@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.exception.OverdueDebtBlocksExamFeeException;
+import com.red_escuela.backend.billing.collections.exception.OverdueDebtBlocksExamFeeException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentUseCase;
@@ -52,6 +52,9 @@ class ExamFeeOverdueDebtIT extends AbstractIntegrationTest {
 
     @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -132,7 +135,7 @@ class ExamFeeOverdueDebtIT extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment("exam.fee.latefee." + System.nanoTime());
         Person admin = persistPerson("exam.fee.admin." + System.nanoTime());
         Invoice installment = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, 5000, LocalDate.now().minusDays(20));
-        Invoice lateFee = persistInvoice(enrollment, FeeType.ADMINISTRATIVE_FEE, 250, LocalDate.now().minusDays(2));
+        Invoice lateFee = persistInvoice(enrollment, FeeType.ADMINISTRATIVE_FEE, 250, LocalDate.now().minusDays(4));
         jdbc.update("update invoice set document_type = 'DEBIT_NOTE', invoice_type = 'LATE_FEE', origin_invoice_id = ? where id = ?", installment.getId(), lateFee.getId());
         BillingTestFixtures.registerApprovedBankTransferPayment(installment.getId(), admin.getId());
 
@@ -177,6 +180,37 @@ class ExamFeeOverdueDebtIT extends AbstractIntegrationTest {
         ProgramEnrollment saved = programEnrollmentRepository.save(second);
 
         assertThat(catchThrowable(() -> createAdHocInvoice.create(saved.getId(), examFeeRequest()))).isInstanceOf(OverdueDebtBlocksExamFeeException.class);
+    }
+
+    @Test
+    @Tag("D-288")
+    void anInstallmentWithinTheGracePeriodDoesNotBlockTheExamFee() {
+        ProgramEnrollment enrollment = persistProgramEnrollment("exam.fee.grace." + System.nanoTime());
+        LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, persistPerson("exam.fee.terms." + System.nanoTime()), 3,
+                java.math.BigDecimal.valueOf(0.05), 30, 2, LocalDate.now().minusYears(1));
+        Invoice installment = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, 5000, LocalDate.now().minusDays(3));
+
+        assertThat(createAdHocInvoice.create(enrollment.getId(), examFeeRequest()).invoice().getFeeType()).isEqualTo(FeeType.EXAM_FEE);
+        assertThat(installment.getDueDate()).isEqualTo(LocalDate.now().minusDays(3));
+    }
+
+    @Test
+    @Tag("D-154")
+    void aReceiptUploadedOnTimeAndUnderReviewDoesNotBlockButOneUploadedLateDoes() {
+        ProgramEnrollment onTime = persistProgramEnrollment("exam.fee.ontime." + System.nanoTime());
+        LocalDate dueDate = LocalDate.now().minusDays(5);
+        underReview(persistInvoice(onTime, FeeType.MONTHLY_INSTALLMENT, 5000, dueDate), dueDate);
+        ProgramEnrollment late = persistProgramEnrollment("exam.fee.late." + System.nanoTime());
+        underReview(persistInvoice(late, FeeType.MONTHLY_INSTALLMENT, 5000, dueDate), dueDate.plusDays(1));
+
+        assertThat(createAdHocInvoice.create(onTime.getId(), examFeeRequest()).invoice().getFeeType()).isEqualTo(FeeType.EXAM_FEE);
+        assertThat(catchThrowable(() -> createAdHocInvoice.create(late.getId(), examFeeRequest()))).isInstanceOf(OverdueDebtBlocksExamFeeException.class);
+    }
+
+    private void underReview(Invoice installment, LocalDate uploadedOn) {
+        jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", installment.getId());
+        jdbc.update("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'receipt.pdf', ?, 'PENDING_REVIEW', 0)",
+                installment.getId(), java.sql.Timestamp.valueOf(uploadedOn.atTime(10, 0)));
     }
 
     @Test

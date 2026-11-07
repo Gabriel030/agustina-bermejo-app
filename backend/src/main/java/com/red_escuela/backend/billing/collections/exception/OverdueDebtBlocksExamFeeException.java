@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.invoice.exception;
+package com.red_escuela.backend.billing.collections.exception;
 
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.exception.ConflictException;

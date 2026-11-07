@@ -28,10 +28,6 @@ public class InvoiceFollowUpQueries {
         return invoiceRepository.existsUnpaidIssuedDocumentDueBefore(studentCurrentAccountId, UNPAID_STATUSES, today);
     }
 
-    public boolean hasUnpaidIssuedDocumentOverdueOfStudent(Long studentId, LocalDate today) {
-        return invoiceRepository.existsUnpaidIssuedDocumentDueBeforeByStudentId(studentId, UNPAID_STATUSES, today);
-    }
-
     public long countOverdueOfCourseEnrollment(Long courseEnrollmentId) {
         return invoiceRepository.countByCourseEnrollmentIdAndPaymentStatus(courseEnrollmentId, InvoicePaymentStatus.OVERDUE);
     }

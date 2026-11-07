@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.invoice.exception.OutstandingDebtBlocksRe
 import com.red_escuela.backend.billing.collections.exception.OverdueDebtBlocksNewEnrollmentException;
 import com.red_escuela.backend.billing.collections.policy.NewEnrollmentDebtCheck;
 import com.red_escuela.backend.billing.invoice.policy.OutstandingDebtFacts;
-import com.red_escuela.backend.billing.invoice.service.InvoiceFollowUpQueries;
 import com.red_escuela.backend.billing.invoice.service.WithdrawnEnrollmentDebtFactsLoader;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.module.CurrentBillingModePort;
@@ -21,18 +20,18 @@ import java.time.LocalDate;
 public class StudentDebtEnrollmentGuard implements EnrollmentDebtGuard {
 
     private final WithdrawnEnrollmentDebtFactsLoader withdrawnDebtFacts;
-    private final InvoiceFollowUpQueries invoiceFollowUp;
+    private final StudentOverdueDebtFinder overdueDebtFinder;
     private final BillingConfigurationReader configurationReader;
     private final CurrentBillingModePort billingMode;
     private final PolicySet<OutstandingDebtFacts> reenrollmentDebtPolicySet;
     private final PolicySet<NewEnrollmentDebtCheck> newEnrollmentDebtPolicySet;
     private final Clock clock;
 
-    public StudentDebtEnrollmentGuard(WithdrawnEnrollmentDebtFactsLoader withdrawnDebtFacts, InvoiceFollowUpQueries invoiceFollowUp, BillingConfigurationReader configurationReader,
+    public StudentDebtEnrollmentGuard(WithdrawnEnrollmentDebtFactsLoader withdrawnDebtFacts, StudentOverdueDebtFinder overdueDebtFinder, BillingConfigurationReader configurationReader,
                                       CurrentBillingModePort billingMode, PolicySet<OutstandingDebtFacts> reenrollmentDebtPolicySet,
                                       PolicySet<NewEnrollmentDebtCheck> newEnrollmentDebtPolicySet, Clock clock) {
         this.withdrawnDebtFacts = withdrawnDebtFacts;
-        this.invoiceFollowUp = invoiceFollowUp;
+        this.overdueDebtFinder = overdueDebtFinder;
         this.configurationReader = configurationReader;
         this.billingMode = billingMode;
         this.reenrollmentDebtPolicySet = reenrollmentDebtPolicySet;
@@ -50,7 +49,7 @@ public class StudentDebtEnrollmentGuard implements EnrollmentDebtGuard {
         LocalDate today = LocalDate.now(clock);
         boolean blockWhenOverdue = configurationReader.findLatePaymentSettingsEffectiveOn(today).map(LatePaymentTerms::blockNewEnrollmentsWhenOverdue).orElse(true);
         NewEnrollmentDebtCheck check = new NewEnrollmentDebtCheck(studentId, blockWhenOverdue,
-                blockWhenOverdue && invoiceFollowUp.hasUnpaidIssuedDocumentOverdueOfStudent(studentId, today));
+                blockWhenOverdue && overdueDebtFinder.hasOverdueDebt(studentId, today));
         newEnrollmentDebtPolicySet.evaluateAllRules(check).throwIfDenied(OverdueDebtBlocksNewEnrollmentException::new);
     }
 }

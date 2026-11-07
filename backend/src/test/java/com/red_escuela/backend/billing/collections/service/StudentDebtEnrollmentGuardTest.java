@@ -4,7 +4,6 @@ import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.collections.CollectionsPolicySetsConfiguration;
 import com.red_escuela.backend.billing.invoice.InvoicePolicySetsConfiguration;
-import com.red_escuela.backend.billing.invoice.service.InvoiceFollowUpQueries;
 import com.red_escuela.backend.billing.invoice.exception.OutstandingDebtBlocksReenrollmentException;
 import com.red_escuela.backend.billing.collections.exception.OverdueDebtBlocksNewEnrollmentException;
 import com.red_escuela.backend.billing.invoice.policy.OutstandingDebtFacts;
@@ -38,7 +37,7 @@ class StudentDebtEnrollmentGuardTest {
     private static final LocalDate TODAY = LocalDate.of(2027, 4, 12);
 
     private final WithdrawnEnrollmentDebtFactsLoader withdrawnDebtFacts = mock(WithdrawnEnrollmentDebtFactsLoader.class);
-    private final InvoiceFollowUpQueries invoiceFollowUp = mock(InvoiceFollowUpQueries.class);
+    private final StudentOverdueDebtFinder overdueDebtFinder = mock(StudentOverdueDebtFinder.class);
     private final BillingConfigurationReader configurationReader = mock(BillingConfigurationReader.class);
     private BillingMode mode = BillingMode.FULL;
     private StudentDebtEnrollmentGuard guard;
@@ -48,7 +47,7 @@ class StudentDebtEnrollmentGuardTest {
         when(withdrawnDebtFacts.loadFactsOf(any())).thenReturn(new OutstandingDebtFacts(STUDENT_ID, false, false));
         InvoicePolicySetsConfiguration policies = new InvoicePolicySetsConfiguration();
         Clock clock = Clock.fixed(TODAY.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
-        guard = new StudentDebtEnrollmentGuard(withdrawnDebtFacts, invoiceFollowUp, configurationReader, () -> mode,
+        guard = new StudentDebtEnrollmentGuard(withdrawnDebtFacts, overdueDebtFinder, configurationReader, () -> mode,
                 policies.reenrollmentDebtPolicySet(), new CollectionsPolicySetsConfiguration().newEnrollmentDebtPolicySet(), clock);
     }
 
@@ -59,7 +58,7 @@ class StudentDebtEnrollmentGuardTest {
     }
 
     private void studentHasOverdueDebt() {
-        when(invoiceFollowUp.hasUnpaidIssuedDocumentOverdueOfStudent(STUDENT_ID, TODAY)).thenReturn(true);
+        when(overdueDebtFinder.hasOverdueDebt(STUDENT_ID, TODAY)).thenReturn(true);
     }
 
     @Test
@@ -109,7 +108,7 @@ class StudentDebtEnrollmentGuardTest {
 
         guard.verifyNoOutstandingDebt(STUDENT_ID);
 
-        org.mockito.Mockito.verify(invoiceFollowUp, org.mockito.Mockito.never()).hasUnpaidIssuedDocumentOverdueOfStudent(eq(STUDENT_ID), any());
+        org.mockito.Mockito.verify(overdueDebtFinder, org.mockito.Mockito.never()).hasOverdueDebt(eq(STUDENT_ID), any());
     }
 
     @Test
@@ -117,7 +116,7 @@ class StudentDebtEnrollmentGuardTest {
         mode = BillingMode.OFF;
 
         assertThatCode(() -> guard.verifyNoOutstandingDebt(STUDENT_ID)).doesNotThrowAnyException();
-        verifyNoInteractions(withdrawnDebtFacts, invoiceFollowUp, configurationReader);
+        verifyNoInteractions(withdrawnDebtFacts, overdueDebtFinder, configurationReader);
     }
 
     @ParameterizedTest

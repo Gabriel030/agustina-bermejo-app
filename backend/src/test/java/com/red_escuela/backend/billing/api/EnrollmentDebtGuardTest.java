@@ -58,6 +58,8 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @SpringBootTest
 @ActiveProfiles("test")
 class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
+    private static final int GRACE_DAYS = 2;
+
     @Autowired
     private EnrollmentDebtGuard enrollmentDebtGuard;
 
@@ -66,6 +68,9 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder snapshotHolder;
@@ -107,6 +112,14 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository studentDiscountRepository;
     @Autowired
     private com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository discountDefinitionRepository;
+
+    @org.junit.jupiter.api.BeforeEach
+    void publishLatePaymentTermsWithTwoGraceDays() {
+        if (jdbc.queryForObject("select count(*) from configuration_version where scope = 'LATE_PAYMENT'", Long.class) == 0) {
+            com.red_escuela.backend.billing.service.LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository,
+                    persistPerson("late.terms." + System.nanoTime()), GRACE_DAYS, BigDecimal.valueOf(0.05), 30, 2, LocalDate.now().minusYears(1));
+        }
+    }
 
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
@@ -506,21 +519,72 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-065")
-    void anInstallmentDueYesterdayBlocksEvenBeforeTheNightlySweepMarksItOverdue() {
+    @Tag("D-288")
+    void anInstallmentWithinTheGracePeriodDoesNotBlock() {
         Student student = persistStudent("88012001");
-        persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(1));
+        persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(GRACE_DAYS));
+
+        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    @Tag("D-065")
+    @Tag("D-288")
+    void anInstallmentOneDayPastTheGracePeriodBlocksEvenBeforeTheNightlySweepMarksItOverdue() {
+        Student student = persistStudent("88012002");
+        persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(GRACE_DAYS + 1));
+
+        assertThat(newEnrollmentViolationCodesOf(student, persistProgram())).containsExactly("OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT");
+    }
+
+    private void placeReceiptUnderReview(Invoice installment, LocalDate uploadedOn) {
+        jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", installment.getId());
+        jdbc.update("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'receipt.pdf', ?, 'PENDING_REVIEW', 0)",
+                installment.getId(), java.sql.Timestamp.valueOf(uploadedOn.atTime(10, 0)));
+    }
+
+    @Test
+    @Tag("D-153")
+    @Tag("D-154")
+    void aReceiptUploadedOnTimeAndStillUnderReviewDoesNotBlockAfterTheDueDatePasses() {
+        Student student = persistStudent("88012011");
+        LocalDate dueDate = LocalDate.now().minusDays(GRACE_DAYS + 1);
+        placeReceiptUnderReview(persistInstallmentOfActiveEnrollment(student, dueDate), dueDate);
+
+        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    @Tag("D-154")
+    void aReceiptUploadedAfterTheDueDateDoesNotProtectTheInstallment() {
+        Student student = persistStudent("88012012");
+        LocalDate dueDate = LocalDate.now().minusDays(GRACE_DAYS + 1);
+        placeReceiptUnderReview(persistInstallmentOfActiveEnrollment(student, dueDate), dueDate.plusDays(1));
+
+        assertThat(newEnrollmentViolationCodesOf(student, persistProgram())).containsExactly("OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT");
+    }
+
+    @Test
+    @Tag("D-154")
+    void aReceiptUploadedOnTimeButLeftUnreviewedBeyondTheProtectionWindowBlocksAgain() {
+        Student student = persistStudent("88012013");
+        LocalDate dueDate = LocalDate.now().minusDays(60);
+        placeReceiptUnderReview(persistInstallmentOfActiveEnrollment(student, dueDate), dueDate);
 
         assertThat(newEnrollmentViolationCodesOf(student, persistProgram())).containsExactly("OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT");
     }
 
     @Test
     @Tag("D-065")
-    void anInstallmentDueTodayDoesNotBlockYet() {
-        Student student = persistStudent("88012002");
-        persistInstallmentOfActiveEnrollment(student, LocalDate.now());
+    void anInstallmentWithoutReceiptPastTheGracePeriodBlocksAndTheProtectedOneDoesNotHideIt() {
+        Student student = persistStudent("88012014");
+        LocalDate dueDate = LocalDate.now().minusDays(GRACE_DAYS + 1);
+        placeReceiptUnderReview(persistInstallmentOfActiveEnrollment(student, dueDate), dueDate);
+        persistInstallmentOfActiveEnrollment(student, dueDate.minusMonths(1));
 
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
-                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+        assertThat(newEnrollmentViolationCodesOf(student, persistProgram())).containsExactly("OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT");
     }
 
     @Test

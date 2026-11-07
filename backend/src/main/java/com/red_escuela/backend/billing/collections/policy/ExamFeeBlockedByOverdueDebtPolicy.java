@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.invoice.policy;
+package com.red_escuela.backend.billing.collections.policy;
 
 import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;

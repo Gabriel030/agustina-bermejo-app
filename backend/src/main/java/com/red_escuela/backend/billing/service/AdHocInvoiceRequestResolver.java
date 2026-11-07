@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.invoice.service.ExamFeeOverdueDebtGuard;
+import com.red_escuela.backend.billing.collections.service.ExamFeeOverdueDebtGuard;
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
