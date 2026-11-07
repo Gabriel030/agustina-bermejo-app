@@ -16,7 +16,7 @@ M4 y M5 chocaron con cuatro reglas de ArchUnit distintas y llegaron a cinco capa
 |---|---|---|
 | Coordinador | `*Controller`, `@Scheduled`, listeners de eventos, receivers | solo casos de uso de **su** módulo |
 | Caso de uso | `XxxUseCase` + `XxxService` (`@UseCase`), el guion de un flujo | solo especialistas de su módulo; nunca otro caso de uso |
-| Especialista | colaboradores de `service/` (`TermFinder`, `AttendanceSectionAccess`) y los especialistas expuestos de `api/` | herramientas propias y `api` de módulos inferiores |
+| Especialista | colaboradores de `service/` (`TermFinder`, `AttendanceSectionAccessChecker`) y los especialistas expuestos de `api/` | herramientas propias y `api` de módulos inferiores |
 | Herramienta | `repository`, mappers, clientes | nadie más |
 | Máquina | jobs que despiertan un caso de uso | casos de uso de su módulo |
 
@@ -41,7 +41,7 @@ Los métodos públicos de `api` solo reciben y devuelven: tipos de `java.*`, rec
 
 ## Cómo queda una consulta, ejemplo
 
-`attendance` necesita saber si un docente da una comisión: `AttendanceController` llama a `LoadAttendanceUseCase` (de attendance), que llama a `AttendanceSectionAccess` (especialista propio en `attendance.service`), que llama a `SectionTeachingFinder` (especialista expuesto en `academicstructure.api`), que usa su repositorio. Cuatro pasos, cero interfaces, cero adaptadores.
+`attendance` necesita saber si un docente da una comisión: `AttendanceController` llama a `LoadAttendanceUseCase` (de attendance), que llama a `AttendanceSectionAccessChecker` (especialista propio en `attendance.service`), que llama a `SectionTeachingFinder` (especialista expuesto en `academicstructure.api`), que usa su repositorio. Cuatro pasos, cero interfaces, cero adaptadores.
 
 ## Reglas de ArchUnit (todas congeladas al entrar, con test de fixture)
 

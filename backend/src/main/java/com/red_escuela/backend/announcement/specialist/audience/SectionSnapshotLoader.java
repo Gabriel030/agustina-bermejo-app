@@ -1,7 +1,7 @@
 package com.red_escuela.backend.announcement.specialist.audience;
 
 import com.red_escuela.backend.announcement.entity.SectionType;
-import com.red_escuela.backend.attendance.api.EnrollmentAbsenceCounts;
+import com.red_escuela.backend.attendance.api.EnrollmentAbsenceCountsView;
 import com.red_escuela.backend.attendance.api.SectionAbsenceCountsReader;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
@@ -42,7 +42,7 @@ public class SectionSnapshotLoader {
         List<Long> ids = enrollments.stream().map(SubjectSectionEnrollment::getId).toList();
 
         Map<Long, EnrollmentGradeScores> grades = gradeScoresFinder.findScoresByProgramEnrollment(ids);
-        Map<Long, EnrollmentAbsenceCounts> attendance = absenceCountsReader.countByProgramEnrollments(ids);
+        Map<Long, EnrollmentAbsenceCountsView> attendance = absenceCountsReader.countByProgramEnrollments(ids);
 
         List<StudentSnapshot> students = new ArrayList<>();
         for (SubjectSectionEnrollment enrollment : enrollments) {
@@ -58,7 +58,7 @@ public class SectionSnapshotLoader {
         List<Long> ids = enrollments.stream().map(CourseSubjectSectionEnrollment::getId).toList();
 
         Map<Long, EnrollmentGradeScores> grades = gradeScoresFinder.findScoresByCourseEnrollment(ids);
-        Map<Long, EnrollmentAbsenceCounts> attendance = absenceCountsReader.countByCourseEnrollments(ids);
+        Map<Long, EnrollmentAbsenceCountsView> attendance = absenceCountsReader.countByCourseEnrollments(ids);
 
         List<StudentSnapshot> students = new ArrayList<>();
         for (CourseSubjectSectionEnrollment enrollment : enrollments) {
@@ -74,9 +74,9 @@ public class SectionSnapshotLoader {
                                        com.red_escuela.backend.enrollment.entity.EnrollmentStatus status,
                                        com.red_escuela.backend.enrollment.entity.FinalGradeType finalGradeType,
                                        Map<Long, EnrollmentGradeScores> grades,
-                                       Map<Long, EnrollmentAbsenceCounts> attendance) {
+                                       Map<Long, EnrollmentAbsenceCountsView> attendance) {
         EnrollmentGradeScores scores = grades.getOrDefault(enrollmentId, EnrollmentGradeScores.empty());
-        EnrollmentAbsenceCounts counts = attendance.getOrDefault(enrollmentId, EnrollmentAbsenceCounts.none());
+        EnrollmentAbsenceCountsView counts = attendance.getOrDefault(enrollmentId, EnrollmentAbsenceCountsView.none());
         return new StudentSnapshot(
                 student,
                 status,

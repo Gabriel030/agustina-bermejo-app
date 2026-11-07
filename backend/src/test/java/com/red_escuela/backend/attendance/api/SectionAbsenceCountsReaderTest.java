@@ -23,11 +23,11 @@ class SectionAbsenceCountsReaderTest {
         when(attendanceRepository.countsByProgramEnrollment(List.of(1L, 2L), AttendanceStatus.ABSENT))
                 .thenReturn(List.of(new Object[]{1L, 10L, 3L}, new Object[]{2L, 4L, null}));
 
-        Map<Long, EnrollmentAbsenceCounts> counts = reader.countByProgramEnrollments(List.of(1L, 2L));
+        Map<Long, EnrollmentAbsenceCountsView> counts = reader.countByProgramEnrollments(List.of(1L, 2L));
 
         assertThat(counts).containsOnly(
-                Map.entry(1L, new EnrollmentAbsenceCounts(10L, 3L)),
-                Map.entry(2L, new EnrollmentAbsenceCounts(4L, 0L)));
+                Map.entry(1L, new EnrollmentAbsenceCountsView(10L, 3L)),
+                Map.entry(2L, new EnrollmentAbsenceCountsView(4L, 0L)));
     }
 
     @Test
@@ -36,7 +36,7 @@ class SectionAbsenceCountsReaderTest {
                 .thenReturn(List.<Object[]>of(new Object[]{5L, 8L, 2L}));
 
         assertThat(reader.countByCourseEnrollments(List.of(5L)))
-                .containsOnly(Map.entry(5L, new EnrollmentAbsenceCounts(8L, 2L)));
+                .containsOnly(Map.entry(5L, new EnrollmentAbsenceCountsView(8L, 2L)));
     }
 
     @Test
