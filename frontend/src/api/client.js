@@ -5,7 +5,7 @@
 import { NetworkError, createCircuitBreaker, rateLimitMessage, runWithRetry } from '@/api/retryPolicy';
 import { ApiError } from '@/api/apiError';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
 export { CircuitOpenError, NetworkError } from '@/api/retryPolicy';
 export { ApiError } from '@/api/apiError';
