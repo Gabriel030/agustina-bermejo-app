@@ -1,8 +1,8 @@
 package com.red_escuela.backend.graduation.controller;
 
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.graduation.service.CertificateService;
-import com.red_escuela.backend.graduation.usecase.graduationrequest.VerifyProgramEnrollmentOwnerUseCase;
+import com.red_escuela.backend.graduation.specialist.ProgramCertificateIssuer;
+import com.red_escuela.backend.graduation.usecase.request.VerifyProgramEnrollmentOwnerUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -19,11 +19,11 @@ public class MeCertificateController {
 
     private final CurrentStudentService currentStudentService;
     private final VerifyProgramEnrollmentOwnerUseCase verifyProgramEnrollmentOwnerUseCase;
-    private final CertificateService certificateService;
+    private final ProgramCertificateIssuer certificateService;
 
     public MeCertificateController(
             CurrentStudentService currentStudentService, VerifyProgramEnrollmentOwnerUseCase verifyProgramEnrollmentOwnerUseCase,
-            CertificateService certificateService) {
+            ProgramCertificateIssuer certificateService) {
         this.currentStudentService = currentStudentService;
         this.verifyProgramEnrollmentOwnerUseCase = verifyProgramEnrollmentOwnerUseCase;
         this.certificateService = certificateService;

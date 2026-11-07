@@ -19,7 +19,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidForTermException;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
-import com.red_escuela.backend.graduation.service.CertificateService;
+import com.red_escuela.backend.graduation.specialist.ProgramCertificateIssuer;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -53,7 +53,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private EnrollmentFeeRequirementService requirementService;
     @Autowired
-    private CertificateService certificateService;
+    private ProgramCertificateIssuer certificateService;
     @Autowired
     private MockMvc mockMvc;
     @Autowired

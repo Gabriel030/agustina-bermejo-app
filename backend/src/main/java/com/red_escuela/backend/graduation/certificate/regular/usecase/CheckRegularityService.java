@@ -4,7 +4,7 @@ import com.red_escuela.backend.platform.api.BillingModeGate;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityVerdict;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
-import com.red_escuela.backend.graduation.certificate.regular.service.RegularityEvaluator;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularityEvaluator;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

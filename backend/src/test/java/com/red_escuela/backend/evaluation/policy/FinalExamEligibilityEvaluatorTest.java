@@ -1,7 +1,7 @@
 package com.red_escuela.backend.evaluation.policy;
 
 import com.red_escuela.backend.evaluation.exception.FinalExamRequiresRegularStudentException;
-import com.red_escuela.backend.evaluation.service.FinalExamEligibilityEvaluator;
+import com.red_escuela.backend.evaluation.specialist.FinalExamEligibilityEvaluator;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

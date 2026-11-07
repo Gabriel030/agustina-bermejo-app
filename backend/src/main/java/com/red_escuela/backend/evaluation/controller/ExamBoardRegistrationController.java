@@ -2,7 +2,7 @@ package com.red_escuela.backend.evaluation.controller;
 
 import com.red_escuela.backend.evaluation.dto.CreateExamBoardRegistrationRequest;
 import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationResponse;
-import com.red_escuela.backend.evaluation.service.ExamBoardRegistrationService;
+import com.red_escuela.backend.evaluation.specialist.ExamBoardRegistrationManager;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ExamBoardRegistrationController {
 
-    private final ExamBoardRegistrationService examBoardRegistrationService;
+    private final ExamBoardRegistrationManager examBoardRegistrationService;
 
-    public ExamBoardRegistrationController(ExamBoardRegistrationService examBoardRegistrationService) {
+    public ExamBoardRegistrationController(ExamBoardRegistrationManager examBoardRegistrationService) {
         this.examBoardRegistrationService = examBoardRegistrationService;
     }
 

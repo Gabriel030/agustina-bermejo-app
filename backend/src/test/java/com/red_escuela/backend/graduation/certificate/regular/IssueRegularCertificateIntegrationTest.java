@@ -29,7 +29,7 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Standing
 import com.red_escuela.backend.graduation.certificate.regular.exception.StudentHasDebtException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
-import com.red_escuela.backend.graduation.certificate.regular.service.RegularCertificateExpirer;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateExpirer;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetRegularCertificatePdfUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.IssueRegularCertificateUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListRegularCertificatesUseCase;

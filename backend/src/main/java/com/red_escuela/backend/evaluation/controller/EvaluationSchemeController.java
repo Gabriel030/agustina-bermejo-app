@@ -3,7 +3,7 @@ package com.red_escuela.backend.evaluation.controller;
 import com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest;
 import com.red_escuela.backend.evaluation.dto.EvaluationSchemeResponse;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
-import com.red_escuela.backend.evaluation.service.EvaluationSchemeService;
+import com.red_escuela.backend.evaluation.specialist.EvaluationSchemeManager;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,9 +20,9 @@ import java.util.List;
 @RestController
 public class EvaluationSchemeController {
 
-    private final EvaluationSchemeService evaluationSchemeService;
+    private final EvaluationSchemeManager evaluationSchemeService;
 
-    public EvaluationSchemeController(EvaluationSchemeService evaluationSchemeService) {
+    public EvaluationSchemeController(EvaluationSchemeManager evaluationSchemeService) {
         this.evaluationSchemeService = evaluationSchemeService;
     }
 

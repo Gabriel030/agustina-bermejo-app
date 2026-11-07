@@ -2,10 +2,10 @@ package com.red_escuela.backend.graduation.controller;
 
 import com.red_escuela.backend.graduation.dto.GraduationRequestResponse;
 import com.red_escuela.backend.graduation.dto.OwnGraduationRequestResponse;
-import com.red_escuela.backend.graduation.usecase.graduationrequest.GetOwnGraduationRequestUseCase;
-import com.red_escuela.backend.graduation.usecase.graduationrequest.RequestGraduationUseCase;
+import com.red_escuela.backend.graduation.usecase.request.GetOwnGraduationRequestUseCase;
+import com.red_escuela.backend.graduation.usecase.request.RequestGraduationUseCase;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.graduation.usecase.graduationrequest.VerifyProgramEnrollmentOwnerUseCase;
+import com.red_escuela.backend.graduation.usecase.request.VerifyProgramEnrollmentOwnerUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;

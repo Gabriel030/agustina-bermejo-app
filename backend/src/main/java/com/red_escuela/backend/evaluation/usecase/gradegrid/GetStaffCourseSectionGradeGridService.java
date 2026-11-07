@@ -1,7 +1,7 @@
 package com.red_escuela.backend.evaluation.usecase.gradegrid;
 
 import com.red_escuela.backend.evaluation.dto.TeacherGradeGridResponse;
-import com.red_escuela.backend.evaluation.service.TeacherGradeGridBuilder;
+import com.red_escuela.backend.evaluation.specialist.TeacherGradeGridBuilder;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

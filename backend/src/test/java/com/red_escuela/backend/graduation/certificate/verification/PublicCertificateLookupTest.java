@@ -5,9 +5,9 @@ import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCer
 import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateView;
 import com.red_escuela.backend.graduation.certificate.verification.exception.CertificateNotFoundException;
-import com.red_escuela.backend.graduation.certificate.verification.service.CertificateVerificationSource;
-import com.red_escuela.backend.graduation.certificate.verification.service.PublicCertificateLookup;
-import com.red_escuela.backend.graduation.certificate.verification.service.PublicVerificationRateLimiter;
+import com.red_escuela.backend.graduation.certificate.verification.specialist.CertificateVerificationSource;
+import com.red_escuela.backend.graduation.certificate.verification.specialist.PublicCertificateLookup;
+import com.red_escuela.backend.graduation.certificate.verification.specialist.PublicVerificationRateLimiter;
 import com.red_escuela.backend.shared.exception.RequestRateLimitExceededException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;

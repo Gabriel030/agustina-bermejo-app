@@ -3,8 +3,8 @@ package com.red_escuela.backend.graduation.certificate.regular.usecase;
 import com.red_escuela.backend.graduation.certificate.regular.dto.IssueRegularCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateChannel;
-import com.red_escuela.backend.graduation.certificate.regular.service.IssueRegularCertificateCommand;
-import com.red_escuela.backend.graduation.certificate.regular.service.RegularCertificateIssuer;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.IssueRegularCertificateCommand;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateIssuer;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

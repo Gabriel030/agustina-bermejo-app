@@ -14,7 +14,7 @@ import com.red_escuela.backend.graduation.certificate.entity.GraduationCertifica
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateAlreadyIssuedException;
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateNotEligibleException;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
-import com.red_escuela.backend.graduation.certificate.service.CertificateDigest;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Institution;

@@ -2,7 +2,7 @@ package com.red_escuela.backend.graduation.certificate.usecase;
 
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.dto.IssueGraduationCertificateRequest;
-import com.red_escuela.backend.graduation.certificate.service.GraduationCertificateIssuer;
+import com.red_escuela.backend.graduation.certificate.specialist.GraduationCertificateIssuer;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

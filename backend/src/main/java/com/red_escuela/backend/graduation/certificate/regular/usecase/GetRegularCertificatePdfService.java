@@ -1,7 +1,7 @@
 package com.red_escuela.backend.graduation.certificate.regular.usecase;
 
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificatePdf;
-import com.red_escuela.backend.graduation.certificate.regular.service.RegularCertificatePdfProvider;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificatePdfProvider;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
