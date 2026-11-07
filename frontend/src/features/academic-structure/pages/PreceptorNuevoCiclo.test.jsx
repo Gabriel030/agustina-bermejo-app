@@ -49,8 +49,8 @@ function mockCatalog() {
     http.get(`${API}/instructors`, () => HttpResponse.json([{ id: 5, name: 'Mariana Gómez' }])),
     http.get(`${API}/classrooms`, () =>
       HttpResponse.json([
-        { id: 3, name: 'Laboratorio 2', capacity: 20 },
-        { id: 4, name: 'Sala de Prácticas', capacity: 18 },
+        { id: 3, name: 'Laboratorio 2', capacity: 20, status: 'ACTIVE' },
+        { id: 4, name: 'Sala de Prácticas', capacity: 18, status: 'ACTIVE' },
       ]),
     ),
   );
