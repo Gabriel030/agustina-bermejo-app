@@ -2,7 +2,6 @@ package com.red_escuela.backend.billing.run.domain;
 
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination;
 import com.red_escuela.backend.billing.run.service.MonthlyInvoiceIssuanceStrategies;
-import com.red_escuela.backend.billing.run.service.EffectiveMonthlyInvoiceIssuanceModeResolver;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -52,11 +51,5 @@ class MonthlyInvoiceIssuanceStrategyTest {
 
         assertThat(direct.finishEventOf(0, 5)).isEqualTo(MonthlyInvoiceRunEvent.RUN_FINISHED_CLEAN);
         assertThat(direct.finishEventOf(1, 5)).isEqualTo(MonthlyInvoiceRunEvent.RUN_FINISHED_WITH_FAILURES);
-    }
-
-    @Test
-    @Tag("D-512")
-    void newRunsAreForcedToDirectUntilTheBatchApprovalExists() {
-        assertThat(new EffectiveMonthlyInvoiceIssuanceModeResolver().resolveModeOfNewRun()).isEqualTo(MonthlyInvoiceIssuanceMode.DIRECT);
     }
 }

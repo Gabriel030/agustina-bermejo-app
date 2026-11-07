@@ -27,6 +27,7 @@ public class BillingShutdownImpactCounter implements BillingShutdownImpactPort {
             "ActivateDuePriceVersionsJob",
             "AdmissionApplicationExpiryJob",
             "AnnualUpfrontDeadlineNoticeJob",
+            "DraftInvoicesAwaitingReviewAlertJob",
             "ExpireAuthorizationRequestsJob",
             "FailedInvoiceRetryJob",
             "IdempotencyRecordCleanupJob",
