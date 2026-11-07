@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.pricing.repository.PriceVersionRepository
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 
@@ -22,6 +23,7 @@ public class AdvanceEnrollmentFeePriceFinder {
 
     @Transactional(readOnly = true)
     public Optional<PriceVersion> findLiveVersion(Long programId, int lectiveYear) {
-        return versionRepository.findFirstByPriceProgramIdAndPriceFeeTypeAndAppliesToLectiveYearAndStatusIn(programId, FeeType.ENROLLMENT_FEE, lectiveYear, LIVE);
+        return versionRepository.findByPriceProgramIdAndPriceFeeTypeAndAppliesToLectiveYearAndStatusIn(programId, FeeType.ENROLLMENT_FEE, lectiveYear, LIVE).stream()
+                .max(Comparator.comparing(PriceVersion::getEffectiveFrom));
     }
 }

@@ -98,6 +98,7 @@ public class Price {
 
     public PriceVersion publishPriceVersion(NonNegativeMoney baseAmount, MarketingDiscount discount, LocalDate effectiveFrom, String changeReason,
                                             Long publisherId, boolean initialVersion, LocalDate today, Instant now, Integer lectiveYear) {
+        requireFutureStartForLectiveYear(lectiveYear, effectiveFrom, today);
         replaceVersionsOfLectiveYear(lectiveYear, publisherId, now);
         PriceVersion version = publishPriceVersion(baseAmount, discount, effectiveFrom, changeReason, publisherId, initialVersion, today, now);
         version.tagLectiveYear(lectiveYear);
@@ -106,6 +107,7 @@ public class Price {
 
     public PriceVersion proposePriceVersion(NonNegativeMoney baseAmount, MarketingDiscount discount, LocalDate effectiveFrom, String changeReason,
                                             Long proposerId, Long authorizationRequestId, boolean initialVersion, LocalDate today, Instant now, Integer lectiveYear) {
+        requireFutureStartForLectiveYear(lectiveYear, effectiveFrom, today);
         PriceVersion version = proposePriceVersion(baseAmount, discount, effectiveFrom, changeReason, proposerId, authorizationRequestId, initialVersion, today, now);
         version.tagLectiveYear(lectiveYear);
         return version;
@@ -158,9 +160,17 @@ public class Price {
     }
 
     public void makeRoomForVersionStartingOn(LocalDate effectiveFrom, LocalDate today, Long causedById, Instant now) {
+        makeRoomForVersionStartingOn(effectiveFrom, today, causedById, now, null);
+    }
+
+    public void makeRoomForVersionStartingOn(LocalDate effectiveFrom, LocalDate today, Long causedById, Instant now, Integer lectiveYear) {
+        if (lectiveYear != null) {
+            return;
+        }
         boolean alreadyInForce = !effectiveFrom.isAfter(today);
         versions.stream()
-                .filter(version -> version.getStatus() == PriceVersionStatus.SCHEDULED && version.getEffectiveFrom().equals(effectiveFrom))
+                .filter(version -> version.getStatus() == PriceVersionStatus.SCHEDULED && version.getEffectiveFrom().equals(effectiveFrom)
+                        && version.getAppliesToLectiveYear() == null)
                 .forEach(version -> {
                     if (alreadyInForce) {
                         version.reachStartCausedBy(causedById, now);
@@ -231,13 +241,15 @@ public class Price {
         if (lectiveYear == null) {
             return;
         }
-        versions.stream().filter(version -> lectiveYear.equals(version.getAppliesToLectiveYear())).forEach(version -> {
-            if (version.getStatus() == PriceVersionStatus.SCHEDULED) {
-                version.cancel(causedById, REPLACED_LECTIVE_YEAR_REASON, now);
-            } else if (version.getStatus() == PriceVersionStatus.EFFECTIVE) {
-                version.supersedeCausedBy(causedById, now);
-            }
-        });
+        versions.stream()
+                .filter(version -> lectiveYear.equals(version.getAppliesToLectiveYear()) && version.getStatus() == PriceVersionStatus.SCHEDULED)
+                .forEach(version -> version.cancel(causedById, REPLACED_LECTIVE_YEAR_REASON, now));
+    }
+
+    private static void requireFutureStartForLectiveYear(Integer lectiveYear, LocalDate effectiveFrom, LocalDate today) {
+        if (lectiveYear != null && !effectiveFrom.isAfter(today)) {
+            throw new IllegalArgumentException("A version for a lective year must start after today");
+        }
     }
 
     private void supersedeEffectiveVersions(Long causedById, Instant now) {

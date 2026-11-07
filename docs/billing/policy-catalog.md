@@ -24,7 +24,8 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | LectiveYearOnlyForEnrollmentFeePolicy | LECTIVE_YEAR_ONLY_FOR_ENROLLMENT_FEE | D-532 |
-| 2 | AdvancePriceStartsBeforeRegularEmissionPolicy | ADVANCE_PRICE_STARTS_AFTER_REGULAR_EMISSION | D-532 |
+| 2 | AdvancePriceStartsInTheFuturePolicy | ADVANCE_PRICE_MUST_START_IN_THE_FUTURE | D-532 |
+| 3 | AdvancePriceStartsBeforeRegularEmissionPolicy | ADVANCE_PRICE_STARTS_AFTER_REGULAR_EMISSION | D-532 |
 
 ## Momento ANNUAL_UPFRONT_APPROVAL
 

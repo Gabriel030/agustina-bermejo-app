@@ -19,13 +19,16 @@ public class YearTermsScopeHandler implements ConfigurationScopeHandler {
     private final YearBillingConfigurationChangeLoader changeLoader;
     private final ConfigurationPolicyEvaluator policyEvaluator;
     private final AdvanceEnrollmentFeeIssuedQuery advanceIssuedQuery;
+    private final AdvanceEnrollmentFeeCalendarReader calendarReader;
 
     public YearTermsScopeHandler(ProgramYearBillingTemplateRepository templateRepository, YearBillingConfigurationChangeLoader changeLoader,
-                                 ConfigurationPolicyEvaluator policyEvaluator, AdvanceEnrollmentFeeIssuedQuery advanceIssuedQuery) {
+                                 ConfigurationPolicyEvaluator policyEvaluator, AdvanceEnrollmentFeeIssuedQuery advanceIssuedQuery,
+                                 AdvanceEnrollmentFeeCalendarReader calendarReader) {
         this.templateRepository = templateRepository;
         this.changeLoader = changeLoader;
         this.policyEvaluator = policyEvaluator;
         this.advanceIssuedQuery = advanceIssuedQuery;
+        this.calendarReader = calendarReader;
     }
 
     @Override
@@ -42,7 +45,8 @@ public class YearTermsScopeHandler implements ConfigurationScopeHandler {
     public void requireCoherentValues(ConfigurationTopic topic, ConfigurationValues values) {
         ProgramYearBillingTemplate template = templateRepository.findByProgramIdAndTermId(topic.programId(), topic.termId())
                 .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(topic.programId()));
-        YearBillingConfigurationChange change = changeLoader.loadVersionedChange(template, (YearBillingTerms) values);
+        YearBillingConfigurationChange change = changeLoader.loadVersionedChange(template, (YearBillingTerms) values)
+                .withEnrollmentWindowClosesOn(calendarReader.windowClosesOnWith(template, (YearBillingTerms) values));
         policyEvaluator.requireCoherentYearConfiguration(change);
         policyEvaluator.requireUnfrozenYearConfiguration(change.withAdvanceEnrollmentFeeIssued(advanceIssuedQuery.hasIssuedFor(template.getId())));
     }

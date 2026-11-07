@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.configuration.policy.ProposalApprovalChec
 import com.red_escuela.backend.billing.configuration.policy.ProposalNotExpiredPolicy;
 import com.red_escuela.backend.billing.pricing.policy.AdvancePriceCheck;
 import com.red_escuela.backend.billing.pricing.policy.AdvancePriceStartsBeforeRegularEmissionPolicy;
+import com.red_escuela.backend.billing.pricing.policy.AdvancePriceStartsInTheFuturePolicy;
 import com.red_escuela.backend.billing.pricing.policy.LectiveYearOnlyForEnrollmentFeePolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceAmountWithinLimitPolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceCancellationReasonPolicy;
@@ -44,6 +45,7 @@ public class PricingPolicySetsConfiguration {
     public PolicySet<AdvancePriceCheck> advancePricePolicySet() {
         List<Policy<AdvancePriceCheck>> ordered = List.of(
                 new LectiveYearOnlyForEnrollmentFeePolicy(),
+                new AdvancePriceStartsInTheFuturePolicy(),
                 new AdvancePriceStartsBeforeRegularEmissionPolicy());
         return PolicySet.named("ADVANCE_PRICE", ordered);
     }

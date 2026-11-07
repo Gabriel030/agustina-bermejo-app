@@ -38,6 +38,11 @@ public record YearBillingConfigurationChange(
         return new YearBillingConfigurationChange(proposed, proposed, termStart, termEnd, Set.of(), Set.of());
     }
 
+    public YearBillingConfigurationChange withEnrollmentWindowClosesOn(Optional<LocalDate> closesOn) {
+        return new YearBillingConfigurationChange(current, proposed, termStart, termEnd, issuedEnrollmentFeeSlots, issuedInstallmentPeriods, currentTermStart,
+                closesOn, advanceEnrollmentFeeIssued);
+    }
+
     public YearBillingConfigurationChange withAdvanceEnrollmentFeeIssued(boolean issued) {
         return new YearBillingConfigurationChange(current, proposed, termStart, termEnd, issuedEnrollmentFeeSlots, issuedInstallmentPeriods, currentTermStart,
                 enrollmentWindowClosesOn, issued);

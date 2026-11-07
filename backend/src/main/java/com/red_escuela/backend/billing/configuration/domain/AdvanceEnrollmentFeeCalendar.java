@@ -1,21 +1,21 @@
 package com.red_escuela.backend.billing.configuration.domain;
 
+import com.red_escuela.backend.billing.planning.domain.SlotWindow;
+import com.red_escuela.backend.billing.planning.domain.YearCycle;
+import com.red_escuela.backend.billing.planning.policy.EnrollmentFeeSlotDueThisMonthSpecification;
+
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.util.Optional;
 
 public record AdvanceEnrollmentFeeCalendar(LocalDate windowOpensOn, LocalDate windowClosesOn, LocalDate advanceOpensOn, LocalDate regularEmissionStart) {
+    private static final int FIRST_SLOT = 1;
 
-    public static Optional<AdvanceEnrollmentFeeCalendar> of(LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd, LocalDateTime termStart, YearBillingTerms terms) {
-        if (enrollmentStart == null || (enrollmentEnd == null && termStart == null)) {
-            return Optional.empty();
-        }
-        LocalDate opens = enrollmentStart.toLocalDate();
-        LocalDate closes = (enrollmentEnd != null ? enrollmentEnd : termStart).toLocalDate();
-        LocalDate regularEmissionStart = YearMonth.from(opens).minusMonths(terms.enrollmentFeeLeadMonths()).atDay(1);
-        LocalDate advanceOpensOn = terms.advanceEnrollmentFeeOpensOn() != null ? terms.advanceEnrollmentFeeOpensOn() : opens;
-        return Optional.of(new AdvanceEnrollmentFeeCalendar(opens, closes, advanceOpensOn, regularEmissionStart));
+    public static Optional<AdvanceEnrollmentFeeCalendar> of(Optional<SlotWindow> window, YearCycle cycle) {
+        return window.map(slotWindow -> {
+            LocalDate regularEmissionStart = EnrollmentFeeSlotDueThisMonthSpecification.emissionMonth(slotWindow, cycle, FIRST_SLOT).atDay(1);
+            LocalDate configured = cycle.yearTerms().advanceEnrollmentFeeOpensOn();
+            return new AdvanceEnrollmentFeeCalendar(slotWindow.opensOn(), slotWindow.closesOn(), configured != null ? configured : slotWindow.opensOn(), regularEmissionStart);
+        });
     }
 
     public boolean openingAfterRegularEmission() {

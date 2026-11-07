@@ -46,14 +46,6 @@ public class ProgramYearBillingTemplate {
         return term.getStartDate();
     }
 
-    public LocalDateTime termEnrollmentStartDate() {
-        return term.getEnrollmentStart();
-    }
-
-    public LocalDateTime termEnrollmentEndDate() {
-        return term.getEnrollmentEnd();
-    }
-
     public LocalDateTime termEndDate() {
         return term.getEndDate();
     }

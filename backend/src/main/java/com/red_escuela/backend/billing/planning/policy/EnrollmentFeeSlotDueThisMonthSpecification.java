@@ -10,6 +10,10 @@ public final class EnrollmentFeeSlotDueThisMonthSpecification implements Plannin
 
     public static YearMonth emissionMonth(ProgramInvoicePlanningFacts facts, YearCycle cycle, int slot) {
         SlotWindow window = facts.windows().get(SlotWindow.key(cycle.templateId(), slot));
+        return emissionMonth(window, cycle, slot);
+    }
+
+    public static YearMonth emissionMonth(SlotWindow window, YearCycle cycle, int slot) {
         return window == null ? cycle.slotPeriod(slot)
                 : YearMonth.from(window.opensOn()).minusMonths(cycle.terms().enrollmentFeeLeadMonths());
     }

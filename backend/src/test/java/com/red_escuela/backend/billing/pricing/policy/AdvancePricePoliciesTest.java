@@ -15,9 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-532")
 class AdvancePricePoliciesTest {
     private static final LocalDate EMISSION_START = LocalDate.of(2026, 12, 1);
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
 
     private static AdvancePriceCheck check(FeeType feeType, LocalDate effectiveFrom, Optional<LocalDate> emissionStart) {
-        return new AdvancePriceCheck(feeType, 2027, effectiveFrom, emissionStart);
+        return new AdvancePriceCheck(feeType, 2027, effectiveFrom, emissionStart, TODAY);
     }
 
     @Test
@@ -52,6 +53,17 @@ class AdvancePricePoliciesTest {
         assertThat(denial.code()).isEqualTo("LECTIVE_YEAR_ONLY_FOR_ENROLLMENT_FEE");
         assertThat(LectiveYearOnlyForEnrollmentFeePolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(policy.evaluateRule(check(FeeType.ENROLLMENT_FEE, EMISSION_START, Optional.empty())).allowed()).isTrue();
+    }
+
+    @Test
+    void aVersionStartingTodayOrBeforeIsRejectedBecauseItWouldReplaceTheRegularPrice() {
+        AdvancePriceStartsInTheFuturePolicy policy = new AdvancePriceStartsInTheFuturePolicy();
+
+        PolicyVerdict denial = policy.evaluateRule(check(FeeType.ENROLLMENT_FEE, TODAY, Optional.empty()));
+
+        assertThat(denial.code()).isEqualTo("ADVANCE_PRICE_MUST_START_IN_THE_FUTURE");
+        assertThat(AdvancePriceStartsInTheFuturePolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
+        assertThat(policy.evaluateRule(check(FeeType.ENROLLMENT_FEE, TODAY.plusDays(1), Optional.empty())).allowed()).isTrue();
     }
 
     @Test

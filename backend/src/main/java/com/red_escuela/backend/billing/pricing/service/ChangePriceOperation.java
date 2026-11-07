@@ -85,7 +85,7 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
         Price price = priceRepository.findById(command.priceId()).orElseThrow(() -> new PriceNotFoundException(command.priceId()));
         Optional<LocalDate> regularEmissionStart = price.getProgramId() == null ? Optional.empty()
                 : calendarReader.regularEmissionStartOf(price.getProgramId(), command.appliesToLectiveYear());
-        policyEvaluator.requireValidAdvancePrice(new AdvancePriceCheck(price.getFeeType(), command.appliesToLectiveYear(), command.effectiveFrom(), regularEmissionStart));
+        policyEvaluator.requireValidAdvancePrice(new AdvancePriceCheck(price.getFeeType(), command.appliesToLectiveYear(), command.effectiveFrom(), regularEmissionStart, LocalDate.now(clock)));
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
     private PriceVersion publishDirectly(Price price, ChangePriceCommand command) {
         LocalDate today = LocalDate.now(clock);
         Instant now = Instant.now(clock);
-        price.makeRoomForVersionStartingOn(command.effectiveFrom(), today, command.requestedByPersonId(), now);
+        price.makeRoomForVersionStartingOn(command.effectiveFrom(), today, command.requestedByPersonId(), now, command.appliesToLectiveYear());
         priceRepository.flush();
         PriceVersion version = price.publishPriceVersion(command.baseAmount(), command.marketingDiscount(), command.effectiveFrom(), command.changeReason(),
                 command.requestedByPersonId(), false, today, now, command.appliesToLectiveYear());
@@ -129,7 +129,7 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
         PriceVersion proposal = price.findOpenProposalOfRequest(command.authorizationRequestId()).orElseThrow(() -> new ProposalNoLongerOpenException(command.authorizationRequestId()));
         policyEvaluator.requireProposalNotExpired(new ProposalApprovalCheck(proposal.getEffectiveFrom(), today, proposal.getProposedAt().atZone(clock.getZone()).toLocalDate()));
         Long deciderId = actorResolver.currentPersonId();
-        price.makeRoomForVersionStartingOn(proposal.getEffectiveFrom(), today, deciderId, now);
+        price.makeRoomForVersionStartingOn(proposal.getEffectiveFrom(), today, deciderId, now, proposal.getAppliesToLectiveYear());
         priceRepository.flush();
         price.approveProposedVersion(proposal, deciderId, null, today, now);
         priceRepository.flush();

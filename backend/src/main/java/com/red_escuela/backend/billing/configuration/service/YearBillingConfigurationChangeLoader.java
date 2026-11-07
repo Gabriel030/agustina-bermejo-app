@@ -54,12 +54,7 @@ public class YearBillingConfigurationChangeLoader {
                     template.programId(), YearMonth.from(template.termStartDate()), YearMonth.from(template.termEndDate())));
         }
         return new YearBillingConfigurationChange(current, proposed, monthOf(proposedStart), monthOf(proposedEnd), issuedSlots, issuedPeriods, monthOf(template.termStartDate()),
-                enrollmentWindowClosesOn(template), false);
-    }
-
-    private Optional<LocalDate> enrollmentWindowClosesOn(ProgramYearBillingTemplate template) {
-        LocalDateTime closes = template.termEnrollmentEndDate() != null ? template.termEnrollmentEndDate() : template.termStartDate();
-        return Optional.ofNullable(closes).map(LocalDateTime::toLocalDate);
+                Optional.empty(), false);
     }
 
     private YearBillingTerms currentTermsOf(ProgramYearBillingTemplate template) {
