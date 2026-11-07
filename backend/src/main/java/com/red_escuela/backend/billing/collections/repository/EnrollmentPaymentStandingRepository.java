@@ -29,6 +29,9 @@ public interface EnrollmentPaymentStandingRepository extends JpaRepository<Enrol
     @Query("select s.programEnrollmentId from EnrollmentPaymentStanding s where s.programEnrollmentId is not null and s.status = com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED")
     List<Long> findSuspendedProgramEnrollmentIds();
 
+    @Query("select s.courseEnrollmentId from EnrollmentPaymentStanding s where s.courseEnrollmentId is not null and s.status = com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED")
+    List<Long> findSuspendedCourseEnrollmentIds();
+
     @Query("select s from EnrollmentPaymentStanding s where s.programEnrollmentId in :ids")
     List<EnrollmentPaymentStanding> findAllByProgramEnrollmentIds(@Param("ids") java.util.Collection<Long> ids);
 

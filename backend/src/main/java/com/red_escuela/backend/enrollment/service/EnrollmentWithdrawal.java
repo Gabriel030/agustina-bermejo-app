@@ -20,6 +20,10 @@ public record EnrollmentWithdrawal(LocalDate informedDate, Long registeredByPers
         return new EnrollmentWithdrawal(null, null, WithdrawalCause.NONPAYMENT);
     }
 
+    public static EnrollmentWithdrawal forNonpaymentEffectiveOn(LocalDate effectiveDate) {
+        return new EnrollmentWithdrawal(Objects.requireNonNull(effectiveDate, "effectiveDate"), null, WithdrawalCause.NONPAYMENT);
+    }
+
     public Optional<LocalDate> informedEffectiveDate() {
         return Optional.ofNullable(informedDate);
     }

@@ -104,9 +104,9 @@ public class SuspendedEnrollmentClosureService {
     private SuspendedEnrollmentClosureReport.EnrollmentClosureFailure closureFailureOf(Long enrollmentId, RuntimeException failure) {
         if (failure instanceof ReportsPolicyViolations rejection) {
             String codes = rejection.violations().stream().map(PolicyViolation::code).collect(Collectors.joining(","));
-            return new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(enrollmentId, true, "WITHDRAWAL_REJECTED_BY_RULE", codes);
+            return new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(EnrollmentKind.PROGRAM, enrollmentId, true, "WITHDRAWAL_REJECTED_BY_RULE", codes);
         }
-        return new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(enrollmentId, false, "SUBJECT_PROCESSING_FAILED", failure.getMessage());
+        return new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(EnrollmentKind.PROGRAM, enrollmentId, false, "SUBJECT_PROCESSING_FAILED", failure.getMessage());
     }
 
     private void logClosureFailure(Long enrollmentId, RuntimeException failure) {
