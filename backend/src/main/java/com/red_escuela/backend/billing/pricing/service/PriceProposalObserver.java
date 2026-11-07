@@ -48,7 +48,7 @@ public class PriceProposalObserver implements AuthorizationRequestObserver {
         Price price = priceLocker.lockForUpdate(command.priceId());
         policyEvaluator.requireNoOpenProposal(new PriceProposalSlot(price.getId(), price.findOpenProposal().isPresent()));
         PriceVersion proposal = price.proposePriceVersion(command.baseAmount(), command.marketingDiscount(), command.effectiveFrom(), command.changeReason(),
-                command.requestedByPersonId(), requestId, false, LocalDate.now(clock), Instant.now(clock));
+                command.requestedByPersonId(), requestId, false, LocalDate.now(clock), Instant.now(clock), command.appliesToLectiveYear());
         versionRepository.saveAndFlush(proposal);
         log.info("Price proposal PROPOSED: price={}, feeType={}, version={}, effectiveFrom={}, authorizationRequestId={}", price.getId(), price.getFeeType(),
                 proposal.getId(), proposal.getEffectiveFrom(), requestId);

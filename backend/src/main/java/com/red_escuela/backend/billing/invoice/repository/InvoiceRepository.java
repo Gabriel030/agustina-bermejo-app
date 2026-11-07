@@ -139,6 +139,13 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
     List<Integer> findIssuedEnrollmentFeeSlotsByTemplateId(@Param("templateId") Long templateId);
 
     @Query("""
+            select count(l) > 0 from InvoiceLine l
+            where l.templateId = :templateId and l.invoice.issuingReason = com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason.ENROLLMENT_FEE_ADVANCE
+              and l.chargeKeyReleasedAt is null
+            """)
+    boolean existsLiveAdvanceEnrollmentFeeByTemplateId(@Param("templateId") Long templateId);
+
+    @Query("""
             select distinct l.period from InvoiceLine l, ProgramEnrollment pe
             where pe.id = l.programEnrollmentId and pe.program.id = :programId
               and l.feeType = com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT

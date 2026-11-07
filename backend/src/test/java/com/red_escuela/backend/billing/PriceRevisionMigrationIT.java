@@ -114,6 +114,7 @@ class PriceRevisionMigrationIT {
             assertThat(jdbc.queryForList("select id from price_version where initial_version order by id", Long.class)).containsExactlyInAnyOrder(oldest, enrollmentFee, coursePrice);
             assertThat(jdbc.queryForObject("select count(*) from price_version where marketing_discount_type is not null or marketing_discount_percentage is not null or marketing_discount_amount is not null or marketing_discount_amount_currency is not null", Long.class)).isZero();
             assertThat(jdbc.queryForObject("select count(*) from price_version where amount_currency <> 'ARS' or not direct_publication", Long.class)).isZero();
+            jdbc.execute("alter table price_version add column applies_to_lective_year integer");
             PriceReader priceReader = priceReaderOver(dataSource);
             OfferingReference program = OfferingReference.ofProgram(seed.programId());
             PriceVersionResolution sameDay = priceReader.requirePriceVersionEffectiveOn(program, FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2020, 1, 1));

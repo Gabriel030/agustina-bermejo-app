@@ -1,9 +1,11 @@
 package com.red_escuela.backend.billing.configuration.domain;
 
+import java.time.LocalDate;
+
 public record YearBillingTerms(int recurringFeeInvoicesCount, int enrollmentFeeCount, int firstEnrollmentFeeMonth, Integer secondEnrollmentFeeMonth,
                                int enrollmentFeeLeadMonths, int lateEnrollmentFeeDueDays, int recurringFeeDueDays, boolean withdrawSuspendedAtTermEnd,
                                boolean paysWhilePaused, boolean blocksEnrollment, boolean blocksExamRegistration, boolean blocksCertificates,
-                               boolean requireEnrollmentFeeForFinalExamOnlyStudents) implements ConfigurationValues {
+                               boolean requireEnrollmentFeeForFinalExamOnlyStudents, LocalDate advanceEnrollmentFeeOpensOn) implements ConfigurationValues {
 
     public YearBillingTerms {
         if (recurringFeeInvoicesCount < 0) {
@@ -24,6 +26,15 @@ public record YearBillingTerms(int recurringFeeInvoicesCount, int enrollmentFeeC
         if (enrollmentFeeLeadMonths < 0 || lateEnrollmentFeeDueDays < 0 || recurringFeeDueDays < 0) {
             throw new InvalidConfigurationValuesException("Los plazos no pueden ser negativos");
         }
+    }
+
+    public YearBillingTerms(int recurringFeeInvoicesCount, int enrollmentFeeCount, int firstEnrollmentFeeMonth, Integer secondEnrollmentFeeMonth,
+                            int enrollmentFeeLeadMonths, int lateEnrollmentFeeDueDays, int recurringFeeDueDays, boolean withdrawSuspendedAtTermEnd,
+                            boolean paysWhilePaused, boolean blocksEnrollment, boolean blocksExamRegistration, boolean blocksCertificates,
+                            boolean requireEnrollmentFeeForFinalExamOnlyStudents) {
+        this(recurringFeeInvoicesCount, enrollmentFeeCount, firstEnrollmentFeeMonth, secondEnrollmentFeeMonth, enrollmentFeeLeadMonths, lateEnrollmentFeeDueDays,
+                recurringFeeDueDays, withdrawSuspendedAtTermEnd, paysWhilePaused, blocksEnrollment, blocksExamRegistration, blocksCertificates,
+                requireEnrollmentFeeForFinalExamOnlyStudents, null);
     }
 
     public static YearBillingTerms initial(int recurringFeeInvoicesCount) {

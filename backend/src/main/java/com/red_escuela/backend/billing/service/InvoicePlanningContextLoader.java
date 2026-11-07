@@ -15,6 +15,7 @@ import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.planning.domain.PaymentPlanCoverage;
 import com.red_escuela.backend.billing.planning.domain.ProgramInvoicePlanningFacts;
 import com.red_escuela.backend.billing.planning.domain.IssuedEnrollmentFee;
+import com.red_escuela.backend.billing.configuration.service.SlotWindowResolver;
 import com.red_escuela.backend.billing.planning.domain.SlotWindow;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import com.red_escuela.backend.billing.planning.domain.YearCycles;
@@ -140,22 +141,11 @@ public class InvoicePlanningContextLoader {
             return windows;
         }
         Set<TermType> irregularTypes = Set.copyOf(configurationReader.irregularTermTypesEffectiveOn(today).types());
-        List<Term> terms = termRepository.findTermsOfProgram(programId).stream()
-                .filter(t -> t.getEnrollmentStart() != null && t.getStartDate() != null)
-                .filter(t -> t.getType() == null || !irregularTypes.contains(t.getType())).toList();
+        List<Term> terms = SlotWindowResolver.regularTerms(termRepository.findTermsOfProgram(programId), irregularTypes);
         for (YearCycle cycle : cycles) {
             for (int slot = 1; slot <= cycle.slotCount(); slot++) {
                 final int currentSlot = slot;
-                List<Term> inSlot = terms.stream()
-                        .filter(t -> cycle.slotContains(currentSlot, YearMonth.from(t.getStartDate()))).toList();
-                if (inSlot.isEmpty()) {
-                    continue;
-                }
-                LocalDate opens = inSlot.stream().map(t -> t.getEnrollmentStart().toLocalDate()).min(LocalDate::compareTo).orElseThrow();
-                LocalDate closes = inSlot.stream()
-                        .map(t -> t.getEnrollmentEnd() != null ? t.getEnrollmentEnd().toLocalDate() : t.getStartDate().toLocalDate())
-                        .min(LocalDate::compareTo).orElseThrow();
-                windows.put(SlotWindow.key(cycle.templateId(), slot), new SlotWindow(opens, closes));
+                SlotWindowResolver.windowOfAmong(terms, cycle, slot).ifPresent(window -> windows.put(SlotWindow.key(cycle.templateId(), currentSlot), window));
             }
         }
         return windows;

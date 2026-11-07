@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface PriceVersionRepository extends JpaRepository<PriceVersion, Long> {
@@ -20,6 +21,9 @@ public interface PriceVersionRepository extends JpaRepository<PriceVersion, Long
             Long courseId, FeeType feeType, Collection<PriceVersionStatus> statuses, LocalDate date);
 
     Optional<PriceVersion> findFirstByAuthorizationRequestId(Long authorizationRequestId);
+
+    List<PriceVersion> findByPriceProgramIdAndPriceFeeTypeAndAppliesToLectiveYearAndStatusIn(
+            Long programId, FeeType feeType, Integer lectiveYear, Collection<PriceVersionStatus> statuses);
 
     @Query("select new com.red_escuela.backend.billing.pricing.repository.PriceVersionCancellationState(v.price.id, v.status, v.effectiveFrom) from PriceVersion v where v.id = :id")
     Optional<PriceVersionCancellationState> findCancellationStateById(@Param("id") Long id);

@@ -27,9 +27,9 @@ public class ProposePriceChangeService implements ProposePriceChangeUseCase {
 
     @Override
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
-    public BillingOperationOutcome<PriceVersion> proposeOrPublishPriceVersion(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason) {
+    public BillingOperationOutcome<PriceVersion> proposeOrPublishPriceVersion(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason, Integer appliesToLectiveYear) {
         ChangePriceCommand command = new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, actorResolver.currentPersonId(),
-                actorResolver.currentActorIsDirector());
+                actorResolver.currentActorIsDirector(), null, appliesToLectiveYear);
         return pipeline.runOperation(operation, command);
     }
 }

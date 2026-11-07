@@ -20,6 +20,8 @@ import com.red_escuela.backend.billing.configuration.policy.ProposalSlot;
 import com.red_escuela.backend.billing.configuration.policy.ScheduledVersionCancellablePolicy;
 import com.red_escuela.backend.billing.configuration.policy.SingleOpenProposalPerTopicPolicy;
 import com.red_escuela.backend.billing.configuration.policy.VersionCancellationCheck;
+import com.red_escuela.backend.billing.configuration.policy.AdvanceEnrollmentFeeOpeningFrozenPolicy;
+import com.red_escuela.backend.billing.configuration.policy.AdvanceEnrollmentFeeOpeningNotAfterWindowClosePolicy;
 import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeCountFrozenPolicy;
 import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeLeadMonthsFrozenPolicy;
 import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeMonthFrozenPolicy;
@@ -66,7 +68,8 @@ public class ConfigurationPolicySetsConfiguration {
                 new SecondEnrollmentFeeAfterFirstPolicy(),
                 new FirstEnrollmentFeeNotAfterTermStartPolicy(),
                 new SecondEnrollmentFeeWithinTermPolicy(),
-                new InstallmentCountWithinTermSpanPolicy());
+                new InstallmentCountWithinTermSpanPolicy(),
+                new AdvanceEnrollmentFeeOpeningNotAfterWindowClosePolicy());
         return PolicySet.named("YEAR_BILLING_CONFIGURATION", ordered);
     }
 
@@ -76,6 +79,7 @@ public class ConfigurationPolicySetsConfiguration {
                 new EnrollmentFeeCountFrozenPolicy(),
                 new EnrollmentFeeMonthFrozenPolicy(),
                 new EnrollmentFeeLeadMonthsFrozenPolicy(),
+                new AdvanceEnrollmentFeeOpeningFrozenPolicy(),
                 new IssuedInstallmentsWithinTermRangePolicy(),
                 new LectiveYearStartFrozenPolicy());
         return PolicySet.named("YEAR_BILLING_CONFIGURATION_FREEZE", ordered);
