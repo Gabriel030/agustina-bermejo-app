@@ -18,7 +18,9 @@ const GRADUATION_TYPES = new Set([
   'GRADUATION_REQUEST_REJECTED',
 ]);
 
-const GRADE_TYPES = new Set(['GRADES_PUBLISHED', 'GRADE_CORRECTED']);
+const ATTENDANCE_CHANGE_TYPES = new Set(['ATTENDANCE_CHANGE_REQUEST_APPROVED', 'ATTENDANCE_CHANGE_REQUEST_REJECTED']);
+
+const GRADE_TYPES =new Set(['GRADES_PUBLISHED', 'GRADE_CORRECTED']);
 
 const BORDE_TONO = {
   warning: 'border-l-warning',
@@ -49,6 +51,11 @@ export function NotificationBell() {
     if (ANNOUNCEMENT_TYPES.has(n.type) && n.relatedEntityId) {
       setOpen(false);
       navigate(`/alumno/inicio?aviso=${n.relatedEntityId}`);
+      return;
+    }
+    if (ATTENDANCE_CHANGE_TYPES.has(n.type)) {
+      setOpen(false);
+      navigate('/docente/tomar-asistencia?tab=pedidos');
       return;
     }
     if (GRADE_TYPES.has(n.type)) {
