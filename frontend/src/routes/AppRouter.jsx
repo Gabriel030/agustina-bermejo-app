@@ -13,6 +13,9 @@ import { Placeholder } from '@/pages/Placeholder';
 import { lazyPage } from '@/routes/lazyPage';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { useStartupPrefetch } from '@/routes/useStartupPrefetch';
+import { DesignCatalog } from '@/pages/DesignCatalog';
+
+const showCatalog = import.meta.env.DEV || import.meta.env.VITE_ENABLE_CATALOG === 'true';
 
 const AutoservicioLayout = lazyPage(() => import('@/layouts/AutoservicioLayout'), 'AutoservicioLayout');
 
@@ -87,6 +90,7 @@ export function AppRouter() {
         {PUBLIC_ROUTES.map(({ path, element }) => (
           <Route key={path} path={path} element={element} />
         ))}
+        {showCatalog && <Route path="/dev/catalog" element={<DesignCatalog />} />}
       </Route>
 
       <Route
