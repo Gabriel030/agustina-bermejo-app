@@ -42,6 +42,15 @@ class CorsExposedHeadersIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void preflightFromAllowedOriginIsCachedByTheBrowserForOneHour() throws Exception {
+        mockMvc.perform(options("/institute-settings")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "PUT")
+                        .header("Access-Control-Request-Headers", "if-match"))
+                .andExpect(header().string("Access-Control-Max-Age", "3600"));
+    }
+
+    @Test
     void preflightFromDisallowedOriginIsRejected() throws Exception {
         mockMvc.perform(options("/institute-settings")
                         .header("Origin", "http://evil.example.com")
