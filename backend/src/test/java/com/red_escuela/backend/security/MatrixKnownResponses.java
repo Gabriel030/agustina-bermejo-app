@@ -8,6 +8,8 @@ final class MatrixKnownResponses {
     private static final String NO_PROFILE = "la persona de la matriz no tiene perfil de alumno o docente asociado";
     private static final String NO_DATA = "la persona de la matriz no tiene datos asociados a este recurso";
 
+    private static final String REFERENCED_ENTITY = "el cuerpo minimo referencia entidades por id que existen o no segun los datos que dejaron otros tests";
+
     private static final Map<String, String> ABSENT_WITHOUT_PATH_VARIABLE = Map.ofEntries(
             Map.entry("GET /exam-boards", NO_PROFILE),
             Map.entry("GET /late-payment-settings/current", "no hay configuracion de mora cargada en el fixture"),
@@ -34,6 +36,8 @@ final class MatrixKnownResponses {
             Map.entry("GET /me/section-evaluation-configs", NO_PROFILE),
             Map.entry("GET /me/student-discounts", NO_PROFILE),
             Map.entry("GET /me/teaching-sections", NO_PROFILE),
+            Map.entry("POST /courses", REFERENCED_ENTITY),
+            Map.entry("POST /director-approval-requests", REFERENCED_ENTITY),
             Map.entry("POST /me/bank-transfer-receipts", NO_DATA),
             Map.entry("POST /me/course-enrollments", NO_PROFILE),
             Map.entry("POST /me/program-enrollment-applications", NO_PROFILE),
