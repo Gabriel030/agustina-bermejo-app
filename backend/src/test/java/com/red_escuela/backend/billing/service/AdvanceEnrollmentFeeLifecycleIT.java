@@ -188,4 +188,33 @@ class AdvanceEnrollmentFeeLifecycleIT extends AbstractAdvanceEnrollmentFeeTest {
         assertThat(invoices(setup.enrollment(), com.red_escuela.backend.billing.invoice.domain.FeeType.ENROLLMENT_FEE).stream()
                 .map(invoice -> invoice.getIssuingReason().name())).contains("ENROLLMENT_FEE_ON_DEMAND");
     }
+
+    @Test
+    @Tag("D-533")
+    void anAdministrativeCancellationOfAnUnpaidAdvanceFeeWaitsForTheDirector() {
+        Setup setup = september();
+        actAsStaff(setup.career());
+        AdvanceEnrollmentFeeIssuance issuance = issuer.issueForStaff(setup.enrollment());
+        actAsAdministrative(setup);
+
+        var outcome = cancelInvoice.cancelOrRequestInvoiceCancellation(issuance.invoiceId(), new CancelInvoiceRequest(CreditNoteReason.BILLING_ERROR, "Generada por error"));
+
+        assertThat(outcome).isInstanceOf(com.red_escuela.backend.billing.operation.BillingOperationOutcome.AwaitingAuthorization.class);
+        assertThat(reload(issuance.invoiceId()).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PENDING);
+    }
+
+    @Test
+    @Tag("D-533")
+    void aPaidAdvanceFeeCannotBeCancelled() {
+        Setup setup = september();
+        actAsStaff(setup.career());
+        AdvanceEnrollmentFeeIssuance issuance = issuer.issueForStaff(setup.enrollment());
+        collectAtCounter(setup, issuance.invoiceId());
+        actAsStaff(setup.career());
+
+        assertThatThrownBy(() -> cancelInvoice.cancelOrRequestInvoiceCancellation(issuance.invoiceId(),
+                new CancelInvoiceRequest(CreditNoteReason.BILLING_ERROR, "Error"))).isInstanceOf(RuntimeException.class);
+
+        assertThat(reload(issuance.invoiceId()).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
+    }
 }
