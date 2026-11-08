@@ -4,6 +4,7 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -60,6 +61,12 @@ public abstract class AbstractIntegrationTest {
             paths.sorted(Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
         } catch (IOException ignored) {
         }
+    }
+
+    @BeforeEach
+    void installApplicationClock() {
+        MutableClock.INSTANCE.reset();
+        ApplicationTime.useClock(MutableClock.INSTANCE);
     }
 
     @AfterEach

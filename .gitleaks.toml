@@ -3,12 +3,9 @@ title = "agustina-bermejo-app"
 [extend]
 useDefault = true
 
-[[allowlists]]
-description = "Contraseña de las cuentas demo y locales, documentada en docs/context/test-users.md"
+[allowlist]
+description = "Contrasena de las cuentas demo y fixtures de test con valores ficticios; los secretos reales no viven ahi"
 regexes = ['''Test1234''']
-
-[[allowlists]]
-description = "Fixtures de test y documentación de perf con valores ficticios; los secretos reales no viven ahí"
 paths = [
   '''(^|/)backend/src/test/''',
   '''(^|/)frontend/src/.*\.test\.jsx?$''',

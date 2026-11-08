@@ -163,7 +163,7 @@ Motivo: ~80 % de los rojos de los PRs de billing eran presupuestos (clases de 31
 | Qué | Límite | Quién lo hace cumplir |
 |---|---|---|
 | Una clase de test | 30 s | `test-budget.py check-shard`, en cada shard |
-| Una clase marcada `@SlowTest` | 90 s | ídem |
+| Una clase marcada `@SlowTest` | 90 s (o su `maxSeconds`, si lo declara; hoy solo `ModuleDocumentationTest`, 300 s, medida en 142-237 s en pushes a master) | ídem |
 | Un shard (tiempo de **reloj**: `SHARD_END - SHARD_START`, desde el primer paso del job hasta el fin de los tests) | 300 s | ídem; en un PR bloquea, en un push es solo `::warning::` |
 | Contextos de Spring distintos en toda la corrida | 24 | `test-budget.py aggregate`, job `test-report` |
 | Reglas ArchUnit sobre los tests | sin violaciones nuevas | `TestSuiteRulesTest` |

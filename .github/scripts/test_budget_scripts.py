@@ -87,6 +87,16 @@ class BudgetTest(unittest.TestCase):
         write_source(self.sources, 'com/acme/LongScenarioIT', '@SlowTest(reason = "walks twelve months")\nclass LongScenarioIT {}')
         self.assertEqual(1, self.check())
 
+    def test_slow_test_class_with_its_own_max_seconds_passes_below_it(self):
+        write_report(self.reports, 'com.acme.DocsIT', 236.7)
+        write_source(self.sources, 'com/acme/DocsIT', '@SlowTest(reason = "writes diagrams (tag docs, only on pushes)", maxSeconds = 300)\nclass DocsIT {}')
+        self.assertEqual(0, self.check())
+
+    def test_slow_test_class_with_its_own_max_seconds_fails_above_it(self):
+        write_report(self.reports, 'com.acme.DocsIT', 301.0)
+        write_source(self.sources, 'com/acme/DocsIT', '@SlowTest(reason = "writes diagrams (tag docs, only on pushes)", maxSeconds = 300)\nclass DocsIT {}')
+        self.assertEqual(1, self.check())
+
     def test_shard_clock_over_the_limit_fails(self):
         write_report(self.reports, 'com.acme.FastIT', 5.0)
         self.assertEqual(1, self.check(wall=181))

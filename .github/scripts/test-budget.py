@@ -22,6 +22,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 TEST_ROOT = os.path.join(ROOT, 'backend', 'src', 'test', 'java')
 MARKER = '<!-- test-time-report -->'
 SLOW = re.compile(r'@SlowTest\s*\(\s*reason\s*=\s*"((?:[^"\\]|\\.)*)"')
+SLOW_MAX = re.compile(r'@SlowTest\s*\(\s*reason\s*=\s*"(?:[^"\\]|\\.)*"\s*,\s*maxSeconds\s*=\s*(\d+)')
 
 DEFAULT_MAX_CLASS = 30.0
 DEFAULT_MAX_SLOW_CLASS = 90.0
@@ -74,6 +75,15 @@ def slow_reason(test_root, name):
     return match.group(1) if match else None
 
 
+def slow_limit(test_root, name, default):
+    path = os.path.join(test_root, name + '.java')
+    if not os.path.exists(path):
+        return default
+    with open(path, encoding='utf-8') as handle:
+        match = SLOW_MAX.search(handle.read())
+    return max(default, float(match.group(1))) if match else default
+
+
 def short(name):
     return name.rsplit('/', 1)[-1]
 
@@ -106,8 +116,9 @@ def check_shard(args):
         reason = slow_reason(args.test_root, name)
         if reason is not None:
             slow[name] = (seconds, reason)
-            if seconds > args.max_slow_class:
-                failures.append('%s took %.1fs, above the @SlowTest limit of %.0fs' % (name, seconds, args.max_slow_class))
+            limit = slow_limit(args.test_root, name, args.max_slow_class)
+            if seconds > limit:
+                failures.append('%s took %.1fs, above the @SlowTest limit of %.0fs' % (name, seconds, limit))
         elif seconds > args.max_class:
             failures.append('%s took %.1fs, above the per-class limit of %.0fs: speed it up or mark it @SlowTest(reason = "...")' % (name, seconds, args.max_class))
     if wall is not None and wall > args.max_shard:
