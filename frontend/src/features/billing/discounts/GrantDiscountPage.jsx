@@ -255,7 +255,7 @@ export function GrantDiscountPage() {
         </GlassCard>
 
         <aside className="flex flex-col gap-4">
-          <GrantEffectPanel preview={preview} values={values} isLoading={previewQuery.isFetching || !settled} isReady={ready} />
+          <GrantEffectPanel preview={preview} values={values} isLoading={previewQuery.isFetching || !settled} isReady={ready} isError={previewQuery.isError} error={previewQuery.error} onRetry={previewQuery.refetch} />
           {!isDirector && (
             <p className="rounded-xl bg-neutral-bg px-4 py-3 text-sm text-ink-soft">
               Queda pendiente hasta que el director lo apruebe. Si nadie decide antes del primer día del período de inicio, la propuesta vence.

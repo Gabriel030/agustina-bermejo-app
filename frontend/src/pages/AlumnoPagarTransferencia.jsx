@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Stepper } from '@/components/Stepper';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { InvoiceSummary } from '@/components/alumno/InvoiceSummary';
@@ -95,10 +96,13 @@ function PasoDatos({ config, amount, onNext }) {
   );
 }
 
-function PasoComprobante({ invoiceId, breakdown, onSuccess, onViewReceipt }) {
+function PasoComprobante({ invoiceId, breakdown, breakdownQuery, onSuccess, onViewReceipt }) {
   const { usuario } = useAuth();
   const { invoices, isLoading } = useMyOpenInvoices();
 
+  if (breakdownQuery.isError && !breakdown) {
+    return <LoadErrorState bare error={breakdownQuery.error} resource="los datos de la cuota" onRetry={breakdownQuery.refetch} />;
+  }
   if (isLoading || !breakdown) return <Skeleton className="h-64" />;
 
   const { selectable, underReview } = orderedPayableInvoices(invoices);
@@ -206,12 +210,16 @@ function ReceiptDetails({ receipt }) {
 
 function PasoEstado({ invoiceId, onResend }) {
   const { originLabel, goToOrigin } = usePaymentReturn();
-  const { data: comprobantes, isLoading, isFetching } = useMisComprobantes();
+  const { data: comprobantes, isLoading, isFetching, isError, error, refetch } = useMisComprobantes();
   const comprobante = latestReceiptCovering(comprobantes, Number(invoiceId));
   const { data: solicitudes } = useMisSolicitudesCarrera();
   const solicitudDeMatricula = (solicitudes ?? []).find((s) => s.admissionInvoice?.id === parseInt(invoiceId, 10));
 
   if (isLoading || (isFetching && !comprobante)) return <Skeleton className="h-32" />;
+
+  if (isError && !comprobante) {
+    return <LoadErrorState bare error={error} resource="el comprobante" onRetry={refetch} />;
+  }
 
   if (!comprobante) {
     return (
@@ -308,8 +316,9 @@ function PasoEstado({ invoiceId, onResend }) {
 export function AlumnoPagarTransferencia() {
   const { invoiceId } = useParams();
   const { goTo } = usePaymentReturn();
-  const { data: config, isLoading } = usePaymentConfig();
-  const { data: breakdown } = usePriceBreakdown(invoiceId);
+  const { data: config, isLoading, isError: configFailed, error: configError, refetch: refetchConfig } = usePaymentConfig();
+  const breakdownQuery = usePriceBreakdown(invoiceId);
+  const breakdown = breakdownQuery.data;
   const { data: receipts } = useMisComprobantes();
   const latestReceipt = latestReceiptCovering(receipts, Number(invoiceId));
   const hasReceiptToFollow = ['PENDING_REVIEW', 'REJECTED'].includes(latestReceipt?.status);
@@ -359,13 +368,18 @@ export function AlumnoPagarTransferencia() {
 
       {isLoading && <Skeleton className="h-48" />}
 
-      {!isLoading && pasoActual === 'datos' && (
+      {configFailed && pasoActual === 'datos' && (
+        <LoadErrorState bare error={configError} resource="los datos bancarios" onRetry={refetchConfig} />
+      )}
+
+      {!isLoading && !configFailed && pasoActual === 'datos' && (
         <PasoDatos config={config} amount={breakdown?.remainingBalance} onNext={() => irAPaso('comprobante')} />
       )}
       {pasoActual === 'comprobante' && (
         <PasoComprobante
           invoiceId={invoiceId}
           breakdown={breakdown}
+          breakdownQuery={breakdownQuery}
           onSuccess={() => irAPaso('estado')}
           onViewReceipt={() => irAPaso('estado')}
         />

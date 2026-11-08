@@ -4,6 +4,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Notice } from '@/components/Notice';
 import { Skeleton } from '@/components/Skeleton';
 import { Stepper } from '@/components/Stepper';
@@ -74,6 +75,20 @@ export function AdvanceEnrollmentFeePage() {
     return (
       <PageContainer>
         <Skeleton className="h-40 w-full rounded-2xl" />
+      </PageContainer>
+    );
+  }
+
+  if (statusQuery.isError && !issued) {
+    return (
+      <PageContainer>
+        <LoadErrorState
+          error={statusQuery.error}
+          resource="la matrícula del año siguiente"
+          onRetry={statusQuery.refetch}
+          backTo={detailPath}
+          backLabel="las cuotas"
+        />
       </PageContainer>
     );
   }

@@ -4,6 +4,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -87,7 +88,7 @@ function HabilitarDialog({ obligacion, programEnrollmentId, onClose }) {
 }
 
 function MatriculaDeInscripcion({ inscripcion }) {
-  const { data: obligaciones, isLoading } = useEstadoMatriculaDeInscripcion(inscripcion.id);
+  const { data: obligaciones, isLoading, isError, error, refetch } = useEstadoMatriculaDeInscripcion(inscripcion.id);
   const { data: habilitaciones } = useHabilitacionesDeMatricula(inscripcion.id);
   const revocar = useRevocarHabilitacion(inscripcion.id);
   const [aHabilitar, setAHabilitar] = useState(null);
@@ -108,6 +109,8 @@ function MatriculaDeInscripcion({ inscripcion }) {
       </h3>
       {isLoading ? (
         <Skeleton rows={2} />
+      ) : isError ? (
+        <LoadErrorState bare error={error} onRetry={refetch} resource="la matrícula" />
       ) : !obligaciones?.length ? (
         <EmptyState title="Sin matrícula configurada" description="La carrera no tiene un año lectivo con matrícula para este período." />
       ) : (
@@ -245,6 +248,10 @@ function EnrollmentFinance({ studentId, roleBase }) {
 
   if (programs.isLoading || courses.isLoading) {
     return <Skeleton rows={3} />;
+  }
+  const failed = programs.isError ? programs : courses.isError ? courses : null;
+  if (failed) {
+    return <LoadErrorState error={failed.error} resource="las inscripciones" onRetry={() => failed.refetch()} />;
   }
   if (!options.length) {
     return <GlassCard className="p-6"><EmptyState title="Sin inscripciones" description="El alumno todavía no tiene una carrera ni un curso." /></GlassCard>;
