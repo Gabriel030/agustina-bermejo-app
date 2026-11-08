@@ -65,10 +65,11 @@ export function useConfirmarAlta() {
         method: 'POST',
         body: JSON.stringify(datos),
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
-      queryClient.invalidateQueries({ queryKey: ['alumnos'] });
-      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+    onSuccess: (_data, { studentId }) => {
+      queryClient.invalidateQueries({ queryKey: ['students', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['alumno', studentId], exact: true });
+      queryClient.invalidateQueries({ queryKey: ['alumnos'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['prospects'], exact: true });
     },
   });
 }

@@ -9,7 +9,7 @@ export function useActualizarPerfil() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (datos) => apiFetch('/me', { method: 'PUT', body: JSON.stringify(datos) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'], exact: true }),
   });
 }
 
@@ -73,8 +73,8 @@ export function useSubirAvatar() {
       return apiFetch('/me/avatar', { method: 'POST', body: form });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['me', 'avatar'] });
-      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['me', 'avatar'], exact: true });
+      queryClient.invalidateQueries({ queryKey: ['me'], exact: true });
     },
   });
 }

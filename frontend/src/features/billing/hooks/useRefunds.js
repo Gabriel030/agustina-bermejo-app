@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
+import { invalidateRefundAffectedQueries } from './studentQueryKeys';
 
 export function useStudentRefunds(studentId) {
   return useQuery({
@@ -37,7 +38,7 @@ export function useRequestRefund(studentId) {
         body: JSON.stringify(payload),
         headers: { 'Idempotency-Key': idempotencyKey },
       }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['students'] }),
+    onSettled: () => invalidateRefundAffectedQueries(queryClient, studentId),
   });
 }
 
@@ -46,7 +47,7 @@ export function useCompleteRefund() {
   return useMutation({
     mutationFn: ({ refundId, payload }) =>
       apiFetch(`/refunds/${refundId}/completion`, { method: 'POST', body: JSON.stringify(payload) }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['students'] }),
+    onSettled: (_data, _error, { studentId }) => invalidateRefundAffectedQueries(queryClient, studentId),
   });
 }
 
@@ -55,6 +56,6 @@ export function useFailRefund() {
   return useMutation({
     mutationFn: ({ refundId, reason }) =>
       apiFetch(`/refunds/${refundId}/failure`, { method: 'POST', body: JSON.stringify({ reason }) }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['students'] }),
+    onSettled: (_data, _error, { studentId }) => invalidateRefundAffectedQueries(queryClient, studentId),
   });
 }

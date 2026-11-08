@@ -38,8 +38,9 @@ function useDecisionMutation(path) {
         method: 'POST',
         body: decisionReason ? JSON.stringify({ decisionReason }) : undefined,
       }),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['authorization-requests'] });
+    onSettled: (_data, _error, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['authorization-requests', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['authorization-requests', 'detail', id], exact: true });
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },
   });
