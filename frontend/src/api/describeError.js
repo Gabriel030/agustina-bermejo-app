@@ -9,6 +9,8 @@ export const ERROR_MESSAGES = {
   UNAUTHENTICATED: 'Tenés que iniciar sesión para continuar.',
   FORBIDDEN: 'No tenés permiso para hacer esto.',
   CONCURRENT_MODIFICATION: 'Otra persona modificó este registro. Recargá y volvé a intentar.',
+  LOCK_CONFLICT: 'Otra persona está modificando lo mismo en este momento. Esperá unos segundos y volvé a intentar.',
+  DATABASE_BUSY: 'El sistema está ocupado. Volvé a intentar en unos segundos.',
   DATA_INTEGRITY_VIOLATION: 'La operación choca con datos existentes.',
   ILLEGAL_STATE: 'La operación no es posible en el estado actual.',
   ILLEGAL_ARGUMENT: 'Algún dato no es válido.',
