@@ -157,8 +157,21 @@ export function invoicePrimaryPeriod(invoice) {
   return invoice.lines?.[0]?.period ?? null;
 }
 
+export function isAdvanceEnrollmentFeeInvoice(invoice) {
+  return invoice?.issuingReason === 'ENROLLMENT_FEE_ADVANCE';
+}
+
 export function invoiceTitle(invoice) {
+  if (isAdvanceEnrollmentFeeInvoice(invoice)) {
+    const year = invoice.dueDate ? String(invoice.dueDate).slice(0, 4) : '';
+    return year ? `Matrícula ${year}` : 'Matrícula del año siguiente';
+  }
   return invoiceConcept(invoice.invoiceType, invoicePrimaryPeriod(invoice));
+}
+
+export function invoiceSubtitle(invoice) {
+  if (!isAdvanceEnrollmentFeeInvoice(invoice)) return null;
+  return invoice.paymentStatus === 'PAID' ? 'Pagada por adelantado' : 'Pago por adelantado';
 }
 
 export function negatedMoney(money) {

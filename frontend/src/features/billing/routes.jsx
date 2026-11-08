@@ -2,6 +2,7 @@ import { lazyPage } from '@/routes/lazyPage';
 import { RequiresConnection } from '@/components/offline/RequiresConnection';
 const AlumnoPagos = lazyPage(() => import('@/pages/AlumnoPagos'), 'AlumnoPagos');
 const AlumnoPagoDetalle = lazyPage(() => import('@/pages/AlumnoPagoDetalle'), 'AlumnoPagoDetalle');
+const AdvanceEnrollmentFeePage = lazyPage(() => import('@/features/billing/advance-enrollment-fee/AdvanceEnrollmentFeePage'), 'AdvanceEnrollmentFeePage');
 const AlumnoPagarSeleccion = lazyPage(() => import('@/pages/AlumnoPagarSeleccion'), 'AlumnoPagarSeleccion');
 const AlumnoPagarTransferencia = lazyPage(() => import('@/pages/AlumnoPagarTransferencia'), 'AlumnoPagarTransferencia');
 const AlumnoPagarOnline = lazyPage(() => import('@/pages/AlumnoPagarOnline'), 'AlumnoPagarOnline');
@@ -44,6 +45,7 @@ export const routes = {
     { roles: ['alumno'], path: 'pagos/notas-de-credito', element: <RequiresConnection><MyCreditNotesPage /></RequiresConnection> },
     { roles: ['alumno'], path: 'pagos/curso/:enrollmentId', element: <RequiresConnection><AlumnoPagoDetalle /></RequiresConnection> },
     { roles: ['alumno'], path: 'pagos/carrera/:enrollmentId', element: <RequiresConnection><AlumnoPagoDetalle /></RequiresConnection> },
+    { roles: ['alumno'], path: 'pagos/carrera/:enrollmentId/matricula-anticipada', element: <RequiresConnection><AdvanceEnrollmentFeePage /></RequiresConnection> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/seleccion', element: <RequiresConnection><AlumnoPagarSeleccion /></RequiresConnection> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/transferencia', element: <RequiresConnection><AlumnoPagarTransferencia /></RequiresConnection> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/online', element: <RequiresConnection><AlumnoPagarOnline /></RequiresConnection> },
