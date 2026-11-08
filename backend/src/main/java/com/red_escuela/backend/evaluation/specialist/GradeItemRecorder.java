@@ -22,7 +22,10 @@ import com.red_escuela.backend.academicstructure.exception.NotOwnSectionExceptio
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
+import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +51,7 @@ public class GradeItemRecorder {
     private final SectionTeachingFinder sectionTeachingFinder;
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
+    private final ExamBoardRegistrationRepository examBoardRegistrationRepository;
     private final GraduationRequestTriggerPort graduationRequestTrigger;
     private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
@@ -60,6 +64,7 @@ public class GradeItemRecorder {
             SectionTeachingFinder sectionTeachingFinder,
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
+            ExamBoardRegistrationRepository examBoardRegistrationRepository,
             GraduationRequestTriggerPort graduationRequestTrigger,
             AbsenceFreeStatusChecker absenceFreeStatusChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
@@ -70,6 +75,7 @@ public class GradeItemRecorder {
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
+        this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.graduationRequestTrigger = graduationRequestTrigger;
         this.absenceFreeStatusChecker = absenceFreeStatusChecker;
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
@@ -90,6 +96,11 @@ public class GradeItemRecorder {
                 () -> sectionTeachingFinder
                         .teaches(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), instructorId),
                 enrollment.getSubjectSection().getId());
+        requireBoardCoversEnrollment(examBoard, request.type(), instructorId,
+                examBoard != null && examBoard.getSubject() != null
+                        && examBoard.getSubject().getId().equals(enrollment.getSubjectSection().getSubject().getId()),
+                () -> examBoardRegistrationRepository.findByExamBoardIdAndProgramSubjectSectionEnrollmentId(
+                        examBoard.getId(), enrollmentId));
         publicationLock.requireUnlocked(
                 SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), request.type(), request.sequenceNumber());
 
@@ -154,6 +165,12 @@ public class GradeItemRecorder {
                 () -> sectionTeachingFinder
                         .teaches(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), instructorId),
                 enrollment.getCourseSubjectSection().getId());
+        requireBoardCoversEnrollment(examBoard, request.type(), instructorId,
+                examBoard != null && examBoard.getCourseSubject() != null
+                        && examBoard.getCourseSubject().getId()
+                                .equals(enrollment.getCourseSubjectSection().getCourseSubject().getId()),
+                () -> examBoardRegistrationRepository.findByExamBoardIdAndCourseSubjectSectionEnrollmentId(
+                        examBoard.getId(), enrollmentId));
         publicationLock.requireUnlocked(
                 SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), request.type(), request.sequenceNumber());
 
@@ -232,6 +249,20 @@ public class GradeItemRecorder {
             throw new NotOwnSectionException(instructorId, examBoardId);
         }
         return examBoard;
+    }
+
+    private void requireBoardCoversEnrollment(
+            ExamBoard examBoard, GradeItemType type, Long instructorId, boolean sameSubject,
+            java.util.function.Supplier<Optional<ExamBoardRegistration>> registration) {
+        if (examBoard == null) {
+            return;
+        }
+        boolean registered = sameSubject && registration.get()
+                .filter(found -> found.getStatus() != ExamBoardRegistrationStatus.WITHDRAWN)
+                .isPresent();
+        if (type != GradeItemType.FINAL || !registered) {
+            throw new NotOwnSectionException(instructorId, examBoard.getId());
+        }
     }
 
     private void requireWeightBetweenZeroAndOne(CreateGradeItemRequest request) {
