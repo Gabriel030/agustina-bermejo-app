@@ -10,7 +10,7 @@ import { STALE_REFUND_CODES, refundErrorMessage } from './refundRequests';
 
 const REASON_MAX_LENGTH = 500;
 
-export function FailRefundDialog({ refund, onClose }) {
+export function FailRefundDialog({ studentId, refund, onClose }) {
   const [reason, setReason] = useState('');
   const [reasonError, setReasonError] = useState('');
   const [formError, setFormError] = useState('');
@@ -25,7 +25,7 @@ export function FailRefundDialog({ refund, onClose }) {
     }
     setReasonError('');
     try {
-      await mutation.mutateAsync({ refundId: refund.id, reason: reason.trim() });
+      await mutation.mutateAsync({ studentId, refundId: refund.id, reason: reason.trim() });
       toast.success('Quedó registrado que no se pudo transferir.');
       onClose();
     } catch (error) {

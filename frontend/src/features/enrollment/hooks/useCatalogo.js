@@ -83,7 +83,7 @@ export function useInscribirmeCurso() {
       apiFetch('/me/course-enrollments', { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-curso'] });
-      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['me', 'course-enrollments'] });
     },
   });
 }

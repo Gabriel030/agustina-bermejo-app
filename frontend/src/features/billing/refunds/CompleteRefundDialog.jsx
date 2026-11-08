@@ -11,7 +11,7 @@ import { STALE_REFUND_CODES, refundErrorMessage, refundMethodLabel } from './ref
 
 const REFERENCE_MAX_LENGTH = 120;
 
-export function CompleteRefundDialog({ refund, onClose }) {
+export function CompleteRefundDialog({ studentId, refund, onClose }) {
   const today = todayIsoDate();
   const [completedOn, setCompletedOn] = useState(today);
   const [reference, setReference] = useState('');
@@ -35,6 +35,7 @@ export function CompleteRefundDialog({ refund, onClose }) {
     if (!validate()) return;
     try {
       await mutation.mutateAsync({
+        studentId,
         refundId: refund.id,
         payload: { completedOn, reference: reference.trim(), methodType: refund.methodType },
       });

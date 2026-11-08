@@ -10,8 +10,8 @@ export function useWithdrawStudent(studentId) {
         body: JSON.stringify({ reason, detail }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alumno', studentId] });
-      queryClient.invalidateQueries({ queryKey: ['alumnos'] });
+      queryClient.invalidateQueries({ queryKey: ['alumno', studentId], exact: true });
+      queryClient.invalidateQueries({ queryKey: ['alumnos'], refetchType: 'none' });
     },
   });
 }
