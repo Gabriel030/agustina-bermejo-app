@@ -2,7 +2,7 @@ package com.red_escuela.backend.identity.specialist;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.RefreshToken;
-import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
+import com.red_escuela.backend.identity.exception.SessionNotFoundException;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ public class SessionRevoker {
     public void revokeSession(Long sessionId, Person person) {
         RefreshToken token = refreshTokenRepository.findById(sessionId)
                 .filter(t -> t.getPerson().getId().equals(person.getId()))
-                .orElseThrow(InvalidRefreshTokenException::new);
+                .orElseThrow(() -> new SessionNotFoundException(sessionId));
         token.setRevoked(true);
         token.setGraceUsed(true);
         refreshTokenRepository.save(token);
