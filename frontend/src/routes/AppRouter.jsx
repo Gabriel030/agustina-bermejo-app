@@ -10,8 +10,11 @@ import { GlassCard } from '@/components/GlassCard';
 import { OfflineState } from '@/pwa/OfflineState';
 import { CargaInicial } from '@/pages/CargaInicial';
 import { Placeholder } from '@/pages/Placeholder';
+import { lazyPage } from '@/routes/lazyPage';
 import { PublicLayout } from '@/layouts/PublicLayout';
-import { AutoservicioLayout } from '@/layouts/AutoservicioLayout';
+import { useStartupPrefetch } from '@/routes/useStartupPrefetch';
+
+const AutoservicioLayout = lazyPage(() => import('@/layouts/AutoservicioLayout'), 'AutoservicioLayout');
 
 function SharedRoutesLayout() {
   const { usuario } = useAuth();
@@ -61,6 +64,8 @@ function OfflineShellRoutes({ retry }) {
 
 export function AppRouter() {
   const { cargando, usuario, sessionPending, retrySession, offlineProfile } = useAuth();
+
+  useStartupPrefetch(sessionPending ? null : usuario);
 
   if (cargando) return <CargaInicial />;
 

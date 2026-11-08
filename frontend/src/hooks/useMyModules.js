@@ -3,13 +3,14 @@ import { apiFetch } from '@/api/client';
 
 const MODULES_STALE_TIME_MS = 60_000;
 
+export const myModulesQuery = {
+  queryKey: ['me', 'modules'],
+  queryFn: () => apiFetch('/me/modules'),
+  staleTime: MODULES_STALE_TIME_MS,
+};
+
 export function useMyModules({ enabled = true } = {}) {
-  const query = useQuery({
-    queryKey: ['me', 'modules'],
-    queryFn: () => apiFetch('/me/modules'),
-    staleTime: MODULES_STALE_TIME_MS,
-    enabled,
-  });
+  const query = useQuery({ ...myModulesQuery, enabled });
   const billingMode = query.data?.billing?.mode;
   return {
     isLoading: enabled && query.isLoading,
