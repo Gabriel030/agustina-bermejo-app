@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.configuration.service.BillingConfiguratio
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
 import com.red_escuela.backend.billing.pricing.exception.NoEffectivePriceException;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.shared.pricing.OfferingReference;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -84,8 +85,16 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
     }
 
     private Optional<PriceVersionResolution> findPriceVersion(InvoiceIssuingRequest request) {
+        if (request.issuingReason() == InvoiceIssuingReason.ENROLLMENT_FEE_ADVANCE) {
+            return findAdvancePriceVersion(request);
+        }
         OfferingReference offering = request.belongsToProgram() ? OfferingReference.ofProgram(request.programId()) : OfferingReference.ofCourse(request.courseId());
         return priceReader.findPriceVersionEffectiveOn(offering, request.feeType(), request.pricingDate());
+    }
+
+    private Optional<PriceVersionResolution> findAdvancePriceVersion(InvoiceIssuingRequest request) {
+        return templateRepository.findById(request.templateId()).flatMap(template -> Optional.ofNullable(template.termYear()))
+                .flatMap(lectiveYear -> priceReader.findAdvanceEnrollmentFeePriceVersion(request.programId(), lectiveYear));
     }
 
     private Integer enrollmentFeeCountOf(InvoiceIssuingRequest request) {

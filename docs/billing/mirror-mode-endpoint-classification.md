@@ -27,6 +27,8 @@ Billing tiene tres modos (`BillingMode`): `OFF`, `MIRROR` y `FULL`. Con `OFF` to
 | AnnualUpfrontTermsController | viewTermsOfVersion | GET | `/annual-upfront-terms/versions/{versionNumber}` | READ | Lectura |
 | AnnualUpfrontTermsController | listTermsVersions | GET | `/annual-upfront-terms/versions` | READ | Lectura |
 | AnnualUpfrontTermsController | publishNewTermsVersion | POST | `/annual-upfront-terms/versions` | WRITE | Publica una nueva versión de los términos del pago anual |
+| AdvanceEnrollmentFeeController | requestForMe | POST | `/me/program-enrollments/{id}/advance-enrollment-fee` | WRITE | Emite la matrícula del año siguiente |
+| AdvanceEnrollmentFeeController | requestForStudent | POST | `/program-enrollments/{id}/advance-enrollment-fee` | WRITE | Emite la matrícula del año siguiente |
 | AnnualUpfrontRequestController | discardAnnualUpfrontRequest | POST | `/me/annual-upfront-requests/{id}/discard` | WRITE | Crea o descarta un pedido de pago anual adelantado |
 | AnnualUpfrontRequestController | requestAnnualUpfront | POST | `/me/program-enrollments/{id}/annual-upfront-requests` | WRITE | Crea o descarta un pedido de pago anual adelantado |
 | AnnualUpfrontRequestViewController | searchRequestsForStaff | GET | `/annual-upfront-requests` | READ | Lectura |

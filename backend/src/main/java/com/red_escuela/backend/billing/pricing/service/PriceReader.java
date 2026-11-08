@@ -20,9 +20,16 @@ public class PriceReader {
     private static final Set<PriceVersionStatus> RESOLVABLE = Set.of(PriceVersionStatus.SCHEDULED, PriceVersionStatus.EFFECTIVE, PriceVersionStatus.SUPERSEDED);
 
     private final PriceVersionRepository priceVersionRepository;
+    private final AdvanceEnrollmentFeePriceFinder advanceEnrollmentFeePriceFinder;
 
-    public PriceReader(PriceVersionRepository priceVersionRepository) {
+    public PriceReader(PriceVersionRepository priceVersionRepository, AdvanceEnrollmentFeePriceFinder advanceEnrollmentFeePriceFinder) {
         this.priceVersionRepository = priceVersionRepository;
+        this.advanceEnrollmentFeePriceFinder = advanceEnrollmentFeePriceFinder;
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PriceVersionResolution> findAdvanceEnrollmentFeePriceVersion(Long programId, int lectiveYear) {
+        return advanceEnrollmentFeePriceFinder.findLiveVersion(programId, lectiveYear).map(PriceVersion::resolution);
     }
 
     @Transactional(readOnly = true)

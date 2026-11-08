@@ -164,7 +164,8 @@ class PriceRevisionMigrationIT {
         factory.setJpaPropertyMap(Map.of("hibernate.physical_naming_strategy", CamelCaseToUnderscoresNamingStrategy.class.getName()));
         factory.afterPropertiesSet();
         EntityManager entityManager = factory.getObject().createEntityManager();
-        return new PriceReader(new JpaRepositoryFactory(entityManager).getRepository(PriceVersionRepository.class));
+        return new PriceReader(new JpaRepositoryFactory(entityManager).getRepository(PriceVersionRepository.class),
+                new com.red_escuela.backend.billing.pricing.service.AdvanceEnrollmentFeePriceFinder(new JpaRepositoryFactory(entityManager).getRepository(PriceVersionRepository.class)));
     }
 
     private static String statusOf(JdbcTemplate jdbc, long versionId) {
