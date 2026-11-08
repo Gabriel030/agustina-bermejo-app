@@ -1012,7 +1012,8 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
 
-        correct(examOf(enrollment, 1), 0.0, "Error de carga del docente");
+        correct(examOf(enrollment, 1), 1.0, "Error de carga del docente");
+        correct(examOf(enrollment, 2), 2.0, "Error de carga del docente");
         entityManager.flush();
         entityManager.refresh(enrollment);
 
