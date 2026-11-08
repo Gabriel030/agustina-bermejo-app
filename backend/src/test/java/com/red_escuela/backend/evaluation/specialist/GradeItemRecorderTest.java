@@ -954,6 +954,73 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
                 new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(newScore)), reason), item.getProgramSubjectSectionEnrollment().getStudent().getPerson().getId());
     }
 
+    private SubjectSectionEnrollment publishedPair(String dni, double first, double second, Double promotionMinGrade) {
+        Instructor instructor = persistInstructor(dni);
+        Subject subject = persistSubject("MateriaRecalculo" + dni);
+        SubjectSection section = persistSection(subject, persistTerm(), persistScheme(2, 0, true, promotionMinGrade));
+        assignInstructor(section, instructor);
+        SubjectSectionEnrollment enrollment = enrollInSection(dni + "1", section);
+        loadExam(enrollment, instructor, 1, first);
+        loadExam(enrollment, instructor, 2, second);
+        entityManager.flush();
+        publishExam(section, instructor, 1);
+        publishExam(section, instructor, 2);
+        entityManager.flush();
+        return enrollment;
+    }
+
+    private GradeItem examOf(SubjectSectionEnrollment enrollment, int sequence) {
+        return gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()).stream()
+                .filter(item -> item.getSequenceNumber() == sequence)
+                .findFirst().orElseThrow();
+    }
+
+    @Test
+    void correctingAFailedEnrollmentAboveTheRegularMinimumMakesItRegular() {
+        SubjectSectionEnrollment enrollment = publishedPair("73200001", 3.0, 4.0, null);
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
+
+        correct(examOf(enrollment, 1), 5.0, "Error de carga del docente");
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(enrollment.getFinalScore()).isNull();
+        assertThat(gradeItemAuditReader.historyOf(examOf(enrollment, 1).getId())).hasSize(1);
+    }
+
+    @Test
+    void correctingAPromotedEnrollmentBelowThePromotionGradeDropsTheFinalScoreAndPromotion() {
+        SubjectSectionEnrollment enrollment = publishedPair("73200002", 8.0, 8.0, 7.0);
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(enrollment.getFinalScore()).isEqualTo(Grade.of(BigDecimal.valueOf(8.0)));
+
+        correct(examOf(enrollment, 1), 3.0, "Error de carga del docente");
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(enrollment.getFinalScore()).isNull();
+        assertThat(enrollment.getFinalGradeType()).isNull();
+    }
+
+    @Test
+    void correctingAPromotedEnrollmentBelowTheRegularMinimumMakesItFailed() {
+        SubjectSectionEnrollment enrollment = publishedPair("73200003", 8.0, 7.0, 7.0);
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+
+        correct(examOf(enrollment, 1), 0.0, "Error de carga del docente");
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
+        assertThat(enrollment.getFinalScore()).isNull();
+        assertThat(enrollment.getFinalGradeType()).isNull();
+    }
+
     @Test
     void publishingAnItemEmitsOneEventWithTheStudentsOfThatItem() {
         Instructor instructor = persistInstructor("73000001");
