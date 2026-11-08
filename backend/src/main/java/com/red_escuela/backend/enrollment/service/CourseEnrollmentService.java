@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -98,6 +99,7 @@ public class CourseEnrollmentService {
         for (CourseModuleView module : courseCatalogFinder.findActiveModules(registration.courseId())) {
             resueltas.add(resolveSection(module.id(), registration.termId(), request));
         }
+        lockCourseThenSectionsAscending(registration.courseId(), resueltas.stream().map(CourseSectionView::id).toList());
 
         CourseEnrollment enrollment = new CourseEnrollment();
         enrollment.setStudent(student);
@@ -187,8 +189,16 @@ public class CourseEnrollmentService {
         return nueva;
     }
 
-    private EnrollmentStatus calculateStatusByCourseCapacity(Long courseId) {
+    private void lockCourseThenSectionsAscending(Long courseId, Collection<Long> sectionIds) {
         courseCatalogFinder.lockCourse(courseId);
+        lockSectionsAscending(sectionIds);
+    }
+
+    private void lockSectionsAscending(Collection<Long> sectionIds) {
+        sectionIds.stream().distinct().sorted().forEach(sectionFinder::lockCourseSection);
+    }
+
+    private EnrollmentStatus calculateStatusByCourseCapacity(Long courseId) {
         return courseCatalogFinder.hasCapacityFor(courseId, countOccupiedSeats(courseId))
                 ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
     }
@@ -199,7 +209,6 @@ public class CourseEnrollmentService {
     }
 
     private EnrollmentStatus calculateStatusByCapacity(CourseSectionView section) {
-        sectionFinder.lockCourseSection(section.id());
         int ocupadas = courseSubjectSectionEnrollmentRepository
                 .findByCourseSubjectSectionIdAndStatusIn(section.id(),
                         List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
@@ -220,6 +229,10 @@ public class CourseEnrollmentService {
             throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED/WAITLISTED, no se puede dar de baja");
         }
         boolean liberaCupoDelCurso = enrollment.getStatus() == EnrollmentStatus.ENROLLED;
+        boolean promotesWaitlist = withdrawal.cause() != WithdrawalCause.NONPAYMENT;
+        if (liberaCupoDelCurso && promotesWaitlist) {
+            courseCatalogFinder.lockCourse(enrollment.courseId());
+        }
         LocalDate effectiveDate = withdrawalDateResolver.resolveEffectiveDate(withdrawal, enrollment.getEnrollmentDate());
         LocalDate registeredOn = withdrawalDateResolver.registrationDate();
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
@@ -227,7 +240,6 @@ public class CourseEnrollmentService {
         courseEnrollmentRepository.save(enrollment);
         withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
                 enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
-        boolean promotesWaitlist = withdrawal.cause() != WithdrawalCause.NONPAYMENT;
         cancelModuleEnrollments(enrollment, promotesWaitlist);
         if (liberaCupoDelCurso && promotesWaitlist) {
             promoteNextFromCourseWaitlist(enrollment.courseId());
@@ -240,7 +252,15 @@ public class CourseEnrollmentService {
 
     private void cancelModuleEnrollments(CourseEnrollment enrollment, boolean promotesWaitlist) {
         LocalDateTime now = LocalDateTime.now(clock);
-        for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(enrollment.getId())) {
+        List<CourseSubjectSectionEnrollment> subEnrollments =
+                courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(enrollment.getId());
+        if (promotesWaitlist) {
+            lockSectionsAscending(subEnrollments.stream()
+                    .filter(sub -> sub.getStatus() == EnrollmentStatus.ENROLLED || sub.getStatus() == EnrollmentStatus.IN_PROGRESS)
+                    .map(CourseSubjectSectionEnrollment::courseSubjectSectionId)
+                    .toList());
+        }
+        for (CourseSubjectSectionEnrollment sub : subEnrollments) {
             EnrollmentStatus estadoAnterior = sub.getStatus();
             if (estadoAnterior == EnrollmentStatus.ENROLLED || estadoAnterior == EnrollmentStatus.IN_PROGRESS
                     || estadoAnterior == EnrollmentStatus.WAITLISTED) {
@@ -255,7 +275,6 @@ public class CourseEnrollmentService {
     }
 
     private void promoteNextFromCourseWaitlist(Long courseId) {
-        courseCatalogFinder.lockCourse(courseId);
         courseEnrollmentRepository
                 .findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(courseId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {
@@ -265,7 +284,6 @@ public class CourseEnrollmentService {
     }
 
     private void promoteNextFromWaitlist(Long courseSubjectSectionId) {
-        sectionFinder.lockCourseSection(courseSubjectSectionId);
         courseSubjectSectionEnrollmentRepository
                 .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {

@@ -38,7 +38,9 @@ Regla del front (decisión del 3-nov-2026): GET, PUT y DELETE reintentables; POS
 | `CONCURRENT_MODIFICATION` | 409 | no | Otro usuario modificó el mismo registro | Hay que releer el registro antes de reintentar; repetir a ciegas pisa cambios ajenos |
 | `DATA_INTEGRITY_VIOLATION` | 409 | no | Restricción de base de datos violada | Choca con el estado persistido; hay que releer y decidir |
 | `ILLEGAL_STATE` | 409 | no | Estado ilegal no previsto por el dominio | Choca con el estado persistido; hay que releer y decidir |
+| `LOCK_CONFLICT` | 409 | sí | Deadlock, espera de bloqueo vencida o fallo de serialización en la base | Otra operación tenía tomados los mismos registros; repetir el mismo pedido suele funcionar |
 | `INTERNAL_ERROR` | 500 | no | Error inesperado o integridad de datos rota | Es un defecto del servidor y repetir el mismo pedido lo repite; el detalle queda solo en el log |
+| `DATABASE_BUSY` | 503 | sí | Consulta cancelada por superar el tiempo máximo de la base | La base está ocupada; repetir tras el Retry-After puede funcionar |
 
 ## Errores de dominio
 
