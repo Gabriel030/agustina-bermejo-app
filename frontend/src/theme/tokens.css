@@ -52,40 +52,56 @@
 
   /* Barrido de brillo del Skeleton (shimmer) — ver components/Skeleton.jsx */
   --shimmer-hi: oklch(99% 0.01 240 / 0.9);
+
+  --r-sm: 0.75rem;
+  --r-md: 1rem;
+  --r-lg: 1.375rem;
+  --r-xl: 1.75rem;
+  --r-2xl: 1rem;
+  --r-control: 1.375rem;
+  --r-card: 1.75rem;
+  --r-dialog: 1.75rem;
+  --r-btn-primary: 1.75rem;
+  --r-seg: 1.375rem;
+  --r-seg-indicator: 1rem;
+  --surface-blur: 28px;
+  --surface-saturate: 1.6;
+  --overlay-blur: 4px;
+  --sh-card: 0 1px 2px oklch(30% 0.03 260 / 0.04), 0 24px 60px -20px oklch(30% 0.08 260 / 0.28);
+  --sh-overlay: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --ring-surface: color-mix(in oklab, var(--ink) 10%, transparent);
+  --page-bg: linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg3));
+  --btn-primary-bg: linear-gradient(to bottom right in oklab, var(--accent), var(--accent-2));
+  --btn-primary-bg-hover: var(--btn-primary-bg);
+  --btn-primary-border: transparent;
+  --btn-primary-shadow: 0 10px 24px -8px color-mix(in oklch, var(--accent) 60%, transparent);
+  --btn-primary-shadow-hover: 0 16px 34px -8px color-mix(in oklch, var(--accent) 65%, transparent);
+  --btn-lift-y: -0.125rem;
+  --card-lift-y: -0.25rem;
+  --seg-indicator-bg: var(--btn-primary-bg);
+  --seg-indicator-shadow: 0 4px 16px -4px color-mix(in oklch, var(--accent) 65%, transparent);
+  --nav-indicator-bg: var(--btn-primary-bg);
+  --nav-active-fg: var(--on-accent);
+  --seg-active-fg: var(--on-accent);
+  --on-accent: oklch(99% 0 0);
+  --table-head: var(--neutral-bg);
+  --table-head-bg: var(--neutral-bg);
+  --table-head-size: 11px;
+  --table-head-border: var(--border);
+  --control-bg: transparent;
+  --pill-success-fg: var(--success);
+  --pill-warning-fg: var(--warning);
+  --pill-danger-fg: var(--danger);
+  --pill-neutral-fg: var(--ink-faint);
+  --row-hover: var(--accent-soft);
+  --row-selected: var(--accent-soft);
+  --row-h: 46px;
+  --overlay-bg: oklch(0% 0 0 / 0.4);
+  --focus-ring: var(--accent);
+  --shell-pad: 1.25rem;
+  --shell-gap: 1.25rem;
 }
 
-/* Modo oscuro — mismo vidrio (blur, borde, sombra), segundo juego de valores
-   oklch por debajo. Se activa por preferencia de sistema (sin JS) o por
-   data-theme explícito (ThemeContext, ver src/context/ThemeContext.jsx),
-   que persiste la elección en localStorage y siempre gana sobre el sistema. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg1: oklch(20% 0.025 260);
-    --bg2: oklch(16% 0.03 270);
-    --bg3: oklch(18% 0.03 245);
-    --surface: oklch(26% 0.02 260 / 0.55);
-    --border: oklch(38% 0.02 260 / 0.55);
-    --ink: oklch(95% 0.01 260);
-    --ink-soft: oklch(80% 0.015 260);
-    --ink-faint: oklch(60% 0.02 260);
-    --accent: oklch(74% 0.13 225);
-    --accent-2: oklch(76% 0.12 292);
-    --accent-soft: oklch(30% 0.06 225);
-    --success: oklch(70% 0.14 155);
-    --success-bg: oklch(28% 0.06 155);
-    --warning: oklch(76% 0.15 78);
-    --warning-bg: oklch(30% 0.07 78);
-    --warning-ink: oklch(82% 0.13 78);
-    --success-ink: oklch(80% 0.14 155);
-    --danger: oklch(70% 0.17 25);
-    --danger-bg: oklch(30% 0.08 25);
-    --danger-ink: oklch(84% 0.1 25);
-    --neutral-bg: oklch(30% 0.012 260);
-    --neutral-ink: oklch(78% 0.01 260);
-    --shimmer-hi: oklch(50% 0.02 260 / 0.9);
-    --dialog-bg: oklch(24% 0.022 260);
-  }
-}
 :root[data-theme='dark'] {
   --bg1: oklch(20% 0.025 260);
   --bg2: oklch(16% 0.03 270);
