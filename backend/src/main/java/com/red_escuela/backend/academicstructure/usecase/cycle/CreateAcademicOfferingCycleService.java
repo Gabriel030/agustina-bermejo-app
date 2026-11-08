@@ -15,6 +15,7 @@ import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleDrafter;
 import com.red_escuela.backend.academicstructure.service.HolidayYearGuard;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.exception.RequestFieldRequiredException;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
@@ -46,6 +47,9 @@ public class CreateAcademicOfferingCycleService implements CreateAcademicOfferin
     @Override
     @Transactional
     public AcademicOfferingCycleResponse create(CreateAcademicOfferingCycleRequest request) {
+        if (request.programId() == null && request.courseId() == null) {
+            throw new RequestFieldRequiredException("programId o courseId");
+        }
         var term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
 

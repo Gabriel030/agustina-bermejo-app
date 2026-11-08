@@ -300,6 +300,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_EVALUATION_CONFIG_NOT_FOUND` | no | `SectionEvaluationConfigNotFoundException` | evaluation |
 | `SECTION_INSTRUCTOR_NOT_FOUND` | no | `SectionInstructorNotFoundException` | academicstructure |
 | `SECTION_NOT_FOUND` | no | `SectionNotFoundException` | academicstructure |
+| `SESSION_NOT_FOUND` | no | `SessionNotFoundException` | identity |
 | `STUDENT_DISCOUNT_NOT_FOUND` | no | `StudentDiscountNotFoundException` | billing |
 | `STUDENT_NOT_FOUND` | no | `StudentNotFoundException` | identity |
 | `SUBJECT_NOT_FOUND` | no | `SubjectNotFoundException` | academicstructure |

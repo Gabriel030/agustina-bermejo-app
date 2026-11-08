@@ -2,7 +2,7 @@ package com.red_escuela.backend.identity.usecase.person;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.RefreshToken;
-import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
+import com.red_escuela.backend.identity.exception.SessionNotFoundException;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import com.red_escuela.backend.identity.specialist.SessionRevoker;
 import org.junit.jupiter.api.Test;
@@ -55,17 +55,17 @@ class RevokeSessionByIdServiceTest {
         RefreshToken token = tokenOwnedBy(person(1L));
 
         assertThatThrownBy(() -> service.revokeById(SESSION_ID, person(2L)))
-                .isInstanceOf(InvalidRefreshTokenException.class);
+                .isInstanceOf(SessionNotFoundException.class);
         assertThat(token.getRevoked()).isFalse();
         verify(refreshTokenRepository, never()).save(any());
     }
 
     @Test
-    void revokingAnUnknownSessionFailsWithInvalidRefreshToken() {
+    void revokingAnUnknownSessionFailsWithSessionNotFound() {
         when(refreshTokenRepository.findById(SESSION_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.revokeById(SESSION_ID, person(1L)))
-                .isInstanceOf(InvalidRefreshTokenException.class);
+                .isInstanceOf(SessionNotFoundException.class);
         verify(refreshTokenRepository, never()).save(any());
     }
 

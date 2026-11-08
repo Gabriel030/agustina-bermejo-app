@@ -1,7 +1,6 @@
 package com.red_escuela.backend.security;
 
 import com.red_escuela.backend.testsupport.SlowTest;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -56,10 +55,6 @@ class AuthorizationMatrixTest extends AuthorizationMatrixSupport {
 
         var mismatch = cell.expected().describeMismatch(
                 status, cell.role() == null, MatrixKnownResponses.toleranceFor(cell.key(), cell.anonymous()));
-        String pendingFix = MatrixKnownResponses.pendingFixReason(cell.role(), cell.key());
-        if (mismatch.isPresent() && pendingFix != null) {
-            Assumptions.abort("bug de produccion pendiente: " + pendingFix);
-        }
         assertThat(mismatch).as("%s", cell).isEmpty();
     }
 }
