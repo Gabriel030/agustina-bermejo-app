@@ -36,7 +36,7 @@ class DemoSeedStepsTest {
     @Test
     void seedStepsHaveDistinctOrdersAndRunAfterEachOther() {
         List<Integer> orders = List.of(DemoPeopleSeedStep.STEP_ORDER, DemoAcademicOfferSeedStep.STEP_ORDER, DemoEnrollmentSeedStep.STEP_ORDER,
-                DemoEvaluationSeedStep.STEP_ORDER, DemoAttendanceSeedStep.STEP_ORDER);
+                DemoAttendanceSeedStep.STEP_ORDER, DemoEvaluationSeedStep.STEP_ORDER);
 
         assertThat(orders).doesNotHaveDuplicates().isSorted();
     }

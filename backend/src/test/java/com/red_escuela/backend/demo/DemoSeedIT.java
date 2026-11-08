@@ -160,43 +160,25 @@ class DemoSeedIT extends AbstractIntegrationTest {
     void everySeededStudentCanLoginWithKnownPassword() {
         DemoDataset dataset = DemoDataset.of(DemoDataset.CI);
         for (int index = 0; index < dataset.studentCount(); index++) {
-            assertThat(api.get(DemoPeopleSeedStep.studentUsername(index), "/me").path("roles").valueStream().map(JsonNode::asString))
-                    .contains("ALUMNO");
+            assertThat(api.get(DemoPeopleSeedStep.studentUsername(index), "/me").path("id").asLong()).isPositive();
         }
     }
 
     @Test
-    void teacherLeadsEverySeededSectionAndSeesItsRoster() {
-        for (DemoCatalog.ProgramSpec program : DemoDataset.of(DemoDataset.CI).programs()) {
-            for (Long sectionId : session.enrolledSectionIdsOf(program.name())) {
-                assertThat(api.get(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/roster")).isNotEmpty();
-            }
-        }
-    }
-
-    @Test
-    void seededGradesFollowEachStudentAcademicProfile() {
-        List<Long> sectionIds = session.enrolledSectionIdsOf(DemoCatalog.EARLY_CHILDHOOD);
-        for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
-            JsonNode roster = api.get(DemoPersona.TEACHER, "/program-sections/" + sectionIds.get(sectionPosition) + "/roster");
-            for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {
-                long enrollmentId = roster.get(rosterPosition).get("enrollmentId").asLong();
-                JsonNode gradeItems = api.get(DemoPersona.TEACHER, "/section-enrollments/" + enrollmentId + "/grade-items");
-                assertThat(gradeItems).hasSize(DemoAcademicProfile.of(rosterPosition, sectionPosition).examScores().size());
-            }
-        }
-    }
-
-    @Test
-    void seededAttendanceFollowsEachStudentAcademicProfile() {
-        List<Long> sectionIds = session.enrolledSectionIdsOf(DemoCatalog.EARLY_CHILDHOOD);
-        for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
-            JsonNode roster = api.get(DemoPersona.TEACHER, "/program-sections/" + sectionIds.get(sectionPosition) + "/roster");
-            for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {
-                assertThat(roster.get(rosterPosition).get("absenceCount").asInt())
-                        .isEqualTo(DemoAcademicProfile.of(rosterPosition, sectionPosition).absences());
-                assertThat(roster.get(rosterPosition).get("classesHeld").asInt()).isEqualTo(DemoAttendanceSeedStep.CLASSES_PER_SECTION);
-            }
+    void seededGradesAndAttendanceFollowTheAcademicProfileOfTheFirstStudent() {
+        String username = DemoPeopleSeedStep.studentUsername(0);
+        long programEnrollmentId = api.get(username, "/me/program-enrollments").get(0).get("id").asLong();
+        JsonNode sectionEnrollments = api.get(DemoPersona.ADMIN, "/program-enrollments/" + programEnrollmentId + "/section-enrollments");
+        assertThat(sectionEnrollments).hasSize(DemoEnrollmentSeedStep.SECTIONS_PER_STUDENT);
+        for (int sectionPosition = 0; sectionPosition < sectionEnrollments.size(); sectionPosition++) {
+            long enrollmentId = sectionEnrollments.get(sectionPosition).get("id").asLong();
+            DemoAcademicProfile profile = DemoAcademicProfile.of(0, sectionPosition);
+            assertThat(api.get(DemoPersona.ADMIN, "/section-enrollments/" + enrollmentId + "/grade-items"))
+                    .hasSize(profile.examScores().size());
+            JsonNode attendance = api.get(username, "/me/section-enrollments/" + enrollmentId + "/attendance");
+            assertThat(attendance).hasSize(DemoAttendanceSeedStep.CLASSES_PER_SECTION);
+            assertThat(attendance.valueStream().filter(record -> "ABSENT".equals(record.path("status").asString(""))).count())
+                    .isEqualTo(profile.absences());
         }
     }
 

@@ -15,7 +15,7 @@ import java.util.Map;
 @Component
 @Profile("demo")
 public class DemoAttendanceSeedStep implements DemoSeedStep {
-    public static final int STEP_ORDER = 50;
+    public static final int STEP_ORDER = 40;
     public static final int CLASSES_PER_SECTION = 4;
 
     private final DemoSeedSession session;
@@ -37,11 +37,9 @@ public class DemoAttendanceSeedStep implements DemoSeedStep {
     @Override
     public void seed(DemoDataset dataset) {
         List<LocalDate> classDates = recentWeekdaysBefore(ApplicationTime.today(), CLASSES_PER_SECTION);
-        for (DemoCatalog.ProgramSpec program : dataset.programs()) {
-            List<Long> sectionIds = session.enrolledSectionIdsOf(program.name());
-            for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
-                recordSection(sectionIds.get(sectionPosition), sectionPosition, classDates);
-            }
+        List<Long> sectionIds = session.enrolledSectionIdsOf(dataset);
+        for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
+            recordSection(sectionIds.get(sectionPosition), sectionPosition, classDates);
         }
     }
 
@@ -59,6 +57,9 @@ public class DemoAttendanceSeedStep implements DemoSeedStep {
 
     private void recordSection(long sectionId, int sectionPosition, List<LocalDate> classDates) {
         JsonNode roster = session.api().get(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/roster");
+        if (roster.isEmpty()) {
+            throw new IllegalStateException("La comisión " + sectionId + " no tiene alumnos para tomar asistencia");
+        }
         for (int dateIndex = 0; dateIndex < classDates.size(); dateIndex++) {
             List<Map<String, Object>> entries = new ArrayList<>();
             for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {

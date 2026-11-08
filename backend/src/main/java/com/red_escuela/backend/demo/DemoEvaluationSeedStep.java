@@ -14,7 +14,7 @@ import java.util.Map;
 @Component
 @Profile("demo")
 public class DemoEvaluationSeedStep implements DemoSeedStep {
-    public static final int STEP_ORDER = 40;
+    public static final int STEP_ORDER = 50;
 
     private static final int FIRST_EXAM_DAYS_AGO = 56;
     private static final int SECOND_EXAM_DAYS_AGO = 21;
@@ -38,16 +38,17 @@ public class DemoEvaluationSeedStep implements DemoSeedStep {
     @Override
     public void seed(DemoDataset dataset) {
         LocalDate today = ApplicationTime.today();
-        for (DemoCatalog.ProgramSpec program : dataset.programs()) {
-            List<Long> sectionIds = session.enrolledSectionIdsOf(program.name());
-            for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
-                gradeSection(sectionIds.get(sectionPosition), sectionPosition, today);
-            }
+        List<Long> sectionIds = session.enrolledSectionIdsOf(dataset);
+        for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
+            gradeSection(sectionIds.get(sectionPosition), sectionPosition, today);
         }
     }
 
     private void gradeSection(long sectionId, int sectionPosition, LocalDate today) {
         JsonNode roster = session.api().get(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/roster");
+        if (roster.isEmpty()) {
+            throw new IllegalStateException("La comisión " + sectionId + " no tiene alumnos para calificar");
+        }
         for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {
             long sectionEnrollmentId = roster.get(rosterPosition).get("enrollmentId").asLong();
             List<BigDecimal> scores = DemoAcademicProfile.of(rosterPosition, sectionPosition).examScores();

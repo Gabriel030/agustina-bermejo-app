@@ -50,6 +50,10 @@ public class DemoSeedSession {
         return firstYearSectionIdsByProgram;
     }
 
+    public List<Long> enrolledSectionIdsOf(DemoDataset dataset) {
+        return dataset.programs().stream().flatMap(program -> enrolledSectionIdsOf(program.name()).stream()).distinct().toList();
+    }
+
     public List<Long> enrolledSectionIdsOf(String programName) {
         List<Long> sectionIds = firstYearSectionIdsByProgram.get(programName);
         return sectionIds.subList(0, Math.min(DemoEnrollmentSeedStep.SECTIONS_PER_STUDENT, sectionIds.size()));
