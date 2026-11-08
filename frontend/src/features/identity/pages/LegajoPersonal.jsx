@@ -230,8 +230,6 @@ export function LegajoPersonal() {
             if (err?.code === 'STAFF_PASSWORD_RESET_BLOCKED') {
               setResetBlocked(true);
               setResetOpen(false);
-            } else {
-              toast.error(staffActionErrorMessage(err, 'No se pudo enviar el link. Intentá de nuevo.'));
             }
             throw err;
           })

@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
 import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
+import { describeError } from '@/api/describeError';
 import { useWithdrawStudent, useResetStudentPassword } from '@/features/identity/hooks/useAccionesLegajo';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ export function LegajoAlumno() {
     setActiveTab('evaluacion');
   }
 
+  const [withdrawError, setWithdrawError] = useState(null);
   const withdrawMutation = useWithdrawStudent(id);
   const resetMutation = useResetStudentPassword(id);
 
@@ -143,9 +145,19 @@ export function LegajoAlumno() {
 
       <DarDeBajaModal
         open={bajaOpen}
-        onClose={() => setBajaOpen(false)}
-        onConfirmar={(data) => withdrawMutation.mutate(data, { onSuccess: () => setBajaOpen(false) })}
+        onClose={() => {
+          setBajaOpen(false);
+          setWithdrawError(null);
+        }}
+        onConfirmar={(data) => {
+          setWithdrawError(null);
+          withdrawMutation.mutate(data, {
+            onSuccess: () => setBajaOpen(false),
+            onError: (error) => setWithdrawError(describeError(error).message),
+          });
+        }}
         isPending={withdrawMutation.isPending}
+        error={withdrawError}
       />
 
       <ResetPasswordModal
