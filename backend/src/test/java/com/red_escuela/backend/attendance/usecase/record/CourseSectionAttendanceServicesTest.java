@@ -27,7 +27,10 @@ import com.red_escuela.backend.attendance.specialist.SectionAttendanceLoader;
 import com.red_escuela.backend.attendance.specialist.ClassSessionUpserter;
 import com.red_escuela.backend.attendance.specialist.SectionAttendanceRecorder;
 import com.red_escuela.backend.attendance.specialist.SectionRosterBuilder;
+import com.red_escuela.backend.attendance.exception.ClassSessionCanceledException;
+import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -60,6 +63,7 @@ class CourseSectionAttendanceServicesTest {
     private final SectionAttendanceRecorder attendanceRecorder = mock(SectionAttendanceRecorder.class);
     private final ClassSessionUpserter classSessionUpserter = mock(ClassSessionUpserter.class);
     private final ClassSessionRepository classSessionRepository = mock(ClassSessionRepository.class);
+    private final SectionEnrollmentFinder enrollmentFinder = mock(SectionEnrollmentFinder.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final SectionRosterBuilder rosterBuilder = mock(SectionRosterBuilder.class);
     private final AttendanceHistoryBuilder historyBuilder = mock(AttendanceHistoryBuilder.class);
@@ -70,7 +74,8 @@ class CourseSectionAttendanceServicesTest {
     private static final LocalDate CLASS_DAY = LocalDate.of(2025, 9, 15);
 
     private final LoadCourseSectionAttendanceService loadService = new LoadCourseSectionAttendanceService(
-            new SectionAttendanceLoader(attendanceRecorder, sectionAccess, classSessionUpserter), eventPublisher);
+            new SectionAttendanceLoader(attendanceRecorder, sectionAccess, classSessionUpserter,
+                    enrollmentFinder, classSessionRepository), eventPublisher);
     private final CancelCourseSectionClassSessionService cancelService = new CancelCourseSectionClassSessionService(
             new ClassSessionCanceller(classSessionRepository, sectionAccess, classSessionUpserter));
     private final GetCourseSectionAbsenceReportService absenceReportService =
@@ -98,6 +103,7 @@ class CourseSectionAttendanceServicesTest {
         when(sectionAccess.findCourseSection(SECTION_ID)).thenReturn(section);
         when(sectionAccess.resolveInstructor(INSTRUCTOR_ID)).thenReturn(instructor);
     }
+
 
     private void givenInstructorDoesNotTeach(Long instructorId) {
         doThrow(new NotOwnSectionException(instructorId, SECTION_ID))
@@ -201,6 +207,51 @@ class CourseSectionAttendanceServicesTest {
 
         assertThat(loadService.load(loadCommand(workingDay, new AttendanceEntry(10L, AttendanceStatus.PRESENT)))).hasSize(1);
         verify(sectionAccess).isHoliday(workingDay);
+    }
+
+    @Test
+    void loadRejectsAnEnrollmentThatIsNotActiveInTheSectionWithoutRecordingAnythingOfTheBatch() {
+        givenOwnSection();
+        doThrow(new SectionEnrollmentNotFoundException(500L))
+                .when(enrollmentFinder).requireActiveInCourseSection(eq(SECTION_ID), any());
+
+        assertThatThrownBy(() -> loadService.load(loadCommand(today(),
+                new AttendanceEntry(10L, AttendanceStatus.PRESENT), new AttendanceEntry(500L, AttendanceStatus.ABSENT))))
+                .isInstanceOf(SectionEnrollmentNotFoundException.class);
+
+        verifyNoInteractions(attendanceRecorder, classSessionUpserter, eventPublisher);
+    }
+
+    @Test
+    void loadRefusesToTakeAttendanceOnACanceledClassWithoutRecordingAnything() {
+        givenOwnSection();
+        ClassSession canceled = new ClassSession();
+        canceled.setStatus(ClassSessionStatus.CANCELED);
+        when(classSessionRepository.findByCourseSubjectSectionIdAndClassDate(SECTION_ID, today()))
+                .thenReturn(java.util.Optional.of(canceled));
+
+        assertThatThrownBy(() -> loadService.load(loadCommand(today(), new AttendanceEntry(10L, AttendanceStatus.PRESENT))))
+                .isInstanceOf(ClassSessionCanceledException.class);
+
+        verifyNoInteractions(attendanceRecorder, classSessionUpserter, eventPublisher);
+    }
+
+    @Test
+    void loadStillRecordsOnAScheduledClassOfTheSameSection() {
+        givenOwnSection();
+        ClassSession scheduled = new ClassSession();
+        scheduled.setStatus(ClassSessionStatus.SCHEDULED);
+        when(classSessionRepository.findByCourseSubjectSectionIdAndClassDate(SECTION_ID, today()))
+                .thenReturn(java.util.Optional.of(scheduled));
+        Attendance saved = attendanceOfEnrollment(10L);
+        when(attendanceRecorder.recordCourseAttendance(10L, today(), AttendanceStatus.PRESENT, instructor)).thenReturn(saved);
+
+        assertThat(loadService.load(loadCommand(today(), new AttendanceEntry(10L, AttendanceStatus.PRESENT)))).containsExactly(saved);
+    }
+
+    @Test
+    @org.junit.jupiter.api.Disabled("Pending product decision: what happens to absences already loaded when a class is canceled (delete, void or exclude from the count)")
+    void absencesLoadedBeforeAClassIsCanceledAreNotCounted() {
     }
 
     @Test

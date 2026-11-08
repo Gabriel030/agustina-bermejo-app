@@ -338,6 +338,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGE_REJECTED` | no | `ChargeRejectedException` | billing |
 | `CLASSROOM_IN_USE` | no | `ClassroomInUseException` | academicstructure |
 | `CLASS_SESSION_ALREADY_CANCELED` | no | `ClassSessionAlreadyCanceledException` | attendance |
+| `CLASS_SESSION_CANCELED` | no | `ClassSessionCanceledException` | attendance |
 | `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | billing |
 | `COHORT_PROMOTION_ALREADY_ACQUIRED` | no | `CohortPromotionAlreadyAcquiredException` | billing |
 | `CONCURRENT_REGULAR_CERTIFICATE_ISSUE` | no | `ConcurrentRegularCertificateIssueException` | graduation |
