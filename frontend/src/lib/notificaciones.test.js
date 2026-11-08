@@ -56,6 +56,13 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.DRAFT_INVOICES_AWAITING_REVIEW).toBe('warning');
   });
 
+  it('etiqueta y da tono a las notas publicadas y a la nota corregida', () => {
+    expect(TIPO_NOTIFICACION_LABEL.GRADES_PUBLISHED).toBe('Notas publicadas');
+    expect(TONO_NOTIFICACION.GRADES_PUBLISHED).toBe('success');
+    expect(TIPO_NOTIFICACION_LABEL.GRADE_CORRECTED).toBe('Nota corregida');
+    expect(TONO_NOTIFICACION.GRADE_CORRECTED).toBe('accent2');
+  });
+
   it('etiqueta y da tono al aviso de feriados faltantes', () => {
     expect(TIPO_NOTIFICACION_LABEL.HOLIDAYS_MISSING_FOR_NEXT_YEAR).toBe('Faltan los feriados del año que viene');
     expect(TONO_NOTIFICACION.HOLIDAYS_MISSING_FOR_NEXT_YEAR).toBe('warning');

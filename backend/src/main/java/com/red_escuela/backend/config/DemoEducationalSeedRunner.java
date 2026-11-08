@@ -2,6 +2,7 @@ package com.red_escuela.backend.config;
 
 import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.config.infrastructure.DemoApiClient;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -13,6 +14,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,7 +46,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
             new String[] {"Producción de Eventos", "DM03"});
     private static final String[] GRADUATING_SUBJECT = {"Taller de Dirección Escénica", "DM04"};
     private static final List<String> COURSE_MODULES = List.of("Fundamentos de la imagen", "Composición y luz", "Edición digital");
-    private static final List<String> CLASS_DATES = List.of("2026-03-09", "2026-03-11", "2026-03-16", "2026-03-18");
+    private static final int CLASS_COUNT = 4;
 
     private static final byte[] MEDICAL_CERTIFICATE_PDF =
             "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
@@ -240,11 +243,24 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     }
 
     private void recordAttendance(DemoApiClient api, long sectionId, long sectionEnrollmentId) {
-        for (int index = 0; index < CLASS_DATES.size(); index++) {
+        List<LocalDate> classDates = recentWeekdaysBefore(ApplicationTime.today(), CLASS_COUNT);
+        for (int index = 0; index < classDates.size(); index++) {
             String status = index == 1 || index == 3 ? "ABSENT" : "PRESENT";
             Map<String, Object> entry = Map.of("enrollmentId", sectionEnrollmentId, "status", status);
-            api.post(TEACHER, "/program-sections/" + sectionId + "/attendance", Map.of("classDate", CLASS_DATES.get(index), "entries", List.of(entry)));
+            api.post(TEACHER, "/program-sections/" + sectionId + "/attendance", Map.of("classDate", classDates.get(index).toString(), "entries", List.of(entry)));
         }
+    }
+
+    static List<LocalDate> recentWeekdaysBefore(LocalDate today, int count) {
+        List<LocalDate> dates = new ArrayList<>();
+        LocalDate day = today.minusDays(1);
+        while (dates.size() < count) {
+            if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                dates.add(0, day);
+            }
+            day = day.minusDays(1);
+        }
+        return dates;
     }
 
     private void justifyFirstAbsence(DemoApiClient api, long sectionEnrollmentId) {
