@@ -25,7 +25,7 @@ class DemoSeedStepsTest {
         scanner.addIncludeFilter(new AssignableTypeFilter(DemoSeedStep.class));
         Set<BeanDefinition> stepClasses = scanner.findCandidateComponents(DemoSeedStep.class.getPackageName());
 
-        assertThat(stepClasses).hasSize(3);
+        assertThat(stepClasses).hasSize(5);
         for (BeanDefinition definition : stepClasses) {
             Class<?> stepClass = Class.forName(definition.getBeanClassName());
             assertThat(stepClass.isAnnotationPresent(Component.class)).isTrue();
@@ -35,7 +35,8 @@ class DemoSeedStepsTest {
 
     @Test
     void seedStepsHaveDistinctOrdersAndRunAfterEachOther() {
-        List<Integer> orders = List.of(DemoPeopleSeedStep.STEP_ORDER, DemoAcademicOfferSeedStep.STEP_ORDER, DemoEnrollmentSeedStep.STEP_ORDER);
+        List<Integer> orders = List.of(DemoPeopleSeedStep.STEP_ORDER, DemoAcademicOfferSeedStep.STEP_ORDER, DemoEnrollmentSeedStep.STEP_ORDER,
+                DemoEvaluationSeedStep.STEP_ORDER, DemoAttendanceSeedStep.STEP_ORDER);
 
         assertThat(orders).doesNotHaveDuplicates().isSorted();
     }
@@ -75,5 +76,19 @@ class DemoSeedStepsTest {
         List<String> codes = DemoCatalog.distinctSubjectNames().stream().map(DemoAcademicOfferSeedStep::subjectCode).toList();
 
         assertThat(codes).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void classDatesAreRecentWeekdaysStrictlyBeforeToday() {
+        List<java.time.LocalDate> dates = DemoAttendanceSeedStep.recentWeekdaysBefore(java.time.LocalDate.of(2026, 11, 9), 4);
+
+        assertThat(dates).containsExactly(java.time.LocalDate.of(2026, 11, 3), java.time.LocalDate.of(2026, 11, 4),
+                java.time.LocalDate.of(2026, 11, 5), java.time.LocalDate.of(2026, 11, 6));
+    }
+
+    @Test
+    void academicProfilesCycleThroughEveryProfile() {
+        assertThat(java.util.stream.IntStream.range(0, 4).mapToObj(position -> DemoAcademicProfile.of(position, 0)).distinct())
+                .hasSize(DemoAcademicProfile.values().length);
     }
 }

@@ -22,8 +22,7 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
     private final DemoSeedSession session;
     private final Map<String, Long> subjectIdsByName = new LinkedHashMap<>();
     private final Map<Long, Long> sectionIdsBySubjectId = new LinkedHashMap<>();
-    private List<Long> instructorIds = List.of();
-    private int leadTeacherCursor;
+    private long leadTeacherId;
     private long schemeId;
 
     public DemoAcademicOfferSeedStep(DemoSeedSession session) {
@@ -44,8 +43,7 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
     public void seed(DemoDataset dataset) {
         subjectIdsByName.clear();
         sectionIdsBySubjectId.clear();
-        leadTeacherCursor = 0;
-        instructorIds = findInstructorIds();
+        leadTeacherId = findLeadTeacherId();
         schemeId = findOrCreateScheme();
         for (DemoCatalog.ProgramSpec program : dataset.programs()) {
             seedProgram(program);
@@ -55,15 +53,13 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         }
     }
 
-    private List<Long> findInstructorIds() {
-        List<Long> ids = new ArrayList<>();
+    private long findLeadTeacherId() {
         for (JsonNode instructor : session.api().get(DemoPersona.ADMIN, "/instructors")) {
-            ids.add(instructor.get("id").asLong());
+            if (DemoPersona.TEACHER_FULL_NAME.equals(instructor.path("name").asString(""))) {
+                return instructor.get("id").asLong();
+            }
         }
-        if (ids.isEmpty()) {
-            throw new IllegalStateException("No hay docentes: el paso de personas debe correr antes");
-        }
-        return ids;
+        throw new IllegalStateException("No existe el perfil de docente de " + DemoPersona.TEACHER);
     }
 
     private long findOrCreateScheme() {
@@ -181,13 +177,9 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         section.put("evaluationSchemeId", schemeId);
         long sectionId = session.api().post(DemoPersona.ADMIN, "/subjects/" + subjectId + "/sections", section).get("id").asLong();
         session.api().post(DemoPersona.ADMIN, "/program-sections/" + sectionId + "/instructors",
-                Map.of("instructorId", nextLeadTeacher(), "role", "LEAD"));
+                Map.of("instructorId", leadTeacherId, "role", "LEAD"));
         sectionIdsBySubjectId.put(subjectId, sectionId);
         return sectionId;
-    }
-
-    private long nextLeadTeacher() {
-        return instructorIds.get(leadTeacherCursor++ % instructorIds.size());
     }
 
     private void seedPrerequisites(Map<String, Long> programSubjectIdsByName) {
@@ -225,7 +217,7 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
             section.put("evaluationSchemeId", schemeId);
             long sectionId = session.api().post(DemoPersona.ADMIN, "/course-subjects/" + moduleId + "/sections", section).get("id").asLong();
             session.api().post(DemoPersona.ADMIN, "/course-sections/" + sectionId + "/instructors",
-                    Map.of("instructorId", nextLeadTeacher(), "role", "LEAD"));
+                    Map.of("instructorId", leadTeacherId, "role", "LEAD"));
         }
     }
 }

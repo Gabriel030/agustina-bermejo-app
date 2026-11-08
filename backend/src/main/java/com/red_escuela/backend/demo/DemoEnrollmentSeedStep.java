@@ -11,7 +11,7 @@ import java.util.Map;
 public class DemoEnrollmentSeedStep implements DemoSeedStep {
     public static final int STEP_ORDER = 30;
 
-    private static final int SECTIONS_PER_STUDENT = 3;
+    public static final int SECTIONS_PER_STUDENT = 3;
     private static final int COURSE_STUDENT_INTERVAL = 4;
 
     private final DemoSeedSession session;

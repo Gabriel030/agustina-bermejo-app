@@ -12,7 +12,6 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.specialist.DemoLearnerAccountsSeeder;
 import com.red_escuela.backend.identity.specialist.LocalSeedRunner;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
-import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,7 +29,6 @@ import org.springframework.test.context.TestPropertySource;
 import tools.jackson.databind.JsonNode;
 
 import java.time.Clock;
-import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,13 +77,10 @@ class DemoSeedIT extends AbstractIntegrationTest {
     @BeforeAll
     void seedBaseOnce() {
         jdbcTemplate.queryForObject("select setval(pg_get_serial_sequence('student', 'id'), 5000)", Long.class);
-        MutableClock.INSTANCE.setDate(LocalDate.of(2026, 3, 18));
         LocalSeedRunner localSeedRunner = new LocalSeedRunner(personRepository, roleRepository, personFactory, passwordEncoder);
         new DemoLearnerAccountsSeeder(localSeedRunner, personRepository, roleRepository, personFactory, passwordEncoder,
                 institutionRepository, studentRepository, instructorProfileCreationPort).run(new DefaultApplicationArguments());
-        demoClock.travelTo(LocalDate.of(2026, 3, 18));
         new DemoEducationalSeedRunner(environment, jdbcTemplate).seedThroughPort(port);
-        demoClock.backToPresent();
         long startedAt = System.currentTimeMillis();
         demoSeedRunner.seedThroughPort(port);
         seedMillis = System.currentTimeMillis() - startedAt;
@@ -159,6 +154,55 @@ class DemoSeedIT extends AbstractIntegrationTest {
                         && "ACTIVE".equals(term.path("status").asString("")))
                 .count();
         assertThat(activeAnnualTerms2026).isEqualTo(1);
+    }
+
+    @Test
+    void everySeededStudentCanLoginWithKnownPassword() {
+        DemoDataset dataset = DemoDataset.of(DemoDataset.CI);
+        for (int index = 0; index < dataset.studentCount(); index++) {
+            assertThat(api.get(DemoPeopleSeedStep.studentUsername(index), "/me").path("roles").valueStream().map(JsonNode::asString))
+                    .contains("ALUMNO");
+        }
+    }
+
+    @Test
+    void teacherLeadsEverySeededSectionAndSeesItsRoster() {
+        for (DemoCatalog.ProgramSpec program : DemoDataset.of(DemoDataset.CI).programs()) {
+            for (Long sectionId : session.enrolledSectionIdsOf(program.name())) {
+                assertThat(api.get(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/roster")).isNotEmpty();
+            }
+        }
+    }
+
+    @Test
+    void seededGradesFollowEachStudentAcademicProfile() {
+        List<Long> sectionIds = session.enrolledSectionIdsOf(DemoCatalog.EARLY_CHILDHOOD);
+        for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
+            JsonNode roster = api.get(DemoPersona.TEACHER, "/program-sections/" + sectionIds.get(sectionPosition) + "/roster");
+            for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {
+                long enrollmentId = roster.get(rosterPosition).get("enrollmentId").asLong();
+                JsonNode gradeItems = api.get(DemoPersona.TEACHER, "/section-enrollments/" + enrollmentId + "/grade-items");
+                assertThat(gradeItems).hasSize(DemoAcademicProfile.of(rosterPosition, sectionPosition).examScores().size());
+            }
+        }
+    }
+
+    @Test
+    void seededAttendanceFollowsEachStudentAcademicProfile() {
+        List<Long> sectionIds = session.enrolledSectionIdsOf(DemoCatalog.EARLY_CHILDHOOD);
+        for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
+            JsonNode roster = api.get(DemoPersona.TEACHER, "/program-sections/" + sectionIds.get(sectionPosition) + "/roster");
+            for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {
+                assertThat(roster.get(rosterPosition).get("absenceCount").asInt())
+                        .isEqualTo(DemoAcademicProfile.of(rosterPosition, sectionPosition).absences());
+                assertThat(roster.get(rosterPosition).get("classesHeld").asInt()).isEqualTo(DemoAttendanceSeedStep.CLASSES_PER_SECTION);
+            }
+        }
+    }
+
+    @Test
+    void educationalSeedLeavesAJustificationPendingWithRealDates() {
+        assertThat(api.get(DemoPersona.ADMIN, "/attendance/justifications")).isNotEmpty();
     }
 
     @Test
