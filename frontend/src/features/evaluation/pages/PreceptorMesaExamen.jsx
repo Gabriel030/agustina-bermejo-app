@@ -7,6 +7,7 @@ import { StatCard } from '@/components/StatCard';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -152,8 +153,10 @@ function TablaAnotados({ anotados, soloLectura, onDarDeBaja, dandoDeBaja }) {
 }
 
 function DetalleMesa({ mesaId }) {
-  const { data: mesa, isLoading: cargandoMesa } = useMesa(mesaId);
-  const { data: anotados, isLoading: cargandoAnotados } = useAnotados(mesaId);
+  const mesaQuery = useMesa(mesaId);
+  const anotadosQuery = useAnotados(mesaId);
+  const { data: mesa, isLoading: cargandoMesa } = mesaQuery;
+  const { data: anotados, isLoading: cargandoAnotados } = anotadosQuery;
   const asignarTribunal = useAsignarTribunal(mesaId);
   const cerrarActa = useCerrarActa(mesaId);
   const darDeBaja = useDarDeBajaInscripcion(mesaId);
@@ -166,6 +169,10 @@ function DetalleMesa({ mesaId }) {
   const [reprogramando, setReprogramando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
 
+  const fallida = mesaQuery.isError ? mesaQuery : anotadosQuery.isError ? anotadosQuery : null;
+  if (fallida) {
+    return <LoadErrorState error={fallida.error} resource="la mesa de examen" onRetry={() => fallida.refetch()} />;
+  }
   if (cargandoMesa || cargandoAnotados || !mesa) {
     return (
       <div className="flex flex-col gap-4 pt-4">

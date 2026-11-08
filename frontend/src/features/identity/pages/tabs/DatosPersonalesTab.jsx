@@ -1,5 +1,6 @@
 import { useDocumentosAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SEX_LABEL } from '@/lib/person';
@@ -49,13 +50,15 @@ function Seccion({ titulo, children }) {
 }
 
 function DocumentosSection({ studentId }) {
-  const { data: documentos, isLoading } = useDocumentosAlumno(studentId);
+  const { data: documentos, isLoading, isError, error, refetch } = useDocumentosAlumno(studentId);
 
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Documentos</h3>
       {isLoading ? (
         <Skeleton className="h-16 w-full" />
+      ) : isError ? (
+        <LoadErrorState bare error={error} onRetry={refetch} resource="los documentos" />
       ) : !documentos?.length ? (
         <p className="text-[13px] text-ink-faint">Sin documentos cargados.</p>
       ) : (

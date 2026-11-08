@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { InfoTip } from '@/components/charts/InfoTip';
 import { GlassCard } from '@/components/GlassCard';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
@@ -157,6 +158,13 @@ export function NewPriceVersionPage() {
     return (
       <PageContainer title="Nueva versión de precio">
         <Skeleton className="h-64 w-full rounded-3xl" aria-label="Cargando precio" />
+      </PageContainer>
+    );
+  }
+  if (prices.isError && !price) {
+    return (
+      <PageContainer title="Nueva versión de precio">
+        <LoadErrorState error={prices.error} resource="el precio" onRetry={prices.refetch} backTo={listPath} backLabel="Precios" />
       </PageContainer>
     );
   }

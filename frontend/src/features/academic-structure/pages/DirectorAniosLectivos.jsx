@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { AniosLectivosSection } from '@/features/academic-structure/components/AniosLectivosSection';
 import { usePrograms } from '@/features/academic-structure/hooks/usePrograms';
 
@@ -10,7 +11,7 @@ const SELECT_CLASS =
   'w-full max-w-md rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent';
 
 export function DirectorAniosLectivos() {
-  const { data: programs, isLoading } = usePrograms();
+  const { data: programs, isLoading, isError, error, refetch } = usePrograms();
   const [programId, setProgramId] = useState('');
 
   return (
@@ -21,6 +22,8 @@ export function DirectorAniosLectivos() {
       </Link>
       {isLoading ? (
         <Skeleton rows={2} />
+      ) : isError ? (
+        <LoadErrorState error={error} resource="las carreras" onRetry={refetch} />
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">

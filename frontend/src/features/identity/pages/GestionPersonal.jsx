@@ -7,6 +7,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { usePersonal } from '@/features/identity/hooks/usePersonal';
@@ -66,7 +67,7 @@ function FilaPersonal({ persona, onClick }) {
   );
 }
 
-function ListaPersonal({ personal, isLoading, navigate, rolBase, tabActivo }) {
+function ListaPersonal({ personal, isLoading, isError, error, onRetry, navigate, rolBase, tabActivo }) {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-1">
@@ -75,6 +76,10 @@ function ListaPersonal({ personal, isLoading, navigate, rolBase, tabActivo }) {
         ))}
       </div>
     );
+  }
+
+  if (isError) {
+    return <LoadErrorState bare error={error} onRetry={onRetry} resource="el personal" />;
   }
 
   if (!personal?.length) {
@@ -118,7 +123,7 @@ export function GestionPersonal() {
   }
 
   const tabParams = TABS.find((t) => t.id === tabActivo)?.params ?? {};
-  const { data: personal, isLoading } = usePersonal({ ...tabParams, search: searchDebounced || undefined });
+  const { data: personal, isLoading, isError, error, refetch } = usePersonal({ ...tabParams, search: searchDebounced || undefined });
   const crearMutation = useCrearPersonal();
 
   return (
@@ -162,6 +167,9 @@ export function GestionPersonal() {
                 <ListaPersonal
                   personal={personal}
                   isLoading={isLoading}
+                  isError={isError}
+                  error={error}
+                  onRetry={refetch}
                   navigate={navigate}
                   rolBase={rolBase}
                   tabActivo={tabActivo}
