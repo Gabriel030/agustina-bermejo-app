@@ -22,8 +22,6 @@ export const ERROR_MESSAGES = {
   JUSTIFICATION_DEADLINE_EXPIRED: 'Venció el plazo para justificar esta falta. Si corresponde, la resuelve el preceptor como excepción.',
   INVALID_JUSTIFICATION_INPUT: 'El motivo de la justificación supera los 500 caracteres. Acortalo e intentá de nuevo.',
   CANNOT_JUSTIFY: 'Esta falta no se puede justificar en su estado actual.',
-  LOCK_CONFLICT: 'Otra operación está usando estos datos. Probá de nuevo en unos segundos.',
-  DATABASE_BUSY: 'El sistema está ocupado. Probá de nuevo en unos segundos.',
   STUDENT_HAS_ACTIVE_ENROLLMENTS: 'El alumno tiene inscripciones activas. Cancelalas antes de darlo de baja.',
   MERCADO_PAGO_GATEWAY: 'Mercado Pago no respondió. Probá en unos minutos.',
   GOOGLE_SERVICE_UNAVAILABLE: 'Google no está disponible ahora. Probá más tarde.',
