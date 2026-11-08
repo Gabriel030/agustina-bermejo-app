@@ -6,10 +6,15 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 
 public record IssuedEnrollmentFee(Long invoiceId, Long templateId, Integer slot, YearMonth period, InvoicePaymentStatus status, LocalDate dueDate,
-                                boolean chargeKeyReleased) {
+                                boolean chargeKeyReleased, boolean cancelledByAdvanceExpiry) {
 
     public IssuedEnrollmentFee(Long invoiceId, Long templateId, Integer slot, YearMonth period, InvoicePaymentStatus status, LocalDate dueDate) {
-        this(invoiceId, templateId, slot, period, status, dueDate, false);
+        this(invoiceId, templateId, slot, period, status, dueDate, false, false);
+    }
+
+    public IssuedEnrollmentFee(Long invoiceId, Long templateId, Integer slot, YearMonth period, InvoicePaymentStatus status, LocalDate dueDate,
+                               boolean chargeKeyReleased) {
+        this(invoiceId, templateId, slot, period, status, dueDate, chargeKeyReleased, false);
     }
 
 

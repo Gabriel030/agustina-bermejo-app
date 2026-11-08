@@ -22,6 +22,10 @@ public record EnrollmentFeeSlotPlanningContext(ProgramInvoicePlanningFacts facts
         return facts.feeOf(cycle, slot);
     }
 
+    public boolean advanceFeeExpired() {
+        return facts.advanceFeeExpiredFor(cycle, slot);
+    }
+
     public BillingConsultation consultation() {
         return BillingConsultation.PLANNING;
     }

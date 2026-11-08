@@ -35,5 +35,8 @@ public interface CreditNoteRepository extends Repository<CreditNote, Long> {
     @Query("select n.id, n.creditNoteNumber.value from CreditNote n where n.id in :ids")
     List<Object[]> findCreditNoteNumbersByIds(@Param("ids") Collection<Long> ids);
 
+    @Query("select n.invoiceId from CreditNote n where n.invoiceId in :invoiceIds and n.reason = com.red_escuela.backend.billing.note.domain.CreditNoteReason.ADVANCE_ENROLLMENT_FEE_EXPIRED")
+    List<Long> findInvoiceIdsCancelledByAdvanceEnrollmentFeeExpiry(@Param("invoiceIds") Collection<Long> invoiceIds);
+
     boolean existsById(Long id);
 }

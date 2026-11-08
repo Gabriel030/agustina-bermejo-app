@@ -75,6 +75,16 @@ public record ProgramInvoicePlanningFacts(
         return entryTemplateId != null && entrySlot != null && entryTemplateId.equals(cycle.templateId()) && entrySlot == slot;
     }
 
+    public boolean advanceFeeExpiredFor(YearCycle cycle, int slot) {
+        return enrollmentFees.stream().anyMatch(fee -> fee.cancelledByAdvanceExpiry() && fee.covers(cycle, slot));
+    }
+
+    public ProgramInvoicePlanningFacts forgivingExpiredAdvanceFees() {
+        return new ProgramInvoicePlanningFacts(enrollmentId, month, today, academicallyActive, suspendedOrWithdrawn, planCompleted, paused, onlyFinalExamsLeft, entryMonth,
+                paymentPlan, hasAnyPaymentPlan, cycles, enrollmentFees.stream().filter(fee -> !fee.cancelledByAdvanceExpiry()).toList(), recurringPeriods, windows,
+                entryTemplateId, entrySlot, cursadaStart, issueDate, annualUpfrontAwaitingPaymentPeriods);
+    }
+
     public Optional<IssuedEnrollmentFee> feeOf(YearCycle cycle, int slot) {
         List<IssuedEnrollmentFee> covering = enrollmentFees.stream().filter(f -> !f.chargeKeyReleased() && f.covers(cycle, slot)).toList();
         return covering.stream().filter(IssuedEnrollmentFee::isSettled).findFirst()

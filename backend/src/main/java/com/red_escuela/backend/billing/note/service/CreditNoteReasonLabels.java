@@ -14,6 +14,7 @@ final class CreditNoteReasonLabels {
             case LATE_FEE_ANNULMENT -> "Anulación de recargo";
             case WITHDRAWAL -> "Baja";
             case LATE_FEE_CORRECTION -> "Corrección de recargo";
+            case ADVANCE_ENROLLMENT_FEE_EXPIRED -> "Matrícula anticipada vencida";
         };
     }
 }

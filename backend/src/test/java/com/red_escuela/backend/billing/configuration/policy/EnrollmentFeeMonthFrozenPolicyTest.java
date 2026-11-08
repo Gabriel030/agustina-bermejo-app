@@ -12,6 +12,7 @@ import static com.red_escuela.backend.billing.configuration.policy.YearChanges.*
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-036")
+@Tag("D-527")
 class EnrollmentFeeMonthFrozenPolicyTest {
     private final EnrollmentFeeMonthFrozenPolicy policy = new EnrollmentFeeMonthFrozenPolicy();
 

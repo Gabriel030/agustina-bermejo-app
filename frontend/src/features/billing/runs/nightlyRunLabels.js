@@ -31,6 +31,7 @@ export const STEP_LABELS = {
   ACCOUNT_CONSISTENCY: 'Consistencia de cuentas',
   GATEWAY_SYNC: 'Sincronización con pasarelas',
   ANNUAL_UPFRONT_EXPIRY: 'Vencimiento de pagos anuales',
+  ADVANCE_ENROLLMENT_FEE_EXPIRY: 'Vencimiento de matrículas anticipadas',
   OVERDUE_DETECTION: 'Detección de facturas vencidas',
   LATE_FEE_ACCRUAL: 'Recargos por mora',
   LATE_FEE_WITHDRAWAL_CORRECTION: 'Corrección de recargos por baja',
