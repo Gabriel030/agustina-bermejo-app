@@ -372,6 +372,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_REVOKED` | no | `EnrollmentFeeExemptionAlreadyRevokedException` | enrollment |
 | `ENROLLMENT_FEE_EXEMPTION_NOT_NEEDED` | no | `EnrollmentFeeExemptionNotNeededException` | enrollment |
 | `EVALUATION_SCHEME_IN_USE` | no | `EvaluationSchemeInUseException` | evaluation |
+| `EXAM_BOARD_CANCELED` | no | `ExamBoardCanceledException` | evaluation |
 | `EXAM_BOARD_CLOSED` | no | `ExamBoardClosedException` | evaluation |
 | `EXAM_BOARD_HAS_GRADES` | no | `ExamBoardHasGradesException` | evaluation |
 | `EXAM_BOARD_NOT_YET_TAKEN` | no | `ExamBoardNotYetTakenException` | evaluation |

@@ -42,6 +42,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.red_escuela.backend.shared.domain.Grade;
+import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -58,6 +61,9 @@ class ExamBoardRegistrationManagerTest extends AbstractIntegrationTest {
 
     @Autowired
     private ExamBoardRegistrationRepository examBoardRegistrationRepository;
+
+    @Autowired
+    private ExamBoardManager examBoardManager;
 
     @Autowired
     private EntityManager entityManager;
@@ -403,5 +409,81 @@ class ExamBoardRegistrationManagerTest extends AbstractIntegrationTest {
         ExamBoardRegistration registration = examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId());
 
         assertThat(registration.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
+    }
+
+    private void closeExamBoardOf(ExamBoard examBoard) {
+        examBoard.setExamDate(LocalDateTime.now().minusDays(1));
+        entityManager.flush();
+        examBoardManager.close(examBoard.getId());
+        entityManager.flush();
+    }
+
+    @Test
+    void anAbsentStudentOfAClosedExamBoardCanRegisterInTheNextCall() {
+        Student student = persistStudent("90000051");
+        Subject subject = persistSubject("MateriaReRendirAusente", 2);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        ExamBoard call1 = persistExamBoard(subject, term);
+        ExamBoard call2 = persistExamBoard(subject, term);
+        Program program = persistProgram("CarreraReRendirAusente");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        entityManager.flush();
+        ExamBoardRegistration first = examBoardRegistrationService.registerProgramEnrollment(call1.getId(), enrollment.getId());
+        closeExamBoardOf(call1);
+
+        ExamBoardRegistration second = examBoardRegistrationService.registerProgramEnrollment(call2.getId(), enrollment.getId());
+
+        assertThat(first.getStatus()).isEqualTo(ExamBoardRegistrationStatus.ABSENT);
+        assertThat(second.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
+    }
+
+    @Test
+    void aFailedStudentOfAClosedExamBoardCanRegisterInTheNextCallWhileAttemptsRemain() {
+        Student student = persistStudent("90000052");
+        Subject subject = persistSubject("MateriaReRendirDesaprobado", 2);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        ExamBoard call1 = persistExamBoard(subject, term);
+        ExamBoard call2 = persistExamBoard(subject, term);
+        Program program = persistProgram("CarreraReRendirDesaprobado");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        entityManager.flush();
+        ExamBoardRegistration first = examBoardRegistrationService.registerProgramEnrollment(call1.getId(), enrollment.getId());
+        GradeItem failed = new GradeItem();
+        failed.setProgramSubjectSectionEnrollment(enrollment);
+        failed.setType(GradeItemType.FINAL);
+        failed.setSequenceNumber(1);
+        failed.setDate(LocalDateTime.now());
+        failed.setScore(Grade.of(BigDecimal.valueOf(2.0)));
+        failed.setExamBoard(call1);
+        entityManager.persist(failed);
+        closeExamBoardOf(call1);
+
+        ExamBoardRegistration second = examBoardRegistrationService.registerProgramEnrollment(call2.getId(), enrollment.getId());
+
+        assertThat(first.getStatus()).isEqualTo(ExamBoardRegistrationStatus.GRADED);
+        assertThat(second.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
+    }
+
+    @Test
+    void anAbsentAttemptStillConsumesTheAttemptLimit() {
+        Student student = persistStudent("90000053");
+        Subject subject = persistSubject("MateriaAusenteConsumeIntento", 1);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        ExamBoard call1 = persistExamBoard(subject, term);
+        ExamBoard call2 = persistExamBoard(subject, term);
+        Program program = persistProgram("CarreraAusenteConsumeIntento");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        entityManager.flush();
+        examBoardRegistrationService.registerProgramEnrollment(call1.getId(), enrollment.getId());
+        closeExamBoardOf(call1);
+
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(call2.getId(), enrollment.getId()))
+                .isInstanceOf(MaxExamAttemptsExceededException.class);
     }
 }
