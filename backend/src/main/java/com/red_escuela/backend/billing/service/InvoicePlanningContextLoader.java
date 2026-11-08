@@ -20,6 +20,7 @@ import com.red_escuela.backend.billing.planning.domain.SlotWindow;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import com.red_escuela.backend.billing.planning.domain.YearCycles;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -43,6 +44,7 @@ public class InvoicePlanningContextLoader {
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final TermRepository termRepository;
     private final InvoiceRepository invoiceRepository;
+    private final CreditNoteRepository creditNoteRepository;
     private final PaymentPlanSelectionRepository selectionRepository;
     private final ProgramEnrollmentService programEnrollmentService;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
@@ -52,7 +54,7 @@ public class InvoicePlanningContextLoader {
     private final EnrollmentPaymentStandingQuery standingQuery;
 
     public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository,
-                                       InvoiceRepository invoiceRepository, PaymentPlanSelectionRepository selectionRepository,
+                                       InvoiceRepository invoiceRepository, CreditNoteRepository creditNoteRepository, PaymentPlanSelectionRepository selectionRepository,
                                        ProgramEnrollmentService programEnrollmentService,
                                        ProgramEnrollmentRepository programEnrollmentRepository,
                                        YearCycleFactory cycleFactory, BillingConfigurationReader configurationReader,
@@ -64,6 +66,7 @@ public class InvoicePlanningContextLoader {
         this.templateRepository = templateRepository;
         this.termRepository = termRepository;
         this.invoiceRepository = invoiceRepository;
+        this.creditNoteRepository = creditNoteRepository;
         this.selectionRepository = selectionRepository;
         this.programEnrollmentService = programEnrollmentService;
     }
@@ -100,9 +103,12 @@ public class InvoicePlanningContextLoader {
         YearCycles cycles = new YearCycles(cycleList, hint);
 
         List<Invoice> invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId);
-        List<IssuedEnrollmentFee> fees = invoices.stream().filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE)
+        List<Invoice> enrollmentFeeInvoices = invoices.stream().filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE).toList();
+        Set<Long> cancelledByAdvanceExpiry = enrollmentFeeInvoices.isEmpty() ? Set.of()
+                : Set.copyOf(creditNoteRepository.findInvoiceIdsCancelledByAdvanceEnrollmentFeeExpiry(enrollmentFeeInvoices.stream().map(Invoice::getId).toList()));
+        List<IssuedEnrollmentFee> fees = enrollmentFeeInvoices.stream()
                 .map(i -> new IssuedEnrollmentFee(i.getId(), i.getTemplateId(), i.getEnrollmentFeeSlot(), i.getPeriod(), i.getPaymentStatus(), i.getDueDate(),
-                        i.getPrimaryLine().getChargeKeyReleased())).toList();
+                        i.getPrimaryLine().getChargeKeyReleased(), cancelledByAdvanceExpiry.contains(i.getId()))).toList();
         Set<YearMonth> recurringPeriods = periods(invoices, FeeType.MONTHLY_INSTALLMENT);
         Set<YearMonth> awaitingAnnualPeriods = invoices.stream()
                 .filter(i -> i.getInvoiceType() == InvoiceType.ANNUAL_UPFRONT && i.getDocumentStatus() == InvoiceDocumentStatus.AWAITING_PAYMENT)

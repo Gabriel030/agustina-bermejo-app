@@ -85,6 +85,20 @@ class InvoiceCancellationPoliciesTest {
     }
 
     @Test
+    @Tag("D-529")
+    void theAdvanceFeeExpiryReasonIsOnlyAcceptedWhenTheSystemOriginatesTheCancellation() {
+        Policy<InvoiceCancellationContext> policy = new CancellationReasonPolicy();
+
+        assertThat(evaluate(policy, com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand.bySystem(1L,
+                com.red_escuela.backend.billing.note.domain.SystemCancellationOrigin.ADVANCE_ENROLLMENT_FEE_EXPIRED, "x"), open("1.00")).allowed()).isTrue();
+        PolicyVerdict byPerson = evaluate(policy, command(CreditNoteReason.ADVANCE_ENROLLMENT_FEE_EXPIRED, "x"), open("1.00"));
+        assertThat(byPerson.allowed()).isFalse();
+        assertThat(byPerson.code()).isEqualTo("INVALID_CREDIT_NOTE_REASON");
+        assertThat(evaluate(policy, com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand.bySystem(1L,
+                com.red_escuela.backend.billing.note.domain.SystemCancellationOrigin.ADMISSION_EXPIRED, "x"), open("1.00")).allowed()).isTrue();
+    }
+
+    @Test
     @Tag("B2-03")
     @Tag("D-165")
     void theJustificationIsRequiredAndLimitedToAThousandCharacters() {

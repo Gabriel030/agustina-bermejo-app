@@ -11,6 +11,8 @@ import com.red_escuela.backend.billing.run.domain.BillingRunStepOutcome;
 import com.red_escuela.backend.billing.run.domain.BillingRunSubjectType;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontDeadlineExpirer;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontExpiryResult;
+import com.red_escuela.backend.billing.advanceenrollmentfee.service.AdvanceEnrollmentFeeExpirer;
+import com.red_escuela.backend.billing.advanceenrollmentfee.service.AdvanceEnrollmentFeeExpiryResult;
 import com.red_escuela.backend.billing.run.domain.BillingRunStep;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -110,6 +112,26 @@ class BillingRunStepAdaptersTest {
                 .containsExactly(
                         org.assertj.core.api.Assertions.tuple(BillingRunSubjectType.ANNUAL_UPFRONT_REQUEST, 41L, BillingRunItemStatus.FAILED, AnnualUpfrontExpiryBillingRunStep.ANNUAL_UPFRONT_EXPIRY_FAILED),
                         org.assertj.core.api.Assertions.tuple(BillingRunSubjectType.ANNUAL_UPFRONT_REQUEST, 42L, BillingRunItemStatus.FAILED, AnnualUpfrontExpiryBillingRunStep.ANNUAL_UPFRONT_EXPIRY_FAILED));
+    }
+
+    @Test
+    @Tag("D-529")
+    void theAdvanceEnrollmentFeeExpiryStepReportsEachFailedInvoiceAndCountsExpiredAndSkippedSeparately() {
+        AdvanceEnrollmentFeeExpirer expirer = mock(AdvanceEnrollmentFeeExpirer.class);
+        when(expirer.expireFeesWhoseWindowClosedBefore(DAY)).thenReturn(new AdvanceEnrollmentFeeExpiryResult(3, 2, List.of(41L, 42L)));
+        AdvanceEnrollmentFeeExpiryBillingRunStep step = new AdvanceEnrollmentFeeExpiryBillingRunStep(expirer);
+
+        BillingRunStepOutcome outcome = step.runStepForBusinessDate(DAY);
+
+        assertThat(step.step()).isEqualTo(BillingRunStep.ADVANCE_ENROLLMENT_FEE_EXPIRY);
+        assertThat(outcome.candidates()).isEqualTo(7);
+        assertThat(outcome.processed()).isEqualTo(3);
+        assertThat(outcome.skipped()).isEqualTo(2);
+        assertThat(outcome.failed()).isEqualTo(2);
+        assertThat(outcome.items()).extracting(item -> item.subjectType(), item -> item.subjectId(), item -> item.status(), item -> item.errorCode())
+                .containsExactly(
+                        org.assertj.core.api.Assertions.tuple(BillingRunSubjectType.INVOICE, 41L, BillingRunItemStatus.FAILED, AdvanceEnrollmentFeeExpiryBillingRunStep.ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED),
+                        org.assertj.core.api.Assertions.tuple(BillingRunSubjectType.INVOICE, 42L, BillingRunItemStatus.FAILED, AdvanceEnrollmentFeeExpiryBillingRunStep.ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED));
     }
 
     @Test

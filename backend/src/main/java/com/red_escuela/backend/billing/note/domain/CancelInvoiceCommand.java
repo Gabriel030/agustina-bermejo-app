@@ -25,7 +25,7 @@ public record CancelInvoiceCommand(Long invoiceId, CreditNoteReason reason, Stri
 
     public static CancelInvoiceCommand bySystem(Long invoiceId, SystemCancellationOrigin origin, String justification) {
         Objects.requireNonNull(origin, "origin");
-        return new CancelInvoiceCommand(invoiceId, CreditNoteReason.CANCELLATION, justification, null, false, origin, null);
+        return new CancelInvoiceCommand(invoiceId, origin.creditNoteReason(), justification, null, false, origin, null);
     }
 
     @Override
