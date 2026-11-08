@@ -102,6 +102,8 @@ export const handlers = [
     HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),
   ),
   http.get(`${API}/program-enrollments/:id/annual-upfront-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/me/program-enrollments/:id/enrollment-fee-status`, () => HttpResponse.json([])),
+  http.get(`${API}/program-enrollments/:id/enrollment-fee-status`, () => HttpResponse.json([])),
   http.get(`${API}/annual-upfront-terms/current`, () => HttpResponse.json(annualTerms())),
   http.get(`${API}/annual-upfront-terms/versions/:versionNumber`, ({ params }) =>
     HttpResponse.json(annualTerms({ versionNumber: Number(params.versionNumber), version: `v${params.versionNumber}` })),

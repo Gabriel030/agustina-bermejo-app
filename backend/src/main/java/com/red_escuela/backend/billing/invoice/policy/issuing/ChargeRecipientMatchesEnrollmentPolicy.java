@@ -14,7 +14,7 @@ public final class ChargeRecipientMatchesEnrollmentPolicy implements Policy<Invo
 
     private static final Set<InvoiceIssuingReason> ENROLLMENT_REASONS = Set.of(InvoiceIssuingReason.MONTHLY_RUN, InvoiceIssuingReason.COURSE_MONTHLY_RUN,
             InvoiceIssuingReason.PAYMENT_PLAN_SELECTION, InvoiceIssuingReason.REACTIVATION, InvoiceIssuingReason.ENROLLMENT_FEE_ON_DEMAND,
-            InvoiceIssuingReason.YEAR_CONFIGURATION_CHANGE);
+            InvoiceIssuingReason.YEAR_CONFIGURATION_CHANGE, InvoiceIssuingReason.ENROLLMENT_FEE_ADVANCE);
 
     @Override
     public String ruleName() {

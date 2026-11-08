@@ -4,8 +4,7 @@ import com.red_escuela.backend.billing.api.AdvanceEnrollmentFeeView;
 import com.red_escuela.backend.billing.advanceenrollmentfee.policy.AdvanceEnrollmentFeeFacts;
 import com.red_escuela.backend.billing.configuration.domain.AdvanceEnrollmentFeeCalendar;
 import com.red_escuela.backend.billing.configuration.service.AdvanceEnrollmentFeeCalendarReader;
-import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.collections.service.StudentOverdueDebtFinder;
 import com.red_escuela.backend.billing.planning.domain.IssuedEnrollmentFee;
 import com.red_escuela.backend.billing.planning.domain.ProgramInvoicePlanningFacts;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
@@ -33,15 +32,15 @@ public class AdvanceEnrollmentFeeAvailabilityReader {
     private final PolicySet<AdvanceEnrollmentFeeFacts> eligibilityPolicySet;
     private final AdvanceEnrollmentFeeCalendarReader calendarReader;
     private final AdvanceEnrollmentFeePriceFinder priceFinder;
-    private final InvoiceRepository invoiceRepository;
+    private final StudentOverdueDebtFinder overdueDebtFinder;
     private final Clock clock;
 
     public AdvanceEnrollmentFeeAvailabilityReader(PolicySet<AdvanceEnrollmentFeeFacts> advanceEnrollmentFeeEligibilityPolicySet, AdvanceEnrollmentFeeCalendarReader calendarReader,
-                                                  AdvanceEnrollmentFeePriceFinder priceFinder, InvoiceRepository invoiceRepository, Clock clock) {
+                                                  AdvanceEnrollmentFeePriceFinder priceFinder, StudentOverdueDebtFinder overdueDebtFinder, Clock clock) {
         this.eligibilityPolicySet = advanceEnrollmentFeeEligibilityPolicySet;
         this.calendarReader = calendarReader;
         this.priceFinder = priceFinder;
-        this.invoiceRepository = invoiceRepository;
+        this.overdueDebtFinder = overdueDebtFinder;
         this.clock = clock;
     }
 
@@ -59,7 +58,7 @@ public class AdvanceEnrollmentFeeAvailabilityReader {
         Optional<IssuedEnrollmentFee> issued = facts.feeOf(nextCycle, FIRST_SLOT);
         AdvanceEnrollmentFeeFacts eligibilityFacts = new AdvanceEnrollmentFeeFacts(today, calendar.isPresent() && price.isPresent(),
                 enrollment.getStatus() == ProgramEnrollmentStatus.ENROLLED, issued.isPresent(),
-                invoiceRepository.existsByStudentIdAndPaymentStatus(enrollment.getStudent().getId(), InvoicePaymentStatus.OVERDUE),
+                overdueDebtFinder.hasOverdueDebt(enrollment.getStudent().getId(), today),
                 calendar.map(AdvanceEnrollmentFeeCalendar::advanceOpensOn).orElse(today), calendar.map(AdvanceEnrollmentFeeCalendar::windowClosesOn).orElse(today));
         Optional<PolicyVerdict> denial = eligibilityPolicySet.evaluateRulesUntilFirstViolation(eligibilityFacts).firstDenial();
         denial.ifPresent(verdict -> log.info("Matrícula anticipada no disponible: inscripcion={}, policy={}, code={}", enrollment.getId(), verdict.policy(), verdict.code()));

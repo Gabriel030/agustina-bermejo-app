@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
@@ -160,7 +160,7 @@ export function Registrarse() {
           )}
           {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
-          <motion.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+          <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <Button
               type="submit"
               disabled={enviando || !institutionId}
@@ -169,7 +169,7 @@ export function Registrarse() {
             >
               {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
             </Button>
-          </motion.div>
+          </m.div>
 
           <div className="-mt-1 text-center text-[11.5px] text-ink-faint">
             Al crear tu cuenta entrás directo — todavía no hay verificación de email.

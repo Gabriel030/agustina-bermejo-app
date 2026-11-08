@@ -1,0 +1,12 @@
+CREATE INDEX IF NOT EXISTS ix_invoice_overdue ON invoice (id) WHERE payment_status = 'OVERDUE';
+CREATE INDEX IF NOT EXISTS ix_invoice_line_period ON invoice_line (period);
+CREATE INDEX IF NOT EXISTS ix_attendance_justification_pending ON attendance (id) WHERE status = 'JUSTIFICATION_PENDING';
+CREATE INDEX IF NOT EXISTS ix_attendance_justification_rejected ON attendance (id) WHERE status = 'ABSENT' AND justification_rejection_reason IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_ebr_program_section_enrollment ON exam_board_registration (program_section_enrollment_id) WHERE program_section_enrollment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_ebr_course_section_enrollment ON exam_board_registration (course_section_enrollment_id) WHERE course_section_enrollment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_schedule_slot_subject_section ON section_schedule_slot (subject_section_id) WHERE subject_section_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_schedule_slot_course_section ON section_schedule_slot (course_section_id) WHERE course_section_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_course_section_term ON course_section (term_id);
+CREATE INDEX IF NOT EXISTS ix_course_section_enrollment_course_enrollment ON course_section_enrollment (course_enrollment_id);
+CREATE INDEX IF NOT EXISTS ix_refresh_token_person ON refresh_token (person_id);
+CREATE INDEX IF NOT EXISTS ix_notification_recipient_created_at ON notification (recipient_id, created_at DESC);

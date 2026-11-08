@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { NextYearBlock, ACCOUNT_ANCHOR } from '@/features/billing/advance-enrollment-fee/NextYearBlock';
 import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
 import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
@@ -18,8 +19,10 @@ import {
   formatDate,
   hasInvoiceDetail,
   invoiceDisplayStatus,
+  isAdvanceEnrollmentFeeInvoice,
   invoicePrimaryPeriod,
   invoiceStatusInfo,
+  invoiceSubtitle,
   invoiceTitle,
   isInvoicePayable,
 } from '@/lib/billing';
@@ -77,7 +80,10 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                 className={expandable ? 'cursor-pointer' : undefined}
                 onClick={expandable ? () => toggle(inv.id) : undefined}
               >
-                <TableCell className="font-medium">{concept}</TableCell>
+                <TableCell className="font-medium">
+                  {concept}
+                  {invoiceSubtitle(inv) && <small className="block text-xs font-normal text-ink-faint">{invoiceSubtitle(inv)}</small>}
+                </TableCell>
                 <TableCell className="text-ink-faint">{formatDate(inv.dueDate)}</TableCell>
                 <TableCell>
                   <PaymentDateCell invoice={inv} />
@@ -205,8 +211,13 @@ export function AlumnoPagoDetalle() {
         </GlassCard>
       )}
 
+      {!isCurso && <NextYearBlock enrollmentId={enrollmentId} />}
+
       {!isLoading && !isError && (
-        <GlassCard className="p-5">
+        <GlassCard id={ACCOUNT_ANCHOR} className="mt-4 p-5">
+          <h2 className="mb-3 font-heading text-base font-semibold text-ink">
+            {sorted.some(isAdvanceEnrollmentFeeInvoice) ? 'Cuotas y matrícula' : 'Cuotas'}
+          </h2>
           <InvoiceTable invoices={paginated} receiptsByInvoice={receiptsByInvoice} />
 
           {totalPages > 1 && (

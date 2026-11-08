@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { GoogleLogin } from '@react-oauth/google';
 import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
@@ -139,7 +139,7 @@ export function Login() {
 
           {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
-          <motion.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+          <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <Button
               type="submit"
               variant="gradient"
@@ -148,7 +148,7 @@ export function Login() {
             >
               {enviando ? 'Ingresando…' : cooldown.active ? `Reintentar en ${cooldown.secondsLeft} s` : 'Ingresar'}
             </Button>
-          </motion.div>
+          </m.div>
 
           <div className="my-2 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />

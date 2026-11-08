@@ -155,7 +155,7 @@ public class EnrollmentFeeRequirementService {
 
     private EnrollmentFeeRequirementOutcome outcomeForUnissuedFee(InvoicePlanningContextLoader.PlanningContext context,
                                                                   EnrollmentFeeRequirementContext requirementContext, PolicyEvaluationResult result) {
-        return planner.planInvoicesForMonth(context.facts(), InvoicePlanningScope.ENROLLMENT_FEE_ONLY, true).charges().stream()
+        return planner.planInvoicesForMonth(context.facts().forgivingExpiredAdvanceFees(), InvoicePlanningScope.ENROLLMENT_FEE_ONLY, true).charges().stream()
                 .filter(charge -> requirementContext.cycle().templateId().equals(charge.templateId()) && Optional.ofNullable(charge.slot()).filter(slot -> slot == requirementContext.slot()).isPresent())
                 .findFirst()
                 .<EnrollmentFeeRequirementOutcome>map(charge -> new EnrollmentFeeRequirementOutcome.IssueOnDemandAndBlock(charge, result))

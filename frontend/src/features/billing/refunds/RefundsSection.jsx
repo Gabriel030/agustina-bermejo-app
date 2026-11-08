@@ -133,8 +133,8 @@ export function RefundsSection({ studentId }) {
         <p className="px-5 py-3 text-xs text-ink-faint">Cada reembolso se hace por el mismo método del pago original.</p>
       </GlassCard>
 
-      {dialog?.type === 'complete' && <CompleteRefundDialog refund={dialog.refund} onClose={() => setDialog(null)} />}
-      {dialog?.type === 'fail' && <FailRefundDialog refund={dialog.refund} onClose={() => setDialog(null)} />}
+      {dialog?.type === 'complete' && <CompleteRefundDialog studentId={studentId} refund={dialog.refund} onClose={() => setDialog(null)} />}
+      {dialog?.type === 'fail' && <FailRefundDialog studentId={studentId} refund={dialog.refund} onClose={() => setDialog(null)} />}
     </section>
   );
 }

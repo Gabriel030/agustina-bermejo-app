@@ -51,6 +51,14 @@ public final class InvoiceIssuingRequestFactory {
                 planned.templateId(), planned.slot(), planned.entry(), null, null, null, null, null, actor());
     }
 
+    public static InvoiceIssuingRequest createAdvanceEnrollmentFeeRequest(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice planned,
+                                                                          StatusChangeActor requestedBy) {
+        return new InvoiceIssuingRequest(enrollment.getStudent().getId(), enrollment.getId(), null, enrollment.getProgram().getId(), null,
+                enrollment.getProgramCohort() == null ? null : enrollment.getProgramCohort().getId(),
+                planned.kind(), planned.period(), planned.dueDate(), planned.priceDate(), InvoiceIssuingReason.ENROLLMENT_FEE_ADVANCE,
+                selection == null ? null : selection.getId(), planned.templateId(), planned.slot(), false, null, null, null, null, null, requestedBy);
+    }
+
     public static InvoiceIssuingRequest createCourseEnrollmentRequest(CourseEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice planned,
                                                                       InvoiceIssuingReason reason) {
         return new InvoiceIssuingRequest(enrollment.getStudent().getId(), null, enrollment.getId(), null, enrollment.getCourse().getId(), null,

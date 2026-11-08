@@ -10,6 +10,7 @@ export const STAFF_REASON_LABELS = {
   LATE_FEE_ANNULMENT: 'Anulación de recargo',
   WITHDRAWAL: 'Baja de la inscripción',
   LATE_FEE_CORRECTION: 'Corrección de recargo',
+  ADVANCE_ENROLLMENT_FEE_EXPIRED: 'Matrícula anticipada vencida',
 };
 
 export const STUDENT_REASON_LABELS = {
@@ -18,6 +19,7 @@ export const STUDENT_REASON_LABELS = {
   LATE_FEE_ANNULMENT: 'Se anuló un recargo',
   WITHDRAWAL: 'Baja de la inscripción',
   LATE_FEE_CORRECTION: 'Ajuste de recargo',
+  ADVANCE_ENROLLMENT_FEE_EXPIRED: 'Matrícula anticipada vencida',
 };
 
 export const CANCELLATION_REASONS = [

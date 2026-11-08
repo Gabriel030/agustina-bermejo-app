@@ -1,9 +1,10 @@
-import { AlumnoLayout } from '@/layouts/AlumnoLayout';
-import { DocenteLayout } from '@/layouts/DocenteLayout';
-import { PreceptorLayout } from '@/layouts/PreceptorLayout';
-import { AdministrativoLayout } from '@/layouts/AdministrativoLayout';
-import { DirectorLayout } from '@/layouts/DirectorLayout';
-import { PlatformLayout } from '@/layouts/PlatformLayout';
+import { lazyPage } from '@/routes/lazyPage';
+const AlumnoLayout = lazyPage(() => import('@/layouts/AlumnoLayout'), 'AlumnoLayout');
+const DocenteLayout = lazyPage(() => import('@/layouts/DocenteLayout'), 'DocenteLayout');
+const PreceptorLayout = lazyPage(() => import('@/layouts/PreceptorLayout'), 'PreceptorLayout');
+const AdministrativoLayout = lazyPage(() => import('@/layouts/AdministrativoLayout'), 'AdministrativoLayout');
+const DirectorLayout = lazyPage(() => import('@/layouts/DirectorLayout'), 'DirectorLayout');
+const PlatformLayout = lazyPage(() => import('@/layouts/PlatformLayout'), 'PlatformLayout');
 
 import { pagesFor } from '@/routes/roleMenu';
 

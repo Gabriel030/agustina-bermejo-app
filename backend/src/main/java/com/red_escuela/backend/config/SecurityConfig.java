@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -28,6 +29,7 @@ import java.util.function.Supplier;
 @EnableMethodSecurity
 public class SecurityConfig {
     private static final String PLATFORM_ADMIN_ROLE = "PLATFORM_ADMIN";
+    private static final Duration CORS_PREFLIGHT_MAX_AGE = Duration.ofHours(1);
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RequestRateLimitFilter requestRateLimitFilter;
@@ -74,6 +76,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "If-Match"));
         configuration.setExposedHeaders(List.of("X-Total-Count", "Retry-After", "X-Request-Id", "Content-Disposition"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(CORS_PREFLIGHT_MAX_AGE);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

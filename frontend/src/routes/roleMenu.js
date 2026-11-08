@@ -1,4 +1,4 @@
-import { BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText } from 'lucide-react';
+import { BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -9,11 +9,12 @@ const academicManagement = { slug: 'gestion-academica', label: 'Gestión académ
 const billingItems = [
   { slug: 'facturacion', label: 'Facturación', icon: Receipt },
   { slug: 'descuentos', label: 'Descuentos', icon: Tag },
+  { slug: 'precios', label: 'Precios', icon: BadgeDollarSign },
   { slug: 'recordatorios-de-pago', label: 'Recordatorios de pago', icon: BellRing },
   { slug: 'corridas-de-facturacion', label: 'Corridas de facturación', icon: Receipt, hidden: true },
   { slug: 'emision-mensual', label: 'Emisión mensual', icon: CalendarClock },
 ];
-const [invoicing, discounts, reminders, runs, monthlyRun] = billingItems;
+const [invoicing, discounts, prices, reminders, runs, monthlyRun] = billingItems;
 const paymentMethods = { slug: 'medios-de-pago', label: 'Medios de pago', icon: Wallet };
 const annualTerms = { slug: 'terminos-del-pago-anual', label: 'Términos del pago anual', icon: ScrollText };
 const financial ={ slug: 'financiero', label: 'Financiero', icon: BarChart2 };
@@ -50,6 +51,7 @@ export const ROLE_MENU = {
     personal,
     invoicing,
     discounts,
+    prices,
     reminders,
     paymentMethods,
     runs,
@@ -74,6 +76,7 @@ export const ROLE_MENU = {
     { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
     invoicing,
     discounts,
+    prices,
     reminders,
     paymentMethods,
     annualTerms,

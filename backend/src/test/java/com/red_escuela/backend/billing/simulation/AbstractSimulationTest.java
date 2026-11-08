@@ -57,9 +57,13 @@ public abstract class AbstractSimulationTest extends AbstractIntegrationTest {
     }
 
     protected Scenario scenario(Timeline.Mode mode) {
+        return scenario(mode, 30, 2);
+    }
+
+    protected Scenario scenario(Timeline.Mode mode, int suspensionAfterDays, int suspensionAfterInvoiceCount) {
         Fixtures fixtures = fixtures();
         Fixtures.Catalog catalog = fixtures.standardCatalog();
-        fixtures.configureLatePayment(catalog);
+        fixtures.configureLatePayment(catalog, suspensionAfterDays, suspensionAfterInvoiceCount);
         return new Scenario(fixtures, catalog, timeline(mode).startAt(Fixtures.SCENARIO_START), jdbcTemplate, MutableClock.INSTANCE, previewCashPaymentUseCase, registerCashPaymentUseCase,
                 ledgerTable -> SimulationInvariants.forDatabase(jdbcTemplate, MutableClock.INSTANCE, ledgerTable));
     }

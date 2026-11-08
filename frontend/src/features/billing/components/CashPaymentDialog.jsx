@@ -13,6 +13,7 @@ import { formatDate } from '@/lib/billing';
 import { formatMoney } from '@/lib/utils';
 import { AMOUNT_ERROR_MESSAGES, formatAmountEsAr, parseAmountInput } from './cashAmount';
 import { newIdempotencyKey } from '@/api/idempotencyKey';
+import { invalidateCashPaymentAffectedQueries } from '@/features/billing/hooks/studentQueryKeys';
 import { usePreviewCashPayment, useRegisterCashPayment } from '@/hooks/useBilling';
 
 const ADMINISTRATIVE_WINDOW_DAYS = 5;
@@ -131,7 +132,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
   }
 
   function handleCloseAfterUnknownOutcome() {
-    queryClient.invalidateQueries({ queryKey: ['students'] });
+    invalidateCashPaymentAffectedQueries(queryClient, student.id);
     onClose(false);
   }
 

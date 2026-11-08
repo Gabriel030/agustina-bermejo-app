@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
-public record ChangePriceRequest(@NotNull NonNegativeMoney amount, @Valid MarketingDiscountRequest marketingDiscount, @NotNull LocalDate effectiveFrom, String changeReason,
+public record ChangePriceRequest(@NotNull NonNegativeMoney amount, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @Valid MarketingDiscountRequest marketingDiscount, @NotNull LocalDate effectiveFrom, String changeReason,
                                  @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @Min(2000) @Max(2200) Integer appliesToLectiveYear) {
 
     public MarketingDiscount discountOrNull() {

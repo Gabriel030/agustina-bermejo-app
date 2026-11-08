@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.note.policy;
 
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
+import com.red_escuela.backend.billing.note.domain.SystemCancellationOrigin;
 import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
@@ -17,6 +18,9 @@ public final class CancellationReasonPolicy implements Policy<InvoiceCancellatio
     public PolicyVerdict evaluateRule(InvoiceCancellationContext context) {
         CreditNoteReason reason = context.command().reason();
         if (reason == CreditNoteReason.CANCELLATION || reason == CreditNoteReason.BILLING_ERROR || reason == CreditNoteReason.LATE_FEE_ANNULMENT) {
+            return PolicyVerdict.allow(ruleName());
+        }
+        if (reason == CreditNoteReason.ADVANCE_ENROLLMENT_FEE_EXPIRED && context.command().systemOrigin() == SystemCancellationOrigin.ADVANCE_ENROLLMENT_FEE_EXPIRED) {
             return PolicyVerdict.allow(ruleName());
         }
         return PolicyVerdict.deny(ruleName(), "INVALID_CREDIT_NOTE_REASON", "El motivo " + reason + " no se puede usar para cancelar una factura");

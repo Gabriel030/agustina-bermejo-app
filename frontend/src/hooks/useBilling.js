@@ -1,5 +1,6 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
+import { invalidateCashPaymentAffectedQueries } from '@/features/billing/hooks/studentQueryKeys';
 
 export function useEnrollmentPaymentStatus() {
   return useQuery({
@@ -117,9 +118,7 @@ export function useRegisterCashPayment(studentId) {
         headers: { 'Idempotency-Key': key },
         body: JSON.stringify(payload),
       }),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
-    },
+    onSettled: () => invalidateCashPaymentAffectedQueries(queryClient, studentId),
   });
 }
 

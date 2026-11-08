@@ -147,6 +147,37 @@ class PlanningPoliciesTest {
     }
 
     @Test
+    @Tag("D-534")
+    void aSlotWhoseAdvanceFeeExpiredIsNotPlannedAgainButAFeeOfAnotherSlotIs() {
+        EnrollmentFeeSlotNotAlreadyIssuedPolicy policy = new EnrollmentFeeSlotNotAlreadyIssuedPolicy();
+        ProgramYearBillingTemplate template = PlanningFixtures.template(1, 2026, 10, 1, 2, null);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
+        java.util.function.BiFunction<Integer, Boolean, EnrollmentFeeSlotPlanningContext> expiredAt = (expiredSlot, planningSlot) -> EnrollmentFeeSlotPlanningContext.of(
+                PlanningFixtures.facts(template, MARCH, MARCH.atDay(1), false, false, null, PaymentPlanCoverage.ofCadence(PaymentPlanCadence.MONTHLY),
+                        List.of(new IssuedEnrollmentFee(5L, 1L, expiredSlot, YearMonth.of(2026, 2), InvoicePaymentStatus.CANCELLED, LocalDate.of(2026, 2, 1), true, true)),
+                        Set.of(), Map.of()), cycle, planningSlot ? 1 : 2, false);
+
+        assertDenies(policy, policy.evaluateRule(expiredAt.apply(1, true)), "ADVANCE_FEE_EXPIRED");
+        assertThat(policy.evaluateRule(expiredAt.apply(1, false)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(EnrollmentFeeSlotPlanningContext.of(PlanningFixtures.facts(template, MARCH, MARCH.atDay(1), false, false, null,
+                PaymentPlanCoverage.ofCadence(PaymentPlanCadence.MONTHLY), List.of(new IssuedEnrollmentFee(5L, 1L, 1, YearMonth.of(2026, 2), InvoicePaymentStatus.CANCELLED,
+                        LocalDate.of(2026, 2, 1), true, false)), Set.of(), Map.of()), cycle, 1, false)).allowed()).isTrue();
+    }
+
+    @Test
+    @Tag("D-534")
+    void forgivingExpiredAdvanceFeesLetsTheOnDemandPlannerIssueTheSlot() {
+        ProgramYearBillingTemplate template = PlanningFixtures.template(1, 2026, 10, 1, 2, null);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
+        var facts = PlanningFixtures.facts(template, MARCH, MARCH.atDay(1), false, false, null, PaymentPlanCoverage.ofCadence(PaymentPlanCadence.MONTHLY),
+                List.of(new IssuedEnrollmentFee(5L, 1L, 1, YearMonth.of(2026, 2), InvoicePaymentStatus.CANCELLED, LocalDate.of(2026, 2, 1), true, true)), Set.of(), Map.of());
+
+        assertThat(facts.advanceFeeExpiredFor(cycle, 1)).isTrue();
+        assertThat(facts.forgivingExpiredAdvanceFees().advanceFeeExpiredFor(cycle, 1)).isFalse();
+        assertThat(new EnrollmentFeeSlotNotAlreadyIssuedPolicy().evaluateRule(EnrollmentFeeSlotPlanningContext.of(facts.forgivingExpiredAdvanceFees(), cycle, 1, false)).allowed()).isTrue();
+    }
+
+    @Test
     @Tag("B2-16")
     @Tag("D-245")
     @Tag("D-202")

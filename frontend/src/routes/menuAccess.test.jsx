@@ -45,13 +45,13 @@ describe('menuAccess', () => {
     expect(pageLabel('algo-nuevo')).toBe('Algo nuevo');
   });
 
-  it.each(Object.keys(ROLE_CONFIG))('shows no visible menu item of %s that lands on a placeholder', (role) => {
+  it.each(Object.keys(ROLE_CONFIG))('shows no visible menu item of %s that lands on a placeholder', async (role) => {
     currentRole = role.toUpperCase();
     const { Layout } = ROLE_CONFIG[role];
     renderWithProviders(<ThemeProvider><Layout /></ThemeProvider>, { route: `/${role}/alumnos` });
 
-    const hrefs = screen
-      .getAllByRole('link')
+    const hrefs = (await screen
+      .findAllByRole('link', {}, { timeout: 10000 }))
       .map((link) => link.getAttribute('href'))
       .filter((href) => href?.startsWith(`/${role}/`));
 

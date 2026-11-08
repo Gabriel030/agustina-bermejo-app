@@ -470,6 +470,19 @@
         "required" : [ "templateId" ],
         "type" : "object"
       },
+      "AdvanceEnrollmentFeeResponse" : {
+        "properties" : {
+          "created" : {
+            "type" : "boolean"
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "created", "invoiceId" ],
+        "type" : "object"
+      },
       "AdvanceEnrollmentFeeView" : {
         "properties" : {
           "amount" : {
@@ -1776,7 +1789,7 @@
           },
           "step" : {
             "type" : "string",
-            "x-extensible-enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "ANNUAL_UPFRONT_EXPIRY", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ]
+            "x-extensible-enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "ANNUAL_UPFRONT_EXPIRY", "ADVANCE_ENROLLMENT_FEE_EXPIRY", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ]
           }
         },
         "required" : [ "candidates", "failed", "finishedAt", "id", "notApplicableCode", "processed", "skipped", "startedAt", "status", "step" ],
@@ -1813,7 +1826,7 @@
             "type" : "string"
           },
           "reason" : {
-            "enum" : [ "BILLING_ERROR", "CANCELLATION", "LATE_FEE_ANNULMENT", "WITHDRAWAL", "LATE_FEE_CORRECTION" ],
+            "enum" : [ "BILLING_ERROR", "CANCELLATION", "LATE_FEE_ANNULMENT", "WITHDRAWAL", "LATE_FEE_CORRECTION", "ADVANCE_ENROLLMENT_FEE_EXPIRED" ],
             "type" : "string"
           }
         },
@@ -2016,7 +2029,7 @@
             "$ref" : "#/components/schemas/MarketingDiscountRequest"
           }
         },
-        "required" : [ "amount", "changeReason", "effectiveFrom", "marketingDiscount" ],
+        "required" : [ "amount", "changeReason", "effectiveFrom" ],
         "type" : "object"
       },
       "ChangeReminderScheduleRequest" : {
@@ -3043,7 +3056,7 @@
             "type" : "array"
           },
           "reason" : {
-            "enum" : [ "BILLING_ERROR", "CANCELLATION", "LATE_FEE_ANNULMENT", "WITHDRAWAL", "LATE_FEE_CORRECTION" ],
+            "enum" : [ "BILLING_ERROR", "CANCELLATION", "LATE_FEE_ANNULMENT", "WITHDRAWAL", "LATE_FEE_CORRECTION", "ADVANCE_ENROLLMENT_FEE_EXPIRED" ],
             "type" : "string"
           }
         },
@@ -6425,7 +6438,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "fixedAmount", "percent", "type" ],
+        "required" : [ "type" ],
         "type" : "object"
       },
       "MeEnrollmentBillingStatusResponse" : {
@@ -20046,7 +20059,7 @@
           "name" : "step",
           "required" : true,
           "schema" : {
-            "enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "ANNUAL_UPFRONT_EXPIRY", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ],
+            "enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "ANNUAL_UPFRONT_EXPIRY", "ADVANCE_ENROLLMENT_FEE_EXPIRY", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ],
             "type" : "string"
           }
         } ],
@@ -41136,6 +41149,123 @@
         "tags" : [ "me-enrollment-controller" ]
       }
     },
+    "/me/program-enrollments/{id}/advance-enrollment-fee" : {
+      "post" : {
+        "operationId" : "AdvanceEnrollmentFee_requestForMe",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdvanceEnrollmentFeeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "advance-enrollment-fee-controller" ]
+      }
+    },
     "/me/program-enrollments/{id}/annual-upfront-requests" : {
       "get" : {
         "operationId" : "AnnualUpfrontRequestView_listRequestsOfEnrollmentOfCurrentStudent",
@@ -49349,6 +49479,123 @@
           }
         },
         "tags" : [ "program-enrollment-controller" ]
+      }
+    },
+    "/program-enrollments/{id}/advance-enrollment-fee" : {
+      "post" : {
+        "operationId" : "AdvanceEnrollmentFee_requestForStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdvanceEnrollmentFeeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "advance-enrollment-fee-controller" ]
       }
     },
     "/program-enrollments/{id}/annual-upfront-requests" : {

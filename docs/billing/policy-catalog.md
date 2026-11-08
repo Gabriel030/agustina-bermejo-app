@@ -295,7 +295,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | BillingWhilePausedPolicy | PAUSED_NOT_BILLED | D-050 |
 | 2 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
-| 3 | EnrollmentFeeSlotNotAlreadyIssuedPolicy | ALREADY_ISSUED, FEE_CANCELLED | D-009 |
+| 3 | EnrollmentFeeSlotNotAlreadyIssuedPolicy | ALREADY_ISSUED, FEE_CANCELLED, ADVANCE_FEE_EXPIRED | D-009, D-534 |
 
 ## Momento ENROLLMENT_FEE_REQUIREMENT
 

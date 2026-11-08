@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '@/api/client'
 import { offlineQuery } from '@/api/offlineQuery'
+import { POLL_INTERVAL, STALE_TIME, pollingOptions } from '@/api/cachePolicy'
 
 export function toScheduleView(response) {
   return {
@@ -21,8 +22,7 @@ export function useMySchedule() {
     offlineQuery('N1', {
       queryKey: ['me', 'schedule'],
       queryFn: async () => toScheduleView(await apiFetch('/me/schedule')),
-      staleTime: 60_000,
-      refetchInterval: () => (navigator.onLine ? 5 * 60_000 : false),
+      ...pollingOptions(POLL_INTERVAL.SCHEDULE, STALE_TIME.MEDIUM),
     }),
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
@@ -118,7 +118,7 @@ export function ForgotPassword() {
 
             {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
-            <motion.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+            <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
               <Button
                 type="submit"
                 disabled={enviando}
@@ -127,7 +127,7 @@ export function ForgotPassword() {
               >
                 {enviando ? 'Enviando…' : 'Enviar código de recuperación'}
               </Button>
-            </motion.div>
+            </m.div>
 
             <div className="mt-2 text-center text-xs text-ink-faint">
               <Link to="/login" className="font-semibold text-brand hover:text-accent-2">
@@ -157,7 +157,7 @@ export function ForgotPassword() {
 
             {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
-            <motion.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+            <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
               <Button
                 type="submit"
                 disabled={enviando}
@@ -166,7 +166,7 @@ export function ForgotPassword() {
               >
                 {enviando ? 'Verificando…' : 'Continuar'}
               </Button>
-            </motion.div>
+            </m.div>
 
             <button
               type="button"
@@ -263,7 +263,7 @@ function NuevaPasswordForm({ resetToken }) {
 
       {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
-      <motion.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+      <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
         <Button
           type="submit"
           disabled={enviando}
@@ -271,7 +271,7 @@ function NuevaPasswordForm({ resetToken }) {
         >
           {enviando ? 'Guardando…' : 'Cambiar contraseña'}
         </Button>
-      </motion.div>
+      </m.div>
     </form>
   );
 }

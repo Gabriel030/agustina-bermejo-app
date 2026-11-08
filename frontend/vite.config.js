@@ -54,10 +54,11 @@ export default defineConfig(({ mode }) => ({
           const chunkPackages = {
             recharts: ['recharts', 'victory-vendor', 'd3-', 'internmap', 'es-toolkit', '@reduxjs', 'react-redux', 'immer', 'reselect', 'decimal.js-light', 'eventemitter3'],
             'react-vendor': ['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler'],
+            table: ['@tanstack/react-table', '@tanstack/table-core'],
             query: ['@tanstack'],
+            'radix-base': ['@radix-ui/react-slot', '@radix-ui/react-compose-refs'],
             radix: ['radix-ui', '@radix-ui'],
             icons: ['lucide-react'],
-            motion: ['motion', 'framer-motion', 'motion-dom', 'motion-utils'],
             utils: ['clsx', 'tailwind-merge', 'class-variance-authority', 'tiny-invariant', 'use-sync-external-store'],
             forms: ['react-hook-form', 'zod', '@hookform'],
           }

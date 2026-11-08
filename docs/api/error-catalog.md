@@ -310,6 +310,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `ACTIVE_TERM_ALREADY_EXISTS` | no | `ActiveTermAlreadyExistsException` | academicstructure |
 | `ADMISSION_FEE_AWAITING_PAYMENT` | no | `AdmissionFeeAwaitingPaymentException` | enrollment |
+| `ADVANCE_ENROLLMENT_FEE_NOT_AVAILABLE` | no | `AdvanceEnrollmentFeeNotAvailableException` | billing |
 | `ALREADY_ENROLLED_IN_COURSE` | no | `AlreadyEnrolledInCourseException` | enrollment |
 | `ALREADY_ENROLLED_IN_PROGRAM` | no | `AlreadyEnrolledInProgramException` | enrollment |
 | `ALREADY_ENROLLED_IN_SUBJECT` | no | `AlreadyEnrolledInSubjectException` | enrollment |
@@ -666,6 +667,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/program-enrollment-applications` | `ProgramEnrollmentApplicationController#request` |
 | POST | `/me/program-enrollment-applications/with-documents` | `ProgramEnrollmentApplicationWithDocumentsController#requestWithDocuments` |
 | POST | `/me/program-enrollment-applications/{id}/documents` | `ProgramEnrollmentApplicationController#addDocument` |
+| POST | `/me/program-enrollments/{id}/advance-enrollment-fee` | `AdvanceEnrollmentFeeController#requestForMe` |
 | POST | `/me/program-enrollments/{id}/graduation-request` | `MeGraduationRequestController#request` |
 | POST | `/me/refund-requests/preview` | `RefundPreviewController#previewOwnRefund` |
 | POST | `/me/section-enrollments` | `MeEnrollmentController#enroll` |
@@ -689,6 +691,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/program-enrollment-applications/{id}/approve` | `ProgramEnrollmentApplicationController#approve` |
 | POST | `/program-enrollment-applications/{id}/reject` | `ProgramEnrollmentApplicationController#reject` |
 | POST | `/program-enrollments/{id}/advance-billing-year` | `ProgramEnrollmentController#advanceAcademicYear` |
+| POST | `/program-enrollments/{id}/advance-enrollment-fee` | `AdvanceEnrollmentFeeController#requestForStudent` |
 | POST | `/program-enrollments/{id}/enrollment-fee-exemptions` | `EnrollmentFeeController#grant` |
 | POST | `/program-enrollments/{id}/payment-plan` | `PaymentPlanSelectionController#selectForProgram` |
 | POST | `/program-enrollments/{id}/section-enrollments` | `SubjectSectionEnrollmentController#enroll` |
