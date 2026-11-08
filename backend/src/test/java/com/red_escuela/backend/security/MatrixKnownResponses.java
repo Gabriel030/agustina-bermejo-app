@@ -1,7 +1,6 @@
 package com.red_escuela.backend.security;
 
 import java.util.Map;
-import java.util.Set;
 
 final class MatrixKnownResponses {
 
@@ -50,22 +49,12 @@ final class MatrixKnownResponses {
             Map.entry("POST /me/refund-requests/preview", NO_PROFILE),
             Map.entry("POST /me/section-enrollments", NO_PROFILE));
 
-    private static final Set<String> UNAUTHORIZED_IS_ANSWER = Set.of("DELETE /me/sessions/{id}");
-
-    private static final Map<String, String> SERVER_ERRORS_PENDING_FIX = Map.of(
-            "PRECEPTOR POST /academic-offering-cycles", "500 con el cuerpo minimo: 'The given id must not be null'",
-            "ADMINISTRATIVO POST /academic-offering-cycles", "500 con el cuerpo minimo: 'The given id must not be null'");
-
     private MatrixKnownResponses() {
     }
 
     static AccessExpectation.Tolerance toleranceFor(String key, AccessExpectation anonymous) {
         boolean absent = key.contains("{") || ABSENT_WITHOUT_PATH_VARIABLE.containsKey(key);
-        boolean unauthorized = anonymous == AccessExpectation.PUBLIC || UNAUTHORIZED_IS_ANSWER.contains(key);
+        boolean unauthorized = anonymous == AccessExpectation.PUBLIC;
         return new AccessExpectation.Tolerance(absent, unauthorized);
-    }
-
-    static String pendingFixReason(MatrixRole role, String key) {
-        return role == null ? null : SERVER_ERRORS_PENDING_FIX.get(role.name() + " " + key);
     }
 }
