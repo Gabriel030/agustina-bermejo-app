@@ -31,66 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("D-523")
 @Tag("D-530")
 @Tag("D-532")
-class AdvanceEnrollmentFeeIssuanceIT extends AbstractInvoiceSequenceTest {
-
-    @Autowired
-    private AdvanceEnrollmentFeeIssuer issuer;
-    @Autowired
-    private EnrollmentFeeRequirementService requirementService;
-
-    @AfterEach
-    void clearSecurity() {
-        SecurityContextHolder.clearContext();
-    }
-
-    private record Setup(Career career, Year nextYear, Long enrollment, Long labeledVersion) {
-    }
-
-    private Setup september() {
-        Career career = newCareer();
-        newYear(career, 2027, 10, 1, 2, null);
-        Year nextYear = newYear(career, 2028, 10, 1, 2, null);
-        transactionTemplate.executeWithoutResult(status -> {
-            Term term = entityManager.find(Term.class, nextYear.termId());
-            term.setEnrollmentStart(LocalDateTime.of(2027, 12, 1, 0, 0));
-            term.setEnrollmentEnd(LocalDateTime.of(2028, 2, 20, 23, 59));
-        });
-        configureYear(nextYear, template -> {
-            var t = com.red_escuela.backend.billing.planning.TestTemplateTerms.termsOf(template);
-            com.red_escuela.backend.billing.planning.TestTemplateTerms.replace(template, new com.red_escuela.backend.billing.configuration.domain.YearBillingTerms(
-                    t.recurringFeeInvoicesCount(), t.enrollmentFeeCount(), t.firstEnrollmentFeeMonth(), t.secondEnrollmentFeeMonth(), t.enrollmentFeeLeadMonths(),
-                    t.lateEnrollmentFeeDueDays(), t.recurringFeeDueDays(), t.withdrawSuspendedAtTermEnd(), t.paysWhilePaused(), t.blocksEnrollment(),
-                    t.blocksExamRegistration(), t.blocksCertificates(), t.requireEnrollmentFeeForFinalExamOnlyStudents(), date(2027, 9, 1)));
-        });
-        Term nextTerm = transactionTemplate.execute(status -> entityManager.find(Term.class, nextYear.termId()));
-        newSection(career, nextTerm);
-        today(date(2027, 3, 3));
-        Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 3), date(2027, 3, 2));
-        Long labeled = labeledEnrollmentFeeVersion(career, 1500, 2028);
-        today(date(2027, 9, 15));
-        return new Setup(career, nextYear, enrollment, labeled);
-    }
-
-    private Long labeledEnrollmentFeeVersion(Career career, long amount, int lectiveYear) {
-        Long versionId = com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(career.programId(), null, FeeType.ENROLLMENT_FEE, "Matrícula",
-                ars(amount), date(2028, 2, 1), career.directorId());
-        jdbcTemplate.update("update price_version set applies_to_lective_year = ? where id = ?", lectiveYear, versionId);
-        return versionId;
-    }
-
-    private void actAsStaff(Career career) {
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(String.valueOf(career.directorId()), "n/a", "ROLE_DIRECTOR"));
-    }
-
-    private void actAsStudentOf(Long enrollment) {
-        Long personId = jdbcTemplate.queryForObject("select s.person_id from student s join program_enrollment pe on pe.student_id = s.id where pe.id = ?", Long.class, enrollment);
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(String.valueOf(personId), "n/a", "ROLE_ALUMNO"));
-    }
-
-    private List<Invoice> advanceInvoices(Long enrollment) {
-        return invoices(enrollment, FeeType.ENROLLMENT_FEE).stream()
-                .filter(invoice -> invoice.getIssuingReason() == InvoiceIssuingReason.ENROLLMENT_FEE_ADVANCE).toList();
-    }
+class AdvanceEnrollmentFeeIssuanceIT extends AbstractAdvanceEnrollmentFeeTest {
 
     @Test
     void studentGeneratesTheNextYearFeeWithTheLabeledPriceFrozenOnTheInvoice() {
