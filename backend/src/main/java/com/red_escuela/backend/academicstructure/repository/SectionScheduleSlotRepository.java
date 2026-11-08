@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface SectionScheduleSlotRepository extends JpaRepository<SectionScheduleSlot, Long> {
@@ -190,6 +191,10 @@ public interface SectionScheduleSlotRepository extends JpaRepository<SectionSche
     List<SectionScheduleSlot> findBySubjectSectionId(Long subjectSectionId);
 
     List<SectionScheduleSlot> findByCourseSectionId(Long courseSectionId);
+
+    List<SectionScheduleSlot> findBySubjectSectionIdInOrderByIdAsc(Collection<Long> subjectSectionIds);
+
+    List<SectionScheduleSlot> findByCourseSectionIdInOrderByIdAsc(Collection<Long> courseSectionIds);
 
     @Query("""
             select s from SectionScheduleSlot s

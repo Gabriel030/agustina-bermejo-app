@@ -169,6 +169,87 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(SubjectNotInProgramPlanException.class);
     }
 
+    private void persistSeatHolder(String dni, Institution institution, Program program, SubjectSection section, EnrollmentStatus status) {
+        Student holder = persistStudent(dni, StatusType.ACTIVE, institution);
+        ProgramEnrollment holderEnrollment = persistProgramEnrollment(holder, program, ProgramEnrollmentStatus.ENROLLED);
+        SubjectSectionEnrollment row = new SubjectSectionEnrollment();
+        row.setStudent(holder);
+        row.setProgramEnrollment(holderEnrollment);
+        row.setSubjectSection(section);
+        row.setStatus(status);
+        row.setEnrolledAt(LocalDateTime.now());
+        row.setAttemptNumber(1);
+        entityManager.persist(row);
+    }
+
+    @Test
+    void enrollingIntoASectionWhoseSeatsAreHeldByEnrolledInProgressAndRegularStudentsEndsWaitlisted() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaCupoLleno");
+        Program program = persistProgram("CarreraCupoLleno");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, 3);
+        persistSeatHolder("61000001", institution, program, section, EnrollmentStatus.ENROLLED);
+        persistSeatHolder("61000002", institution, program, section, EnrollmentStatus.IN_PROGRESS);
+        persistSeatHolder("61000003", institution, program, section, EnrollmentStatus.REGULAR);
+        Student applicant = persistStudent("61000004", StatusType.ACTIVE, institution);
+        ProgramEnrollment enrollment = persistProgramEnrollment(applicant, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        SubjectSectionEnrollment result = subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+
+        assertThat(result.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void waitlistedWithdrawnAndFailedRowsDoNotConsumeSeats() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaCupoLibre");
+        Program program = persistProgram("CarreraCupoLibre");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, 2);
+        persistSeatHolder("62000001", institution, program, section, EnrollmentStatus.ENROLLED);
+        persistSeatHolder("62000002", institution, program, section, EnrollmentStatus.WAITLISTED);
+        persistSeatHolder("62000003", institution, program, section, EnrollmentStatus.WITHDRAWN);
+        persistSeatHolder("62000004", institution, program, section, EnrollmentStatus.FAILED);
+        Student applicant = persistStudent("62000005", StatusType.ACTIVE, institution);
+        ProgramEnrollment enrollment = persistProgramEnrollment(applicant, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        SubjectSectionEnrollment result = subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+
+        assertThat(result.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void withdrawingAnEnrolledStudentPromotesTheOldestWaitlistedOne() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaPromocion");
+        Program program = persistProgram("CarreraPromocion");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, 1);
+        Student first = persistStudent("63000001", StatusType.ACTIVE, institution);
+        Student second = persistStudent("63000002", StatusType.ACTIVE, institution);
+        ProgramEnrollment firstEnrollment = persistProgramEnrollment(first, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment secondEnrollment = persistProgramEnrollment(second, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+        SubjectSectionEnrollment seated = subjectSectionEnrollmentService.enroll(
+                firstEnrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+        SubjectSectionEnrollment waiting = subjectSectionEnrollmentService.enroll(
+                secondEnrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+        assertThat(seated.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+
+        subjectSectionEnrollmentService.withdraw(seated.getId());
+
+        assertThat(subjectSectionEnrollmentService.get(waiting.getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
     @Test
     void reEnrollingWithoutChangeSectionToAnotherSectionOfTheSameTermDoesNotIncrementAttemptNumber() {
         Institution institution = persistInstitution();

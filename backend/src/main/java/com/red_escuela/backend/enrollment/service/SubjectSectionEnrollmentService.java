@@ -290,10 +290,9 @@ public class SubjectSectionEnrollmentService {
     }
 
     private int countOccupiedSeats(Long sectionId) {
-        return subjectSectionEnrollmentRepository
-                .findBySubjectSectionIdAndStatusIn(sectionId,
-                        List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
-                .size();
+        return (int) subjectSectionEnrollmentRepository
+                .countBySubjectSectionIdAndStatusIn(sectionId,
+                        List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));
     }
 
     private int capacityOf(ProgramSectionView section) {
