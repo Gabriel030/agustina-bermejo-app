@@ -8,5 +8,5 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface ValidatePriceChangeUseCase {
-    List<PolicyViolation> validatePriceChange(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason);
+    List<PolicyViolation> validatePriceChange(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason, Integer appliesToLectiveYear);
 }

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
-import com.red_escuela.backend.identity.service.PasswordResetCodeRequester;
+import com.red_escuela.backend.identity.specialist.PasswordResetCodeRequester;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

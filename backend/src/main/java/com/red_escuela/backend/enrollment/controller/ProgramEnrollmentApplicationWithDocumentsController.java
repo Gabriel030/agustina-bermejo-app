@@ -4,7 +4,7 @@ import com.red_escuela.backend.enrollment.dto.ApplicationDocumentFiles;
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.SubmitProgramEnrollmentApplicationWithDocumentsCommand;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.SubmitProgramEnrollmentApplicationWithDocumentsUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;

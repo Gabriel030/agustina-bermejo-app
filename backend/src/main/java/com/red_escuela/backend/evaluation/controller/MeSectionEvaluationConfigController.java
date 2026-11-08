@@ -4,14 +4,14 @@ import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
-import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.GetMySectionEvaluationConfigCommand;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.GetMySectionEvaluationConfigUseCase;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ListMySectionEvaluationConfigsUseCase;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSectionEvaluationConfigDraftCommand;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSectionEvaluationConfigDraftUseCase;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalCommand;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalUseCase;
+import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigInstructorAccessChecker;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.GetMySectionEvaluationConfigCommand;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.GetMySectionEvaluationConfigUseCase;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.ListMySectionEvaluationConfigsUseCase;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.SaveSectionEvaluationConfigDraftCommand;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.SaveSectionEvaluationConfigDraftUseCase;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.SubmitSectionEvaluationConfigForApprovalCommand;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.SubmitSectionEvaluationConfigForApprovalUseCase;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.validation.Valid;
@@ -32,7 +32,7 @@ public class MeSectionEvaluationConfigController {
     private final GetMySectionEvaluationConfigUseCase getMySectionEvaluationConfigUseCase;
     private final SaveSectionEvaluationConfigDraftUseCase saveSectionEvaluationConfigDraftUseCase;
     private final SubmitSectionEvaluationConfigForApprovalUseCase submitSectionEvaluationConfigForApprovalUseCase;
-    private final SectionEvaluationConfigInstructorAccess instructorAccess;
+    private final SectionEvaluationConfigInstructorAccessChecker instructorAccess;
     private final CurrentInstructorService currentInstructorService;
 
     public MeSectionEvaluationConfigController(
@@ -40,7 +40,7 @@ public class MeSectionEvaluationConfigController {
             GetMySectionEvaluationConfigUseCase getMySectionEvaluationConfigUseCase,
             SaveSectionEvaluationConfigDraftUseCase saveSectionEvaluationConfigDraftUseCase,
             SubmitSectionEvaluationConfigForApprovalUseCase submitSectionEvaluationConfigForApprovalUseCase,
-            SectionEvaluationConfigInstructorAccess instructorAccess,
+            SectionEvaluationConfigInstructorAccessChecker instructorAccess,
             CurrentInstructorService currentInstructorService) {
         this.listMySectionEvaluationConfigsUseCase = listMySectionEvaluationConfigsUseCase;
         this.getMySectionEvaluationConfigUseCase = getMySectionEvaluationConfigUseCase;

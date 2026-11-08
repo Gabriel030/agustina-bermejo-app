@@ -1,7 +1,0 @@
-package com.red_escuela.backend.graduation.usecase.graduationrequest;
-
-import com.red_escuela.backend.graduation.dto.GraduationDebtSummaryResponse;
-
-public interface GetGraduationRequestDebtSummaryUseCase {
-    GraduationDebtSummaryResponse get(Long graduationRequestId);
-}

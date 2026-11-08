@@ -16,7 +16,7 @@ import com.red_escuela.backend.identity.usecase.person.RevokeSessionByIdUseCase;
 import com.red_escuela.backend.identity.usecase.person.UpdateNotificationPreferencesUseCase;
 import com.red_escuela.backend.identity.usecase.person.UpdateOwnProfileUseCase;
 import com.red_escuela.backend.identity.usecase.person.UploadAvatarUseCase;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.storage.FileStorageService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

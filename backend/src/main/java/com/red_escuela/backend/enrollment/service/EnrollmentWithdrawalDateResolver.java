@@ -7,6 +7,8 @@ import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import com.red_escuela.backend.enrollment.api.WithdrawalCause;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,11 +28,19 @@ public class EnrollmentWithdrawalDateResolver {
 
     public LocalDate resolveEffectiveDate(EnrollmentWithdrawal withdrawal, LocalDateTime enrollmentDate) {
         LocalDate today = LocalDate.now(clock);
+        if (withdrawal.cause() == WithdrawalCause.NONPAYMENT && withdrawal.informedEffectiveDate().isPresent()) {
+            return clampedToEnrollmentAndToday(withdrawal.informedEffectiveDate().get(), enrollmentDate, today);
+        }
         LocalDate effectiveDate = withdrawal.informedEffectiveDate().orElse(today);
         WithdrawalDateContext context = new WithdrawalDateContext(effectiveDate, today,
                 Optional.ofNullable(enrollmentDate).map(LocalDateTime::toLocalDate));
         WITHDRAWAL_DATE_RULES.evaluateAllRules(context).throwIfDenied(WithdrawalDateOutOfAllowedRangeException::new);
         return effectiveDate;
+    }
+
+    private static LocalDate clampedToEnrollmentAndToday(LocalDate informed, LocalDateTime enrollmentDate, LocalDate today) {
+        LocalDate notBeforeEnrollment = Optional.ofNullable(enrollmentDate).map(LocalDateTime::toLocalDate).filter(informed::isBefore).orElse(informed);
+        return notBeforeEnrollment.isAfter(today) ? today : notBeforeEnrollment;
     }
 
     public LocalDate registrationDate() {

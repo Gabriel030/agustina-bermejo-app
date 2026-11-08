@@ -91,7 +91,7 @@ def plan_class_moves(repo, class_moves, class_names):
                 continue
             for path in old_dir.iterdir():
                 if path.is_file() and (path.stem == simple or path.stem in (simple + "Test", simple + "IT", simple + "Tests")):
-                    result.append((path, target_dir / path.name))
+                    result.append((path, target_dir / path.name, new_package))
     return result
 
 
@@ -103,9 +103,17 @@ def add_missing_imports(class_moves, original_packages):
             if package != BASE + "." + old_package or not path.exists() or path.suffix != ".java":
                 continue
             text = path.read_text(encoding="utf-8")
+            declared = re.search(r"^package\s+([\w.]+);", text, flags=re.M)
+            if declared and declared.group(1) == BASE + "." + new_package:
+                continue
             uses = re.search(r"(?<![A-Za-z0-9_.])" + simple + r"(?![A-Za-z0-9_])", text)
             if uses and ("import " + fqn + ";") not in text and not path.stem.startswith(simple):
-                path.write_text(re.sub(r"^import ", "import " + fqn + ";\nimport ", text, count=1, flags=re.M), encoding="utf-8")
+                line = "import " + fqn + ";\n"
+                if re.search(r"^import ", text, flags=re.M):
+                    text = re.sub(r"^import ", lambda _: line + "import ", text, count=1, flags=re.M)
+                else:
+                    text = re.sub(r"^(package\s+[\w.]+;\n)", lambda match: match.group(1) + "\n" + line, text, count=1, flags=re.M)
+                path.write_text(text, encoding="utf-8")
 
 
 def plan_moves(repo, packages, classes):
@@ -155,8 +163,10 @@ def main():
             sys.exit(f"el paquete {old} no pertenece al modulo {args.module}")
 
     moves = plan_moves(repo, packages, classes)
-    explicit = plan_class_moves(repo, class_moves, classes)
-    explicit_sources = {source for source, _ in explicit}
+    explicit_plan = plan_class_moves(repo, class_moves, classes)
+    explicit = [(source, target) for source, target, _ in explicit_plan]
+    explicit_package = {source: package for source, _, package in explicit_plan}
+    explicit_sources = set(explicit_package)
     moves = [move for move in moves if move[0] not in explicit_sources] + explicit
     original_packages = {}
     for source_root in ("backend/src/main/java", "backend/src/test/java"):
@@ -197,9 +207,7 @@ def main():
         actual = moved.get(path, path)
         text = actual.read_text(encoding="utf-8")
         if path in explicit_sources:
-            for old, new in class_moves:
-                old_package, _, new_package = split_move(old, new)
-                text = text.replace("package " + BASE + "." + old_package + ";", "package " + BASE + "." + new_package + ";", 1)
+            text = re.sub(r"^package\s+[\w.]+;", "package " + BASE + "." + explicit_package[path] + ";", text, count=1, flags=re.M)
         actual.write_text(rewrite_text(text, packages, classes, class_moves), encoding="utf-8")
     renamed_originals = {moved.get(path, path): package for path, package in original_packages.items()}
     add_missing_imports(class_moves, renamed_originals)

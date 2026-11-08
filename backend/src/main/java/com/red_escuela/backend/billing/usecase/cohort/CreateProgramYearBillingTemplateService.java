@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepo
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;

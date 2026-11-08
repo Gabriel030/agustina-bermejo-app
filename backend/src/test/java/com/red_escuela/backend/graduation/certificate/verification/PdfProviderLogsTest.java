@@ -11,12 +11,12 @@ import com.red_escuela.backend.graduation.certificate.entity.GraduationCertifica
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
-import com.red_escuela.backend.graduation.certificate.regular.service.RegularCertificatePdfProvider;
-import com.red_escuela.backend.graduation.certificate.regular.service.RegularCertificateTemplate;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificatePdfProvider;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateTemplate;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
-import com.red_escuela.backend.graduation.certificate.service.CertificateDigest;
-import com.red_escuela.backend.graduation.certificate.service.CertificateVerificationUrl;
-import com.red_escuela.backend.graduation.certificate.service.GraduationCertificatePdfProvider;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.specialist.GraduationCertificatePdfProvider;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 

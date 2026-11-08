@@ -470,6 +470,33 @@
         "required" : [ "templateId" ],
         "type" : "object"
       },
+      "AdvanceEnrollmentFeeView" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "available" : {
+            "type" : "boolean"
+          },
+          "dueDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "opensOn" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "reasonCode" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "available", "reasonCode" ],
+        "type" : "object"
+      },
       "AllocatedInvoiceResponse" : {
         "properties" : {
           "amount" : {
@@ -1236,7 +1263,7 @@
           },
           "publishedByPersonId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "text" : {
             "type" : "string"
@@ -1249,7 +1276,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "current", "publishedAt", "publishedByPersonId", "text", "version", "versionNumber" ],
+        "required" : [ "current", "publishedAt", "text", "version", "versionNumber" ],
         "type" : "object"
       },
       "AuthResponse" : {
@@ -1704,7 +1731,7 @@
           },
           "subjectType" : {
             "type" : "string",
-            "x-extensible-enum" : [ "INVOICE", "LATE_FEE_CHARGE", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "CURRENT_ACCOUNT", "STUDENT" ]
+            "x-extensible-enum" : [ "INVOICE", "LATE_FEE_CHARGE", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "CURRENT_ACCOUNT", "STUDENT", "ANNUAL_UPFRONT_REQUEST" ]
           }
         },
         "required" : [ "decisionCode", "errorCode", "id", "message", "status", "subjectId", "subjectType" ],
@@ -1749,7 +1776,7 @@
           },
           "step" : {
             "type" : "string",
-            "x-extensible-enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ]
+            "x-extensible-enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "ANNUAL_UPFRONT_EXPIRY", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ]
           }
         },
         "required" : [ "candidates", "failed", "finishedAt", "id", "notApplicableCode", "processed", "skipped", "startedAt", "status", "step" ],
@@ -1971,6 +1998,12 @@
         "properties" : {
           "amount" : {
             "$ref" : "#/components/schemas/Money"
+          },
+          "appliesToLectiveYear" : {
+            "format" : "int32",
+            "maximum" : 2200,
+            "minimum" : 2000,
+            "type" : "integer"
           },
           "changeReason" : {
             "type" : "string"
@@ -4650,6 +4683,9 @@
       },
       "EnrollmentFeeObligationResponse" : {
         "properties" : {
+          "advance" : {
+            "$ref" : "#/components/schemas/AdvanceEnrollmentFeeView"
+          },
           "dueDate" : {
             "format" : "date",
             "type" : "string"
@@ -8433,6 +8469,10 @@
       },
       "PriceVersionResponse" : {
         "properties" : {
+          "appliesToLectiveYear" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
           "baseAmount" : {
             "$ref" : "#/components/schemas/Money"
           },
@@ -8891,6 +8931,13 @@
       },
       "ProgramYearBillingTemplateResponse" : {
         "properties" : {
+          "advanceEnrollmentFeeOpensOn" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "advanceOpeningAfterRegularEmission" : {
+            "type" : "boolean"
+          },
           "blocksCertificates" : {
             "type" : "boolean"
           },
@@ -8919,6 +8966,9 @@
           "lateEnrollmentFeeDueDays" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "nextYearPriceMissing" : {
+            "type" : "boolean"
           },
           "paysWhilePaused" : {
             "type" : "boolean"
@@ -8950,7 +9000,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "blocksCertificates", "blocksEnrollment", "blocksExamRegistration", "enrollmentFeeCount", "enrollmentFeeLeadMonths", "firstEnrollmentFeeMonth", "id", "lateEnrollmentFeeDueDays", "paysWhilePaused", "programId", "recurringFeeDueDays", "recurringFeeInvoicesCount", "requireEnrollmentFeeForFinalExamOnlyStudents", "secondEnrollmentFeeMonth", "termId", "withdrawSuspendedAtTermEnd" ],
+        "required" : [ "advanceOpeningAfterRegularEmission", "blocksCertificates", "blocksEnrollment", "blocksExamRegistration", "enrollmentFeeCount", "enrollmentFeeLeadMonths", "firstEnrollmentFeeMonth", "id", "lateEnrollmentFeeDueDays", "nextYearPriceMissing", "paysWhilePaused", "programId", "recurringFeeDueDays", "recurringFeeInvoicesCount", "requireEnrollmentFeeForFinalExamOnlyStudents", "secondEnrollmentFeeMonth", "termId", "withdrawSuspendedAtTermEnd" ],
         "type" : "object"
       },
       "PromotionBenefitResponse" : {
@@ -12243,6 +12293,10 @@
       },
       "YearBillingConfigurationRequest" : {
         "properties" : {
+          "advanceEnrollmentFeeOpensOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "blocksCertificates" : {
             "type" : "boolean"
           },
@@ -19992,7 +20046,7 @@
           "name" : "step",
           "required" : true,
           "schema" : {
-            "enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ],
+            "enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "ANNUAL_UPFRONT_EXPIRY", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ],
             "type" : "string"
           }
         } ],

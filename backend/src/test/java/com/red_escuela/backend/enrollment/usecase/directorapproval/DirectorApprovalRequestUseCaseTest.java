@@ -40,7 +40,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalRequestStateException;
-import com.red_escuela.backend.evaluation.service.ExamBoardRegistrationService;
+import com.red_escuela.backend.evaluation.specialist.ExamBoardRegistrationManager;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
@@ -74,7 +74,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
     private RejectDirectorApprovalRequestUseCase rejectDirectorApprovalRequestUseCase;
 
     @Autowired
-    private ExamBoardRegistrationService examBoardRegistrationService;
+    private ExamBoardRegistrationManager examBoardRegistrationService;
 
     @Autowired
     private SubjectSectionEnrollmentService subjectSectionEnrollmentService;

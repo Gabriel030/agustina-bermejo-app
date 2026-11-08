@@ -620,8 +620,32 @@ public final class BillingInvariantChecker {
         }
     }
 
+    public List<String> anInvoiceUnderReviewNeitherIsOverdueNorAccruesLateFees() {
+        List<String> found = new ArrayList<>(violations("I-10 an invoice with a pending receipt uploaded on time is overdue", """
+                select 'invoice ' || i.id || ' due ' || i.due_date
+                from invoice i
+                where @INVOICES@ and i.payment_status = 'OVERDUE'
+                  and exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW' and r.payment_id is null
+                              and r.uploaded_at::date <= i.due_date)
+                """, baselineInvoiceId, baselineAccountId, baselineEntryId));
+        found.addAll(violations("I-10 a late fee was charged while its origin was under receipt review", """
+                select 'debit note ' || c.debit_note_id || ' origin ' || c.origin_invoice_id
+                from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
+                where c.debit_note_id > ? and o.payment_status = 'PAYMENT_UNDER_REVIEW'
+                  and c.created_at > (select max(r.occurred_at) from invoice_status_change r where r.invoice_id = o.id
+                                      and r.status_kind = 'PAYMENT' and r.to_status = 'PAYMENT_UNDER_REVIEW')
+                """, baselineInvoiceId));
+        return found;
+    }
+
+    public List<String> noEventPublicationIsPending() {
+        return jdbc.queryForList("select 'publication ' || id || ' ' || event_type from event_publication where completion_date is null order by publication_date",
+                String.class).stream().map(row -> "I-18 pending event publication: " + row).toList();
+    }
+
     public void assertAllBillingInvariantsHold() {
         List<String> all = new ArrayList<>();
+        all.addAll(anInvoiceUnderReviewNeitherIsOverdueNorAccruesLateFees());
         all.addAll(oneEnrollmentFeePerEnrollmentTemplateAndSlot());
         all.addAll(noNegativeAmountIsPersisted());
         all.addAll(allocationsHaveTheCurrencyOfTheirInvoice());

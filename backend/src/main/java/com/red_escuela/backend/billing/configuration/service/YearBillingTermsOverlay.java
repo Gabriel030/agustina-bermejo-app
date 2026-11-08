@@ -24,6 +24,7 @@ public class YearBillingTermsOverlay {
                 Optional.ofNullable(request.blocksEnrollment()).orElse(base.blocksEnrollment()),
                 Optional.ofNullable(request.blocksExamRegistration()).orElse(base.blocksExamRegistration()),
                 Optional.ofNullable(request.blocksCertificates()).orElse(base.blocksCertificates()),
-                Optional.ofNullable(request.requireEnrollmentFeeForFinalExamOnlyStudents()).orElse(base.requireEnrollmentFeeForFinalExamOnlyStudents()));
+                Optional.ofNullable(request.requireEnrollmentFeeForFinalExamOnlyStudents()).orElse(base.requireEnrollmentFeeForFinalExamOnlyStudents()),
+                Optional.ofNullable(request.advanceEnrollmentFeeOpensOn()).orElse(base.advanceEnrollmentFeeOpensOn()));
     }
 }

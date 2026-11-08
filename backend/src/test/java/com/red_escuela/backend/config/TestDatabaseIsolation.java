@@ -103,7 +103,13 @@ public final class TestDatabaseIsolation implements AfterAllCallback {
         }
     }
 
-    private void restoreSeededState() {
+    public static void restoreNow() {
+        if (dataSource != null) {
+            restoreSeededState();
+        }
+    }
+
+    private static void restoreSeededState() {
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
             statement.execute("SET session_replication_role = replica");
             StringBuilder tables = new StringBuilder();

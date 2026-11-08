@@ -30,7 +30,7 @@ class EnrollmentFeeRequirementInvoiceFactsTest {
     @BeforeEach
     void createTheServiceWithOnlyTheReceiptRepository() {
         receipts = mock(BankTransferReceiptRepository.class);
-        service = new EnrollmentFeeRequirementService(null, null, receipts, null, null, null, null, null);
+        service = new EnrollmentFeeRequirementService(null, null, receipts, null, null, null, null, null, null);
         invoice = withId(monthlyDraft("80000.00"), INVOICE_ID);
         issue(invoice, LocalDate.of(2027, 3, 1), LocalDate.of(2027, 3, 10));
     }

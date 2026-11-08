@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
@@ -208,6 +209,11 @@ public class CourseEnrollmentService {
     }
 
     @Transactional
+    public void withdrawForNonpayment(Long id, LocalDate effectiveDate) {
+        withdraw(id, EnrollmentWithdrawal.forNonpaymentEffectiveOn(effectiveDate));
+    }
+
+    @Transactional
     public void withdraw(Long id, EnrollmentWithdrawal withdrawal) {
         CourseEnrollment enrollment = findOrThrow(id);
         if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.WAITLISTED) {
@@ -221,13 +227,18 @@ public class CourseEnrollmentService {
         courseEnrollmentRepository.save(enrollment);
         withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
                 enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
-        cancelModuleEnrollments(enrollment);
-        if (liberaCupoDelCurso) {
+        boolean promotesWaitlist = withdrawal.cause() != WithdrawalCause.NONPAYMENT;
+        cancelModuleEnrollments(enrollment, promotesWaitlist);
+        if (liberaCupoDelCurso && promotesWaitlist) {
             promoteNextFromCourseWaitlist(enrollment.courseId());
         }
     }
 
     void cancelModuleEnrollments(CourseEnrollment enrollment) {
+        cancelModuleEnrollments(enrollment, true);
+    }
+
+    private void cancelModuleEnrollments(CourseEnrollment enrollment, boolean promotesWaitlist) {
         LocalDateTime now = LocalDateTime.now(clock);
         for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(enrollment.getId())) {
             EnrollmentStatus estadoAnterior = sub.getStatus();
@@ -236,7 +247,7 @@ public class CourseEnrollmentService {
                 sub.setStatus(EnrollmentStatus.WITHDRAWN);
                 sub.setDroppedAt(now);
                 courseSubjectSectionEnrollmentRepository.save(sub);
-                if (estadoAnterior != EnrollmentStatus.WAITLISTED) {
+                if (promotesWaitlist && estadoAnterior != EnrollmentStatus.WAITLISTED) {
                     promoteNextFromWaitlist(sub.courseSubjectSectionId());
                 }
             }

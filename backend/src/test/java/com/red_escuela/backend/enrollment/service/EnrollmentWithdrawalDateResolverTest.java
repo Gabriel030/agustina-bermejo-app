@@ -70,4 +70,66 @@ class EnrollmentWithdrawalDateResolverTest {
         assertThat(lateEveningLocal.atZone(ZoneId.of("UTC")).toLocalDate()).isEqualTo(LocalDate.of(2027, 6, 1));
         assertThat(resolver.resolveEffectiveDate(new EnrollmentWithdrawal(null, null, WithdrawalCause.VOLUNTARY), ENROLLED_AT)).isEqualTo(LocalDate.of(2027, 5, 31));
     }
+
+    @Test
+    void aNonpaymentWithdrawalInformedMonthsAgoSkipsTheVoluntaryRangeAndKeepsTheInformedDate() {
+        EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 9, 20, 9, 0));
+
+        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.forNonpaymentEffectiveOn(LocalDate.of(2027, 6, 30)), ENROLLED_AT)).isEqualTo(LocalDate.of(2027, 6, 30));
+    }
+
+    @Test
+    void theSameOldDateIsStillRejectedForAVoluntaryWithdrawal() {
+        EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 9, 20, 9, 0));
+
+        assertThatThrownBy(() -> resolver.resolveEffectiveDate(EnrollmentWithdrawal.voluntaryRegisteredBy(LocalDate.of(2027, 6, 30), 5L), ENROLLED_AT))
+                .isInstanceOf(WithdrawalDateOutOfAllowedRangeException.class);
+    }
+
+    @Test
+    void aNonpaymentWithdrawalInformedBeforeTheEnrollmentIsMovedToTheEnrollmentDate() {
+        EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 9, 20, 9, 0));
+
+        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.forNonpaymentEffectiveOn(LocalDate.of(2027, 2, 1)), ENROLLED_AT)).isEqualTo(LocalDate.of(2027, 3, 1));
+    }
+
+    @Test
+    void aNonpaymentWithdrawalInformedBeforeALateEnrollmentIsMovedToTheEnrollmentDateEvenIfItFallsAfterTheCourseEnd() {
+        EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 9, 20, 9, 0));
+        LocalDateTime enrolledAfterCourseEnd = LocalDateTime.of(2027, 7, 15, 10, 0);
+
+        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.forNonpaymentEffectiveOn(LocalDate.of(2027, 6, 30)), enrolledAfterCourseEnd))
+                .isEqualTo(LocalDate.of(2027, 7, 15));
+    }
+
+    @Test
+    void aNonpaymentWithdrawalInformedInTheFutureIsCappedToToday() {
+        EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 9, 20, 9, 0));
+
+        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.forNonpaymentEffectiveOn(LocalDate.of(2027, 12, 1)), ENROLLED_AT))
+                .isEqualTo(LocalDate.of(2027, 9, 20));
+    }
+
+    @Test
+    void aNonpaymentWithdrawalWithUnknownEnrollmentDateKeepsTheInformedDate() {
+        EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 9, 20, 9, 0));
+
+        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.forNonpaymentEffectiveOn(LocalDate.of(2027, 6, 30)), null))
+                .isEqualTo(LocalDate.of(2027, 6, 30));
+    }
+
+    @Test
+    void aNonpaymentWithdrawalInformedInTheFutureWithUnknownEnrollmentDateIsCappedToToday() {
+        EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 9, 20, 9, 0));
+
+        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.forNonpaymentEffectiveOn(LocalDate.of(2027, 12, 1)), null))
+                .isEqualTo(LocalDate.of(2027, 9, 20));
+    }
+
+    @Test
+    void aNonpaymentWithdrawalWithoutInformedDateStillUsesTodayThroughTheRangeRule() {
+        EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 9, 20, 9, 0));
+
+        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.forNonpayment(), ENROLLED_AT)).isEqualTo(LocalDate.of(2027, 9, 20));
+    }
 }

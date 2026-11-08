@@ -10,17 +10,18 @@ import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import java.time.LocalDate;
 
 public record ChangePriceCommand(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom,
-                                 String changeReason, Long requestedByPersonId, boolean requestedByDirector, Long authorizationRequestId)
+                                 String changeReason, Long requestedByPersonId, boolean requestedByDirector, Long authorizationRequestId,
+                                 Integer appliesToLectiveYear)
         implements DirectorApprovable, ResumedFromAuthorizationRequest<ChangePriceCommand> {
 
     public ChangePriceCommand(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason,
                               Long requestedByPersonId, boolean requestedByDirector) {
-        this(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, requestedByPersonId, requestedByDirector, null);
+        this(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, requestedByPersonId, requestedByDirector, null, null);
     }
 
     @Override
     public ChangePriceCommand resumedFromAuthorizationRequest(Long authorizationRequestId) {
-        return new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, requestedByPersonId, requestedByDirector, authorizationRequestId);
+        return new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, requestedByPersonId, requestedByDirector, authorizationRequestId, appliesToLectiveYear);
     }
 
     public PriceVersionDraft toDraft(Currency priceCurrency) {

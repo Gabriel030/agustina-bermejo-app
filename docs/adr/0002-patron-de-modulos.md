@@ -84,3 +84,7 @@ Rutas, contratos HTTP, base de datos, el patrón `XxxUseCase` + `XxxService`, la
 ## Nota de implementación de D4
 
 El cambio de la regla de `@Transactional` altera su descripción, así que ArchUnit re-indexa su almacén congelado: queda con ~100 líneas nuevas que son la deuda declarada, no violaciones nuevas escondidas. Es la única excepción autorizada a "los almacenes solo pierden líneas" en este ADR.
+
+## Nota: módulo `demo` (7-nov-2026)
+
+El seed de la demo vive en el módulo `demo`, de composición, con `allowedDependencies = {"shared"}` y beans solo bajo `@Profile("demo")`. No importa ningún tipo de otro módulo: siembra llamando a la API HTTP real (mismas rutas y permisos que el frontend), por eso `ModularityTest` no cambia su línea base. Se descartó portar el seed con repositorios y entidades internas (66 violaciones nuevas) y declarar dependencias a otros módulos (solo permitiría `api`, `events` y `model`).

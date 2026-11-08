@@ -22,7 +22,7 @@ public class PriceChangeViolationsReader {
     }
 
     @Transactional(readOnly = true)
-    public List<PolicyViolation> validatePriceChange(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason) {
-        return validator.collectViolations(new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, actorResolver.currentPersonId(), actorResolver.currentActorIsDirector()));
+    public List<PolicyViolation> validatePriceChange(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason, Integer appliesToLectiveYear) {
+        return validator.collectViolations(new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, actorResolver.currentPersonId(), actorResolver.currentActorIsDirector(), null, appliesToLectiveYear));
     }
 }

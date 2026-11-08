@@ -1,6 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.verification;
 
-import com.red_escuela.backend.graduation.certificate.verification.service.DocumentMasker;
+import com.red_escuela.backend.graduation.certificate.verification.specialist.DocumentMasker;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -19,7 +19,7 @@ import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesExcep
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentApplicationService;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import com.red_escuela.backend.enrollment.dto.CourseTransferReceiptForm;

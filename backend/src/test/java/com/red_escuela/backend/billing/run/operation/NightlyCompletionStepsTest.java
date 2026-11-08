@@ -10,7 +10,9 @@ import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.run.domain.BillingRunItemStatus;
 import com.red_escuela.backend.billing.run.domain.BillingRunStepOutcome;
 import com.red_escuela.backend.billing.run.domain.BillingRunSubjectType;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClosureReport;
+import com.red_escuela.backend.billing.collections.service.CourseEnrollmentWithdrawalAtCourseEndService;
 import com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentComplianceSweepReport;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
@@ -78,10 +80,12 @@ class NightlyCompletionStepsTest {
     void theTermEndStepSeparatesRuleRejectionsFromFailures() {
         SuspendedEnrollmentClosureService closure = mock(SuspendedEnrollmentClosureService.class);
         when(closure.closeFinishedCyclesReportingFailures()).thenReturn(new SuspendedEnrollmentClosureReport(5, 2, List.of(
-                new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(11L, true, "WITHDRAWAL_REJECTED_BY_RULE", "RULE_X"),
-                new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(12L, false, "SUBJECT_PROCESSING_FAILED", "boom"))));
+                new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(EnrollmentKind.PROGRAM, 11L, true, "WITHDRAWAL_REJECTED_BY_RULE", "RULE_X"),
+                new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(EnrollmentKind.PROGRAM, 12L, false, "SUBJECT_PROCESSING_FAILED", "boom"))));
+        CourseEnrollmentWithdrawalAtCourseEndService courses = mock(CourseEnrollmentWithdrawalAtCourseEndService.class);
+        when(courses.withdrawSuspendedEnrollmentsOfEndedCourses()).thenReturn(new SuspendedEnrollmentClosureReport(0, 0, List.of()));
 
-        BillingRunStepOutcome outcome = new TermEndWithdrawalBillingRunStep(closure).runStepForBusinessDate(NIGHT);
+        BillingRunStepOutcome outcome = new TermEndWithdrawalBillingRunStep(closure, courses).runStepForBusinessDate(NIGHT);
 
         assertThat(outcome.candidates()).isEqualTo(5);
         assertThat(outcome.processed()).isEqualTo(3);
@@ -89,6 +93,77 @@ class NightlyCompletionStepsTest {
         assertThat(outcome.failed()).isEqualTo(1);
         assertThat(outcome.items()).extracting(item -> item.subjectId(), item -> item.status())
                 .containsExactly(org.assertj.core.groups.Tuple.tuple(11L, BillingRunItemStatus.SKIPPED), org.assertj.core.groups.Tuple.tuple(12L, BillingRunItemStatus.FAILED));
+    }
+
+    @Test
+    void theTermEndStepAddsTheCourseWithdrawalsToTheProgramOnesAndLabelsEachFailureWithItsSubjectType() {
+        SuspendedEnrollmentClosureService closure = mock(SuspendedEnrollmentClosureService.class);
+        when(closure.closeFinishedCyclesReportingFailures()).thenReturn(new SuspendedEnrollmentClosureReport(2, 1, List.of(
+                new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(EnrollmentKind.PROGRAM, 21L, false, "SUBJECT_PROCESSING_FAILED", "program boom"))));
+        CourseEnrollmentWithdrawalAtCourseEndService courses = mock(CourseEnrollmentWithdrawalAtCourseEndService.class);
+        when(courses.withdrawSuspendedEnrollmentsOfEndedCourses()).thenReturn(new SuspendedEnrollmentClosureReport(3, 2, List.of(
+                new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(EnrollmentKind.COURSE, 31L, false, "SUBJECT_PROCESSING_FAILED", "course boom"))));
+
+        BillingRunStepOutcome outcome = new TermEndWithdrawalBillingRunStep(closure, courses).runStepForBusinessDate(NIGHT);
+
+        assertThat(outcome.candidates()).isEqualTo(5);
+        assertThat(outcome.processed()).isEqualTo(3);
+        assertThat(outcome.failed()).isEqualTo(2);
+        assertThat(outcome.items()).extracting(item -> item.subjectType(), item -> item.subjectId())
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(BillingRunSubjectType.PROGRAM_ENROLLMENT, 21L),
+                        org.assertj.core.groups.Tuple.tuple(BillingRunSubjectType.COURSE_ENROLLMENT, 31L));
+    }
+
+    @Test
+    void aCourseRuleRejectionIsReportedAsSkippedWithoutAffectingTheProgramCount() {
+        SuspendedEnrollmentClosureService closure = mock(SuspendedEnrollmentClosureService.class);
+        when(closure.closeFinishedCyclesReportingFailures()).thenReturn(new SuspendedEnrollmentClosureReport(1, 1, List.of()));
+        CourseEnrollmentWithdrawalAtCourseEndService courses = mock(CourseEnrollmentWithdrawalAtCourseEndService.class);
+        when(courses.withdrawSuspendedEnrollmentsOfEndedCourses()).thenReturn(new SuspendedEnrollmentClosureReport(1, 0, List.of(
+                new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(EnrollmentKind.COURSE, 41L, true, "WITHDRAWAL_REJECTED_BY_RULE", "RULE_Y"))));
+
+        BillingRunStepOutcome outcome = new TermEndWithdrawalBillingRunStep(closure, courses).runStepForBusinessDate(NIGHT);
+
+        assertThat(outcome.candidates()).isEqualTo(2);
+        assertThat(outcome.processed()).isEqualTo(1);
+        assertThat(outcome.skipped()).isEqualTo(1);
+        assertThat(outcome.items()).singleElement().satisfies(item -> assertThat(item.subjectType()).isEqualTo(BillingRunSubjectType.COURSE_ENROLLMENT));
+    }
+
+    @Test
+    void aProgramServiceFailureDoesNotStopTheCourseWithdrawalsAndIsRethrownAfterwards() {
+        SuspendedEnrollmentClosureService closure = mock(SuspendedEnrollmentClosureService.class);
+        when(closure.closeFinishedCyclesReportingFailures()).thenThrow(new IllegalStateException("programs down"));
+        CourseEnrollmentWithdrawalAtCourseEndService courses = mock(CourseEnrollmentWithdrawalAtCourseEndService.class);
+        when(courses.withdrawSuspendedEnrollmentsOfEndedCourses()).thenReturn(new SuspendedEnrollmentClosureReport(1, 1, List.of()));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TermEndWithdrawalBillingRunStep(closure, courses).runStepForBusinessDate(NIGHT))
+                .isInstanceOf(IllegalStateException.class).hasMessage("programs down");
+
+        org.mockito.Mockito.verify(courses).withdrawSuspendedEnrollmentsOfEndedCourses();
+    }
+
+    @Test
+    void aCourseServiceFailureDoesNotStopTheProgramClosuresAndIsRethrownAfterwards() {
+        SuspendedEnrollmentClosureService closure = mock(SuspendedEnrollmentClosureService.class);
+        when(closure.closeFinishedCyclesReportingFailures()).thenReturn(new SuspendedEnrollmentClosureReport(1, 1, List.of()));
+        CourseEnrollmentWithdrawalAtCourseEndService courses = mock(CourseEnrollmentWithdrawalAtCourseEndService.class);
+        when(courses.withdrawSuspendedEnrollmentsOfEndedCourses()).thenThrow(new IllegalStateException("courses down"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TermEndWithdrawalBillingRunStep(closure, courses).runStepForBusinessDate(NIGHT))
+                .isInstanceOf(IllegalStateException.class).hasMessage("courses down");
+
+        org.mockito.Mockito.verify(closure).closeFinishedCyclesReportingFailures();
+    }
+
+    @Test
+    void theTermEndStepOnlyRunsInsideTheNightlyJobThatRequiresBillingInFullMode() throws NoSuchMethodException {
+        com.red_escuela.backend.shared.module.RequiresModule gate = NightlyBillingJob.class.getMethod("run")
+                .getAnnotation(com.red_escuela.backend.shared.module.RequiresModule.class);
+
+        assertThat(gate).isNotNull();
+        assertThat(gate.value()).isEqualTo(com.red_escuela.backend.shared.module.RequiresModule.BILLING);
+        assertThat(gate.minMode()).isEqualTo(com.red_escuela.backend.shared.module.BillingMode.FULL);
     }
 
     @Test

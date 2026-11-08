@@ -5,7 +5,7 @@ import com.red_escuela.backend.identity.dto.CreateStaffRequest;
 import com.red_escuela.backend.identity.dto.StaffRecordResponse;
 import com.red_escuela.backend.identity.dto.StaffResponse;
 import com.red_escuela.backend.identity.dto.UpdateStaffRequest;
-import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
+import com.red_escuela.backend.identity.specialist.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.usecase.staff.CreateStaffUseCase;
 import com.red_escuela.backend.identity.usecase.staff.GetStaffRecordUseCase;
 import com.red_escuela.backend.identity.usecase.staff.ListStaffCommand;

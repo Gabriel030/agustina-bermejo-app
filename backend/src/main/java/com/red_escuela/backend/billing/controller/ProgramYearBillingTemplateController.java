@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
 import com.red_escuela.backend.billing.dto.CreateProgramYearBillingTemplateRequest;
 import com.red_escuela.backend.billing.dto.ProgramCohortCatalogResponse;
 import com.red_escuela.backend.billing.dto.ProgramCohortResponse;
+import com.red_escuela.backend.billing.advanceenrollmentfee.usecase.FindAdvanceEnrollmentFeeAlertsUseCase;
 import com.red_escuela.backend.billing.dto.ProgramYearBillingTemplateResponse;
 import com.red_escuela.backend.billing.dto.UpdateEntryFeeDiscountRequest;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
@@ -45,6 +46,7 @@ public class ProgramYearBillingTemplateController {
     private final FindProgramBillingConfigurationUseCase findConfigurationUseCase;
     private final UpdateYearBillingConfigurationUseCase updateYearConfigurationUseCase;
     private final UpdateCohortEntryFeeDiscountUseCase updateEntryFeeDiscountUseCase;
+    private final FindAdvanceEnrollmentFeeAlertsUseCase findAdvanceAlertsUseCase;
     private final Clock clock;
 
     public ProgramYearBillingTemplateController(CreateProgramYearBillingTemplateUseCase createTemplateUseCase,
@@ -54,7 +56,7 @@ public class ProgramYearBillingTemplateController {
                                                   ListProgramBillingTemplatesUseCase listBillingTemplatesUseCase,
                                                   UpdateYearBillingConfigurationUseCase updateYearConfigurationUseCase,
                                                   UpdateCohortEntryFeeDiscountUseCase updateEntryFeeDiscountUseCase,
-                                                  Clock clock) {
+                                                  FindAdvanceEnrollmentFeeAlertsUseCase findAdvanceAlertsUseCase, Clock clock) {
         this.updateYearConfigurationUseCase = updateYearConfigurationUseCase;
         this.updateEntryFeeDiscountUseCase = updateEntryFeeDiscountUseCase;
         this.createTemplateUseCase = createTemplateUseCase;
@@ -62,12 +64,14 @@ public class ProgramYearBillingTemplateController {
         this.listCohortsForTemplateUseCase = listCohortsForTemplateUseCase;
         this.listCohortsForProgramUseCase = listCohortsForProgramUseCase;
         this.listBillingTemplatesUseCase = listBillingTemplatesUseCase;
+        this.findAdvanceAlertsUseCase = findAdvanceAlertsUseCase;
         this.clock = clock;
         this.findConfigurationUseCase = findConfigurationUseCase;
     }
 
     private ProgramYearBillingTemplateResponse templateResponse(ProgramYearBillingTemplate template) {
-        return ProgramYearBillingTemplateResponse.from(template, findConfigurationUseCase.findYearTermsInEffect(template.programId(), template.termId()));
+        return ProgramYearBillingTemplateResponse.from(template, findConfigurationUseCase.findYearTermsInEffect(template.programId(), template.termId()),
+                findAdvanceAlertsUseCase.find(template.getId()));
     }
 
     private ProgramCohortResponse cohortResponse(ProgramCohort cohort) {

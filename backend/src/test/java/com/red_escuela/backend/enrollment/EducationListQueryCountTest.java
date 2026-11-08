@@ -24,7 +24,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.RoleRepository;
-import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
+import com.red_escuela.backend.identity.specialist.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.usecase.staff.ListStaffCommand;
 import com.red_escuela.backend.identity.usecase.staff.ListStaffUseCase;
 import com.red_escuela.backend.identity.usecase.student.ListStudentsCommand;

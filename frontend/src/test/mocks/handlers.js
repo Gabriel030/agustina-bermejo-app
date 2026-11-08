@@ -32,6 +32,7 @@ const personResponse = (overrides = {}) => ({
  * body (ver docs/context/backend.md) — acá se replica ese contrato a propósito.
  */
 export const handlers = [
+  http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
   http.get(`${API}/institution/academic-settings`, () =>
     HttpResponse.json({
       announcementEmailEnabled: false,

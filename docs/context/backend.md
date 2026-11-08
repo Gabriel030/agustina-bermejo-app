@@ -68,7 +68,7 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
 - **Colaboradores en `service/`** (sin `@UseCase`): lógica compartida entre
   varios use cases del mismo subdominio que no es en sí "algo que un actor
   pide hacer" — ver `AuthTokenIssuer`, `PasswordPolicyValidator`,
-  `StaffRoleAssignmentPolicy`, `CurrentPersonService` en `identity/service/`.
+  `StaffRoleAssignmentPolicy`, `CurrentPersonService` en `identity/specialist/`.
   Si un helper se usa desde un solo use case, va como método privado ahí
   adentro — no se extrae un colaborador "por las dudas".
 - **`infrastructure/`**: lo que no representa una regla de negocio (firmar
@@ -86,7 +86,7 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
   Ver `adr/0002-patron-de-modulos.md`.
 - **La persona autenticada nunca se resuelve de un id de la URL.** Se resuelve
   del `sub` del JWT vía `CurrentPersonService.resolveCurrentPerson()`
-  (`identity/service/`) — reusalo, no dupliques esa resolución en un use case
+  (`identity/specialist/`) — reusalo, no dupliques esa resolución en un use case
   nuevo.
 - **Autorización de rol grueso vía `@PreAuthorize("hasRole('X')")`** a nivel
   de clase o método del controller. Cuando la regla depende de datos (ej.
@@ -284,10 +284,10 @@ distintos). `SectionEvaluationConfigReminderJob` es un job programado.
 (crear borrador/guardar borrador/enviar a aprobación) con decisión de
 Director/Administrativo (aprobar/rechazar/listar) — mismo patrón que
 `ProgramEnrollmentApplicationService` en enrollment. 8 use cases en
-`evaluation/usecase/sectionevaluationconfig/`, con tres colaboradores en
-`evaluation/service/`:
+`evaluation/usecase/sectionconfig/`, con tres colaboradores en
+`evaluation/specialist/`:
 - `SectionEvaluationConfigFinder` — findOrThrow compartido.
-- `SectionEvaluationConfigInstructorAccess` — validación de pertenencia/
+- `SectionEvaluationConfigInstructorAccessChecker` — validación de pertenencia/
   liderazgo de comisión y armado de la lista de docentes de la respuesta;
   se inyecta directo en los controllers para las consultas de soporte de
   UI (mismo patrón que `CurrentPersonService`/`CurrentInstructorService`),
@@ -367,10 +367,10 @@ Administrativo *verifica deuda*, Director *aprueba*, Administrativo/Director
 colaborador del findOrThrow compartido.
 
 `createGraduationRequestIfEligible` (se dispara solo al aprobarse una
-materia, ver `evaluation.service.GradeItemService`) no es un use case — nadie
+materia, ver `evaluation.specialist.GradeItemRecorder`) no es un use case — nadie
 lo pide desde un endpoint propio, es un efecto automático de otro flujo.
 Quedó como el colaborador `GraduationRequestAutoRequester`
-(`graduation/service/`), que internamente invoca `RequestGraduationUseCase`
+(`graduation/specialist/`), que internamente invoca `RequestGraduationUseCase`
 — un colaborador plano puede depender de un Use Case de su propia feature,
 no hace falta que todo pase por otro Use Case.
 

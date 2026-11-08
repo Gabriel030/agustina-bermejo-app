@@ -1,7 +1,7 @@
 package com.red_escuela.backend.config;
 
-import com.red_escuela.backend.identity.service.DemoLearnerAccountsSeeder;
-import com.red_escuela.backend.identity.service.LocalSeedRunner;
+import com.red_escuela.backend.identity.specialist.DemoLearnerAccountsSeeder;
+import com.red_escuela.backend.identity.specialist.LocalSeedRunner;
 import com.red_escuela.backend.notification.delivery.controller.SimulatedEmailController;
 import com.red_escuela.backend.testsupport.SharedPropertyOverrides;
 import org.junit.jupiter.api.Test;

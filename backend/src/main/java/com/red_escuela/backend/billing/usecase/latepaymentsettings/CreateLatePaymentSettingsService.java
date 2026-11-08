@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

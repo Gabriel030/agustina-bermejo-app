@@ -10,7 +10,7 @@ Un módulo solo puede depender de los de capas inferiores y de `shared` (módulo
 
 `shared` < `identity` < `academicstructure` < `enrollment` < `attendance` < `evaluation` < `billing` < `graduation` < `announcement` < `notification`
 
-`academicrecord` es un módulo de composición que puede usar a todos. `config` (seguridad, filtros, scheduler) no tiene restricción de salida. Las dependencias que hoy van hacia arriba son violaciones congeladas en la línea base y las bajan las fases M3, M4 y M5.
+`academicrecord` es un módulo de composición que puede usar a todos. `demo` es un módulo de composición distinto: solo carga con el perfil `demo`, depende únicamente de `shared` y siembra la institución de prueba hablando por HTTP con la propia aplicación (cliente en `demo.infrastructure`), sin repositorios ni entidades de otros módulos; así no suma violaciones a la línea base. `config` (seguridad, filtros, scheduler) no tiene restricción de salida. Las dependencias que hoy van hacia arriba son violaciones congeladas en la línea base y las bajan las fases M3, M4 y M5.
 
 ## Qué expone un módulo
 
@@ -173,6 +173,35 @@ flowchart LR
     S --> OT[academicstructure, enrollment, attendance, evaluation: api]
     S -.publica.-> EV[announcement.events]
     J[specialist: ScheduledAnnouncementDispatchJob] --> S
+```
+
+`evaluation` (lo consultan otros módulos por `api`; emite eventos que consume `notification`):
+
+```mermaid
+flowchart LR
+    C[controller: GradePublicationController, ExamBoardController] --> U[usecase/gradepublication, examboard, gradecorrection, gradegrid, sectionconfig: PublishCourseSectionGradeItemService...]
+    U --> S[specialist: SectionGradeItemPublisher, PublishedGradeCorrector, ExamBoardManager]
+    S --> P[policy: RegularStudentForFinalExamPolicy]
+    S --> R[repository: ExamBoardInstructorRepository]
+    S --> OT[academicstructure, enrollment, attendance: api]
+    S -.publica.-> EV[evaluation.events]
+    API[evaluation.api: GradeItemFinder, GraduationRequestTriggerPort] --> R
+    J[specialist: SectionEvaluationConfigReminderJob] --> S
+```
+
+`graduation` (usa `evaluation.api` y `billing`; emite eventos que consume `notification`):
+
+```mermaid
+flowchart LR
+    C[controller: GraduationRequestController, MeCertificateController] --> U[usecase/request: RequestGraduationService...]
+    U --> S[specialist: GraduationRequestRegistrar, GraduationRequestApprover, GraduationDebtChecker]
+    S --> R[repository: GraduationRequestRepository]
+    S --> OT[evaluation, billing, platform: api]
+    S -.publica.-> EV[graduation.events]
+    TA[specialist: ProgramGraduationRequestTriggerPortAdapter] --> S
+    CC[certificate/controller, regular/controller, verification/controller] --> CU[certificate/usecase, regular/usecase, verification/usecase]
+    CU --> CS[certificate/specialist, regular/specialist, verification/specialist]
+    CS --> CE[certificate/engine: CertificatePdfRenderer]
 ```
 
 `platform` (lo consultan otros módulos solo por `api`):

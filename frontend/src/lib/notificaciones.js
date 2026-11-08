@@ -45,8 +45,18 @@ export const TIPO_NOTIFICACION_LABEL = {
   MONTHLY_INVOICE_RUN_MISSED: 'No corrió la emisión mensual',
   MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED: 'Reintentos de emisión agotados',
   HOLIDAYS_MISSING_FOR_NEXT_YEAR: 'Faltan los feriados del año que viene',
+  DRAFT_INVOICES_AWAITING_REVIEW: 'Facturas por revisar',
   GRADES_PUBLISHED: 'Notas publicadas',
   GRADE_CORRECTED: 'Nota corregida',
+  LATE_PAYMENT_SETTINGS_CREATED: 'Nueva configuración de mora',
+  AUTHORIZATION_REQUESTED: 'Autorización pendiente',
+  AUTHORIZATION_REQUEST_EXPIRED: 'Propuesta vencida sin decidir',
+  CONFIGURATION_CHANGE_APPROVED: 'Configuración aprobada por el director',
+  CONFIGURATION_CHANGE_REJECTED: 'Configuración rechazada por el director',
+  CONFIGURATION_VERSION_CANCELLED: 'Cambio de configuración cancelado',
+  PRICE_CHANGE_APPROVED: 'Precio aprobado',
+  PRICE_CHANGE_REJECTED: 'Precio rechazado',
+  DISCOUNT_QUOTA_EXHAUSTED: 'Cupo de promoción agotado',
 };
 
 export const TONO_NOTIFICACION = {
@@ -96,8 +106,18 @@ export const TONO_NOTIFICACION = {
   MONTHLY_INVOICE_RUN_MISSED: 'danger',
   MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED: 'warning',
   HOLIDAYS_MISSING_FOR_NEXT_YEAR: 'warning',
+  DRAFT_INVOICES_AWAITING_REVIEW: 'warning',
   GRADES_PUBLISHED: 'success',
   GRADE_CORRECTED: 'accent2',
+  LATE_PAYMENT_SETTINGS_CREATED: 'accent2',
+  AUTHORIZATION_REQUESTED: 'warning',
+  AUTHORIZATION_REQUEST_EXPIRED: 'warning',
+  CONFIGURATION_CHANGE_APPROVED: 'success',
+  CONFIGURATION_CHANGE_REJECTED: 'danger',
+  CONFIGURATION_VERSION_CANCELLED: 'warning',
+  PRICE_CHANGE_APPROVED: 'success',
+  PRICE_CHANGE_REJECTED: 'danger',
+  DISCOUNT_QUOTA_EXHAUSTED: 'warning',
 };
 
 export const ETIQUETA_NOTIFICACION_DESCONOCIDA = 'Notificación';

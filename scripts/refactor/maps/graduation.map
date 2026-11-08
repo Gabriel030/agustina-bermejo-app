@@ -1,0 +1,7 @@
+package graduation.service -> graduation.specialist
+package graduation.certificate.service -> graduation.certificate.specialist
+package graduation.certificate.regular.service -> graduation.certificate.regular.specialist
+package graduation.certificate.verification.service -> graduation.certificate.verification.specialist
+package graduation.usecase.graduationrequest -> graduation.usecase.request
+class CertificateService -> ProgramCertificateIssuer
+class ProgramGraduationRequestTrigger -> ProgramGraduationRequestTriggerPortAdapter

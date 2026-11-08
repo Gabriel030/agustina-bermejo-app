@@ -7,7 +7,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.AuthTokenIssuer;
+import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.evaluation.usecase.examboard;
 
 import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
-import com.red_escuela.backend.evaluation.service.ExamBoardCanceler;
+import com.red_escuela.backend.evaluation.specialist.ExamBoardCanceler;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

@@ -82,7 +82,7 @@ public class PriceController {
             @ApiResponse(responseCode = "202", description = "Accepted", content = @Content(schema = @Schema(implementation = PriceChangePendingAuthorizationResponse.class)))})
     public ResponseEntity<?> publishPriceVersion(@PathVariable Long priceId, @Valid @RequestBody ChangePriceRequest request) {
         BillingOperationOutcome<PriceVersion> outcome = proposePriceChangeUseCase.proposeOrPublishPriceVersion(priceId, request.amount(), request.discountOrNull(),
-                request.effectiveFrom(), request.changeReason());
+                request.effectiveFrom(), request.changeReason(), request.appliesToLectiveYear());
         return switch (outcome) {
             case BillingOperationOutcome.Processed<PriceVersion> processed -> ResponseEntity.status(HttpStatus.CREATED).body(PriceVersionResponse.from(processed.result()));
             case BillingOperationOutcome.AwaitingAuthorization<PriceVersion> awaiting ->
@@ -94,7 +94,7 @@ public class PriceController {
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public PriceChangeValidationResponse validatePriceChange(@PathVariable Long priceId, @Valid @RequestBody ChangePriceRequest request) {
         return new PriceChangeValidationResponse(validatePriceChangeUseCase.validatePriceChange(priceId, request.amount(), request.discountOrNull(),
-                request.effectiveFrom(), request.changeReason()));
+                request.effectiveFrom(), request.changeReason(), request.appliesToLectiveYear()));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)

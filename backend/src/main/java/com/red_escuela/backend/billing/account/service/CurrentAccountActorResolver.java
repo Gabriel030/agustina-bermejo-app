@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.springframework.stereotype.Component;
 

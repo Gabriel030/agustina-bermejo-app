@@ -2,7 +2,7 @@ package com.red_escuela.backend.identity.usecase.person;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.storage.FileStorageService;
 import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 import com.red_escuela.backend.shared.UseCase;

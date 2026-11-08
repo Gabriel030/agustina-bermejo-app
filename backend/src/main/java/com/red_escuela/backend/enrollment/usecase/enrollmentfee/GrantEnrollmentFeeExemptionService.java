@@ -16,7 +16,7 @@ import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionNotNee
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.EnrollmentFeeExemptionRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.enrollment.service.EnrollmentNotificationEvents;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;

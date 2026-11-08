@@ -4,7 +4,7 @@ import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.GradeItemResponse;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
-import com.red_escuela.backend.evaluation.service.GradeItemService;
+import com.red_escuela.backend.evaluation.specialist.GradeItemRecorder;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,10 +20,10 @@ import java.util.List;
 @RestController
 public class GradeItemController {
 
-    private final GradeItemService gradeItemService;
+    private final GradeItemRecorder gradeItemService;
     private final CurrentInstructorService currentInstructorService;
 
-    public GradeItemController(GradeItemService gradeItemService, CurrentInstructorService currentInstructorService) {
+    public GradeItemController(GradeItemRecorder gradeItemService, CurrentInstructorService currentInstructorService) {
         this.gradeItemService = gradeItemService;
         this.currentInstructorService = currentInstructorService;
     }
