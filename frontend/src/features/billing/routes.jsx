@@ -19,6 +19,9 @@ const DiscountDefinitionFormPage = lazyPage(() => import('@/features/billing/dis
 const DiscountDefinitionDetailPage = lazyPage(() => import('@/features/billing/discounts/DiscountDefinitionDetailPage'), 'DiscountDefinitionDetailPage');
 const GrantDiscountPage = lazyPage(() => import('@/features/billing/discounts/GrantDiscountPage'), 'GrantDiscountPage');
 
+const PricesPage = lazyPage(() => import('@/features/billing/pricing/PricesPage'), 'PricesPage');
+const PriceDetailPage = lazyPage(() => import('@/features/billing/pricing/PriceDetailPage'), 'PriceDetailPage');
+const NewPriceVersionPage = lazyPage(() => import('@/features/billing/pricing/NewPriceVersionPage'), 'NewPriceVersionPage');
 const MonthlyRunPage = lazyPage(() => import('@/features/billing/monthly-run/MonthlyRunPage'), 'MonthlyRunPage');
 const DraftInvoicesPage = lazyPage(() => import('@/features/billing/monthly-run/DraftInvoicesPage'), 'DraftInvoicesPage');
 const BillingRunsPage =lazyPage(() => import('@/features/billing/runs/BillingRunsPage'), 'BillingRunsPage');
@@ -53,6 +56,9 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'descuentos/nuevo', element: <DiscountDefinitionFormPage mode="discount" /> },
     { roles: ['administrativo', 'director'], path: 'descuentos/promociones/nueva', element: <DiscountDefinitionFormPage mode="promotion" /> },
     { roles: ['administrativo', 'director'], path: 'descuentos/:id', element: <DiscountDefinitionDetailPage /> },
+    { roles: ['administrativo', 'director'], path: 'precios', element: <PricesPage /> },
+    { roles: ['administrativo', 'director'], path: 'precios/:priceId', element: <PriceDetailPage /> },
+    { roles: ['administrativo', 'director'], path: 'precios/:priceId/nueva-version', element: <NewPriceVersionPage /> },
     { roles: ['administrativo', 'director'], path: 'corridas-de-facturacion', element: <BillingRunsPage /> },
     { roles: ['administrativo', 'director'], path: 'emision-mensual', element: <MonthlyRunPage /> },
     { roles: ['administrativo', 'director'], path: 'emision-mensual/:runId/borradores', element: <DraftInvoicesPage /> },

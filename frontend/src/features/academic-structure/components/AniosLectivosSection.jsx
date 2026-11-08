@@ -1,163 +1,35 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, Settings2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
   useProgramBillingTemplates,
-  useUpdateYearBillingConfiguration,
   useBillingConfigurationAlerts,
 } from '@/features/academic-structure/hooks/useCohorts';
-import { MESES, descripcionMatriculas } from '@/features/academic-structure/lib/aniosLectivos';
+import { descripcionMatriculas } from '@/features/academic-structure/lib/aniosLectivos';
+import { formatIso } from '@/features/academic-structure/lib/billingConfigForm';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
+import { YearBillingConfigPage } from './YearBillingConfigPage';
 
-const SELECT_CLASS =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent';
-const LABEL_CLASS = 'text-[11px] font-bold uppercase tracking-widest text-ink-faint';
+function advanceLine(template, term) {
+  if (template.advanceEnrollmentFeeOpensOn) return `Matrícula anticipada: abre el ${formatIso(template.advanceEnrollmentFeeOpensOn)}`;
+  if (term?.enrollmentStart) return `Matrícula anticipada: abre con la inscripción, el ${formatIso(term.enrollmentStart)}`;
+  return null;
+}
 
-function ConfigurarAnioDialog({ template, titulo, onClose }) {
-  const update = useUpdateYearBillingConfiguration();
-  const [violations, setViolations] = useState([]);
-  const [cantidad, setCantidad] = useState(String(template.enrollmentFeeCount ?? 1));
-  const [primerMes, setPrimerMes] = useState(String(template.firstEnrollmentFeeMonth ?? 2));
-  const [segundoMes, setSegundoMes] = useState(String(template.secondEnrollmentFeeMonth ?? 7));
-  const [anticipacion, setAnticipacion] = useState(String(template.enrollmentFeeLeadMonths ?? 1));
-  const [diasTardia, setDiasTardia] = useState(String(template.lateEnrollmentFeeDueDays ?? 10));
-  const [pagaEnPausa, setPagaEnPausa] = useState(template.paysWhilePaused ?? false);
-  const [bloqueaMaterias, setBloqueaMaterias] = useState(template.blocksEnrollment ?? true);
-  const [bloqueaMesas, setBloqueaMesas] = useState(template.blocksExamRegistration ?? true);
-  const [bloqueaCertificados, setBloqueaCertificados] = useState(template.blocksCertificates ?? true);
-  const [soloFinales, setSoloFinales] = useState(template.requireEnrollmentFeeForFinalExamOnlyStudents ?? false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (cantidad === '2' && Number(segundoMes) <= Number(primerMes)) {
-      toast.error('El mes de la segunda matrícula tiene que ser posterior al de la primera.');
-      return;
-    }
-    setViolations([]);
-    try {
-      await update.mutateAsync({
-        templateId: template.id,
-        enrollmentFeeCount: Number(cantidad),
-        firstEnrollmentFeeMonth: Number(primerMes),
-        ...(cantidad === '2' ? { secondEnrollmentFeeMonth: Number(segundoMes) } : {}),
-        enrollmentFeeLeadMonths: Number(anticipacion),
-        lateEnrollmentFeeDueDays: Number(diasTardia),
-        paysWhilePaused: pagaEnPausa,
-        blocksEnrollment: bloqueaMaterias,
-        blocksExamRegistration: bloqueaMesas,
-        blocksCertificates: bloqueaCertificados,
-        requireEnrollmentFeeForFinalExamOnlyStudents: soloFinales,
-      });
-      toast.success('Configuración del año lectivo guardada.');
-      onClose();
-    } catch (error) {
-      setViolations(error?.violations ?? []);
-      toast.error('No se pudo guardar la configuración.');
-    }
-  }
-
+function Alert({ tone, children }) {
+  const classes = tone === 'danger' ? 'bg-danger-bg text-ink' : 'bg-warning-bg text-ink';
+  const iconClasses = tone === 'danger' ? 'text-danger' : 'text-warning';
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Configurar cobro — {titulo}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <fieldset className="flex flex-col gap-3">
-            <legend className={LABEL_CLASS}>Cuándo se cobra</legend>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="anio-cantidad" className={LABEL_CLASS}>Cantidad de matrículas por año</label>
-              <select id="anio-cantidad" value={cantidad} onChange={(e) => setCantidad(e.target.value)} className={SELECT_CLASS}>
-                <option value="1">1 por año (cubre los dos cuatrimestres)</option>
-                <option value="2">2 por año (una por cuatrimestre)</option>
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="anio-primer-mes" className={LABEL_CLASS}>Mes de la {cantidad === '2' ? 'primera ' : ''}matrícula</label>
-              <select id="anio-primer-mes" value={primerMes} onChange={(e) => setPrimerMes(e.target.value)} className={SELECT_CLASS}>
-                {MESES.map((nombre, i) => <option key={nombre} value={String(i + 1)}>{nombre}</option>)}
-              </select>
-            </div>
-            {cantidad === '2' && (
-              <div className="flex flex-col gap-1">
-                <label htmlFor="anio-segundo-mes" className={LABEL_CLASS}>Mes de la segunda matrícula</label>
-                <select id="anio-segundo-mes" value={segundoMes} onChange={(e) => setSegundoMes(e.target.value)} className={SELECT_CLASS}>
-                  {MESES.map((nombre, i) => <option key={nombre} value={String(i + 1)}>{nombre}</option>)}
-                </select>
-              </div>
-            )}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="anio-anticipacion" className={LABEL_CLASS}>Meses de anticipación a la inscripción</label>
-              <input id="anio-anticipacion" type="number" min="0" max="6" value={anticipacion}
-                onChange={(e) => setAnticipacion(e.target.value)} className={SELECT_CLASS} />
-              <p className="text-[12px] text-ink-faint">La matrícula se emite entre el 1 y el 5 del mes que corresponde a esta anticipación antes de que abra la inscripción del cuatrimestre.</p>
-            </div>
-          </fieldset>
-
-          <fieldset className="flex flex-col gap-2">
-            <legend className={LABEL_CLASS}>Qué bloquea la matrícula impaga</legend>
-            <label className="flex items-center gap-2 text-[13px] text-ink">
-              <input type="checkbox" checked={bloqueaMaterias} onChange={(e) => setBloqueaMaterias(e.target.checked)} />
-              Inscripción a materias
-            </label>
-            <label className="flex items-center gap-2 text-[13px] text-ink">
-              <input type="checkbox" checked={bloqueaMesas} onChange={(e) => setBloqueaMesas(e.target.checked)} />
-              Inscripción a mesas de examen
-            </label>
-            <label className="flex items-center gap-2 text-[13px] text-ink">
-              <input type="checkbox" checked={bloqueaCertificados} onChange={(e) => setBloqueaCertificados(e.target.checked)} />
-              Pedido de certificados
-            </label>
-          </fieldset>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="anio-solo-finales" className={LABEL_CLASS}>Alumnos que solo rinden finales: ¿deben pagar matrícula?</label>
-            <select id="anio-solo-finales" value={soloFinales ? 'si' : 'no'} onChange={(e) => setSoloFinales(e.target.value === 'si')} className={SELECT_CLASS}>
-              <option value="no">No</option>
-              <option value="si">Sí</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="anio-dias-tardia" className={LABEL_CLASS}>Días de vencimiento de una matrícula emitida fuera de ventana</label>
-            <input id="anio-dias-tardia" type="number" min="1" max="60" value={diasTardia}
-              onChange={(e) => setDiasTardia(e.target.value)} className={SELECT_CLASS} />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="anio-paga-pausa" className={LABEL_CLASS}>Alumnos en pausa académica: ¿pagan cuotas y matrícula?</label>
-            <select id="anio-paga-pausa" value={pagaEnPausa ? 'si' : 'no'} onChange={(e) => setPagaEnPausa(e.target.value === 'si')} className={SELECT_CLASS}>
-              <option value="no">No</option>
-              <option value="si">Sí</option>
-            </select>
-          </div>
-
-          {violations.length > 0 && (
-            <ul role="alert" className="list-disc space-y-1 pl-5 text-sm text-destructive">
-              {violations.map((violation) => (
-                <li key={violation.code}>{violation.message}</li>
-              ))}
-            </ul>
-          )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" variant="gradient" loading={update.isPending}>Guardar</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <div role="alert" className={`flex items-start gap-2 rounded-xl px-3 py-2 text-[13px] ${classes}`}>
+      <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${iconClasses}`} />
+      <span>{children}</span>
+    </div>
   );
 }
 
@@ -165,25 +37,33 @@ export function AniosLectivosSection({ programId, canEdit = false }) {
   const { data: templates, isLoading, isError, error, refetch } = useProgramBillingTemplates(programId);
   const { data: alertas } = useBillingConfigurationAlerts();
   const { data: terminos } = useTerminos();
+  const basePath = useRoleBasePath();
   const [editando, setEditando] = useState(null);
 
   const alertasDeLaCarrera = (alertas ?? []).filter((a) => String(a.programId) === String(programId));
 
+  function termOf(template) {
+    return (terminos ?? []).find((t) => String(t.id) === String(template.termId));
+  }
+
   function tituloDe(template) {
-    const term = (terminos ?? []).find((t) => String(t.id) === String(template.termId));
+    const term = termOf(template);
     return term ? `Año lectivo ${term.year}` : `Año lectivo (término ${template.termId})`;
+  }
+
+  if (editando) {
+    return (
+      <YearBillingConfigPage template={editando} title={tituloDe(editando)} term={termOf(editando)} onClose={() => setEditando(null)} />
+    );
   }
 
   return (
     <div className="flex flex-col gap-4">
       {alertasDeLaCarrera.length > 0 && (
-        <div role="alert" className="flex items-start gap-2 rounded-xl bg-warning-bg px-3 py-2 text-[13px] text-ink">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-          <span>
-            Esta carrera no tiene un año lectivo configurado para {alertasDeLaCarrera[0].period}: no se emite ninguna cuota ni
-            matrícula a {alertasDeLaCarrera[0].affectedEnrollments} inscripciones activas. Cargá el año lectivo para completar lo pendiente.
-          </span>
-        </div>
+        <Alert tone="warning">
+          Esta carrera no tiene un año lectivo configurado para {alertasDeLaCarrera[0].period}: no se emite ninguna cuota ni
+          matrícula a {alertasDeLaCarrera[0].affectedEnrollments} inscripciones activas. Cargá el año lectivo para completar lo pendiente.
+        </Alert>
       )}
 
       {!canEdit && (
@@ -200,26 +80,44 @@ export function AniosLectivosSection({ programId, canEdit = false }) {
         </GlassCard>
       ) : (
         <div className="flex flex-col gap-3">
-          {templates.map((template) => (
-            <GlassCard key={template.id} className="p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-ink">{tituloDe(template)} — {template.recurringFeeInvoicesCount} cuotas</p>
-                  <p className="text-[12px] text-ink-faint">{descripcionMatriculas(template)}</p>
+          {templates.map((template) => {
+            const term = termOf(template);
+            const line = advanceLine(template, term);
+            return (
+              <GlassCard key={template.id} className="flex flex-col gap-3 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-semibold text-ink">{tituloDe(template)} — {template.recurringFeeInvoicesCount} cuotas</p>
+                    <p className="text-[12px] text-ink-faint">{descripcionMatriculas(template)}</p>
+                    {line && <p className="text-[12px] text-ink-faint">{line}</p>}
+                  </div>
+                  {canEdit && (
+                    <Button variant="outline" size="sm" onClick={() => setEditando(template)} aria-label={`Configurar cobro de ${tituloDe(template)}`}>
+                      <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+                      Configurar cobro
+                    </Button>
+                  )}
                 </div>
-                {canEdit && (
-                  <Button variant="outline" size="sm" onClick={() => setEditando(template)} aria-label={`Configurar cobro de ${tituloDe(template)}`}>
-                    <Settings2 className="mr-1.5 h-3.5 w-3.5" />
-                    Configurar cobro
-                  </Button>
+                {template.nextYearPriceMissing && (
+                  <Alert tone="danger">
+                    Falta el precio de la matrícula del año siguiente: hasta cargarlo, nadie puede generarla por adelantado.{' '}
+                    {canEdit && (
+                      <Link to={`${basePath}/precios`} className="font-semibold text-primary hover:underline">
+                        Cargar el precio
+                      </Link>
+                    )}
+                  </Alert>
                 )}
-              </div>
-            </GlassCard>
-          ))}
+                {template.advanceOpeningAfterRegularEmission && (
+                  <Alert tone="warning">
+                    La apertura de la matrícula anticipada es posterior a la emisión regular: nadie va a poder adelantarla. Elegí una fecha anterior.
+                  </Alert>
+                )}
+              </GlassCard>
+            );
+          })}
         </div>
       )}
-
-      {editando && <ConfigurarAnioDialog template={editando} titulo={tituloDe(editando)} onClose={() => setEditando(null)} />}
     </div>
   );
 }
