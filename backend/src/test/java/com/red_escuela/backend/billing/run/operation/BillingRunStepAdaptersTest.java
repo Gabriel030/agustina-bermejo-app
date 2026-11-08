@@ -118,7 +118,9 @@ class BillingRunStepAdaptersTest {
     @Tag("D-529")
     void theAdvanceEnrollmentFeeExpiryStepReportsEachFailedInvoiceAndCountsExpiredAndSkippedSeparately() {
         AdvanceEnrollmentFeeExpirer expirer = mock(AdvanceEnrollmentFeeExpirer.class);
-        when(expirer.expireFeesWhoseWindowClosedBefore(DAY)).thenReturn(new AdvanceEnrollmentFeeExpiryResult(3, 2, List.of(41L, 42L)));
+        when(expirer.expireFeesWhoseWindowClosedBefore(DAY)).thenReturn(new AdvanceEnrollmentFeeExpiryResult(3, 2, List.of(
+                new AdvanceEnrollmentFeeExpiryResult.Failure(41L, AdvanceEnrollmentFeeExpiryBillingRunStep.ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED, "IllegalStateException: boom"),
+                new AdvanceEnrollmentFeeExpiryResult.Failure(42L, AdvanceEnrollmentFeeExpiryBillingRunStep.ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED, "other"))));
         AdvanceEnrollmentFeeExpiryBillingRunStep step = new AdvanceEnrollmentFeeExpiryBillingRunStep(expirer);
 
         BillingRunStepOutcome outcome = step.runStepForBusinessDate(DAY);
@@ -128,6 +130,7 @@ class BillingRunStepAdaptersTest {
         assertThat(outcome.processed()).isEqualTo(3);
         assertThat(outcome.skipped()).isEqualTo(2);
         assertThat(outcome.failed()).isEqualTo(2);
+        assertThat(outcome.items().get(0).message()).isEqualTo("IllegalStateException: boom");
         assertThat(outcome.items()).extracting(item -> item.subjectType(), item -> item.subjectId(), item -> item.status(), item -> item.errorCode())
                 .containsExactly(
                         org.assertj.core.api.Assertions.tuple(BillingRunSubjectType.INVOICE, 41L, BillingRunItemStatus.FAILED, AdvanceEnrollmentFeeExpiryBillingRunStep.ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED),

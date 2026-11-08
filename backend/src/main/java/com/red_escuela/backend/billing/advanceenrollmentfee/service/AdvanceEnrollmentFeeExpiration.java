@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AdvanceEnrollmentFeeExpiration {
     private static final Logger log = LoggerFactory.getLogger(AdvanceEnrollmentFeeExpiration.class);
-    private static final String JUSTIFICATION = "La matrícula del año siguiente pagada por adelantado venció al cerrar la ventana de inscripción sin pagarse";
+    private static final String JUSTIFICATION = "La matrícula anticipada del año siguiente no fue abonada y venció al cerrar la ventana de inscripción";
 
     private final SystemAdmissionInvoiceCancellation invoiceCancellation;
 

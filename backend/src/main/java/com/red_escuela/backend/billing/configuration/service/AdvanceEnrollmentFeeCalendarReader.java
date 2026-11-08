@@ -33,7 +33,11 @@ public class AdvanceEnrollmentFeeCalendarReader {
 
     @Transactional(readOnly = true)
     public Optional<AdvanceEnrollmentFeeCalendar> calendarOf(ProgramYearBillingTemplate template) {
-        LocalDate today = LocalDate.now(clock);
+        return calendarOf(template, LocalDate.now(clock));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<AdvanceEnrollmentFeeCalendar> calendarOf(ProgramYearBillingTemplate template, LocalDate today) {
         try {
             YearBillingTerms terms = configurationReader.requireYearTermsEffectiveOn(template.programId(), template.termId(), today);
             YearCycle cycle = YearCycle.of(template, terms, today.getYear());
@@ -44,8 +48,8 @@ public class AdvanceEnrollmentFeeCalendarReader {
     }
 
     @Transactional(readOnly = true)
-    public Optional<LocalDate> windowClosesOnOfTemplate(Long templateId) {
-        return templateRepository.findById(templateId).flatMap(this::calendarOf).map(AdvanceEnrollmentFeeCalendar::windowClosesOn);
+    public Optional<LocalDate> windowClosesOnOfTemplate(Long templateId, LocalDate asOf) {
+        return templateRepository.findById(templateId).flatMap(template -> calendarOf(template, asOf)).map(AdvanceEnrollmentFeeCalendar::windowClosesOn);
     }
 
     @Transactional(readOnly = true)

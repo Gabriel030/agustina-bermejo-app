@@ -114,6 +114,20 @@ class AdvanceEnrollmentFeeExpiryIT extends AbstractAdvanceEnrollmentFeeTest {
     }
 
     @Test
+    void theBusinessDateDecidesTheExpiryEvenWhenTheClockShowsAnotherDay() {
+        Setup setup = september();
+        Long invoiceId = issueAsStaff(setup);
+        today(date(2028, 2, 10));
+
+        AdvanceEnrollmentFeeExpiryResult sameClockDay = expirer.expireFeesWhoseWindowClosedBefore(WINDOW_CLOSING_DAY);
+        assertThat(sameClockDay.candidates()).isZero();
+        AdvanceEnrollmentFeeExpiryResult laterBusinessDate = expirer.expireFeesWhoseWindowClosedBefore(NIGHT_AFTER_CLOSING);
+
+        assertThat(laterBusinessDate.expired()).isEqualTo(1);
+        assertThat(reload(invoiceId).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.CANCELLED);
+    }
+
+    @Test
     void theFeeIsNotCancelledOnTheDayTheWindowClosesOnlyTheNightAfter() {
         Setup setup = september();
         Long invoiceId = issueAsStaff(setup);

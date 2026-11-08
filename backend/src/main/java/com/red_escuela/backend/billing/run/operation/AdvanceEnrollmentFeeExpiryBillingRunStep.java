@@ -13,8 +13,7 @@ import java.util.List;
 
 @Component
 public class AdvanceEnrollmentFeeExpiryBillingRunStep extends AbstractBillingRunStep {
-    public static final String ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED = "ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED";
-    private static final String FAILURE_MESSAGE = "No se pudo vencer la matrícula anticipada";
+    public static final String ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED = AdvanceEnrollmentFeeExpirer.EXPIRY_FAILED;
 
     private final AdvanceEnrollmentFeeExpirer expirer;
 
@@ -30,11 +29,11 @@ public class AdvanceEnrollmentFeeExpiryBillingRunStep extends AbstractBillingRun
     @Override
     protected BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate) {
         AdvanceEnrollmentFeeExpiryResult result = expirer.expireFeesWhoseWindowClosedBefore(businessDate);
-        List<BillingRunItemRecord> failures = result.failedInvoiceIds().stream().map(AdvanceEnrollmentFeeExpiryBillingRunStep::failureOf).toList();
+        List<BillingRunItemRecord> failures = result.failures().stream().map(AdvanceEnrollmentFeeExpiryBillingRunStep::failureOf).toList();
         return new BillingRunStepOutcome(result.candidates(), result.expired(), result.skipped(), failures.size(), failures);
     }
 
-    private static BillingRunItemRecord failureOf(Long invoiceId) {
-        return BillingRunItemRecord.failedSubject(BillingRunSubjectType.INVOICE, invoiceId, ADVANCE_ENROLLMENT_FEE_EXPIRY_FAILED, FAILURE_MESSAGE);
+    private static BillingRunItemRecord failureOf(AdvanceEnrollmentFeeExpiryResult.Failure failure) {
+        return BillingRunItemRecord.failedSubject(BillingRunSubjectType.INVOICE, failure.invoiceId(), failure.code(), failure.message());
     }
 }
