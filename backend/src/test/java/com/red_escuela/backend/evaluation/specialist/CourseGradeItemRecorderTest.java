@@ -18,6 +18,8 @@ import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
@@ -359,6 +361,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         Setup s = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
         Instructor tribunalMember = persistInstructor();
         ExamBoard board = persistExamBoard(s, ExamBoardStatus.SCHEDULED);
+        registerInBoard(s, board, ExamBoardRegistrationStatus.REGISTERED);
         ExamBoardInstructor member = new ExamBoardInstructor();
         member.setExamBoard(board);
         member.setInstructor(tribunalMember);
@@ -370,6 +373,70 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
 
         assertThat(item.getExamBoard().getId()).isEqualTo(board.getId());
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.APPROVED);
+    }
+
+    private void registerInBoard(Setup s, ExamBoard board, ExamBoardRegistrationStatus status) {
+        ExamBoardRegistration registration = new ExamBoardRegistration();
+        registration.setExamBoard(board);
+        registration.setCourseSubjectSectionEnrollment(s.enrollment());
+        registration.setStatus(status);
+        registration.setRegisteredAt(LocalDateTime.now());
+        entityManager.persist(registration);
+    }
+
+    private Instructor persistTribunalMember(ExamBoard board) {
+        Instructor member = persistInstructor();
+        ExamBoardInstructor assignment = new ExamBoardInstructor();
+        assignment.setExamBoard(board);
+        assignment.setInstructor(member);
+        entityManager.persist(assignment);
+        entityManager.flush();
+        return member;
+    }
+
+    private void assertBoardGradeRejected(Setup s, Instructor member, CreateGradeItemRequest request) {
+        assertThatThrownBy(() -> gradeItemService.loadCourseEnrollmentGrade(
+                s.enrollment().getId(), member.getId(), request))
+                .isInstanceOf(NotOwnSectionException.class);
+        assertThat(gradeItemService.listByCourseEnrollment(s.enrollment().getId())).isEmpty();
+    }
+
+    @Test
+    void aTribunalMemberCannotGradeACourseStudentNotRegisteredInTheBoard() {
+        Setup s = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
+        ExamBoard board = persistExamBoard(s, ExamBoardStatus.SCHEDULED);
+
+        assertBoardGradeRejected(s, persistTribunalMember(board), boardRequest(board.getId()));
+    }
+
+    @Test
+    void aTribunalMemberCannotGradeACourseStudentWhoWithdrewFromTheBoard() {
+        Setup s = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
+        ExamBoard board = persistExamBoard(s, ExamBoardStatus.SCHEDULED);
+        registerInBoard(s, board, ExamBoardRegistrationStatus.WITHDRAWN);
+
+        assertBoardGradeRejected(s, persistTribunalMember(board), boardRequest(board.getId()));
+    }
+
+    @Test
+    void aTribunalMemberCannotGradeThroughABoardOfAnotherCourseSubject() {
+        Setup s = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
+        Setup other = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
+        ExamBoard otherBoard = persistExamBoard(other, ExamBoardStatus.SCHEDULED);
+        registerInBoard(s, otherBoard, ExamBoardRegistrationStatus.REGISTERED);
+
+        assertBoardGradeRejected(s, persistTribunalMember(otherBoard), boardRequest(otherBoard.getId()));
+    }
+
+    @Test
+    void aTribunalMemberCannotLoadANonFinalCourseItemThroughTheBoard() {
+        Setup s = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
+        ExamBoard board = persistExamBoard(s, ExamBoardStatus.SCHEDULED);
+        registerInBoard(s, board, ExamBoardRegistrationStatus.REGISTERED);
+        CreateGradeItemRequest request = new CreateGradeItemRequest(
+                GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7), null, board.getId());
+
+        assertBoardGradeRejected(s, persistTribunalMember(board), request);
     }
 
     @Test
