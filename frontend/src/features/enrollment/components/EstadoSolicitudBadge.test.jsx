@@ -26,17 +26,17 @@ describe('EstadoSolicitudBadge', () => {
   it('una solicitud aprobada con la matrícula vencida lo dice en tono de peligro', () => {
     render(<EstadoSolicitudBadge solicitud={{ status: 'APPROVED', admissionInvoice: factura({ paymentStatus: 'OVERDUE' }) }} />);
     const pill = screen.getByText('Matrícula vencida');
-    expect(pill.className).toContain('text-danger');
+    expect(pill.className).toContain('text-pill-danger');
   });
 
   it('una solicitud aprobada con la matrícula pagada y la inscripción creada figura como inscripto', () => {
     render(<EstadoSolicitudBadge solicitud={{ status: 'APPROVED', admissionInvoice: factura({ paymentStatus: 'PAID' }), programEnrollmentId: 15 }} />);
-    expect(screen.getByText('Inscripto').className).toContain('text-success');
+    expect(screen.getByText('Inscripto').className).toContain('text-pill-success');
   });
 
   it('una solicitud aprobada con la matrícula pagada pero sin inscripción figura como confirmando inscripción', () => {
     render(<EstadoSolicitudBadge solicitud={{ status: 'APPROVED', admissionInvoice: factura({ paymentStatus: 'PAID' }), programEnrollmentId: null }} />);
-    expect(screen.getByText('Confirmando inscripción').className).toContain('text-warning');
+    expect(screen.getByText('Confirmando inscripción').className).toContain('text-pill-warning');
     expect(screen.queryByText('Inscripto')).not.toBeInTheDocument();
   });
 

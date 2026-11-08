@@ -15,7 +15,7 @@ export function ThemeToggle() {
     >
       <span
         className={`relative h-8 w-14 rounded-full border border-border transition-colors duration-300 ${
-          oscuro ? "bg-gradient-to-br from-brand to-accent-2" : "bg-neutral-bg"
+          oscuro ? "bg-(image:--btn-primary-bg)" : "bg-neutral-bg"
         }`}
       >
         <span
