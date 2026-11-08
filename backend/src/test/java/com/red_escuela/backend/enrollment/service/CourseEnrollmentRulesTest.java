@@ -312,6 +312,26 @@ class CourseEnrollmentRulesTest {
     }
 
     @Test
+    void withdrawLocksTheCourseFirstAndThenTheSectionsInAscendingIdOrder() {
+        CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment higherSection = subEnrollment(100L, 33L, 23L, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment lowerSection = subEnrollment(101L, 31L, 21L, EnrollmentStatus.IN_PROGRESS);
+        CourseSubjectSectionEnrollment middleSection = subEnrollment(102L, 32L, 22L, EnrollmentStatus.ENROLLED);
+        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        givenWithdrawalDates();
+        when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(higherSection, lowerSection, middleSection));
+
+        service.withdraw(1L, voluntaryWithdrawal());
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(courseCatalogFinder, sectionFinder);
+        order.verify(courseCatalogFinder).lockCourse(COURSE_ID);
+        order.verify(sectionFinder).lockCourseSection(31L);
+        order.verify(sectionFinder).lockCourseSection(32L);
+        order.verify(sectionFinder).lockCourseSection(33L);
+        order.verifyNoMoreInteractions();
+    }
+
+    @Test
     void withdrawOfWaitlistedStudentDoesNotFreeASeatForTheCourseWaitlist() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.WAITLISTED);
         when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));

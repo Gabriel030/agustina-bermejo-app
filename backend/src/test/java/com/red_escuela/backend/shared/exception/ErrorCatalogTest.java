@@ -65,6 +65,12 @@ class ErrorCatalogTest {
         handlers.put(org.springframework.orm.ObjectOptimisticLockingFailureException.class, new TransversalError(
                 ErrorCodeResponse.CONCURRENT_MODIFICATION_CODE, 409, false, "Otro usuario modificó el mismo registro",
                 "Hay que releer el registro antes de reintentar; repetir a ciegas pisa cambios ajenos"));
+        handlers.put(org.springframework.dao.PessimisticLockingFailureException.class, new TransversalError(
+                ErrorCodeResponse.LOCK_CONFLICT_CODE, 409, true, "Deadlock, espera de bloqueo vencida o fallo de serialización en la base",
+                "Otra operación tenía tomados los mismos registros; repetir el mismo pedido suele funcionar"));
+        handlers.put(org.springframework.dao.QueryTimeoutException.class, new TransversalError(
+                ErrorCodeResponse.DATABASE_BUSY_CODE, 503, true, "Consulta cancelada por superar el tiempo máximo de la base",
+                "La base está ocupada; repetir tras el Retry-After puede funcionar"));
         handlers.put(IllegalArgumentException.class, new TransversalError(
                 ErrorCodeResponse.codeOf(IllegalArgumentException.class), 400, false, "Argumento ilegal no previsto por el dominio",
                 "El pedido es inválido; repetirlo igual falla igual"));

@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,7 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final String REQUEST_ID_KEY = "requestId";
     private static final String USER_ID_KEY = "userId";
+    private static final int DATABASE_BUSY_RETRY_AFTER_SECONDS = 5;
 
     private ApiErrorCounter apiErrorCounter;
 
@@ -182,6 +185,26 @@ public class GlobalExceptionHandler {
                 exception);
         count(HttpStatus.CONFLICT, ErrorCodeResponse.CONCURRENT_MODIFICATION_CODE);
         return new ErrorCodeResponse(ErrorCodeResponse.CONCURRENT_MODIFICATION_CODE);
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorCodeResponse handlePessimisticLockingFailure(PessimisticLockingFailureException exception) {
+        log.warn("Conflicto de bloqueo en la base [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMostSpecificCause().getMessage()),
+                exception);
+        count(HttpStatus.CONFLICT, ErrorCodeResponse.LOCK_CONFLICT_CODE);
+        return new ErrorCodeResponse(ErrorCodeResponse.LOCK_CONFLICT_CODE, true);
+    }
+
+    @ExceptionHandler(QueryTimeoutException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ResponseEntity<ErrorCodeResponse> handleQueryTimeout(QueryTimeoutException exception) {
+        log.warn("Consulta cancelada por tiempo [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMostSpecificCause().getMessage()),
+                exception);
+        count(HttpStatus.SERVICE_UNAVAILABLE, ErrorCodeResponse.DATABASE_BUSY_CODE);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(DATABASE_BUSY_RETRY_AFTER_SECONDS))
+                .body(new ErrorCodeResponse(ErrorCodeResponse.DATABASE_BUSY_CODE, true));
     }
 
     @ExceptionHandler(Exception.class)

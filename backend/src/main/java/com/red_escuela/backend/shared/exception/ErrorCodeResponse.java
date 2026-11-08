@@ -24,6 +24,8 @@ public record ErrorCodeResponse(
     public static final String INVALID_PARAMETER_TYPE_CODE = "INVALID_PARAMETER_TYPE";
     public static final String DATA_INTEGRITY_VIOLATION_CODE = "DATA_INTEGRITY_VIOLATION";
     public static final String CONCURRENT_MODIFICATION_CODE = "CONCURRENT_MODIFICATION";
+    public static final String LOCK_CONFLICT_CODE = "LOCK_CONFLICT";
+    public static final String DATABASE_BUSY_CODE = "DATABASE_BUSY";
 
     public static final String EXTERNAL_SERVICE_UNAVAILABLE_CODE = "EXTERNAL_SERVICE_UNAVAILABLE";
 
