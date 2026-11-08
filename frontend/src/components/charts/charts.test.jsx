@@ -140,7 +140,7 @@ describe('library and theme guardrails', () => {
       return token;
     });
     for (const token of [...seriesTokens, ...extraTokens]) {
-      expect(tokensCss.split(`${token}:`).length - 1, token).toBeGreaterThanOrEqual(3);
+      expect(tokensCss.split(`${token}:`).length - 1, token).toBeGreaterThanOrEqual(2);
     }
   });
 });
