@@ -1,5 +1,5 @@
 import { useLocation, useOutlet } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { SkipToContent } from "@/components/SkipToContent";
 import { SystemBar } from "@/pwa/SystemBar";
 
@@ -17,7 +17,7 @@ export function PublicLayout() {
       <SystemBar />
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
         <AnimatePresence mode="popLayout" initial={false}>
-          <motion.div
+          <m.div
             key={location.pathname}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -25,7 +25,7 @@ export function PublicLayout() {
             transition={{ duration: 0.15, ease: "easeOut" }}
           >
             {element}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </main>
     </>

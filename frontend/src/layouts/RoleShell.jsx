@@ -1,5 +1,5 @@
 import { useLocation, useOutlet } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { Sidebar } from '@/components/Sidebar';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Breadcrumb } from '@/components/Breadcrumb';
@@ -77,7 +77,7 @@ export function RoleShell({ titulo, items }) {
               desplazamiento vertical durante el fade es lo que se leía como el
               "flash" del scroll vertical. */}
           <AnimatePresence mode="popLayout" initial={false}>
-            <motion.div
+            <m.div
               key={location.pathname}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -88,7 +88,7 @@ export function RoleShell({ titulo, items }) {
               <ErrorBoundary scope="screen" resetKey={location.pathname} fallback={(props) => <ErrorFallback {...props} />}>
                 {element}
               </ErrorBoundary>
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </main>
       </div>

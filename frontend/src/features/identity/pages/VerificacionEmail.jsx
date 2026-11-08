@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
@@ -28,7 +28,7 @@ export function VerificacionEmail() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
       <MeshBackground />
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
@@ -85,7 +85,7 @@ export function VerificacionEmail() {
             </>
           )}
         </GlassCard>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createQueryClient } from '@/api/queryClient';
 import { OFFLINE_BUSTER, OFFLINE_MAX_AGE_MS, offlineDehydrateOptions, offlinePersister } from '@/api/offlinePersistence';
+import { LazyMotion } from 'motion/react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -13,6 +14,8 @@ import { Toaster } from '@/components/ui/sonner';
 // Primera pantalla con fetch + paginación + invalidación real (Épica 7 Fase 3,
 // ver docs/context/frontend.md) — antes no había caso de uso que lo justificara.
 const queryClient = createQueryClient();
+
+const loadMotionFeatures = () => import('@/lib/motionFeatures').then((module) => module.default);
 
 const persistOptions = {
   persister: offlinePersister,
@@ -29,7 +32,9 @@ export function App() {
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
             <BrowserRouter>
               <AuthProvider>
-                <AppRouter />
+                <LazyMotion features={loadMotionFeatures}>
+                  <AppRouter />
+                </LazyMotion>
               </AuthProvider>
             </BrowserRouter>
           </PersistQueryClientProvider>
