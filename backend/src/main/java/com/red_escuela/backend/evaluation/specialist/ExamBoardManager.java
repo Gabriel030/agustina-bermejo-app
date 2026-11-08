@@ -8,6 +8,9 @@ import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationSummaryRespon
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
+import com.red_escuela.backend.evaluation.entity.GradeItemType;
+import com.red_escuela.backend.evaluation.exception.ExamBoardCanceledException;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
@@ -102,8 +105,28 @@ public class ExamBoardManager {
     @Transactional
     public ExamBoard close(Long examBoardId) {
         ExamBoard examBoard = findOrThrow(examBoardId);
+        if (examBoard.getStatus() == ExamBoardStatus.CANCELED) {
+            throw new ExamBoardCanceledException(examBoardId);
+        }
         examBoard.close(LocalDateTime.now(clock));
+        settleRegistrations(examBoardId);
         return examBoardRepository.save(examBoard);
+    }
+
+    private void settleRegistrations(Long examBoardId) {
+        List<GradeItem> finalGrades = gradeItemRepository.findByExamBoardId(examBoardId).stream()
+                .filter(grade -> grade.getType() == GradeItemType.FINAL && grade.getScore() != null)
+                .toList();
+        examBoardRegistrationRepository.findByExamBoardId(examBoardId).stream()
+                .filter(registration -> registration.getStatus() == ExamBoardRegistrationStatus.REGISTERED)
+                .forEach(registration -> registration.setStatus(
+                        hasFinalGrade(registration, finalGrades)
+                                ? ExamBoardRegistrationStatus.GRADED
+                                : ExamBoardRegistrationStatus.ABSENT));
+    }
+
+    private boolean hasFinalGrade(ExamBoardRegistration registration, List<GradeItem> finalGrades) {
+        return finalGrades.stream().anyMatch(grade -> sameEnrollment(grade, registration));
     }
 
     public List<ExamBoardRegistration> listRegistrants(Long examBoardId) {

@@ -27,6 +27,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
+import com.red_escuela.backend.evaluation.exception.ExamBoardCanceledException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotYetTakenException;
 import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
 import com.red_escuela.backend.identity.entity.Person;
@@ -195,5 +196,123 @@ class ExamBoardManagerTest extends AbstractIntegrationTest {
             assertThat(row.status()).isEqualTo("GRADED");
             assertThat(row.finalScore()).isEqualByComparingTo(BigDecimal.valueOf(7.0));
         });
+    }
+
+    private ExamBoardRegistration persistRegisteredStudent(ExamBoard examBoard, SubjectSectionEnrollment enrollment) {
+        ExamBoardRegistration registration = new ExamBoardRegistration();
+        registration.setExamBoard(examBoard);
+        registration.setProgramSubjectSectionEnrollment(enrollment);
+        registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
+        registration.setRegisteredAt(LocalDateTime.of(2020, 8, 20, 10, 0));
+        entityManager.persist(registration);
+        return registration;
+    }
+
+    private void persistFinalGrade(ExamBoard examBoard, SubjectSectionEnrollment enrollment, double score) {
+        GradeItem finalGrade = new GradeItem();
+        finalGrade.setProgramSubjectSectionEnrollment(enrollment);
+        finalGrade.setType(GradeItemType.FINAL);
+        finalGrade.setSequenceNumber(1);
+        finalGrade.setDate(LocalDateTime.of(2020, 9, 2, 18, 0));
+        finalGrade.setScore(Grade.of(BigDecimal.valueOf(score)));
+        finalGrade.setExamBoard(examBoard);
+        entityManager.persist(finalGrade);
+    }
+
+    @Test
+    void closingAnExamBoardMarksGradedRegistrantsAsGradedAndTheRestAsAbsent() {
+        Subject subject = persistSubject("MateriaCierreGradedAusente");
+        Term term = persistTerm();
+        ExamBoard examBoard = persistExamBoard(subject, term, LocalDateTime.of(2020, 9, 2, 18, 0));
+        SubjectSectionEnrollment presentEnrollment = persistRegularEnrollment(subject, term, "72000011");
+        SubjectSectionEnrollment absentEnrollment = persistRegularEnrollment(subject, term, "72000012");
+        ExamBoardRegistration present = persistRegisteredStudent(examBoard, presentEnrollment);
+        ExamBoardRegistration absent = persistRegisteredStudent(examBoard, absentEnrollment);
+        persistFinalGrade(examBoard, presentEnrollment, 4.0);
+        entityManager.flush();
+
+        examBoardService.close(examBoard.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(entityManager.find(ExamBoardRegistration.class, present.getId()).getStatus())
+                .isEqualTo(ExamBoardRegistrationStatus.GRADED);
+        assertThat(entityManager.find(ExamBoardRegistration.class, absent.getId()).getStatus())
+                .isEqualTo(ExamBoardRegistrationStatus.ABSENT);
+    }
+
+    @Test
+    void aRegistrantWithAGradeFromAnotherExamBoardIsAbsentInThisOne() {
+        Subject subject = persistSubject("MateriaCierreNotaAjena");
+        Term term = persistTerm();
+        ExamBoard examBoard = persistExamBoard(subject, term, LocalDateTime.of(2020, 9, 2, 18, 0));
+        ExamBoard otherExamBoard = persistExamBoard(subject, term, LocalDateTime.of(2020, 8, 2, 18, 0));
+        SubjectSectionEnrollment enrollment = persistRegularEnrollment(subject, term, "72000013");
+        ExamBoardRegistration registration = persistRegisteredStudent(examBoard, enrollment);
+        persistFinalGrade(otherExamBoard, enrollment, 2.0);
+        entityManager.flush();
+
+        examBoardService.close(examBoard.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(entityManager.find(ExamBoardRegistration.class, registration.getId()).getStatus())
+                .isEqualTo(ExamBoardRegistrationStatus.ABSENT);
+    }
+
+    @Test
+    void closingAnExamBoardTwiceKeepsTheRegistrationStates() {
+        Subject subject = persistSubject("MateriaCierreIdempotente");
+        Term term = persistTerm();
+        ExamBoard examBoard = persistExamBoard(subject, term, LocalDateTime.of(2020, 9, 2, 18, 0));
+        SubjectSectionEnrollment enrollment = persistRegularEnrollment(subject, term, "72000014");
+        ExamBoardRegistration registration = persistRegisteredStudent(examBoard, enrollment);
+        persistFinalGrade(examBoard, enrollment, 8.0);
+        entityManager.flush();
+
+        examBoardService.close(examBoard.getId());
+        examBoardService.close(examBoard.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(entityManager.find(ExamBoardRegistration.class, registration.getId()).getStatus())
+                .isEqualTo(ExamBoardRegistrationStatus.GRADED);
+    }
+
+    @Test
+    void withdrawnRegistrationsAreNotTouchedWhenClosingAnExamBoard() {
+        Subject subject = persistSubject("MateriaCierreConBaja");
+        Term term = persistTerm();
+        ExamBoard examBoard = persistExamBoard(subject, term, LocalDateTime.of(2020, 9, 2, 18, 0));
+        SubjectSectionEnrollment enrollment = persistRegularEnrollment(subject, term, "72000015");
+        ExamBoardRegistration registration = persistRegisteredStudent(examBoard, enrollment);
+        registration.setStatus(ExamBoardRegistrationStatus.WITHDRAWN);
+        entityManager.flush();
+
+        examBoardService.close(examBoard.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(entityManager.find(ExamBoardRegistration.class, registration.getId()).getStatus())
+                .isEqualTo(ExamBoardRegistrationStatus.WITHDRAWN);
+    }
+
+    @Test
+    void aCanceledExamBoardCannotBeClosedAndStaysCanceled() {
+        Subject subject = persistSubject("MateriaCierreCancelada");
+        Term term = persistTerm();
+        ExamBoard examBoard = persistExamBoard(subject, term, LocalDateTime.of(2020, 9, 2, 18, 0));
+        SubjectSectionEnrollment enrollment = persistRegularEnrollment(subject, term, "72000016");
+        ExamBoardRegistration registration = persistRegisteredStudent(examBoard, enrollment);
+        examBoard.setStatus(ExamBoardStatus.CANCELED);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> examBoardService.close(examBoard.getId()))
+                .isInstanceOf(ExamBoardCanceledException.class);
+        entityManager.clear();
+
+        assertThat(entityManager.find(ExamBoard.class, examBoard.getId()).getStatus()).isEqualTo(ExamBoardStatus.CANCELED);
+        assertThat(entityManager.find(ExamBoardRegistration.class, registration.getId()).getStatus())
+                .isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
     }
 }
