@@ -43,6 +43,8 @@ class AdvanceEnrollmentFeeLifecycleIT extends AbstractAdvanceEnrollmentFeeTest {
     private CancelInvoiceUseCase cancelInvoice;
     @Autowired
     private QuoteAnnualUpfrontUseCase quoteAnnualUpfront;
+    @Autowired
+    private com.red_escuela.backend.billing.advanceenrollmentfee.usecase.RequestAdvanceEnrollmentFeeUseCase requestUseCase;
 
     private Long studentIdOf(Long enrollment) {
         return jdbcTemplate.queryForObject("select student_id from program_enrollment where id = ?", Long.class, enrollment);
@@ -104,7 +106,7 @@ class AdvanceEnrollmentFeeLifecycleIT extends AbstractAdvanceEnrollmentFeeTest {
         jdbcTemplate.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", issuance.invoiceId());
 
         assertThatThrownBy(() -> cancelInvoice.cancelOrRequestInvoiceCancellation(issuance.invoiceId(),
-                new CancelInvoiceRequest(CreditNoteReason.BILLING_ERROR, "Error"))).isInstanceOf(RuntimeException.class);
+                new CancelInvoiceRequest(CreditNoteReason.BILLING_ERROR, "Error"))).isInstanceOf(com.red_escuela.backend.billing.note.exception.PendingBankTransferOnInvoiceException.class);
 
         assertThat(reload(issuance.invoiceId()).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
     }
@@ -213,8 +215,32 @@ class AdvanceEnrollmentFeeLifecycleIT extends AbstractAdvanceEnrollmentFeeTest {
         actAsStaff(setup.career());
 
         assertThatThrownBy(() -> cancelInvoice.cancelOrRequestInvoiceCancellation(issuance.invoiceId(),
-                new CancelInvoiceRequest(CreditNoteReason.BILLING_ERROR, "Error"))).isInstanceOf(RuntimeException.class);
+                new CancelInvoiceRequest(CreditNoteReason.BILLING_ERROR, "Error"))).isInstanceOf(com.red_escuela.backend.billing.invoice.exception.IllegalInvoicePaymentStatusTransitionException.class);
 
         assertThat(reload(issuance.invoiceId()).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
+    }
+
+    @Test
+    @Tag("D-530")
+    void anAdministrativeStaffMemberGeneratesTheFeeForTheStudent() {
+        Setup setup = september();
+        actAsAdministrative(setup);
+
+        AdvanceEnrollmentFeeIssuance issuance = requestUseCase.requestForStudentAtCounter(setup.enrollment());
+
+        assertThat(issuance.created()).isTrue();
+        assertThat(advanceInvoices(setup.enrollment())).hasSize(1);
+    }
+
+    @Test
+    @Tag("D-530")
+    void thePreceptorAndTheStudentCannotUseTheStaffAction() {
+        Setup setup = september();
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(String.valueOf(setup.career().directorId()), "n/a", "ROLE_PRECEPTOR"));
+        assertThatThrownBy(() -> requestUseCase.requestForStudentAtCounter(setup.enrollment())).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        actAsStudentOf(setup.enrollment());
+        assertThatThrownBy(() -> requestUseCase.requestForStudentAtCounter(setup.enrollment())).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+
+        assertThat(advanceInvoices(setup.enrollment())).isEmpty();
     }
 }
