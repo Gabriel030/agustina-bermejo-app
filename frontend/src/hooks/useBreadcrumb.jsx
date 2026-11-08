@@ -34,9 +34,10 @@ export function useBreadcrumb() {
 
   const enDetallePagosCurso = /^\/alumno\/pagos\/curso\/[^/]+$/.test(location.pathname);
   const enDetallePagosCarrera = /^\/alumno\/pagos\/carrera\/[^/]+$/.test(location.pathname);
+  const enMatriculaAnticipada = /^\/alumno\/pagos\/carrera\/[^/]+\/matricula-anticipada$/.test(location.pathname);
   const enDetallePagos = enDetallePagosCurso || enDetallePagosCarrera;
   const { data: cursos } = useMisCursos(enDetallePagosCurso);
-  const { data: carreras } = useMisMatriculaciones(enDetallePagosCarrera);
+  const { data: carreras } = useMisMatriculaciones(enDetallePagosCarrera || enMatriculaAnticipada);
 
   const enLegajoAlumno = /^\/(preceptor|administrativo|director)\/alumnos\/[^/]+$/.test(location.pathname);
   const { data: legajo } = useLegajoAlumno(params.id, enLegajoAlumno);
@@ -92,6 +93,15 @@ export function useBreadcrumb() {
   const enPagos = location.pathname === '/alumno/pagos';
   if (enPagos) {
     return [{ label: 'Mis pagos' }];
+  }
+
+  if (enMatriculaAnticipada) {
+    const found = carreras?.find((m) => m.id === +params.enrollmentId);
+    return [
+      { label: 'Mis pagos', to: '/alumno/pagos' },
+      { label: found ? (found.programName ?? `Carrera #${found.programId}`) : <Skeleton className="h-4 w-32" />, to: `/alumno/pagos/carrera/${params.enrollmentId}` },
+      { label: 'Pagar la matrícula anticipada' },
+    ];
   }
 
   if (enDetallePagos) {

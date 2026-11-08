@@ -24,11 +24,13 @@ import {
   formatPeriod,
   invoiceDisplayStatus,
   invoiceStatusInfo,
+  invoiceSubtitle,
   invoiceTitle,
   isInvoicePayable,
 } from '@/lib/billing';
 import { sumMoney } from '@/features/billing/dashboard/dashboardMetrics';
 import { TabCount } from '@/components/TabCount';
+import { AdvanceEnrollmentFeeStaffSection } from '@/features/billing/advance-enrollment-fee/AdvanceEnrollmentFeeStaffSection';
 import { AnnualUpfrontStaffSection } from '@/features/billing/annual-upfront/AnnualUpfrontStaffSection';
 import { CashPaymentDialog } from '@/features/billing/components/CashPaymentDialog';
 import { STUDENT_PAYMENTS_ANCHOR, StudentPaymentsCard } from '@/features/billing/payment-reversals/StudentPaymentsCard';
@@ -122,7 +124,10 @@ function InvoicesTable({ invoices, billing }) {
           return (
             <Fragment key={inv.id}>
               <TableRow className="cursor-pointer" onClick={() => toggle(inv.id)}>
-                <TableCell className="font-medium">{concept}</TableCell>
+                <TableCell className="font-medium">
+                  {concept}
+                  {invoiceSubtitle(inv) && <small className="block text-xs font-normal text-ink-faint">{invoiceSubtitle(inv)}</small>}
+                </TableCell>
                 <TableCell className="text-ink-faint">{formatDate(inv.dueDate)}</TableCell>
                 <TableCell>
                   <PaymentDateCell invoice={inv} />
@@ -220,6 +225,7 @@ function EnrollmentCard({ enrollment, billing, defaultExpanded = false }) {
       {expanded && (
         <div className="flex flex-col gap-3 border-t border-border px-4 pb-4 pt-3">
           {isProgram && <AnnualUpfrontStaffSection enrollmentId={enrollment.enrollmentId} studentId={billing.studentId} />}
+          {isProgram && <AdvanceEnrollmentFeeStaffSection enrollmentId={enrollment.enrollmentId} invoices={invoices} />}
           {invoices.length === 0 ? (
             <p className="py-4 text-center text-sm text-ink-faint">Sin cuotas generadas todavía.</p>
           ) : (
