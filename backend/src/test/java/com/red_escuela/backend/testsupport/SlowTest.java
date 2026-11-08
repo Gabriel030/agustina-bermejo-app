@@ -15,4 +15,6 @@ import java.lang.annotation.Target;
 public @interface SlowTest {
 
     String reason();
+
+    int maxSeconds() default 0;
 }
