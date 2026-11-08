@@ -7,3 +7,4 @@ export { useRoleBasePath } from './hooks/useRoleBasePath';
 export { FormField, SelectField } from './components/FormField';
 export { fieldProps } from './lib/offeringForm';
 export { describeSection } from './lib/describeSection';
+export { useTerminos } from './hooks/useTerminos';

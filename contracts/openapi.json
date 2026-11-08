@@ -2029,7 +2029,7 @@
             "$ref" : "#/components/schemas/MarketingDiscountRequest"
           }
         },
-        "required" : [ "amount", "changeReason", "effectiveFrom", "marketingDiscount" ],
+        "required" : [ "amount", "changeReason", "effectiveFrom" ],
         "type" : "object"
       },
       "ChangeReminderScheduleRequest" : {
@@ -6438,7 +6438,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "fixedAmount", "percent", "type" ],
+        "required" : [ "type" ],
         "type" : "object"
       },
       "MeEnrollmentBillingStatusResponse" : {
