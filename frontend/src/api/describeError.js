@@ -21,6 +21,7 @@ export const ERROR_MESSAGES = {
   NO_PENDING_GRADES_TO_PUBLISH: 'No hay notas cargadas para publicar en esta evaluación.',
   JUSTIFICATION_DEADLINE_EXPIRED: 'Venció el plazo para justificar esta falta. Si corresponde, la resuelve el preceptor como excepción.',
   INVALID_JUSTIFICATION_INPUT: 'El motivo de la justificación supera los 500 caracteres. Acortalo e intentá de nuevo.',
+  SECTION_FULL: 'La comisión elegida no tiene cupo. Seguís en tu comisión actual.',
   CANNOT_JUSTIFY: 'Esta falta no se puede justificar en su estado actual.',
   STUDENT_HAS_ACTIVE_ENROLLMENTS: 'El alumno tiene inscripciones activas. Cancelalas antes de darlo de baja.',
   MERCADO_PAGO_GATEWAY: 'Mercado Pago no respondió. Probá en unos minutos.',

@@ -15,6 +15,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
+import com.red_escuela.backend.enrollment.exception.SectionFullException;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -221,5 +223,142 @@ class SectionEnrollmentConcurrencyIT extends AbstractIntegrationTest {
 
         assertThat(seatsHeldIn(ids[1])).isEqualTo(1);
         assertThat(waitlistedIn(ids[1])).isEqualTo(1);
+    }
+
+    @Test
+    void waitlistedStudentCanWithdrawWithoutFreeingASeatOrPromotingAnyone() {
+        Long[] ids = new Long[4];
+        inTransaction(() -> {
+            SubjectSection section = section(1);
+            ids[0] = enrollmentIn(section, EnrollmentStatus.ENROLLED, 0).getId();
+            ids[1] = enrollmentIn(section, EnrollmentStatus.WAITLISTED, 1).getId();
+            ids[2] = enrollmentIn(section, EnrollmentStatus.WAITLISTED, 2).getId();
+            ids[3] = section.getId();
+        });
+
+        service.withdraw(ids[1]);
+
+        assertThat(enrollmentRepository.findById(ids[1]).orElseThrow().getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(enrollmentRepository.findById(ids[1]).orElseThrow().getDroppedAt()).isNotNull();
+        assertThat(enrollmentRepository.findById(ids[0]).orElseThrow().getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(enrollmentRepository.findById(ids[2]).orElseThrow().getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+        assertThat(seatsHeldIn(ids[3])).isEqualTo(1);
+    }
+
+    @RepeatedTest(5)
+    void waitlistedWithdrawalRacingWithTheSeatHolderWithdrawalLeavesTheNextInLineEnrolled() throws Exception {
+        Long[] ids = new Long[4];
+        inTransaction(() -> {
+            SubjectSection section = section(1);
+            ids[0] = enrollmentIn(section, EnrollmentStatus.ENROLLED, 0).getId();
+            ids[1] = enrollmentIn(section, EnrollmentStatus.WAITLISTED, 1).getId();
+            ids[2] = enrollmentIn(section, EnrollmentStatus.WAITLISTED, 2).getId();
+            ids[3] = section.getId();
+        });
+        Callable<Object> holderWithdraws = () -> {
+            service.withdraw(ids[0]);
+            return null;
+        };
+        Callable<Object> waitlistedWithdraws = () -> {
+            service.withdraw(ids[1]);
+            return null;
+        };
+
+        List<Outcome<Object>> outcomes = ConcurrentRace.run(List.of(holderWithdraws, waitlistedWithdraws));
+
+        assertThat(outcomes).allSatisfy(outcome -> assertThat(outcome.failure()).isNull());
+        assertThat(enrollmentRepository.findById(ids[1]).orElseThrow().getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(enrollmentRepository.findById(ids[2]).orElseThrow().getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(seatsHeldIn(ids[3])).isEqualTo(1);
+        assertThat(waitlistedIn(ids[3])).isZero();
+    }
+
+    @Test
+    void changingToAFullSectionIsRejectedAndKeepsTheOriginSeat() {
+        Long[] ids = new Long[4];
+        inTransaction(() -> {
+            SubjectSection origin = section(20);
+            SubjectSection target = section(1);
+            ids[0] = enrollmentIn(origin, EnrollmentStatus.ENROLLED, 0).getId();
+            ids[1] = origin.getId();
+            ids[2] = target.getId();
+            enrollmentIn(target, EnrollmentStatus.ENROLLED, 1);
+        });
+
+        assertThatThrownBy(() -> service.changeSection(ids[0], new ChangeSectionRequest(ids[2])))
+                .isInstanceOf(SectionFullException.class);
+
+        assertThat(enrollmentRepository.findById(ids[0]).orElseThrow().getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(seatsHeldIn(ids[1])).isEqualTo(1);
+        assertThat(seatsHeldIn(ids[2])).isEqualTo(1);
+        assertThat(waitlistedIn(ids[2])).isZero();
+    }
+
+    @RepeatedTest(5)
+    void twoStudentsChangingIntoTheLastSeatLetOneInAndKeepTheOtherInTheirOrigin() throws Exception {
+        Long[] ids = new Long[4];
+        inTransaction(() -> {
+            SubjectSection origin = section(20);
+            SubjectSection target = section(1);
+            ids[0] = enrollmentIn(origin, EnrollmentStatus.ENROLLED, 0).getId();
+            ids[1] = enrollmentIn(origin, EnrollmentStatus.ENROLLED, 1).getId();
+            ids[2] = origin.getId();
+            ids[3] = target.getId();
+        });
+        Callable<Object> firstChanges = () -> service.changeSection(ids[0], new ChangeSectionRequest(ids[3]));
+        Callable<Object> secondChanges = () -> service.changeSection(ids[1], new ChangeSectionRequest(ids[3]));
+
+        List<Outcome<Object>> outcomes = ConcurrentRace.run(List.of(firstChanges, secondChanges));
+
+        assertThat(outcomes).filteredOn(Outcome::succeeded).hasSize(1);
+        assertThat(outcomes).filteredOn(outcome -> !outcome.succeeded())
+                .singleElement().satisfies(outcome -> assertThat(outcome.failure()).isInstanceOf(SectionFullException.class));
+        assertThat(seatsHeldIn(ids[3])).isEqualTo(1);
+        assertThat(seatsHeldIn(ids[2])).isEqualTo(1);
+        assertThat(waitlistedIn(ids[3])).isZero();
+    }
+
+    @Test
+    void reEnrollingAfterWithdrawalTakesTheCurrentDateAndGoesBehindTheExistingWaitlist() {
+        Long[] ids = new Long[4];
+        LocalDateTime longAgo = LocalDateTime.now().minusYears(1);
+        inTransaction(() -> {
+            SubjectSection section = section(1);
+            enrollmentIn(section, EnrollmentStatus.ENROLLED, 0);
+            ProgramEnrollment returning = fixtures.programEnrollment(program);
+            ids[0] = fixtures.sectionEnrollment(returning, section, EnrollmentStatus.WITHDRAWN, longAgo).getId();
+            ids[1] = returning.getId();
+            ids[2] = enrollmentIn(section, EnrollmentStatus.WAITLISTED, -5).getId();
+            ids[3] = section.getId();
+        });
+        LocalDateTime before = LocalDateTime.now();
+
+        SubjectSectionEnrollment reactivated = service.enroll(ids[1], new CreateSectionEnrollmentRequest(ids[3]));
+
+        assertThat(reactivated.getId()).isEqualTo(ids[0]);
+        assertThat(reactivated.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+        assertThat(enrollmentRepository.findById(ids[0]).orElseThrow().getEnrolledAt()).isAfterOrEqualTo(before.minusSeconds(5));
+        assertThat(enrollmentRepository.findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(ids[3], EnrollmentStatus.WAITLISTED))
+                .get().extracting(SubjectSectionEnrollment::getId).isEqualTo(ids[2]);
+    }
+
+    @Test
+    void changingIntoAPreviouslyWithdrawnSectionTakesTheCurrentDate() {
+        Long[] ids = new Long[3];
+        LocalDateTime longAgo = LocalDateTime.now().minusYears(1);
+        inTransaction(() -> {
+            SubjectSection origin = section(20);
+            SubjectSection target = section(20);
+            ProgramEnrollment programEnrollment = fixtures.programEnrollment(program);
+            ids[0] = fixtures.sectionEnrollment(programEnrollment, origin, EnrollmentStatus.ENROLLED, LocalDateTime.now()).getId();
+            ids[1] = fixtures.sectionEnrollment(programEnrollment, target, EnrollmentStatus.WITHDRAWN, longAgo).getId();
+            ids[2] = target.getId();
+        });
+        LocalDateTime before = LocalDateTime.now();
+
+        SubjectSectionEnrollment reactivated = service.changeSection(ids[0], new ChangeSectionRequest(ids[2]));
+
+        assertThat(reactivated.getId()).isEqualTo(ids[1]);
+        assertThat(enrollmentRepository.findById(ids[1]).orElseThrow().getEnrolledAt()).isAfterOrEqualTo(before.minusSeconds(5));
     }
 }

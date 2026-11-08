@@ -176,6 +176,7 @@ public class CourseEnrollmentService {
             reactivada.setCourseEnrollment(enrollment);
             reactivada.setStatus(calculateStatusByCapacity(elegida));
             reactivada.setDroppedAt(null);
+            reactivada.setEnrolledAt(now);
             return reactivada;
         }
 
@@ -275,6 +276,9 @@ public class CourseEnrollmentService {
     }
 
     private void promoteNextFromCourseWaitlist(Long courseId) {
+        if (!courseCatalogFinder.hasCapacityFor(courseId, countOccupiedSeats(courseId))) {
+            return;
+        }
         courseEnrollmentRepository
                 .findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(courseId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {
@@ -284,6 +288,12 @@ public class CourseEnrollmentService {
     }
 
     private void promoteNextFromWaitlist(Long courseSubjectSectionId) {
+        Integer capacity = sectionFinder.findCourseSection(courseSubjectSectionId).capacity();
+        long occupiedSeats = courseSubjectSectionEnrollmentRepository.countByCourseSubjectSectionIdAndStatusIn(
+                courseSubjectSectionId, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));
+        if (capacity != null && occupiedSeats >= capacity) {
+            return;
+        }
         courseSubjectSectionEnrollmentRepository
                 .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {

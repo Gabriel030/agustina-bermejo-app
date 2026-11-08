@@ -482,6 +482,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
 | `SECTION_CODE_ALREADY_EXISTS` | no | `SectionCodeAlreadyExistsException` | academicstructure |
+| `SECTION_FULL` | no | `SectionFullException` | enrollment |
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
