@@ -469,21 +469,49 @@ class ExamBoardRegistrationManagerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void anAbsentAttemptStillConsumesTheAttemptLimit() {
-        Student student = persistStudent("90000053");
-        Subject subject = persistSubject("MateriaAusenteConsumeIntento", 1);
+    void aFailedAttemptConsumesTheAttemptLimitOfOne() {
+        Student student = persistStudent("90000054");
+        Subject subject = persistSubject("MateriaDesaprobadoConsumeIntento", 1);
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term);
         ExamBoard call1 = persistExamBoard(subject, term);
         ExamBoard call2 = persistExamBoard(subject, term);
-        Program program = persistProgram("CarreraAusenteConsumeIntento");
+        Program program = persistProgram("CarreraDesaprobadoConsumeIntento");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        entityManager.flush();
+        examBoardRegistrationService.registerProgramEnrollment(call1.getId(), enrollment.getId());
+        GradeItem failed = new GradeItem();
+        failed.setProgramSubjectSectionEnrollment(enrollment);
+        failed.setType(GradeItemType.FINAL);
+        failed.setSequenceNumber(1);
+        failed.setDate(LocalDateTime.now());
+        failed.setScore(Grade.of(BigDecimal.valueOf(2.0)));
+        failed.setExamBoard(call1);
+        entityManager.persist(failed);
+        closeExamBoardOf(call1);
+
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(call2.getId(), enrollment.getId()))
+                .isInstanceOf(MaxExamAttemptsExceededException.class);
+    }
+
+    @Test
+    void anAbsentAttemptDoesNotConsumeTheAttemptLimitOfOne() {
+        Student student = persistStudent("90000055");
+        Subject subject = persistSubject("MateriaAusenteNoConsumeIntento", 1);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        ExamBoard call1 = persistExamBoard(subject, term);
+        ExamBoard call2 = persistExamBoard(subject, term);
+        Program program = persistProgram("CarreraAusenteNoConsumeIntento");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         entityManager.flush();
         examBoardRegistrationService.registerProgramEnrollment(call1.getId(), enrollment.getId());
         closeExamBoardOf(call1);
 
-        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(call2.getId(), enrollment.getId()))
-                .isInstanceOf(MaxExamAttemptsExceededException.class);
+        ExamBoardRegistration second = examBoardRegistrationService.registerProgramEnrollment(call2.getId(), enrollment.getId());
+
+        assertThat(second.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
     }
 }
