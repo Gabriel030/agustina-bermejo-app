@@ -15,6 +15,9 @@ import java.util.List;
 
 @Service
 public class CourseSectionEnrollmentService {
+    private static final List<EnrollmentStatus> SEAT_HOLDING_STATUSES =
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final SectionFinder sectionFinder;
     private final Clock clock;
@@ -34,18 +37,28 @@ public class CourseSectionEnrollmentService {
     @Transactional
     public void withdraw(Long id) {
         CourseSubjectSectionEnrollment enrollment = findOrThrow(id);
-        if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.IN_PROGRESS) {
+        EnrollmentStatus previousStatus = enrollment.getStatus();
+        if (previousStatus != EnrollmentStatus.ENROLLED && previousStatus != EnrollmentStatus.IN_PROGRESS
+                && previousStatus != EnrollmentStatus.WAITLISTED) {
             throw new CannotWithdrawException(
-                    "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede dar de baja");
+                    "La inscripción " + id + " no está ENROLLED/IN_PROGRESS/WAITLISTED, no se puede dar de baja");
         }
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollment.setDroppedAt(LocalDateTime.now(clock));
         courseSubjectSectionEnrollmentRepository.save(enrollment);
-        promoteNextFromWaitlist(enrollment.courseSubjectSectionId());
+        if (previousStatus != EnrollmentStatus.WAITLISTED) {
+            promoteNextFromWaitlist(enrollment.courseSubjectSectionId());
+        }
     }
 
     private void promoteNextFromWaitlist(Long courseSubjectSectionId) {
         sectionFinder.lockCourseSection(courseSubjectSectionId);
+        Integer capacity = sectionFinder.findCourseSection(courseSubjectSectionId).capacity();
+        long occupiedSeats = courseSubjectSectionEnrollmentRepository.countByCourseSubjectSectionIdAndStatusIn(
+                courseSubjectSectionId, SEAT_HOLDING_STATUSES);
+        if (capacity != null && occupiedSeats >= capacity) {
+            return;
+        }
         courseSubjectSectionEnrollmentRepository
                 .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {

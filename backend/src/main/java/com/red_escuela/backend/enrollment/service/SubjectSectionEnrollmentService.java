@@ -26,6 +26,7 @@ import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectExce
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionChangeException;
+import com.red_escuela.backend.enrollment.exception.SectionFullException;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
@@ -122,6 +123,7 @@ public class SubjectSectionEnrollmentService {
             SubjectSectionEnrollment reactivada = existente.get();
             reactivada.setStatus(calculateStatusByCapacity(section));
             reactivada.setDroppedAt(null);
+            reactivada.setEnrolledAt(LocalDateTime.now(clock));
             return subjectSectionEnrollmentRepository.save(reactivada);
         }
 
@@ -153,14 +155,18 @@ public class SubjectSectionEnrollmentService {
     public void withdraw(Long id) {
         sectionFinder.lockProgramSection(findSubjectSectionIdOrThrow(id));
         SubjectSectionEnrollment enrollment = findOrThrow(id);
-        if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.IN_PROGRESS) {
+        EnrollmentStatus previousStatus = enrollment.getStatus();
+        if (previousStatus != EnrollmentStatus.ENROLLED && previousStatus != EnrollmentStatus.IN_PROGRESS
+                && previousStatus != EnrollmentStatus.WAITLISTED) {
             throw new CannotWithdrawException(
-                    "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede dar de baja");
+                    "La inscripción " + id + " no está ENROLLED/IN_PROGRESS/WAITLISTED, no se puede dar de baja");
         }
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollment.setDroppedAt(LocalDateTime.now(clock));
         subjectSectionEnrollmentRepository.save(enrollment);
-        promoteNextFromWaitlist(enrollment.subjectSectionId());
+        if (previousStatus != EnrollmentStatus.WAITLISTED) {
+            promoteNextFromWaitlist(enrollment.subjectSectionId());
+        }
     }
 
     @Transactional
@@ -187,6 +193,9 @@ public class SubjectSectionEnrollmentService {
                     "changeSection es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");
         }
         validateEnrollmentWindow(destino.termId());
+        if (countOccupiedSeats(destino.id()) >= capacityOf(destino)) {
+            throw new SectionFullException(destino.id());
+        }
 
         Student student = origen.getStudent();
         ProgramEnrollment programEnrollment = origen.getProgramEnrollment();
@@ -204,6 +213,7 @@ public class SubjectSectionEnrollmentService {
             SubjectSectionEnrollment reactivada = existenteDestino.get();
             reactivada.setStatus(calculateStatusByCapacity(destino));
             reactivada.setDroppedAt(null);
+            reactivada.setEnrolledAt(now);
             return subjectSectionEnrollmentRepository.save(reactivada);
         }
 
