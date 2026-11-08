@@ -200,12 +200,12 @@ describe('AnnualUpfrontCard', () => {
 
   it('usesGradientCtaOnlyWhenCardIsPrimary', async () => {
     mount({ quote: annualQuote(), primary: true });
-    expect((await screen.findByRole('button', { name: 'Pedir el año completo' })).className).toContain('bg-gradient-to-br');
+    expect((await screen.findByRole('button', { name: 'Pedir el año completo' })).className).toContain('bg-(image:--btn-primary-bg)');
   });
 
   it('usesOutlineCtaWhenCardIsNotPrimary', async () => {
     mount({ quote: annualQuote() });
-    expect((await screen.findByRole('button', { name: 'Pedir el año completo' })).className).not.toContain('bg-gradient-to-br');
+    expect((await screen.findByRole('button', { name: 'Pedir el año completo' })).className).not.toContain('bg-(image:--btn-primary-bg)');
   });
 
   it('keepsIdempotencyKeyWhenDialogIsClosedAndReopenedAfterUnknownOutcome', async () => {
@@ -258,8 +258,8 @@ describe('AnnualUpfrontCard', () => {
     renderWithProviders(<AnnualUpfrontCards enrollments={enrollments} />);
     const buttons = await screen.findAllByRole('button', { name: 'Pedir el año completo' });
     expect(buttons).toHaveLength(2);
-    await vi.waitFor(() => expect(buttons[0].className).toContain('bg-gradient-to-br'));
-    expect(buttons[1].className).not.toContain('bg-gradient-to-br');
+    await vi.waitFor(() => expect(buttons[0].className).toContain('bg-(image:--btn-primary-bg)'));
+    expect(buttons[1].className).not.toContain('bg-(image:--btn-primary-bg)');
   });
 
   it('givesNoGradientWhenAnAdmissionInvoiceIsActionable', async () => {
@@ -271,6 +271,6 @@ describe('AnnualUpfrontCard', () => {
     );
     renderWithProviders(<AnnualUpfrontCards enrollments={[{ id: 3, programName: 'Uno' }]} />);
     const button = await screen.findByRole('button', { name: 'Pedir el año completo' });
-    await vi.waitFor(() => expect(button.className).not.toContain('bg-gradient-to-br'));
+    await vi.waitFor(() => expect(button.className).not.toContain('bg-(image:--btn-primary-bg)'));
   });
 });

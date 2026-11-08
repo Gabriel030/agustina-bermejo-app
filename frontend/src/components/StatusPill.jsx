@@ -6,11 +6,11 @@ import { cn } from '@/lib/utils';
 // color; `dot` agrega el puntito antes del texto (usado en Inicio para el
 // estado de pago, no en el resto).
 const TONOS = {
-  success: 'bg-success-bg text-success',
-  warning: 'bg-warning-bg text-warning',
-  danger: 'bg-danger-bg text-danger',
+  success: 'bg-success-bg text-pill-success',
+  warning: 'bg-warning-bg text-pill-warning',
+  danger: 'bg-danger-bg text-pill-danger',
   accent: 'bg-accent-soft text-primary',
-  neutral: 'bg-neutral-bg text-ink-faint',
+  neutral: 'bg-neutral-bg text-pill-neutral',
 };
 
 const COLOR_DOT = {

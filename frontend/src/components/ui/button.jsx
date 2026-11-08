@@ -6,13 +6,13 @@ import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-control border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
         outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border-border bg-background design-b:bg-control hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
@@ -23,7 +23,9 @@ const buttonVariants = cva(
         // CTA principal del sistema de diseño (Vidrio Líquido) — antes repetido a
         // mano en cada pantalla (Catálogo, Detalle, wizard, Mis carreras...).
         gradient:
-          "rounded-xl bg-gradient-to-br from-brand to-accent-2 font-semibold text-white shadow-[0_10px_24px_-8px_color-mix(in_oklch,var(--accent)_60%,transparent)] hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-8px_color-mix(in_oklch,var(--accent)_65%,transparent)] active:translate-y-0",
+          "rounded-(--r-btn-primary) border-(--btn-primary-border) bg-(image:--btn-primary-bg) font-semibold text-on-accent shadow-(--btn-primary-shadow) hover:translate-y-(--btn-lift-y) hover:bg-(image:--btn-primary-bg-hover) hover:shadow-(--btn-primary-shadow-hover) active:translate-y-0",
+        primary:
+          "rounded-(--r-btn-primary) border-(--btn-primary-border) bg-(image:--btn-primary-bg) font-semibold text-on-accent shadow-(--btn-primary-shadow) hover:translate-y-(--btn-lift-y) hover:bg-(image:--btn-primary-bg-hover) hover:shadow-(--btn-primary-shadow-hover) active:translate-y-0",
       },
       size: {
         default:

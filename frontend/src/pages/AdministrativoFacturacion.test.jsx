@@ -1090,8 +1090,8 @@ describe('AdministrativoFacturacion — carga de comprobante por el alumno', () 
     const upload = await screen.findByRole('button', { name: 'Cargar comprobante' });
     await vi.waitFor(() => expect(upload).toBeEnabled());
     expect(upload.className).toContain('bg-background');
-    expect(upload.className).not.toContain('from-brand');
-    expect(screen.getByRole('button', { name: /Cobrar en efectivo/ }).className).toContain('from-brand');
+    expect(upload.className).not.toContain('bg-(image:--btn-primary-bg)');
+    expect(screen.getByRole('button', { name: /Cobrar en efectivo/ }).className).toContain('bg-(image:--btn-primary-bg)');
   });
 
   it('disables the upload button with an explanation when the student has no pending installments', async () => {
