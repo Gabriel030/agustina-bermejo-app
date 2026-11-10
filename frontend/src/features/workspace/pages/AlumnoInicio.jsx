@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
@@ -111,13 +112,15 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
         {aviso.body}
       </div>
       {desborda && (
-        <button
+        <Button
+          variant="text"
+          size="inline"
           type="button"
           onClick={alternar}
-          className="mt-1 text-[12px] font-semibold text-primary"
-        >
+          className="mt-1 text-[12px] font-semibold"
+          >
           {expandido ? 'Ver menos' : 'Ver más'}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -237,13 +240,15 @@ export function AlumnoInicio() {
                 );
               })}
               {novedades.length > NOVEDADES_INICIAL && (
-                <button
+                <Button
+                  variant="text"
+                  size="inline"
                   type="button"
                   onClick={() => setVerTodos((v) => !v)}
-                  className="mt-1 self-start text-[12.5px] font-semibold text-primary"
-                >
+                  className="mt-1 self-start text-[12.5px] font-semibold"
+                  >
                   {verTodos ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
-                </button>
+                </Button>
               )}
             </div>
           )}

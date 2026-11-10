@@ -23,7 +23,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Stepper } from '@/components/Stepper';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-const BUTTON_VARIANTS = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link', 'gradient'];
+const BUTTON_VARIANTS = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link', 'text', 'subtle', 'ghost-destructive', 'gradient'];
 const BUTTON_SIZES = ['default', 'sm', 'lg'];
 const PILL_TONES = ['success', 'warning', 'danger', 'accent', 'neutral'];
 const BADGE_VARIANTS = ['default', 'secondary', 'destructive', 'outline', 'ghost'];
@@ -118,6 +118,27 @@ export function DesignCatalog() {
             </Button>
           </Row>
         ))}
+        <Row>
+          <Button variant="link" size="inline">
+            link inline
+          </Button>
+          <Button variant="text" size="inline">
+            text inline
+          </Button>
+          <Button variant="subtle" size="inline">
+            subtle inline
+          </Button>
+        </Row>
+        <Row>
+          <div className="flex w-full max-w-md flex-col gap-2">
+            <Button variant="row" size="row">
+              Fila clicable
+            </Button>
+            <Button variant="row-card" size="row">
+              Fila clicable con tarjeta
+            </Button>
+          </div>
+        </Row>
       </Section>
 
       <Section id="cards" title="Tarjetas">

@@ -128,16 +128,18 @@ function DebtorsTable({ data, isLoading, isError, onRetry }) {
             onClick={() => openStudent(d.studentId)}
           >
             <TableCell className="pl-4 font-medium text-ink">
-              <button
+              <Button
+                variant="link"
+                size="inline"
                 type="button"
-                className="text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={(event) => {
                   event.stopPropagation();
                   openStudent(d.studentId);
                 }}
               >
                 {d.fullName}
-              </button>
+              </Button>
             </TableCell>
             <TableCell className="text-ink-soft">{d.dni}</TableCell>
             <TableCell className="text-ink-soft">{d.enrollmentName}</TableCell>

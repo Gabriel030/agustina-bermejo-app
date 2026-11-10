@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, TriangleAlert } from 'lucide-react';
@@ -142,14 +143,15 @@ export function NotificationBell() {
             <div role="alert" className="flex flex-col items-center gap-2 px-4 py-6 text-center">
               <TriangleAlert aria-hidden="true" className="h-5 w-5 text-warning" />
               <p className="text-sm text-ink-soft">No pudimos cargar tus notificaciones.</p>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 type="button"
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-neutral-bg/60 disabled:opacity-60"
-              >
+                className="px-3 font-semibold text-ink">
                 Reintentar
-              </button>
+              </Button>
             </div>
           ) : lista.length === 0 ? (
             <EmptyState title="Nada por ahora" className="py-6" />

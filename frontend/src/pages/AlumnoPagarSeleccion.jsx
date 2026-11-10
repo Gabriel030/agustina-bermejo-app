@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useParams } from 'react-router-dom';
 import { Banknote, CreditCard, ChevronLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -67,14 +68,16 @@ export function AlumnoPagarSeleccion() {
 
   return (
     <PageContainer className="max-w-lg">
-      <button
+      <Button
+        variant="subtle"
+        size="inline"
         type="button"
         onClick={goToOrigin}
-        className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
-      >
+        className="flex items-center gap-1.5 text-sm"
+        >
         <ChevronLeft size={16} />
         {originLabel}
-      </button>
+      </Button>
 
       <h1 className="text-xl font-bold">¿Cómo querés pagar?</h1>
 

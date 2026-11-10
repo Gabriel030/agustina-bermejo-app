@@ -49,11 +49,12 @@ function FilaPrograma({ programa, navigate }) {
   const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
 
   return (
-    <button
+    <Button
+      variant="row"
+      size="row"
       type="button"
       onClick={() => navigate(`${basePath}/oferta-academica/carreras/${programa.id}`)}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
-    >
+      >
       <div className="min-w-0">
         <span className="block truncate text-[14px] font-medium text-ink">{programa.name}</span>
         <span className="text-[12px] text-ink-faint">{programa.totalYears} {programa.totalYears === 1 ? 'año' : 'años'}</span>
@@ -62,7 +63,7 @@ function FilaPrograma({ programa, navigate }) {
         <BadgeCiclo ciclo={cicloActivo} failed={ciclosFailed} />
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -72,11 +73,12 @@ function FilaCurso({ curso, navigate }) {
   const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
 
   return (
-    <button
+    <Button
+      variant="row"
+      size="row"
       type="button"
       onClick={() => navigate(`${basePath}/oferta-academica/cursos/${curso.id}`)}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
-    >
+      >
       <div className="min-w-0">
         <span className="block truncate text-[14px] font-medium text-ink">{curso.name}</span>
         <span className="text-[12px] text-ink-faint">{formatCourseDuration(curso.durationMonths)}</span>
@@ -85,7 +87,7 @@ function FilaCurso({ curso, navigate }) {
         <BadgeCiclo ciclo={cicloActivo} failed={ciclosFailed} />
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
-    </button>
+    </Button>
   );
 }
 

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/Skeleton';
@@ -94,11 +95,13 @@ export function TabAsistencia({ carreraId }) {
             const pill = ESTADO_PILL[inscripcion.status] ?? { label: inscripcion.status, tone: 'neutral' };
             return (
               <div key={inscripcion.id}>
-                <button
+                <Button
+                  variant="row-card"
+                  size="row"
                   type="button"
                   onClick={() => toggleFila(inscripcion.id)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:bg-neutral-bg"
-                >
+                  className="gap-3 justify-start"
+                  >
                   {abierto ? <ChevronDown className="h-4 w-4 shrink-0 text-ink-faint" /> : <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />}
                   <span className="text-[13px] font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
                   <span className="flex-1 text-[13.5px] font-semibold text-ink">{inscripcion.subjectName}</span>
@@ -106,7 +109,7 @@ export function TabAsistencia({ carreraId }) {
                     <span className="hidden text-xs text-ink-faint sm:inline">{inscripcion.curricularYear}° año</span>
                   )}
                   <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
-                </button>
+                </Button>
                 {abierto && (
                   <div className="mt-2">
                     <SeccionAsistencia sectionEnrollmentId={inscripcion.id} />

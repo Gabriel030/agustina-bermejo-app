@@ -57,13 +57,14 @@ export function AlumnoPagoEstado() {
           </Button>
 
           {status === 'failure' && invoiceId && (
-            <button
+            <Button
+              variant="outline"
+              size="lg"
               type="button"
               onClick={() => navigate(`/alumno/pagos/${invoiceId}/seleccion`)}
-              className="rounded-xl border border-border px-6 py-3 text-sm font-semibold text-ink transition-colors hover:border-brand hover:text-brand"
-            >
+              className="px-6 font-semibold text-ink hover:border-brand hover:text-brand">
               Intentar con otro método de pago
-            </button>
+            </Button>
           )}
         </div>
       </GlassCard>

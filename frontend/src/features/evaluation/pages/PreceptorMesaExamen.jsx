@@ -136,14 +136,16 @@ function TablaAnotados({ anotados, soloLectura, onDarDeBaja, dandoDeBaja }) {
             <div><StatusPill tone={config.tone}>{config.label}</StatusPill></div>
             <div>
               {a.status === 'REGISTERED' && !soloLectura && (
-                <button
+                <Button
+                  variant="link"
+                  size="inline"
                   type="button"
                   disabled={dandoDeBaja}
                   onClick={() => onDarDeBaja(a.id)}
-                  className="text-[12.5px] font-semibold text-danger hover:underline disabled:opacity-50"
-                >
+                  className="text-[12.5px] font-semibold text-danger disabled:opacity-50"
+                  >
                   Dar de baja
-                </button>
+                </Button>
               )}
             </div>
           </div>
