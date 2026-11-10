@@ -57,6 +57,9 @@ export const TIPO_NOTIFICACION_LABEL = {
   PRICE_CHANGE_APPROVED: 'Precio aprobado',
   PRICE_CHANGE_REJECTED: 'Precio rechazado',
   DISCOUNT_QUOTA_EXHAUSTED: 'Cupo de promoción agotado',
+  OFFER_CYCLE_SUBMITTED: 'Oferta enviada a aprobación',
+  OFFER_CYCLE_APPROVED: 'Oferta aprobada',
+  OFFER_CYCLE_REJECTED: 'Oferta rechazada',
 };
 
 export const TONO_NOTIFICACION = {
@@ -118,6 +121,9 @@ export const TONO_NOTIFICACION = {
   PRICE_CHANGE_APPROVED: 'success',
   PRICE_CHANGE_REJECTED: 'danger',
   DISCOUNT_QUOTA_EXHAUSTED: 'warning',
+  OFFER_CYCLE_SUBMITTED: 'warning',
+  OFFER_CYCLE_APPROVED: 'success',
+  OFFER_CYCLE_REJECTED: 'danger',
 };
 
 export const ETIQUETA_NOTIFICACION_DESCONOCIDA = 'Notificación';

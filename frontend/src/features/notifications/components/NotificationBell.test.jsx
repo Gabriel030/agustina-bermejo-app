@@ -219,6 +219,35 @@ describe('NotificationBell', () => {
     expect(await screen.findByText('/alumno/mis-carreras')).toBeInTheDocument();
   });
 
+  it.each([
+    ['OFFER_CYCLE_SUBMITTED', 'CycleSubmitted', '/director/aprobaciones/oferta-academica/9'],
+    ['OFFER_CYCLE_APPROVED', 'AcademicOfferingCycle', '/oferta-academica'],
+    ['OFFER_CYCLE_REJECTED', 'AcademicOfferingCycle', '/oferta-academica'],
+  ])('navigates to the offer screen when tapping %s', async (type, entityType, destination) => {
+    const user = userEvent.setup();
+    function Destino() {
+      return <div>{useLocation().pathname}</div>;
+    }
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([
+          { id: 31, type, message: 'Oferta', read: true, relatedEntityType: entityType, relatedEntityId: 9, createdAt: '2026-11-01T10:00:00' },
+        ]),
+      ),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<NotificationBell />} />
+        <Route path="*" element={<Destino />} />
+      </Routes>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones' }));
+    await user.click(await screen.findByText(TIPO_NOTIFICACION_LABEL[type]));
+
+    expect(await screen.findByText(destination)).toBeInTheDocument();
+  });
+
   it('navigates to the announcement on the student home when tapping an announcement', async () => {
     const user = userEvent.setup();
     function Destino() {
