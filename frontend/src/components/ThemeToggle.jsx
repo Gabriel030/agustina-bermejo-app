@@ -11,7 +11,7 @@ export function ThemeToggle() {
       onClick={alternarTema}
       aria-pressed={oscuro}
       aria-label={oscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      className="flex h-11 w-14 shrink-0 items-center justify-center"
+      className="flex h-11 w-14 shrink-0 items-center justify-center design-b:max-lg:hidden"
     >
       <span
         className={`relative h-8 w-14 rounded-full border border-border transition-colors duration-300 ${
