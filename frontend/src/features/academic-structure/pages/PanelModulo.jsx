@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAddCourseSubject } from '@/features/academic-structure/hooks/useCourses';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const RECURRENCE_OPTIONS = [
   { value: '', label: 'Sin especificar' },
@@ -101,17 +102,16 @@ export function PanelModulo({ open, onClose, courseId }) {
             <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
               Recurrencia
             </label>
-            <select
+            <NativeSelect
               value={subjectRecurrence}
               onChange={(e) => setSubjectRecurrence(e.target.value)}
-              className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
             >
               {RECURRENCE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           <div className="flex flex-col gap-1.5">

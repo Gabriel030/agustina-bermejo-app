@@ -5,6 +5,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Stepper } from '@/components/Stepper';
 import { InfoTip } from '@/components/charts/InfoTip';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUpdateYearBillingConfiguration } from '@/features/academic-structure/hooks/useCohorts';
@@ -18,9 +19,8 @@ import {
   toBillingForm,
   toBillingPayload,
 } from '@/features/academic-structure/lib/billingConfigForm';
+import { NativeSelect } from '@/components/ui/native-select';
 
-const SELECT_CLASS =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent';
 const STEPS = [
   { key: 'changes', label: 'Cambios' },
   { key: 'confirm', label: 'Confirmar' },
@@ -156,7 +156,7 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
             <FieldLabel htmlFor="anio-apertura" tipLabel="Qué significa Matrícula anticipada · Abre" tip={advanceTip(term)}>
               Matrícula anticipada · Abre
             </FieldLabel>
-            <select
+            <NativeSelect
               id="anio-apertura"
               value={opensFromDate ? 'date' : 'window'}
               onChange={(event) => {
@@ -164,11 +164,10 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
                 setOpensFromDate(fromDate);
                 set('advanceEnrollmentFeeOpensOn', fromDate ? (term?.enrollmentStart?.split('T')[0] ?? '') : '');
               }}
-              className={SELECT_CLASS}
             >
               <option value="window">Con la inscripción</option>
               <option value="date">Desde una fecha</option>
-            </select>
+            </NativeSelect>
             {opensFromDate && (
               <Input
                 aria-label="Fecha de apertura de la matrícula anticipada"
@@ -189,10 +188,10 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
             >
               Cantidad de matrículas por año
             </FieldLabel>
-            <select id="anio-cantidad" value={form.enrollmentFeeCount} onChange={(event) => set('enrollmentFeeCount', event.target.value)} className={SELECT_CLASS}>
+            <NativeSelect id="anio-cantidad" value={form.enrollmentFeeCount} onChange={(event) => set('enrollmentFeeCount', event.target.value)}>
               <option value="1">1 por año (cubre los dos cuatrimestres)</option>
               <option value="2">2 por año (una por cuatrimestre)</option>
-            </select>
+            </NativeSelect>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -203,17 +202,17 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
             >
               Mes de la {twoFees ? 'primera ' : ''}matrícula
             </FieldLabel>
-            <select id="anio-primer-mes" value={form.firstEnrollmentFeeMonth} onChange={(event) => set('firstEnrollmentFeeMonth', event.target.value)} className={SELECT_CLASS}>
+            <NativeSelect id="anio-primer-mes" value={form.firstEnrollmentFeeMonth} onChange={(event) => set('firstEnrollmentFeeMonth', event.target.value)}>
               {MESES.map((name, i) => <option key={name} value={String(i + 1)}>{name}</option>)}
-            </select>
+            </NativeSelect>
           </div>
 
           {twoFees && (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="anio-segundo-mes">Mes de la segunda matrícula</Label>
-              <select id="anio-segundo-mes" value={form.secondEnrollmentFeeMonth} onChange={(event) => set('secondEnrollmentFeeMonth', event.target.value)} className={SELECT_CLASS}>
+              <NativeSelect id="anio-segundo-mes" value={form.secondEnrollmentFeeMonth} onChange={(event) => set('secondEnrollmentFeeMonth', event.target.value)}>
                 {MESES.map((name, i) => <option key={name} value={String(i + 1)}>{name}</option>)}
-              </select>
+              </NativeSelect>
             </div>
           )}
 
@@ -248,7 +247,7 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
               ['blocksCertificates', 'Pedido de certificados'],
             ].map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 text-[13px] text-ink">
-                <input type="checkbox" checked={form[key]} onChange={(event) => set(key, event.target.checked)} />
+                <Checkbox checked={form[key]} onCheckedChange={(checked) => set(key, checked === true)} />
                 {label}
               </label>
             ))}
@@ -256,18 +255,18 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="anio-solo-finales">Alumnos que solo rinden finales: ¿deben pagar matrícula?</Label>
-            <select id="anio-solo-finales" value={form.requireEnrollmentFeeForFinalExamOnlyStudents ? 'si' : 'no'} onChange={(event) => set('requireEnrollmentFeeForFinalExamOnlyStudents', event.target.value === 'si')} className={SELECT_CLASS}>
+            <NativeSelect id="anio-solo-finales" value={form.requireEnrollmentFeeForFinalExamOnlyStudents ? 'si' : 'no'} onChange={(event) => set('requireEnrollmentFeeForFinalExamOnlyStudents', event.target.value === 'si')}>
               <option value="no">No</option>
               <option value="si">Sí</option>
-            </select>
+            </NativeSelect>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="anio-paga-pausa">Alumnos en pausa académica: ¿pagan cuotas y matrícula?</Label>
-            <select id="anio-paga-pausa" value={form.paysWhilePaused ? 'si' : 'no'} onChange={(event) => set('paysWhilePaused', event.target.value === 'si')} className={SELECT_CLASS}>
+            <NativeSelect id="anio-paga-pausa" value={form.paysWhilePaused ? 'si' : 'no'} onChange={(event) => set('paysWhilePaused', event.target.value === 'si')}>
               <option value="no">No</option>
               <option value="si">Sí</option>
-            </select>
+            </NativeSelect>
           </div>
         </GlassCard>
 

@@ -15,6 +15,7 @@ import {
   useRemoveCorequisite,
   useProgramSubjects,
 } from '@/features/academic-structure/hooks/usePrograms';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const REQUIREMENT_TYPE_OPTIONS = [
   { value: 'APPROVED', label: 'Aprobada' },
@@ -95,17 +96,16 @@ function CampoSelect({ label, value, onChange, options }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
-      <select
+      <NativeSelect
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   );
 }

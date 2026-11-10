@@ -4,6 +4,7 @@ import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import { RAW_ELEMENT_EXCEPTIONS, localPlugin } from './eslint-rules/raw-elements.js'
 
 const FEATURES = [
   'identity',
@@ -39,7 +40,11 @@ const featureBoundaryRules = FEATURES.map((feature) => ({
 }))
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'scripts/__fixtures__']),
+  {
+    files: ['scripts/**/*.js', 'eslint-rules/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -100,6 +105,12 @@ export default defineConfig([
         })),
       ],
     },
+  },
+  {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/components/ui/**', '**/*.test.{js,jsx}', ...RAW_ELEMENT_EXCEPTIONS],
+    plugins: { local: localPlugin },
+    rules: { 'local/no-raw-elements': 'error' },
   },
   {
     files: ['src/components/**/*.{js,jsx}', 'src/lib/**/*.{js,jsx}', 'src/layouts/**/*.{js,jsx}'],

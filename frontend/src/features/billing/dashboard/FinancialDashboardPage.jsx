@@ -26,6 +26,7 @@ import { DASHBOARD_TABS, FINANCIAL_PANELS } from './financialPanels';
 import { MonthKpis, TodayKpis } from './KpiBlocks';
 import { ALL_SCOPE, OfferCombobox } from './OfferCombobox';
 import { MetricPanel } from './MetricPanel';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const ALL_TYPES = 'ALL';
 const INVOICE_TYPE_OPTIONS = [
@@ -168,21 +169,21 @@ function DebtorsSection() {
           <span className="font-heading text-[14.5px] font-semibold text-ink">Alumnos con deuda vencida</span>
           <span className="text-xs text-ink-soft">· todas las monedas</span>
         </div>
-        <select
+        <NativeSelect
+          className="w-auto"
           aria-label="Ordenar por"
           value={sortBy}
           onChange={(e) => {
             setSortBy(e.target.value);
             setPage(0);
           }}
-          className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <DebtorsTable data={data?.items} isLoading={isLoading} isError={isError} onRetry={() => refetch()} />
       <Paginador page={page + 1} totalPages={totalPages} onChange={(next) => setPage(next - 1)} />
