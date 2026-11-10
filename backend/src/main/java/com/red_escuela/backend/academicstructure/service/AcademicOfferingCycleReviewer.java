@@ -18,11 +18,13 @@ public class AcademicOfferingCycleReviewer {
         this.clock = clock;
     }
 
-    public void approve(AcademicOfferingCycle cycle) {
+    public void approve(AcademicOfferingCycle cycle, String idempotencyKey) {
         cycle.approve(currentActorFinder.currentPerson(), LocalDateTime.now(clock));
+        cycle.recordDecisionKey(idempotencyKey);
     }
 
-    public void reject(AcademicOfferingCycle cycle, String reason) {
+    public void reject(AcademicOfferingCycle cycle, String reason, String idempotencyKey) {
         cycle.reject(currentActorFinder.currentPerson(), reason, LocalDateTime.now(clock));
+        cycle.recordDecisionKey(idempotencyKey);
     }
 }

@@ -80,6 +80,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CURRENCY_MISMATCH` | no | `CurrencyMismatchException` | shared |
 | `CURRENCY_REQUIRED` | no | `CurrencyRequiredException` | billing |
 | `CURRICULAR_YEAR_OUT_OF_RANGE` | no | `CurricularYearOutOfRangeException` | academicstructure |
+| `CYCLE_DECISION_IDEMPOTENCY_KEY_INVALID` | no | `CycleDecisionIdempotencyKeyInvalidException` | academicstructure |
 | `CYCLE_INCOMPLETE` | no | `CycleIncompleteException` | academicstructure |
 | `DIRECTOR_APPROVAL_SUBJECT_REQUIRED` | no | `DirectorApprovalSubjectRequiredException` | enrollment |
 | `DISCOUNT_CLOSURE_REASON_REQUIRED` | no | `DiscountClosureReasonRequiredException` | billing |
@@ -357,6 +358,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT` | no | `CreditNoteRefundExceedsPaidAmountException` | billing |
 | `CURRENT_ACCOUNT_ENTRY_SOURCE_MISMATCH` | no | `CurrentAccountEntrySourceMismatchException` | billing |
 | `CYCLE_ALREADY_IN_PROGRESS` | no | `CycleAlreadyInProgressException` | academicstructure |
+| `CYCLE_DECISION_IDEMPOTENCY_KEY_CONFLICT` | no | `CycleDecisionIdempotencyKeyConflictException` | academicstructure |
 | `CYCLE_NOT_EDITABLE` | no | `CycleNotEditableException` | academicstructure |
 | `CYCLE_NOT_PENDING_APPROVAL` | no | `CycleNotPendingApprovalException` | academicstructure |
 | `DIRECTOR_ALREADY_EXISTS` | no | `DirectorAlreadyExistsException` | identity |
@@ -555,6 +557,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 
 | Método | Ruta | Handler |
 |---|---|---|
+| POST | `/academic-offering-cycles/{id}/approve` | `AcademicOfferingCycleController#approve` |
+| POST | `/academic-offering-cycles/{id}/reject` | `AcademicOfferingCycleController#reject` |
 | POST | `/course-enrollments/{id}/invoices/ad-hoc` | `CourseEnrollmentController#createAdHocInvoice` |
 | POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/me/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitOwnReceipt` |
@@ -572,8 +576,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | Método | Ruta | Handler |
 |---|---|---|
 | POST | `/academic-offering-cycles` | `AcademicOfferingCycleController#create` |
-| POST | `/academic-offering-cycles/{id}/approve` | `AcademicOfferingCycleController#approve` |
-| POST | `/academic-offering-cycles/{id}/reject` | `AcademicOfferingCycleController#reject` |
 | POST | `/academic-offering-cycles/{id}/sections` | `AcademicOfferingCycleController#createSection` |
 | POST | `/academic-offering-cycles/{id}/submit` | `AcademicOfferingCycleController#submit` |
 | POST | `/annual-upfront-terms/versions` | `AnnualUpfrontTermsController#publishNewTermsVersion` |

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.notification.specialist;
 
+import com.red_escuela.backend.academicstructure.events.AcademicOfferingCycleApprovedEvent;
+import com.red_escuela.backend.academicstructure.events.AcademicOfferingCycleRejectedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementPublishedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
 import com.red_escuela.backend.attendance.events.AttendanceChangeRequestApprovedEvent;
@@ -162,6 +164,20 @@ class DomainEventNotificationListenersAsyncIT extends AbstractIntegrationTest {
         assertAFailingListenerDoesNotRollBackThePublisherAndTheRegistryRedeliversIt(
                 personId -> new SectionEvaluationConfigApprovedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 1L, "Materia", "Comisión A", personId),
                 NotificationType.SECTION_EVAL_CONFIG_APPROVED);
+    }
+
+    @Test
+    void aFailureNotifyingAnOfferCycleApprovalDoesNotRollBackTheOperationAndIsRedelivered() {
+        assertAFailingListenerDoesNotRollBackThePublisherAndTheRegistryRedeliversIt(
+                personId -> new AcademicOfferingCycleApprovedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 1L, "Tecnicatura", "2027", personId),
+                NotificationType.OFFER_CYCLE_APPROVED);
+    }
+
+    @Test
+    void aFailureNotifyingAnOfferCycleRejectionDoesNotRollBackTheOperationAndIsRedelivered() {
+        assertAFailingListenerDoesNotRollBackThePublisherAndTheRegistryRedeliversIt(
+                personId -> new AcademicOfferingCycleRejectedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 1L, "Tecnicatura", "2027", "faltan docentes", personId),
+                NotificationType.OFFER_CYCLE_REJECTED);
     }
 
     @Test

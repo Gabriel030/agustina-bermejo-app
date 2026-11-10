@@ -79,6 +79,6 @@ public class CreateAcademicOfferingCycleService implements CreateAcademicOfferin
             cycle.setCourse(course);
         }
 
-        return AcademicOfferingCycleResponse.from(cycleRepository.save(cycle));
+        return AcademicOfferingCycleResponse.from(cycleRepository.save(cycle), 0L);
     }
 }

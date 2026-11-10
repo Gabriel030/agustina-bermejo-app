@@ -3,6 +3,7 @@ package com.red_escuela.backend.academicstructure.controller;
 import com.red_escuela.backend.academicstructure.dto.AcademicOfferingCycleResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
+import com.red_escuela.backend.academicstructure.dto.CycleConflictsResponse;
 import com.red_escuela.backend.academicstructure.dto.CycleSectionResponse;
 import com.red_escuela.backend.academicstructure.dto.ModifySectionRequest;
 import com.red_escuela.backend.academicstructure.dto.RejectCycleRequest;
@@ -12,6 +13,7 @@ import com.red_escuela.backend.academicstructure.usecase.cycle.ApproveSectionMod
 import com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.GetAcademicOfferingCycleUseCase;
+import com.red_escuela.backend.academicstructure.usecase.cycle.GetCycleConflictsUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.GetCycleSectionsUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.ListAcademicOfferingCyclesUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleUseCase;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,6 +48,7 @@ public class AcademicOfferingCycleController {
     private final ApproveSectionModificationUseCase approveModification;
     private final RejectSectionModificationUseCase rejectModification;
     private final GetAcademicOfferingCycleUseCase getCycle;
+    private final GetCycleConflictsUseCase getCycleConflicts;
 
     public AcademicOfferingCycleController(
             CreateAcademicOfferingCycleUseCase createCycle,
@@ -57,7 +61,8 @@ public class AcademicOfferingCycleController {
             RequestSectionModificationUseCase requestModification,
             ApproveSectionModificationUseCase approveModification,
             RejectSectionModificationUseCase rejectModification,
-            GetAcademicOfferingCycleUseCase getCycle
+            GetAcademicOfferingCycleUseCase getCycle,
+            GetCycleConflictsUseCase getCycleConflicts
     ) {
         this.createCycle = createCycle;
         this.listCycles = listCycles;
@@ -70,6 +75,7 @@ public class AcademicOfferingCycleController {
         this.approveModification = approveModification;
         this.rejectModification = rejectModification;
         this.getCycle = getCycle;
+        this.getCycleConflicts = getCycleConflicts;
     }
 
     @PostMapping("/academic-offering-cycles")
@@ -112,21 +118,28 @@ public class AcademicOfferingCycleController {
     @PostMapping("/academic-offering-cycles/{id}/approve")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('DIRECTOR')")
-    public void approve(@PathVariable Long id) {
-        approveCycle.approve(id);
+    public void approve(@PathVariable Long id, @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        approveCycle.approve(id, idempotencyKey);
     }
 
     @PostMapping("/academic-offering-cycles/{id}/reject")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('DIRECTOR')")
-    public void reject(@PathVariable Long id, @Valid @RequestBody RejectCycleRequest request) {
-        rejectCycle.reject(id, request.reason());
+    public void reject(@PathVariable Long id, @Valid @RequestBody RejectCycleRequest request,
+                       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        rejectCycle.reject(id, request.reason(), idempotencyKey);
     }
 
     @GetMapping("/academic-offering-cycles/{id}/sections")
     @PreAuthorize("isAuthenticated()")
     public List<CycleSectionResponse> getSections(@PathVariable Long id) {
         return getCycleSections.getSections(id);
+    }
+
+    @GetMapping("/academic-offering-cycles/{id}/conflicts")
+    @PreAuthorize("hasRole('DIRECTOR') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public CycleConflictsResponse getConflicts(@PathVariable Long id) {
+        return getCycleConflicts.getConflicts(id);
     }
 
     @PostMapping("/subject-sections/{id}/modification-request")

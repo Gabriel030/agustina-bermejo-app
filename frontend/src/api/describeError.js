@@ -26,6 +26,8 @@ const CORE_ERROR_MESSAGES = {
   SECTION_FULL: 'La comisión elegida no tiene cupo. Seguís en tu comisión actual.',
   CANNOT_JUSTIFY: 'Esta falta no se puede justificar en su estado actual.',
   STUDENT_HAS_ACTIVE_ENROLLMENTS: 'El alumno tiene inscripciones activas. Cancelalas antes de darlo de baja.',
+  CYCLE_DECISION_IDEMPOTENCY_KEY_CONFLICT: 'Esta decisión ya se registró de otra forma. Recargá la oferta para ver el estado actual.',
+  CYCLE_DECISION_IDEMPOTENCY_KEY_INVALID: 'No pudimos identificar el pedido. Recargá la página e intentá de nuevo.',
   MERCADO_PAGO_GATEWAY: 'Mercado Pago no respondió. Probá en unos minutos.',
   GOOGLE_SERVICE_UNAVAILABLE: 'Google no está disponible ahora. Probá más tarde.',
 };

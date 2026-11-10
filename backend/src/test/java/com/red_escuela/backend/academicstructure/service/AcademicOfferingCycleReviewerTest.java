@@ -34,20 +34,30 @@ class AcademicOfferingCycleReviewerTest {
 
     @Test
     void approvalIsDecidedByTheCurrentPersonAtTheClockInstant() {
-        service.approve(cycle);
+        service.approve(cycle, "key-1");
 
         assertThat(cycle.getStatus()).isEqualTo(AcademicOfferingCycleStatus.APPROVED);
         assertThat(cycle.getDecidedBy()).isSameAs(reviewer);
         assertThat(cycle.getDecidedAt()).isEqualTo(LocalDateTime.of(2026, 3, 2, 9, 30));
+        assertThat(cycle.getDecisionIdempotencyKey()).isEqualTo("key-1");
     }
 
     @Test
     void rejectionRecordsTheReasonTheCurrentPersonAndTheClockInstant() {
-        service.reject(cycle, "missing teachers");
+        service.reject(cycle, "missing teachers", "key-2");
 
         assertThat(cycle.getStatus()).isEqualTo(AcademicOfferingCycleStatus.REJECTED);
         assertThat(cycle.getRejectionReason()).isEqualTo("missing teachers");
         assertThat(cycle.getDecidedBy()).isSameAs(reviewer);
         assertThat(cycle.getDecidedAt()).isEqualTo(LocalDateTime.of(2026, 3, 2, 9, 30));
+    }
+
+    @Test
+    void rejectionRemembersTheIdempotencyKeyOfTheDecision() {
+        service.reject(cycle, "missing teachers", "key-2");
+
+        assertThat(cycle.wasDecidedWithKey("key-2")).isTrue();
+        assertThat(cycle.wasDecidedWithKey("other")).isFalse();
+        assertThat(cycle.wasDecidedWithKey(null)).isFalse();
     }
 }

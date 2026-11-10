@@ -6,8 +6,14 @@ import com.red_escuela.backend.academicstructure.exception.CycleNotFoundExceptio
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.events.AcademicOfferingCycleSubmittedEvent;
+import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
 
 @Service
 public class CycleSubmission {
@@ -15,15 +21,24 @@ public class CycleSubmission {
     private final AcademicOfferingCycleRepository cycleRepository;
     private final SubjectSectionRepository subjectSectionRepository;
     private final CourseSubjectSectionRepository courseSectionRepository;
+    private final CurrentActorFinder currentActorFinder;
+    private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CycleSubmission(
             AcademicOfferingCycleRepository cycleRepository,
             SubjectSectionRepository subjectSectionRepository,
-            CourseSubjectSectionRepository courseSectionRepository
+            CourseSubjectSectionRepository courseSectionRepository,
+            CurrentActorFinder currentActorFinder,
+            Clock clock,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectSectionRepository = subjectSectionRepository;
         this.courseSectionRepository = courseSectionRepository;
+        this.currentActorFinder = currentActorFinder;
+        this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -52,6 +67,8 @@ public class CycleSubmission {
         }
 
         cycle.submitForApproval();
+        cycle.recordSubmission(currentActorFinder.currentPerson(), LocalDateTime.now(clock));
         cycleRepository.save(cycle);
+        eventPublisher.publishEvent(AcademicOfferingCycleSubmittedEvent.submittedFor(cycle));
     }
 }
