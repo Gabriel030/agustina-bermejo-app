@@ -17,19 +17,13 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { formatearFecha } from '@/lib/comisiones';
 import { ReprogramarMesaDialog } from '@/features/evaluation/components/ReprogramarMesaDialog';
 import { CancelarMesaDialog } from '@/features/evaluation/components/CancelarMesaDialog';
+import { ExamBoardGradesSection } from '@/features/evaluation/components/ExamBoardGradesSection';
 import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion, useReprogramarMesa, useCancelarMesa } from '@/features/evaluation/hooks/useMesasDeExamen';
 
 const ESTADO_MESA = {
   SCHEDULED: { label: 'Agendada', tone: 'accent' }, CLOSED: { label: 'Cerrada', tone: 'neutral' },
   CANCELED: { label: 'Cancelada', tone: 'danger' },
 };
-const ESTADO_INSCRIPCION = {
-  REGISTERED: { label: 'Anotado', tone: 'accent' },
-  GRADED: { label: 'Rindió', tone: 'success' },
-  WITHDRAWN: { label: 'Dado de baja', tone: 'neutral' },
-  ABSENT: { label: 'Ausente', tone: 'danger' },
-};
-
 const MENSAJES_ERROR_MESA = {
   EXAM_BOARD_NOT_YET_TAKEN: 'Todavía no se tomó el examen: el acta se cierra después de la fecha de la mesa.',
   EXAM_BOARD_CLOSED: 'La mesa ya está cerrada: no se puede modificar.',
@@ -116,46 +110,7 @@ function ModalAsignarTribunal({ open, onClose, onAsignar, asignando }) {
   );
 }
 
-function TablaAnotados({ anotados, soloLectura, onDarDeBaja, dandoDeBaja }) {
-  if (anotados.length === 0) {
-    return <EmptyState title="Todavía no hay alumnos anotados" className="py-8" />;
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="grid grid-cols-[2fr_1.4fr_0.6fr_0.6fr_1fr_100px] gap-2 border-b border-border px-3 pb-2 text-[11px] font-bold uppercase tracking-wide text-ink-faint">
-        <div>Alumno</div><div>Carrera</div><div>Intento</div><div>Nota</div><div>Estado</div><div />
-      </div>
-      {anotados.map((a) => {
-        const config = ESTADO_INSCRIPCION[a.status] ?? { label: a.status, tone: 'neutral' };
-        return (
-          <div key={a.id} className="grid grid-cols-[2fr_1.4fr_0.6fr_0.6fr_1fr_100px] items-center gap-2 rounded-xl px-3 py-2.5 hover:bg-neutral-bg/40">
-            <div className="text-[13.5px] font-semibold text-ink">{a.studentName}</div>
-            <div className="text-[13px] text-ink-soft">{a.carrera}</div>
-            <div className="text-[13px] text-ink-soft">{a.attemptNumber ?? '-'}°</div>
-            <div className="text-[13px] font-semibold text-ink">{a.finalScore ?? '—'}</div>
-            <div><StatusPill tone={config.tone}>{config.label}</StatusPill></div>
-            <div>
-              {a.status === 'REGISTERED' && !soloLectura && (
-                <Button
-                  variant="link"
-                  size="inline"
-                  type="button"
-                  disabled={dandoDeBaja}
-                  onClick={() => onDarDeBaja(a.id)}
-                  className="text-[12.5px] font-semibold text-danger disabled:opacity-50"
-                  >
-                  Dar de baja
-                </Button>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function DetalleMesa({ mesaId }) {
+function DetalleMesa({ mesaId, role }) {
   const mesaQuery = useMesa(mesaId);
   const anotadosQuery = useAnotados(mesaId);
   const { data: mesa, isLoading: cargandoMesa } = mesaQuery;
@@ -191,7 +146,8 @@ function DetalleMesa({ mesaId }) {
   const inscriptos = (anotados ?? []).filter((a) => a.status !== 'WITHDRAWN').length;
   const conNotaFinal = (anotados ?? []).some((a) => a.finalScore != null);
   const modificable = mesa.status === 'SCHEDULED';
-  const sinNota = (anotados ?? []).filter((a) => a.status === 'REGISTERED').length;
+  const sinNota = (anotados ?? []).filter((a) => a.status === 'REGISTERED' && a.finalScore == null).length;
+  const gestiona = role === 'preceptor';
   const ahora = new Date();
   const examenPendiente = ahora < new Date(mesa.examDate);
   const ventanaAbierta = soloLectura
@@ -270,7 +226,7 @@ function DetalleMesa({ mesaId }) {
       <GlassCard className="flex flex-col gap-3 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="font-heading text-[16px] font-semibold text-ink">Alumnos anotados</div>
-          <div className="flex flex-wrap gap-2">
+          {gestiona && <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" disabled={!modificable || conNotaFinal} onClick={() => setReprogramando(true)}>
               Reprogramar
             </Button>
@@ -283,21 +239,23 @@ function DetalleMesa({ mesaId }) {
             <Button variant="gradient" size="sm" disabled={soloLectura || cerrando || examenPendiente} onClick={() => setConfirmarCierre(true)}>
               Cerrar acta
             </Button>
-          </div>
+          </div>}
         </div>
-        {modificable && conNotaFinal && (
+        {gestiona && modificable && conNotaFinal && (
           <div className="text-[12px] font-semibold text-danger" role="alert">
             Hay alumnos con nota final cargada: no se puede reprogramar ni cancelar la mesa.
           </div>
         )}
-        {!soloLectura && examenPendiente && (
+        {gestiona && !soloLectura && examenPendiente && (
           <div className="text-[12px] text-ink-faint">El acta se cierra después del examen, cuando ya se pueden cargar las notas.</div>
         )}
-        <TablaAnotados
-          anotados={anotados ?? []}
-          soloLectura={soloLectura}
-          onDarDeBaja={(id) => darDeBaja.mutate(id, { onError: (e) => toast.error(mensajeErrorMesa(e)) })}
-          dandoDeBaja={darDeBaja.isPending}
+        <ExamBoardGradesSection
+          mesa={mesa}
+          rows={anotados ?? []}
+          role={role}
+          canWithdraw={gestiona && !soloLectura}
+          onWithdraw={(id) => darDeBaja.mutate(id, { onError: (e) => toast.error(mensajeErrorMesa(e)) })}
+          withdrawing={darDeBaja.isPending}
         />
       </GlassCard>
 
@@ -324,7 +282,7 @@ function DetalleMesa({ mesaId }) {
             </DialogDescription>
           {sinNota > 0 && (
             <p className="text-sm font-semibold text-danger" role="alert">
-              {sinNota === 1 ? 'Hay 1 alumno anotado sin nota.' : `Hay ${sinNota} alumnos anotados sin nota.`} Revisá la tabla antes de cerrar el acta.
+              {sinNota === 1 ? 'Hay 1 alumno anotado sin nota.' : `Hay ${sinNota} alumnos anotados sin nota.`} Al cerrar el acta {sinNota === 1 ? 'queda' : 'quedan'} como Ausente.
             </p>
           )}
           </DialogHeader>
@@ -383,7 +341,7 @@ function BuscadorMesas({ mesas, mesaId, onElegir }) {
   );
 }
 
-export function PreceptorMesaExamen() {
+export function PreceptorMesaExamen({ role = 'preceptor' }) {
   const [tab, setTab] = useState('SCHEDULED');
   const [mesaId, setMesaId] = useState(null);
   const { data: mesas, isLoading } = useMesas(tab);
@@ -424,7 +382,7 @@ export function PreceptorMesaExamen() {
           <EmptyState title="Elegí una mesa" description="Buscá arriba la mesa de examen sobre la que querés trabajar." />
         </GlassCard>
       ) : (
-        <DetalleMesa mesaId={mesaId} />
+        <DetalleMesa key={mesaId} mesaId={mesaId} role={role} />
       )}
     </PageContainer>
   );

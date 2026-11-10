@@ -67,6 +67,14 @@ export function useReprogramarMesa(id) {
   });
 }
 
+export function useSaveFinalGrades(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => apiFetch(`/exam-boards/${id}/final-grades`, { method: 'PUT', body: JSON.stringify(payload) }),
+    onSettled: () => invalidarMesa(queryClient, id),
+  });
+}
+
 export function useCancelarMesa(id) {
   const queryClient = useQueryClient();
   return useMutation({

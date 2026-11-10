@@ -37,6 +37,7 @@ export const ROLE_MENU = {
     inicio,
     { slug: 'mis-comisiones', label: 'Mis comisiones', icon: ClipboardList },
     { slug: 'tomar-asistencia', label: 'Tomar asistencia', icon: CalendarCheck },
+    { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
   ],
   preceptor: [
     inicio,

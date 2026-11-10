@@ -10,6 +10,7 @@ export const routes = {
   shared: [],
   role: [
     { roles: ['preceptor'], path: 'mesas-de-examen', element: <PreceptorMesaExamen /> },
+    { roles: ['docente'], path: 'mesas-de-examen', element: <PreceptorMesaExamen role="docente" /> },
     { roles: ['director'], path: 'esquemas-evaluacion', element: <DirectorEsquemasEvaluacion /> },
     { roles: ['director'], path: 'revisar-configuracion/:sectionId', element: <DirectorRevisarConfiguracion /> },
     { roles: ['director'], path: 'aprobaciones/configuracion-evaluacion', element: <DirectorAprobacionesConfigEvaluacion /> },
