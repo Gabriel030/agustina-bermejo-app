@@ -2,8 +2,10 @@ package com.red_escuela.backend.graduation.specialist;
 
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentGraduationRecorder;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
 import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
@@ -65,7 +67,7 @@ class GraduationRequestApproverTest {
             return null;
         }).when(recorder).lockForGraduation(enrollment);
 
-        assertThatThrownBy(() -> approver.requireApprovableAndFindStudentId(verifiedRequestFor(enrollment))).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> approver.requireApprovableAndFindStudentId(verifiedRequestFor(enrollment))).isInstanceOf(ProgramEnrollmentRequiredException.class);
         verify(eligibilityChecker, never()).isEligibleToGraduate(10L);
     }
 
@@ -98,7 +100,7 @@ class GraduationRequestApproverTest {
         request.setStatus(GraduationRequestStatus.REQUESTED);
 
         assertThatThrownBy(() -> approver.recordApproval(request, new Person(), LocalDateTime.now()))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(InvalidGraduationRequestStateException.class);
 
         verify(recorder, never()).recordGraduation(any());
         verify(requestRepository, never()).save(any());

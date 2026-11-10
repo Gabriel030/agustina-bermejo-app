@@ -53,7 +53,7 @@ public class LaterChargesCancellationOnWithdrawal {
         if (facts.cause() != WithdrawalCause.VOLUNTARY) {
             return;
         }
-        discountConsumption.lockEnrollmentsOfDiscountsAppliedOnInvoices(invoiceAccess.findInvoicesOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId()).stream().map(Invoice::getId).toList());
+        discountConsumption.lockEnrollmentsOfDiscountsAppliedOnInvoices(invoiceAccess.findInvoiceIdsOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId()));
         invoiceAccess.findAccountIdsOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId()).stream().sorted().forEach(accountService::lockStudentCurrentAccount);
         List<Invoice> invoices = invoiceAccess.findInvoicesOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId());
         Set<Long> withPendingRequest = invoiceAccess.findInvoiceIdsWithPendingAuthorizationRequest(invoices.stream().map(Invoice::getId).toList());

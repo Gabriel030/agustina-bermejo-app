@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -60,6 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -277,7 +279,7 @@ class ProgramEnrollmentRulesTest {
 
         service.withdrawForNonpayment(1L);
 
-        org.mockito.InOrder order = org.mockito.Mockito.inOrder(programEnrollmentRepository, withdrawalBillingPort);
+        InOrder order = inOrder(programEnrollmentRepository, withdrawalBillingPort);
         order.verify(programEnrollmentRepository).findByIdForUpdate(1L);
         order.verify(withdrawalBillingPort).registerWithdrawalForBilling(any());
     }

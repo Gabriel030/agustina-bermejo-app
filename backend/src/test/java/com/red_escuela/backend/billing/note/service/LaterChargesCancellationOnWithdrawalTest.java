@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.note.service;
 
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceFactory;
@@ -10,7 +11,6 @@ import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import org.junit.jupiter.api.BeforeEach;
-import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,6 +60,7 @@ class LaterChargesCancellationOnWithdrawalTest {
                 YearMonth.of(2028, 2), 123L, null, null, null, 5L, "PE:123:F:2028", ars("50000.00"), TEMPLATE_2028, 1), Optional.empty(), ACTOR), 12L);
         issue(fee);
         when(invoiceAccess.findAccountIdsOfEnrollment(123L, null)).thenReturn(List.of(31L, 30L));
+        when(invoiceAccess.findInvoiceIdsOfEnrollment(123L, null)).thenReturn(List.of(11L, 12L));
         when(invoiceAccess.findInvoicesOfEnrollment(123L, null)).thenReturn(List.of(june, fee));
         when(invoiceAccess.findInvoiceIdsWithPendingAuthorizationRequest(any())).thenReturn(java.util.Set.of());
         when(invoiceAccess.findTermStartOfTemplate(TEMPLATE_2028)).thenReturn(Optional.of(LocalDate.of(2028, 3, 1)));
@@ -78,6 +80,7 @@ class LaterChargesCancellationOnWithdrawalTest {
         order.verify(accountService).lockStudentCurrentAccount(30L);
         order.verify(accountService).lockStudentCurrentAccount(31L);
         order.verify(invoiceAccess).findInvoicesOfEnrollment(123L, null);
+        verify(invoiceAccess, times(1)).findInvoicesOfEnrollment(123L, null);
     }
 
     @Test

@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,7 +40,7 @@ class EnrollmentLockBeforeAccountLockTest {
         for (OrderedCalls entryPoint : ENTRY_POINTS) {
             String source = Files.readString(Path.of("src/main/java").resolve(entryPoint.file()));
             List<String> candidates = bodiesOf(source, entryPoint.method()).stream()
-                    .filter(body -> entryPoint.calls().stream().allMatch(call -> body.contains(call))).toList();
+                    .filter(body -> entryPoint.calls().stream().allMatch(call -> positionOf(body, call) >= 0)).toList();
             assertThat(candidates).as(entryPoint.file() + "#" + entryPoint.method() + " must call " + entryPoint.calls()).isNotEmpty();
             candidates.forEach(body -> outOfOrderCalls(body, entryPoint.calls()).forEach(call -> violations.add(entryPoint.file() + "#" + entryPoint.method() + ": " + call)));
         }
@@ -51,17 +53,32 @@ class EnrollmentLockBeforeAccountLockTest {
         String right = "{ lockEnrollmentsOfDiscountsAppliedOn(2L); lockStudentCurrentAccount(1L); }";
 
         assertThat(outOfOrderCalls(inverted, List.of(ENROLLMENT_LOCKS, ACCOUNT_LOCK))).containsExactly(ENROLLMENT_LOCKS + " must come before " + ACCOUNT_LOCK);
+        String prefixOnly = "{ lockEnrollmentsOfDiscountsAppliedOnInvoices(ids); lockStudentCurrentAccount(1L); }";
+        String commentOnly = "{ lockStudentCurrentAccount(1L); // lockEnrollmentsOfDiscountsAppliedOn(2L)\n }";
+        String stringOnly = "{ log(\"lockEnrollmentsOfDiscountsAppliedOn(\"); lockStudentCurrentAccount(1L); }";
+        String reference = "{ ids.forEach(accountService::lockStudentCurrentAccount); }";
+
+        assertThat(positionOf(prefixOnly, ENROLLMENT_LOCKS)).isNegative();
+        assertThat(positionOf(commentOnly, ENROLLMENT_LOCKS)).isNegative();
+        assertThat(positionOf(stringOnly, ENROLLMENT_LOCKS)).isNegative();
+        assertThat(positionOf(reference, ACCOUNT_LOCK)).isNotNegative();
         assertThat(outOfOrderCalls(right, List.of(ENROLLMENT_LOCKS, ACCOUNT_LOCK))).isEmpty();
     }
 
     private static List<String> outOfOrderCalls(String body, List<String> orderedCalls) {
         List<String> outOfOrder = new ArrayList<>();
         for (int index = 1; index < orderedCalls.size(); index++) {
-            if (body.indexOf(orderedCalls.get(index)) < body.indexOf(orderedCalls.get(index - 1))) {
+            if (positionOf(body, orderedCalls.get(index)) < positionOf(body, orderedCalls.get(index - 1))) {
                 outOfOrder.add(orderedCalls.get(index - 1) + " must come before " + orderedCalls.get(index));
             }
         }
         return outOfOrder;
+    }
+
+    private static int positionOf(String body, String call) {
+        String code = body.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\n]*", " ").replaceAll("\"(\\\\.|[^\"\\\\])*\"", "\"\"");
+        Matcher matcher = Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(call) + "\\s*\\(|::" + Pattern.quote(call) + "(?![A-Za-z0-9_])").matcher(code);
+        return matcher.find() ? matcher.start() : -1;
     }
 
     private static List<String> bodiesOf(String source, String method) {

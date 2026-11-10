@@ -50,13 +50,18 @@ public class DiscountConsumptionService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockEnrollmentsOfDiscountsAppliedOn(Long invoiceId) {
-        lockEnrollmentsOfDiscountsAppliedOnInvoices(List.of(invoiceId));
+        studentDiscountRepository.findEnrollmentsOfDiscountsLiveOnInvoice(invoiceId).stream()
+                .flatMap(this::referencesOf)
+                .sorted(Comparator.comparing(EnrollmentReference::kind).thenComparing(EnrollmentReference::id))
+                .forEach(enrollmentLock::lockDiscountsOf);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockEnrollmentsOfDiscountsAppliedOnInvoices(Collection<Long> invoiceIds) {
-        invoiceIds.stream().distinct()
-                .flatMap(invoiceId -> studentDiscountRepository.findEnrollmentsOfDiscountsLiveOnInvoice(invoiceId).stream())
+        if (invoiceIds.isEmpty()) {
+            return;
+        }
+        studentDiscountRepository.findEnrollmentsOfDiscountsLiveOnInvoices(invoiceIds).stream()
                 .flatMap(this::referencesOf)
                 .distinct()
                 .sorted(Comparator.comparing(EnrollmentReference::kind).thenComparing(EnrollmentReference::id))
