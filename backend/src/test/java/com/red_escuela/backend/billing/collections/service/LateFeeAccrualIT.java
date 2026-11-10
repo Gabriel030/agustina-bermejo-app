@@ -583,6 +583,36 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-332")
+    void lateFeeIssuingTakesTheEnrollmentLockBeforeTheAccountLockLikeTheMonthlyRunSoNeitherDeadlocks() throws Exception {
+        arrange(2115);
+        publishDefaults(2115);
+        ProgramEnrollment programEnrollment = programEnrollment();
+        Invoice origin = programInstallmentDueOn(programEnrollment, d(2115, 3, 11));
+        Long accountId = origin.getStudentCurrentAccountId();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            java.util.concurrent.CountDownLatch enrollmentLocked = new java.util.concurrent.CountDownLatch(1);
+            Future<Void> monthlyRunLike = executor.submit(() -> {
+                transactionTemplate.executeWithoutResult(status -> {
+                    jdbc.queryForList("select id from program_enrollment where id = ? for update", Long.class, programEnrollment.getId());
+                    enrollmentLocked.countDown();
+                    await().atMost(Duration.ofSeconds(30)).until(() -> jdbc.queryForObject(
+                            "select count(*) from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'", Long.class) > 0);
+                    accountService.lockStudentCurrentAccount(accountId);
+                });
+                return null;
+            });
+            assertThat(enrollmentLocked.await(30, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            Future<Integer> lateFeeAccrual = executor.submit(() -> accrualService.reconcileLateFeesOfInvoice(origin.getId(), d(2115, 4, 1)));
+            monthlyRunLike.get(60, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(lateFeeAccrual.get(60, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @Tag("D-332")
     void whenThePriorCheckMissesAnExistingChargeTheDatabaseIsTheBarrierAndItIsTranslatedToAlreadyIssued() {
         arrange(2114);
         publishDefaults(2114);

@@ -14,6 +14,7 @@ import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
@@ -40,10 +41,11 @@ public class LateFeeIssuer {
     private final BillingOperationPipeline pipeline;
     private final LateFeeDebitNoteIssuingOperation operation;
     private final TransactionTemplate ownTransaction;
+    private final JdbcTemplate jdbcTemplate;
 
     public LateFeeIssuer(InvoiceCreditAccessService invoiceAccess, StudentCurrentAccountService accountService,
                          LateFeeChargeRepository chargeRepository, LateFeeContextLoader contextLoader, PolicySet<LateFeeIssuingContext> debitNoteIssuingPolicySet,
-                         BillingOperationPipeline pipeline, LateFeeDebitNoteIssuingOperation operation, PlatformTransactionManager transactionManager) {
+                         BillingOperationPipeline pipeline, LateFeeDebitNoteIssuingOperation operation, PlatformTransactionManager transactionManager, JdbcTemplate jdbcTemplate) {
         this.invoiceAccess = invoiceAccess;
         this.accountService = accountService;
         this.chargeRepository = chargeRepository;
@@ -51,6 +53,7 @@ public class LateFeeIssuer {
         this.issuingPolicies = debitNoteIssuingPolicySet;
         this.pipeline = pipeline;
         this.operation = operation;
+        this.jdbcTemplate = jdbcTemplate;
         this.ownTransaction = new TransactionTemplate(transactionManager);
         this.ownTransaction.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
     }
@@ -69,6 +72,7 @@ public class LateFeeIssuer {
 
     private boolean issueLateFeeUnderLocks(Long originInvoiceId, LocalDate periodStart, LocalDate businessDate, LatePaymentTimeline timeline) {
         Long accountId = invoiceAccess.findAccountIdOf(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
+        lockEnrollmentsOfInvoice(originInvoiceId);
         accountService.lockStudentCurrentAccount(accountId);
         Invoice origin = invoiceAccess.lockInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
         List<LateFeeAccrualPeriod> covered = chargeRepository.findCoveredPeriodsByOriginInvoiceId(originInvoiceId);
@@ -85,6 +89,11 @@ public class LateFeeIssuer {
         pipeline.runOperation(operation, context.get()).resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException(
                 "Late fee issuing does not wait for authorization: " + requestId));
         return true;
+    }
+
+    private void lockEnrollmentsOfInvoice(Long invoiceId) {
+        jdbcTemplate.queryForList("select id from program_enrollment where id in (select program_enrollment_id from invoice_line where invoice_id = ?) order by id for update", Long.class, invoiceId);
+        jdbcTemplate.queryForList("select id from course_enrollment where id in (select course_enrollment_id from invoice_line where invoice_id = ?) order by id for update", Long.class, invoiceId);
     }
 
     private static boolean violatesLateFeeUniqueness(DataIntegrityViolationException e) {
