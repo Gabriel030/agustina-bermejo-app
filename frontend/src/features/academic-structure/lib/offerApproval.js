@@ -20,12 +20,6 @@ export function cycleTargetKind(cycle) {
   return cycle.programId ? 'Carrera' : 'Curso';
 }
 
-const SHIFT_LABELS = { MORNING: 'Mañana', AFTERNOON: 'Tarde', EVENING: 'Noche' };
-
-export function shiftLabel(shift) {
-  return SHIFT_LABELS[shift] ?? 'Sin turno';
-}
-
 function timeOf(value) {
   return value?.slice(0, 5) ?? '';
 }
