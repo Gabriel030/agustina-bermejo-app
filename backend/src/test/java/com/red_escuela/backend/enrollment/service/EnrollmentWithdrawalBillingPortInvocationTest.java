@@ -68,7 +68,7 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
         programEnrollment.setStudent(student);
         programEnrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         programEnrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
-        when(programRepository.findById(10L)).thenReturn(Optional.of(programEnrollment));
+        when(programRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(programEnrollment));
         Course course = new Course();
         course.setId(5L);
         courseEnrollment = new CourseEnrollment();
@@ -77,7 +77,7 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
         courseEnrollment.setCourse(course);
         courseEnrollment.setStatus(EnrollmentStatus.WAITLISTED);
         courseEnrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
-        when(courseRepository.findById(20L)).thenReturn(Optional.of(courseEnrollment));
+        when(courseRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(courseEnrollment));
     }
 
     @Test

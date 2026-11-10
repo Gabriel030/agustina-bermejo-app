@@ -252,7 +252,7 @@ class ProgramEnrollmentRulesTest {
     @EnumSource(value = ProgramEnrollmentStatus.class, names = {"ENROLLED", "PAUSED"})
     void withdrawRecordsTheWithdrawalAndReportsItToBilling(ProgramEnrollmentStatus status) {
         ProgramEnrollment active = enrollment(1L, status);
-        when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(active));
+        when(programEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(active));
         when(withdrawalDateResolver.resolveEffectiveDate(any(), any())).thenReturn(LocalDate.of(2026, 3, 2));
         when(withdrawalDateResolver.registrationDate()).thenReturn(LocalDate.of(2026, 3, 2));
         when(withdrawalDateResolver.completionMomentOf(LocalDate.of(2026, 3, 2))).thenReturn(NOW);
@@ -271,7 +271,7 @@ class ProgramEnrollmentRulesTest {
     @EnumSource(value = ProgramEnrollmentStatus.class, names = {"ENROLLED", "PAUSED"}, mode = EnumSource.Mode.EXCLUDE)
     void withdrawRejectsEnrollmentsThatAreNeitherEnrolledNorPaused(ProgramEnrollmentStatus status) {
         ProgramEnrollment inactive = enrollment(1L, status);
-        when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(inactive));
+        when(programEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(inactive));
 
         assertThatThrownBy(() -> service.withdraw(1L, EnrollmentWithdrawal.forNonpayment())).isInstanceOf(CannotWithdrawException.class);
         assertThat(inactive.getStatus()).isEqualTo(status);
