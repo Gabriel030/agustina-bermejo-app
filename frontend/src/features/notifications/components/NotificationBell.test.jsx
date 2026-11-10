@@ -73,6 +73,45 @@ describe('NotificationBell', () => {
     expect(await screen.findByText('/mis-solicitudes/42')).toBeInTheDocument();
   });
 
+  it('opens the review sheet of the application when staff taps a received application notification', async () => {
+    const user = userEvent.setup();
+    function Destination() {
+      return <div>{useLocation().pathname}</div>;
+    }
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([
+          {
+            id: 12,
+            type: 'PROGRAM_APPLICATION_RECEIVED',
+            message: 'Nueva solicitud de ingreso: Camila Ibarra pidió Tecnicatura en Seguridad e Higiene',
+            read: false,
+            relatedEntityType: 'ProgramEnrollmentApplication',
+            relatedEntityId: 55,
+            createdAt: '2026-10-01T10:00:00',
+          },
+        ]),
+      ),
+      http.post(`${API}/me/notifications/12/read`, () =>
+        HttpResponse.json({ id: 12, type: 'PROGRAM_APPLICATION_RECEIVED', message: 'Aviso', read: true, createdAt: '2026-10-01T10:00:00', relatedEntityId: 55, relatedEntityType: 'ProgramEnrollmentApplication' }),
+      ),
+      http.patch(`${API}/me/notifications/12/read`, () => HttpResponse.json({})),
+      http.put(`${API}/me/notifications/12/read`, () => HttpResponse.json({})),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/administrativo/inicio" element={<NotificationBell />} />
+        <Route path="*" element={<Destination />} />
+      </Routes>,
+      { route: '/administrativo/inicio' },
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones, 1 sin leer' }));
+    await user.click(await screen.findByText('Nueva solicitud de ingreso'));
+
+    expect(await screen.findByText('/administrativo/solicitudes-de-ingreso/55')).toBeInTheDocument();
+  });
+
   it('shows an error state with retry instead of the empty message when loading fails', async () => {
     const user = userEvent.setup();
     let calls = 0;

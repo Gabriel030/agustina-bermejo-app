@@ -93,6 +93,10 @@ export const handlers = [
   http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: { amount: '8000.00', currency: 'ARS' } })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+  http.get(`${API}/program-enrollment-applications/pending`, () => HttpResponse.json([])),
+  http.get(`${API}/program-enrollment-applications/history`, () => HttpResponse.json({ items: [], totalElements: 0 })),
+  http.get(`${API}/program-enrollment-applications/:id`, () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
+  http.get(`${API}/program-enrollment-applications/:id/approval-check`, () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
   http.get(`${API}/me/program-enrollments`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollments/:id/annual-upfront/quote`, () =>
     HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),

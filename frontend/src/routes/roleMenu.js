@@ -19,6 +19,7 @@ const paymentMethods = { slug: 'medios-de-pago', label: 'Medios de pago', icon: 
 const annualTerms = { slug: 'terminos-del-pago-anual', label: 'Términos del pago anual', icon: ScrollText };
 const financial ={ slug: 'financiero', label: 'Financiero', icon: BarChart2 };
 const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText };
+const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicitudes de ingreso', icon: UserPlus };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const approvals = { slug: 'aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 };
@@ -40,6 +41,7 @@ export const ROLE_MENU = {
   preceptor: [
     inicio,
     alumnos,
+    enrollmentApplications,
     academicOffering,
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     solicitudes,
@@ -49,6 +51,7 @@ export const ROLE_MENU = {
     inicio,
     alumnos,
     personal,
+    enrollmentApplications,
     invoicing,
     discounts,
     prices,
