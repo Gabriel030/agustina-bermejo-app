@@ -6,6 +6,9 @@ import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationApprov
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse.DocumentationSummary;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
+import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
+import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import org.junit.jupiter.api.Tag;
@@ -15,6 +18,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,6 +37,7 @@ class ProgramApplicationApprovalCheckTest {
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setId(1L);
         application.setStudent(student);
+        application.setStatus(ProgramEnrollmentApplicationStatus.PENDING);
         when(finder.findOrThrow(1L)).thenReturn(application);
         when(views.documentationOf(7L)).thenReturn(new DocumentationSummary(documentationComplete,
                 documentationComplete ? List.of() : List.of(DocumentType.DNI_DORSO), List.of()));
@@ -88,5 +93,42 @@ class ProgramApplicationApprovalCheckTest {
                 .when(enrollmentService).verifyStudentHasNoOutstandingDebt(7L);
 
         assertThatThrownBy(() -> check.check(1L)).isInstanceOf(com.red_escuela.backend.shared.exception.ConflictException.class);
+    }
+
+    @Test
+    void anApplicationThatIsNotPendingCannotBeApprovedAndSaysSo() {
+        givenApplicationOfStudent7(true);
+        finder.findOrThrow(1L).setStatus(ProgramEnrollmentApplicationStatus.APPROVED);
+
+        ProgramEnrollmentApplicationApprovalCheckResponse response = check.check(1L);
+
+        assertThat(response.canApprove()).isFalse();
+        assertThat(response.blockingReasons()).containsExactly("INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE");
+    }
+
+    @Test
+    void aStudentAlreadyEnrolledInTheProgramCannotBeApprovedAndSaysSo() {
+        givenApplicationOfStudent7(true);
+        doThrow(new AlreadyEnrolledInProgramException(7L, 3L)).when(enrollmentService).validateStudentCanEnrollInProgram(any(), any());
+
+        ProgramEnrollmentApplicationApprovalCheckResponse response = check.check(1L);
+
+        assertThat(response.canApprove()).isFalse();
+        assertThat(response.blockingReasons()).containsExactly("ALREADY_ENROLLED_IN_PROGRAM");
+    }
+
+    @Test
+    void aStudentNotConfirmedCannotBeApprovedAndSaysSo() {
+        givenApplicationOfStudent7(true);
+        doThrow(new StudentNotConfirmedException(7L)).when(enrollmentService).validateStudentCanEnrollInProgram(any(), any());
+
+        assertThat(check.check(1L).blockingReasons()).containsExactly("STUDENT_NOT_CONFIRMED");
+    }
+
+    @Test
+    void aPendingEligibleApplicationHasNoBlockingReasons() {
+        givenApplicationOfStudent7(true);
+
+        assertThat(check.check(1L).blockingReasons()).isEmpty();
     }
 }

@@ -8801,6 +8801,12 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "blockingReasons" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "canApprove" : {
             "type" : "boolean"
           },
@@ -8811,7 +8817,7 @@
             "$ref" : "#/components/schemas/DocumentationSummary"
           }
         },
-        "required" : [ "applicationId", "canApprove", "debt", "documentation" ],
+        "required" : [ "applicationId", "blockingReasons", "canApprove", "debt", "documentation" ],
         "type" : "object"
       },
       "ProgramEnrollmentApplicationPage" : {

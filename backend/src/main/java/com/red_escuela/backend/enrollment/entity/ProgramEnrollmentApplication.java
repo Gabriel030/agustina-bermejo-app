@@ -106,7 +106,7 @@ public class ProgramEnrollmentApplication {
         this.rejectionReason = reason;
     }
 
-    private void requirePending() {
+    public void requirePending() {
         if (status != ProgramEnrollmentApplicationStatus.PENDING) {
             throw new InvalidProgramEnrollmentApplicationStateException(id, status);
         }
