@@ -62,6 +62,7 @@ public class GradeItemRecorder {
     private final PublishedGradeItemSelector publishedGradeItemSelector;
     private final FinalGradeRevertAuditor finalGradeRevertAuditor;
     private final AcademicReferenceFinder academicReferenceFinder;
+    private final ExamBoardTakenChecker examBoardTakenChecker;
 
     public GradeItemRecorder(
             GradeItemRepository gradeItemRepository,
@@ -77,7 +78,8 @@ public class GradeItemRecorder {
             GradeItemPublicationLockChecker publicationLock,
             PublishedGradeItemSelector publishedGradeItemSelector,
             FinalGradeRevertAuditor finalGradeRevertAuditor,
-            AcademicReferenceFinder academicReferenceFinder) {
+            AcademicReferenceFinder academicReferenceFinder,
+            ExamBoardTakenChecker examBoardTakenChecker) {
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -92,6 +94,7 @@ public class GradeItemRecorder {
         this.publishedGradeItemSelector = publishedGradeItemSelector;
         this.finalGradeRevertAuditor = finalGradeRevertAuditor;
         this.academicReferenceFinder = academicReferenceFinder;
+        this.examBoardTakenChecker = examBoardTakenChecker;
     }
 
     @Transactional
@@ -130,6 +133,50 @@ public class GradeItemRecorder {
         gradeItem = gradeItemRepository.save(gradeItem);
         applyProgramEnrollmentCondition(enrollment, correction, false);
         return gradeItem;
+    }
+
+    @Transactional
+    public void clearProgramEnrollmentFinal(Long enrollmentId, Long instructorId, Long examBoardId, String reason) {
+        sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
+        SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
+        Optional<GradeItem> existing = gradeItemRepository
+                .findByExamBoardIdAndProgramSubjectSectionEnrollmentId(examBoardId, enrollmentId).stream()
+                .filter(item -> item.getType() == GradeItemType.FINAL)
+                .findFirst();
+        if (existing.isEmpty()) {
+            return;
+        }
+        revertFinalToAbsent(existing.get(), reason, instructorId, SectionKind.PROGRAM,
+                enrollment.getSubjectSection().getId(), enrollmentId);
+        applyProgramEnrollmentCondition(enrollment, true, false);
+    }
+
+    @Transactional
+    public void clearCourseEnrollmentFinal(Long enrollmentId, Long instructorId, Long examBoardId, String reason) {
+        sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
+        CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
+        Optional<GradeItem> existing = gradeItemRepository
+                .findByExamBoardIdAndCourseSubjectSectionEnrollmentId(examBoardId, enrollmentId).stream()
+                .filter(item -> item.getType() == GradeItemType.FINAL)
+                .findFirst();
+        if (existing.isEmpty()) {
+            return;
+        }
+        revertFinalToAbsent(existing.get(), reason, instructorId, SectionKind.COURSE,
+                enrollment.getCourseSubjectSection().getId(), enrollmentId);
+        applyCourseEnrollmentCondition(enrollment, true, false);
+    }
+
+    private void revertFinalToAbsent(GradeItem existing, String reason, Long instructorId, SectionKind kind,
+                                     Long sectionId, Long enrollmentId) {
+        ExamBoard board = existing.getExamBoard();
+        if (board != null && board.getStatus() != ExamBoardStatus.SCHEDULED) {
+            throw new ExamBoardClosedException(board.getId());
+        }
+        Long actorPersonId = academicReferenceFinder.findInstructor(instructorId).getPerson().getId();
+        finalGradeRevertAuditor.recordRevert(existing, null, reason, kind, sectionId, enrollmentId, actorPersonId);
+        gradeItemRepository.delete(existing);
+        gradeItemRepository.flush();
     }
 
     @Transactional
@@ -285,6 +332,7 @@ public class GradeItemRecorder {
         if (!examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoardId, instructorId)) {
             throw new NotOwnSectionException(instructorId, examBoardId);
         }
+        examBoardTakenChecker.requireTaken(examBoard);
         return examBoard;
     }
 
