@@ -1,7 +1,7 @@
 import { StatusPill } from '@/components/StatusPill';
 import { multiSelectFilter } from '@/components/table/multiSelectFilter';
 import { BOARD_RESULT, boardRowResult } from '../lib/examBoardGrades';
-import { ExamBoardGradeCell, ExamBoardStudentCell, ExamBoardWithdrawButton } from './ExamBoardGradeCell';
+import { ExamBoardCorrectButton, ExamBoardGradeCell, ExamBoardStudentCell, ExamBoardWithdrawButton } from './ExamBoardGradeCell';
 
 export function buildBoardColumns() {
   return [
@@ -52,7 +52,9 @@ export function buildBoardColumns() {
       enableSorting: false,
       meta: { sticky: 'right' },
       cell: ({ row, table }) => {
-        const { canWithdraw, onWithdraw, withdrawing } = table.options.meta.board;
+        const { canWithdraw, onWithdraw, withdrawing, correctionAccess, onCorrect } = table.options.meta.board;
+        const access = correctionAccess(row.original);
+        if (access !== 'none') return <ExamBoardCorrectButton row={row.original} access={access} onCorrect={onCorrect} />;
         return canWithdraw && row.original.status === 'REGISTERED' ? (
           <ExamBoardWithdrawButton row={row.original} onWithdraw={onWithdraw} pending={withdrawing} />
         ) : null;

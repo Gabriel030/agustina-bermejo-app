@@ -1,4 +1,4 @@
-import { Lock, UserMinus } from 'lucide-react';
+import { Lock, Pencil, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
@@ -7,6 +7,8 @@ import { formatScore, scoreTextState } from '../lib/gradeGrid';
 import { isBlockedRow, isGradableRow } from '../lib/examBoardGrades';
 
 export const NOT_REGULAR_REASON = 'Requiere condición regular: perdió la regularidad';
+export const CLOSED_CORRECTION_REASON = 'El acta está cerrada: la nota ya no se puede corregir';
+export const SAVED_ABSENT_HINT = 'Ausente guardado: solo puede pasar a una nota';
 
 function focusSibling(input, step) {
   const grid = input.closest('[data-board-grid]');
@@ -112,6 +114,7 @@ export function ExamBoardGradeCell({ row, draft, mode, lockedReason, error, onCh
           {absent ? 'Ausente ✓' : 'Ausente'}
         </Toggle>
       </WithReason>
+      {!locked && !draft && row.status === 'ABSENT' && <span className="text-[12px] text-ink-faint">{SAVED_ABSENT_HINT}</span>}
       {showError && (
         <span id={errorId} role={error ? 'alert' : undefined} className="text-[12px] text-danger">
           {error ?? 'Entre 1 y 10'}
@@ -141,5 +144,24 @@ export function ExamBoardWithdrawButton({ row, onWithdraw, pending }) {
         <TooltipContent>Dar de baja de la mesa</TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+export function ExamBoardCorrectButton({ row, access, onCorrect }) {
+  if (access === 'enabled') {
+    return (
+      <Button type="button" variant="outline" size="sm" aria-label={`Corregir la nota de ${row.studentName}`} onClick={() => onCorrect(row)}>
+        <Pencil aria-hidden="true" />
+        <span className="sr-only md:not-sr-only">Corregir</span>
+      </Button>
+    );
+  }
+  return (
+    <WithReason reason={CLOSED_CORRECTION_REASON}>
+      <Button type="button" variant="outline" size="sm" disabled aria-label={`Corregir la nota de ${row.studentName}`}>
+        <Pencil aria-hidden="true" />
+        <span className="sr-only md:not-sr-only">Corregir</span>
+      </Button>
+    </WithReason>
   );
 }

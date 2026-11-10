@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flexRender, getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { StatusPill } from '@/components/StatusPill';
 import { ColumnFilter } from '@/components/table/ColumnFilter';
 import { multiSelectFilter } from '@/components/table/multiSelectFilter';
@@ -29,8 +30,14 @@ const STICKY_RIGHT = 'sticky right-0 z-20 min-w-[56px] bg-dialog-bg text-right s
 const NO_COLUMNS = [];
 const FINAL_DISABLED_REASON = 'Requiere condición regular';
 
-function PublishHeader({ column, students, hasDrafts, onPublish }) {
-  if (column.type === 'FINAL') return null;
+function PublishHeader({ column, students, hasDrafts, boardHref, onPublish }) {
+  if (column.type === 'FINAL') {
+    return boardHref ? (
+      <Link to={boardHref} className="text-[12px] font-semibold text-primary underline-offset-2 hover:underline">
+        Ver mesa
+      </Link>
+    ) : null;
+  }
   const label = gradeColumnLabel(column);
   if (isColumnLocked(column)) {
     return (
@@ -58,7 +65,7 @@ function PublishHeader({ column, students, hasDrafts, onPublish }) {
   );
 }
 
-export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course', board, drafts = {}, statuses = {}, readOnly = false, onChange, onSettle, onRetry, onOpenStudent, onOpenCell, onPublish }) {
+export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course', board, drafts = {}, statuses = {}, readOnly = false, onChange, onSettle, onRetry, onOpenStudent, onOpenCell, onPublish, finalBoardHref }) {
   'use no memo';
   const scrollRef = useRef(null);
   const [moreToRight, setMoreToRight] = useState(false);
@@ -240,6 +247,7 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
                             column={header.column.columnDef.meta.column}
                             students={students}
                             hasDrafts={hasColumnDrafts(drafts, header.column.columnDef.meta.column)}
+                            boardHref={finalBoardHref}
                             onPublish={onPublish}
                           />
                         )}

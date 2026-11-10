@@ -53,6 +53,7 @@ export const ROLE_MENU = {
     alumnos,
     personal,
     enrollmentApplications,
+    { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     invoicing,
     discounts,
     prices,
@@ -77,6 +78,7 @@ export const ROLE_MENU = {
     approvals,
     academicManagement,
     { slug: 'esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
+    { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
     invoicing,
     discounts,
@@ -110,7 +112,7 @@ const MENU_GROUPS = {
     {
       id: 'academic',
       label: 'Académico',
-      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'periodos', 'constancias'],
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'periodos', 'constancias'],
     },
     {
       id: 'billing',

@@ -15,7 +15,9 @@ import {
   boardAccess,
   boardChangeRows,
   boardChanges,
+  buildCorrectionPayload,
   buildFinalGradesPayload,
+  correctionAccess,
   hasInvalidBoardDraft,
   patchBoardDraft,
   removeBoardDraft,
@@ -23,6 +25,7 @@ import {
   summarizeBoardSave,
 } from '../lib/examBoardGrades';
 import { formatScore } from '../lib/gradeGrid';
+import { ExamBoardCorrectionSheet } from './ExamBoardCorrectionSheet';
 import { GradeGridTable } from './GradeGridTable';
 
 const ROW_REJECTED = 'EXAM_BOARD_FINAL_GRADE_ROW_REJECTED';
@@ -82,6 +85,8 @@ export function ExamBoardGradesSection({ mesa, rows, role, canWithdraw, onWithdr
   const [reviewing, setReviewing] = useState(false);
   const [failure, setFailure] = useState(null);
   const [discarding, setDiscarding] = useState(false);
+  const [correcting, setCorrecting] = useState(null);
+  const [correctionFailure, setCorrectionFailure] = useState(null);
 
   const gradeRows = useMemo(() => rows.filter((row) => row.status !== 'WITHDRAWN'), [rows]);
   const mode = boardAccess({ role, mesa });
@@ -114,6 +119,22 @@ export function ExamBoardGradesSection({ mesa, rows, role, canWithdraw, onWithdr
         toast.success(summarizeBoardSave(saved));
       },
       onError: (error) => setFailure(batchFailure(error, gradeRows)),
+    });
+  }
+
+  function closeCorrection() {
+    setCorrecting(null);
+    setCorrectionFailure(null);
+  }
+
+  function confirmCorrection(form) {
+    const target = correcting;
+    saveFinalGrades.mutate(buildCorrectionPayload(target, form), {
+      onSuccess: () => {
+        closeCorrection();
+        toast.success(form.absent ? `${target.studentName} quedó Ausente. El cambio quedó en el historial.` : `Se corrigió la nota de ${target.studentName}. El cambio quedó en el historial.`);
+      },
+      onError: (error) => setCorrectionFailure(batchFailure(error, gradeRows).message),
     });
   }
 
@@ -153,12 +174,23 @@ export function ExamBoardGradesSection({ mesa, rows, role, canWithdraw, onWithdr
         <Notice title="Solo lectura.">Las notas las carga el tribunal de la mesa.</Notice>
       )}
       {mesa.status === 'CLOSED' && (
-        <Notice title="Acta cerrada.">Las notas quedaron firmes. Si hay un error, hablá con Dirección.</Notice>
+        <Notice title="Acta cerrada.">Las notas quedaron firmes y ya no se pueden corregir. Si hay un error, hablá con Dirección.</Notice>
       )}
       <GradeGridTable
         mode="board"
         students={gradeRows}
-        board={{ drafts, rowErrors, mode, lockedReason, onChange: changeDraft, canWithdraw, onWithdraw, withdrawing }}
+        board={{
+          drafts,
+          rowErrors,
+          mode,
+          lockedReason,
+          onChange: changeDraft,
+          canWithdraw,
+          onWithdraw,
+          withdrawing,
+          correctionAccess: (row) => correctionAccess({ role, mesa, row }),
+          onCorrect: (row) => setCorrecting(row),
+        }}
       />
       {mode === 'edit' && dirty && (
         <StickyActionBar
@@ -183,6 +215,13 @@ export function ExamBoardGradesSection({ mesa, rows, role, canWithdraw, onWithdr
           setDrafts({});
           setDiscarding(false);
         }}
+      />
+      <ExamBoardCorrectionSheet
+        row={correcting}
+        saving={saveFinalGrades.isPending}
+        failure={correctionFailure}
+        onClose={closeCorrection}
+        onConfirm={confirmCorrection}
       />
       <ReviewSheet
         open={reviewing}

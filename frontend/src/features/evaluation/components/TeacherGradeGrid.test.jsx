@@ -70,6 +70,15 @@ describe('TeacherGradeGrid', () => {
     expect(within(rows[1]).getByText('Acosta, Joaquín')).toBeInTheDocument();
   });
 
+  it('links the final column to the exam boards screen of the docente', async () => {
+    useGrid();
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
+
+    await screen.findByLabelText('Parcial 1 de Benítez, Lucía');
+
+    expect(screen.getByRole('link', { name: 'Ver mesa' })).toHaveAttribute('href', '/docente/mesas-de-examen');
+  });
+
   it('shows the previous to new correction and posts every modified cell once', async () => {
     useGrid();
     const posts = [];

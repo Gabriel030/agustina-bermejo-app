@@ -209,6 +209,7 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
         onRetry={retryCell}
         onOpenStudent={setOpenEnrollmentId}
         onPublish={setPublishing}
+        finalBoardHref="/docente/mesas-de-examen"
       />
       <PublishDialog
         column={publishing}

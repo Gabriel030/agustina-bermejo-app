@@ -1,4 +1,5 @@
-import { formatScore, parseScore, scoreTextState } from './gradeGrid';
+import { CORRECTION_REASON_MAX, CORRECTION_REASON_MIN, correctionDifference } from './gradeCorrection';
+import { formatScore, isValidScore, parseScore, scoreTextState } from './gradeGrid';
 
 export const BOARD_RESULT = {
   PASSED: { tone: 'success', label: 'Aprobado' },
@@ -116,4 +117,43 @@ export function summarizeBoardSave(changes) {
 export function boardAccess({ role, mesa, now = new Date() }) {
   if (mesa.status !== 'SCHEDULED' || role !== 'docente') return 'read';
   return now < new Date(mesa.examDate) ? 'locked' : 'edit';
+}
+
+export function boardRoleCaps(role) {
+  return { grades: role === 'docente', manages: role === 'preceptor' || role === 'administrativo' };
+}
+
+export function correctionAccess({ role, mesa, row }) {
+  if (role !== 'docente' || row.status === 'WITHDRAWN' || row.finalScore == null) return 'none';
+  if (mesa.status === 'SCHEDULED') return boardAccess({ role, mesa }) === 'edit' ? 'enabled' : 'none';
+  return mesa.status === 'CLOSED' ? 'closed' : 'none';
+}
+
+export function boardCorrectionForm({ row, scoreText, absent, reasonText }) {
+  const value = absent ? null : parseScore(scoreText);
+  const reason = reasonText.trim();
+  const scoreInvalid = !absent && value !== null && !isValidScore(value);
+  const scoreMissing = !absent && value === null;
+  const unchanged = !absent && value !== null && !scoreInvalid && value === row.finalScore;
+  const reasonTooShort = reasonText.length > 0 && reason.length < CORRECTION_REASON_MIN;
+  const reasonTooLong = reasonText.length > CORRECTION_REASON_MAX;
+  const reasonOk = reason.length >= CORRECTION_REASON_MIN && !reasonTooLong;
+  const ready = reasonOk && !scoreInvalid && !scoreMissing && !unchanged;
+  return { value, reason, absent, scoreInvalid, scoreMissing, unchanged, reasonTooShort, reasonTooLong, ready };
+}
+
+export function buildCorrectionPayload(row, form) {
+  const entry = form.absent ? { registrationId: row.id, absent: true } : { registrationId: row.id, score: form.value };
+  return { items: [{ ...entry, reason: form.reason }] };
+}
+
+export function correctionChangeRows(row, form) {
+  const before = BOARD_RESULT[boardRowResult(row, undefined)].label;
+  const nextResult = form.absent ? 'ABSENT' : form.value >= row.minApprovalGrade ? 'PASSED' : 'FAILED';
+  const after = BOARD_RESULT[nextResult].label;
+  const delta = form.absent ? '' : correctionDifference(row.finalScore, form.value);
+  return [
+    { key: 'score', label: 'Nota del final', today: formatScore(row.finalScore), next: form.absent ? 'Ausente' : formatScore(form.value), difference: form.absent ? 'Se quita la nota' : delta },
+    { key: 'result', label: 'Resultado', today: before, next: after, difference: before === after ? 'Sin cambio' : `${before} → ${after}`, unchanged: before === after },
+  ];
 }
