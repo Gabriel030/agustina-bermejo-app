@@ -57,6 +57,7 @@ public class GradeItemRecorder {
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
     private final GradeItemPublicationLockChecker publicationLock;
     private final PublishedGradeItemSelector publishedGradeItemSelector;
+    private final CourseworkApprovalChecker courseworkApprovalChecker;
 
     public GradeItemRecorder(
             GradeItemRepository gradeItemRepository,
@@ -70,7 +71,8 @@ public class GradeItemRecorder {
             AbsenceFreeStatusChecker absenceFreeStatusChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
             GradeItemPublicationLockChecker publicationLock,
-            PublishedGradeItemSelector publishedGradeItemSelector) {
+            PublishedGradeItemSelector publishedGradeItemSelector,
+            CourseworkApprovalChecker courseworkApprovalChecker) {
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -83,6 +85,7 @@ public class GradeItemRecorder {
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
         this.publicationLock = publicationLock;
         this.publishedGradeItemSelector = publishedGradeItemSelector;
+        this.courseworkApprovalChecker = courseworkApprovalChecker;
     }
 
     @Transactional
@@ -106,6 +109,10 @@ public class GradeItemRecorder {
                         examBoard.getId(), enrollmentId));
         publicationLock.requireUnlocked(
                 SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), request.type(), request.sequenceNumber());
+        if (request.type() == GradeItemType.EXAM) {
+            courseworkApprovalChecker.requireApprovedBeforeExam(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(),
+                    scheme, gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId));
+        }
 
         GradeItem gradeItem = gradeItemRepository
                 .findByProgramSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
@@ -186,6 +193,10 @@ public class GradeItemRecorder {
                         examBoard.getId(), enrollmentId));
         publicationLock.requireUnlocked(
                 SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), request.type(), request.sequenceNumber());
+        if (request.type() == GradeItemType.EXAM) {
+            courseworkApprovalChecker.requireApprovedBeforeExam(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(),
+                    scheme, gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId));
+        }
 
         GradeItem gradeItem = gradeItemRepository
                 .findByCourseSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(

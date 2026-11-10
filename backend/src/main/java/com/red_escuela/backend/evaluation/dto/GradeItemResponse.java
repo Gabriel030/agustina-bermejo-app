@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Grade;
 
@@ -9,7 +10,8 @@ import java.time.LocalDateTime;
 
 public record GradeItemResponse(
         Long id, Long enrollmentId, String type, Integer sequenceNumber,
-        BigDecimal score, LocalDateTime date, Long examBoardId) {
+        BigDecimal score, LocalDateTime date, Long examBoardId,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) BigDecimal originalScore) {
 
     public static GradeItemResponse from(GradeItem gradeItem) {
         Long enrollmentId = gradeItem.getProgramSubjectSectionEnrollment() != null
@@ -22,6 +24,7 @@ public record GradeItemResponse(
                 gradeItem.getSequenceNumber(),
                 Grade.valueOrNull(gradeItem.getScore()),
                 gradeItem.getDate(),
-                gradeItem.getExamBoard() == null ? null : gradeItem.getExamBoard().getId());
+                gradeItem.getExamBoard() == null ? null : gradeItem.getExamBoard().getId(),
+                Grade.valueOrNull(gradeItem.getOriginalScore()));
     }
 }

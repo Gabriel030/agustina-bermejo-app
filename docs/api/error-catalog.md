@@ -390,7 +390,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
 | `GRADE_CORRECTION_NO_CHANGE` | no | `GradeCorrectionNoChangeException` | evaluation |
 | `GRADE_CORRECTION_PERIOD_ENDED` | no | `GradeCorrectionPeriodEndedException` | evaluation |
+| `GRADE_ITEM_ALREADY_RECOVERED` | no | `GradeItemAlreadyRecoveredException` | evaluation |
 | `GRADE_ITEM_NOT_PUBLISHED` | no | `GradeItemNotPublishedException` | evaluation |
+| `GRADE_ITEM_NOT_RECOVERABLE` | no | `GradeItemNotRecoverableException` | evaluation |
 | `GRADE_ITEM_PUBLISHED_LOCKED` | no | `GradeItemPublishedLockedException` | evaluation |
 | `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
@@ -463,6 +465,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PAYMENT_RECEIPT_ALREADY_PENDING` | no | `PaymentReceiptAlreadyPendingException` | billing |
 | `PAYMENT_RECEIPT_ALREADY_REVIEWED` | no | `PaymentReceiptAlreadyReviewedException` | billing |
 | `PENDING_BANK_TRANSFER_ON_INVOICE` | no | `PendingBankTransferOnInvoiceException` | billing |
+| `PENDING_COURSEWORK` | no | `PendingCourseworkException` | evaluation |
 | `PENDING_COURSE_ENROLLMENT_APPLICATION` | no | `PendingCourseEnrollmentApplicationException` | enrollment |
 | `PENDING_DEBT` | no | `PendingDebtException` | billing |
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
@@ -480,6 +483,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `RECEIPT_INVOICE_NOT_PAYABLE` | no | `ReceiptInvoiceNotPayableException` | billing |
 | `RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST` | no | `ReceiptMustCoverOldestInvoicesFirstException` | billing |
 | `RECEIPT_TRANSFER_DATE_MISMATCH` | no | `ReceiptTransferDateMismatchException` | billing |
+| `RECOVERY_QUOTA_EXCEEDED` | no | `RecoveryQuotaExceededException` | evaluation |
 | `REFUND_BLOCKED_BY_OVERDUE_DEBT` | no | `RefundBlockedByOverdueDebtException` | billing |
 | `REFUND_EXCEEDS_AVAILABLE_AMOUNT` | no | `RefundExceedsAvailableAmountException` | billing |
 | `REFUND_METHOD_MISMATCH` | no | `RefundMethodMismatchException` | billing |
@@ -661,6 +665,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/exam-boards/{id}/reschedule` | `ExamBoardChangeController#reschedule` |
 | POST | `/exam-boards/{id}/tribunal` | `ExamBoardController#assignTribunal` |
 | POST | `/grade-items/{id}/corrections` | `GradeCorrectionController#correctPublishedGrade` |
+| POST | `/grade-items/{id}/recovery` | `ExamRecoveryController#recordExamRecovery` |
 | POST | `/graduation-certificates` | `GraduationCertificateController#issue` |
 | POST | `/graduation-requests/{id}/approve` | `GraduationRequestController#approve` |
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |

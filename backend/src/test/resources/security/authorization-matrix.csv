@@ -192,6 +192,7 @@ GET,/me/course-section-enrollments/{id}/attendance,DENY,OWNER,ALLOW,ALLOW,ALLOW,
 GET,/me/course-section-enrollments/{id}/attendance/risk,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,course-section-enrollment,
 GET,/grade-items/{id}/audit,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/grade-items/{id}/corrections,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""newScore"":8,""reason"":""Error de carga de la nota""}"
+POST,/grade-items/{id}/recovery,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,"{""score"":7}"
 GET,/me/course-section-enrollments/{id}/grade-items,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,course-section-enrollment,
 GET,/me/credit-balance,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
 GET,/me/credit-notes,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
