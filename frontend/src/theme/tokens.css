@@ -69,6 +69,7 @@
   --overlay-blur: 4px;
   --sh-card: 0 1px 2px oklch(30% 0.03 260 / 0.04), 0 24px 60px -20px oklch(30% 0.08 260 / 0.28);
   --sh-overlay: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --sh-dialog: none;
   --ring-surface: color-mix(in oklab, var(--ink) 10%, transparent);
   --page-bg: linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg3));
   --btn-primary-bg: linear-gradient(to bottom right in oklab, var(--accent), var(--accent-2));

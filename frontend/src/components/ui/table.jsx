@@ -23,7 +23,7 @@ function TableHeader({
   return (
     <thead
       data-slot="table-header"
-      className={cn("sticky top-0 z-10 bg-muted [&_tr]:border-b", className)}
+      className={cn("sticky top-0 z-10 bg-(--table-head-bg) [&_tr]:border-b", className)}
       {...props} />
   );
 }
@@ -75,7 +75,7 @@ function TableHead({
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle text-[11px] font-bold tracking-wide text-muted-foreground uppercase whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        "h-10 px-2 text-left align-middle text-(length:--table-head-size) font-bold tracking-wide text-muted-foreground uppercase whitespace-nowrap [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props} />
