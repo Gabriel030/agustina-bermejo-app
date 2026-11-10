@@ -6,6 +6,7 @@ import com.red_escuela.backend.enrollment.exception.ApplicationDocumentsIncomple
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.TreeSet;
@@ -21,13 +22,16 @@ public class ProgramApplicationDocumentCompletenessGuard {
     }
 
     public void requireAllRequiredDocuments(Long studentId) {
-        Set<DocumentType> missing = EnumSet.allOf(DocumentType.class);
-        studentDocumentRepository.findByStudentId(studentId).stream()
-                .map(StudentDocument::getType)
-                .forEach(missing::remove);
+        Set<DocumentType> missing = missingTypesOf(studentDocumentRepository.findByStudentId(studentId));
         if (!missing.isEmpty()) {
             throw new ApplicationDocumentsIncompleteException(studentId, namesOf(missing));
         }
+    }
+
+    public Set<DocumentType> missingTypesOf(Collection<StudentDocument> documents) {
+        Set<DocumentType> missing = EnumSet.allOf(DocumentType.class);
+        documents.stream().map(StudentDocument::getType).forEach(missing::remove);
+        return missing;
     }
 
     private Set<String> namesOf(Set<DocumentType> types) {

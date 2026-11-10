@@ -66,6 +66,17 @@ public class ProgramEnrollmentApplication {
     @Column(name = "expired_at")
     private LocalDateTime expiredAt;
 
+    @Column(name = "decision_idempotency_key", length = 100)
+    private String decisionIdempotencyKey;
+
+    public void recordDecisionKey(String idempotencyKey) {
+        this.decisionIdempotencyKey = idempotencyKey;
+    }
+
+    public boolean wasDecidedWithKey(String idempotencyKey) {
+        return idempotencyKey != null && idempotencyKey.equals(decisionIdempotencyKey);
+    }
+
     public boolean expireIfApproved() {
         if (status != ProgramEnrollmentApplicationStatus.APPROVED) {
             return false;

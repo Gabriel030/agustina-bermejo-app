@@ -22,6 +22,7 @@ import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.R
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.service.AdmissionInvoiceReceiptFinder;
+import com.red_escuela.backend.enrollment.service.ProgramApplicationReviewViews;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -54,6 +56,7 @@ public class ProgramEnrollmentApplicationController {
     private final StudentDocumentRepository studentDocumentRepository;
     private final AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final ProgramApplicationReviewViews reviewViews;
 
     public ProgramEnrollmentApplicationController(
             CurrentStudentService currentStudentService,
@@ -67,7 +70,8 @@ public class ProgramEnrollmentApplicationController {
             RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase,
             StudentDocumentRepository studentDocumentRepository,
             AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder,
-            ProgramEnrollmentRepository programEnrollmentRepository) {
+            ProgramEnrollmentRepository programEnrollmentRepository,
+            ProgramApplicationReviewViews reviewViews) {
         this.currentStudentService = currentStudentService;
         this.currentPersonService = currentPersonService;
         this.requestProgramEnrollmentApplicationUseCase = requestProgramEnrollmentApplicationUseCase;
@@ -80,6 +84,7 @@ public class ProgramEnrollmentApplicationController {
         this.studentDocumentRepository = studentDocumentRepository;
         this.admissionInvoiceReceiptFinder = admissionInvoiceReceiptFinder;
         this.programEnrollmentRepository = programEnrollmentRepository;
+        this.reviewViews = reviewViews;
     }
 
     @PostMapping("/me/program-enrollment-applications")
@@ -121,25 +126,26 @@ public class ProgramEnrollmentApplicationController {
     @GetMapping("/program-enrollment-applications")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public List<ProgramEnrollmentApplicationResponse> listPending() {
-        return listPendingProgramEnrollmentApplicationsUseCase.list().stream()
-                .map(ProgramEnrollmentApplicationResponse::from).toList();
+        return reviewViews.viewsOf(listPendingProgramEnrollmentApplicationsUseCase.list());
     }
 
     @PostMapping("/program-enrollment-applications/{id}/approve")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ProgramEnrollmentApplicationResponse approve(@PathVariable Long id) {
+    public ProgramEnrollmentApplicationResponse approve(@PathVariable Long id,
+                                                        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         Person decidedBy = currentPersonService.resolveCurrentPerson();
-        return ProgramEnrollmentApplicationResponse.from(
-                approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(id, decidedBy)));
+        return reviewViews.viewOf(
+                approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(id, decidedBy, idempotencyKey)));
     }
 
     @PostMapping("/program-enrollment-applications/{id}/reject")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public ProgramEnrollmentApplicationResponse reject(
-            @PathVariable Long id, @Valid @RequestBody RejectProgramEnrollmentApplicationRequest request) {
+            @PathVariable Long id, @Valid @RequestBody RejectProgramEnrollmentApplicationRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         Person decidedBy = currentPersonService.resolveCurrentPerson();
-        return ProgramEnrollmentApplicationResponse.from(
-                rejectProgramEnrollmentApplicationUseCase.reject(new RejectProgramEnrollmentApplicationCommand(id, decidedBy, request.reason())));
+        return reviewViews.viewOf(
+                rejectProgramEnrollmentApplicationUseCase.reject(new RejectProgramEnrollmentApplicationCommand(id, decidedBy, request.reason(), idempotencyKey)));
     }
 
     private void requireOwner(ProgramEnrollmentApplication application, Student student) {

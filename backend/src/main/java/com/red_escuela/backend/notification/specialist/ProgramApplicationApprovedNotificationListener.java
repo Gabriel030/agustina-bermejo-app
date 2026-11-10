@@ -5,6 +5,7 @@ import com.red_escuela.backend.notification.domain.NotificationTopic;
 import com.red_escuela.backend.notification.domain.BillingOperationNotification;
 import com.red_escuela.backend.enrollment.events.AdmissionEnrollmentStalledEvent;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
+import com.red_escuela.backend.enrollment.events.ProgramApplicationReceivedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
@@ -18,6 +19,7 @@ import java.util.List;
 @Component
 public class ProgramApplicationApprovedNotificationListener {
     static final String APPROVED_HANDLER = "ProgramApplicationApprovedNotificationListener.notifyStudentOfApprovedApplication";
+    static final String RECEIVED_HANDLER = "ProgramApplicationApprovedNotificationListener.notifySecretariatOfReceivedApplication";
     static final String STALLED_HANDLER = "ProgramApplicationApprovedNotificationListener.notifySecretariatOfStalledEnrollment";
 
     private final ProcessedEffectGuard effectGuard;
@@ -36,6 +38,14 @@ public class ProgramApplicationApprovedNotificationListener {
         effectGuard.runEffectOnce(event, APPROVED_HANDLER, () -> eventPublisher.publishEvent(
                 new ProgramApplicationApprovedNotification(event.applicationId(),
                 entityManager.getReference(Person.class, event.studentPersonId()), event.programName())));
+    }
+
+    @ApplicationModuleListener
+    public void notifySecretariatOfReceivedApplication(ProgramApplicationReceivedEvent event) {
+        effectGuard.runEffectOnce(event, RECEIVED_HANDLER, () -> eventPublisher.publishEvent(new BillingOperationNotification(
+                NotificationType.PROGRAM_APPLICATION_RECEIVED,
+                "Nueva solicitud de ingreso: " + event.studentFullName() + " pidió " + event.programName(),
+                List.of(NotificationTopic.ENROLLMENT_SECRETARIAT), "ProgramEnrollmentApplication", event.applicationId())));
     }
 
     @ApplicationModuleListener

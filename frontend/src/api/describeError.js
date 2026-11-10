@@ -28,6 +28,10 @@ const CORE_ERROR_MESSAGES = {
   STUDENT_HAS_ACTIVE_ENROLLMENTS: 'El alumno tiene inscripciones activas. Cancelalas antes de darlo de baja.',
   MERCADO_PAGO_GATEWAY: 'Mercado Pago no respondió. Probá en unos minutos.',
   GOOGLE_SERVICE_UNAVAILABLE: 'Google no está disponible ahora. Probá más tarde.',
+  APPLICATION_DECISION_IDEMPOTENCY_KEY_CONFLICT: 'Esta decisión ya se registró de otra forma. Recargá la solicitud para ver el estado actual.',
+  APPLICATION_DECISION_IDEMPOTENCY_KEY_INVALID: 'No pudimos identificar el pedido. Recargá la página e intentá de nuevo.',
+  APPLICATION_DOCUMENT_NOT_FOUND: 'No encontramos ese documento en la solicitud.',
+  INVALID_RESOLVED_APPLICATION_STATUS: 'El historial solo muestra solicitudes aprobadas, rechazadas o vencidas.',
 };
 
 export const ERROR_MESSAGES = { ...DOMAIN_ERROR_MESSAGES, ...BILLING_ERROR_MESSAGES, ...CORE_ERROR_MESSAGES };
