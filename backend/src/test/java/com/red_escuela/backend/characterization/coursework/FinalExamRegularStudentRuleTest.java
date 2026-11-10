@@ -30,6 +30,8 @@ class FinalExamRegularStudentRuleTest extends CourseworkCharacterizationSupport 
     private void makeRegular(Classroom classroom) throws Exception {
         load(classroom.teacher(), classroom, GradeItemType.EXAM, 1, "6").andExpect(status().isCreated());
         load(classroom.teacher(), classroom, GradeItemType.EXAM, 2, "6").andExpect(status().isCreated());
+        publishItem(classroom, GradeItemType.EXAM, 1);
+        publishItem(classroom, GradeItemType.EXAM, 2);
         assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.REGULAR);
     }
 
@@ -76,6 +78,8 @@ class FinalExamRegularStudentRuleTest extends CourseworkCharacterizationSupport 
         Classroom classroom = classroom("fin4", "7900004");
         load(classroom.teacher(), classroom, GradeItemType.EXAM, 1, "2").andExpect(status().isCreated());
         load(classroom.teacher(), classroom, GradeItemType.EXAM, 2, "3").andExpect(status().isCreated());
+        publishItem(classroom, GradeItemType.EXAM, 1);
+        publishItem(classroom, GradeItemType.EXAM, 2);
         assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.FAILED);
 
         load(classroom.teacher(), classroom, GradeItemType.FINAL, 1, "9")

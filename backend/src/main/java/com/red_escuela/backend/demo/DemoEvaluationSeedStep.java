@@ -49,6 +49,7 @@ public class DemoEvaluationSeedStep implements DemoSeedStep {
         if (roster.isEmpty()) {
             throw new IllegalStateException("La comisión " + sectionId + " no tiene alumnos para calificar");
         }
+        int loadedExams = 0;
         for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {
             long sectionEnrollmentId = roster.get(rosterPosition).get("enrollmentId").asLong();
             List<BigDecimal> scores = DemoAcademicProfile.of(rosterPosition, sectionPosition).examScores();
@@ -56,7 +57,18 @@ public class DemoEvaluationSeedStep implements DemoSeedStep {
                 int daysAgo = exam == 0 ? FIRST_EXAM_DAYS_AGO : SECOND_EXAM_DAYS_AGO;
                 loadExam(sectionEnrollmentId, exam + 1, today.minusDays(daysAgo), scores.get(exam));
             }
+            loadedExams = Math.max(loadedExams, scores.size());
         }
+        for (int exam = 1; exam <= loadedExams; exam++) {
+            publishExam(sectionId, exam);
+        }
+    }
+
+    private void publishExam(long sectionId, int sequenceNumber) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("gradeType", "EXAM");
+        request.put("sequenceNumber", sequenceNumber);
+        session.api().post(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/grade-items/publish", request);
     }
 
     private void loadExam(long sectionEnrollmentId, int sequenceNumber, LocalDate date, BigDecimal score) {
