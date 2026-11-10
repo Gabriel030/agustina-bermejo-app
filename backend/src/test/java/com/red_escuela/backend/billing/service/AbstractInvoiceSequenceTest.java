@@ -326,12 +326,19 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
         });
     }
 
+    private static String uniquenessKeyOf(Invoice invoice) {
+        if (invoice.getFeeType() == FeeType.LATE_FEE) {
+            return "LATE_FEE@origin" + invoice.getOriginInvoiceId() + ":" + invoice.getPrimaryLine().getChargeKey();
+        }
+        return invoice.getFeeType() + "@" + invoice.getPeriod();
+    }
+
     protected void assertInvariants(Long enrollmentId, Year... years) {
         List<Invoice> all = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId);
         Set<String> seen = new HashSet<>();
         for (Invoice invoice : all) {
-            assertThat(seen.add(invoice.getFeeType() + "@" + invoice.getPeriod()))
-                    .as("sin dos cargos del mismo tipo y período: %s %s", invoice.getFeeType(), invoice.getPeriod()).isTrue();
+            assertThat(seen.add(uniquenessKeyOf(invoice)))
+                    .as("sin dos cargos con la misma clave: %s", uniquenessKeyOf(invoice)).isTrue();
             assertThat(invoice.getAmounts().linesTotal().value().currency()).isEqualTo(Currency.ARS);
         }
         for (Year year : years) {
