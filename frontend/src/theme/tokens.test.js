@@ -123,6 +123,11 @@ describe('design B tokens', () => {
     expect(outOfGamut).toEqual([]);
   });
 
+  it('design B defines the dialog shadow variable', () => {
+    expect(bCss).toContain('--sh-dialog');
+    expect(baseRoot['--sh-dialog']).toBe('none');
+  });
+
   it('the contrast helper rejects a known failing pair', () => {
     const white = oklchToLinearRgb(1, 0, 0);
     const lightGray = oklchToLinearRgb(0.9, 0, 0);

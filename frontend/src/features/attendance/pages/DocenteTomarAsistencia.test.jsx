@@ -488,7 +488,7 @@ describe('TabHistorial rejected justification', () => {
 
     await user.click(await screen.findByLabelText(/Justificación rechazada: Certificado ilegible/));
     expect(await screen.findByRole('dialog')).toHaveTextContent('Justificación rechazada: Certificado ilegible (04/11/2026)');
-    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+    await user.click(screen.getAllByRole('button', { name: 'Cerrar' })[0]);
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
     await user.click(screen.getAllByTitle('Ausente')[0]);

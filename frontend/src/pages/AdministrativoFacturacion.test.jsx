@@ -661,7 +661,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     const { dialog, overviewCalls } = await failConfirmWithNetworkError(user);
     const before = overviewCalls();
 
-    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Cerrar' }));
 
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await vi.waitFor(() => expect(overviewCalls()).toBeGreaterThan(before));

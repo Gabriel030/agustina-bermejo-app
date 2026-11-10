@@ -26,7 +26,7 @@ const tabsListVariants = cva(
       variant: {
         default: "bg-muted",
         line: "gap-1 bg-transparent",
-        segmented: "relative gap-0.5 bg-neutral-bg",
+        segmented: "relative gap-0.5 rounded-(--r-seg) bg-neutral-bg",
       },
     },
     defaultVariants: {
@@ -89,7 +89,7 @@ function TabsList({
       {variant === "segmented" && rect && (
         <div
           aria-hidden="true"
-          className="absolute inset-y-[3px] left-0 z-0 rounded-md bg-gradient-to-br from-brand to-accent-2 shadow-[0_4px_16px_-4px_color-mix(in_oklch,var(--accent)_65%,transparent)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="absolute inset-y-[3px] left-0 z-0 rounded-(--r-seg-indicator) bg-(image:--seg-indicator-bg) shadow-(--seg-indicator-shadow) transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{ transform: `translateX(${rect.left}px)`, width: rect.width }}
         />
       )}
@@ -110,7 +110,7 @@ function TabsTrigger({
         "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
         "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
         "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
-        "group-data-[variant=segmented]/tabs-list:z-10 group-data-[variant=segmented]/tabs-list:bg-transparent group-data-[variant=segmented]/tabs-list:text-ink-faint group-data-[variant=segmented]/tabs-list:data-active:bg-transparent group-data-[variant=segmented]/tabs-list:data-active:text-white group-data-[variant=segmented]/tabs-list:data-active:shadow-none",
+        "group-data-[variant=segmented]/tabs-list:z-10 group-data-[variant=segmented]/tabs-list:bg-transparent group-data-[variant=segmented]/tabs-list:text-ink-faint group-data-[variant=segmented]/tabs-list:data-active:bg-transparent group-data-[variant=segmented]/tabs-list:data-active:text-(--seg-active-fg) group-data-[variant=segmented]/tabs-list:data-active:shadow-none",
         className
       )}
       {...props} />

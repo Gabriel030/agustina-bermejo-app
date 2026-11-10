@@ -38,7 +38,7 @@ const Toaster = ({
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast backdrop-blur-[28px] backdrop-saturate-[1.6]",
+          toast: "cn-toast backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)",
         },
       }}
       {...props} />
