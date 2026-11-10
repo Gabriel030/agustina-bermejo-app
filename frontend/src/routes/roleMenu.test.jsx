@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ROLE_CONFIG } from '@/routes/roleConfig';
-import { ROLE_MENU, menuItemsFor, pagesFor } from '@/routes/roleMenu';
+import { ROLE_MENU, groupMenuItems, menuGroupSlugs, menuItemsFor, pagesFor } from '@/routes/roleMenu';
 import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
@@ -47,5 +47,34 @@ describe('role menu manifest', () => {
   it('gives the director the academic offering and keeps the administrative out of it', () => {
     expect(pagesFor('director')).toContain('oferta-academica');
     expect(pagesFor('administrativo')).not.toContain('oferta-academica');
+  });
+  it('maps every visible director menu entry to a group', () => {
+    const slugs = ROLE_MENU.director.filter((entry) => entry.slug && !entry.hidden).map((entry) => entry.slug);
+    expect(slugs.filter((slug) => !menuGroupSlugs('director').includes(slug))).toEqual([]);
+  });
+
+  it('keeps every director item once and only in its group', () => {
+    const items = menuItemsFor('director');
+    const groups = groupMenuItems('director', items);
+    expect(groups.flatMap((group) => group.items.map((item) => item.to)).sort()).toEqual(items.map((item) => item.to).sort());
+    expect(groups.find((group) => group.id === 'billing').items.map((item) => item.label)).toContain('Emisión mensual');
+  });
+
+  it('drops groups left without visible items', () => {
+    const withoutAcademic = menuItemsFor('director').filter(
+      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'periodos', 'constancias'].some((slug) => item.to.endsWith(slug)),
+    );
+    expect(groupMenuItems('director', withoutAcademic).map((group) => group.id)).not.toContain('academic');
+  });
+
+  it('keeps unmapped items in the headless first group instead of losing them', () => {
+    const extra = { to: '/director/nuevo', label: 'Nuevo', icon: null };
+    const groups = groupMenuItems('director', [...menuItemsFor('director'), extra]);
+    expect(groups[0].label).toBeNull();
+    expect(groups[0].items).toContain(extra);
+  });
+
+  it('has no grouping for roles without a definition', () => {
+    expect(groupMenuItems('alumno', menuItemsFor('alumno'))).toBeNull();
   });
 });

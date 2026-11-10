@@ -99,6 +99,52 @@ export function menuItemsFor(role) {
     .map(({ slug, to, label, icon }) => ({ to: to ?? `/${role}/${slug}`, label, icon }));
 }
 
+const MENU_GROUPS = {
+  director: [
+    { id: 'main', label: null, slugs: ['inicio', 'aprobaciones'] },
+    { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal'] },
+    {
+      id: 'academic',
+      label: 'Académico',
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'periodos', 'constancias'],
+    },
+    {
+      id: 'billing',
+      label: 'Facturación',
+      slugs: [
+        'facturacion',
+        'descuentos',
+        'precios',
+        'recordatorios-de-pago',
+        'medios-de-pago',
+        'terminos-del-pago-anual',
+        'emision-mensual',
+        'financiero',
+      ],
+    },
+    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto'] },
+  ],
+};
+
+export function menuGroupSlugs(role) {
+  return (MENU_GROUPS[role] ?? []).flatMap((group) => group.slugs);
+}
+
+export function groupMenuItems(role, items) {
+  const definitions = MENU_GROUPS[role];
+  if (!definitions) return null;
+  const prefix = `/${role}/`;
+  const slugOf = (item) => (item.to.startsWith(prefix) ? item.to.slice(prefix.length) : null);
+  const known = new Set(menuGroupSlugs(role));
+  return definitions
+    .map((group, index) => {
+      const own = items.filter((item) => group.slugs.includes(slugOf(item)));
+      const unmapped = index === 0 ? items.filter((item) => !known.has(slugOf(item))) : [];
+      return { id: group.id, label: group.label, items: [...own, ...unmapped] };
+    })
+    .filter((group) => group.items.length > 0);
+}
+
 export function pageLabels() {
   return Object.fromEntries(
     Object.values(ROLE_MENU).flat().filter((entry) => entry.slug).map((entry) => [entry.slug, entry.label]),
