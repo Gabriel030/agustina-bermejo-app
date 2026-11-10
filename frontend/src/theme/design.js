@@ -1,6 +1,6 @@
 export const DESIGNS = ['vl', 'b'];
 export const DESIGN_STORAGE_KEY = 'design';
-export const DEFAULT_DESIGN = 'vl';
+export const DEFAULT_DESIGN = 'b';
 
 export function resolveDesign({ search = '', stored = null, fallback = DEFAULT_DESIGN } = {}) {
   const fromQuery = new URLSearchParams(search).get('design');

@@ -94,7 +94,7 @@ function Cell({ label, name, reason, selected, current, focusable, cellRef, onSe
           'relative h-11 rounded-xl border-[1.5px] border-transparent text-sm font-bold lowercase tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           !selected && !reason && 'hover:bg-accent-soft',
           current && !selected && 'border-primary',
-          selected && 'bg-gradient-to-br from-brand to-accent-2 text-white',
+          selected && 'bg-gradient-to-br from-brand to-accent-2 text-on-accent',
           reason && 'cursor-not-allowed text-ink-faint opacity-50',
         )}
       >
@@ -102,7 +102,7 @@ function Cell({ label, name, reason, selected, current, focusable, cellRef, onSe
         {current && (
           <span
             aria-hidden="true"
-            className={cn('absolute bottom-[5px] left-1/2 size-[5px] -translate-x-1/2 rounded-full', selected ? 'bg-white' : 'bg-primary')}
+            className={cn('absolute bottom-[5px] left-1/2 size-[5px] -translate-x-1/2 rounded-full', selected ? 'bg-on-accent' : 'bg-primary')}
           />
         )}
       </button>

@@ -259,7 +259,7 @@ export function FinancialDashboardPage() {
             <SlidersHorizontal />
             <span className="hidden sm:inline">Filtros</span>
             {activeFilters > 0 && (
-              <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold leading-[18px] text-white">{activeFilters}</span>
+              <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold leading-[18px] text-on-accent">{activeFilters}</span>
             )}
           </Button>
         </PopoverTrigger>

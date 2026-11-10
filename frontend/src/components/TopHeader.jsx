@@ -41,7 +41,7 @@ export function TopHeader({ titulo, items, groups }) {
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-brand font-heading text-[13px] font-bold text-white design-b:bg-none design-b:bg-(color:--accent-soft) design-b:text-(--accent)">
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-brand font-heading text-[13px] font-bold text-on-accent design-b:bg-none design-b:bg-(color:--accent-soft) design-b:text-(--accent)">
                       {iniciales(usuario.nombre, usuario.apellido)}
                     </div>
                   )}

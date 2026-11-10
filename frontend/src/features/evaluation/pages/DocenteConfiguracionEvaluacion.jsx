@@ -60,7 +60,7 @@ function CampoFecha({ label, value, onChange, disabled, error, min, max }) {
               ? 'border-danger bg-danger-bg/30'
               : completo && !disabled
                 ? 'border-success bg-success-bg/30'
-                : 'border-border bg-white/70 dark:bg-white/10'
+                : 'border-border bg-surface'
           }`}
         />
         {completo && !disabled && <Check className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />}
@@ -228,7 +228,7 @@ export function DocenteConfiguracionEvaluacion() {
                   onClick={() => setForm((f) => ({ ...f, tpCount: n }))}
                   className={`rounded-lg px-4 py-2 text-sm font-bold ${
                     form.tpCount === n
-                      ? 'bg-gradient-to-br from-primary to-brand text-white ring-2 ring-success ring-offset-2'
+                      ? 'bg-gradient-to-br from-primary to-brand text-on-accent ring-2 ring-success ring-offset-2'
                       : 'bg-neutral-bg text-ink-faint'
                   } disabled:opacity-60 disabled:ring-0`}
                 >

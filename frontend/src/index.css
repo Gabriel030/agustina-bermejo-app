@@ -67,6 +67,7 @@
   --color-dialog-bg: var(--dialog-bg);
 
   --color-on-accent: var(--on-accent);
+  --color-on-overlay: var(--on-overlay);
   --color-table-head: var(--table-head);
   --color-pill-success: var(--pill-success-fg);
   --color-pill-warning: var(--pill-warning-fg);
@@ -85,6 +86,7 @@
 
   --shadow-card: var(--sh-card);
   --shadow-overlay: var(--sh-overlay);
+  --shadow-popover: var(--sh-popover);
 }
 
 @custom-variant design-b (:root[data-design='b'] &);

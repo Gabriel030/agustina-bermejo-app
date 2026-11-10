@@ -23,7 +23,7 @@ function SegmentedButton({ active, onClick, children }) {
       onClick={onClick}
       className={cn(
         'shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors',
-        active ? 'bg-accent text-white' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg',
+        active ? 'bg-accent text-on-accent' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg',
       )}
     >
       {children}

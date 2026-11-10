@@ -90,7 +90,7 @@ export function MobileMenu({ titulo, items, groups }) {
         </button>
       </DialogPrimitive.Trigger>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/20 duration-150 design-b:bg-(--overlay-bg) data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-(--overlay-bg-menu) duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-5 shadow-overlay backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) duration-200 data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left"
