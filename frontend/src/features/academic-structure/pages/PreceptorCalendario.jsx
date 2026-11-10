@@ -14,6 +14,7 @@ import { ClassroomModuleSelector } from '@/features/academic-structure/component
 import { ClassroomWeekOccupancy } from '@/features/academic-structure/components/ClassroomWeekOccupancy';
 import { WEEKDAYS } from '@/features/academic-structure/lib/classroomAvailability';
 import { SHIFTS, buildModules, selectionRange } from '@/features/academic-structure/lib/classroomModules';
+import { NativeSelect } from '@/components/ui/native-select';
 
 function SegmentedButton({ active, onClick, children }) {
   return (
@@ -23,7 +24,7 @@ function SegmentedButton({ active, onClick, children }) {
       onClick={onClick}
       className={cn(
         'shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors',
-        active ? 'bg-accent text-white' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg',
+        active ? 'bg-accent text-on-accent' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg',
       )}
     >
       {children}
@@ -42,15 +43,14 @@ function PeriodSelect({ termId, onChange }) {
       <label htmlFor="calendar-period" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
         Período
       </label>
-      <select
+      <NativeSelect
         id="calendar-period"
         value={termId ?? ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
       >
         <option value="">Seleccioná un período…</option>
         {(terms ?? []).map((t) => <option key={t.id} value={t.id}>{t.description}</option>)}
-      </select>
+      </NativeSelect>
     </div>
   );
 }

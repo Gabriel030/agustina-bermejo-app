@@ -103,7 +103,7 @@ export function MonthGrid({ year, month, entries, todayIso, selectedIso, onSelec
                     'outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
                     entry ? entry.cellClass : weekend ? 'border-transparent bg-neutral-bg/70 hover:border-border hover:bg-surface' : 'border-transparent bg-neutral-bg/35 hover:border-border hover:bg-surface',
                     entry && 'hover:brightness-95',
-                    selected && 'border-2 border-ink shadow-lg',
+                    selected && 'border-2 border-ink shadow-popover',
                   )}
                 >
                   <span

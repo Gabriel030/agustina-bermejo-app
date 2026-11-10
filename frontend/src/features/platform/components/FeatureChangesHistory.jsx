@@ -9,6 +9,8 @@ import { formatDateTime } from '@/lib/billing';
 import { FEATURE_CATALOG } from '@/features/platform/lib/featureCatalog';
 import { describeState } from '@/features/platform/lib/featureChangeRows';
 import { useFeatureChanges } from '@/features/platform/hooks/useFeatureChanges';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const ALL = 'ALL';
 const ACTOR_KINDS = [
@@ -69,30 +71,30 @@ export function FeatureChangesHistory() {
   } else {
     body = (
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs text-ink-faint">
-              <th scope="col" className="py-1 pr-3 font-semibold">Fecha</th>
-              <th scope="col" className="py-1 pr-3 font-semibold">Módulo</th>
-              <th scope="col" className="py-1 pr-3 font-semibold">Quién</th>
-              <th scope="col" className="py-1 pr-3 font-semibold">Cambio</th>
-              <th scope="col" className="py-1 font-semibold">Motivo</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="w-full text-left text-sm">
+          <TableHeader>
+            <TableRow className="text-xs text-ink-faint">
+              <TableHead scope="col" className="py-1 pr-3 font-semibold">Fecha</TableHead>
+              <TableHead scope="col" className="py-1 pr-3 font-semibold">Módulo</TableHead>
+              <TableHead scope="col" className="py-1 pr-3 font-semibold">Quién</TableHead>
+              <TableHead scope="col" className="py-1 pr-3 font-semibold">Cambio</TableHead>
+              <TableHead scope="col" className="py-1 font-semibold">Motivo</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {query.data.content.map((change) => (
-              <tr key={change.id} className="border-t border-line align-top">
-                <td className="whitespace-nowrap py-2 pr-3 text-ink-soft">{formatDateTime(change.changedAt)}</td>
-                <td className="py-2 pr-3 font-medium text-ink">{FEATURE_CATALOG[change.code]?.label ?? change.code}</td>
-                <td className="py-2 pr-3 text-ink-soft">{actorName(change)}</td>
-                <td className="py-2 pr-3 text-ink">
+              <TableRow key={change.id} className="border-t border-line align-top">
+                <TableCell className="whitespace-nowrap py-2 pr-3 text-ink-soft">{formatDateTime(change.changedAt)}</TableCell>
+                <TableCell className="py-2 pr-3 font-medium text-ink">{FEATURE_CATALOG[change.code]?.label ?? change.code}</TableCell>
+                <TableCell className="py-2 pr-3 text-ink-soft">{actorName(change)}</TableCell>
+                <TableCell className="py-2 pr-3 text-ink">
                   <span>{describeState(change.code, change.before)}</span> → <b>{describeState(change.code, change.after)}</b>
-                </td>
-                <td className="py-2 text-ink-soft">{change.reason}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="py-2 text-ink-soft">{change.reason}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         <Paginador page={page} totalPages={query.data.totalPages ?? 1} onChange={setPage} />
       </div>
     );
@@ -105,29 +107,29 @@ export function FeatureChangesHistory() {
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-[13px] font-medium text-ink-soft">
             Módulo
-            <select
+            <NativeSelect
+              className="w-auto"
               value={code}
               onChange={(event) => selectCode(event.target.value)}
-              className="rounded-lg border border-line bg-surface px-2 py-1.5 text-sm text-ink"
             >
               <option value={ALL}>Todos</option>
               {Object.entries(FEATURE_CATALOG).map(([value, feature]) => (
                 <option key={value} value={value}>{feature.label}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label className="flex items-center gap-2 text-[13px] font-medium text-ink-soft">
             Quién
-            <select
+            <NativeSelect
+              className="w-auto"
               value={actorKind}
               onChange={(event) => selectActorKind(event.target.value)}
-              className="rounded-lg border border-line bg-surface px-2 py-1.5 text-sm text-ink"
             >
               <option value={ALL}>Todos</option>
               {ACTOR_KINDS.map((kind) => (
                 <option key={kind.value} value={kind.value}>{kind.label}</option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label className="flex items-center gap-2 text-[13px] font-medium text-ink-soft">
             Desde

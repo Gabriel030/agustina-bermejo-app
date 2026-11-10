@@ -3,6 +3,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { formatDate, formatMoney, formatPeriod, invoiceStatusInfo } from '@/lib/billing';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 function Header({ children }) {
   return (
@@ -52,35 +53,35 @@ export function GraduationDebtCard({ summary, isLoading, isError, onRetry, finan
     <GlassCard className="flex flex-col gap-3 p-4">
       <Header><StatusPill tone="danger">Con deuda</StatusPill></Header>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[420px] border-collapse text-[13.5px]">
-          <caption className="sr-only">Cuotas adeudadas</caption>
-          <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wider text-ink-faint">
-              <th scope="col" className="px-2.5 py-2">Cuota</th>
-              <th scope="col" className="px-2.5 py-2">Estado</th>
-              <th scope="col" className="px-2.5 py-2 text-right">Monto</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="w-full min-w-[420px] border-collapse text-[13.5px]">
+          <TableCaption className="sr-only">Cuotas adeudadas</TableCaption>
+          <TableHeader>
+            <TableRow className="text-left text-[11px] uppercase tracking-wider text-ink-faint">
+              <TableHead scope="col" className="px-2.5 py-2">Cuota</TableHead>
+              <TableHead scope="col" className="px-2.5 py-2">Estado</TableHead>
+              <TableHead scope="col" className="px-2.5 py-2 text-right">Monto</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {installments.map((installment) => {
               const status = invoiceStatusInfo(installment.status);
               return (
-                <tr key={`${installment.period}-${installment.dueDate}`} className="border-t border-border/50">
-                  <td className="px-2.5 py-2.5 text-ink">
+                <TableRow key={`${installment.period}-${installment.dueDate}`} className="border-t border-border/50">
+                  <TableCell className="px-2.5 py-2.5 text-ink">
                     {formatPeriod(installment.period)}
                     <span className="block text-[12px] text-ink-faint">Vence {formatDate(installment.dueDate)}</span>
-                  </td>
-                  <td className="px-2.5 py-2.5"><StatusPill tone={status.tone}>{status.label}</StatusPill></td>
-                  <td className="px-2.5 py-2.5 text-right tabular-nums text-ink">{formatMoney(installment.amount)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-2.5 py-2.5"><StatusPill tone={status.tone}>{status.label}</StatusPill></TableCell>
+                  <TableCell className="px-2.5 py-2.5 text-right tabular-nums text-ink">{formatMoney(installment.amount)}</TableCell>
+                </TableRow>
               );
             })}
-            <tr className="border-t border-border font-bold text-ink">
-              <td colSpan={2} className="px-2.5 py-2.5">Total adeudado</td>
-              <td className="px-2.5 py-2.5 text-right tabular-nums">{formatMoney(summary.totalDue)}</td>
-            </tr>
-          </tbody>
-        </table>
+            <TableRow className="border-t border-border font-bold text-ink">
+              <TableCell colSpan={2} className="px-2.5 py-2.5">Total adeudado</TableCell>
+              <TableCell className="px-2.5 py-2.5 text-right tabular-nums">{formatMoney(summary.totalDue)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
       <p className="text-[12px] text-ink-faint">Datos al momento de abrir la ficha. Al verificar se vuelven a controlar.</p>
       {financeAction}

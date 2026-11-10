@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useProgramBillingTemplates, useCreateCohort } from '@/features/academic-structure/hooks/useCohorts';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Input } from '@/components/ui/input';
 
 const INTAKE_LABELS = {
   FIRST: '1er semestre',
@@ -98,10 +100,9 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
             <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
               Año lectivo
             </label>
-            <select
+            <NativeSelect
               value={selectedTemplateId}
               onChange={(e) => setSelectedTemplateId(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               required
             >
               <option value="">Seleccioná un año lectivo</option>
@@ -110,17 +111,16 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
                   {getTemplateLabel(t)}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
               Semestre de ingreso
             </label>
-            <select
+            <NativeSelect
               value={intake}
               onChange={(e) => setIntake(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               required
             >
               <option value="">Seleccioná</option>
@@ -129,7 +129,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
                   {o.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -137,11 +137,10 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
                 Inicio admisión
               </label>
-              <input
+              <Input
                 type="date"
                 value={admissionStart}
                 onChange={(e) => setAdmissionStart(e.target.value)}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
                 required
               />
             </div>
@@ -149,11 +148,10 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
                 Fin admisión
               </label>
-              <input
+              <Input
                 type="date"
                 value={admissionEnd}
                 onChange={(e) => setAdmissionEnd(e.target.value)}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
                 required
               />
             </div>
@@ -163,11 +161,10 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
             <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
               Inicio de cursada
             </label>
-            <input
+            <Input
               type="date"
               value={cursadaStart}
               onChange={(e) => setCursadaStart(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               required
             />
           </div>
@@ -179,7 +176,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
             >
               Descuento de la matrícula de ingreso (%)
             </label>
-            <input
+            <Input
               id="cohort-entry-fee-discount"
               type="number"
               min="0"
@@ -188,7 +185,6 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               value={entryFeeDiscount}
               onChange={(e) => setEntryFeeDiscount(e.target.value)}
               placeholder={intake === 'SECOND' ? '50 (por defecto)' : '0 (sin descuento)'}
-              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <p className="text-[12px] text-ink-faint">
               Si lo dejás vacío se usa el valor por defecto: 50% para el 2do semestre y sin descuento para el 1er semestre.

@@ -22,8 +22,8 @@ import {
 import { GradeEntryCell } from './GradeEntryCell';
 import { GradeReadCell } from './GradeReadCell';
 
-const STICKY_LEFT = 'sticky left-0 z-20 w-[112px] min-w-[112px] max-w-[112px] bg-dialog-bg whitespace-normal shadow-[6px_0_8px_-6px_color-mix(in_oklch,var(--ink)_25%,transparent)] md:w-[170px] md:min-w-[170px] md:max-w-[170px]';
-const STICKY_RIGHT = 'sticky right-0 z-20 min-w-[56px] bg-dialog-bg text-right shadow-[-6px_0_8px_-6px_color-mix(in_oklch,var(--ink)_25%,transparent)] md:min-w-[72px]';
+const STICKY_LEFT = 'sticky left-0 z-20 w-[112px] min-w-[112px] max-w-[112px] bg-dialog-bg whitespace-normal shadow-(--sh-sticky-left) md:w-[170px] md:min-w-[170px] md:max-w-[170px]';
+const STICKY_RIGHT = 'sticky right-0 z-20 min-w-[56px] bg-dialog-bg text-right shadow-(--sh-sticky-right) md:min-w-[72px]';
 const FINAL_DISABLED_REASON = 'Requiere condición regular';
 
 function PublishHeader({ column, students, hasDrafts, onPublish }) {

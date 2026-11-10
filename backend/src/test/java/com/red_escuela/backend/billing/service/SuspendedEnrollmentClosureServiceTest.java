@@ -87,6 +87,7 @@ class SuspendedEnrollmentClosureServiceTest {
         when(standingQuery.findStandingOfProgramEnrollment(ENROLLMENT_ID)).thenReturn(Optional.of(new EnrollmentPaymentStandingView(ENROLLMENT_ID, 41L,
                 EnrollmentPaymentStatus.SUSPENDED, LocalDate.of(2027, 4, 1), LocalDateTime.of(2027, 4, 12, 10, 0))));
         when(enrollments.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
+        when(enrollments.findByIdForUpdate(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         return enrollment;
     }
 

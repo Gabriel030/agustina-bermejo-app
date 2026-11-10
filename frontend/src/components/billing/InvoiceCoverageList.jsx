@@ -45,7 +45,7 @@ export function InvoiceCoverageList({ invoices, underReview = [], count, amount,
                   aria-hidden="true"
                   className={cn(
                     'flex size-5 shrink-0 items-center justify-center rounded-md border',
-                    selected ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-white' : 'border-border',
+                    selected ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-on-accent' : 'border-border',
                   )}
                 >
                   {selected && <Check className="size-3.5" />}

@@ -267,7 +267,7 @@ class CourseEnrollmentRulesTest {
     @EnumSource(value = EnrollmentStatus.class, names = {"IN_PROGRESS", "REGULAR", "APPROVED", "FAILED", "WITHDRAWN", "WAITLIST_EXPIRED"})
     void withdrawRejectsCourseEnrollmentsThatAreNeitherEnrolledNorWaitlisted(EnrollmentStatus status) {
         CourseEnrollment enrollment = courseEnrollment(1L, status);
-        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
 
         assertThatThrownBy(() -> service.withdraw(1L, voluntaryWithdrawal())).isInstanceOf(CannotWithdrawException.class);
         assertThat(enrollment.getStatus()).isEqualTo(status);
@@ -283,7 +283,7 @@ class CourseEnrollmentRulesTest {
         CourseSubjectSectionEnrollment approvedModule = subEnrollment(102L, 33L, 23L, EnrollmentStatus.APPROVED);
         CourseEnrollment nextInCourse = courseEnrollment(2L, EnrollmentStatus.WAITLISTED);
         CourseSubjectSectionEnrollment nextInSection = subEnrollment(200L, 31L, 21L, EnrollmentStatus.WAITLISTED);
-        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
         givenWithdrawalDates();
         when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(activeModule, waitlistedModule, approvedModule));
         when(sectionFinder.findCourseSection(31L)).thenReturn(sectionView(31L, 21L));
@@ -314,12 +314,26 @@ class CourseEnrollmentRulesTest {
     }
 
     @Test
+    void withdrawLocksTheEnrollmentBeforeTheCourseAndBeforeNotifyingBilling() {
+        CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
+        givenWithdrawalDates();
+
+        service.withdraw(1L, voluntaryWithdrawal());
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(courseEnrollmentRepository, courseCatalogFinder, withdrawalBillingPort);
+        order.verify(courseEnrollmentRepository).findByIdForUpdate(1L);
+        order.verify(courseCatalogFinder).lockCourse(COURSE_ID);
+        order.verify(withdrawalBillingPort).registerWithdrawalForBilling(any());
+    }
+
+    @Test
     void withdrawLocksTheCourseFirstAndThenTheSectionsInAscendingIdOrder() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
         CourseSubjectSectionEnrollment higherSection = subEnrollment(100L, 33L, 23L, EnrollmentStatus.ENROLLED);
         CourseSubjectSectionEnrollment lowerSection = subEnrollment(101L, 31L, 21L, EnrollmentStatus.IN_PROGRESS);
         CourseSubjectSectionEnrollment middleSection = subEnrollment(102L, 32L, 22L, EnrollmentStatus.ENROLLED);
-        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
         givenWithdrawalDates();
         when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(higherSection, lowerSection, middleSection));
         when(sectionFinder.findCourseSection(any())).thenAnswer(inv -> sectionView(inv.getArgument(0), 21L));
@@ -338,7 +352,7 @@ class CourseEnrollmentRulesTest {
     @Test
     void withdrawOfWaitlistedStudentDoesNotFreeASeatForTheCourseWaitlist() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.WAITLISTED);
-        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
         givenWithdrawalDates();
         when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of());
 
@@ -352,7 +366,7 @@ class CourseEnrollmentRulesTest {
     @Test
     void withdrawDoesNotPromoteTheCourseWaitlistWhenTheCourseIsStillFull() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
-        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
         givenWithdrawalDates();
         when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of());
         when(courseEnrollmentRepository.countByCourseIdAndStatusIn(COURSE_ID, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS)))
@@ -368,7 +382,7 @@ class CourseEnrollmentRulesTest {
     void withdrawDoesNotPromoteTheSectionWaitlistWhenTheSectionIsStillFull() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
         CourseSubjectSectionEnrollment activeModule = subEnrollment(100L, 31L, 21L, EnrollmentStatus.ENROLLED);
-        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
         givenWithdrawalDates();
         when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(activeModule));
         when(sectionFinder.findCourseSection(31L)).thenReturn(new CourseSectionView(31L, 21L, COURSE_ID, TERM_ID, 1, "Comision 31"));

@@ -267,7 +267,7 @@ function NuevaPasswordForm({ resetToken }) {
         <Button
           type="submit"
           disabled={enviando}
-          className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-[14.5px] font-bold text-white"
+          className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-[14.5px] font-bold text-on-accent"
         >
           {enviando ? 'Guardando…' : 'Cambiar contraseña'}
         </Button>

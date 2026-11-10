@@ -10,7 +10,7 @@ import {
   esFeriado,
 } from '@/lib/calendario';
 
-const TONO_BG = { success: 'bg-success text-white', warning: 'bg-warning text-white', accent: 'bg-brand text-white', accent2: 'bg-accent-2 text-white' };
+const TONO_BG = { success: 'bg-success text-on-accent', warning: 'bg-warning text-on-accent', accent: 'bg-brand text-on-accent', accent2: 'bg-accent-2 text-on-accent' };
 const MESES_POR_PAGINA = 5;
 
 function DiaCelda({ dia, eventos, feriado }) {

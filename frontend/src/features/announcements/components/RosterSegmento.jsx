@@ -2,6 +2,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { nombreDeInstancia } from '@/lib/avisos';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 function columnasDeNotas(destinatarios, segmentKey) {
   if (!segmentKey) return [];
@@ -38,43 +39,43 @@ export function RosterSegmento({ abierto, titulo, descripcion, destinatarios, se
 
         {!isLoading && !isError && lista.length > 0 && (
           <div className="max-h-80 overflow-auto rounded-xl border border-border">
-            <table className="w-full border-collapse text-[12.5px]">
-              <thead>
-                <tr>
+            <Table className="w-full border-collapse text-[12.5px]">
+              <TableHeader>
+                <TableRow>
                   {['Legajo', 'Alumno', ...columnas.map((c) => c.label)].map((encabezado) => (
-                    <th
+                    <TableHead
                       key={encabezado}
                       className="sticky top-0 border-b border-border bg-surface px-2.5 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-[0.04em] text-ink-faint"
                     >
                       {encabezado}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {lista.map((alumno) => (
-                  <tr key={alumno.studentId} className="transition-colors hover:bg-accent-soft">
-                    <td className="border-b border-border/60 px-2.5 py-1.5 font-bold tabular-nums text-ink">
+                  <TableRow key={alumno.studentId} className="transition-colors hover:bg-accent-soft">
+                    <TableCell className="border-b border-border/60 px-2.5 py-1.5 font-bold tabular-nums text-ink">
                       {alumno.file ?? '—'}
-                    </td>
-                    <td className="border-b border-border/60 px-2.5 py-1.5 text-ink-soft">{alumno.name}</td>
+                    </TableCell>
+                    <TableCell className="border-b border-border/60 px-2.5 py-1.5 text-ink-soft">{alumno.name}</TableCell>
                     {columnas.map((columna) => {
                       const nota = alumno[columna.campo]?.[columna.numero];
                       return (
-                        <td
+                        <TableCell
                           key={columna.label}
                           className={`border-b border-border/60 px-2.5 py-1.5 tabular-nums ${
                             nota === undefined ? 'font-bold text-warning' : 'text-ink-soft'
                           }`}
                         >
                           {nota === undefined ? 'sin nota' : nota}
-                        </td>
+                        </TableCell>
                       );
                     })}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </DialogContent>
