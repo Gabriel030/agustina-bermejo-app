@@ -24,7 +24,9 @@ class FinalExamRegularStudentRuleTest extends CourseworkCharacterizationSupport 
     private ResultActions load(Person actor, Classroom classroom, GradeItemType type, int sequence, String score) throws Exception {
         return postJson(actor, "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
                 new CreateGradeItemRequest(type, sequence, null, LocalDateTime.of(2026, 6, 1, 10, 0),
-                        new BigDecimal(score), null, null));
+                        new BigDecimal(score), null,
+                        type == GradeItemType.FINAL ? examBoardIdForFinal(classroom) : null,
+                        type == GradeItemType.FINAL ? "Correccion del acta" : null));
     }
 
     private void makeRegular(Classroom classroom) throws Exception {

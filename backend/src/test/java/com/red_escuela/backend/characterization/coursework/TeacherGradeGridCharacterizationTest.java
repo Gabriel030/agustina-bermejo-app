@@ -43,7 +43,8 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
     private void loadGrade(Classroom classroom, GradeItemType type, int sequence, String score) throws Exception {
         postJson(classroom.teacher(), "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
                 new CreateGradeItemRequest(type, sequence, null, LocalDateTime.of(2026, 6, 1, 10, 0),
-                        new BigDecimal(score), "comentario", null))
+                        new BigDecimal(score), "comentario",
+                        type == GradeItemType.FINAL ? examBoardIdForFinal(classroom) : null, null))
                 .andExpect(status().isCreated());
     }
 
@@ -230,7 +231,7 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
         CourseClassroom classroom = courseClassroom("gridc1", "8200001", scheme);
         postJson(classroom.teacher(), "/course-section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
                 new CreateGradeItemRequest(GradeItemType.TP, 2, null, LocalDateTime.of(2026, 6, 1, 10, 0),
-                        new BigDecimal("9"), null, null))
+                        new BigDecimal("9"), null, null, null))
                 .andExpect(status().isCreated());
 
         getAs(classroom.teacher(), "/course-sections/" + classroom.section().getId() + "/grade-grid")
@@ -279,13 +280,13 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
         for (double weight : new double[] {1.0001, -0.1}) {
             postJson(classroom.teacher(), "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
                     new CreateGradeItemRequest(GradeItemType.EXAM, 1, weight, LocalDateTime.of(2026, 6, 1, 10, 0),
-                            new BigDecimal("7"), null, null))
+                            new BigDecimal("7"), null, null, null))
                     .andExpect(status().isBadRequest());
         }
         for (double weight : new double[] {0.0, 1.0}) {
             postJson(classroom.teacher(), "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
                     new CreateGradeItemRequest(GradeItemType.EXAM, 1, weight, LocalDateTime.of(2026, 6, 1, 10, 0),
-                            new BigDecimal("7"), null, null))
+                            new BigDecimal("7"), null, null, null))
                     .andExpect(status().isCreated());
         }
     }

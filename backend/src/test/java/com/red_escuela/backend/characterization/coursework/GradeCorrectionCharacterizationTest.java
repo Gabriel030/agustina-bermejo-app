@@ -23,7 +23,7 @@ class GradeCorrectionCharacterizationTest extends CourseworkCharacterizationSupp
         Classroom classroom = persistClassroom(key, dniBase, persistScheme(2, false, null), null, 10, 10, InstructorRole.LEAD);
         postJson(classroom.teacher(), "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.of(2026, 6, 1, 10, 0),
-                        new BigDecimal(score), null, null)).andExpect(status().isCreated());
+                        new BigDecimal(score), null, null, null)).andExpect(status().isCreated());
         postJson(classroom.teacher(), "/program-sections/" + classroom.section().getId() + "/grade-items/publish",
                 new PublishGradeItemRequest(GradeItemType.EXAM, 1)).andExpect(status().isOk());
         return classroom;

@@ -55,7 +55,7 @@ class GradeItemExamBoardScopeTest extends ExamBoardChangeFixture {
 
     private CreateGradeItemRequest request(GradeItemType type, Long examBoardId) {
         return new CreateGradeItemRequest(
-                type, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7), null, examBoardId);
+                type, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7), null, examBoardId, null);
     }
 
     private void withdrawnRegistration(ExamBoard board, SubjectSectionEnrollment enrollment) {

@@ -64,6 +64,7 @@ public class SubjectSectionEnrollmentService {
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final SectionWaitlistPromoter waitlistPromoter;
+    private final SubjectRetakeGuard subjectRetakeGuard;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -77,7 +78,9 @@ public class SubjectSectionEnrollmentService {
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             StudentEnrollmentEligibility studentEnrollmentEligibility,
             SectionWaitlistPromoter waitlistPromoter,
+            SubjectRetakeGuard subjectRetakeGuard,
             Clock clock) {
+        this.subjectRetakeGuard = subjectRetakeGuard;
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.waitlistPromoter = waitlistPromoter;
@@ -115,6 +118,7 @@ public class SubjectSectionEnrollmentService {
             throw new AlreadyEnrolledInSubjectException(programEnrollmentId, subjectId);
         }
 
+        subjectRetakeGuard.requireNotAlreadyPassed(programEnrollmentId, subjectId, null);
         validatePrerequisites(programEnrollment, subjectId);
 
         Optional<SubjectSectionEnrollment> existente = subjectSectionEnrollmentRepository
@@ -195,6 +199,7 @@ public class SubjectSectionEnrollmentService {
             throw new InvalidSectionChangeException(
                     "changeSection es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");
         }
+        subjectRetakeGuard.requireNotAlreadyPassed(origen.getProgramEnrollment().getId(), origen.subjectId(), origen.getId());
         validateEnrollmentWindow(destino.termId());
         if (countOccupiedSeats(destino.id()) >= capacityOf(destino)) {
             throw new SectionFullException(destino.id());

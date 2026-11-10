@@ -78,7 +78,7 @@ class GradeItemConcurrencyIT extends AbstractIntegrationTest {
     }
 
     private CreateGradeItemRequest examGrade(String score) {
-        return new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), new BigDecimal(score), null, null);
+        return new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), new BigDecimal(score), null, null, null);
     }
 
     @RepeatedTest(5)

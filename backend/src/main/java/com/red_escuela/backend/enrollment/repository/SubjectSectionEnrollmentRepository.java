@@ -67,6 +67,9 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
     Optional<SubjectSectionEnrollment> findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(
             Long subjectSectionId, EnrollmentStatus status);
 
+    List<SubjectSectionEnrollment> findBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(
+            Long subjectSectionId, EnrollmentStatus status);
+
     List<SubjectSectionEnrollment> findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
             Long programEnrollmentId, Long subjectId, List<EnrollmentStatus> statuses);
 

@@ -8,6 +8,7 @@ import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
@@ -15,6 +16,8 @@ import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
+import com.red_escuela.backend.evaluation.exception.FinalGradeRequiresExamBoardException;
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
 import com.red_escuela.backend.evaluation.exception.InvalidGradeItemWeightException;
 import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
@@ -57,6 +60,8 @@ public class GradeItemRecorder {
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
     private final GradeItemPublicationLockChecker publicationLock;
     private final PublishedGradeItemSelector publishedGradeItemSelector;
+    private final FinalGradeRevertAuditor finalGradeRevertAuditor;
+    private final AcademicReferenceFinder academicReferenceFinder;
 
     public GradeItemRecorder(
             GradeItemRepository gradeItemRepository,
@@ -70,7 +75,9 @@ public class GradeItemRecorder {
             AbsenceFreeStatusChecker absenceFreeStatusChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
             GradeItemPublicationLockChecker publicationLock,
-            PublishedGradeItemSelector publishedGradeItemSelector) {
+            PublishedGradeItemSelector publishedGradeItemSelector,
+            FinalGradeRevertAuditor finalGradeRevertAuditor,
+            AcademicReferenceFinder academicReferenceFinder) {
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -83,11 +90,14 @@ public class GradeItemRecorder {
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
         this.publicationLock = publicationLock;
         this.publishedGradeItemSelector = publishedGradeItemSelector;
+        this.finalGradeRevertAuditor = finalGradeRevertAuditor;
+        this.academicReferenceFinder = academicReferenceFinder;
     }
 
     @Transactional
     public GradeItem loadProgramEnrollmentGrade(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
         requireWeightBetweenZeroAndOne(request);
+        requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
@@ -113,6 +123,8 @@ public class GradeItemRecorder {
                 .orElseGet(GradeItem::new);
         boolean correction = isFinalCorrection(gradeItem, request);
         requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular(), correction);
+        auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.PROGRAM,
+                enrollment.getSubjectSection().getId(), enrollmentId);
         gradeItem.setProgramSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
@@ -167,6 +179,7 @@ public class GradeItemRecorder {
     @Transactional
     public GradeItem loadCourseEnrollmentGrade(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
         requireWeightBetweenZeroAndOne(request);
+        requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
@@ -193,6 +206,8 @@ public class GradeItemRecorder {
                 .orElseGet(GradeItem::new);
         boolean correction = isFinalCorrection(gradeItem, request);
         requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular(), correction);
+        auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.COURSE,
+                enrollment.getCourseSubjectSection().getId(), enrollmentId);
         gradeItem.setCourseSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
@@ -292,6 +307,29 @@ public class GradeItemRecorder {
         if (weight != null && (weight.isNaN() || weight < 0.0 || weight > 1.0)) {
             throw new InvalidGradeItemWeightException(weight);
         }
+    }
+
+    private void requireFinalFromExamBoard(CreateGradeItemRequest request) {
+        if (request.type() == GradeItemType.FINAL && request.examBoardId() == null) {
+            throw new FinalGradeRequiresExamBoardException();
+        }
+    }
+
+    private void auditFinalRevert(GradeItem existing, CreateGradeItemRequest request, boolean correction,
+                                  Long instructorId, SectionKind kind, Long sectionId, Long enrollmentId) {
+        if (!correction) {
+            return;
+        }
+        ExamBoard originalBoard = existing.getExamBoard();
+        if (originalBoard != null && originalBoard.getStatus() != ExamBoardStatus.SCHEDULED) {
+            throw new ExamBoardClosedException(originalBoard.getId());
+        }
+        Grade newScore = Grade.of(request.score());
+        if (newScore.equals(existing.getScore())) {
+            return;
+        }
+        Long actorPersonId = academicReferenceFinder.findInstructor(instructorId).getPerson().getId();
+        finalGradeRevertAuditor.recordRevert(existing, newScore, request.reason(), kind, sectionId, enrollmentId, actorPersonId);
     }
 
     private boolean isFinalCorrection(GradeItem existing, CreateGradeItemRequest request) {
