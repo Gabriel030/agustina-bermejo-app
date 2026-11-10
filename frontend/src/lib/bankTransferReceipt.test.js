@@ -100,6 +100,18 @@ describe('receiptFormErrors', () => {
     expect(receiptFormErrors({ ...valid, amount: 99.99 }).amount).toBe('El monto no alcanza a cubrir la primera cuota.');
   });
 
+  it('rejectsTextsLongerThanTheBackendColumns', () => {
+    expect(receiptFormErrors({ ...valid, operationNumber: 'x'.repeat(51) }).operationNumber).toBeDefined();
+    expect(receiptFormErrors({ ...valid, operationNumber: 'x'.repeat(50) }).operationNumber).toBeUndefined();
+    expect(receiptFormErrors({ ...valid, holderName: 'x'.repeat(121) }).holderName).toBeDefined();
+    expect(receiptFormErrors({ ...valid, holderName: 'x'.repeat(120) }).holderName).toBeUndefined();
+  });
+
+  it('rejectsAnAmountAboveTheStorableMaximum', () => {
+    expect(receiptFormErrors({ ...valid, amount: 10000000000 }).amount).toBe('El monto es demasiado alto.');
+    expect(receiptFormErrors({ ...valid, amount: 9999999999.99 }).amount).toBeUndefined();
+  });
+
   it('acceptsAnAmountAboveTheSelectedTotal', () => {
     expect(receiptFormErrors({ ...valid, amount: 5000 })).toEqual({});
   });

@@ -30,36 +30,39 @@ import {
 } from '@/features/identity/lib/studentRegistration';
 import { useCrearProspecto, useSubirDocumentoProspecto, useGuardarBorradorProspecto, useConfirmarAlta } from '@/features/identity/hooks/useProspectos';
 
+const text = (max) => z.string().max(max, `Máximo ${max} caracteres`);
+const optionalText = (max) => text(max).optional();
+
 const schema = z.object({
-  nombre: z.string().min(1, 'Requerido'),
-  apellido: z.string().min(1, 'Requerido'),
-  email: z.string().email('Email inválido'),
-  telefono: z.string().optional(),
+  nombre: text(255).min(1, 'Requerido'),
+  apellido: text(255).min(1, 'Requerido'),
+  email: text(255).email('Email inválido'),
+  telefono: optionalText(255),
   documentType: z.enum(['DNI', 'PASSPORT', 'OTHER']).default('DNI'),
-  dni: z.string().min(1, 'Requerido'),
-  street: z.string().min(1, 'Requerido'),
-  number: z.string().optional(),
-  floor: z.string().optional(),
-  city: z.string().min(1, 'Requerido'),
-  state: z.string().optional(),
-  postalCode: z.string().optional(),
-  country: z.string().optional(),
+  dni: text(255).min(1, 'Requerido'),
+  street: text(255).min(1, 'Requerido'),
+  number: optionalText(255),
+  floor: optionalText(255),
+  city: text(255).min(1, 'Requerido'),
+  state: optionalText(255),
+  postalCode: optionalText(255),
+  country: optionalText(255),
   birthDate: z.string().min(1, 'Requerido'),
-  sex: z.string().optional(),
-  nationality: z.string().max(255, 'Máximo 255 caracteres').optional(),
-  guardianName: z.string().optional(),
-  guardianDni: z.string().optional(),
-  guardianRelationship: z.string().optional(),
-  guardianPhone: z.string().optional(),
-  guardianEmail: z.string().optional(),
-  emergencyName: z.string().optional(),
-  emergencyRelationship: z.string().optional(),
-  emergencyPhone: z.string().optional(),
+  sex: optionalText(255),
+  nationality: optionalText(255),
+  guardianName: optionalText(200),
+  guardianDni: optionalText(20),
+  guardianRelationship: optionalText(60),
+  guardianPhone: optionalText(40),
+  guardianEmail: optionalText(255),
+  emergencyName: optionalText(200),
+  emergencyRelationship: optionalText(60),
+  emergencyPhone: optionalText(40),
 }).superRefine((valores, ctx) => {
   const mensaje = validateDocument(valores.documentType, valores.dni);
   if (mensaje) ctx.addIssue({ code: 'custom', path: ['dni'], message: mensaje });
-  if (valores.birthDate && valores.birthDate > todayIso()) {
-    ctx.addIssue({ code: 'custom', path: ['birthDate'], message: 'La fecha no puede ser futura' });
+  if (valores.birthDate && valores.birthDate >= todayIso()) {
+    ctx.addIssue({ code: 'custom', path: ['birthDate'], message: 'La fecha tiene que ser anterior a hoy' });
   }
   if (!isMinor(valores.birthDate)) return;
   const required = ['guardianName', 'guardianDni', 'guardianRelationship', 'guardianPhone', 'emergencyName', 'emergencyRelationship', 'emergencyPhone'];
