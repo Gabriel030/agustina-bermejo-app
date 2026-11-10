@@ -35,6 +35,21 @@ const DEBT_VIOLATION_LABEL = {
   OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT: 'Tiene deuda de una inscripción anterior que dio de baja.',
 };
 
+const BLOCKING_REASON_LABEL = {
+  INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE: 'La solicitud ya fue resuelta.',
+  STUDENT_NOT_CONFIRMED: 'La inscripción del alumno todavía no está confirmada.',
+  STUDENT_NOT_ACTIVE: 'El alumno no está activo.',
+  ALREADY_ENROLLED_IN_PROGRAM: 'El alumno ya está inscripto en esta carrera.',
+};
+
+const BLOCKING_REASONS_SHOWN_ELSEWHERE = ['APPLICATION_DOCUMENTS_INCOMPLETE'];
+
+export function blockingReasonMessages(check) {
+  return (check?.blockingReasons ?? [])
+    .filter((code) => !BLOCKING_REASONS_SHOWN_ELSEWHERE.includes(code))
+    .map((code) => BLOCKING_REASON_LABEL[code] ?? 'Hay una condición sin cumplir.');
+}
+
 export const GENERIC_DEBT_MESSAGE = 'Tiene deuda pendiente que bloquea una nueva inscripción.';
 
 export const ALREADY_RESOLVED_CODE = 'INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE';
@@ -75,6 +90,7 @@ export function approvalBlockReason(check) {
     reasons.push(`falta ${missingDocumentsText(check.documentation.missingTypes)}`);
   }
   if (check.debt?.blocksApproval) reasons.push('el alumno tiene deuda');
+  blockingReasonMessages(check).forEach((message) => reasons.push(message.replace(/\.$/, '').replace(/^./, (c) => c.toLowerCase())));
   return reasons.length
     ? `Aprobar está deshabilitado: ${reasons.join(' y ')}.`
     : 'Aprobar está deshabilitado: hay condiciones sin cumplir.';
