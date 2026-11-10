@@ -5532,8 +5532,8 @@
             "type" : "integer"
           },
           "kind" : {
-            "enum" : [ "CORRECTION", "FINAL_REVERT", "RECOVERY" ],
-            "type" : "string"
+            "type" : "string",
+            "x-extensible-enum" : [ "CORRECTION", "FINAL_REVERT", "RECOVERY" ]
           },
           "newScore" : {
             "type" : "number"
