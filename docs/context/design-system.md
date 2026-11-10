@@ -47,6 +47,20 @@ Diseños registrados hoy: `b` (default desde 26-A P6) y `vl` (Vidrio Líquido, r
 
 Estructura y layout (orden y agrupación de ítems del menú, qué se muestra o se oculta por pantalla, grillas, anchos máximos), tipografía por pantalla (`text-[13px]` y similares: son tamaños, no color), y los textos. Cambiar eso es trabajo de componente, no de tokens.
 
+## Cuántos usos tiene cada componente
+
+Objetivo: saber que un componente se usa en N lugares y que cambiarlo aplica a todos.
+
+- `npm run component-usage` (en `frontend/`) recorre `src` y, por cada componente exportado de `src/components/` (incluye `ui/`), imprime en cuántos archivos se importa y cuántas veces se usa en JSX, ordenado de más a menos usado. Excluye tests. Con `--json` devuelve el mismo informe como JSON (incluye el detalle por archivo de los elementos crudos). Acepta una carpeta como argumento (los tests lo corren contra `frontend/scripts/__fixtures__/component-usage/src`).
+- Al final cuenta los elementos HTML crudos (`<button>`, `<table>`, `<input>`, `<select>`, `<textarea>`) fuera de `components/ui/` y el componente que los reemplaza, y lista los componentes compartidos que nadie importa. Los componentes que se importan a través de un barrel (`@/components/charts`) no se atribuyen al archivo que los define.
+
+## Elementos crudos de formulario y tabla
+
+- Regla de lint `local/no-raw-elements` (`frontend/eslint-rules/raw-elements.js`, error): prohíbe `<table>`, `<select>`, `<textarea>` e `<input>` fuera de `src/components/ui/` y de tests. Usar `Table*`, `Select` (shadcn, para listas con estilos propios) o `NativeSelect` (select nativo con el estilo compartido; mismo contrato `onChange`/`value`), `Textarea` e `Input`.
+- `<input>` con `type` `checkbox`, `radio`, `file` o `hidden` queda permitido por la regla: son controles nativos sin aspecto de campo (los `file` van ocultos detrás de un botón). Para checkbox preferir `Checkbox` de `ui/`.
+- Excepciones por archivo: `RAW_ELEMENT_EXCEPTIONS` en el mismo archivo. Hoy: `DocenteTomarAsistencia.jsx` y `GradeGridTable.jsx` (grillas con `rowSpan`, columnas pegajosas y bordes propios que `Table` no soporta). `raw-elements.test.js` falla si un archivo de la lista ya no tiene el elemento crudo: la lista solo puede achicarse.
+- `<button>` queda fuera de esta regla (lo cubre otro paquete).
+
 ## Nota sobre `components/ui/`
 
 Vienen del CLI de shadcn con modificaciones locales para leer variables. Un `npx shadcn add` sobre un archivo existente las pisa: revisar el diff antes de aceptar.

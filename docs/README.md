@@ -12,6 +12,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 |---|---|---|
 | [backend.md](context/backend.md) | Convenciones de backend: entidades, casos de uso, servicios, controllers, migraciones | vigente |
 | [frontend.md](context/frontend.md) | Convenciones de frontend, flujo de diseño con `ux-advisor`, rutas por rol | vigente |
+| [design-system.md](context/design-system.md) | Sistema de diseño: cómo registrar un diseño nuevo cambiando solo los tokens | vigente |
 | [components.md](context/components.md) | Qué componente usar y cómo listarlos en una spec | vigente |
 | [modules.md](context/modules.md) | Límites entre módulos con Spring Modulith, línea base de violaciones | vigente |
 | [overload-protection.md](context/overload-protection.md) | Rate limit, IP real detrás de proxy, timeouts, pool, límites de entrada y dead letter de la cola de eventos | vigente |

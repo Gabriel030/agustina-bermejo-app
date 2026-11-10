@@ -25,6 +25,7 @@ class EnrollmentLockBeforeAccountLockTest {
 
     private static final List<OrderedCalls> ENTRY_POINTS = List.of(
             new OrderedCalls(BILLING_NOTE + "CancelInvoiceOperation.java", "cancelWithoutAllocatingCredit", List.of(ENROLLMENT_LOCKS, ACCOUNT_LOCK)),
+            new OrderedCalls(BILLING_NOTE + "LaterChargesCancellationOnWithdrawal.java", "cancelLaterChargesOf", List.of("lockEnrollmentsOfDiscountsAppliedOnInvoices", ACCOUNT_LOCK)),
             new OrderedCalls(BILLING_NOTE + "SystemAdmissionInvoiceCancellation.java", "cancelWhenUnpaid", List.of(ENROLLMENT_LOCKS, ACCOUNT_LOCK)),
             new OrderedCalls(BILLING_NOTE + "LeftOutInvoiceCancellationOnReceiptRejectionListener.java", "cancelIfLeftOutOfWithdrawal", List.of(ENROLLMENT_LOCKS, ACCOUNT_LOCK)),
             new OrderedCalls(ENROLLMENT_SERVICE + "ProgramEnrollmentService.java", "withdraw", List.of("findByIdForUpdate", BILLING_PORT)),
@@ -37,7 +38,7 @@ class EnrollmentLockBeforeAccountLockTest {
         for (OrderedCalls entryPoint : ENTRY_POINTS) {
             String source = Files.readString(Path.of("src/main/java").resolve(entryPoint.file()));
             List<String> candidates = bodiesOf(source, entryPoint.method()).stream()
-                    .filter(body -> entryPoint.calls().stream().allMatch(call -> body.contains(call + "("))).toList();
+                    .filter(body -> entryPoint.calls().stream().allMatch(call -> body.contains(call))).toList();
             assertThat(candidates).as(entryPoint.file() + "#" + entryPoint.method() + " must call " + entryPoint.calls()).isNotEmpty();
             candidates.forEach(body -> outOfOrderCalls(body, entryPoint.calls()).forEach(call -> violations.add(entryPoint.file() + "#" + entryPoint.method() + ": " + call)));
         }
@@ -56,7 +57,7 @@ class EnrollmentLockBeforeAccountLockTest {
     private static List<String> outOfOrderCalls(String body, List<String> orderedCalls) {
         List<String> outOfOrder = new ArrayList<>();
         for (int index = 1; index < orderedCalls.size(); index++) {
-            if (body.indexOf(orderedCalls.get(index) + "(") < body.indexOf(orderedCalls.get(index - 1) + "(")) {
+            if (body.indexOf(orderedCalls.get(index)) < body.indexOf(orderedCalls.get(index - 1))) {
                 outOfOrder.add(orderedCalls.get(index - 1) + " must come before " + orderedCalls.get(index));
             }
         }

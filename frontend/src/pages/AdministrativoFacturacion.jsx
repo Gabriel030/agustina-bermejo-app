@@ -53,6 +53,7 @@ import {
   useAprobarComprobante,
   useRechazarComprobante,
 } from '@/hooks/useBilling';
+import { Input } from '@/components/ui/input';
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -392,12 +393,12 @@ function TabFacturacion() {
         <GlassCard className="p-4">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
-            <input
+            <Input
               type="text"
               placeholder="Buscar alumno por nombre o DNI…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
+              className="pl-9 pr-3"
             />
           </div>
 

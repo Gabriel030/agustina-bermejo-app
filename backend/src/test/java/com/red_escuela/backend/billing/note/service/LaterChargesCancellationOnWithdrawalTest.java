@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import org.junit.jupiter.api.BeforeEach;
+import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -45,8 +46,9 @@ class LaterChargesCancellationOnWithdrawalTest {
     private final CancelInvoicesAfterWithdrawalOperation batchOperation = mock(CancelInvoicesAfterWithdrawalOperation.class);
     private final CreditNoteActorResolver actorResolver = mock(CreditNoteActorResolver.class);
     private final StudentCurrentAccountService accountService = mock(StudentCurrentAccountService.class);
+    private final DiscountConsumptionService discountConsumption = mock(DiscountConsumptionService.class);
     private final LaterChargesCancellationOnWithdrawal service = new LaterChargesCancellationOnWithdrawal(invoiceAccess, cancelInvoiceOperation, pipeline,
-            batchOperation, actorResolver, accountService);
+            batchOperation, actorResolver, accountService, discountConsumption);
 
     @BeforeEach
     void stubTheEnrollmentInvoices() {
@@ -76,6 +78,16 @@ class LaterChargesCancellationOnWithdrawalTest {
         order.verify(accountService).lockStudentCurrentAccount(30L);
         order.verify(accountService).lockStudentCurrentAccount(31L);
         order.verify(invoiceAccess).findInvoicesOfEnrollment(123L, null);
+    }
+
+    @Test
+    @Tag("D-457")
+    void theEnrollmentsOfTheDiscountsOfAllTheInvoicesAreLockedTogetherBeforeTheFirstAccount() {
+        service.cancelLaterChargesOf(facts());
+
+        InOrder order = inOrder(discountConsumption, accountService);
+        order.verify(discountConsumption).lockEnrollmentsOfDiscountsAppliedOnInvoices(List.of(11L, 12L));
+        order.verify(accountService).lockStudentCurrentAccount(30L);
     }
 
     @Test

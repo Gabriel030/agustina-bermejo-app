@@ -12,6 +12,7 @@ import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import org.springframework.stereotype.Service;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
+import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,16 +34,18 @@ public class LaterChargesCancellationOnWithdrawal {
     private final CancelInvoicesAfterWithdrawalOperation operation;
     private final CreditNoteActorResolver actorResolver;
     private final StudentCurrentAccountService accountService;
+    private final DiscountConsumptionService discountConsumption;
 
     public LaterChargesCancellationOnWithdrawal(WithdrawalInvoiceAccess invoiceAccess, CancelInvoiceOperation cancelInvoiceOperation,
                                                  BillingOperationPipeline pipeline, CancelInvoicesAfterWithdrawalOperation operation,
-                                                 CreditNoteActorResolver actorResolver, StudentCurrentAccountService accountService) {
+                                                 CreditNoteActorResolver actorResolver, StudentCurrentAccountService accountService, DiscountConsumptionService discountConsumption) {
         this.invoiceAccess = invoiceAccess;
         this.cancelInvoiceOperation = cancelInvoiceOperation;
         this.pipeline = pipeline;
         this.operation = operation;
         this.actorResolver = actorResolver;
         this.accountService = accountService;
+        this.discountConsumption = discountConsumption;
     }
 
     @Transactional
@@ -50,6 +53,7 @@ public class LaterChargesCancellationOnWithdrawal {
         if (facts.cause() != WithdrawalCause.VOLUNTARY) {
             return;
         }
+        discountConsumption.lockEnrollmentsOfDiscountsAppliedOnInvoices(invoiceAccess.findInvoicesOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId()).stream().map(Invoice::getId).toList());
         invoiceAccess.findAccountIdsOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId()).stream().sorted().forEach(accountService::lockStudentCurrentAccount);
         List<Invoice> invoices = invoiceAccess.findInvoicesOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId());
         Set<Long> withPendingRequest = invoiceAccess.findInvoiceIdsWithPendingAuthorizationRequest(invoices.stream().map(Invoice::getId).toList());

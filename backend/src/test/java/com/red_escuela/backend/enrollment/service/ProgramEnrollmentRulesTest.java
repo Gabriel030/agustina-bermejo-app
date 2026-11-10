@@ -267,6 +267,21 @@ class ProgramEnrollmentRulesTest {
         assertThat(facts.getValue().cause()).isEqualTo(WithdrawalCause.NONPAYMENT);
     }
 
+    @Test
+    void withdrawLocksTheEnrollmentBeforeNotifyingBilling() {
+        ProgramEnrollment active = enrollment(1L, ProgramEnrollmentStatus.ENROLLED);
+        when(programEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(active));
+        when(withdrawalDateResolver.resolveEffectiveDate(any(), any())).thenReturn(LocalDate.of(2026, 3, 2));
+        when(withdrawalDateResolver.registrationDate()).thenReturn(LocalDate.of(2026, 3, 2));
+        when(withdrawalDateResolver.completionMomentOf(LocalDate.of(2026, 3, 2))).thenReturn(NOW);
+
+        service.withdrawForNonpayment(1L);
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(programEnrollmentRepository, withdrawalBillingPort);
+        order.verify(programEnrollmentRepository).findByIdForUpdate(1L);
+        order.verify(withdrawalBillingPort).registerWithdrawalForBilling(any());
+    }
+
     @ParameterizedTest
     @EnumSource(value = ProgramEnrollmentStatus.class, names = {"ENROLLED", "PAUSED"}, mode = EnumSource.Mode.EXCLUDE)
     void withdrawRejectsEnrollmentsThatAreNeitherEnrolledNorPaused(ProgramEnrollmentStatus status) {

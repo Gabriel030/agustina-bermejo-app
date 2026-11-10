@@ -14,6 +14,7 @@ import {
   formatIsoDate,
   listAbsences,
 } from '@/features/attendance/lib/absenceRows';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 function DeadlineCell({ entry }) {
   if (entry.status === 'JUSTIFIED') return <span className="text-ink-faint">Resuelta el {formatIsoDate(entry.justifiedAt)}</span>;
@@ -102,34 +103,34 @@ export function FaltasDeMateria({ sectionEnrollmentId, studentName, subjectLabel
           ))}
         </ul>
       ) : (
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="text-left text-xs uppercase text-ink-faint">
-              <th className="py-2 pr-3 font-semibold">Clase</th>
-              <th className="py-2 pr-3 font-semibold">Estado</th>
-              <th className="py-2 pr-3 font-semibold">Plazo</th>
-              <th className="py-2 font-semibold">
+        <Table className="w-full text-[13px]">
+          <TableHeader>
+            <TableRow className="text-left text-xs uppercase text-ink-faint">
+              <TableHead className="py-2 pr-3 font-semibold">Clase</TableHead>
+              <TableHead className="py-2 pr-3 font-semibold">Estado</TableHead>
+              <TableHead className="py-2 pr-3 font-semibold">Plazo</TableHead>
+              <TableHead className="py-2 font-semibold">
                 <span className="sr-only">Acción</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {absences.map((entry) => (
-              <tr key={entry.id} className="border-t border-border align-top">
-                <td className="py-2 pr-3 font-semibold">{formatIsoDate(entry.classDate)}</td>
-                <td className="py-2 pr-3">
+              <TableRow key={entry.id} className="border-t border-border align-top">
+                <TableCell className="py-2 pr-3 font-semibold">{formatIsoDate(entry.classDate)}</TableCell>
+                <TableCell className="py-2 pr-3">
                   <StatusCell entry={entry} />
-                </td>
-                <td className="py-2 pr-3">
+                </TableCell>
+                <TableCell className="py-2 pr-3">
                   <DeadlineCell entry={entry} />
-                </td>
-                <td className="py-2 text-right">
+                </TableCell>
+                <TableCell className="py-2 text-right">
                   <ActionCell entry={entry} {...cell} />
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
       {selected && (
         <JustificarFaltaDialog

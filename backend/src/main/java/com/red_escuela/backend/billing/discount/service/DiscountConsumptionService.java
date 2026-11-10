@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -49,8 +50,15 @@ public class DiscountConsumptionService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockEnrollmentsOfDiscountsAppliedOn(Long invoiceId) {
-        studentDiscountRepository.findEnrollmentsOfDiscountsLiveOnInvoice(invoiceId).stream()
+        lockEnrollmentsOfDiscountsAppliedOnInvoices(List.of(invoiceId));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockEnrollmentsOfDiscountsAppliedOnInvoices(Collection<Long> invoiceIds) {
+        invoiceIds.stream().distinct()
+                .flatMap(invoiceId -> studentDiscountRepository.findEnrollmentsOfDiscountsLiveOnInvoice(invoiceId).stream())
                 .flatMap(this::referencesOf)
+                .distinct()
                 .sorted(Comparator.comparing(EnrollmentReference::kind).thenComparing(EnrollmentReference::id))
                 .forEach(enrollmentLock::lockDiscountsOf);
     }

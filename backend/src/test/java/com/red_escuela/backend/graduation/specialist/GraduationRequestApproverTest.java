@@ -57,6 +57,19 @@ class GraduationRequestApproverTest {
     }
 
     @Test
+    void theEnrollmentIsLockedBeforeItsStateIsChecked() {
+        ProgramEnrollment enrollment = enrollmentWithStudent(10L, 77L);
+        when(eligibilityChecker.isEligibleToGraduate(10L)).thenReturn(true);
+        Mockito.doAnswer(invocation -> {
+            enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+            return null;
+        }).when(recorder).lockForGraduation(enrollment);
+
+        assertThatThrownBy(() -> approver.requireApprovableAndFindStudentId(verifiedRequestFor(enrollment))).isInstanceOf(RuntimeException.class);
+        verify(eligibilityChecker, never()).isEligibleToGraduate(10L);
+    }
+
+    @Test
     void aNotEligibleEnrollmentFailsWithGraduationRequirementsNotMet() {
         ProgramEnrollment enrollment = enrollmentWithStudent(10L, 77L);
         when(eligibilityChecker.isEligibleToGraduate(10L)).thenReturn(false);

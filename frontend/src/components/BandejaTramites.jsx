@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Buscador } from '@/components/Buscador';
 import { Paginador } from '@/components/Paginador';
 import { LoadErrorState } from '@/components/LoadErrorState';
+import { Input } from '@/components/ui/input';
 
 const POR_PAGINA = 8;
 
@@ -126,20 +127,20 @@ export function BandejaTramites({
         <div className="flex min-w-0 flex-wrap items-center gap-2 text-[12.5px] text-ink-faint">
           <label className="flex items-center gap-2">
             Desde
-            <input
+            <Input
               type="date"
               value={desde}
               onChange={(e) => updateParams({ desde: e.target.value })}
-              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
+              className="w-auto"
             />
           </label>
           <label className="flex items-center gap-2">
             Hasta
-            <input
+            <Input
               type="date"
               value={hasta}
               onChange={(e) => updateParams({ hasta: e.target.value })}
-              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
+              className="w-auto"
             />
           </label>
         </div>

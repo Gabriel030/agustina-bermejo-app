@@ -13,6 +13,7 @@ import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
 import { AdmissionInvoicePendingCard, AnnualUpfrontCards, CreditBalanceCard, MyDiscountsTab } from '@/features/billing';
 import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
 import { formatDate } from '@/lib/billing';
+import { Input } from '@/components/ui/input';
 
 const STANDING_CONFIG = {
   UP_TO_DATE: { label: 'Al día', tone: 'success' },
@@ -98,12 +99,12 @@ export function AlumnoPagos() {
         <TabsContent value="cuotas" className="flex flex-col gap-6">
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-          <input
+          <Input
             type="text"
             placeholder="Buscar curso o carrera…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-brand"
+            className="pl-10 pr-4"
           />
         </div>
 

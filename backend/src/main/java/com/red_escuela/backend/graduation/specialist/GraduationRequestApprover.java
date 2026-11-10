@@ -26,6 +26,7 @@ public class GraduationRequestApprover {
 
     public Long requireApprovableAndFindStudentId(GraduationRequest request) {
         request.requireAwaitingDirectorDecision();
+        programEnrollmentGraduationRecorder.lockForGraduation(request.getProgramEnrollment());
         request.getProgramEnrollment().requireActive();
         Long programEnrollmentId = request.getProgramEnrollment().getId();
         if (!graduationEligibilityChecker.isEligibleToGraduate(programEnrollmentId)) {

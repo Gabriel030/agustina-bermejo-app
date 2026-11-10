@@ -8,6 +8,7 @@ import { useChangePlatformFeature } from '@/features/platform/hooks/useChangePla
 import { usePreviewFeatureChange } from '@/features/platform/hooks/usePreviewFeatureChange';
 import { useCountdown } from '@/features/platform/hooks/useCountdown';
 import { FeatureImpactStep } from '@/features/platform/components/FeatureImpactStep';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const REASON_MIN = 5;
 const REASON_MAX = 500;
@@ -20,26 +21,26 @@ function titleOf(code, target) {
 
 function DiffTable({ rows }) {
   return (
-    <table className="w-full text-left text-sm">
-      <thead>
-        <tr className="text-xs text-ink-faint">
-          <th scope="col" className="py-1 pr-2 font-semibold"><span className="sr-only">Concepto</span></th>
-          <th scope="col" className="py-1 pr-2 font-semibold">Hoy</th>
-          <th scope="col" className="py-1 pr-2 font-semibold">Nuevo</th>
-          <th scope="col" className="py-1 font-semibold">Diferencia</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table className="w-full text-left text-sm">
+      <TableHeader>
+        <TableRow className="text-xs text-ink-faint">
+          <TableHead scope="col" className="py-1 pr-2 font-semibold"><span className="sr-only">Concepto</span></TableHead>
+          <TableHead scope="col" className="py-1 pr-2 font-semibold">Hoy</TableHead>
+          <TableHead scope="col" className="py-1 pr-2 font-semibold">Nuevo</TableHead>
+          <TableHead scope="col" className="py-1 font-semibold">Diferencia</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {rows.map((row) => (
-          <tr key={row.label} className="border-t border-line">
-            <th scope="row" className="py-1.5 pr-2 font-medium text-ink">{row.label}</th>
-            <td className="py-1.5 pr-2 text-ink-soft">{row.today}</td>
-            <td className="py-1.5 pr-2 font-semibold text-ink">{row.next}</td>
-            <td className="py-1.5 text-ink-soft">{row.diff}</td>
-          </tr>
+          <TableRow key={row.label} className="border-t border-line">
+            <TableHead scope="row" className="h-auto py-1.5 pr-2 text-sm font-medium normal-case tracking-normal text-ink whitespace-normal">{row.label}</TableHead>
+            <TableCell className="py-1.5 pr-2 text-ink-soft">{row.today}</TableCell>
+            <TableCell className="py-1.5 pr-2 font-semibold text-ink">{row.next}</TableCell>
+            <TableCell className="py-1.5 text-ink-soft">{row.diff}</TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }
 
