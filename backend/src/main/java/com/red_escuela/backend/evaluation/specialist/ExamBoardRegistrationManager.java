@@ -36,6 +36,9 @@ import java.util.List;
 @Service
 public class ExamBoardRegistrationManager {
 
+    private static final java.util.List<ExamBoardRegistrationStatus> ATTEMPT_FREE_STATUSES =
+            java.util.List.of(ExamBoardRegistrationStatus.WITHDRAWN, ExamBoardRegistrationStatus.ABSENT);
+
     private final ExamBoardRegistrationRepository examBoardRegistrationRepository;
     private final ExamBoardRepository examBoardRepository;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
@@ -116,7 +119,7 @@ public class ExamBoardRegistrationManager {
         Integer maxAttempts = examBoard.getSubject().getMaxFinalExamAttempts();
         if (maxAttempts != null) {
             long previousAttempts = examBoardRegistrationRepository
-                    .countByProgramSubjectSectionEnrollmentIdAndStatusNot(enrollmentId, ExamBoardRegistrationStatus.WITHDRAWN);
+                    .countByProgramSubjectSectionEnrollmentIdAndStatusNotIn(enrollmentId, ATTEMPT_FREE_STATUSES);
             if (previousAttempts >= maxAttempts) {
                 throw new MaxExamAttemptsExceededException(subjectId, maxAttempts);
             }
@@ -174,7 +177,7 @@ public class ExamBoardRegistrationManager {
         Integer maxAttempts = examBoard.getCourseSubject().getMaxFinalExamAttempts();
         if (maxAttempts != null) {
             long previousAttempts = examBoardRegistrationRepository
-                    .countByCourseSubjectSectionEnrollmentIdAndStatusNot(enrollmentId, ExamBoardRegistrationStatus.WITHDRAWN);
+                    .countByCourseSubjectSectionEnrollmentIdAndStatusNotIn(enrollmentId, ATTEMPT_FREE_STATUSES);
             if (previousAttempts >= maxAttempts) {
                 throw new MaxExamAttemptsExceededException(courseSubjectId, maxAttempts);
             }

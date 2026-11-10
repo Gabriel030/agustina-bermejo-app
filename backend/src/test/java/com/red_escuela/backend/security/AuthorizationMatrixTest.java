@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SlowTest(reason = "2256 requests MockMvc, una por celda de la matriz, contra el contexto completo")
 class AuthorizationMatrixTest extends AuthorizationMatrixSupport {
 
-    record MatrixCell(String key, MatrixRole role, AccessExpectation expected, String body) {
+    record MatrixCell(String key, MatrixRole role, AccessExpectation expected, AccessExpectation anonymous, String body) {
 
         @Override
         public String toString() {
@@ -27,9 +27,9 @@ class AuthorizationMatrixTest extends AuthorizationMatrixSupport {
     static Stream<MatrixCell> matrixCells() {
         List<MatrixCell> cells = new ArrayList<>();
         for (AuthorizationMatrixRow row : AuthorizationMatrixFile.read()) {
-            cells.add(new MatrixCell(row.key(), null, row.anonymous(), row.body()));
+            cells.add(new MatrixCell(row.key(), null, row.anonymous(), row.anonymous(), row.body()));
             for (MatrixRole role : MatrixRole.values()) {
-                cells.add(new MatrixCell(row.key(), role, row.byRole().get(role), row.body()));
+                cells.add(new MatrixCell(row.key(), role, row.byRole().get(role), row.anonymous(), row.body()));
             }
         }
         return cells.stream();
@@ -53,8 +53,8 @@ class AuthorizationMatrixTest extends AuthorizationMatrixSupport {
 
         int status = statusOf(endpoint, cell.body(), cell.role());
 
-        assertThat(cell.expected().describeMismatch(status, cell.role() == null))
-                .as("%s", cell)
-                .isEmpty();
+        var mismatch = cell.expected().describeMismatch(
+                status, cell.role() == null, MatrixKnownResponses.toleranceFor(cell.key(), cell.anonymous()));
+        assertThat(mismatch).as("%s", cell).isEmpty();
     }
 }

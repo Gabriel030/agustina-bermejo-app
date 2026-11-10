@@ -11,6 +11,7 @@ import com.red_escuela.backend.academicstructure.exception.CourseNotFoundExcepti
 import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.shared.exception.RequestFieldRequiredException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -96,6 +97,15 @@ class CreateAcademicOfferingCycleServiceTest {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
         stubDraft();
         when(cycleRepository.save(any(AcademicOfferingCycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    @Test
+    void requestWithoutProgramNorCourseFailsAsBadRequestAndTouchesNoRepository() {
+        assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(null, null, TERM_ID)))
+                .isInstanceOf(RequestFieldRequiredException.class);
+
+        verify(courseRepository, never()).findById(any());
+        verify(cycleRepository, never()).save(any());
     }
 
     @Test

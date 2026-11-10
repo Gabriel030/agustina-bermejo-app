@@ -3,13 +3,14 @@ import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { errorBody } from '@/test/fixtures/errors';
 import { AlumnoMisCursos } from './AlumnoMisCursos';
 
 const API = 'http://localhost:8080';
 
 describe('AlumnoMisCursos load error', () => {
   it('shows the retry state instead of the empty list when the enrollments fail to load', async () => {
-    server.use(http.get(`${API}/me/course-enrollments`, () => HttpResponse.json({ code: 'BOOM' }, { status: 500 })));
+    server.use(http.get(`${API}/me/course-enrollments`, () => HttpResponse.json(errorBody('INTERNAL_ERROR', { retryable: true }), { status: 500 })));
     renderWithProviders(<AlumnoMisCursos />);
 
     expect(await screen.findByText('No pudimos cargar tus cursos')).toBeInTheDocument();

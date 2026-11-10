@@ -24,6 +24,20 @@
             : window.matchMedia('(prefers-color-scheme: dark)').matches
               ? 'dark'
               : 'light';
+        var consulta = new URLSearchParams(window.location.search).get('design');
+        var guardadoDiseno = localStorage.getItem('design');
+        var porDefecto = '%VITE_DEFAULT_DESIGN%';
+        var validos = ['vl', 'b'];
+        var diseno =
+          validos.indexOf(consulta) >= 0
+            ? consulta
+            : validos.indexOf(guardadoDiseno) >= 0
+              ? guardadoDiseno
+              : validos.indexOf(porDefecto) >= 0
+                ? porDefecto
+                : 'vl';
+        if (validos.indexOf(consulta) >= 0) localStorage.setItem('design', consulta);
+        document.documentElement.dataset.design = diseno;
         document.documentElement.dataset.theme = tema;
       })();
     </script>

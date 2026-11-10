@@ -6,6 +6,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { TabCount } from '@/components/TabCount';
 import { ModalMotivo } from '@/components/ModalMotivo';
@@ -159,6 +160,7 @@ export function SolicitudesAsistencia() {
     justification: justificationItems,
   }[tab];
   const isLoading = corrections.isLoading || justifications.isLoading;
+  const failed = [corrections, justifications].find((query) => query.isError && query.data === undefined);
   const busy =
     approveCorrection.isPending || rejectCorrection.isPending || approveJustification.isPending || rejectJustification.isPending;
 
@@ -210,6 +212,8 @@ export function SolicitudesAsistencia() {
           <Skeleton className="h-16" />
           <Skeleton className="h-16" />
         </div>
+      ) : failed ? (
+        <LoadErrorState error={failed.error} resource="las solicitudes" onRetry={() => failed.refetch()} />
       ) : visible.length === 0 ? (
         <GlassCard className="p-4">
           <EmptyState title="Sin solicitudes pendientes" description="Cuando haya una corrección o una justificación, aparece acá." />

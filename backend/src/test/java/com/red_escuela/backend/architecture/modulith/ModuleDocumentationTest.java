@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("docs")
-@SlowTest(reason = "Generates the Modulith diagrams and canvases of every module (tag docs, runs only on pushes)")
+@SlowTest(reason = "Generates the Modulith diagrams and canvases of every module (tag docs, runs only on pushes)", maxSeconds = 300)
 class ModuleDocumentationTest {
 
     private static final String UPDATE_PROPERTY = "modulith.docs.update";

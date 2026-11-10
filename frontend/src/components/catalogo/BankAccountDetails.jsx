@@ -1,8 +1,18 @@
+import { Button } from '@/components/ui/button';
 import { usePaymentConfig } from '@/hooks/useBilling';
 
 export function BankAccountDetails() {
-  const { data: config, isLoading } = usePaymentConfig();
+  const { data: config, isLoading, isError, refetch } = usePaymentConfig();
   if (isLoading) return null;
+
+  if (isError) {
+    return (
+      <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-neutral-bg px-4 py-3 text-xs text-ink-soft">
+        <span>No pudimos cargar los datos de la cuenta.</span>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>Reintentar</Button>
+      </div>
+    );
+  }
 
   const fields = [
     { label: 'Titular', value: config?.accountHolder },

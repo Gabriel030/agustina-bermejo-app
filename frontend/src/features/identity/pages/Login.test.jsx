@@ -104,6 +104,22 @@ describe('Login', () => {
     expect(await screen.findByText('Algo salió mal. Probá de nuevo.')).toBeInTheDocument();
   });
 
+  it('blocksTheSubmitWhenUsernameOrPasswordIsBlank', async () => {
+    let called = false;
+    server.use(http.post(`${API}/auth/login`, () => {
+      called = true;
+      return HttpResponse.json({});
+    }));
+    const user = userEvent.setup();
+    renderLogin();
+
+    await user.type(screen.getByPlaceholderText('DNI o email'), '   ');
+    await user.click(screen.getByRole('button', { name: /ingresar/i }));
+
+    expect(await screen.findByText('Ingresá tu usuario y tu contraseña.')).toBeInTheDocument();
+    expect(called).toBe(false);
+  });
+
   it('muestra "Usuario o contraseña incorrectos" cuando el backend rechaza el login', async () => {
     server.use(http.post(`${API}/auth/login`, () => HttpResponse.json(errorBody('INVALID_CREDENTIALS'), { status: 401 })));
     const user = userEvent.setup();

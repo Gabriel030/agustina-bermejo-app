@@ -1,5 +1,6 @@
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { InfoTip } from '@/components/charts/InfoTip';
 import { cn } from '@/lib/utils';
 import { describeGrantEffect } from './grantForm';
@@ -10,10 +11,12 @@ const DOT_TONES = {
   neutral: 'bg-ink-faint',
 };
 
-export function GrantEffectPanel({ preview, values, isLoading, isReady }) {
+export function GrantEffectPanel({ preview, values, isLoading, isReady, isError = false, error, onRetry }) {
   let body;
   if (!isReady) {
     body = <p className="text-sm text-ink-faint">Cargá el valor y el período para ver qué va a pasar.</p>;
+  } else if (isError && !isLoading) {
+    body = <LoadErrorState bare error={error} resource="la vista previa" onRetry={onRetry} />;
   } else if (isLoading || !preview) {
     body = <Skeleton className="h-16 w-full rounded-xl" />;
   } else if (!preview.allowed) {

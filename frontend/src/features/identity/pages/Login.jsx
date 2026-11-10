@@ -13,6 +13,7 @@ import { apiFetch } from '@/api/client';
 import {
   GOOGLE_REJECTED_MESSAGE,
   INVALID_CREDENTIALS_MESSAGE,
+  SESSION_EXPIRED_MESSAGE,
   cooldownSecondsFor,
   messageForAuthError,
 } from '@/features/identity/lib/loginErrors';
@@ -27,6 +28,7 @@ export function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const sessionExpired = useLocation().state?.expired === true;
   const [enviando, setEnviando] = useState(false);
   const [googleIdTokenPendiente, setGoogleIdTokenPendiente] = useState(null);
   const [institutionId, setInstitutionId] = useState(null);
@@ -63,6 +65,10 @@ export function Login() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
+    if (!username.trim() || !password.trim()) {
+      setError('Ingresá tu usuario y tu contraseña.');
+      return;
+    }
     setEnviando(true);
     try {
       await login(username, password);
@@ -137,6 +143,11 @@ export function Login() {
             </Link>
           </div>
 
+          {sessionExpired && !error && (
+            <div role="status" className="rounded-lg bg-warning-bg px-3 py-2 text-xs font-medium text-ink">
+              {SESSION_EXPIRED_MESSAGE}
+            </div>
+          )}
           {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
           <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>

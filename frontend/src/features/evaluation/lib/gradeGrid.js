@@ -1,3 +1,5 @@
+import { formatDecimal } from '@/lib/formatNumber';
+
 export const GRID_CONDITION = {
   IN_PROGRESS: { tone: 'accent', label: 'Cursando' },
   REGULAR: { tone: 'success', label: 'Regular' },
@@ -21,7 +23,7 @@ export function draftKey(enrollmentId, type, sequenceNumber) {
 }
 
 export function formatScore(score) {
-  return score == null ? '' : String(score).replace('.', ',');
+  return score == null ? '' : formatDecimal(Number(score), { useGrouping: false });
 }
 
 export function parseScore(text) {

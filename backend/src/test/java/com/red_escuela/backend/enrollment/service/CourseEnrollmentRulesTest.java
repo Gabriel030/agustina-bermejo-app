@@ -286,8 +286,10 @@ class CourseEnrollmentRulesTest {
         when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
         givenWithdrawalDates();
         when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(activeModule, waitlistedModule, approvedModule));
+        when(sectionFinder.findCourseSection(31L)).thenReturn(sectionView(31L, 21L));
         when(subEnrollmentRepository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(31L, EnrollmentStatus.WAITLISTED))
                 .thenReturn(Optional.of(nextInSection));
+        when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 0L)).thenReturn(true);
         when(courseEnrollmentRepository.findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(COURSE_ID, EnrollmentStatus.WAITLISTED))
                 .thenReturn(Optional.of(nextInCourse));
 
@@ -312,6 +314,28 @@ class CourseEnrollmentRulesTest {
     }
 
     @Test
+    void withdrawLocksTheCourseFirstAndThenTheSectionsInAscendingIdOrder() {
+        CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment higherSection = subEnrollment(100L, 33L, 23L, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment lowerSection = subEnrollment(101L, 31L, 21L, EnrollmentStatus.IN_PROGRESS);
+        CourseSubjectSectionEnrollment middleSection = subEnrollment(102L, 32L, 22L, EnrollmentStatus.ENROLLED);
+        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        givenWithdrawalDates();
+        when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(higherSection, lowerSection, middleSection));
+        when(sectionFinder.findCourseSection(any())).thenAnswer(inv -> sectionView(inv.getArgument(0), 21L));
+
+        service.withdraw(1L, voluntaryWithdrawal());
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(courseCatalogFinder, sectionFinder);
+        order.verify(courseCatalogFinder).lockCourse(COURSE_ID);
+        order.verify(sectionFinder).lockCourseSection(31L);
+        order.verify(sectionFinder).lockCourseSection(32L);
+        order.verify(sectionFinder).lockCourseSection(33L);
+        verify(courseCatalogFinder, org.mockito.Mockito.times(1)).lockCourse(any());
+        verify(sectionFinder, org.mockito.Mockito.times(3)).lockCourseSection(any());
+    }
+
+    @Test
     void withdrawOfWaitlistedStudentDoesNotFreeASeatForTheCourseWaitlist() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.WAITLISTED);
         when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
@@ -323,6 +347,55 @@ class CourseEnrollmentRulesTest {
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
         verify(courseCatalogFinder, never()).lockCourse(any());
         verify(courseEnrollmentRepository, never()).findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(any(), any());
+    }
+
+    @Test
+    void withdrawDoesNotPromoteTheCourseWaitlistWhenTheCourseIsStillFull() {
+        CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
+        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        givenWithdrawalDates();
+        when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of());
+        when(courseEnrollmentRepository.countByCourseIdAndStatusIn(COURSE_ID, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS)))
+                .thenReturn(2L);
+        when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 2L)).thenReturn(false);
+
+        service.withdraw(1L, voluntaryWithdrawal());
+
+        verify(courseEnrollmentRepository, never()).findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(any(), any());
+    }
+
+    @Test
+    void withdrawDoesNotPromoteTheSectionWaitlistWhenTheSectionIsStillFull() {
+        CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment activeModule = subEnrollment(100L, 31L, 21L, EnrollmentStatus.ENROLLED);
+        when(courseEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+        givenWithdrawalDates();
+        when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(activeModule));
+        when(sectionFinder.findCourseSection(31L)).thenReturn(new CourseSectionView(31L, 21L, COURSE_ID, TERM_ID, 1, "Comision 31"));
+        when(subEnrollmentRepository.countByCourseSubjectSectionIdAndStatusIn(31L,
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))).thenReturn(1L);
+
+        service.withdraw(1L, voluntaryWithdrawal());
+
+        verify(subEnrollmentRepository, never()).findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(any(), any());
+    }
+
+    @Test
+    void reEnrollingInAPreviouslyWithdrawnSectionTakesTheCurrentDate() {
+        givenStudentWithOpenWindow();
+        when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
+        when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
+        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L)));
+        when(courseCatalogFinder.findCourseEntity(COURSE_ID)).thenReturn(course);
+        when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 0L)).thenReturn(true);
+        when(courseEnrollmentRepository.save(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+        CourseSubjectSectionEnrollment previous = subEnrollment(100L, 31L, 21L, EnrollmentStatus.WITHDRAWN);
+        previous.setEnrolledAt(NOW.minusYears(1));
+        when(subEnrollmentRepository.findByStudentIdAndCourseSubjectSectionId(7L, 31L)).thenReturn(Optional.of(previous));
+
+        service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null));
+
+        assertThat(previous.getEnrolledAt()).isEqualTo(NOW);
     }
 
     @Test

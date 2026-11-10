@@ -3,13 +3,14 @@ import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { errorBody } from '@/test/fixtures/errors';
 import { DirectorEsquemasEvaluacion } from './DirectorEsquemasEvaluacion';
 
 const API = 'http://localhost:8080';
 
 describe('DirectorEsquemasEvaluacion load error', () => {
   it('shows the retry state instead of a blank table when the schemes fail to load', async () => {
-    server.use(http.get(`${API}/evaluation-schemes`, () => HttpResponse.json({ code: 'BOOM' }, { status: 500 })));
+    server.use(http.get(`${API}/evaluation-schemes`, () => HttpResponse.json(errorBody('INTERNAL_ERROR', { retryable: true }), { status: 500 })));
     renderWithProviders(<DirectorEsquemasEvaluacion />);
 
     expect(await screen.findByText('No pudimos cargar los esquemas')).toBeInTheDocument();

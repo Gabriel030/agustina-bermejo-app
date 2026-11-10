@@ -5,7 +5,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.RefreshToken;
-import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
+import com.red_escuela.backend.identity.exception.SessionNotFoundException;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,7 +76,7 @@ class IdentitySpecialistsTransactionIT extends AbstractIntegrationTest {
     @Test
     void revokeSessionOfAnotherPersonFailsAndLeavesTheTokenActive() {
         assertThatThrownBy(() -> sessionRevoker.revokeSession(tokenId, stranger))
-                .isInstanceOf(InvalidRefreshTokenException.class);
+                .isInstanceOf(SessionNotFoundException.class);
 
         assertThat(isRevoked()).isFalse();
     }

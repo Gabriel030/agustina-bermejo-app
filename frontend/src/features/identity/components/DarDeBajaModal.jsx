@@ -10,7 +10,7 @@ const MOTIVOS = {
   OTRO: 'Otro',
 };
 
-export function DarDeBajaModal({ open, onClose, onConfirmar, isPending }) {
+export function DarDeBajaModal({ open, onClose, onConfirmar, isPending, error }) {
   const [reason, setReason] = useState('');
   const [detail, setDetail] = useState('');
 
@@ -60,6 +60,12 @@ export function DarDeBajaModal({ open, onClose, onConfirmar, isPending }) {
             />
           </div>
         </div>
+
+        {error && (
+          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">
+            {error}
+          </div>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={isPending}>

@@ -38,7 +38,9 @@ Regla del front (decisión del 3-nov-2026): GET, PUT y DELETE reintentables; POS
 | `CONCURRENT_MODIFICATION` | 409 | no | Otro usuario modificó el mismo registro | Hay que releer el registro antes de reintentar; repetir a ciegas pisa cambios ajenos |
 | `DATA_INTEGRITY_VIOLATION` | 409 | no | Restricción de base de datos violada | Choca con el estado persistido; hay que releer y decidir |
 | `ILLEGAL_STATE` | 409 | no | Estado ilegal no previsto por el dominio | Choca con el estado persistido; hay que releer y decidir |
+| `LOCK_CONFLICT` | 409 | sí | Deadlock, espera de bloqueo vencida o fallo de serialización en la base | Otra operación tenía tomados los mismos registros; repetir el mismo pedido suele funcionar |
 | `INTERNAL_ERROR` | 500 | no | Error inesperado o integridad de datos rota | Es un defecto del servidor y repetir el mismo pedido lo repite; el detalle queda solo en el log |
+| `DATABASE_BUSY` | 503 | sí | Consulta cancelada por superar el tiempo máximo de la base | La base está ocupada; repetir tras el Retry-After puede funcionar |
 
 ## Errores de dominio
 
@@ -298,6 +300,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_EVALUATION_CONFIG_NOT_FOUND` | no | `SectionEvaluationConfigNotFoundException` | evaluation |
 | `SECTION_INSTRUCTOR_NOT_FOUND` | no | `SectionInstructorNotFoundException` | academicstructure |
 | `SECTION_NOT_FOUND` | no | `SectionNotFoundException` | academicstructure |
+| `SESSION_NOT_FOUND` | no | `SessionNotFoundException` | identity |
 | `STUDENT_DISCOUNT_NOT_FOUND` | no | `StudentDiscountNotFoundException` | billing |
 | `STUDENT_NOT_FOUND` | no | `StudentNotFoundException` | identity |
 | `SUBJECT_NOT_FOUND` | no | `SubjectNotFoundException` | academicstructure |
@@ -338,6 +341,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGE_REJECTED` | no | `ChargeRejectedException` | billing |
 | `CLASSROOM_IN_USE` | no | `ClassroomInUseException` | academicstructure |
 | `CLASS_SESSION_ALREADY_CANCELED` | no | `ClassSessionAlreadyCanceledException` | attendance |
+| `CLASS_SESSION_CANCELED` | no | `ClassSessionCanceledException` | attendance |
 | `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | billing |
 | `COHORT_PROMOTION_ALREADY_ACQUIRED` | no | `CohortPromotionAlreadyAcquiredException` | billing |
 | `CONCURRENT_REGULAR_CERTIFICATE_ISSUE` | no | `ConcurrentRegularCertificateIssueException` | graduation |
@@ -371,6 +375,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_REVOKED` | no | `EnrollmentFeeExemptionAlreadyRevokedException` | enrollment |
 | `ENROLLMENT_FEE_EXEMPTION_NOT_NEEDED` | no | `EnrollmentFeeExemptionNotNeededException` | enrollment |
 | `EVALUATION_SCHEME_IN_USE` | no | `EvaluationSchemeInUseException` | evaluation |
+| `EXAM_BOARD_CANCELED` | no | `ExamBoardCanceledException` | evaluation |
 | `EXAM_BOARD_CLOSED` | no | `ExamBoardClosedException` | evaluation |
 | `EXAM_BOARD_HAS_GRADES` | no | `ExamBoardHasGradesException` | evaluation |
 | `EXAM_BOARD_NOT_YET_TAKEN` | no | `ExamBoardNotYetTakenException` | evaluation |
@@ -478,6 +483,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
 | `SECTION_CODE_ALREADY_EXISTS` | no | `SectionCodeAlreadyExistsException` | academicstructure |
+| `SECTION_FULL` | no | `SectionFullException` | enrollment |
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |

@@ -45,18 +45,20 @@ const CAMPOS_DATOS = {
   city: 'la ciudad',
 };
 
+const TOO_LONG = 'Máximo 255 caracteres';
+
 const datosSchema = z
   .object({
-    email: z.string().trim().min(1, 'Ingresá tu email').email('El email no es válido'),
+    email: z.string().trim().min(1, 'Ingresá tu email').email('El email no es válido').max(255, TOO_LONG),
     documentType: z.enum(['DNI', 'PASSPORT', 'OTHER']),
     dni: z.string(),
-    street: z.string().trim().min(1, 'Ingresá la calle'),
-    number: z.string().trim().min(1, 'Ingresá el número'),
-    floor: z.string(),
-    city: z.string().trim().min(1, 'Ingresá la ciudad'),
-    state: z.string(),
-    postalCode: z.string(),
-    country: z.string(),
+    street: z.string().trim().min(1, 'Ingresá la calle').max(255, TOO_LONG),
+    number: z.string().trim().min(1, 'Ingresá el número').max(255, TOO_LONG),
+    floor: z.string().max(255, TOO_LONG),
+    city: z.string().trim().min(1, 'Ingresá la ciudad').max(255, TOO_LONG),
+    state: z.string().max(255, TOO_LONG),
+    postalCode: z.string().max(255, TOO_LONG),
+    country: z.string().max(255, TOO_LONG),
   })
   .superRefine((valores, ctx) => {
     const mensaje = validateDocument(valores.documentType, valores.dni);
@@ -467,7 +469,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
             </div>
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Piso/Depto</div>
-              <Input {...register('floor')} />
+              <Input maxLength={255} {...register('floor')} />
             </div>
           </div>
 
@@ -479,11 +481,11 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
             </div>
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Provincia</div>
-              <Input {...register('state')} />
+              <Input maxLength={255} {...register('state')} />
             </div>
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Código postal</div>
-              <Input {...register('postalCode')} />
+              <Input maxLength={255} {...register('postalCode')} />
             </div>
           </div>
 

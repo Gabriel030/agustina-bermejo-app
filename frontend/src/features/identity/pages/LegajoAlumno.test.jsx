@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -8,8 +8,10 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { LegajoAlumno } from './LegajoAlumno';
 import { studentFixture } from '@/test/fixtures/students';
 
+const auth = vi.hoisted(() => ({ roles: ['PRECEPTOR'] }));
+
 vi.mock('@/context/AuthContext', () => ({
-  useAuth: () => ({ usuario: { roles: ['PRECEPTOR'] } }),
+  useAuth: () => ({ usuario: { roles: auth.roles } }),
 }));
 
 const API = 'http://localhost:8080';
@@ -95,5 +97,58 @@ describe('LegajoAlumno — load failure', () => {
     await screen.findByText('Pérez, Lucía');
     expect(screen.queryByText('Menor de edad')).not.toBeInTheDocument();
     expect(screen.queryByText('Tutor')).not.toBeInTheDocument();
+  });
+});
+
+describe('LegajoAlumno — failed actions', () => {
+  afterEach(() => {
+    auth.roles = ['PRECEPTOR'];
+  });
+
+  function renderAs(role) {
+    auth.roles = [role.toUpperCase()];
+    server.use(
+      http.get(`${API}/students/9`, () => HttpResponse.json(STUDENT)),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/:rol/alumnos/:id" element={<LegajoAlumno />} />
+      </Routes>,
+      { route: `/${role}/alumnos/9` },
+    );
+  }
+
+  it('keepsTheWithdrawalModalOpenAndExplainsTheActiveEnrollmentsConflict', async () => {
+    server.use(
+      http.post(`${API}/students/9/withdraw`, () =>
+        HttpResponse.json({ code: 'STUDENT_HAS_ACTIVE_ENROLLMENTS', retryable: false }, { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderAs('director');
+    await user.click(await screen.findByRole('button', { name: 'Dar de baja' }));
+    await user.click(screen.getByRole('combobox'));
+    await user.click(await screen.findByRole('option', { name: 'Abandono' }));
+    await user.type(screen.getByPlaceholderText(/Información adicional/), 'Dejó de asistir');
+    await user.click(screen.getByRole('button', { name: 'Confirmar baja' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('El alumno tiene inscripciones activas');
+    expect(screen.getByRole('button', { name: 'Confirmar baja' })).toBeEnabled();
+  });
+
+  it('showsTheFailureInsideTheResetPasswordModalInsteadOfClosingSilently', async () => {
+    server.use(
+      http.post(`${API}/students/9/reset-password`, () =>
+        HttpResponse.json({ code: 'INTERNAL_ERROR', retryable: false }, { status: 500 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderAs('preceptor');
+    await user.click(await screen.findByRole('button', { name: 'Resetear contraseña' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar link' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tuvimos un problema de nuestro lado');
+    expect(screen.getByRole('button', { name: 'Enviar link' })).toBeEnabled();
   });
 });

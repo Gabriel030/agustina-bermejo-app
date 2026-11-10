@@ -18,6 +18,9 @@ import com.red_escuela.backend.attendance.entity.ClassSessionStatus;
 import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
 import com.red_escuela.backend.attendance.exception.CannotJustifyException;
 import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
+import com.red_escuela.backend.attendance.exception.ClassSessionCanceledException;
+import com.red_escuela.backend.attendance.repository.AttendanceRepository;
+import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.attendance.exception.InvalidAttendanceChangeRequestStateException;
 import com.red_escuela.backend.attendance.repository.ClassSessionRepository;
 import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand;
@@ -81,12 +84,16 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
     private CancelProgramSectionClassSessionUseCase cancelClass;
     @Autowired
     private ClassSessionRepository classSessionRepository;
+    @Autowired
+    private AttendanceRepository attendanceRepository;
 
     private CycleTestFixtures fixtures;
     private SubjectSection section;
     private Instructor owner;
     private Instructor stranger;
     private Attendance absence;
+    private SubjectSectionEnrollment enrollment;
+    private SubjectSectionEnrollment enrollmentInAnotherSection;
 
     @BeforeEach
     void seedAbsenceInAnOwnedSection() {
@@ -116,7 +123,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
         programEnrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         programEnrollment.setEnrollmentDate(LocalDateTime.now());
         entityManager.persist(programEnrollment);
-        SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
+        enrollment = new SubjectSectionEnrollment();
         enrollment.setStudent(student);
         enrollment.setProgramEnrollment(programEnrollment);
         enrollment.setSubjectSection(section);
@@ -124,6 +131,15 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
         enrollment.setEnrolledAt(LocalDateTime.now());
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
+        SubjectSection anotherSection = fixtures.section(fixtures.subject(), term, com.red_escuela.backend.shared.domain.StatusType.ACTIVE, cycle);
+        enrollmentInAnotherSection = new SubjectSectionEnrollment();
+        enrollmentInAnotherSection.setStudent(student);
+        enrollmentInAnotherSection.setProgramEnrollment(programEnrollment);
+        enrollmentInAnotherSection.setSubjectSection(anotherSection);
+        enrollmentInAnotherSection.setStatus(EnrollmentStatus.IN_PROGRESS);
+        enrollmentInAnotherSection.setEnrolledAt(LocalDateTime.now());
+        enrollmentInAnotherSection.setAttemptNumber(1);
+        entityManager.persist(enrollmentInAnotherSection);
         entityManager.flush();
         List<Attendance> loaded = loadAttendance.load(new LoadProgramSectionAttendanceCommand(section.getId(), owner.getId(),
                 new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
@@ -264,6 +280,60 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> rejectChange.reject(new RejectAttendanceChangeRequestCommand(request.getId(), "Motivo suficiente")))
                 .isInstanceOf(InvalidAttendanceChangeRequestStateException.class);
+    }
+
+    private CargarAsistenciaRequest requestFor(LocalDate day, AttendanceEntry... entries) {
+        return new CargarAsistenciaRequest(day, List.of(entries), null, null);
+    }
+
+    @Test
+    void anEnrollmentOfAnotherSectionIsRejectedAndNothingOfTheBatchIsPersisted() {
+        LocalDate otherDay = CLASS_DAY.plusDays(21);
+        var request = requestFor(otherDay,
+                new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT),
+                new AttendanceEntry(enrollmentInAnotherSection.getId(), AttendanceStatus.ABSENT));
+
+        assertThatThrownBy(() -> loadAttendance.load(new LoadProgramSectionAttendanceCommand(section.getId(), owner.getId(), request)))
+                .isInstanceOf(SectionEnrollmentNotFoundException.class);
+
+        assertThat(attendanceRepository.findByProgramSubjectSectionEnrollmentIdAndClassDate(enrollment.getId(), otherDay)).isEmpty();
+        assertThat(attendanceRepository.findByProgramSubjectSectionEnrollmentIdAndClassDate(enrollmentInAnotherSection.getId(), otherDay)).isEmpty();
+        assertThat(classSessionRepository.findBySubjectSectionIdAndClassDate(section.getId(), otherDay)).isEmpty();
+    }
+
+    @Test
+    void aWithdrawnEnrollmentIsRejectedAndNothingIsPersisted() {
+        LocalDate otherDay = CLASS_DAY.plusDays(28);
+        enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
+        entityManager.flush();
+        var request = requestFor(otherDay, new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT));
+
+        assertThatThrownBy(() -> loadAttendance.load(new LoadProgramSectionAttendanceCommand(section.getId(), owner.getId(), request)))
+                .isInstanceOf(SectionEnrollmentNotFoundException.class);
+
+        assertThat(attendanceRepository.findByProgramSubjectSectionEnrollmentIdAndClassDate(enrollment.getId(), otherDay)).isEmpty();
+    }
+
+    @Test
+    void attendanceOnACanceledClassIsRefusedAndNothingIsPersisted() {
+        LocalDate otherDay = CLASS_DAY.plusDays(35);
+        cancelClass.cancel(new CancelProgramSectionClassSessionCommand(section.getId(), owner.getId(), otherDay));
+        var request = requestFor(otherDay, new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT));
+
+        assertThatThrownBy(() -> loadAttendance.load(new LoadProgramSectionAttendanceCommand(section.getId(), owner.getId(), request)))
+                .isInstanceOf(ClassSessionCanceledException.class);
+
+        assertThat(attendanceRepository.findByProgramSubjectSectionEnrollmentIdAndClassDate(enrollment.getId(), otherDay)).isEmpty();
+    }
+
+    @Test
+    void anActiveEnrollmentOfTheSectionIsStillRecorded() {
+        LocalDate otherDay = CLASS_DAY.plusDays(42);
+
+        var loaded = loadAttendance.load(new LoadProgramSectionAttendanceCommand(section.getId(), owner.getId(),
+                requestFor(otherDay, new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT))));
+
+        assertThat(loaded).hasSize(1);
     }
 
     @Test

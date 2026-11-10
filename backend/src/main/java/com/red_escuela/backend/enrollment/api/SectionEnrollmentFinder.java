@@ -85,6 +85,24 @@ public class SectionEnrollmentFinder {
         return enrollment;
     }
 
+    public void requireActiveInProgramSection(Long sectionId, java.util.Collection<Long> enrollmentIds) {
+        java.util.Set<Long> activeIds = findActiveInProgramSection(sectionId).stream()
+                .map(SubjectSectionEnrollment::getId).collect(java.util.stream.Collectors.toSet());
+        enrollmentIds.stream().filter(id -> !activeIds.contains(id)).findFirst()
+                .ifPresent(id -> {
+                    throw new SectionEnrollmentNotFoundException(id);
+                });
+    }
+
+    public void requireActiveInCourseSection(Long sectionId, java.util.Collection<Long> enrollmentIds) {
+        java.util.Set<Long> activeIds = findActiveInCourseSection(sectionId).stream()
+                .map(CourseSubjectSectionEnrollment::getId).collect(java.util.stream.Collectors.toSet());
+        enrollmentIds.stream().filter(id -> !activeIds.contains(id)).findFirst()
+                .ifPresent(id -> {
+                    throw new SectionEnrollmentNotFoundException(id);
+                });
+    }
+
     public List<SubjectSectionEnrollment> findActiveInProgramSection(Long sectionId) {
         return programEnrollmentRepository.findBySubjectSectionIdAndStatusIn(sectionId, ACTIVE_STATUSES);
     }

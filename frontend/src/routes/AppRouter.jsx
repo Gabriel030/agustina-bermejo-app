@@ -10,9 +10,13 @@ import { GlassCard } from '@/components/GlassCard';
 import { OfflineState } from '@/pwa/OfflineState';
 import { CargaInicial } from '@/pages/CargaInicial';
 import { Placeholder } from '@/pages/Placeholder';
+import { NotFound } from '@/pages/NotFound';
 import { lazyPage } from '@/routes/lazyPage';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { useStartupPrefetch } from '@/routes/useStartupPrefetch';
+import { DesignCatalog } from '@/pages/DesignCatalog';
+
+const showCatalog = import.meta.env.DEV || import.meta.env.VITE_ENABLE_CATALOG === 'true';
 
 const AutoservicioLayout = lazyPage(() => import('@/layouts/AutoservicioLayout'), 'AutoservicioLayout');
 
@@ -87,6 +91,7 @@ export function AppRouter() {
         {PUBLIC_ROUTES.map(({ path, element }) => (
           <Route key={path} path={path} element={element} />
         ))}
+        {showCatalog && <Route path="/dev/catalog" element={<DesignCatalog />} />}
       </Route>
 
       <Route
@@ -99,6 +104,7 @@ export function AppRouter() {
         {SHARED_ROUTES.map(({ path, element }) => (
           <Route key={path} path={path} element={element} />
         ))}
+        <Route path="*" element={<NotFound />} />
       </Route>
 
       {Object.entries(ROLE_CONFIG).map(([role, { Layout, pages }]) => (
@@ -113,6 +119,7 @@ export function AppRouter() {
         >
           <Route index element={<Navigate to={firstRealPage(role, pages) ?? pages[0]} replace />} />
           {renderRoleRoutes(role, pages)}
+          <Route path="*" element={<NotFound />} />
         </Route>
       ))}
 
@@ -131,7 +138,6 @@ export function AppRouter() {
           />
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

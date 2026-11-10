@@ -7,13 +7,14 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useCrearPreferenciaMp, usePaymentConfig } from '@/hooks/useBilling';
 
 export function AlumnoPagarOnline() {
   const { invoiceId } = useParams();
-  const { data: config, isLoading } = usePaymentConfig();
+  const { data: config, isLoading, isError, error, refetch } = usePaymentConfig();
   const notified = useRef(false);
-  const gatewayDisabled = !isLoading && config?.mpEnabled !== true;
+  const gatewayDisabled = !isLoading && !isError && config?.mpEnabled !== true;
 
   useEffect(() => {
     if (gatewayDisabled && !notified.current) {
@@ -26,6 +27,19 @@ export function AlumnoPagarOnline() {
     return (
       <PageContainer className="max-w-lg">
         <Skeleton className="h-40" />
+      </PageContainer>
+    );
+  }
+  if (isError) {
+    return (
+      <PageContainer className="max-w-lg">
+        <LoadErrorState
+          error={error}
+          resource="los medios de pago"
+          onRetry={refetch}
+          backTo={`/alumno/pagos/${invoiceId}/seleccion`}
+          backLabel="la selección de pago"
+        />
       </PageContainer>
     );
   }

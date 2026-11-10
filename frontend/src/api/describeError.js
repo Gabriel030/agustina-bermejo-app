@@ -1,6 +1,8 @@
+import { BILLING_ERROR_MESSAGES } from '@/api/billingErrorMessages';
 import { CircuitOpenError, NetworkError, RateLimitedError } from '@/api/client';
+import { DOMAIN_ERROR_MESSAGES } from '@/api/domainErrorMessages';
 
-export const ERROR_MESSAGES = {
+const CORE_ERROR_MESSAGES = {
   VALIDATION_FAILED: 'Revisá los datos ingresados.',
   MALFORMED_REQUEST_BODY: 'No pudimos procesar lo que enviaste. Recargá e intentá de nuevo.',
   INVALID_PARAMETER_TYPE: 'El enlace o el dato indicado no es válido.',
@@ -9,6 +11,8 @@ export const ERROR_MESSAGES = {
   UNAUTHENTICATED: 'Tenés que iniciar sesión para continuar.',
   FORBIDDEN: 'No tenés permiso para hacer esto.',
   CONCURRENT_MODIFICATION: 'Otra persona modificó este registro. Recargá y volvé a intentar.',
+  LOCK_CONFLICT: 'Otra persona está modificando lo mismo en este momento. Esperá unos segundos y volvé a intentar.',
+  DATABASE_BUSY: 'El sistema está ocupado. Volvé a intentar en unos segundos.',
   DATA_INTEGRITY_VIOLATION: 'La operación choca con datos existentes.',
   ILLEGAL_STATE: 'La operación no es posible en el estado actual.',
   ILLEGAL_ARGUMENT: 'Algún dato no es válido.',
@@ -19,10 +23,14 @@ export const ERROR_MESSAGES = {
   NO_PENDING_GRADES_TO_PUBLISH: 'No hay notas cargadas para publicar en esta evaluación.',
   JUSTIFICATION_DEADLINE_EXPIRED: 'Venció el plazo para justificar esta falta. Si corresponde, la resuelve el preceptor como excepción.',
   INVALID_JUSTIFICATION_INPUT: 'El motivo de la justificación supera los 500 caracteres. Acortalo e intentá de nuevo.',
+  SECTION_FULL: 'La comisión elegida no tiene cupo. Seguís en tu comisión actual.',
   CANNOT_JUSTIFY: 'Esta falta no se puede justificar en su estado actual.',
+  STUDENT_HAS_ACTIVE_ENROLLMENTS: 'El alumno tiene inscripciones activas. Cancelalas antes de darlo de baja.',
   MERCADO_PAGO_GATEWAY: 'Mercado Pago no respondió. Probá en unos minutos.',
   GOOGLE_SERVICE_UNAVAILABLE: 'Google no está disponible ahora. Probá más tarde.',
 };
+
+export const ERROR_MESSAGES = { ...DOMAIN_ERROR_MESSAGES, ...BILLING_ERROR_MESSAGES, ...CORE_ERROR_MESSAGES };
 
 const DEFAULT_FALLBACK = 'Ocurrió un error inesperado. Probá de nuevo.';
 
