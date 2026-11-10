@@ -314,6 +314,20 @@ class CourseEnrollmentRulesTest {
     }
 
     @Test
+    void withdrawLocksTheEnrollmentBeforeTheCourseAndBeforeNotifyingBilling() {
+        CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
+        givenWithdrawalDates();
+
+        service.withdraw(1L, voluntaryWithdrawal());
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(courseEnrollmentRepository, courseCatalogFinder, withdrawalBillingPort);
+        order.verify(courseEnrollmentRepository).findByIdForUpdate(1L);
+        order.verify(courseCatalogFinder).lockCourse(COURSE_ID);
+        order.verify(withdrawalBillingPort).registerWithdrawalForBilling(any());
+    }
+
+    @Test
     void withdrawLocksTheCourseFirstAndThenTheSectionsInAscendingIdOrder() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
         CourseSubjectSectionEnrollment higherSection = subEnrollment(100L, 33L, 23L, EnrollmentStatus.ENROLLED);
