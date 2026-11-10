@@ -23,10 +23,10 @@ import {
   cycleTargetKind,
   cycleTargetName,
   leadInstructorName,
-  shiftLabel,
   slotLabel,
   sortedSlots,
 } from '@/features/academic-structure/lib/offerApproval';
+import { shiftLabel } from '@/features/academic-structure/lib/shifts';
 
 function buildSectionColumns(conflicted) {
   return [
