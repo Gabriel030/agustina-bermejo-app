@@ -18,10 +18,13 @@ import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycl
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +60,11 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         fixtures = new CycleTestFixtures(entityManager);
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     private CreateCycleSectionRequest eveningSectionRequest(Subject subject, Classroom classroom, int capacity) {
@@ -132,12 +140,18 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
         fixtures.assignLead(added, fixtures.instructor());
         fixtures.flushAndClear();
 
+        var submitter = fixtures.person();
+        fixtures.flushAndClear();
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(submitter.getId().toString(), null));
+
         submitCycle.submit(cycle.getId());
 
         AcademicOfferingCycle resubmitted = cycleRepository.findById(cycle.getId()).orElseThrow();
         assertThat(resubmitted.getStatus()).isEqualTo(AcademicOfferingCycleStatus.PENDING_APPROVAL);
         assertThat(resubmitted.getRejectionReason()).isNull();
         assertThat(resubmitted.getDecidedBy()).isNull();
+        assertThat(resubmitted.getSubmittedBy().getId()).isEqualTo(submitter.getId());
+        assertThat(resubmitted.getSubmittedAt()).isNotNull();
     }
 
     @Test
