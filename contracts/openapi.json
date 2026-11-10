@@ -5582,9 +5582,6 @@
             "format" : "int64",
             "type" : "integer"
           },
-          "originalScore" : {
-            "type" : [ "number", "null" ]
-          },
           "score" : {
             "type" : "number"
           },

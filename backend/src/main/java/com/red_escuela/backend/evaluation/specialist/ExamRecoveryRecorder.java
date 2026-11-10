@@ -82,7 +82,7 @@ public class ExamRecoveryRecorder {
         requireQuotaAvailable(target.scheme(), enrollmentItems);
         courseworkApprovalChecker.requireApprovedBeforeExam(
                 target.kind(), target.sectionId(), target.scheme(), enrollmentItems);
-        Grade recoveryScore = Grade.of(request.score());
+        Grade recoveryScore = request.score();
         Grade originalScore = gradeItem.getScore();
         LocalDateTime now = LocalDateTime.now(clock);
         gradeItem.applyRecovery(recoveryScore, actorPersonId, now);

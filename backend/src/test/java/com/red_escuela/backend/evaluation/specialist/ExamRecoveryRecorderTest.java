@@ -207,7 +207,7 @@ class ExamRecoveryRecorderTest extends AbstractIntegrationTest {
 
     private GradeItemAuditResponse recover(Fixture fixture, GradeItem item, double score) {
         return examRecoveryRecorder.record(item.getId(), fixture.instructor().getId(),
-                fixture.instructor().getPerson().getId(), new RecordExamRecoveryRequest(BigDecimal.valueOf(score)));
+                fixture.instructor().getPerson().getId(), new RecordExamRecoveryRequest(Grade.of(BigDecimal.valueOf(score))));
     }
 
     @Test
@@ -332,7 +332,7 @@ class ExamRecoveryRecorderTest extends AbstractIntegrationTest {
         GradeItem first = item(fixture, GradeItemType.EXAM, 1);
 
         assertThatThrownBy(() -> examRecoveryRecorder.record(first.getId(), outsider.getId(), outsider.getPerson().getId(),
-                new RecordExamRecoveryRequest(BigDecimal.valueOf(6.0))))
+                new RecordExamRecoveryRequest(Grade.of(BigDecimal.valueOf(6.0)))))
                 .isInstanceOf(NotOwnSectionException.class);
     }
 
