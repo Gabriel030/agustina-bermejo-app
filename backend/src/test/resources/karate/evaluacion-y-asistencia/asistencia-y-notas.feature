@@ -3,7 +3,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
   # Un Docente solo puede cargar asistencia/notas de una comisión propia
   # (SubjectSectionInstructor/CourseSubjectSectionInstructor, no un campo "owner" —
   # NotOwnSectionException, 403). La carga de notas dispara el recálculo automático
-  # de status/finalScore de la cursada (GradeItemRecorder.calcularResultado): con
+  # de status/finalScore de la cursada solo con notas publicadas (GradeItemRecorder): con
   # examCountExpected=2, tpCountExpected=1, minRegularGrade=4.0, minApprovalGrade=6.0,
   # SIMPLE_AVERAGE, cargar los 3 parciales define REGULAR (promedio >= 4) o FAILED
   # (promedio < 4, corta ahí sin evaluar el final); estando REGULAR, cargar un FINAL
@@ -110,7 +110,25 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     When method post
     Then status 201
 
-    # Tres parciales cargados, promedio (7+8+6)/3 = 7 >= 4 → REGULAR
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'EXAM', sequenceNumber: 1 }
+    When method post
+    Then status 200
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'EXAM', sequenceNumber: 2 }
+    When method post
+    Then status 200
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'TP', sequenceNumber: 1 }
+    When method post
+    Then status 200
+
+    # Tres parciales cargados y publicados, promedio (7+8+6)/3 = 7 >= 4 → REGULAR
     Given path '/program-enrollments', programEnrollmentId, 'section-enrollments'
     And header Authorization = 'Bearer ' + adminToken
     When method get
@@ -163,6 +181,24 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 1 }
     When method post
     Then status 201
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'EXAM', sequenceNumber: 1 }
+    When method post
+    Then status 200
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'EXAM', sequenceNumber: 2 }
+    When method post
+    Then status 200
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'TP', sequenceNumber: 1 }
+    When method post
+    Then status 200
 
     Given path '/program-enrollments', programEnrollmentId, 'section-enrollments'
     And header Authorization = 'Bearer ' + adminToken

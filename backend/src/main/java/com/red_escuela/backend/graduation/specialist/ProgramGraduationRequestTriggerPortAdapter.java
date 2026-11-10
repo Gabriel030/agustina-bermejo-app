@@ -8,14 +8,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProgramGraduationRequestTriggerPortAdapter implements GraduationRequestTriggerPort {
 
     private final GraduationRequestAutoRequester graduationRequestAutoRequester;
+    private final GraduationRequestOutdatedFlagger graduationRequestOutdatedFlagger;
 
-    public ProgramGraduationRequestTriggerPortAdapter(GraduationRequestAutoRequester graduationRequestAutoRequester) {
+    public ProgramGraduationRequestTriggerPortAdapter(GraduationRequestAutoRequester graduationRequestAutoRequester,
+                                                      GraduationRequestOutdatedFlagger graduationRequestOutdatedFlagger) {
         this.graduationRequestAutoRequester = graduationRequestAutoRequester;
+        this.graduationRequestOutdatedFlagger = graduationRequestOutdatedFlagger;
     }
 
     @Override
     @Transactional
     public void requestGraduationIfEligible(Long programEnrollmentId) {
         graduationRequestAutoRequester.createIfEligible(programEnrollmentId);
+    }
+
+    @Override
+    @Transactional
+    public void flagGraduationRequestOutdated(Long programEnrollmentId) {
+        graduationRequestOutdatedFlagger.flagOutdatedRequests(programEnrollmentId);
     }
 }

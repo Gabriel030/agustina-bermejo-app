@@ -59,6 +59,18 @@ public interface GradeItemRepository extends JpaRepository<GradeItem, Long> {
     List<Long> findStudentPersonIdsByCourseSection(@Param("sectionId") Long sectionId, @Param("type") GradeItemType type,
                                                    @Param("sequenceNumber") Integer sequenceNumber);
 
+    @Query("select distinct g.programSubjectSectionEnrollment.id from GradeItem g "
+            + "where g.programSubjectSectionEnrollment.subjectSection.id = :sectionId "
+            + "and g.type = :type and g.sequenceNumber = :sequenceNumber")
+    List<Long> findEnrollmentIdsByProgramSection(@Param("sectionId") Long sectionId, @Param("type") GradeItemType type,
+                                                 @Param("sequenceNumber") Integer sequenceNumber);
+
+    @Query("select distinct g.courseSubjectSectionEnrollment.id from GradeItem g "
+            + "where g.courseSubjectSectionEnrollment.courseSubjectSection.id = :sectionId "
+            + "and g.type = :type and g.sequenceNumber = :sequenceNumber")
+    List<Long> findEnrollmentIdsByCourseSection(@Param("sectionId") Long sectionId, @Param("type") GradeItemType type,
+                                                @Param("sequenceNumber") Integer sequenceNumber);
+
     @Query("select count(distinct g.courseSubjectSectionEnrollment.id) from GradeItem g "
             + "where g.courseSubjectSectionEnrollment.courseSubjectSection.id = :sectionId "
             + "and g.type = :type and g.sequenceNumber = :sequenceNumber")

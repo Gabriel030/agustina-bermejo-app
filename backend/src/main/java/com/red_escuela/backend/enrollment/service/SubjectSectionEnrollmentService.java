@@ -63,6 +63,7 @@ public class SubjectSectionEnrollmentService {
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
+    private final SectionWaitlistPromoter waitlistPromoter;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -75,9 +76,11 @@ public class SubjectSectionEnrollmentService {
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             StudentEnrollmentEligibility studentEnrollmentEligibility,
+            SectionWaitlistPromoter waitlistPromoter,
             Clock clock) {
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.studentEnrollmentEligibility = studentEnrollmentEligibility;
+        this.waitlistPromoter = waitlistPromoter;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.sectionFinder = sectionFinder;
@@ -280,17 +283,7 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void promoteNextFromWaitlist(Long sectionId) {
-        sectionFinder.lockProgramSection(sectionId);
-        ProgramSectionView section = sectionFinder.findProgramSection(sectionId);
-        if (countOccupiedSeats(sectionId) >= capacityOf(section)) {
-            return;
-        }
-        subjectSectionEnrollmentRepository
-                .findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
-                .ifPresent(siguiente -> {
-                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
-                    subjectSectionEnrollmentRepository.save(siguiente);
-                });
+        waitlistPromoter.promoteNextFromWaitlist(sectionId);
     }
 
     private EnrollmentStatus calculateStatusByCapacity(ProgramSectionView section) {

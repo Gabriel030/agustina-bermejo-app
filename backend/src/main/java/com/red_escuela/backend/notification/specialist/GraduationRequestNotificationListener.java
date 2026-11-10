@@ -7,6 +7,8 @@ import com.red_escuela.backend.notification.domain.GraduationRequestCreatedNotif
 import com.red_escuela.backend.notification.domain.GraduationRequestApprovedNotification;
 import com.red_escuela.backend.graduation.events.GraduationRequestApprovedEvent;
 import com.red_escuela.backend.graduation.events.GraduationRequestRejectedEvent;
+import com.red_escuela.backend.graduation.events.GraduationRequestOutdatedEvent;
+import com.red_escuela.backend.notification.domain.GraduationRequestOutdatedNotification;
 import com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent;
 import com.red_escuela.backend.graduation.events.GraduationRequestedEvent;
 
@@ -24,6 +26,7 @@ public class GraduationRequestNotificationListener {
     static final String NOTIFY_CREATED_HANDLER = "GraduationRequestNotificationListener.notifyCreated";
     static final String NOTIFY_PENDING_REVIEW_HANDLER = "GraduationRequestNotificationListener.notifyPendingReview";
     static final String NOTIFY_VERIFIED_HANDLER = "GraduationRequestNotificationListener.notifyVerified";
+    static final String NOTIFY_OUTDATED_HANDLER = "GraduationRequestNotificationListener.notifyOutdated";
     private final ProcessedEffectGuard effectGuard;
     private final ApplicationEventPublisher eventPublisher;
     private final EntityManager entityManager;
@@ -62,5 +65,12 @@ public class GraduationRequestNotificationListener {
     public void notifyVerified(GraduationRequestVerifiedEvent event) {
         effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_VERIFIED_HANDLER, () -> eventPublisher.publishEvent(new GraduationRequestVerifiedNotification(
                 event.requestId(), entityManager.getReference(Person.class, event.studentPersonId()), event.programName())));
+    }
+
+    @ApplicationModuleListener
+    public void notifyOutdated(GraduationRequestOutdatedEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_OUTDATED_HANDLER, () -> eventPublisher.publishEvent(
+                new GraduationRequestOutdatedNotification(event.requestId(), entityManager.getReference(Person.class, event.studentPersonId()),
+                        event.studentName(), event.programName())));
     }
 }
