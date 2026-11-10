@@ -1,6 +1,7 @@
 package com.red_escuela.backend.notification.specialist;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.graduation.events.GraduationRequestOutdatedEvent;
 import com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent;
 import com.red_escuela.backend.graduation.events.GraduationRequestedEvent;
 import com.red_escuela.backend.identity.entity.Person;
@@ -120,5 +121,22 @@ class GraduationRequestStageNotificationsIT extends AbstractIntegrationTest {
         awaitAsserted(() -> assertThat(notificationsOf(student, NotificationType.GRADUATION_REQUEST_VERIFIED)).isEqualTo(1L));
         publish(event);
         assertStaysAt(student, NotificationType.GRADUATION_REQUEST_VERIFIED, 1L);
+    }
+
+    @Test
+    void anOutdatedGraduationNotifiesTheStudentAndTheDirectorOnce() {
+        Person student = persistPerson(null);
+        Person director = persistPerson("DIRECTOR");
+        GraduationRequestOutdatedEvent event = new GraduationRequestOutdatedEvent(
+                CorrelationIds.current(), FIRST_OCCURRENCE, 1L, student.getId(), "Ana Perez", "Carrera");
+
+        publish(event);
+
+        awaitAsserted(() -> {
+            assertThat(notificationsOf(student, NotificationType.GRADUATION_REQUEST_OUTDATED)).isEqualTo(1L);
+            assertThat(notificationsOf(director, NotificationType.GRADUATION_REQUEST_OUTDATED)).isEqualTo(1L);
+        });
+        publish(event);
+        assertStaysAt(student, NotificationType.GRADUATION_REQUEST_OUTDATED, 1L);
     }
 }

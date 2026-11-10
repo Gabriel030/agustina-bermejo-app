@@ -46,6 +46,7 @@ class AttendanceLoadRecalculationTest extends CourseworkCharacterizationSupport 
                     new CreateGradeItemRequest(GradeItemType.EXAM, sequence, null, LocalDateTime.of(2026, 6, 1, 10, 0),
                             new BigDecimal("7"), null, null))
                     .andExpect(status().isCreated());
+            publishItem(classroom, GradeItemType.EXAM, sequence);
         }
     }
 

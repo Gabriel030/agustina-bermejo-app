@@ -30,6 +30,9 @@ class GradeProgressionAndGraduationCharacterizationTest extends CourseworkCharac
 
     private void load(Classroom classroom, GradeItemType type, int sequence, String score) throws Exception {
         loadAs(classroom.teacher(), classroom, type, sequence, score).andExpect(status().isCreated());
+        if (type != GradeItemType.FINAL) {
+            publishItem(classroom, type, sequence);
+        }
     }
 
     private org.springframework.test.web.servlet.ResultActions loadAs(
@@ -148,8 +151,8 @@ class GradeProgressionAndGraduationCharacterizationTest extends CourseworkCharac
         Classroom classroom = withFinal("grade7", "7700007", 10);
         Person preceptor = persistPerson("grade7.preceptor", "77000077", "PRECEPTOR");
 
-        load(classroom, GradeItemType.EXAM, 1, "4");
-        load(classroom, GradeItemType.EXAM, 1, "9");
+        loadAs(classroom.teacher(), classroom, GradeItemType.EXAM, 1, "4").andExpect(status().isCreated());
+        loadAs(classroom.teacher(), classroom, GradeItemType.EXAM, 1, "9").andExpect(status().isCreated());
 
         getAs(preceptor, "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items")
                 .andExpect(status().isOk())

@@ -473,6 +473,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(3.0), null, null));
 
+        publishLoadedItems(enrollment, instructor);
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
@@ -498,6 +499,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
 
+        publishLoadedItems(enrollment, instructor);
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
@@ -648,6 +650,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
 
+        publishLoadedItems(enrollment, instructor);
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
@@ -675,6 +678,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(5.0), null, null));
 
+        publishLoadedItems(enrollment, instructor);
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
@@ -700,6 +704,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.TP, 1, null, LocalDateTime.now(), BigDecimal.valueOf(1.0), null, null));
 
+        publishLoadedItems(enrollment, instructor);
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
@@ -829,6 +834,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(6.0), null, null));
 
+        publishLoadedItems(enrollment, instructor);
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(scheme.getAggregationMethod()).isEqualTo(GradeAggregationMethod.SIMPLE_AVERAGE);
@@ -907,6 +913,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
+        publishLoadedItems(enrollment, instructor);
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
@@ -936,6 +943,16 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+    }
+
+    private void publishLoadedItems(SubjectSectionEnrollment enrollment, Instructor instructor) {
+        entityManager.flush();
+        gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()).stream()
+                .filter(item -> item.getType() != GradeItemType.FINAL)
+                .forEach(item -> sectionGradeItemPublisher.publishProgramSection(
+                        enrollment.getSubjectSection().getId(), instructor.getId(), instructor.getPerson().getId(),
+                        new PublishGradeItemRequest(item.getType(), item.getSequenceNumber())));
+        entityManager.flush();
     }
 
     private GradeItem publishedExam(String dni, double score) {
@@ -1154,5 +1171,64 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         var history = gradeItemAuditReader.historyOf(item.getId());
 
         assertThat(history).extracting(GradeItemAuditResponse::reason).containsExactly("Segunda corrección", "Primera corrección");
+    }
+
+    private record DraftPair(SubjectSectionEnrollment enrollment, SubjectSection section, Instructor instructor) {
+    }
+
+    private DraftPair draftPair(String dni, double first, double second, Double promotionMinGrade) {
+        Instructor instructor = persistInstructor(dni);
+        Subject subject = persistSubject("MateriaBorrador" + dni);
+        SubjectSection section = persistSection(subject, persistTerm(), persistScheme(2, 0, true, promotionMinGrade));
+        assignInstructor(section, instructor);
+        SubjectSectionEnrollment enrollment = enrollInSection(dni + "1", section);
+        loadExam(enrollment, instructor, 1, first);
+        loadExam(enrollment, instructor, 2, second);
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        return new DraftPair(enrollment, section, instructor);
+    }
+
+    @Test
+    void draftGradesDoNotChangeTheEnrollmentConditionUntilTheyArePublished() {
+        DraftPair draft = draftPair("73300001", 3.0, 4.0, null);
+
+        assertThat(draft.enrollment().getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
+
+        publishExam(draft.section(), draft.instructor(), 1);
+        entityManager.flush();
+        entityManager.refresh(draft.enrollment());
+        assertThat(draft.enrollment().getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
+
+        publishExam(draft.section(), draft.instructor(), 2);
+        entityManager.flush();
+        entityManager.refresh(draft.enrollment());
+        assertThat(draft.enrollment().getStatus()).isEqualTo(EnrollmentStatus.FAILED);
+    }
+
+    @Test
+    void draftPromotionGradesDoNotApproveTheEnrollmentUntilTheyArePublished() {
+        DraftPair draft = draftPair("73300002", 8.0, 8.0, 7.0);
+
+        assertThat(draft.enrollment().getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
+        assertThat(draft.enrollment().getFinalScore()).isNull();
+
+        publishExam(draft.section(), draft.instructor(), 1);
+        publishExam(draft.section(), draft.instructor(), 2);
+        entityManager.flush();
+        entityManager.refresh(draft.enrollment());
+
+        assertThat(draft.enrollment().getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(draft.enrollment().getFinalScore()).isEqualTo(Grade.of(BigDecimal.valueOf(8.0)));
+    }
+
+    @Test
+    void aDraftItemLoadedAfterPublishingTheOthersDoesNotCountUntilItIsPublished() {
+        DraftPair draft = draftPair("73300003", 8.0, 8.0, 7.0);
+        publishExam(draft.section(), draft.instructor(), 1);
+        entityManager.flush();
+        entityManager.refresh(draft.enrollment());
+
+        assertThat(draft.enrollment().getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
     }
 }

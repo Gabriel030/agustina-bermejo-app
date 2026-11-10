@@ -57,7 +57,7 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
     void setUp() {
         EnrollmentWithdrawalDateResolver resolver = new EnrollmentWithdrawalDateResolver(clock);
         programService = new ProgramEnrollmentService(programRepository, null, null, null, null, null, null, null, null, null,
-                resolver, port, null, clock);
+                resolver, port, null, mock(ProgramEnrollmentSectionWithdrawer.class), clock);
         CourseCatalogFinder courses = mock(CourseCatalogFinder.class);
         courseService = new CourseEnrollmentService(courseRepository, null, null, courses, mock(SectionFinder.class), mock(CourseSubjectSectionEnrollmentRepository.class), null, null,
                 resolver, port, null, clock);

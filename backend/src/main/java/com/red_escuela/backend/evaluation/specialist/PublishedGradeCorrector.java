@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.specialist;
 import com.red_escuela.backend.academicstructure.api.SectionTermEndFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
+import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 import com.red_escuela.backend.evaluation.dto.CorrectGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
@@ -39,6 +40,7 @@ public class PublishedGradeCorrector {
     private final SectionTermEndFinder sectionTermEndFinder;
     private final GradeItemRecorder gradeItemService;
     private final ApplicationEventPublisher eventPublisher;
+    private final GraduationRequestTriggerPort graduationRequestTrigger;
     private final Clock clock;
 
     public PublishedGradeCorrector(GradeItemRepository gradeItemRepository,
@@ -48,6 +50,7 @@ public class PublishedGradeCorrector {
                                    SectionTermEndFinder sectionTermEndFinder,
                                    GradeItemRecorder gradeItemService,
                                    ApplicationEventPublisher eventPublisher,
+                                   GraduationRequestTriggerPort graduationRequestTrigger,
                                    Clock clock) {
         this.gradeItemRepository = gradeItemRepository;
         this.publicationRepository = publicationRepository;
@@ -56,6 +59,7 @@ public class PublishedGradeCorrector {
         this.sectionTermEndFinder = sectionTermEndFinder;
         this.gradeItemService = gradeItemService;
         this.eventPublisher = eventPublisher;
+        this.graduationRequestTrigger = graduationRequestTrigger;
         this.clock = clock;
     }
 
@@ -88,6 +92,7 @@ public class PublishedGradeCorrector {
         gradeItem.setScore(request.newScore());
         gradeItemRepository.save(gradeItem);
         recalculateCondition(target);
+        flagGraduationRequestOutdated(target);
         eventPublisher.publishEvent(GradeCorrectedEvent.correctedFor(
                 gradeItemId, target.studentPersonId(), target.sectionName(), gradeItem.getType().displayName(),
                 SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber())));
@@ -116,6 +121,12 @@ public class PublishedGradeCorrector {
         }
     }
 
+    private void flagGraduationRequestOutdated(Target target) {
+        if (target.kind() == SectionKind.PROGRAM) {
+            graduationRequestTrigger.flagGraduationRequestOutdated(target.programEnrollmentId());
+        }
+    }
+
     private void requirePublished(GradeItem gradeItem, Target target) {
         boolean published = publicationRepository.existsBySectionKindAndSectionIdAndGradeItemTypeAndSequenceNumber(
                 target.kind(), target.sectionId(), gradeItem.getType(),
@@ -132,16 +143,18 @@ public class PublishedGradeCorrector {
         }
     }
 
-    private record Target(SectionKind kind, Long sectionId, Long enrollmentId, Long studentPersonId, String sectionName) {
+    private record Target(SectionKind kind, Long sectionId, Long enrollmentId, Long programEnrollmentId, Long studentPersonId,
+                          String sectionName) {
 
         static Target of(GradeItem gradeItem) {
             if (gradeItem.getProgramSubjectSectionEnrollment() != null) {
                 var enrollment = gradeItem.getProgramSubjectSectionEnrollment();
                 return new Target(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), enrollment.getId(),
-                        enrollment.getStudent().getPerson().getId(), enrollment.getSubjectSection().getName());
+                        enrollment.getProgramEnrollment().getId(), enrollment.getStudent().getPerson().getId(),
+                        enrollment.getSubjectSection().getName());
             }
             var enrollment = gradeItem.getCourseSubjectSectionEnrollment();
-            return new Target(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), enrollment.getId(),
+            return new Target(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), enrollment.getId(), null,
                     enrollment.getStudent().getPerson().getId(), enrollment.getCourseSubjectSection().getName());
         }
     }

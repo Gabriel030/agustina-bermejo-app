@@ -22,6 +22,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
+import com.red_escuela.backend.evaluation.dto.PublishGradeItemRequest;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
@@ -62,6 +63,9 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
 
     @Autowired
     private GradeItemRepository gradeItemRepository;
+
+    @Autowired
+    private SectionGradeItemPublisher sectionGradeItemPublisher;
 
     @Autowired
     private EntityManager entityManager;
@@ -190,6 +194,15 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         gradeItemService.loadCourseEnrollmentGrade(s.enrollment().getId(), s.instructor().getId(), request);
     }
 
+    private void publishLoadedItems(Setup s) {
+        entityManager.flush();
+        gradeItemRepository.findByCourseSubjectSectionEnrollmentId(s.enrollment().getId()).stream()
+                .filter(item -> item.getType() != GradeItemType.FINAL)
+                .forEach(item -> sectionGradeItemPublisher.publishCourseSection(
+                        s.enrollment().getCourseSubjectSection().getId(), s.instructor().getId(),
+                        s.instructor().getPerson().getId(), new PublishGradeItemRequest(item.getType(), item.getSequenceNumber())));
+    }
+
     private EnrollmentStatus statusAfter(Setup s) {
         entityManager.flush();
         entityManager.refresh(s.enrollment());
@@ -235,6 +248,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.IN_PROGRESS);
         load(s, request(GradeItemType.EXAM, 2, 3));
 
+        publishLoadedItems(s);
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.FAILED);
     }
 
@@ -245,6 +259,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         load(s, request(GradeItemType.EXAM, 1, 7));
         load(s, request(GradeItemType.EXAM, 2, 9));
 
+        publishLoadedItems(s);
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(s.enrollment().getFinalGradeType()).isEqualTo(FinalGradeType.PROMOTION);
     }
@@ -257,6 +272,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         load(s, request(GradeItemType.EXAM, 1, 8));
         load(s, request(GradeItemType.EXAM, 2, 9));
 
+        publishLoadedItems(s);
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(s.enrollment().getFinalGradeType()).isEqualTo(FinalGradeType.PROMOTION);
     }
@@ -268,6 +284,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         load(s, request(GradeItemType.EXAM, 1, 5));
         load(s, request(GradeItemType.EXAM, 2, 5));
 
+        publishLoadedItems(s);
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.REGULAR);
     }
 
@@ -448,6 +465,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         load(s, request(GradeItemType.EXAM, 1, 2, 0.9, now));
         load(s, request(GradeItemType.EXAM, 2, 8, 0.1, now));
 
+        publishLoadedItems(s);
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.FAILED);
     }
 
@@ -459,6 +477,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         load(s, request(GradeItemType.EXAM, 1, 3));
         load(s, request(GradeItemType.EXAM, 2, 5));
 
+        publishLoadedItems(s);
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.REGULAR);
     }
 
@@ -470,6 +489,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         load(s, request(GradeItemType.EXAM, 1, 1));
         load(s, request(GradeItemType.EXAM, 2, 6));
 
+        publishLoadedItems(s);
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.REGULAR);
     }
 
@@ -482,6 +502,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         load(s, request(GradeItemType.EXAM, 1, 6, null, now));
         load(s, request(GradeItemType.EXAM, 2, 1, null, now.minusDays(5)));
 
+        publishLoadedItems(s);
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.REGULAR);
     }
 
@@ -506,6 +527,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
     void recalculatingTheConditionSettlesAnEnrollmentWhoseExamsAreAlreadyComplete() {
         Setup s = setup(simpleScheme(1, true), EnrollmentStatus.IN_PROGRESS, null);
         load(s, request(GradeItemType.EXAM, 1, 2));
+        publishLoadedItems(s);
         s.enrollment().setStatus(EnrollmentStatus.IN_PROGRESS);
         entityManager.flush();
 
