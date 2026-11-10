@@ -1,13 +1,11 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
 import com.red_escuela.backend.billing.collections.operation.LateFeeDebitNoteIssuingOperation;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
-import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessService;
+import com.red_escuela.backend.billing.invoice.service.SubjectLockSequence;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -32,8 +30,7 @@ public class LateFeeIssuer {
     private static final Set<String> LATE_FEE_UNIQUE_CONSTRAINTS = Set.of("uk_invoice_line_charge_key", "uk_late_fee_charge_origin_period_start", "uk_late_fee_charge_debit_note",
             "ex_late_fee_charge_no_overlapping_days");
 
-    private final InvoiceCreditAccessService invoiceAccess;
-    private final StudentCurrentAccountService accountService;
+    private final SubjectLockSequence subjectLockSequence;
     private final LateFeeChargeRepository chargeRepository;
     private final LateFeeContextLoader contextLoader;
     private final PolicySet<LateFeeIssuingContext> issuingPolicies;
@@ -41,11 +38,10 @@ public class LateFeeIssuer {
     private final LateFeeDebitNoteIssuingOperation operation;
     private final TransactionTemplate ownTransaction;
 
-    public LateFeeIssuer(InvoiceCreditAccessService invoiceAccess, StudentCurrentAccountService accountService,
+    public LateFeeIssuer(SubjectLockSequence subjectLockSequence,
                          LateFeeChargeRepository chargeRepository, LateFeeContextLoader contextLoader, PolicySet<LateFeeIssuingContext> debitNoteIssuingPolicySet,
                          BillingOperationPipeline pipeline, LateFeeDebitNoteIssuingOperation operation, PlatformTransactionManager transactionManager) {
-        this.invoiceAccess = invoiceAccess;
-        this.accountService = accountService;
+        this.subjectLockSequence = subjectLockSequence;
         this.chargeRepository = chargeRepository;
         this.contextLoader = contextLoader;
         this.issuingPolicies = debitNoteIssuingPolicySet;
@@ -68,9 +64,7 @@ public class LateFeeIssuer {
     }
 
     private boolean issueLateFeeUnderLocks(Long originInvoiceId, LocalDate periodStart, LocalDate businessDate, LatePaymentTimeline timeline) {
-        Long accountId = invoiceAccess.findAccountIdOf(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
-        accountService.lockStudentCurrentAccount(accountId);
-        Invoice origin = invoiceAccess.lockInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
+        Invoice origin = subjectLockSequence.lockInvoiceFollowingTheEnrollmentAndAccount(originInvoiceId);
         List<LateFeeAccrualPeriod> covered = chargeRepository.findCoveredPeriodsByOriginInvoiceId(originInvoiceId);
         Optional<LateFeeIssuingContext> context = contextLoader.loadMissingPeriodContexts(origin, covered, businessDate, timeline).stream()
                 .filter(candidate -> candidate.period().period().firstDay().equals(periodStart)).findFirst();
