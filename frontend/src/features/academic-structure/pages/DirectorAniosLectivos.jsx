@@ -6,9 +6,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { AniosLectivosSection } from '@/features/academic-structure/components/AniosLectivosSection';
 import { usePrograms } from '@/features/academic-structure/hooks/usePrograms';
-
-const SELECT_CLASS =
-  'w-full max-w-md rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent';
+import { NativeSelect } from '@/components/ui/native-select';
 
 export function DirectorAniosLectivos() {
   const { data: programs, isLoading, isError, error, refetch } = usePrograms();
@@ -28,10 +26,10 @@ export function DirectorAniosLectivos() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label htmlFor="anios-carrera" className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Carrera</label>
-            <select id="anios-carrera" value={programId} onChange={(e) => setProgramId(e.target.value)} className={SELECT_CLASS}>
+            <NativeSelect className="max-w-md" id="anios-carrera" value={programId} onChange={(e) => setProgramId(e.target.value)}>
               <option value="">Elegí una carrera</option>
               {(programs ?? []).map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
-            </select>
+            </NativeSelect>
           </div>
           {programId && <AniosLectivosSection key={programId} programId={programId} canEdit />}
         </div>

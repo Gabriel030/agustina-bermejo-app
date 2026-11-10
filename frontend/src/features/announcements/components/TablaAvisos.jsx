@@ -14,6 +14,7 @@ import {
 import { FilaAviso } from './FilaAviso';
 import { RosterSegmento } from './RosterSegmento';
 import { useDestinatariosDeAviso } from '../hooks/useAvisos';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const COLUMNAS = ['Aviso', 'Categoría', 'Audiencia', 'Estado', 'Leído por', 'Creado', 'Envío', 'Vence'];
 
@@ -83,20 +84,20 @@ export function TablaAvisos({ avisos, isLoading, isError, onReintentar, soloLect
       <GlassCard className="card-avisos overflow-hidden p-0">
         <div className="px-4 pt-3 text-[11px] text-ink-faint">Todos los horarios en UTC−3</div>
         <div ref={scrollerRef} className="overflow-x-auto">
-          <table className="tabla-avisos w-full min-w-[980px] border-collapse">
-            <thead>
-              <tr>
+          <Table containerClassName="overflow-visible" className="tabla-avisos w-full min-w-[980px] border-collapse">
+            <TableHeader>
+              <TableRow>
                 {COLUMNAS.map((columna) => (
-                  <th
+                  <TableHead
                     key={columna}
                     className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.04em] text-ink-faint"
                   >
                     {columna}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {lista.map((aviso) => (
                 <FilaAviso
                   key={aviso.id}
@@ -108,8 +109,8 @@ export function TablaAvisos({ avisos, isLoading, isError, onReintentar, soloLect
                   onVerDestinatarios={setVerDestinatariosDe}
                 />
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </GlassCard>
 

@@ -5,6 +5,8 @@ import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { CalendarioConfiguracion } from '@/features/evaluation/components/CalendarioConfiguracion';
 import {
   useConfiguracionComision,
@@ -46,7 +48,7 @@ function CampoFecha({ label, value, onChange, disabled, error, min, max }) {
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-semibold text-ink-soft">{label}</label>
       <div className="relative">
-        <input
+        <Input
           type="date"
           aria-label={label}
           value={campoFecha(value)}
@@ -55,13 +57,11 @@ function CampoFecha({ label, value, onChange, disabled, error, min, max }) {
           onChange={(e) => onChange(e.target.value || null)}
           disabled={disabled}
           aria-invalid={!!error}
-          className={`w-full rounded-lg border px-3 py-2 pr-8 text-[13.5px] text-ink disabled:bg-neutral-bg disabled:text-ink-faint ${
-            error
-              ? 'border-danger bg-danger-bg/30'
-              : completo && !disabled
-                ? 'border-success bg-success-bg/30'
-                : 'border-border bg-surface'
-          }`}
+          className={cn(
+            'pr-8',
+            error && 'bg-danger-bg/30',
+            !error && completo && !disabled && 'border-success bg-success-bg/30',
+          )}
         />
         {completo && !disabled && <Check className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />}
       </div>
