@@ -189,10 +189,13 @@ necesite de verdad.
   `status`, `code`, `retryable`, `requestId` y `violations` (cuerpo estándar del
   catálogo `docs/api/error-catalog.md`).
 - **`describeError(error)`** (`api/describeError.js`) devuelve `{ kind, message,
-  retryable, requestId }` con el mensaje en castellano por código transversal. Un
-  test cruza `ERROR_MESSAGES` contra el catálogo: sumar un transversal en el backend
-  obliga a sumarlo acá. Los códigos de dominio siguen en cada feature (prioridad:
-  mensaje de la feature, luego `describeError`). Regla en mutaciones:
+  retryable, requestId }` con el mensaje en castellano por código, transversal o de
+  dominio (`api/domainErrorMessages.js` y `api/billingErrorMessages.js`). Un test cruza
+  `ERROR_MESSAGES` contra todo el catálogo: sumar un código en el backend obliga a
+  sumarlo acá, y borrar uno obliga a quitarlo. Una feature puede seguir teniendo su
+  mensaje más específico (prioridad: mensaje de la feature, luego `describeError`).
+  `ApiError.message` nunca trae texto del backend: es un mensaje por estado HTTP.
+  Números y porcentajes en pantalla pasan por `lib/formatNumber.js` (es-AR). Regla en mutaciones:
   `toast.error(describeError(err).message)`.
 - **Timeouts**: 30 s por pedido (`timeoutMs` en las opciones lo cambia), 120 s para
   `FormData` y descargas. Un timeout se trata como falla de red.

@@ -362,6 +362,17 @@ describe('NuevoAlumno', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('rejectsABirthDateOfToday', async () => {
+    mockOnboarding({});
+    const user = userEvent.setup();
+    renderWithProviders(<NuevoAlumno />);
+    await goToPersonalDataStep(user);
+    await fillPersonalData(user, '40111666', isoYearsAgo(0));
+    await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+
+    expect(await screen.findByText('La fecha tiene que ser anterior a hoy')).toBeInTheDocument();
+  });
+
   describe('minors', () => {
     async function fillAndAdvance(user, birthDate) {
       await goToPersonalDataStep(user);

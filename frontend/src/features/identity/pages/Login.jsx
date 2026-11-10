@@ -65,6 +65,10 @@ export function Login() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
+    if (!username.trim() || !password.trim()) {
+      setError('Ingresá tu usuario y tu contraseña.');
+      return;
+    }
     setEnviando(true);
     try {
       await login(username, password);

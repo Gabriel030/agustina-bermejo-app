@@ -1,6 +1,8 @@
+import { BILLING_ERROR_MESSAGES } from '@/api/billingErrorMessages';
 import { CircuitOpenError, NetworkError, RateLimitedError } from '@/api/client';
+import { DOMAIN_ERROR_MESSAGES } from '@/api/domainErrorMessages';
 
-export const ERROR_MESSAGES = {
+const CORE_ERROR_MESSAGES = {
   VALIDATION_FAILED: 'Revisá los datos ingresados.',
   MALFORMED_REQUEST_BODY: 'No pudimos procesar lo que enviaste. Recargá e intentá de nuevo.',
   INVALID_PARAMETER_TYPE: 'El enlace o el dato indicado no es válido.',
@@ -27,6 +29,8 @@ export const ERROR_MESSAGES = {
   MERCADO_PAGO_GATEWAY: 'Mercado Pago no respondió. Probá en unos minutos.',
   GOOGLE_SERVICE_UNAVAILABLE: 'Google no está disponible ahora. Probá más tarde.',
 };
+
+export const ERROR_MESSAGES = { ...DOMAIN_ERROR_MESSAGES, ...BILLING_ERROR_MESSAGES, ...CORE_ERROR_MESSAGES };
 
 const DEFAULT_FALLBACK = 'Ocurrió un error inesperado. Probá de nuevo.';
 

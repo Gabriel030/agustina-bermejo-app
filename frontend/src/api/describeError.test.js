@@ -10,6 +10,12 @@ function transversalCodes() {
   return [...section.matchAll(/^\| `([A-Z_]+)` \|/gm)].map((match) => match[1]);
 }
 
+function domainCodes() {
+  const catalog = readFileSync(resolve(import.meta.dirname, '../../../docs/api/error-catalog.md'), 'utf8');
+  const section = catalog.split('## Errores de dominio')[1].split('\n## ')[0];
+  return [...new Set([...section.matchAll(/^\| `([A-Z][A-Z_0-9]+)` \|/gm)].map((match) => match[1]))];
+}
+
 describe('describeError', () => {
   it('mapsEveryTransversalCodeOfTheBackendCatalog', () => {
     const codes = transversalCodes();
@@ -17,6 +23,37 @@ describe('describeError', () => {
     expect(codes.length).toBeGreaterThan(10);
     const missing = codes.filter((code) => !ERROR_MESSAGES[code]);
     expect(missing).toEqual([]);
+  });
+
+  it('mapsEveryDomainCodeOfTheBackendCatalog', () => {
+    const codes = domainCodes();
+
+    expect(codes.length).toBeGreaterThan(300);
+    const missing = codes.filter((code) => !ERROR_MESSAGES[code]);
+    expect(missing).toEqual([]);
+  });
+
+  it('mapsNoCodeThatTheCatalogDoesNotKnow', () => {
+    const known = new Set([...transversalCodes(), ...domainCodes()]);
+
+    const stale = Object.keys(ERROR_MESSAGES).filter((code) => !known.has(code));
+    expect(stale).toEqual([]);
+  });
+
+  it('everyMessageIsUserFacingSpanishWithoutTechnicalText', () => {
+    const technical = /[A-Z]{2,}_[A-Z_]+|exception|stack|null|undefined|sql|constraint|\bhttp\b|\bjson\b|\bapi\b|[{}<>]/i;
+
+    const offenders = Object.entries(ERROR_MESSAGES).filter(
+      ([, message]) => typeof message !== 'string' || message.length < 10 || !/[.]$/.test(message) || technical.test(message),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it('backendMessageNeverReachesTheUser', () => {
+    const error = new ApiError('No pudimos completar la operación.', { status: 409, code: 'SOMETHING_NEW' });
+    error.backendDetail = 'org.postgresql.util.PSQLException: duplicate key';
+
+    expect(describeError(error).message).not.toContain('PSQLException');
   });
 
   it('networkErrorIsRetryableWithoutRequestId', () => {

@@ -1,6 +1,9 @@
 import { formatMoney, invoiceTitle, isInvoicePayable } from '@/lib/billing';
+import { formatDecimal } from '@/lib/formatNumber';
 import { moneyValue } from '@/lib/utils';
 import { parseAmountInput as cashParseAmountInput } from '@/lib/cashAmount';
+
+export const RECEIPT_LIMITS = { operationNumber: 50, originAccount: 50, holderName: 120, bankName: 100, maxAmount: 9999999999.99 };
 
 export const CBU_PATTERN = /^\d{22}$/;
 export const ALIAS_PATTERN = /^[a-zA-Z0-9.-]{6,20}$/;
@@ -51,8 +54,7 @@ export function parseAmountInput(text) {
 }
 
 export function formatAmountInput(value) {
-  if (!Number.isFinite(value)) return '';
-  return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatDecimal(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function selectedTotal(invoices, count) {
@@ -152,6 +154,7 @@ export function receiptFormErrors({ file, operationNumber, originAccount, holder
   const errors = {};
   if (!file) errors.file = staff ? 'Subí el comprobante para poder cargarlo.' : 'Subí el comprobante para poder enviarlo.';
   if (!operationNumber.trim()) errors.operationNumber = 'Ingresá el número de operación que figura en el comprobante.';
+  else if (operationNumber.trim().length > RECEIPT_LIMITS.operationNumber) errors.operationNumber = `El número de operación tiene hasta ${RECEIPT_LIMITS.operationNumber} caracteres.`;
   const origin = originAccount.trim();
   if (!origin) {
     errors.originAccount = staff
@@ -161,8 +164,11 @@ export function receiptFormErrors({ file, operationNumber, originAccount, holder
     errors.originAccount = 'Revisá el CBU (22 números) o el alias (6 a 20 caracteres).';
   }
   if (!holderName.trim()) errors.holderName = 'Ingresá el titular de la cuenta de origen.';
+  else if (holderName.trim().length > RECEIPT_LIMITS.holderName) errors.holderName = `El titular tiene hasta ${RECEIPT_LIMITS.holderName} caracteres.`;
   if (!(amount > 0)) {
     errors.amount = 'Ingresá un monto mayor a cero.';
+  } else if (amount > RECEIPT_LIMITS.maxAmount) {
+    errors.amount = 'El monto es demasiado alto.';
   } else if (firstInvoiceOutstanding != null && amount < firstInvoiceOutstanding) {
     errors.amount = 'El monto no alcanza a cubrir la primera cuota.';
   }

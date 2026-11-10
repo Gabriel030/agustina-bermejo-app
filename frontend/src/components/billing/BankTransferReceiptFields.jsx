@@ -2,8 +2,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ReceiptDropzone } from '@/components/ReceiptDropzone';
+import { RECEIPT_LIMITS } from '@/lib/bankTransferReceipt';
 
-function TextField({ id, label, value, onChange, onBlur, error, placeholder, inputMode, autoComplete = 'off' }) {
+function TextField({ id, label, value, onChange, onBlur, error, placeholder, inputMode, maxLength, autoComplete = 'off' }) {
   const errorId = `${id}-error`;
   return (
     <div className="flex flex-col gap-1.5">
@@ -15,6 +16,7 @@ function TextField({ id, label, value, onChange, onBlur, error, placeholder, inp
         onBlur={onBlur}
         placeholder={placeholder}
         inputMode={inputMode}
+        maxLength={maxLength}
         autoComplete={autoComplete}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : undefined}
@@ -84,6 +86,7 @@ export function BankTransferReceiptFields({ fields, errors, holderHint = null })
               label="Banco de origen (opcional)"
               value={fields.bankName}
               onChange={fields.setBankName}
+              maxLength={RECEIPT_LIMITS.bankName}
               placeholder="Ej. Banco Nación"
             />
           ) : (
