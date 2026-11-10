@@ -10,6 +10,8 @@ const AlumnoMateriaDetalle = lazyPage(() => import('@/features/workspace/pages/A
 const DirectorAprobacionesExcepciones = lazyPage(() => import('@/features/enrollment/pages/DirectorAprobacionesExcepciones'), 'DirectorAprobacionesExcepciones');
 const DirectorExcepcionDetalle = lazyPage(() => import('@/features/enrollment/pages/DirectorExcepcionDetalle'), 'DirectorExcepcionDetalle');
 const InscribirAlumno = lazyPage(() => import('@/features/enrollment/pages/InscribirAlumno'), 'InscribirAlumno');
+const SolicitudesDeIngreso = lazyPage(() => import('@/features/enrollment/pages/SolicitudesDeIngreso'), 'SolicitudesDeIngreso');
+const SolicitudDeIngresoDetalle = lazyPage(() => import('@/features/enrollment/pages/SolicitudDeIngresoDetalle'), 'SolicitudDeIngresoDetalle');
 const PadronAlumnos = lazyPage(() => import('@/features/identity/pages/PadronAlumnos'), 'PadronAlumnos');
 import { Navigate } from 'react-router-dom';
 import { lazyPage } from '@/routes/lazyPage';
@@ -28,6 +30,8 @@ export const routes = {
   role: [
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos', element: <PadronAlumnos /> },
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos/:id/inscribir', element: <InscribirAlumno /> },
+    { roles: ['preceptor', 'administrativo'], path: 'solicitudes-de-ingreso', element: <SolicitudesDeIngreso /> },
+    { roles: ['preceptor', 'administrativo'], path: 'solicitudes-de-ingreso/:id', element: <SolicitudDeIngresoDetalle /> },
     { roles: ['alumno'], path: 'mis-cursos', element: <AlumnoMisCursos /> },
     { roles: ['alumno'], path: 'mis-carreras', element: <AlumnoMisCarreras /> },
     { roles: ['alumno'], path: 'mis-carreras/materias/:id', element: <AlumnoMateriaDetalle /> },

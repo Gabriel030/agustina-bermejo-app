@@ -89,6 +89,11 @@ export function NotificationBell() {
       navigate(`${staffBasePath}/emision-mensual/${n.relatedEntityId}/borradores`);
       return;
     }
+    if (n.type === 'PROGRAM_APPLICATION_RECEIVED') {
+      setOpen(false);
+      navigate(n.relatedEntityId ? `${staffBasePath}/solicitudes-de-ingreso/${n.relatedEntityId}` : `${staffBasePath}/solicitudes-de-ingreso`);
+      return;
+    }
     if (n.type === 'PROGRAM_APPLICATION_APPROVED' && n.relatedEntityId) {
       setOpen(false);
       navigate(`/mis-solicitudes/${n.relatedEntityId}`);
