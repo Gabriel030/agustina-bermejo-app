@@ -35,7 +35,7 @@
               ? guardadoDiseno
               : validos.indexOf(porDefecto) >= 0
                 ? porDefecto
-                : 'vl';
+                : 'b';
         if (validos.indexOf(consulta) >= 0) localStorage.setItem('design', consulta);
         document.documentElement.dataset.design = diseno;
         document.documentElement.dataset.theme = tema;

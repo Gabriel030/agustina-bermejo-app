@@ -100,7 +100,7 @@ function OnlinePaymentRedirect({ invoiceId }) {
             </div>
             <a
               href={data.initPoint}
-              className="rounded-xl bg-gradient-to-br from-brand to-accent-2 px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+              className="rounded-xl bg-gradient-to-br from-brand to-accent-2 px-6 py-3 font-semibold text-on-accent shadow-sm transition-opacity hover:opacity-90"
             >
               Ir a Mercado Pago
             </a>

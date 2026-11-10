@@ -226,7 +226,7 @@ export function DirectorRevisarConfiguracion() {
                 Rechazar
               </Button>
               <Button
-                className="bg-success text-white hover:bg-success/90"
+                className="bg-success text-on-accent hover:bg-success/90"
                 onClick={() => setModalAprobacion(true)}
                 disabled={deciding}
               >

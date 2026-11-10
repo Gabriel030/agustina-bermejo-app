@@ -111,12 +111,12 @@ function AvatarUpload() {
         {avatarUrl ? (
           <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-brand font-heading text-xl font-bold text-white">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-brand font-heading text-xl font-bold text-on-accent">
             {iniciales(perfil?.nombre, perfil?.apellido)}
           </div>
         )}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-          <Camera size={18} className="text-white" />
+        <div className="absolute inset-0 flex items-center justify-center bg-(--overlay-bg) opacity-0 transition-opacity group-hover:opacity-100">
+          <Camera size={18} className="text-on-overlay" />
         </div>
       </button>
       <div>

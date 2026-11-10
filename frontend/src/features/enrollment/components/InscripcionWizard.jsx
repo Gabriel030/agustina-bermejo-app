@@ -586,7 +586,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
                 como texto fijo) para que agregar otro método el día de mañana no
                 implique rediseñar este paso. */}
             <div className="flex items-center gap-3 rounded-xl border border-brand bg-accent-soft px-4 py-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-accent-2 text-sm text-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-accent-2 text-sm text-on-accent">
                 ✓
               </div>
               <div>

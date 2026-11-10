@@ -41,7 +41,7 @@ export function GoalLine({ value, label, axis = LEFT_AXIS }) {
 function ChartTooltip({ active, payload, label, unit, currency, unitBySeries }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-border bg-surface px-3 py-2 text-xs shadow-lg backdrop-blur-[28px]">
+    <div className="rounded-xl border border-border bg-surface px-3 py-2 text-xs shadow-popover backdrop-blur-[28px]">
       <div className="mb-1 font-semibold text-ink">{label}</div>
       <div className="flex flex-col gap-0.5">
         {payload.map((entry) => (

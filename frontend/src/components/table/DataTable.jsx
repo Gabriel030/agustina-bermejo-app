@@ -24,7 +24,7 @@ import { multiSelectFilter } from './multiSelectFilter';
 
 const EXPANDER_COLUMN_ID = 'expander';
 const LOADING_ROWS = 4;
-const STICKY_SHADOW = 'shadow-[6px_0_8px_-6px_oklch(30%_0.05_260/0.25)]';
+const STICKY_SHADOW = 'shadow-(--sh-sticky-left)';
 const STICKY_HEAD_CLASS = `sticky left-0 z-20 bg-dialog-bg ${STICKY_SHADOW}`;
 const STICKY_CELL_CLASS = `sticky left-0 z-10 bg-dialog-bg ${STICKY_SHADOW}`;
 
@@ -50,7 +50,7 @@ function SortIcon({ direction }) {
   return <ChevronsUpDown className="size-3.5 opacity-30" />;
 }
 
-const STICKY_START_CELL = 'sticky left-0 z-20 bg-dialog-bg shadow-[6px_0_8px_-6px_oklch(30%_0.05_260/0.25)]';
+const STICKY_START_CELL = 'sticky left-0 z-20 bg-dialog-bg shadow-(--sh-sticky-left)';
 
 function stickyStartClass(meta, compact) {
   return compact && meta.stickyStart ? STICKY_START_CELL : undefined;
@@ -102,7 +102,7 @@ function HeaderCell({ header, compact }) {
         meta.sticky && STICKY_HEAD_CLASS,
         meta.headerClassName,
         compact && 'bg-dialog-bg',
-        compact && meta.stickyStart && 'sticky left-0 z-30 shadow-[6px_0_8px_-6px_oklch(30%_0.05_260/0.25)]',
+        compact && meta.stickyStart && 'sticky left-0 z-30 shadow-(--sh-sticky-left)',
       )}
     >
       <div className={cn('flex items-center gap-1', meta.align === 'right' && 'justify-end')}>

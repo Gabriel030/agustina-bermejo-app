@@ -19,7 +19,7 @@ function CardPaymentOption({ enabled, onSelect }) {
       <div
         className={cn(
           'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-          enabled ? 'bg-gradient-to-br from-brand to-accent-2 text-white' : 'bg-neutral-bg text-ink-faint',
+          enabled ? 'bg-gradient-to-br from-brand to-accent-2 text-on-accent' : 'bg-neutral-bg text-ink-faint',
         )}
       >
         <CreditCard size={20} />
@@ -105,7 +105,7 @@ export function AlumnoPagarSeleccion() {
               className="text-left"
             >
               <GlassCard className="flex items-start gap-4 p-5 transition-shadow hover:shadow-md">
-                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-accent-2 text-white">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-accent-2 text-on-accent">
                   <Banknote size={20} />
                 </div>
                 <div>

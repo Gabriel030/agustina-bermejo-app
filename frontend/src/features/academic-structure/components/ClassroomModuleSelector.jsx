@@ -39,7 +39,7 @@ export function ClassroomModuleSelector({ shift, selection, onChange }) {
               className={cn(
                 'flex min-h-11 flex-col items-center justify-center rounded-lg border px-2 py-1 text-[12px] transition-colors',
                 selected
-                  ? 'border-accent bg-accent text-white'
+                  ? 'border-accent bg-accent text-on-accent'
                   : 'border-surface-border bg-surface/50 text-ink hover:border-accent',
               )}
             >
