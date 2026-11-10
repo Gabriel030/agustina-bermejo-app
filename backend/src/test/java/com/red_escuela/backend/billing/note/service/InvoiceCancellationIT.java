@@ -3,16 +3,7 @@ package com.red_escuela.backend.billing.note.service;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
-import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceDraftHeader;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceFactory;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceLineDraft;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
-import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
-import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
@@ -31,7 +22,6 @@ import java.util.Map;
 
 import static com.red_escuela.backend.billing.account.domain.AccountTestData.ars;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.ACTOR;
-import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.discount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,35 +39,8 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
     @Autowired
     private com.red_escuela.backend.billing.authorization.service.AuthorizationRequestExpirer authorizationRequestExpirer;
 
-    private InvoiceLineDraft annualLine(int number, long tag, Long priceRevisionId) {
-        return new InvoiceLineDraft(com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT, "Cuota " + number,
-                java.time.YearMonth.of(2027, 2 + number), null, null, null, null, priceRevisionId, "ANN:" + tag + ":" + number, ars("1000.00"));
-    }
-
     private Long issueDiscountedAnnualInvoice(Long studentId, Long accountId) {
-        return inTransaction(() -> {
-            Person person = studentPerson(studentId);
-            StudentSnapshot snapshot = new StudentSnapshot(person.getName() + " " + person.getLastname(), person.getDni(), "Calle 1");
-            InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.ANNUAL_UPFRONT,
-                    InvoiceIssuingReason.ANNUAL_UPFRONT_PAYMENT, null);
-            long tag = System.nanoTime();
-            Long programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, 'ARS') returning id", Long.class, "Fixture " + tag);
-            Long revisionId = com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(programId, null, com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT, "Test", com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("1000.00"), com.red_escuela.backend.shared.domain.Currency.ARS), java.time.LocalDate.of(2027, 1, 1), person.getId());
-            Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
-                    Long.class, studentId, programId);
-            Long studentDiscountId = jdbc.queryForObject(
-                    "insert into student_discount (program_enrollment_id, student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period, "
-                            + "to_period, status, granted_at, granted_by_id, reason) values (?, ?, 'ARS', 'INDIVIDUAL', 'ENROLLMENT_FEE', 'DIRECT_GRANT', "
-                            + "cast('{\"type\":\"PROPORTIONAL\",\"fraction\":\"0.5\"}' as jsonb), 1, date '2027-03-01', date '2027-03-01', 'ACTIVE', now(), ?, 'motivo') returning id",
-                    Long.class, enrollmentId, studentId, person.getId());
-            List<InvoiceLineDraft> lines = List.of(annualLine(1, tag, revisionId), annualLine(2, tag, revisionId), annualLine(3, tag, revisionId));
-            Invoice draft = InvoiceFactory.createAnnualUpfrontInvoiceDraft(header, lines,
-                    Map.of(1, discount("1000.00", "333.33", studentDiscountId), 2, discount("1000.00", "333.33", studentDiscountId), 3, discount("1000.00", "333.34", studentDiscountId)), ACTOR);
-            draft.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), DUE_DATE.minusDays(9), DUE_DATE, snapshot, ACTOR);
-            Invoice saved = invoiceRepository.save(draft);
-            service.recordInvoiceIssuedDebit(service.lockStudentCurrentAccount(accountId), saved, DUE_DATE.minusDays(9));
-            return saved.getId();
-        });
+        return issueDiscountedAnnualInvoiceOfNewEnrollment(studentId, accountId).invoiceId();
     }
 
     @Test
