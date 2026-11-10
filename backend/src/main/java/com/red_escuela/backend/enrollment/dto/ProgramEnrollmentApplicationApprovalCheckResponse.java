@@ -4,7 +4,7 @@ import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationRespon
 
 import java.util.List;
 
-public record ProgramEnrollmentApplicationApprovalCheckResponse(Long applicationId, boolean canApprove, DocumentationSummary documentation, DebtCheck debt) {
+public record ProgramEnrollmentApplicationApprovalCheckResponse(Long applicationId, boolean canApprove, DocumentationSummary documentation, DebtCheck debt, List<String> blockingReasons) {
 
     public record DebtCheck(boolean blocksApproval, List<String> violationCodes) {
     }
