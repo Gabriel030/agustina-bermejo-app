@@ -8,7 +8,13 @@ import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleSta
 import com.red_escuela.backend.academicstructure.entity.Classroom;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
+import com.red_escuela.backend.academicstructure.events.AcademicOfferingCycleApprovedEvent;
+import com.red_escuela.backend.academicstructure.events.AcademicOfferingCycleRejectedEvent;
+import com.red_escuela.backend.academicstructure.events.AcademicOfferingCycleSubmittedEvent;
+import com.red_escuela.backend.academicstructure.exception.CycleDecisionIdempotencyKeyConflictException;
+import com.red_escuela.backend.academicstructure.exception.CycleDecisionIdempotencyKeyInvalidException;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -20,6 +26,8 @@ import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycl
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.service.CycleApproval;
+import com.red_escuela.backend.academicstructure.service.CycleRejection;
 import com.red_escuela.backend.academicstructure.service.CycleSubmission;
 import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleReader;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
@@ -30,7 +38,9 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
@@ -65,9 +75,12 @@ class CycleSubmissionAndApprovalServicesTest {
     private SectionConflictChecker conflictChecker;
     @Mock
     private CurrentActorFinder currentActorFinder;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private AcademicOfferingCycle cycle;
     private Term term;
+    private Person creator;
 
     @BeforeEach
     void setUp() {
@@ -76,16 +89,21 @@ class CycleSubmissionAndApprovalServicesTest {
         cycle = new AcademicOfferingCycle();
         cycle.setId(CYCLE_ID);
         cycle.setTerm(term);
+        cycle.setProgram(Program.builder().name("Tecnicatura").build());
+        creator = new Person();
+        creator.setId(7L);
+        cycle.setCreatedBy(creator);
     }
 
     private SubmitCycleForApprovalService submitService() {
-        return new SubmitCycleForApprovalService(new CycleSubmission(cycleRepository, subjectSectionRepository, courseSectionRepository));
+        return new SubmitCycleForApprovalService(new CycleSubmission(cycleRepository, subjectSectionRepository, courseSectionRepository, currentActorFinder, Clock.systemDefaultZone(), eventPublisher));
     }
 
     private ApproveCycleService approveService() {
-        return new ApproveCycleService(cycleRepository, subjectSectionRepository, courseSectionRepository,
+        return new ApproveCycleService(new CycleApproval(cycleRepository, subjectSectionRepository, courseSectionRepository,
                 slotRepository, conflictChecker,
-                new AcademicOfferingCycleReviewer(currentActorFinder, Clock.systemDefaultZone()));
+                new AcademicOfferingCycleReviewer(currentActorFinder, Clock.systemDefaultZone()),
+                eventPublisher));
     }
 
     private SubjectSection subjectSection(Long id, InstructorRole... roles) {
@@ -237,18 +255,18 @@ class CycleSubmissionAndApprovalServicesTest {
 
     @Test
     void approvingAnUnknownCycleFailsWithCycleNotFound() {
-        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.empty());
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> approveService().approve(CYCLE_ID)).isInstanceOf(CycleNotFoundException.class);
+        assertThatThrownBy(() -> approveService().approve(CYCLE_ID, null)).isInstanceOf(CycleNotFoundException.class);
     }
 
     @Test
     void approvingACycleThatIsNotPendingApprovalIsRejected() {
         for (var status : new AcademicOfferingCycleStatus[]{AcademicOfferingCycleStatus.DRAFT, AcademicOfferingCycleStatus.APPROVED, AcademicOfferingCycleStatus.REJECTED}) {
             cycle.setStatus(status);
-            when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(cycle));
+            when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
 
-            assertThatThrownBy(() -> approveService().approve(CYCLE_ID)).isInstanceOf(CycleNotPendingApprovalException.class);
+            assertThatThrownBy(() -> approveService().approve(CYCLE_ID, null)).isInstanceOf(CycleNotPendingApprovalException.class);
         }
 
         verify(cycleRepository, never()).save(any());
@@ -263,14 +281,14 @@ class CycleSubmissionAndApprovalServicesTest {
         var courseSection = courseSection(2L, InstructorRole.LEAD);
         var subjectSlot = slot(10L, 3L, DayOfWeek.MONDAY);
         var courseSlot = slot(11L, 4L, DayOfWeek.TUESDAY);
-        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(cycle));
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
         when(subjectSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of(subjectSection));
         when(courseSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of(courseSection));
         when(slotRepository.findBySubjectSectionId(1L)).thenReturn(List.of(subjectSlot));
         when(slotRepository.findByCourseSectionId(2L)).thenReturn(List.of(courseSlot));
         when(currentActorFinder.currentPerson()).thenReturn(director);
 
-        approveService().approve(CYCLE_ID);
+        approveService().approve(CYCLE_ID, null);
 
         verify(conflictChecker).checkClassroomAvailability(term, 3L, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(10, 0), 10L);
         verify(conflictChecker).checkClassroomAvailability(term, 4L, DayOfWeek.TUESDAY, LocalTime.of(8, 0), LocalTime.of(10, 0), 11L);
@@ -289,13 +307,13 @@ class CycleSubmissionAndApprovalServicesTest {
         cycle.setStatus(AcademicOfferingCycleStatus.PENDING_APPROVAL);
         var subjectSection = subjectSection(1L, InstructorRole.LEAD);
         var subjectSlot = slot(10L, 3L, DayOfWeek.MONDAY);
-        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(cycle));
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
         when(subjectSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of(subjectSection));
         when(slotRepository.findBySubjectSectionId(1L)).thenReturn(List.of(subjectSlot));
         doThrow(new IllegalStateException("occupied")).when(conflictChecker)
                 .checkClassroomAvailability(term, 3L, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(10, 0), 10L);
 
-        assertThatThrownBy(() -> approveService().approve(CYCLE_ID)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> approveService().approve(CYCLE_ID, null)).isInstanceOf(IllegalStateException.class);
 
         assertThat(subjectSection.getStatus()).isEqualTo(StatusType.INACTIVE);
         assertThat(cycle.getStatus()).isEqualTo(AcademicOfferingCycleStatus.PENDING_APPROVAL);
@@ -308,14 +326,14 @@ class CycleSubmissionAndApprovalServicesTest {
         cycle.setStatus(AcademicOfferingCycleStatus.PENDING_APPROVAL);
         var courseSection = courseSection(2L, InstructorRole.LEAD);
         var courseSlot = slot(11L, 4L, DayOfWeek.TUESDAY);
-        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(cycle));
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
         when(subjectSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of());
         when(courseSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of(courseSection));
         when(slotRepository.findByCourseSectionId(2L)).thenReturn(List.of(courseSlot));
         doThrow(new IllegalStateException("occupied")).when(conflictChecker)
                 .checkClassroomAvailability(term, 4L, DayOfWeek.TUESDAY, LocalTime.of(8, 0), LocalTime.of(10, 0), 11L);
 
-        assertThatThrownBy(() -> approveService().approve(CYCLE_ID)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> approveService().approve(CYCLE_ID, null)).isInstanceOf(IllegalStateException.class);
 
         assertThat(courseSection.getStatus()).isEqualTo(StatusType.INACTIVE);
         assertThat(cycle.getStatus()).isEqualTo(AcademicOfferingCycleStatus.PENDING_APPROVAL);
@@ -330,5 +348,133 @@ class CycleSubmissionAndApprovalServicesTest {
         when(reader.listCycleSections(CYCLE_ID)).thenReturn(sections);
 
         assertThat(new GetCycleSectionsService(reader).getSections(CYCLE_ID)).isSameAs(sections);
+    }
+
+    private RejectCycleService rejectService() {
+        return new RejectCycleService(new CycleRejection(cycleRepository,
+                new AcademicOfferingCycleReviewer(currentActorFinder, Clock.systemDefaultZone()), eventPublisher));
+    }
+
+    private void givenPendingCycleWithOneSection() {
+        cycle.setStatus(AcademicOfferingCycleStatus.PENDING_APPROVAL);
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
+        when(subjectSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of());
+        when(courseSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of());
+        when(currentActorFinder.currentPerson()).thenReturn(new Person());
+    }
+
+    @Test
+    void submittingRecordsTheSubmitterAndPublishesTheSubmittedEvent() {
+        var submitter = new Person();
+        submitter.setId(9L);
+        when(currentActorFinder.currentPerson()).thenReturn(submitter);
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(cycle));
+        when(subjectSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of(subjectSection(1L, InstructorRole.LEAD)));
+        when(courseSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of());
+
+        submitService().submit(CYCLE_ID);
+
+        assertThat(cycle.getSubmittedBy()).isSameAs(submitter);
+        assertThat(cycle.getSubmittedAt()).isNotNull();
+        var captor = ArgumentCaptor.forClass(AcademicOfferingCycleSubmittedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().cycleId()).isEqualTo(CYCLE_ID);
+        assertThat(captor.getValue().targetName()).isEqualTo("Tecnicatura");
+    }
+
+    @Test
+    void approvingPublishesTheApprovedEventForTheSubmitter() {
+        var submitter = new Person();
+        submitter.setId(9L);
+        cycle.setSubmittedBy(submitter);
+        givenPendingCycleWithOneSection();
+
+        approveService().approve(CYCLE_ID, "key-1");
+
+        var captor = ArgumentCaptor.forClass(AcademicOfferingCycleApprovedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().submitterPersonId()).isEqualTo(9L);
+        assertThat(cycle.getDecisionIdempotencyKey()).isEqualTo("key-1");
+    }
+
+    @Test
+    void approvingACycleWithoutRecordedSubmitterNotifiesTheCreator() {
+        givenPendingCycleWithOneSection();
+
+        approveService().approve(CYCLE_ID, null);
+
+        var captor = ArgumentCaptor.forClass(AcademicOfferingCycleApprovedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().submitterPersonId()).isEqualTo(7L);
+    }
+
+    @Test
+    void retryingAnApprovalWithTheSameKeyDoesNothingAndPublishesNothing() {
+        cycle.setStatus(AcademicOfferingCycleStatus.APPROVED);
+        cycle.setDecisionIdempotencyKey("key-1");
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
+
+        approveService().approve(CYCLE_ID, " key-1 ");
+
+        verify(cycleRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+        verify(subjectSectionRepository, never()).findByAcademicOfferingCycleId(any());
+    }
+
+    @Test
+    void approvingWithAKeyAlreadyUsedByARejectionIsAKeyConflict() {
+        cycle.setStatus(AcademicOfferingCycleStatus.REJECTED);
+        cycle.setDecisionIdempotencyKey("key-1");
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
+
+        assertThatThrownBy(() -> approveService().approve(CYCLE_ID, "key-1"))
+                .isInstanceOf(CycleDecisionIdempotencyKeyConflictException.class);
+    }
+
+    @Test
+    void approvingAnAlreadyApprovedCycleWithADifferentKeyIsNotPendingApproval() {
+        cycle.setStatus(AcademicOfferingCycleStatus.APPROVED);
+        cycle.setDecisionIdempotencyKey("key-1");
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
+
+        assertThatThrownBy(() -> approveService().approve(CYCLE_ID, "key-2"))
+                .isInstanceOf(CycleNotPendingApprovalException.class);
+    }
+
+    @Test
+    void aKeyLongerThanOneHundredCharactersIsInvalid() {
+        var tooLong = "k".repeat(101);
+
+        assertThatThrownBy(() -> approveService().approve(CYCLE_ID, tooLong))
+                .isInstanceOf(CycleDecisionIdempotencyKeyInvalidException.class);
+        assertThatThrownBy(() -> rejectService().reject(CYCLE_ID, "motivo suficiente", tooLong))
+                .isInstanceOf(CycleDecisionIdempotencyKeyInvalidException.class);
+    }
+
+    @Test
+    void rejectingPublishesTheRejectedEventWithTheReason() {
+        cycle.setStatus(AcademicOfferingCycleStatus.PENDING_APPROVAL);
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
+        when(currentActorFinder.currentPerson()).thenReturn(new Person());
+
+        rejectService().reject(CYCLE_ID, "faltan docentes", "key-9");
+
+        var captor = ArgumentCaptor.forClass(AcademicOfferingCycleRejectedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().rejectionReason()).isEqualTo("faltan docentes");
+        assertThat(captor.getValue().submitterPersonId()).isEqualTo(7L);
+        verify(cycleRepository).save(cycle);
+    }
+
+    @Test
+    void retryingARejectionWithTheSameKeyDoesNothing() {
+        cycle.setStatus(AcademicOfferingCycleStatus.REJECTED);
+        cycle.setDecisionIdempotencyKey("key-9");
+        when(cycleRepository.findByIdForUpdate(CYCLE_ID)).thenReturn(Optional.of(cycle));
+
+        rejectService().reject(CYCLE_ID, "faltan docentes", "key-9");
+
+        verify(cycleRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 }

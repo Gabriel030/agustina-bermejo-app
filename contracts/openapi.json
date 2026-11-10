@@ -38,8 +38,19 @@
           "rejectionReason" : {
             "type" : [ "string", "null" ]
           },
+          "sectionCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "status" : {
             "type" : "string"
+          },
+          "submittedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "submittedByName" : {
+            "type" : [ "string", "null" ]
           },
           "termId" : {
             "format" : "int64",
@@ -49,7 +60,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "courseId", "courseName", "createdAt", "createdByName", "decidedAt", "decidedByName", "id", "programId", "programName", "rejectionReason", "status", "termId", "termName" ],
+        "required" : [ "courseId", "courseName", "createdAt", "createdByName", "decidedAt", "decidedByName", "id", "programId", "programName", "rejectionReason", "sectionCount", "status", "submittedAt", "submittedByName", "termId", "termName" ],
         "type" : "object"
       },
       "AcademicSettingsRequest" : {
@@ -2485,6 +2496,44 @@
         "required" : [ "city", "country", "dni", "documentType", "floor", "number", "postalCode", "state", "street" ],
         "type" : "object"
       },
+      "Conflict" : {
+        "properties" : {
+          "classroomId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "classroomName" : {
+            "type" : "string"
+          },
+          "dayOfWeek" : {
+            "type" : "string"
+          },
+          "endTime" : {
+            "type" : "string"
+          },
+          "instructorId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "instructorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "otherSection" : {
+            "$ref" : "#/components/schemas/Side"
+          },
+          "ownSection" : {
+            "$ref" : "#/components/schemas/Side"
+          },
+          "startTime" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "classroomId", "classroomName", "dayOfWeek", "endTime", "instructorId", "instructorName", "otherSection", "ownSection", "startTime", "type" ],
+        "type" : "object"
+      },
       "CorequisiteResponse" : {
         "properties" : {
           "corequisiteProgramSubjectId" : {
@@ -3919,6 +3968,21 @@
           }
         },
         "required" : [ "monthlyCollected", "monthlyDebt", "monthlyProjected", "totalDebt" ],
+        "type" : "object"
+      },
+      "CycleConflictsResponse" : {
+        "properties" : {
+          "conflicts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Conflict"
+            },
+            "type" : "array"
+          },
+          "hasConflicts" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "conflicts", "hasConflicts" ],
         "type" : "object"
       },
       "CycleOccupancyResponse" : {
@@ -10779,6 +10843,26 @@
         "required" : [ "endTime", "shift", "startTime" ],
         "type" : "object"
       },
+      "Side" : {
+        "properties" : {
+          "cycleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "subjectName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "cycleId", "sectionId", "sectionName", "subjectName" ],
+        "type" : "object"
+      },
       "SlotInfo" : {
         "properties" : {
           "classroomId" : {
@@ -12762,10 +12846,134 @@
             "format" : "int64",
             "type" : "integer"
           }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "204" : {
             "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "academic-offering-cycle-controller" ]
+      }
+    },
+    "/academic-offering-cycles/{id}/conflicts" : {
+      "get" : {
+        "operationId" : "AcademicOfferingCycle_getConflicts",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleConflictsResponse"
+                }
+              }
+            },
+            "description" : "OK"
           },
           "400" : {
             "content" : {
@@ -12988,6 +13196,13 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "requestBody" : {

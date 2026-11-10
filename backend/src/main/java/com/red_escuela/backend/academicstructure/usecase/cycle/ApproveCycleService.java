@@ -1,75 +1,19 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
-import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
-import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
-import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
-import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
-import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
-import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleReviewer;
+import com.red_escuela.backend.academicstructure.service.CycleApproval;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class ApproveCycleService implements ApproveCycleUseCase {
 
-    private final AcademicOfferingCycleRepository cycleRepository;
-    private final SubjectSectionRepository subjectSectionRepository;
-    private final CourseSubjectSectionRepository courseSectionRepository;
-    private final SectionScheduleSlotRepository slotRepository;
-    private final SectionConflictChecker conflictChecker;
-    private final AcademicOfferingCycleReviewer cycleReviewer;
+    private final CycleApproval cycleApproval;
 
-    public ApproveCycleService(
-            AcademicOfferingCycleRepository cycleRepository,
-            SubjectSectionRepository subjectSectionRepository,
-            CourseSubjectSectionRepository courseSectionRepository,
-            SectionScheduleSlotRepository slotRepository,
-            SectionConflictChecker conflictChecker,
-            AcademicOfferingCycleReviewer cycleReviewer
-    ) {
-        this.cycleRepository = cycleRepository;
-        this.subjectSectionRepository = subjectSectionRepository;
-        this.courseSectionRepository = courseSectionRepository;
-        this.slotRepository = slotRepository;
-        this.conflictChecker = conflictChecker;
-        this.cycleReviewer = cycleReviewer;
+    public ApproveCycleService(CycleApproval cycleApproval) {
+        this.cycleApproval = cycleApproval;
     }
 
     @Override
-    @Transactional
-    public void approve(Long cycleId) {
-        var cycle = cycleRepository.findById(cycleId)
-                .orElseThrow(() -> new CycleNotFoundException(cycleId));
-        if (cycle.getStatus() != AcademicOfferingCycleStatus.PENDING_APPROVAL) {
-            throw new CycleNotPendingApprovalException(cycleId);
-        }
-
-        var subjectSections = subjectSectionRepository.findByAcademicOfferingCycleId(cycleId);
-        for (var section : subjectSections) {
-            for (var slot : slotRepository.findBySubjectSectionId(section.getId())) {
-                conflictChecker.checkClassroomAvailability(cycle.getTerm(),
-                        slot.getClassroom().getId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getId());
-                conflictChecker.checkSubjectSlotInstructorsAvailability(cycle, section, slot);
-            }
-        }
-
-        var courseSections = courseSectionRepository.findByAcademicOfferingCycleId(cycleId);
-        for (var section : courseSections) {
-            for (var slot : slotRepository.findByCourseSectionId(section.getId())) {
-                conflictChecker.checkClassroomAvailability(cycle.getTerm(),
-                        slot.getClassroom().getId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getId());
-                conflictChecker.checkCourseSlotInstructorsAvailability(cycle, section, slot);
-            }
-        }
-
-        subjectSections.forEach(s -> { s.setStatus(StatusType.ACTIVE); subjectSectionRepository.save(s); });
-        courseSections.forEach(s -> { s.setStatus(StatusType.ACTIVE); courseSectionRepository.save(s); });
-
-        cycleReviewer.approve(cycle);
-        cycleRepository.save(cycle);
+    public void approve(Long cycleId, String idempotencyKey) {
+        cycleApproval.approve(cycleId, idempotencyKey);
     }
 }

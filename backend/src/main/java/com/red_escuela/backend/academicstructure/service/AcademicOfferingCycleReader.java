@@ -2,6 +2,7 @@ package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.dto.AcademicOfferingCycleResponse;
 import com.red_escuela.backend.academicstructure.dto.CycleSectionResponse;
+import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.SectionModificationProposal;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
@@ -14,6 +15,7 @@ import com.red_escuela.backend.academicstructure.repository.SubjectSectionReposi
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,27 +45,41 @@ public class AcademicOfferingCycleReader {
 
     @Transactional(readOnly = true)
     public AcademicOfferingCycleResponse readCycle(Long cycleId) {
-        return cycleRepository.findById(cycleId)
-                .map(AcademicOfferingCycleResponse::from)
+        var cycle = cycleRepository.findById(cycleId)
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
+        return AcademicOfferingCycleResponse.from(cycle, sectionCounts(List.of(cycle)).getOrDefault(cycleId, 0L));
     }
 
     @Transactional(readOnly = true)
     public List<AcademicOfferingCycleResponse> listCycles(Long programId, Long courseId, AcademicOfferingCycleStatus status) {
         if (programId != null) {
-            return cycleRepository.findByProgramIdOrderByCreatedAtDesc(programId)
-                    .stream().map(AcademicOfferingCycleResponse::from).toList();
+            return toResponses(cycleRepository.findByProgramIdOrderByCreatedAtDesc(programId));
         }
         if (courseId != null) {
-            return cycleRepository.findByCourseIdOrderByCreatedAtDesc(courseId)
-                    .stream().map(AcademicOfferingCycleResponse::from).toList();
+            return toResponses(cycleRepository.findByCourseIdOrderByCreatedAtDesc(courseId));
         }
         if (status != null) {
-            return cycleRepository.findByStatus(status)
-                    .stream().map(AcademicOfferingCycleResponse::from).toList();
+            return toResponses(cycleRepository.findByStatus(status));
         }
-        return cycleRepository.findAll()
-                .stream().map(AcademicOfferingCycleResponse::from).toList();
+        return toResponses(cycleRepository.findAll());
+    }
+
+    private List<AcademicOfferingCycleResponse> toResponses(List<AcademicOfferingCycle> cycles) {
+        var counts = sectionCounts(cycles);
+        return cycles.stream()
+                .map(c -> AcademicOfferingCycleResponse.from(c, counts.getOrDefault(c.getId(), 0L)))
+                .toList();
+    }
+
+    private Map<Long, Long> sectionCounts(List<AcademicOfferingCycle> cycles) {
+        if (cycles.isEmpty()) {
+            return Map.of();
+        }
+        var ids = cycles.stream().map(AcademicOfferingCycle::getId).toList();
+        var counts = new HashMap<Long, Long>();
+        subjectSectionRepository.countByCycleIds(ids).forEach(c -> counts.merge(c.cycleId(), c.sections(), Long::sum));
+        courseSectionRepository.countByCycleIds(ids).forEach(c -> counts.merge(c.cycleId(), c.sections(), Long::sum));
+        return counts;
     }
 
     @Transactional(readOnly = true)
