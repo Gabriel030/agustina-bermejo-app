@@ -2,6 +2,7 @@ import { CircuitOpenError, NetworkError, RateLimitedError } from '@/api/client';
 
 export const GENERIC_ERROR_MESSAGE = 'Algo salió mal. Probá de nuevo.';
 export const INVALID_CREDENTIALS_MESSAGE = 'Usuario o contraseña incorrectos.';
+export const SESSION_EXPIRED_MESSAGE = 'Tu sesión venció. Ingresá de nuevo para continuar.';
 export const RATE_LIMITED_MESSAGE = 'Demasiados intentos. Esperá para volver a probar.';
 export const SERVICE_UNAVAILABLE_MESSAGE = 'El servicio no está disponible. Probá en unos minutos.';
 export const NETWORK_MESSAGE = 'No pudimos conectar. Revisá tu conexión.';

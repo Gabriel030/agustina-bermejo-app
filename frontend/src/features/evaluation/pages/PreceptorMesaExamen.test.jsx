@@ -63,7 +63,7 @@ describe('PreceptorMesaExamen', () => {
       ),
       http.get(`${API}/exam-boards/6`, () => HttpResponse.json(cerrada)),
       http.get(`${API}/exam-boards/6/registrations`, () =>
-        HttpResponse.json([anotado(1, 'GRADED', 10), anotado(2, 'GRADED', 4), anotado(3, 'WITHDRAWN')]),
+        HttpResponse.json([anotado(1, 'GRADED', 10), anotado(2, 'GRADED', 4), anotado(3, 'WITHDRAWN'), anotado(4, 'ABSENT')]),
       ),
     );
     const user = userEvent.setup();
@@ -72,8 +72,10 @@ describe('PreceptorMesaExamen', () => {
     await abrirMesa(user, 'Cerradas');
 
     const inscriptos = (await screen.findByText('Inscriptos')).parentElement;
-    expect(within(inscriptos).getByText('2')).toBeInTheDocument();
+    expect(within(inscriptos).getByText('3')).toBeInTheDocument();
     expect(screen.getAllByText('Rindió')).toHaveLength(2);
+    expect(screen.getByText('Ausente')).toBeInTheDocument();
+    expect(screen.queryByText('ABSENT')).not.toBeInTheDocument();
     expect(screen.queryByText('GRADED')).not.toBeInTheDocument();
     expect(screen.getByText('10')).toBeInTheDocument();
   });

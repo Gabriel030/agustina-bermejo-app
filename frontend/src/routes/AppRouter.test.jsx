@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { setOfflineSessionMode } from '@/api/client';
+import { apiFetch, setOfflineSessionMode } from '@/api/client';
 import { OFFLINE_OWNER_KEY, storeOfflineProfile } from '@/api/offlinePersistence';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
@@ -250,5 +250,58 @@ describe('AppRouter', () => {
     await vi.advanceTimersByTimeAsync(10000);
     expect(profileRequests).toBeLessThanOrEqual(2);
     expect(refreshRequests).toBeLessThanOrEqual(1);
+  });
+
+  it('showsTheNotFoundPageInsideTheRoleLayoutForUnknownRolePaths', async () => {
+    server.use(
+      http.get(`${API}/me`, () =>
+        HttpResponse.json(profileFixture({ id: 6, nombre: 'Dora', apellido: 'Dir', email: 'dora@demo.test', roles: ['DIRECTOR'] })),
+      ),
+    );
+    renderApp('/director/ruta-inexistente');
+
+    await signIn(userEvent.setup());
+
+    expect(await screen.findByText('Página no encontrada')).toBeInTheDocument();
+    expect(screen.getAllByText('Oferta académica').length).toBeGreaterThan(0);
+  });
+
+  it('sendsAnAnonymousVisitorOnAnUnknownPathToLoginInsteadOfTheNotFoundPage', async () => {
+    renderApp('/ruta-inexistente');
+
+    expect(await screen.findByPlaceholderText('DNI o email')).toBeInTheDocument();
+    expect(screen.queryByText('Página no encontrada')).not.toBeInTheDocument();
+  });
+
+  it('showsAMessageAndReturnsToTheOriginalRouteAfterAnExpiredSession', async () => {
+    let refreshRequests = 0;
+    server.use(
+      http.get(`${API}/me`, () =>
+        HttpResponse.json(profileFixture({ id: 6, nombre: 'Dora', apellido: 'Dir', email: 'dora@demo.test', roles: ['DIRECTOR'] })),
+      ),
+      http.get(`${API}/institutions`, () => new HttpResponse(null, { status: 401 })),
+    );
+    renderApp('/director/constancias');
+    const user = userEvent.setup();
+    await signIn(user);
+    expect(await screen.findByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
+
+    server.use(
+      http.post(`${API}/auth/refresh`, () => {
+        refreshRequests += 1;
+        return new HttpResponse(null, { status: 401 });
+      }),
+    );
+    await act(async () => {
+      await Promise.allSettled([apiFetch('/institutions'), apiFetch('/institutions')]);
+    });
+
+    expect(await screen.findByText('Tu sesión venció. Ingresá de nuevo para continuar.')).toBeInTheDocument();
+    expect(refreshRequests).toBe(1);
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+
+    await signIn(user);
+
+    expect(await screen.findByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
   });
 });

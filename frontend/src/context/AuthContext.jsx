@@ -38,6 +38,7 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [loggedOut, setLoggedOut] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [sessionPending, setSessionPending] = useState(false);
   const [restoreAttempts, setRestoreAttempts] = useState(0);
   const [offlineProfile, setOfflineProfile] = useState(null);
@@ -63,14 +64,20 @@ export function AuthProvider({ children }) {
       await storeOfflineProfile(perfil);
       setUsuario(perfil);
       setLoggedOut(false);
+      setSessionExpired(false);
       return perfil;
     },
     [queryClient],
   );
 
-  useEffect(() => {
-    setSessionExpiredHandler(limpiarSesion);
+  const expireSession = useCallback(() => {
+    setSessionExpired(true);
+    limpiarSesion();
   }, [limpiarSesion]);
+
+  useEffect(() => {
+    setSessionExpiredHandler(expireSession);
+  }, [expireSession]);
 
   const attemptRestore = useCallback(async () => {
     try {
@@ -88,7 +95,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       if (isSessionRejected(error)) {
         setSessionPending(false);
-        limpiarSesion();
+        expireSession();
       } else {
         setOfflineSessionMode(true);
         setOfflineProfile(await readOfflineProfile());
@@ -98,7 +105,7 @@ export function AuthProvider({ children }) {
     } finally {
       setCargando(false);
     }
-  }, [queryClient, limpiarSesion]);
+  }, [queryClient, expireSession]);
 
   useEffect(() => {
     if (!localStorage.getItem('refreshToken')) {
@@ -194,8 +201,8 @@ export function AuthProvider({ children }) {
   const shownUser = usuario ?? (sessionPending ? offlineProfile : null);
 
   const value = useMemo(
-    () => ({ usuario: shownUser, roles: shownUser?.roles ?? [], offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionPending, retrySession: attemptRestore }),
-    [shownUser, offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionPending, attemptRestore],
+    () => ({ usuario: shownUser, roles: shownUser?.roles ?? [], offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionExpired, sessionPending, retrySession: attemptRestore }),
+    [shownUser, offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionExpired, sessionPending, attemptRestore],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

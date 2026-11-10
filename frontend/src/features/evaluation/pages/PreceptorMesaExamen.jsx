@@ -27,6 +27,7 @@ const ESTADO_INSCRIPCION = {
   REGISTERED: { label: 'Anotado', tone: 'accent' },
   GRADED: { label: 'Rindió', tone: 'success' },
   WITHDRAWN: { label: 'Dado de baja', tone: 'neutral' },
+  ABSENT: { label: 'Ausente', tone: 'danger' },
 };
 
 const MENSAJES_ERROR_MESA = {
