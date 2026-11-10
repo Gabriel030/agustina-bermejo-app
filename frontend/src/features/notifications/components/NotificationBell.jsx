@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, TriangleAlert } from 'lucide-react';
@@ -17,6 +18,7 @@ const GRADUATION_TYPES = new Set([
   'GRADUATION_REQUEST_DEBT_BLOCKED',
   'GRADUATION_REQUEST_APPROVED',
   'GRADUATION_REQUEST_REJECTED',
+  'GRADUATION_REQUEST_OUTDATED',
 ]);
 
 const ATTENDANCE_CHANGE_TYPES = new Set(['ATTENDANCE_CHANGE_REQUEST_APPROVED', 'ATTENDANCE_CHANGE_REQUEST_REJECTED']);
@@ -87,6 +89,11 @@ export function NotificationBell() {
       navigate(`${staffBasePath}/emision-mensual/${n.relatedEntityId}/borradores`);
       return;
     }
+    if (n.type === 'PROGRAM_APPLICATION_RECEIVED') {
+      setOpen(false);
+      navigate(n.relatedEntityId ? `${staffBasePath}/solicitudes-de-ingreso/${n.relatedEntityId}` : `${staffBasePath}/solicitudes-de-ingreso`);
+      return;
+    }
     if (n.type === 'PROGRAM_APPLICATION_APPROVED' && n.relatedEntityId) {
       setOpen(false);
       navigate(`/mis-solicitudes/${n.relatedEntityId}`);
@@ -142,14 +149,15 @@ export function NotificationBell() {
             <div role="alert" className="flex flex-col items-center gap-2 px-4 py-6 text-center">
               <TriangleAlert aria-hidden="true" className="h-5 w-5 text-warning" />
               <p className="text-sm text-ink-soft">No pudimos cargar tus notificaciones.</p>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 type="button"
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-neutral-bg/60 disabled:opacity-60"
-              >
+                className="px-3 font-semibold text-ink">
                 Reintentar
-              </button>
+              </Button>
             </div>
           ) : lista.length === 0 ? (
             <EmptyState title="Nada por ahora" className="py-6" />

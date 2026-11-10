@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
@@ -101,12 +102,14 @@ export function TabMaterias({ carreraId }) {
           {lista.map((inscripcion) => {
             const pill = ESTADO_PILL[inscripcion.status] ?? { label: inscripcion.status, tone: 'neutral' };
             return (
-              <button
+              <Button
+                variant="row-card"
+                size="row"
                 key={inscripcion.id}
                 type="button"
                 onClick={() => navigate(`/alumno/mis-carreras/materias/${inscripcion.id}`)}
-                className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:bg-neutral-bg"
-              >
+                className="gap-3 justify-start"
+                >
                 <span className="text-[13px] font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
                 <span className="flex-1 text-[13.5px] font-semibold text-ink">
                   {inscripcion.subjectName}
@@ -125,7 +128,7 @@ export function TabMaterias({ carreraId }) {
                   )}
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />
-              </button>
+              </Button>
             );
           })}
         </div>

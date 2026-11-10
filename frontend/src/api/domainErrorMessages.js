@@ -1,6 +1,9 @@
 export const DOMAIN_ERROR_MESSAGES = {
   ADMISSION_WINDOW_CLOSED: 'El período de admisión está cerrado.',
   AMBIGUOUS_SECTION: 'Hay más de una comisión posible. Elegí una de la lista.',
+  APPLICATION_DECISION_IDEMPOTENCY_KEY_CONFLICT: 'Esta decisión ya se registró de otra forma. Recargá la solicitud para ver el estado actual.',
+  APPLICATION_DECISION_IDEMPOTENCY_KEY_INVALID: 'No pudimos identificar el pedido. Recargá la página e intentá de nuevo.',
+  APPLICATION_DOCUMENT_NOT_FOUND: 'No encontramos ese documento en la solicitud.',
   APPLICATION_DOCUMENT_TOO_LARGE: 'Uno de los documentos supera el tamaño permitido.',
   ATTENDANCE_STATUS_NOT_RECORDABLE: 'Ese estado de asistencia no se puede registrar.',
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
@@ -48,6 +51,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   INVALID_PASSWORD_POLICY: 'La contraseña no cumple los requisitos de seguridad.',
   INVALID_PERCENTAGE: 'El porcentaje ingresado no es válido.',
   INVALID_PREREQUISITE: 'La correlatividad indicada no es válida.',
+  INVALID_RESOLVED_APPLICATION_STATUS: 'El historial solo muestra solicitudes aprobadas, rechazadas o vencidas.',
   INVALID_PROGRAM_SUBJECT_CATEGORY: 'La categoría de la materia no es válida.',
   INVALID_REGISTRATION_WINDOW: 'El período de inscripción no es válido.',
   INVALID_SECTION_CHANGE: 'El cambio de comisión no es válido.',

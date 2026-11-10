@@ -127,6 +127,12 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
             rejectionReason: null,
             admissionInvoice: null,
             programEnrollmentId: 1,
+            studentFullName: null,
+            studentEmail: null,
+            studentDni: null,
+            programCohortName: null,
+            decidedByName: null,
+            documentation: null,
           },
           { status: 201 },
         );

@@ -21,15 +21,17 @@ export function VerifyAnotherCode({ onSubmit, disabled = false }) {
 
   return (
     <div className="flex flex-col gap-2.5 px-4 pt-1.5 pb-[18px] sm:px-5">
-      <button
+      <Button
+        variant="text"
+        size="inline"
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className="flex min-h-11 items-center gap-1.5 self-start font-bold text-brand"
-      >
+        >
         Verificar otro código
         <ChevronDown className={cn('size-5 transition-transform', open && 'rotate-180')} aria-hidden="true" />
-      </button>
+      </Button>
       {open && (
         <>
           <form onSubmit={submit} className="flex flex-wrap gap-2.5">

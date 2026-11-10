@@ -30,7 +30,7 @@ class EnrollmentLockBeforeAccountLockTest {
             new OrderedCalls(BILLING_NOTE + "LaterChargesCancellationOnWithdrawal.java", "cancelLaterChargesOf", List.of("lockEnrollmentsOfDiscountsAppliedOnInvoices", ACCOUNT_LOCK)),
             new OrderedCalls(BILLING_NOTE + "SystemAdmissionInvoiceCancellation.java", "cancelWhenUnpaid", List.of(ENROLLMENT_LOCKS, ACCOUNT_LOCK)),
             new OrderedCalls(BILLING_NOTE + "LeftOutInvoiceCancellationOnReceiptRejectionListener.java", "cancelIfLeftOutOfWithdrawal", List.of(ENROLLMENT_LOCKS, ACCOUNT_LOCK)),
-            new OrderedCalls(ENROLLMENT_SERVICE + "ProgramEnrollmentService.java", "withdraw", List.of("findByIdForUpdate", BILLING_PORT)),
+            new OrderedCalls(ENROLLMENT_SERVICE + "ProgramEnrollmentService.java", "withdraw", List.of("findByIdForUpdate", "withdrawOpenEnrollmentsOf", BILLING_PORT)),
             new OrderedCalls(ENROLLMENT_SERVICE + "CourseEnrollmentService.java", "withdraw",
                     List.of("findByIdForUpdate", "cancelModuleEnrollments", "promoteNextFromCourseWaitlist", BILLING_PORT)));
 

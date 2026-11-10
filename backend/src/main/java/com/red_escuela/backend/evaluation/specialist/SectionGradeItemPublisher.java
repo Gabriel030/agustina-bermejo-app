@@ -29,19 +29,22 @@ public class SectionGradeItemPublisher {
     private final SectionGradeItemPublicationRepository publicationRepository;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
+    private final GradeItemRecorder gradeItemRecorder;
 
     public SectionGradeItemPublisher(SectionFinder sectionFinder,
                                      SectionTeachingFinder sectionTeachingFinder,
                                      GradeItemRepository gradeItemRepository,
                                      SectionGradeItemPublicationRepository publicationRepository,
                                      Clock clock,
-                                     ApplicationEventPublisher eventPublisher) {
+                                     ApplicationEventPublisher eventPublisher,
+                                     GradeItemRecorder gradeItemRecorder) {
         this.sectionFinder = sectionFinder;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.gradeItemRepository = gradeItemRepository;
         this.publicationRepository = publicationRepository;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
+        this.gradeItemRecorder = gradeItemRecorder;
     }
 
     @Transactional
@@ -77,10 +80,22 @@ public class SectionGradeItemPublisher {
         int studentCount = (int) countEnrollments(kind, sectionId, type, sequenceNumber);
         publicationRepository.save(SectionGradeItemPublication.of(
                 kind, sectionId, type, sequenceNumber, LocalDateTime.now(clock), publisherPersonId));
+        recalculateConditions(kind, sectionId, type, sequenceNumber);
         eventPublisher.publishEvent(GradesPublishedEvent.publishedFor(
                 sectionId, sectionNameOf(kind, sectionId), type.displayName(), sequenceNumber,
                 studentPersonIdsOf(kind, sectionId, type, sequenceNumber)));
         return new PublishedGradesSummary(gradeCount, studentCount);
+    }
+
+    private void recalculateConditions(SectionKind kind, Long sectionId, GradeItemType type, Integer sequenceNumber) {
+        switch (kind) {
+            case PROGRAM -> gradeItemRepository.findEnrollmentIdsByProgramSection(sectionId, type, sequenceNumber).stream()
+                    .sorted()
+                    .forEach(gradeItemRecorder::recalculateProgramEnrollmentCondition);
+            case COURSE -> gradeItemRepository.findEnrollmentIdsByCourseSection(sectionId, type, sequenceNumber).stream()
+                    .sorted()
+                    .forEach(gradeItemRecorder::recalculateCourseEnrollmentCondition);
+        }
     }
 
     private String sectionNameOf(SectionKind kind, Long sectionId) {

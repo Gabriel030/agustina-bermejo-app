@@ -84,9 +84,9 @@ function CreditNoteSummary({ draft, creditBalance, creditQuery, onCancelInstead 
       {draft.equalsDebt && (
         <div role="alert" className="rounded-xl border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-ink">
           Esa nota cubre toda la deuda. Para dejar la cuota sin efecto usá{' '}
-          <button type="button" onClick={onCancelInstead} className="font-semibold text-brand underline">
+          <Button variant="text" size="inline" type="button" onClick={onCancelInstead} className="font-semibold text-brand underline">
             Cancelar cuota
-          </button>
+          </Button>
           .
         </div>
       )}

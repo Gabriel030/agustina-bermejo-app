@@ -50,15 +50,16 @@ function DatoField({ label, value }) {
         <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{label}</p>
         <p className="mt-0.5 font-mono font-semibold">{value}</p>
       </div>
-      <button
+      <Button
+        variant="outline"
+        size="icon"
         type="button"
         onClick={() => copiar(value)}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-ink-faint transition-colors hover:border-brand hover:text-brand"
+        className="shrink-0 text-ink-faint hover:border-brand hover:text-brand"
         title="Copiar"
-        aria-label={`Copiar ${label}`}
-      >
+        aria-label={`Copiar ${label}`}>
         {copiado ? <Check size={14} /> : <Copy size={14} />}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -344,14 +345,16 @@ export function AlumnoPagarTransferencia() {
 
   return (
     <PageContainer className="max-w-lg">
-      <button
+      <Button
+        variant="subtle"
+        size="inline"
         type="button"
         onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
-        className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
-      >
+        className="flex items-center gap-1.5 text-sm"
+        >
         <ChevronLeft size={16} />
         Volver
-      </button>
+      </Button>
 
       <h1 className="text-xl font-bold">Pago por transferencia</h1>
 

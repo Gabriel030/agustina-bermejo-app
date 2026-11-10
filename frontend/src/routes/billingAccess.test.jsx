@@ -17,7 +17,7 @@ describe('billing screen access by role', () => {
 
   it('keeps the administrative menu order untouched', () => {
     expect(ROLE_CONFIG.administrativo.pages).toEqual([
-      'inicio', 'alumnos', 'personal', 'facturacion', 'descuentos', 'precios', 'recordatorios-de-pago', 'medios-de-pago', 'corridas-de-facturacion', 'emision-mensual', 'aprobaciones', 'egresos-por-verificar', 'financiero', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica', 'periodos', 'feriados',
+      'inicio', 'alumnos', 'personal', 'solicitudes-de-ingreso', 'facturacion', 'descuentos', 'precios', 'recordatorios-de-pago', 'medios-de-pago', 'corridas-de-facturacion', 'emision-mensual', 'aprobaciones', 'egresos-por-verificar', 'financiero', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica', 'periodos', 'feriados',
     ]);
   });
 });

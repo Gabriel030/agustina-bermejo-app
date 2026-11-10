@@ -9,6 +9,9 @@ import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplication
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.enrollment.events.ProgramApplicationReceivedEvent;
+import com.red_escuela.backend.identity.entity.Person;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,19 +27,22 @@ public class ProgramApplicationRegistrar {
     private final ProgramCohortService programCohortService;
     private final CatalogAvailabilityGuard catalogAvailabilityGuard;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ProgramApplicationRegistrar(ProgramEnrollmentApplicationRepository applicationRepository,
                                        ProgramSubjectReferenceFinder programSubjectReferenceFinder,
                                        ProgramEnrollmentService programEnrollmentService,
                                        ProgramCohortService programCohortService,
                                        CatalogAvailabilityGuard catalogAvailabilityGuard,
-                                       Clock clock) {
+                                       Clock clock,
+                                       ApplicationEventPublisher eventPublisher) {
         this.applicationRepository = applicationRepository;
         this.programSubjectReferenceFinder = programSubjectReferenceFinder;
         this.programEnrollmentService = programEnrollmentService;
         this.programCohortService = programCohortService;
         this.catalogAvailabilityGuard = catalogAvailabilityGuard;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -64,7 +70,11 @@ public class ProgramApplicationRegistrar {
         application.setProgramCohort(cohort);
         application.setStatus(ProgramEnrollmentApplicationStatus.PENDING);
         application.setRequestedAt(LocalDateTime.now(clock));
-        return applicationRepository.save(application);
+        ProgramEnrollmentApplication saved = applicationRepository.save(application);
+        Person person = student.getPerson();
+        eventPublisher.publishEvent(ProgramApplicationReceivedEvent.receivedFor(saved.getId(),
+                person.getName() + " " + person.getLastname(), program.getName()));
+        return saved;
     }
 
     private void requireDni(Student student) {

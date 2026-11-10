@@ -165,11 +165,12 @@ function ProgramRow({ program, navigate }) {
     .join(' · ');
 
   return (
-    <button
+    <Button
+      variant="row"
+      size="row"
       type="button"
       onClick={() => navigate(`/administrativo/gestion-academica/carreras/${program.id}`)}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
-    >
+      >
       <div className="min-w-0">
         <span className="block truncate text-[14px] font-medium text-ink">{program.name}</span>
         {meta && <span className="text-[12px] text-ink-faint">{meta}</span>}
@@ -178,7 +179,7 @@ function ProgramRow({ program, navigate }) {
         <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -193,11 +194,12 @@ function CourseRow({ course, navigate }) {
     .join(' · ');
 
   return (
-    <button
+    <Button
+      variant="row"
+      size="row"
       type="button"
       onClick={() => navigate(`/administrativo/gestion-academica/cursos/${course.id}`)}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
-    >
+      >
       <div className="min-w-0">
         <span className="block truncate text-[14px] font-medium text-ink">{course.name}</span>
         {meta && <span className="text-[12px] text-ink-faint">{meta}</span>}
@@ -206,7 +208,7 @@ function CourseRow({ course, navigate }) {
         <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
-    </button>
+    </Button>
   );
 }
 

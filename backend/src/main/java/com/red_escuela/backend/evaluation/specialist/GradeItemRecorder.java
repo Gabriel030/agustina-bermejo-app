@@ -56,6 +56,7 @@ public class GradeItemRecorder {
     private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
     private final GradeItemPublicationLockChecker publicationLock;
+    private final PublishedGradeItemSelector publishedGradeItemSelector;
 
     public GradeItemRecorder(
             GradeItemRepository gradeItemRepository,
@@ -68,7 +69,8 @@ public class GradeItemRecorder {
             GraduationRequestTriggerPort graduationRequestTrigger,
             AbsenceFreeStatusChecker absenceFreeStatusChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
-            GradeItemPublicationLockChecker publicationLock) {
+            GradeItemPublicationLockChecker publicationLock,
+            PublishedGradeItemSelector publishedGradeItemSelector) {
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -80,6 +82,7 @@ public class GradeItemRecorder {
         this.absenceFreeStatusChecker = absenceFreeStatusChecker;
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
         this.publicationLock = publicationLock;
+        this.publishedGradeItemSelector = publishedGradeItemSelector;
     }
 
     @Transactional
@@ -121,21 +124,29 @@ public class GradeItemRecorder {
     public void recalculateProgramEnrollmentCondition(Long enrollmentId) {
         sectionEnrollmentFinder.findProgramEnrollmentIfPresent(enrollmentId)
                 .filter(enrollment -> enrollment.getSubjectSection().getEvaluationScheme() != null)
-                .ifPresent(enrollment -> applyProgramEnrollmentCondition(enrollment, false, true));
+                .ifPresent(enrollment -> {
+                    sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
+                    applyProgramEnrollmentCondition(enrollment, false, true);
+                });
     }
 
     @Transactional
     public void recalculateCourseEnrollmentCondition(Long enrollmentId) {
         sectionEnrollmentFinder.findCourseEnrollmentIfPresent(enrollmentId)
                 .filter(enrollment -> enrollment.getCourseSubjectSection().getEvaluationScheme() != null)
-                .ifPresent(enrollment -> applyCourseEnrollmentCondition(enrollment, false, true));
+                .ifPresent(enrollment -> {
+                    sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
+                    applyCourseEnrollmentCondition(enrollment, false, true);
+                });
     }
 
     private void applyProgramEnrollmentCondition(
             SubjectSectionEnrollment enrollment, boolean finalCorrection, boolean rebuildFromItems) {
         Long enrollmentId = enrollment.getId();
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
-        List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
+        List<GradeItem> items = publishedGradeItemSelector.selectPublished(
+                SectionKind.PROGRAM, enrollment.getSubjectSection().getId(),
+                gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId));
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
         boolean rebuild = rebuildFromItems && isRebuildable(enrollment.getStatus(), enrollment.getFinalGradeType());
         var current = rebuild ? EnrollmentStatus.ENROLLED : enrollment.statusAssumingRegularWhen(finalCorrection);
@@ -193,7 +204,9 @@ public class GradeItemRecorder {
             CourseSubjectSectionEnrollment enrollment, boolean finalCorrection, boolean rebuildFromItems) {
         Long enrollmentId = enrollment.getId();
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
-        List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
+        List<GradeItem> items = publishedGradeItemSelector.selectPublished(
+                SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(),
+                gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId));
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
         boolean rebuild = rebuildFromItems && isRebuildable(enrollment.getStatus(), enrollment.getFinalGradeType());
         var current = rebuild ? EnrollmentStatus.ENROLLED : enrollment.statusAssumingRegularWhen(finalCorrection);

@@ -45,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,6 +59,9 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     @Autowired
     private SubjectSectionEnrollmentService subjectSectionEnrollmentService;
+
+    @Autowired
+    private ProgramEnrollmentService programEnrollmentService;
 
     @Autowired
     private EntityManager entityManager;
@@ -532,5 +536,72 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
 
         assertThat(resultado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void withdrawingTheProgramEnrollmentWithdrawsOpenSectionEnrollmentsAndPromotesTheWaitlist() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaBajaCarrera");
+        Subject otherSubject = persistSubject("MateriaBajaCarreraDos");
+        Program program = persistProgram("CarreraBaja");
+        persistProgramSubject(program, subject);
+        persistProgramSubject(program, otherSubject);
+        Term term = persistTerm(null, null);
+        SubjectSection fullSection = persistSubjectSection(subject, term, 1);
+        SubjectSection otherSection = persistSubjectSection(otherSubject, term, 5);
+        Student leaving = persistStudent("64000001", StatusType.ACTIVE, institution);
+        Student waiting = persistStudent("64000002", StatusType.ACTIVE, institution);
+        ProgramEnrollment leavingEnrollment = persistProgramEnrollment(leaving, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment waitingEnrollment = persistProgramEnrollment(waiting, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+        SubjectSectionEnrollment seated = subjectSectionEnrollmentService.enroll(
+                leavingEnrollment.getId(), new CreateSectionEnrollmentRequest(fullSection.getId()));
+        SubjectSectionEnrollment other = subjectSectionEnrollmentService.enroll(
+                leavingEnrollment.getId(), new CreateSectionEnrollmentRequest(otherSection.getId()));
+        SubjectSectionEnrollment queued = subjectSectionEnrollmentService.enroll(
+                waitingEnrollment.getId(), new CreateSectionEnrollmentRequest(fullSection.getId()));
+        assertThat(queued.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+
+        programEnrollmentService.withdrawForNonpayment(leavingEnrollment.getId());
+
+        assertThat(subjectSectionEnrollmentService.get(seated.getId()).getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(subjectSectionEnrollmentService.get(seated.getId()).getDroppedAt()).isNotNull();
+        assertThat(subjectSectionEnrollmentService.get(other.getId()).getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(subjectSectionEnrollmentService.get(queued.getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void withdrawingTheProgramEnrollmentKeepsRegularApprovedAndFailedSectionEnrollmentsAsHistory() {
+        Institution institution = persistInstitution();
+        Program program = persistProgram("CarreraHistoria");
+        Term term = persistTerm(null, null);
+        Student student = persistStudent("65000001", StatusType.ACTIVE, institution);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        List<SubjectSectionEnrollment> rows = List.of(
+                persistSectionEnrollment(enrollment, student, program, term, "HistoriaRegular", EnrollmentStatus.REGULAR),
+                persistSectionEnrollment(enrollment, student, program, term, "HistoriaAprobada", EnrollmentStatus.APPROVED),
+                persistSectionEnrollment(enrollment, student, program, term, "HistoriaDesaprobada", EnrollmentStatus.FAILED));
+        entityManager.flush();
+
+        programEnrollmentService.withdrawForNonpayment(enrollment.getId());
+
+        assertThat(rows).extracting(row -> subjectSectionEnrollmentService.get(row.getId()).getStatus())
+                .containsExactly(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED);
+    }
+
+    private SubjectSectionEnrollment persistSectionEnrollment(ProgramEnrollment enrollment, Student student, Program program,
+                                                              Term term, String subjectName, EnrollmentStatus status) {
+        Subject subject = persistSubject(subjectName);
+        persistProgramSubject(program, subject);
+        SubjectSection section = persistSubjectSection(subject, term, 5);
+        SubjectSectionEnrollment row = new SubjectSectionEnrollment();
+        row.setStudent(student);
+        row.setProgramEnrollment(enrollment);
+        row.setSubjectSection(section);
+        row.setStatus(status);
+        row.setEnrolledAt(LocalDateTime.now());
+        row.setAttemptNumber(1);
+        entityManager.persist(row);
+        return row;
     }
 }

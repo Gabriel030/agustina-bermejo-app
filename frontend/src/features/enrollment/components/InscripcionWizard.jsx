@@ -354,13 +354,15 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
 
   return (
     <PageContainer>
-      <button
+      <Button
+        variant="subtle"
+        size="inline"
         type="button"
         onClick={() => navigate(volverA)}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
-      >
+        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft"
+        >
         ← {target.name}
-      </button>
+      </Button>
 
       <div>
         <div className="font-heading text-xl font-bold tracking-tight text-ink">Inscribirme</div>

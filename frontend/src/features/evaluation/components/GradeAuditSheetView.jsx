@@ -18,9 +18,9 @@ export function GradeAuditSheetView({ student, column, cell, onBack }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <button type="button" onClick={onBack} className="w-fit text-left text-[13px] font-semibold text-primary hover:underline">
+      <Button variant="link" size="inline" type="button" onClick={onBack} className="w-fit text-left text-[13px] font-semibold">
         {`← ${student.lastname}, ${student.name}`}
-      </button>
+      </Button>
       <div>
         <h3 className="font-heading text-lg font-semibold text-ink">{`Historial · ${label}`}</h3>
         <p className="text-[12.5px] text-ink-faint">Correcciones de esta nota</p>

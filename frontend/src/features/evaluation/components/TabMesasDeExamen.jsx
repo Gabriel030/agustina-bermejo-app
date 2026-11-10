@@ -203,11 +203,13 @@ export function TabMesasDeExamen({ carreraId }) {
               const misInscripcionesDeEstaMateria = (misMesas ?? []).filter((mia) => mia.examBoard.subjectId === inscripcion.subjectId);
               return (
                 <div key={inscripcion.id}>
-                  <button
+                  <Button
+                    variant="row-card"
+                    size="row"
                     type="button"
                     onClick={() => toggleFila(inscripcion.id)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:bg-neutral-bg"
-                  >
+                    className="gap-3 justify-start"
+                    >
                     {abierto ? <ChevronDown className="h-4 w-4 shrink-0 text-ink-faint" /> : <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />}
                     <span className="text-[13px] font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
                     <span className="flex-1 text-[13.5px] font-semibold text-ink">{inscripcion.subjectName}</span>
@@ -217,7 +219,7 @@ export function TabMesasDeExamen({ carreraId }) {
                       </span>
                     )}
                     <StatusPill tone="warning">Regular · falta final</StatusPill>
-                  </button>
+                  </Button>
                   {abierto && (
                     <LlamadosDisponibles
                       subjectId={inscripcion.subjectId}

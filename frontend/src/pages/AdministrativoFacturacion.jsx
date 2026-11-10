@@ -149,15 +149,16 @@ function InvoicesTable({ invoices, billing }) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     type="button"
                     aria-expanded={open}
                     aria-controls={`invoice-detail-${inv.id}`}
                     aria-label={`Ver detalle de ${concept}`}
-                    className="rounded-lg p-1 text-ink-faint"
-                  >
+                    className="text-ink-faint">
                     {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </button>
+                  </Button>
                 </TableCell>
               </TableRow>
               {open && (
@@ -614,14 +615,16 @@ function TabComprobantes() {
               )}
               <ReceiptInstallments invoices={receipt.invoices} />
               {receipt.filePath && (
-                <button
+                <Button
+                  variant="link"
+                  size="inline"
                   type="button"
                   onClick={() => openReceiptFile(receipt.id)}
-                  className="mt-1.5 inline-flex items-center gap-1 text-sm text-brand hover:underline"
-                >
+                  className="mt-1.5 inline-flex items-center gap-1 text-sm text-brand"
+                  >
                   <Receipt size={13} />
                   Ver comprobante
-                </button>
+                </Button>
               )}
             </div>
             <div className="flex shrink-0 gap-2">

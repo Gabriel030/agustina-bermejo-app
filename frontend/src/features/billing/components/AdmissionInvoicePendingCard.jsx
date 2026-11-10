@@ -35,13 +35,15 @@ function SolicitudPendiente({ solicitud, principal }) {
           <span className="font-semibold text-ink">{solicitud.programName}.</span> Subiste el comprobante el{' '}
           {formatFecha(admissionInvoice.receiptUploadedAt)}; cuando lo aprobemos tu inscripción queda confirmada.
         </div>
-        <button
+        <Button
+          variant="text"
+          size="inline"
           type="button"
           onClick={() => navigate(`/alumno/pagos/${admissionInvoice.id}/transferencia`, { state: originState })}
-          className="w-fit text-[12.5px] font-semibold text-primary"
-        >
+          className="w-fit text-[12.5px] font-semibold"
+          >
           Ver estado del pago
-        </button>
+        </Button>
       </div>
     );
   }

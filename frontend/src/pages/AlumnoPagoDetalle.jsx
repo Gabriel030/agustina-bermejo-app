@@ -126,15 +126,16 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                       </Button>
                     )}
                     {expandable && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
                         type="button"
                         aria-expanded={open}
                         aria-controls={`invoice-detail-${inv.id}`}
                         aria-label={`Ver detalle de ${concept}`}
-                        className="rounded-lg p-1 text-ink-faint"
-                      >
+                        className="text-ink-faint">
                         {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </TableCell>
@@ -185,14 +186,16 @@ export function AlumnoPagoDetalle() {
 
   return (
     <PageContainer>
-      <button
+      <Button
+        variant="subtle"
+        size="inline"
         type="button"
         onClick={() => navigate('/alumno/pagos')}
-        className="mb-4 flex items-center gap-1.5 text-sm text-ink-faint transition-colors hover:text-ink"
-      >
+        className="mb-4 flex items-center gap-1.5 text-sm"
+        >
         <ArrowLeft size={16} />
         Mis pagos
-      </button>
+      </Button>
 
       {enrollmentName && (
         <h1 className="mb-4 font-heading text-xl font-bold text-ink">
@@ -222,27 +225,27 @@ export function AlumnoPagoDetalle() {
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-sm">
-              <button
+              <Button
+                variant="subtle"
+                size="sm"
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-ink-faint transition-colors hover:text-ink disabled:opacity-40"
-              >
+                disabled={page === 1}>
                 <ChevronLeft size={15} />
                 Anterior
-              </button>
+              </Button>
               <span className="text-ink-faint">
                 {page} / {totalPages}
               </span>
-              <button
+              <Button
+                variant="subtle"
+                size="sm"
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-ink-faint transition-colors hover:text-ink disabled:opacity-40"
-              >
+                disabled={page === totalPages}>
                 Siguiente
                 <ChevronRight size={15} />
-              </button>
+              </Button>
             </div>
           )}
         </GlassCard>
