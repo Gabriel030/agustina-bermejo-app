@@ -613,7 +613,7 @@ describe('FinancialDashboardPage', () => {
     renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
 
     const sort = await screen.findByLabelText('Ordenar por');
-    const section = sort.parentElement.parentElement;
+    const section = sort.parentElement.parentElement.parentElement;
     expect(await within(section).findByText('No se pudo cargar')).toBeInTheDocument();
     expect(within(section).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
     expect(screen.queryByText('Sin alumnos con deuda vencida')).not.toBeInTheDocument();

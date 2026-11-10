@@ -29,6 +29,7 @@ import {
   isAttendanceRegimeValid,
 } from '@/features/academic-structure/attendanceRegime';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const PASOS = [
   { key: 'periodo', label: 'Período' },
@@ -149,15 +150,14 @@ function CampoSelect({ label, value, onChange, children, required }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
-      <select
+      <NativeSelect
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
       >
         {children}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
@@ -392,15 +392,14 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
 
       <div className="mt-3 flex flex-col gap-1">
         <label htmlFor={`${fieldId}-instructor`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Docente titular</label>
-        <select
+        <NativeSelect
           id={`${fieldId}-instructor`}
           value={instructorId}
           onChange={(e) => setInstructorId(e.target.value)}
-          className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent"
         >
           <option value="">Seleccioná un docente…</option>
           {(instructores ?? []).map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-        </select>
+        </NativeSelect>
       </div>
 
       <div className="mt-3 flex flex-col gap-1">
@@ -432,15 +431,14 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
 
       <div className="mt-3 flex flex-col gap-1">
         <label htmlFor={`${fieldId}-classroom`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Aula</label>
-        <select
+        <NativeSelect
           id={`${fieldId}-classroom`}
           value={aulaId}
           onChange={(e) => setAulaId(e.target.value)}
-          className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent"
         >
           <option value="">Seleccioná un aula…</option>
           {(aulas ?? []).map((a) => <option key={a.id} value={a.id}>{a.name} ({a.capacity} lugares)</option>)}
-        </select>
+        </NativeSelect>
       </div>
 
       <AttendanceRegimeField value={regime} onChange={setRegime} />

@@ -18,6 +18,8 @@ import {
   useOtorgarHabilitacion,
   useRevocarHabilitacion,
 } from '@/features/identity/hooks/useMatriculaAlumno';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 
 const ESTADO_MATRICULA = {
   NOT_ISSUED: { label: 'Todavía no emitida', tone: 'neutral' },
@@ -65,13 +67,12 @@ function HabilitarDialog({ obligacion, programEnrollmentId, onClose }) {
           </p>
           <div className="flex flex-col gap-1">
             <label htmlFor="habilitacion-motivo" className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Motivo</label>
-            <textarea
+            <Textarea
               id="habilitacion-motivo"
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               maxLength={1000}
               rows={3}
-              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <p className="text-[12px] text-ink-faint">
               {motivo.trim().length}/{MIN_MOTIVO} caracteres como mínimo
@@ -115,35 +116,35 @@ function MatriculaDeInscripcion({ inscripcion }) {
         <EmptyState title="Sin matrícula configurada" description="La carrera no tiene un año lectivo con matrícula para este período." />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-left text-[13px]">
-            <thead>
-              <tr className="text-[11px] uppercase tracking-widest text-ink-faint">
-                <th className="py-2 pr-3 font-bold">Matrícula</th>
-                <th className="py-2 pr-3 font-bold">Estado</th>
-                <th className="py-2 pr-3 font-bold">Vence</th>
-                <th className="py-2 font-bold" />
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full min-w-[480px] text-left text-[13px]">
+            <TableHeader>
+              <TableRow className="text-[11px] uppercase tracking-widest text-ink-faint">
+                <TableHead className="py-2 pr-3 font-bold">Matrícula</TableHead>
+                <TableHead className="py-2 pr-3 font-bold">Estado</TableHead>
+                <TableHead className="py-2 pr-3 font-bold">Vence</TableHead>
+                <TableHead className="py-2 font-bold" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {obligaciones.map((o) => {
                 const estado = ESTADO_MATRICULA[o.status] ?? { label: o.status, tone: 'neutral' };
                 return (
-                  <tr key={`${o.templateId}-${o.slot}`}>
-                    <td className="py-2 pr-3 text-ink">Matrícula {o.slot} del año</td>
-                    <td className="py-2 pr-3"><StatusPill tone={estado.tone}>{estado.label}</StatusPill></td>
-                    <td className="py-2 pr-3 text-ink-soft">{formatearFecha(o.dueDate)}</td>
-                    <td className="py-2 text-right">
+                  <TableRow key={`${o.templateId}-${o.slot}`}>
+                    <TableCell className="py-2 pr-3 text-ink">Matrícula {o.slot} del año</TableCell>
+                    <TableCell className="py-2 pr-3"><StatusPill tone={estado.tone}>{estado.label}</StatusPill></TableCell>
+                    <TableCell className="py-2 pr-3 text-ink-soft">{formatearFecha(o.dueDate)}</TableCell>
+                    <TableCell className="py-2 text-right">
                       {!o.satisfied && (
                         <Button variant="outline" size="sm" onClick={() => setAHabilitar(o)} aria-label={`Permitir inscripción sin matrícula ${o.slot}`}>
                           Permitir inscripción sin matrícula
                         </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
