@@ -71,9 +71,9 @@ export function OfferCombobox({ value, onChange, programs, courses, selectedName
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button type="button" aria-label="Qué limita la oferta" className="text-ink-faint hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Button variant="subtle" size="inline" type="button" aria-label="Qué limita la oferta" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <Info className="size-3.5" />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent>Limita los números a una carrera o a un curso.</TooltipContent>
           </Tooltip>

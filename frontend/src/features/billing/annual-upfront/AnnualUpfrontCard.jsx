@@ -69,15 +69,17 @@ function InstallmentsList({ lines }) {
   const Icon = open ? ChevronUp : ChevronDown;
   return (
     <div className="flex flex-col gap-2">
-      <button
+      <Button
+        variant="text"
+        size="inline"
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex w-fit items-center gap-1 text-[13px] font-semibold text-primary"
-      >
+        className="flex w-fit items-center gap-1 text-[13px] font-semibold"
+        >
         {summary.amount ? `${summary.count} cuotas de ${formatMoney(summary.amount)}` : `${summary.count} cuotas`}
         <Icon size={14} />
-      </button>
+      </Button>
       {open && (
         <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
           {lines.map((line) => (

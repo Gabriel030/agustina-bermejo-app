@@ -38,11 +38,12 @@ function useDebounce(value, delay) {
 
 function FilaAlumno({ alumno, onClick }) {
   return (
-    <button
+    <Button
+      variant="row"
+      size="row"
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
-    >
+      >
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-[14px] font-medium text-ink">
           {alumno.apellido}, {alumno.nombre}
@@ -58,7 +59,7 @@ function FilaAlumno({ alumno, onClick }) {
         </div>
         <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -69,11 +70,12 @@ function normalizeSearch(text) {
 function FilaProspecto({ prospect, onClick }) {
   const complete = prospect.missingDocuments.length === 0;
   return (
-    <button
+    <Button
+      variant="row"
+      size="row"
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
-    >
+      >
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-[14px] font-medium text-ink">
           {prospect.apellido}, {prospect.nombre}
@@ -86,7 +88,7 @@ function FilaProspecto({ prospect, onClick }) {
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />
       </div>
-    </button>
+    </Button>
   );
 }
 

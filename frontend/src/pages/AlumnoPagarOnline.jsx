@@ -69,14 +69,16 @@ function OnlinePaymentRedirect({ invoiceId }) {
 
   return (
     <PageContainer className="max-w-lg">
-      <button
+      <Button
+        variant="subtle"
+        size="inline"
         type="button"
         onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
-        className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
-      >
+        className="flex items-center gap-1.5 text-sm"
+        >
         <ChevronLeft size={16} />
         Volver
-      </button>
+      </Button>
 
       <h1 className="text-xl font-bold">Pagar con tarjeta</h1>
 

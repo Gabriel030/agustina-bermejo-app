@@ -142,13 +142,15 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
               </div>
 
               {!audienciaCompleta && (
-                <button
+                <Button
+                  variant="link"
+                  size="inline"
                   type="button"
-                  className="w-fit text-left text-[12.5px] font-semibold text-brand hover:underline"
+                  className="w-fit text-left text-[12.5px] font-semibold text-brand"
                   onClick={() => onVerDestinatarios(aviso)}
-                >
+                  >
                   Ver quiénes son los destinatarios
-                </button>
+                </Button>
               )}
 
               {aviso.updatedAt && (

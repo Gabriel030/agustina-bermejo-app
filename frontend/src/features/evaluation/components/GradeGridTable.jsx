@@ -74,13 +74,15 @@ export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, 
           const condition = GRID_CONDITION[row.original.condition];
           return (
             <div className="flex flex-col items-start gap-1">
-              <button
+              <Button
+                variant="link"
+                size="inline"
                 type="button"
                 onClick={() => onOpenStudent(row.original.enrollmentId)}
-                className="text-left text-[13px] font-semibold leading-tight text-ink hover:underline"
-              >
+                className="text-left text-[13px] font-semibold leading-tight text-ink"
+                >
                 {`${row.original.lastname}, ${row.original.name}`}
-              </button>
+              </Button>
               {condition && <StatusPill tone={condition.tone} className="px-2 py-0.5">{condition.label}</StatusPill>}
             </div>
           );

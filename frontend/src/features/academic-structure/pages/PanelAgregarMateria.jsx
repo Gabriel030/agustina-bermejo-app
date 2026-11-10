@@ -175,13 +175,15 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
                 </span>
                 <p className="text-[13.5px] font-medium text-ink">{selectedSubject.name}</p>
               </div>
-              <button
+              <Button
+                variant="subtle"
+                size="inline"
                 type="button"
                 onClick={() => setSelectedSubjectId(null)}
-                className="text-[12px] text-ink-faint underline hover:text-ink"
-              >
+                className="text-[12px] underline"
+                >
                 Cambiar
-              </button>
+              </Button>
             </div>
 
             <CampoSelect

@@ -76,36 +76,38 @@ function SubjectRow({ ps, onCorrelativas, onRemove, onRestore, isRestoring }) {
         {meta && <span className="text-[12px] text-ink-faint">{meta}</span>}
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
           type="button"
           onClick={() => onCorrelativas(ps)}
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink"
-          title="Correlativas"
-        >
+          className="text-ink-faint hover:text-ink"
+          title="Correlativas">
           <GitBranch className="h-3.5 w-3.5" />
           Correlativas
-        </button>
+        </Button>
         {ps.status === 'INACTIVE' ? (
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             type="button"
             onClick={() => onRestore(ps)}
             disabled={isRestoring}
             aria-label={`Volver a agregar ${ps.subjectName} al plan`}
             title="Volver a agregar al plan"
-            className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink"
-          >
+            className="text-ink-faint">
             <RotateCcw className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
+            variant="ghost-destructive"
+            size="icon-sm"
             type="button"
             onClick={() => onRemove(ps)}
             aria-label={`Quitar ${ps.subjectName} del plan`}
-            title="Quitar del plan"
-            className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-danger/10 hover:text-danger"
-          >
+            title="Quitar del plan">
             <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         )}
       </div>
     </div>

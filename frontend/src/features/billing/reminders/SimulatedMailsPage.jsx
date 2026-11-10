@@ -91,9 +91,9 @@ function buildColumns(onOpen) {
       enableSorting: false,
       accessorFn: (mail) => mail.subject,
       cell: ({ row }) => (
-        <button type="button" onClick={() => onOpen(row.original)} className="text-left font-semibold text-primary hover:underline">
+        <Button variant="link" size="inline" type="button" onClick={() => onOpen(row.original)} className="text-left font-semibold">
           {row.original.subject}
-        </button>
+        </Button>
       ),
       meta: { cardTitle: true },
     },
