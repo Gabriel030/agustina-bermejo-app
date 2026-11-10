@@ -21,6 +21,8 @@ const GRADUATION_TYPES = new Set([
 
 const ATTENDANCE_CHANGE_TYPES = new Set(['ATTENDANCE_CHANGE_REQUEST_APPROVED', 'ATTENDANCE_CHANGE_REQUEST_REJECTED']);
 
+const OFFER_CYCLE_TYPES = new Set(['OFFER_CYCLE_APPROVED', 'OFFER_CYCLE_REJECTED']);
+
 const GRADE_TYPES =new Set(['GRADES_PUBLISHED', 'GRADE_CORRECTED']);
 
 const BORDE_TONO = {
@@ -58,6 +60,16 @@ export function NotificationBell() {
     if (ATTENDANCE_CHANGE_TYPES.has(n.type)) {
       setOpen(false);
       navigate('/docente/tomar-asistencia?tab=pedidos');
+      return;
+    }
+    if (n.type === 'OFFER_CYCLE_SUBMITTED' && n.relatedEntityId) {
+      setOpen(false);
+      navigate(`/director/aprobaciones/oferta-academica/${n.relatedEntityId}`);
+      return;
+    }
+    if (OFFER_CYCLE_TYPES.has(n.type)) {
+      setOpen(false);
+      navigate(`${staffBasePath}/oferta-academica`);
       return;
     }
     if (GRADE_TYPES.has(n.type)) {

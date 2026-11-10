@@ -8,3 +8,4 @@ export { FormField, SelectField } from './components/FormField';
 export { fieldProps } from './lib/offeringForm';
 export { describeSection } from './lib/describeSection';
 export { useTerminos } from './hooks/useTerminos';
+export { usePendingOfferCycles } from './hooks/useOfferApproval';
