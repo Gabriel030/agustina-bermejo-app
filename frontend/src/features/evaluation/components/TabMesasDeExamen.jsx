@@ -258,8 +258,8 @@ export function TabMesasDeExamen({ carreraId }) {
                 {mia.score != null && <span className="font-heading text-base font-bold text-ink">{mia.score}</span>}
                 {/* El status de la inscripción a mesa nunca pasa a GRADED en el backend — "ya
                     rindió" se deriva de si hay nota, no del status. */}
-                <StatusPill tone={mia.examBoard.status === 'CANCELED' ? 'danger' : mia.status === 'WITHDRAWN' ? 'neutral' : mia.score != null ? 'success' : 'accent'}>
-                  {mia.examBoard.status === 'CANCELED' ? 'Mesa cancelada' : mia.status === 'WITHDRAWN' ? 'De baja' : mia.score != null ? 'Rendido' : 'Inscripto'}
+                <StatusPill tone={mia.examBoard.status === 'CANCELED' ? 'danger' : mia.status === 'WITHDRAWN' ? 'neutral' : mia.status === 'ABSENT' ? 'danger' : mia.score != null ? 'success' : 'accent'}>
+                  {mia.examBoard.status === 'CANCELED' ? 'Mesa cancelada' : mia.status === 'WITHDRAWN' ? 'De baja' : mia.status === 'ABSENT' ? 'Ausente' : mia.score != null ? 'Rendido' : 'Inscripto'}
                 </StatusPill>
                 {mia.status === 'REGISTERED' && mia.score == null && mia.examBoard.status !== 'CANCELED' && (
                   <Button variant="outline" className="text-danger" onClick={() => darmeDeBaja.mutate(mia.id)} disabled={darmeDeBaja.isPending}>

@@ -66,6 +66,7 @@ describe('TabMesasDeExamen', () => {
         HttpResponse.json([
           { id: 1, enrollmentId: 9, status: 'WITHDRAWN', score: 0, examBoard: { ...mesa, id: 10, status: 'CANCELED', cancelReason: 'Paro docente' } },
           { id: 2, enrollmentId: 9, status: 'WITHDRAWN', score: 0, examBoard: { ...mesa, id: 11, status: 'SCHEDULED' } },
+          { id: 3, enrollmentId: 9, status: 'ABSENT', score: 0, examBoard: { ...mesa, id: 12, status: 'CLOSED' } },
         ]),
       ),
     );
@@ -77,5 +78,6 @@ describe('TabMesasDeExamen', () => {
     expect(await screen.findByText('Mesa cancelada')).toBeInTheDocument();
     expect(screen.getByText('Motivo: Paro docente')).toBeInTheDocument();
     expect(screen.getByText('De baja')).toBeInTheDocument();
+    expect(screen.getByText('Ausente')).toBeInTheDocument();
   });
 });
