@@ -39,7 +39,7 @@ class ApproveProgramEnrollmentApplicationDebtTest {
         when(student.getId()).thenReturn(7L);
         when(application.getStatus()).thenReturn(ProgramEnrollmentApplicationStatus.PENDING);
         when(application.getStudent()).thenReturn(student);
-        when(finder.findOrThrow(anyLong())).thenReturn(application);
+        when(finder.findLockedOrThrow(anyLong())).thenReturn(application);
         doThrow(new OutstandingDebtBlocksReenrollmentException(List.of(new PolicyViolation("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT", "deuda"))))
                 .when(enrollmentService).verifyStudentHasNoOutstandingDebt(7L);
         ApproveProgramEnrollmentApplicationService useCase = new ApproveProgramEnrollmentApplicationService(finder, roleGranter, issuer, enrollmentService,
