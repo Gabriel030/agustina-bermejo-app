@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   approvalBlockReason,
+  blockingReasonMessages,
   cohortLabel,
   debtMessages,
   documentationLabel,
@@ -43,6 +44,13 @@ describe('applicationReview', () => {
     expect(approvalBlockReason({ canApprove: false, documentation: { complete: true }, debt: { blocksApproval: true } })).toBe(
       'Aprobar está deshabilitado: el alumno tiene deuda.',
     );
+  });
+
+  it('lists the blocking reasons without repeating the documentation one', () => {
+    expect(
+      blockingReasonMessages({ blockingReasons: ['STUDENT_NOT_CONFIRMED', 'APPLICATION_DOCUMENTS_INCOMPLETE', 'OTHER'] }),
+    ).toEqual(['La inscripción del alumno todavía no está confirmada.', 'Hay una condición sin cumplir.']);
+    expect(blockingReasonMessages({})).toEqual([]);
   });
 
   it('only treats the state conflict as already resolved', () => {

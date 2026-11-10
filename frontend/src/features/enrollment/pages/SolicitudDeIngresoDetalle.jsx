@@ -29,6 +29,7 @@ import {
   DOCUMENT_TYPE_LABEL,
   REQUIRED_DOCUMENT_TYPES,
   approvalBlockReason,
+  blockingReasonMessages,
   cohortLabel,
   debtMessages,
   isApplicationAlreadyResolved,
@@ -175,6 +176,15 @@ function BeforeApprovingCard({ check, application, basePath }) {
           </Button>
         )}
       </CheckRow>
+      {blockingReasonMessages(data).length > 0 && (
+        <CheckRow ok={false} title="Estado de la solicitud y del alumno">
+          {blockingReasonMessages(data).map((message) => (
+            <p key={message} className="text-[12.5px] text-ink-faint">
+              {message}
+            </p>
+          ))}
+        </CheckRow>
+      )}
       <CheckRow ok={!debtBlocks} title="Deuda del alumno">
         {debtBlocks ? (
           <>
