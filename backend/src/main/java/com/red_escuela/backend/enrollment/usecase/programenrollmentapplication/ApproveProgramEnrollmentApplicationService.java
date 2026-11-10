@@ -4,7 +4,6 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.service.ProgramAdmissionInvoiceIssuer;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
-import com.red_escuela.backend.enrollment.exception.ApplicationDecisionIdempotencyKeyConflictException;
 import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import com.red_escuela.backend.enrollment.service.ApplicationDecisionIdempotencyKeys;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
@@ -43,11 +42,8 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
     public ProgramEnrollmentApplication approve(ApproveProgramEnrollmentApplicationCommand command) {
         String idempotencyKey = ApplicationDecisionIdempotencyKeys.normalize(command.idempotencyKey());
         ProgramEnrollmentApplication application = applicationFinder.findLockedOrThrow(command.id());
-        if (application.wasDecidedWithKey(idempotencyKey)) {
-            if (isApprovedOutcome(application.getStatus())) {
-                return application;
-            }
-            throw new ApplicationDecisionIdempotencyKeyConflictException(application.getId());
+        if (ApplicationDecisionIdempotencyKeys.isReplayOfApproval(application, idempotencyKey)) {
+            return application;
         }
         if (application.getStatus() != ProgramEnrollmentApplicationStatus.PENDING) {
             throw new InvalidProgramEnrollmentApplicationStateException(application.getId(), application.getStatus());
@@ -58,13 +54,9 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
 
         Invoice admissionInvoice = programAdmissionInvoiceIssuer.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
         application.approve(command.decidedBy(), admissionInvoice);
-        application.recordDecisionKey(idempotencyKey);
+        ApplicationDecisionIdempotencyKeys.remember(application, idempotencyKey);
         programApplicantRoleGranter.grantStudentRole(student);
         eventPublisher.publishEvent(ProgramApplicationApprovedEvent.approvedFor(application.getId(), student.getPerson().getId(), application.getProgram().getName()));
         return application;
-    }
-
-    private boolean isApprovedOutcome(ProgramEnrollmentApplicationStatus status) {
-        return status == ProgramEnrollmentApplicationStatus.APPROVED || status == ProgramEnrollmentApplicationStatus.EXPIRED;
     }
 }

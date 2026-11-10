@@ -5,7 +5,10 @@ import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationRespon
 import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
+import com.red_escuela.backend.enrollment.repository.ApplicationCohortName;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,30 +24,46 @@ import java.util.stream.Collectors;
 public class ProgramApplicationReviewViews {
 
     private final StudentDocumentRepository studentDocumentRepository;
-
+    private final ProgramEnrollmentApplicationRepository applicationRepository;
+    private final ProgramEnrollmentApplicationFinder applicationFinder;
     private final ProgramApplicationDocumentCompletenessGuard completenessGuard;
 
     public ProgramApplicationReviewViews(StudentDocumentRepository studentDocumentRepository,
+                                         ProgramEnrollmentApplicationRepository applicationRepository,
+                                         ProgramEnrollmentApplicationFinder applicationFinder,
                                          ProgramApplicationDocumentCompletenessGuard completenessGuard) {
         this.studentDocumentRepository = studentDocumentRepository;
+        this.applicationRepository = applicationRepository;
+        this.applicationFinder = applicationFinder;
         this.completenessGuard = completenessGuard;
     }
 
     @Transactional(readOnly = true)
-    public List<ProgramEnrollmentApplicationResponse> viewsOf(List<ProgramEnrollmentApplication> applications) {
-        Set<Long> studentIds = applications.stream().map(application -> application.getStudent().getId()).collect(Collectors.toSet());
-        Map<Long, List<StudentDocument>> documentsByStudentId = studentIds.isEmpty() ? Map.of()
-                : studentDocumentRepository.findByStudentIdIn(studentIds).stream()
-                .collect(Collectors.groupingBy(document -> document.getStudent().getId()));
-        return applications.stream()
-                .map(application -> ProgramEnrollmentApplicationResponse.forReview(application,
-                        documentationOf(documentsByStudentId.getOrDefault(application.getStudent().getId(), List.of()))))
-                .toList();
+    public List<ProgramEnrollmentApplicationResponse> pendingViews() {
+        return viewsOf(applicationRepository.findByStatusOrderByRequestedAtAsc(ProgramEnrollmentApplicationStatus.PENDING));
     }
 
     @Transactional(readOnly = true)
-    public ProgramEnrollmentApplicationResponse viewOf(ProgramEnrollmentApplication application) {
-        return viewsOf(List.of(application)).getFirst();
+    public ProgramEnrollmentApplicationResponse viewOfApplication(Long applicationId) {
+        return viewsOf(List.of(applicationFinder.findOrThrow(applicationId))).getFirst();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProgramEnrollmentApplicationResponse> viewsOf(List<ProgramEnrollmentApplication> applications) {
+        if (applications.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> studentIds = applications.stream().map(application -> application.getStudent().getId()).collect(Collectors.toSet());
+        Map<Long, List<StudentDocument>> documentsByStudentId = studentDocumentRepository.findByStudentIdIn(studentIds).stream()
+                .collect(Collectors.groupingBy(document -> document.getStudent().getId()));
+        Map<Long, String> cohortNameByApplicationId = applicationRepository
+                .findCohortNamesByApplicationIds(applications.stream().map(ProgramEnrollmentApplication::getId).toList()).stream()
+                .collect(Collectors.toMap(ApplicationCohortName::getApplicationId, ApplicationCohortName::getName));
+        return applications.stream()
+                .map(application -> ProgramEnrollmentApplicationResponse.forReview(application,
+                        documentationOf(documentsByStudentId.getOrDefault(application.getStudent().getId(), List.of())),
+                        cohortNameByApplicationId.get(application.getId())))
+                .toList();
     }
 
     @Transactional(readOnly = true)

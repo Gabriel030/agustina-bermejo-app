@@ -37,6 +37,13 @@ public interface ProgramEnrollmentApplicationRepository extends JpaRepository<Pr
     Page<ProgramEnrollmentApplication> searchByStatuses(@Param("statuses") Collection<ProgramEnrollmentApplicationStatus> statuses,
                                                         @Param("pattern") String pattern, Pageable pageable);
 
+    @Query("""
+            select a.id as applicationId, concat(str(c.intake), ' ', str(extract(year from c.cursadaStart))) as name
+            from ProgramEnrollmentApplication a join a.programCohort c
+            where a.id in :ids
+            """)
+    List<ApplicationCohortName> findCohortNamesByApplicationIds(@Param("ids") Collection<Long> ids);
+
     Optional<ProgramEnrollmentApplication> findByStudentIdAndProgramIdAndStatus(
             Long studentId, Long programId, ProgramEnrollmentApplicationStatus status);
 

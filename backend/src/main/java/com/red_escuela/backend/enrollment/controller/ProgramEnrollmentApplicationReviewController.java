@@ -4,11 +4,10 @@ import com.red_escuela.backend.enrollment.dto.ProgramApplicationDocumentFile;
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationApprovalCheckResponse;
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationPage;
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
-import com.red_escuela.backend.enrollment.service.ProgramApplicationReviewViews;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.GetProgramEnrollmentApplicationApprovalCheckUseCase;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.GetProgramEnrollmentApplicationDocumentUseCase;
-import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.GetProgramEnrollmentApplicationUseCase;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.GetProgramEnrollmentApplicationForReviewUseCase;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ListPendingProgramEnrollmentApplicationsForReviewUseCase;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ListResolvedProgramEnrollmentApplicationsUseCase;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -20,31 +19,39 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 public class ProgramEnrollmentApplicationReviewController {
 
+    private final ListPendingProgramEnrollmentApplicationsForReviewUseCase listPendingUseCase;
     private final ListResolvedProgramEnrollmentApplicationsUseCase listResolvedUseCase;
-    private final GetProgramEnrollmentApplicationUseCase getApplicationUseCase;
+    private final GetProgramEnrollmentApplicationForReviewUseCase getApplicationUseCase;
     private final GetProgramEnrollmentApplicationApprovalCheckUseCase approvalCheckUseCase;
     private final GetProgramEnrollmentApplicationDocumentUseCase documentUseCase;
-    private final ProgramApplicationReviewViews reviewViews;
 
-    public ProgramEnrollmentApplicationReviewController(ListResolvedProgramEnrollmentApplicationsUseCase listResolvedUseCase,
-                                                        GetProgramEnrollmentApplicationUseCase getApplicationUseCase,
+    public ProgramEnrollmentApplicationReviewController(ListPendingProgramEnrollmentApplicationsForReviewUseCase listPendingUseCase,
+                                                        ListResolvedProgramEnrollmentApplicationsUseCase listResolvedUseCase,
+                                                        GetProgramEnrollmentApplicationForReviewUseCase getApplicationUseCase,
                                                         GetProgramEnrollmentApplicationApprovalCheckUseCase approvalCheckUseCase,
-                                                        GetProgramEnrollmentApplicationDocumentUseCase documentUseCase,
-                                                        ProgramApplicationReviewViews reviewViews) {
+                                                        GetProgramEnrollmentApplicationDocumentUseCase documentUseCase) {
+        this.listPendingUseCase = listPendingUseCase;
         this.listResolvedUseCase = listResolvedUseCase;
         this.getApplicationUseCase = getApplicationUseCase;
         this.approvalCheckUseCase = approvalCheckUseCase;
         this.documentUseCase = documentUseCase;
-        this.reviewViews = reviewViews;
+    }
+
+    @GetMapping("/program-enrollment-applications/pending")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public List<ProgramEnrollmentApplicationResponse> pending() {
+        return listPendingUseCase.list();
     }
 
     @GetMapping("/program-enrollment-applications/history")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public ProgramEnrollmentApplicationPage history(
-            @RequestParam(required = false) ProgramEnrollmentApplicationStatus status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         return listResolvedUseCase.list(status, search, page, size);
@@ -53,7 +60,7 @@ public class ProgramEnrollmentApplicationReviewController {
     @GetMapping("/program-enrollment-applications/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public ProgramEnrollmentApplicationResponse get(@PathVariable Long id) {
-        return reviewViews.viewOf(getApplicationUseCase.get(id));
+        return getApplicationUseCase.get(id);
     }
 
     @GetMapping("/program-enrollment-applications/{id}/approval-check")

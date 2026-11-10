@@ -17,4 +17,5 @@ public class RejectProgramEnrollmentApplicationService implements RejectProgramE
     public ProgramEnrollmentApplication reject(RejectProgramEnrollmentApplicationCommand command) {
         return applicationRejection.reject(command.id(), command.decidedBy(), command.reason(), command.idempotencyKey());
     }
+
 }

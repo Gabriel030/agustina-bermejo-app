@@ -56,17 +56,18 @@ public record ProgramEnrollmentApplicationResponse(
 
     public static ProgramEnrollmentApplicationResponse from(ProgramEnrollmentApplication application, Function<Long, AdmissionReceiptSummary> latestReceiptByInvoiceId,
                                                             Function<Long, Long> enrollmentIdByApplicationId) {
-        return build(application, latestReceiptByInvoiceId, enrollmentIdByApplicationId, null);
+        return build(application, latestReceiptByInvoiceId, enrollmentIdByApplicationId, null, null);
     }
 
-    public static ProgramEnrollmentApplicationResponse forReview(ProgramEnrollmentApplication application, DocumentationSummary documentation) {
-        return build(application, invoiceId -> null, applicationId -> null, documentation);
+    public static ProgramEnrollmentApplicationResponse forReview(ProgramEnrollmentApplication application, DocumentationSummary documentation,
+                                                                 String cohortName) {
+        return build(application, invoiceId -> null, applicationId -> null, documentation, cohortName);
     }
 
     private static ProgramEnrollmentApplicationResponse build(ProgramEnrollmentApplication application,
                                                               Function<Long, AdmissionReceiptSummary> latestReceiptByInvoiceId,
                                                               Function<Long, Long> enrollmentIdByApplicationId,
-                                                              DocumentationSummary documentation) {
+                                                              DocumentationSummary documentation, String cohortName) {
         boolean forReview = documentation != null;
         Person studentPerson = forReview ? application.getStudent().getPerson() : null;
         return new ProgramEnrollmentApplicationResponse(
@@ -85,8 +86,7 @@ public record ProgramEnrollmentApplicationResponse(
                 forReview ? fullNameOf(studentPerson) : null,
                 forReview && studentPerson.getEmail() != null ? studentPerson.getEmail().value() : null,
                 forReview ? studentPerson.getDni() : null,
-                forReview && application.getProgramCohort() != null
-                        ? application.getProgramCohort().getIntake().name() + " " + application.getProgramCohort().getCursadaStart().getYear() : null,
+                cohortName,
                 forReview && application.getDecidedBy() != null ? fullNameOf(application.getDecidedBy()) : null,
                 documentation);
     }

@@ -494,9 +494,9 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Person preceptor = persistPreceptor();
 
         ProgramEnrollmentApplication first = approveProgramEnrollmentApplicationUseCase.approve(
-                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor, "key-1"));
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-1"));
         ProgramEnrollmentApplication replay = approveProgramEnrollmentApplicationUseCase.approve(
-                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor, "key-1"));
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-1"));
 
         assertThat(replay.getId()).isEqualTo(first.getId());
         assertThat(replay.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.APPROVED);
@@ -508,10 +508,10 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     void approvingTwiceWithADifferentKeyIsStillRejectedAsAlreadyDecided() {
         ProgramEnrollmentApplication application = requestApplication("82000002");
         Person preceptor = persistPreceptor();
-        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor, "key-1"));
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-1"));
 
         assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(
-                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor, "key-2")))
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-2")))
                 .isInstanceOf(InvalidProgramEnrollmentApplicationStateException.class);
         assertThat(admissionInvoicesOf(application.getStudent())).isEqualTo(1L);
     }
@@ -522,10 +522,10 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollmentApplication application = requestApplication("82000003");
         Person preceptor = persistPreceptor();
         rejectProgramEnrollmentApplicationUseCase.reject(
-                new RejectProgramEnrollmentApplicationCommand(application.getId(), preceptor, "Documentación ilegible", "key-1"));
+                new RejectProgramEnrollmentApplicationCommand(application.getId(), preceptor, "Documentación ilegible").withIdempotencyKey("key-1"));
 
         assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(
-                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor, "key-1")))
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-1")))
                 .isInstanceOf(com.red_escuela.backend.enrollment.exception.ApplicationDecisionIdempotencyKeyConflictException.class);
         assertThat(entityManager.find(ProgramEnrollmentApplication.class, application.getId()).getStatus())
                 .isEqualTo(ProgramEnrollmentApplicationStatus.REJECTED);
@@ -536,16 +536,16 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     void rejectingTwiceWithTheSameKeyIsIdempotentAndRejectingWithTheKeyOfAnApprovalConflicts() {
         ProgramEnrollmentApplication rejected = requestApplication("82000004");
         Person preceptor = persistPreceptor();
-        rejectProgramEnrollmentApplicationUseCase.reject(new RejectProgramEnrollmentApplicationCommand(rejected.getId(), preceptor, "Documentación ilegible", "key-1"));
+        rejectProgramEnrollmentApplicationUseCase.reject(new RejectProgramEnrollmentApplicationCommand(rejected.getId(), preceptor, "Documentación ilegible").withIdempotencyKey("key-1"));
 
         ProgramEnrollmentApplication replay = rejectProgramEnrollmentApplicationUseCase.reject(
-                new RejectProgramEnrollmentApplicationCommand(rejected.getId(), preceptor, "Documentación ilegible", "key-1"));
+                new RejectProgramEnrollmentApplicationCommand(rejected.getId(), preceptor, "Documentación ilegible").withIdempotencyKey("key-1"));
         assertThat(replay.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.REJECTED);
 
         ProgramEnrollmentApplication approved = requestApplication("82000005");
-        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(approved.getId(), preceptor, "key-2"));
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(approved.getId(), preceptor).withIdempotencyKey("key-2"));
         assertThatThrownBy(() -> rejectProgramEnrollmentApplicationUseCase.reject(
-                new RejectProgramEnrollmentApplicationCommand(approved.getId(), preceptor, "Documentación ilegible", "key-2")))
+                new RejectProgramEnrollmentApplicationCommand(approved.getId(), preceptor, "Documentación ilegible").withIdempotencyKey("key-2")))
                 .isInstanceOf(com.red_escuela.backend.enrollment.exception.ApplicationDecisionIdempotencyKeyConflictException.class);
     }
 
@@ -555,7 +555,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollmentApplication application = requestApplication("82000006");
 
         assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(
-                new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor(), "k".repeat(101))))
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor()).withIdempotencyKey("k".repeat(101))))
                 .isInstanceOf(com.red_escuela.backend.enrollment.exception.ApplicationDecisionIdempotencyKeyInvalidException.class);
         assertThat(entityManager.find(ProgramEnrollmentApplication.class, application.getId()).getStatus())
                 .isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
@@ -568,7 +568,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollmentApplication application = requestApplication("82000007");
 
         ProgramEnrollmentApplication approved = approveProgramEnrollmentApplicationUseCase.approve(
-                new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor(), "k".repeat(100)));
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor()).withIdempotencyKey("k".repeat(100)));
         entityManager.flush();
 
         assertThat(approved.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.APPROVED);
@@ -593,7 +593,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollmentApplication application = requestApplicationWithoutDocuments("82000009", DocumentType.DNI_DORSO);
         application = entityManager.find(ProgramEnrollmentApplication.class, application.getId());
 
-        ProgramEnrollmentApplicationResponse view = reviewViews.viewOf(application);
+        ProgramEnrollmentApplicationResponse view = reviewViews.viewOfApplication(application.getId());
 
         assertThat(view.studentFullName()).isEqualTo("Persona 82000009");
         assertThat(view.studentDni()).isEqualTo("82000009");
@@ -617,8 +617,8 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollmentApplication approved = approveProgramEnrollmentApplicationUseCase.approve(
                 new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor));
 
-        assertThat(reviewViews.viewOf(approved).decidedByName()).isEqualTo("Marta Gómez");
-        assertThat(reviewViews.viewOf(approved).documentation().complete()).isTrue();
+        assertThat(reviewViews.viewOfApplication(approved.getId()).decidedByName()).isEqualTo("Marta Gómez");
+        assertThat(reviewViews.viewOfApplication(approved.getId()).documentation().complete()).isTrue();
     }
 
     @Test
@@ -637,7 +637,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
         var firstPage = listResolvedUseCase.list(null, "8200001", 0, 1);
         var secondPage = listResolvedUseCase.list(null, "8200001", 1, 1);
-        var onlyRejected = listResolvedUseCase.list(ProgramEnrollmentApplicationStatus.REJECTED, "8200001", 0, 10);
+        var onlyRejected = listResolvedUseCase.list("REJECTED", "8200001", 0, 10);
 
         assertThat(firstPage.totalElements()).isEqualTo(2);
         assertThat(firstPage.items()).extracting(ProgramEnrollmentApplicationResponse::id).containsExactly(rejected.getId());
@@ -665,7 +665,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     @Test
     @Tag("r1-10")
     void theHistoryRefusesToListPendingApplicationsAndCapsThePageSize() {
-        assertThatThrownBy(() -> listResolvedUseCase.list(ProgramEnrollmentApplicationStatus.PENDING, null, 0, 10))
+        assertThatThrownBy(() -> listResolvedUseCase.list("PENDING", null, 0, 10))
                 .isInstanceOf(com.red_escuela.backend.enrollment.exception.InvalidResolvedApplicationStatusException.class);
         assertThat(listResolvedUseCase.list(null, null, -5, 100000)).isNotNull();
     }
@@ -689,5 +689,26 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollmentApplication application = requestApplication("82000016");
 
         assertThat(approvalCheckUseCase.get(application.getId()).canApprove()).isTrue();
+    }
+
+    @Autowired
+    private ListPendingProgramEnrollmentApplicationsForReviewUseCase listPendingForReviewUseCase;
+
+    @Test
+    @Tag("r1-12")
+    void thePendingListForReviewCarriesStudentCohortAndDocumentationAndLeavesOutResolvedOnes() {
+        ProgramEnrollmentApplication pending = requestApplicationWithoutDocuments("82000017", DocumentType.DNI_FRENTE);
+        ProgramEnrollmentApplication approved = requestApplication("82000018");
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(approved.getId(), persistPreceptor()));
+        entityManager.flush();
+        entityManager.clear();
+
+        List<ProgramEnrollmentApplicationResponse> views = listPendingForReviewUseCase.list();
+
+        assertThat(views).extracting(ProgramEnrollmentApplicationResponse::id).contains(pending.getId()).doesNotContain(approved.getId());
+        ProgramEnrollmentApplicationResponse view = views.stream().filter(candidate -> candidate.id().equals(pending.getId())).findFirst().orElseThrow();
+        assertThat(view.studentFullName()).isEqualTo("Persona 82000017");
+        assertThat(view.programCohortName()).startsWith("FIRST ");
+        assertThat(view.documentation().missingTypes()).containsExactly(DocumentType.DNI_FRENTE);
     }
 }
