@@ -48,7 +48,6 @@ import org.junit.jupiter.api.AfterEach;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
-import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.configuration.service.DirectConfigurationPublisher;
 import com.red_escuela.backend.billing.planning.domain.SlotWindow;
@@ -102,9 +101,6 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void clearSecurity() {
         SecurityContextHolder.clearContext();
     }
-
-    @Autowired
-    private ConfigurationVersionRepository configurationVersionRepository;
 
     private void authenticateAs(Career career) {
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(career.directorId().toString(), null));
@@ -299,7 +295,6 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         newSection(career, first);
         newSection(career, second);
         today(date(2027, 2, 5));
-        LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, director(career), 0, new BigDecimal("0.002"), 30, 1, 10, true, true, date(2027, 1, 1));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
         job.run();
         today(date(2027, 7, 3));
