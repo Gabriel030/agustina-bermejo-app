@@ -314,6 +314,31 @@ class CourseEnrollmentRulesTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Tag("D-457")
+    void withdrawFinishesCancellingModulesAndPromotingWaitlistsBeforeBillingTakesTheAccountLock() {
+        CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment activeModule = subEnrollment(100L, 31L, 21L, EnrollmentStatus.ENROLLED);
+        CourseEnrollment nextInCourse = courseEnrollment(2L, EnrollmentStatus.WAITLISTED);
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
+        givenWithdrawalDates();
+        when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(activeModule));
+        when(sectionFinder.findCourseSection(31L)).thenReturn(sectionView(31L, 21L));
+        when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 0L)).thenReturn(true);
+        when(courseEnrollmentRepository.findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(COURSE_ID, EnrollmentStatus.WAITLISTED))
+                .thenReturn(Optional.of(nextInCourse));
+
+        service.withdraw(1L, voluntaryWithdrawal());
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(courseEnrollmentRepository, courseCatalogFinder, sectionFinder, subEnrollmentRepository, withdrawalBillingPort);
+        order.verify(courseEnrollmentRepository).findByIdForUpdate(1L);
+        order.verify(courseCatalogFinder).lockCourse(COURSE_ID);
+        order.verify(sectionFinder).lockCourseSection(31L);
+        order.verify(subEnrollmentRepository).save(activeModule);
+        order.verify(courseEnrollmentRepository).save(nextInCourse);
+        order.verify(withdrawalBillingPort).registerWithdrawalForBilling(any());
+    }
+
+    @Test
     void withdrawLocksTheCourseFirstAndThenTheSectionsInAscendingIdOrder() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
         CourseSubjectSectionEnrollment higherSection = subEnrollment(100L, 33L, 23L, EnrollmentStatus.ENROLLED);
