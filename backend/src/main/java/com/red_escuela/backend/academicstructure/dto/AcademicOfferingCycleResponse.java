@@ -18,9 +18,12 @@ public record AcademicOfferingCycleResponse(
         LocalDateTime createdAt,
         @Schema(nullable = true) String decidedByName,
         @Schema(nullable = true) LocalDateTime decidedAt,
-        @Schema(nullable = true) String rejectionReason
+        @Schema(nullable = true) String rejectionReason,
+        @Schema(nullable = true) String submittedByName,
+        @Schema(nullable = true) LocalDateTime submittedAt,
+        long sectionCount
 ) {
-    public static AcademicOfferingCycleResponse from(AcademicOfferingCycle c) {
+    public static AcademicOfferingCycleResponse from(AcademicOfferingCycle c, long sectionCount) {
         return new AcademicOfferingCycleResponse(
                 c.getId(),
                 c.getStatus().name(),
@@ -34,7 +37,10 @@ public record AcademicOfferingCycleResponse(
                 c.getCreatedAt(),
                 c.getDecidedBy() != null ? c.getDecidedBy().getName() + " " + c.getDecidedBy().getLastname() : null,
                 c.getDecidedAt(),
-                c.getRejectionReason()
+                c.getRejectionReason(),
+                c.getSubmittedBy() != null ? c.getSubmittedBy().getName() + " " + c.getSubmittedBy().getLastname() : null,
+                c.getSubmittedAt(),
+                sectionCount
         );
     }
 }

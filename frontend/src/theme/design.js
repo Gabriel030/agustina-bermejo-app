@@ -9,6 +9,10 @@ export function resolveDesign({ search = '', stored = null, fallback = DEFAULT_D
   return DESIGNS.includes(fallback) ? fallback : DEFAULT_DESIGN;
 }
 
+export function isDesignB(root = document.documentElement) {
+  return root.dataset.design === 'b';
+}
+
 export function applyDesign(design, root = document.documentElement) {
   root.dataset.design = design;
 }

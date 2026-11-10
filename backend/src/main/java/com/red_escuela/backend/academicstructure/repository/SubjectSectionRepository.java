@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,9 @@ public interface SubjectSectionRepository extends JpaRepository<SubjectSection, 
     List<SubjectSection> findBySubjectId(Long subjectId);
 
     List<SubjectSection> findByAcademicOfferingCycleId(Long cycleId);
+
+    @Query("select new com.red_escuela.backend.academicstructure.repository.CycleSectionCount(s.academicOfferingCycle.id, count(s)) from SubjectSection s where s.academicOfferingCycle.id in :cycleIds group by s.academicOfferingCycle.id")
+    List<CycleSectionCount> countByCycleIds(@Param("cycleIds") Collection<Long> cycleIds);
 
     List<SubjectSection> findBySubjectIdAndStatus(Long subjectId, StatusType status);
 

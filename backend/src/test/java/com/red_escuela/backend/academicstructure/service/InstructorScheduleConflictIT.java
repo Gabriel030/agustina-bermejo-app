@@ -297,7 +297,7 @@ class InstructorScheduleConflictIT extends AbstractIntegrationTest {
         fixtures.assignLead(pending, teacher);
         fixtures.flushAndClear();
 
-        assertThatThrownBy(() -> approveCycle.approve(cycle.getId()))
+        assertThatThrownBy(() -> approveCycle.approve(cycle.getId(), null))
                 .isInstanceOf(InstructorScheduleConflictException.class);
     }
 }

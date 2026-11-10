@@ -94,4 +94,32 @@ public class AcademicOfferingCycle {
             throw new CycleNotPendingApprovalException(id);
         }
     }
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "submitted_by")
+    private Person submittedBy;
+
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
+
+    @Column(name = "decision_idempotency_key", length = 100)
+    private String decisionIdempotencyKey;
+
+    public void recordSubmission(Person submitter, LocalDateTime submittedAt) {
+        this.submittedBy = submitter;
+        this.submittedAt = submittedAt;
+        this.decisionIdempotencyKey = null;
+    }
+
+    public void recordDecisionKey(String idempotencyKey) {
+        this.decisionIdempotencyKey = idempotencyKey;
+    }
+
+    public boolean wasDecidedWithKey(String idempotencyKey) {
+        return idempotencyKey != null && idempotencyKey.equals(decisionIdempotencyKey);
+    }
+
+    public Person submitterOrCreator() {
+        return submittedBy != null ? submittedBy : createdBy;
+    }
 }
