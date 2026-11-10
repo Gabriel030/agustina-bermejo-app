@@ -71,6 +71,13 @@
   --table-head-border: var(--border);
 }
 :root[data-design='b'] {
+  --overlay-bg-sheet: var(--overlay-bg);
+  --overlay-bg-menu: var(--overlay-bg);
+  --on-overlay: oklch(99% 0 0);
+  --sh-popover: var(--sh-overlay);
+  --sh-sticky-left: 6px 0 8px -6px color-mix(in oklch, var(--ink) 25%, transparent);
+  --sh-sticky-right: -6px 0 8px -6px color-mix(in oklch, var(--ink) 25%, transparent);
+  --sh-highlight-row: inset 3px 0 0 var(--accent-2), inset -3px 0 0 var(--accent-2);
   --r-sm: 0.375rem;
   --r-md: 0.5rem;
   --r-lg: 0.5rem;

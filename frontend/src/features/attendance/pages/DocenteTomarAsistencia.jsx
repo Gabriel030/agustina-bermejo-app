@@ -37,13 +37,13 @@ import {
 } from '@/features/attendance/hooks/useDocenteAsistencia';
 
 const ESTADOS = [
-  { value: 'PRESENT', label: 'Presente', filaClass: 'bg-success-bg', chipActivo: 'bg-success text-white' },
-  { value: 'LATE', label: 'Tarde', filaClass: 'bg-warning-bg', chipActivo: 'bg-warning text-white' },
-  { value: 'ABSENT', label: 'Ausente', filaClass: 'bg-danger-bg', chipActivo: 'bg-danger text-white' },
+  { value: 'PRESENT', label: 'Presente', filaClass: 'bg-success-bg', chipActivo: 'bg-success text-on-accent' },
+  { value: 'LATE', label: 'Tarde', filaClass: 'bg-warning-bg', chipActivo: 'bg-warning text-on-accent' },
+  { value: 'ABSENT', label: 'Ausente', filaClass: 'bg-danger-bg', chipActivo: 'bg-danger text-on-accent' },
 ];
 const ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION = [
-  { value: 'JUSTIFIED', label: 'Justificada', filaClass: 'bg-accent-soft', chipActivo: 'bg-brand text-white' },
-  { value: 'JUSTIFICATION_PENDING', label: 'Justificación pendiente', filaClass: 'bg-accent-soft', chipActivo: 'bg-brand text-white' },
+  { value: 'JUSTIFIED', label: 'Justificada', filaClass: 'bg-accent-soft', chipActivo: 'bg-brand text-on-accent' },
+  { value: 'JUSTIFICATION_PENDING', label: 'Justificación pendiente', filaClass: 'bg-accent-soft', chipActivo: 'bg-brand text-on-accent' },
 ];
 const CHIP_INACTIVO = 'bg-neutral-bg text-ink-faint hover:bg-neutral-bg/70';
 const ESTADO_POR_VALOR = Object.fromEntries([...ESTADOS, ...ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION].map((e) => [e.value, e]));
@@ -638,7 +638,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 key={fecha}
                 onMouseEnter={() => setFechaHover(fecha)}
                 onMouseLeave={() => setFechaHover(null)}
-                className={`bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-[inset_3px_0_0_var(--accent-2),inset_-3px_0_0_var(--accent-2)]' : ''}`}
+                className={`bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
               >
                 {Number(fecha.slice(8, 10))}
               </th>
@@ -656,7 +656,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 onClick={() => setAlumnoFijado((prev) => (prev === fila.studentId ? null : fila.studentId))}
                 className="cursor-pointer"
               >
-                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-white' : 'border-transparent bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] text-ink'}`}>
+                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-on-accent' : 'border-transparent bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] text-ink'}`}>
                   {fila.studentName}
                 </td>
                 {historial.classDates.map((fecha) => {
@@ -672,7 +672,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                         e.stopPropagation();
                         setCeldaSeleccionada({ studentName: fila.studentName, fecha, ...celda });
                       }}
-                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.filaClass : ''} ${divisor(fecha)} ${resaltada ? 'border-accent-2' : 'border-transparent'} ${returnRequest && fila.studentName === returnRequest.studentName && fecha === returnRequest.classDate ? 'ring-2 ring-inset ring-brand' : ''} ${fecha === fechaHover ? 'shadow-[inset_3px_0_0_var(--accent-2),inset_-3px_0_0_var(--accent-2)]' : ''}`}
+                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.filaClass : ''} ${divisor(fecha)} ${resaltada ? 'border-accent-2' : 'border-transparent'} ${returnRequest && fila.studentName === returnRequest.studentName && fecha === returnRequest.classDate ? 'ring-2 ring-inset ring-brand' : ''} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
                       title={celda?.rejection ? rejectionText(celda.rejection) : (config?.label ?? 'Sin cargar')}
                       tabIndex={celda?.rejection ? 0 : undefined}
                       aria-label={celda?.rejection ? `${config.label}. ${rejectionText(celda.rejection)}` : undefined}
@@ -682,7 +682,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                     </td>
                   );
                 })}
-                <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-white' : 'border-transparent text-ink'}`}>
+                <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-on-accent' : 'border-transparent text-ink'}`}>
                   {fila.attendancePercent == null ? '-' : `${Math.round(attendancePercentToPoints(fila.attendancePercent))}%`}
                 </td>
               </tr>
@@ -880,7 +880,7 @@ function BarraAsistenciaPorAlumno({ entrada, totalClases }) {
         onMouseLeave={() => setHover(false)}
       >
         {tooltip && hover && (
-          <div className="absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-semibold text-white shadow-md">
+          <div className="absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-semibold text-on-accent shadow-popover">
             {tooltip}
             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ink" />
           </div>

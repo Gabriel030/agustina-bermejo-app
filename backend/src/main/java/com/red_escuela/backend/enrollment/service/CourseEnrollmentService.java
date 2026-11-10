@@ -225,7 +225,8 @@ public class CourseEnrollmentService {
 
     @Transactional
     public void withdraw(Long id, EnrollmentWithdrawal withdrawal) {
-        CourseEnrollment enrollment = findOrThrow(id);
+        CourseEnrollment enrollment = courseEnrollmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new CourseEnrollmentNotFoundException(id));
         if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.WAITLISTED) {
             throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED/WAITLISTED, no se puede dar de baja");
         }

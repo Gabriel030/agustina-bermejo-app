@@ -274,11 +274,10 @@ de `src/theme/tokens.css`, gana el código y se corrige la doc.
   `text-ink-soft`, `text-ink-faint`, `border-border`, `bg-neutral-bg`, `text-danger`,
   `bg-danger-bg`, `text-success`, `bg-success-bg`, `text-warning`, `bg-accent-soft`,
   `text-brand`, etc. Ver ese archivo para la lista completa.
-- Modo oscuro real: atributo `data-theme` en `<html>` + fallback a
-  `prefers-color-scheme`. Lo maneja `context/ThemeContext.jsx` (`useTheme()` →
+- Modo oscuro real: atributo `data-theme` en `<html>` (la preferencia del sistema la resuelve el script de `index.html`). Lo maneja `context/ThemeContext.jsx` (`useTheme()` →
   `{ tema, alternarTema }`, persiste en `localStorage`); `index.html` tiene un script
   inline que evita el flash del tema equivocado; el switch es `ThemeToggle.jsx`.
-  Los tokens oscuros se definen dos veces a propósito (media query + `[data-theme]`).
+  Los tokens oscuros se definen solo bajo `[data-theme='dark']` (sin media query). Diseño default `b` (`tokens-b.css`) con `vl` de respaldo: ver [design-system.md](design-system.md).
 - Los tests que renderizan árboles completos necesitan `<ThemeProvider>`; `matchMedia`
   está polyfilleado en `src/test/setup.js`.
 

@@ -153,7 +153,8 @@ public class ProgramEnrollmentService {
 
     @Transactional
     public void withdraw(Long id, EnrollmentWithdrawal withdrawal) {
-        ProgramEnrollment enrollment = findOrThrow(id);
+        ProgramEnrollment enrollment = programEnrollmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
                 && enrollment.getStatus() != ProgramEnrollmentStatus.PAUSED) {
             throw new CannotWithdrawException(

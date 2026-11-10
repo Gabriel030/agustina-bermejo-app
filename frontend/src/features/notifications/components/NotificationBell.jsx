@@ -119,7 +119,7 @@ export function NotificationBell() {
           {!loadFailed && noLeidas > 0 && (
             <span
               aria-hidden="true"
-              className="absolute -right-1 -top-1 flex h-4 min-w-4 animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-white motion-reduce:animate-none design-b:animate-none"
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-on-accent motion-reduce:animate-none design-b:animate-none"
             >
               {noLeidas > 9 ? '9+' : noLeidas}
             </span>
@@ -131,7 +131,7 @@ export function NotificationBell() {
         align="end"
         aria-label="Notificaciones"
         sideOffset={8}
-        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-2xl backdrop-blur-[28px] backdrop-saturate-[1.6]"
+        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay backdrop-blur-[28px] backdrop-saturate-[1.6]"
       >
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-[13px] font-semibold text-ink">
           Notificaciones

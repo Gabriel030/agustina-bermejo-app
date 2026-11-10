@@ -11,7 +11,7 @@ function Chip({ activo, onClick, rol, children }) {
       onClick={onClick}
       className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
         activo
-          ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-white'
+          ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-on-accent'
           : 'border-border text-ink-soft hover:border-brand hover:text-ink'
       }`}
     >

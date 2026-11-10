@@ -98,6 +98,13 @@
   --row-selected: var(--accent-soft);
   --row-h: 46px;
   --overlay-bg: oklch(0% 0 0 / 0.4);
+  --overlay-bg-sheet: oklch(0% 0 0 / 0.1);
+  --overlay-bg-menu: oklch(0% 0 0 / 0.2);
+  --on-overlay: oklch(99% 0 0);
+  --sh-popover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --sh-sticky-left: 6px 0 8px -6px color-mix(in oklch, var(--ink) 25%, transparent);
+  --sh-sticky-right: -6px 0 8px -6px color-mix(in oklch, var(--ink) 25%, transparent);
+  --sh-highlight-row: inset 3px 0 0 var(--accent-2), inset -3px 0 0 var(--accent-2);
   --focus-ring: var(--accent);
   --shell-pad: 1.25rem;
   --shell-gap: 1.25rem;
