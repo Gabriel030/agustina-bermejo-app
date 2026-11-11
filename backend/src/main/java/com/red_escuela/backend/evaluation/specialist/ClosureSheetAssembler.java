@@ -18,6 +18,7 @@ import com.red_escuela.backend.evaluation.domain.ClosureBlockedReason;
 import com.red_escuela.backend.evaluation.domain.ClosureStudentAssessment;
 import com.red_escuela.backend.evaluation.domain.ClosureSuggestedResult;
 import com.red_escuela.backend.evaluation.domain.ClosureViewerProfile;
+import com.red_escuela.backend.evaluation.api.PaymentsStanding;
 import com.red_escuela.backend.evaluation.dto.ClosureSheetAdministrativeResponse;
 import com.red_escuela.backend.evaluation.dto.ClosureSheetAvailabilityResponse;
 import com.red_escuela.backend.evaluation.dto.ClosureSheetColumnResponse;
@@ -34,6 +35,7 @@ import com.red_escuela.backend.evaluation.entity.CommissionClosureStudent;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
+import com.red_escuela.backend.evaluation.repository.CommissionClosureExceptionRepository;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureStudentRepository;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import com.red_escuela.backend.identity.entity.Person;
@@ -48,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -64,13 +67,15 @@ public class ClosureSheetAssembler {
     private final PublishedGradeItemSelector publishedGradeItemSelector;
     private final CommissionClosureStudentRepository closureStudentRepository;
     private final ClosureColumnsFinder closureColumnsFinder;
+    private final CommissionClosureExceptionRepository exceptionRepository;
 
     public ClosureSheetAssembler(SectionFinder sectionFinder, SectionEnrollmentFinder sectionEnrollmentFinder,
             SectionInstructorFinder sectionInstructorFinder, SectionTermEndFinder sectionTermEndFinder,
             SectionPresencePercentFinder sectionPresencePercentFinder,
             StudentRequiredDocumentsFinder studentRequiredDocumentsFinder, GradeItemRepository gradeItemRepository,
             PublishedGradeItemSelector publishedGradeItemSelector,
-            CommissionClosureStudentRepository closureStudentRepository, ClosureColumnsFinder closureColumnsFinder) {
+            CommissionClosureStudentRepository closureStudentRepository, ClosureColumnsFinder closureColumnsFinder,
+            CommissionClosureExceptionRepository exceptionRepository) {
         this.sectionFinder = sectionFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionInstructorFinder = sectionInstructorFinder;
@@ -81,6 +86,7 @@ public class ClosureSheetAssembler {
         this.publishedGradeItemSelector = publishedGradeItemSelector;
         this.closureStudentRepository = closureStudentRepository;
         this.closureColumnsFinder = closureColumnsFinder;
+        this.exceptionRepository = exceptionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -99,17 +105,42 @@ public class ClosureSheetAssembler {
                 : Map.of();
         Map<Long, List<GradeItem>> published = publishedGradeItemSelector.selectPublishedByEnrollment(
                 kind, sectionId, context.itemsByEnrollment());
+        Set<Long> exemptedIds = exceptionRepository.findByClosureIdAndRevokedAtIsNull(closure.getId()).stream()
+                .map(exception -> exception.getEnrollmentId()).collect(Collectors.toSet());
         List<ClosureSheetStudentResponse> students = assessments.stream()
                 .map(assessment -> studentRow(assessment, context, columns, published, snapshotRows, presence, documents,
-                        viewer, closure))
-                .sorted(Comparator.comparing((ClosureSheetStudentResponse row) -> row.lastname().toLowerCase())
-                        .thenComparing(row -> row.name().toLowerCase()))
-                .toList();
+                        viewer, closure, exemptedIds.contains(assessment.enrollmentId())))
+                .collect(Collectors.toCollection(ArrayList::new));
+        students.addAll(withdrawnOf(kind, sectionId, viewer));
+        students.sort(Comparator.comparing((ClosureSheetStudentResponse row) -> row.lastname().toLowerCase())
+                .thenComparing(row -> row.name().toLowerCase()));
         return new ClosureSheetResponse(closure.getId(), sectionId, context.sectionName(), context.subjectName(),
                 context.programName(), context.termLabel(), sectionTermEndFinder.termEndDate(kind, sectionId),
                 instructorsOf(kind, sectionId), closure.getStatus(),
                 availabilityOf(closure, columns, viewer), schemeOf(context), columns, students, summaryOf(students),
-                closure.getReportNumber(), closure.getClosedAt());
+                closure.getReportNumber(), closure.getClosedAt(), closure.getReportVersion(), closure.getBook(),
+                closure.getFolio());
+    }
+
+    private List<ClosureSheetStudentResponse> withdrawnOf(SectionKind kind, Long sectionId, ClosureViewerProfile viewer) {
+        List<ClosureSheetStudentResponse> withdrawn = new ArrayList<>();
+        if (kind == SectionKind.PROGRAM) {
+            sectionEnrollmentFinder.findWithdrawnWithStudentInProgramSection(sectionId).forEach(enrollment -> withdrawn.add(
+                    withdrawnRow(enrollment.getId(), enrollment.getStudent().getPerson(), viewer)));
+        } else {
+            sectionEnrollmentFinder.findWithdrawnWithStudentInCourseSection(sectionId).forEach(enrollment -> withdrawn.add(
+                    withdrawnRow(enrollment.getId(), enrollment.getStudent().getPerson(), viewer)));
+        }
+        return withdrawn;
+    }
+
+    private ClosureSheetStudentResponse withdrawnRow(Long enrollmentId, Person person, ClosureViewerProfile viewer) {
+        return new ClosureSheetStudentResponse(enrollmentId, person.getLastname(), person.getName(), person.getDni(),
+                EnrollmentStatus.WITHDRAWN, List.of(), 0, null, null, ClosureSuggestedResult.PENDING,
+                new ClosureSheetRequirementsResponse(null, null, null, null),
+                new ClosureSheetAdministrativeResponse(PaymentsStanding.NOT_VERIFIED, false,
+                        viewer.seesAdministrativeDetail() ? List.of() : null),
+                List.of(), false, null, false);
     }
 
     private ClosureSheetAvailabilityResponse availabilityOf(CommissionClosure closure,
@@ -117,13 +148,14 @@ public class ClosureSheetAssembler {
         if (closure.getStatus() == ClosureStatus.CLOSED) {
             return new ClosureSheetAvailabilityResponse(false, false, ClosureBlockedReason.ALREADY_CLOSED);
         }
+        boolean staff = viewer == ClosureViewerProfile.STAFF;
         if (closure.getStatus() == ClosureStatus.TEACHER_CONFIRMED) {
-            return new ClosureSheetAvailabilityResponse(false, false, ClosureBlockedReason.ALREADY_CONFIRMED);
+            return new ClosureSheetAvailabilityResponse(false, staff, staff ? null : ClosureBlockedReason.ALREADY_CONFIRMED);
         }
         if (!closureColumnsFinder.allPublished(columns)) {
             return new ClosureSheetAvailabilityResponse(false, false, ClosureBlockedReason.PUBLISHED_GRADES_INCOMPLETE);
         }
-        return new ClosureSheetAvailabilityResponse(viewer == ClosureViewerProfile.TEACHER, false, null);
+        return new ClosureSheetAvailabilityResponse(!staff, staff, null);
     }
 
     private ClosureSheetSchemeResponse schemeOf(SectionContext context) {
@@ -147,7 +179,8 @@ public class ClosureSheetAssembler {
     private ClosureSheetStudentResponse studentRow(ClosureStudentAssessment assessment, SectionContext context,
             List<ClosureSheetColumnResponse> columns, Map<Long, List<GradeItem>> published,
             Map<Long, CommissionClosureStudent> snapshotRows, Map<Long, Percentage> presence,
-            Map<Long, StudentDocumentsStanding> documents, ClosureViewerProfile viewer, CommissionClosure closure) {
+            Map<Long, StudentDocumentsStanding> documents, ClosureViewerProfile viewer, CommissionClosure closure,
+            boolean promotionExempted) {
         Long enrollmentId = assessment.enrollmentId();
         EnrollmentRow enrollment = context.enrollmentsById().get(enrollmentId);
         List<GradeItem> items = published.getOrDefault(enrollmentId, List.of());
@@ -166,7 +199,7 @@ public class ClosureSheetAssembler {
                 administrativeOf(assessment, documents, viewer), alertsOf(assessment, context.scheme(), items, coursework),
                 assessment.prerequisites().map(prerequisites -> prerequisites.outcome() == PrerequisiteOutcome.WAIVED)
                         .orElse(false),
-                snapshot == null ? null : snapshot.getTeacherObservation());
+                snapshot == null ? null : snapshot.getTeacherObservation(), promotionExempted);
     }
 
     private ClosureSheetAdministrativeResponse administrativeOf(ClosureStudentAssessment assessment,
@@ -230,6 +263,7 @@ public class ClosureSheetAssembler {
 
     private ClosureSheetSummaryResponse summaryOf(List<ClosureSheetStudentResponse> students) {
         Map<ClosureSuggestedResult, Long> counts = students.stream()
+                .filter(row -> row.enrollmentStatus() != EnrollmentStatus.WITHDRAWN)
                 .collect(Collectors.groupingBy(ClosureSheetStudentResponse::suggestedResult, Collectors.counting()));
         return new ClosureSheetSummaryResponse(count(counts, ClosureSuggestedResult.PROMOTES),
                 count(counts, ClosureSuggestedResult.GOES_TO_FINAL), count(counts, ClosureSuggestedResult.FAILED),

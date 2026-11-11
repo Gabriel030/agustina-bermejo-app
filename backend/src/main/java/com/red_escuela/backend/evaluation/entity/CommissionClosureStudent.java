@@ -57,6 +57,18 @@ public class CommissionClosureStudent {
     @Column(name = "teacher_observation", length = 500)
     private String teacherObservation;
 
+    public void settleConditionalPromotion(boolean exempted) {
+        if (finalCondition != ClosureFinalCondition.PROMOTION_CONDITIONAL) {
+            return;
+        }
+        if (exempted) {
+            this.finalCondition = ClosureFinalCondition.PROMOTES;
+        } else {
+            this.finalCondition = ClosureFinalCondition.GOES_TO_FINAL;
+            this.promotionGrade = null;
+        }
+    }
+
     public void changeTeacherObservation(String observation) {
         this.teacherObservation = observation;
     }

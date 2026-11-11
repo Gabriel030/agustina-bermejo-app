@@ -23,5 +23,8 @@ public record ClosureSheetResponse(
         List<ClosureSheetStudentResponse> students,
         ClosureSheetSummaryResponse summary,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String reportNumber,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) LocalDateTime closedAt) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) LocalDateTime closedAt,
+        int reportVersion,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String book,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String folio) {
 }

@@ -487,3 +487,11 @@ POST,/course-sections/{id}/closure/confirm,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,
 PUT,/program-sections/{id}/closure/students/{enrollmentId}/observation,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,section-instructor,
 PUT,/course-sections/{id}/closure/students/{enrollmentId}/observation,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,
 GET,/commission-closures/{closureId}/students/{enrollmentId}/prerequisites,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/program-sections/{id}/closure/approve,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,"{""book"":""Libro 1"",""folio"":""Folio 1"",""closeWithoutTeacherConfirmation"":false}"
+POST,/program-sections/{id}/closure/reopen,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+PUT,/program-sections/{id}/closure/students/{enrollmentId}/exception,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+DELETE,/program-sections/{id}/closure/students/{enrollmentId}/exception,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+POST,/course-sections/{id}/closure/approve,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,"{""book"":""Libro 1"",""folio"":""Folio 1"",""closeWithoutTeacherConfirmation"":false}"
+POST,/course-sections/{id}/closure/reopen,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+PUT,/course-sections/{id}/closure/students/{enrollmentId}/exception,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+DELETE,/course-sections/{id}/closure/students/{enrollmentId}/exception,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,

@@ -24,5 +24,6 @@ public record ClosureSheetStudentResponse(
         ClosureSheetAdministrativeResponse administrative,
         List<ClosureAlert> alerts,
         boolean exempted,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String teacherObservation) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String teacherObservation,
+        boolean promotionExempted) {
 }

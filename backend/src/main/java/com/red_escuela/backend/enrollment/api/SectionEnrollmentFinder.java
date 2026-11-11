@@ -127,6 +127,14 @@ public class SectionEnrollmentFinder {
         return courseEnrollmentRepository.findWithStudentBySectionIdAndStatusIn(sectionId, MEMBER_STATUSES);
     }
 
+    public List<SubjectSectionEnrollment> findWithdrawnWithStudentInProgramSection(Long sectionId) {
+        return programEnrollmentRepository.findWithStudentBySectionIdAndStatusIn(sectionId, List.of(EnrollmentStatus.WITHDRAWN));
+    }
+
+    public List<CourseSubjectSectionEnrollment> findWithdrawnWithStudentInCourseSection(Long sectionId) {
+        return courseEnrollmentRepository.findWithStudentBySectionIdAndStatusIn(sectionId, List.of(EnrollmentStatus.WITHDRAWN));
+    }
+
     public List<SubjectSectionEnrollment> findMembersOfProgramSection(Long sectionId) {
         return programEnrollmentRepository.findBySubjectSectionIdAndStatusIn(sectionId, MEMBER_STATUSES);
     }
