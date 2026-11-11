@@ -347,4 +347,41 @@ class ClosureRequirementsCalculatorIT extends AbstractIntegrationTest {
         assertThat(closureStudentRepository.findByClosureId(closure.getId())).hasSize(SMALL_SECTION)
                 .extracting(row -> row.getId()).containsExactlyInAnyOrderElementsOf(rows.stream().map(row -> row.getId()).toList());
     }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = ClosureStatus.class, names = {"TEACHER_CONFIRMED", "CLOSED"})
+    void recalculationIsRejectedAndTheSignedSnapshotIsKeptWhenTheClosureIsNotDraftOrReopened(ClosureStatus status) {
+        SubjectSection section = persistCommission(SMALL_SECTION);
+        CommissionClosure closure = CommissionClosure.builder()
+                .sectionKind(SectionKind.PROGRAM).sectionId(section.getId()).status(ClosureStatus.DRAFT_AVAILABLE).build();
+        entityManager.persist(closure);
+        entityManager.flush();
+        snapshotRecorder.recordSnapshot(closure.getId());
+        entityManager.flush();
+        entityManager.createNativeQuery("""
+                update commission_closure set status = :status, report_number = 'ACTA-2026-0001', book = 'L1', folio = '1',
+                closed_by_id = (select min(id) from person), closed_at = now() where id = :id
+                """.replace("report_number = 'ACTA-2026-0001', book = 'L1', folio = '1',\n                closed_by_id = (select min(id) from person), closed_at = now()",
+                        status == ClosureStatus.CLOSED ? "report_number = 'ACTA-2026-0001', book = 'L1', folio = '1', closed_by_id = (select min(id) from person), closed_at = now()" : "lock_version = lock_version"))
+                .setParameter("status", status.name()).setParameter("id", closure.getId()).executeUpdate();
+        entityManager.clear();
+        var before = closureStudentRepository.findByClosureId(closure.getId());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> snapshotRecorder.recordSnapshot(closure.getId()))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.ClosureSnapshotNotRecalculableException.class);
+
+        entityManager.clear();
+        assertThat(closureStudentRepository.findByClosureId(closure.getId())).hasSize(before.size());
+    }
+
+    @Test
+    void aReopenedClosureCanBeRecalculated() {
+        SubjectSection section = persistCommission(SMALL_SECTION);
+        CommissionClosure closure = CommissionClosure.builder()
+                .sectionKind(SectionKind.PROGRAM).sectionId(section.getId()).status(ClosureStatus.REOPENED).build();
+        entityManager.persist(closure);
+        entityManager.flush();
+
+        assertThat(snapshotRecorder.recordSnapshot(closure.getId()).assessments()).hasSize(SMALL_SECTION);
+    }
 }

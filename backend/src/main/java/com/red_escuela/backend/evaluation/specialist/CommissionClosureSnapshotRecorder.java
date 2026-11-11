@@ -2,7 +2,9 @@ package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.evaluation.domain.ClosureSnapshotResult;
 import com.red_escuela.backend.evaluation.domain.ClosureStudentAssessment;
+import com.red_escuela.backend.evaluation.entity.ClosureStatus;
 import com.red_escuela.backend.evaluation.entity.CommissionClosure;
+import com.red_escuela.backend.evaluation.exception.ClosureSnapshotNotRecalculableException;
 import com.red_escuela.backend.evaluation.entity.CommissionClosureStudent;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureRepository;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureStudentRepository;
@@ -31,8 +33,11 @@ public class CommissionClosureSnapshotRecorder {
 
     @Transactional
     public ClosureSnapshotResult recordSnapshot(Long closureId) {
-        CommissionClosure closure = closureRepository.findById(closureId)
+        CommissionClosure closure = closureRepository.findByIdForUpdate(closureId)
                 .orElseThrow(() -> new IllegalArgumentException("Cierre inexistente: " + closureId));
+        if (closure.getStatus() != ClosureStatus.DRAFT_AVAILABLE && closure.getStatus() != ClosureStatus.REOPENED) {
+            throw new ClosureSnapshotNotRecalculableException(closureId);
+        }
         List<ClosureStudentAssessment> assessments = requirementsCalculator.calculate(closure.getSectionKind(), closure.getSectionId());
         Map<Long, CommissionClosureStudent> existing = closureStudentRepository.findByClosureId(closureId).stream()
                 .collect(Collectors.toMap(CommissionClosureStudent::getEnrollmentId, Function.identity()));
