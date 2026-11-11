@@ -41,6 +41,7 @@ import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 
 @Service
 public class ProspectService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ProspectService.class);
     private final StudentFinder studentFinder;
     private final StudentOnboarding studentOnboarding;
     private final StudentDocumentRepository studentDocumentRepository;
@@ -73,10 +74,26 @@ public class ProspectService {
         try {
             studentOnboarding.registerProspectIfEmailIsFree(new NewProspect(
                     request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId(), null))
-                    .ifPresent(prospect -> emailVerificationSender.sendVerificationToStudent(prospect.studentId()));
-        } catch (DataIntegrityViolationException concurrentRegistration) {
-            return;
+                    .ifPresent(this::sendVerificationWithoutFailingTheRegistration);
+        } catch (DataIntegrityViolationException violation) {
+            if (!violatesEmailUniqueness(violation)) {
+                throw violation;
+            }
         }
+    }
+
+    private void sendVerificationWithoutFailingTheRegistration(StudentOnboardingSummary prospect) {
+        try {
+            emailVerificationSender.sendVerificationToStudent(prospect.studentId());
+        } catch (RuntimeException failure) {
+            log.warn("Verification email for prospect {} could not be sent: {}", prospect.studentId(),
+                    failure.getClass().getSimpleName());
+        }
+    }
+
+    private static boolean violatesEmailUniqueness(DataIntegrityViolationException violation) {
+        Throwable cause = violation.getMostSpecificCause();
+        return cause.getMessage() != null && cause.getMessage().contains("uk_person_email");
     }
 
     @Transactional

@@ -42,6 +42,8 @@ public class StudentOnboarding {
 
     @Transactional
     public Optional<StudentOnboardingSummary> registerProspectIfEmailIsFree(NewProspect prospect) {
+        institutionRepository.findById(prospect.institutionId())
+                .orElseThrow(() -> new InstitutionNotFoundException(prospect.institutionId()));
         if (basePersonCreator.isEmailRegistered(prospect.email())) {
             return Optional.empty();
         }

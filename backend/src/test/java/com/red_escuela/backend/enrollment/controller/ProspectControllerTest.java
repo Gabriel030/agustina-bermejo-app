@@ -193,6 +193,27 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void creatingProspectWithAMissingInstitutionRespondsTheSameForExistingAndNewEmails() throws Exception {
+        Long institutionId = persistInstitution();
+        persistProspect(institutionId);
+        Long missingInstitutionId = institutionId + 100000;
+
+        MvcResult existing = mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateProspectRequest(
+                                "Ana", "Gómez", "ana.gomez.prospecto@example.com", null, missingInstitutionId))))
+                .andReturn();
+        MvcResult fresh = mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateProspectRequest(
+                                "Luis", "Paz", "luis.paz.nuevo@example.com", null, missingInstitutionId))))
+                .andReturn();
+
+        assertThat(existing.getResponse().getStatus()).isEqualTo(fresh.getResponse().getStatus());
+        assertThat(existing.getResponse().getContentAsString()).isEqualTo(fresh.getResponse().getContentAsString());
+    }
+
+    @Test
     void creatingProspectWithOversizedFieldsReturns400() throws Exception {
         String tooLong = "x".repeat(101);
 
