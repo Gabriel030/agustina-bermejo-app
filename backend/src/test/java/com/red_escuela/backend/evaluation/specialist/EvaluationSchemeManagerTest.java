@@ -61,7 +61,7 @@ class EvaluationSchemeManagerTest extends AbstractIntegrationTest {
     }
 
     private CreateEvaluationSchemeRequest validRequest(String name) {
-        return new CreateEvaluationSchemeRequest(name, 2, true, 0.6, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), BigDecimal.valueOf(8.0), null);
+        return new CreateEvaluationSchemeRequest(name, 2, true, 0.6, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), BigDecimal.valueOf(8.0), null, null);
     }
 
     @Test
@@ -86,17 +86,17 @@ class EvaluationSchemeManagerTest extends AbstractIntegrationTest {
     @Test
     void creatingASchemeWithGradesOutsideTheZeroToTenScaleFails() {
         assertThatThrownBy(() -> evaluationSchemeService.create(
-                new CreateEvaluationSchemeRequest("Notas fuera de escala", 2, true, null, null, BigDecimal.valueOf(-2.0), BigDecimal.valueOf(6.0), null, null)))
+                new CreateEvaluationSchemeRequest("Notas fuera de escala", 2, true, null, null, BigDecimal.valueOf(-2.0), BigDecimal.valueOf(6.0), null, null, null)))
                 .isInstanceOf(InvalidEvaluationSchemeException.class);
         assertThatThrownBy(() -> evaluationSchemeService.create(
-                new CreateEvaluationSchemeRequest("Final sobre 15", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(15.0), null, null)))
+                new CreateEvaluationSchemeRequest("Final sobre 15", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(15.0), null, null, null)))
                 .isInstanceOf(InvalidEvaluationSchemeException.class);
     }
 
     @Test
     void creatingASchemeWhosePromotionCutIsBelowTheApprovalGradeFails() {
         assertThatThrownBy(() -> evaluationSchemeService.create(
-                new CreateEvaluationSchemeRequest("Promoción con 3", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), BigDecimal.valueOf(3.0), null)))
+                new CreateEvaluationSchemeRequest("Promoción con 3", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), BigDecimal.valueOf(3.0), null, null)))
                 .isInstanceOf(InvalidEvaluationSchemeException.class);
     }
 
@@ -104,14 +104,14 @@ class EvaluationSchemeManagerTest extends AbstractIntegrationTest {
     void creatingASchemeWhoseApprovalGradeIsBelowTheRegularGradeFails() {
         assertThatThrownBy(() -> evaluationSchemeService.create(
                 new CreateEvaluationSchemeRequest("Aprobar con menos que regular", 2, true, null, null,
-                        BigDecimal.valueOf(6.0), BigDecimal.valueOf(4.0), null, null)))
+                        BigDecimal.valueOf(6.0), BigDecimal.valueOf(4.0), null, null, null)))
                 .isInstanceOf(InvalidEvaluationSchemeException.class);
     }
 
     @Test
     void creatingASchemeWithMoreThanFourExamsFails() {
         assertThatThrownBy(() -> evaluationSchemeService.create(
-                new CreateEvaluationSchemeRequest("Cinco parciales", 5, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), null, null)))
+                new CreateEvaluationSchemeRequest("Cinco parciales", 5, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), null, null, null)))
                 .isInstanceOf(InvalidEvaluationSchemeException.class);
     }
 
@@ -120,7 +120,7 @@ class EvaluationSchemeManagerTest extends AbstractIntegrationTest {
         EvaluationScheme scheme = evaluationSchemeService.create(validRequest("Reglamento a corregir"));
 
         assertThatThrownBy(() -> evaluationSchemeService.update(scheme.getId(),
-                new CreateEvaluationSchemeRequest("Reglamento a corregir", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(11.0), null, null)))
+                new CreateEvaluationSchemeRequest("Reglamento a corregir", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(11.0), null, null, null)))
                 .isInstanceOf(InvalidEvaluationSchemeException.class);
         assertThat(scheme.getMinApprovalGrade()).isEqualTo(Grade.of(BigDecimal.valueOf(6.0)));
     }

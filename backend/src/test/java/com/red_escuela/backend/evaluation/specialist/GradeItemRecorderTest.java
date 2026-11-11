@@ -699,8 +699,13 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(10.0), null, null));
+        GradeItem legacyExam = new GradeItem();
+        legacyExam.setProgramSubjectSectionEnrollment(enrollment);
+        legacyExam.setType(GradeItemType.EXAM);
+        legacyExam.setSequenceNumber(1);
+        legacyExam.setDate(LocalDateTime.now());
+        legacyExam.setScore(Grade.of(BigDecimal.valueOf(10.0)));
+        gradeItemRepository.save(legacyExam);
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.TP, 1, null, LocalDateTime.now(), BigDecimal.valueOf(1.0), null, null));
 
@@ -824,7 +829,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
     @Test
     void schemeCreatedWithoutAggregationMethodStillMakesAStudentWithApprovedExamsRegular() {
         EvaluationScheme scheme = evaluationSchemeService.create(
-                new CreateEvaluationSchemeRequest("Esquema desde la pantalla", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), null, null));
+                new CreateEvaluationSchemeRequest("Esquema desde la pantalla", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), null, null, null));
         Instructor instructor = persistInstructor("71000112");
         SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000111", scheme, instructor, null);
         entityManager.flush();
