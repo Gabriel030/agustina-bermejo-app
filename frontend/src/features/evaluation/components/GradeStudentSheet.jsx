@@ -15,12 +15,12 @@ import {
   scoreTextState,
 } from '../lib/gradeGrid';
 
-const FINAL_DISABLED_REASON = 'Requiere condición regular';
+const FINAL_DISABLED_REASON = 'Se carga desde la mesa de examen';
 
 function SheetRow({ student, column, draft, saved, onPatch }) {
   const label = gradeColumnLabel(column);
   const locked = isColumnLocked(column);
-  const disabled = column.type === 'FINAL' && !student.finalEnabled;
+  const disabled = column.type === 'FINAL';
   const scoreText = draft ? draft.score : formatScore(saved?.score);
   const hasScore = scoreTextState(scoreText) !== 'empty';
   const comments = draft ? draft.comments : (saved?.comments ?? '');
@@ -43,7 +43,7 @@ function SheetRow({ student, column, draft, saved, onPatch }) {
                   {FINAL_DISABLED_REASON}
                 </span>
               </TooltipTrigger>
-              <TooltipContent>El final solo se carga a alumnos regulares.</TooltipContent>
+              <TooltipContent>La nota del final se registra desde la mesa de examen.</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         ) : (

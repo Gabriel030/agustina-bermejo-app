@@ -21,10 +21,13 @@ public class ExamBoardFinalGradeRowRejectedException extends ConflictException i
 
     @Override
     public Map<String, Object> details() {
+        if (registrationId == null || causeCode == null) {
+            return Map.of();
+        }
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("registrationId", registrationId);
         details.put("causeCode", causeCode);
-        if (!causeDetails.isEmpty()) {
+        if (causeDetails != null && !causeDetails.isEmpty()) {
             details.put("causeDetails", causeDetails);
         }
         return details;
