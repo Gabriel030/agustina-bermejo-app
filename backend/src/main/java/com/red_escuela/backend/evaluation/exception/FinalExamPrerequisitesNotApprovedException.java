@@ -18,6 +18,9 @@ public class FinalExamPrerequisitesNotApprovedException extends ConflictExceptio
 
     @Override
     public Map<String, Object> details() {
+        if (enrollmentId == null || pendingPrerequisites == null) {
+            return Map.of();
+        }
         return Map.of("enrollmentId", enrollmentId, "pendingPrerequisites", pendingPrerequisites);
     }
 }
