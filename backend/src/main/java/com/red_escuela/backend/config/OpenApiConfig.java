@@ -47,6 +47,7 @@ public class OpenApiConfig {
 
     private static final Map<String, List<String>> EXTENSIBLE_RESPONSE_ENUMS = Map.of(
             "BillingRunStepResponse", List.of("step"),
+            "GradeItemAuditResponse", List.of("kind"),
             "BillingRunItemResponse", List.of("subjectType"),
             "BillingRunAlertResponse", List.of("type"),
             "MonthlyInvoiceRunItemResponse", List.of("result"),

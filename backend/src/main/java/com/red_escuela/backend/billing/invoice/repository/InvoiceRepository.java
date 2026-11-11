@@ -99,6 +99,12 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
     @Query("select l.invoice.id from InvoiceLine l where l.chargeKey = :chargeKey and l.chargeKeyReleasedAt is null")
     Optional<Long> findLiveInvoiceIdByChargeKey(@Param("chargeKey") String chargeKey);
 
+    @Query("select distinct l.invoice.id from InvoiceLine l where l.programEnrollmentId = :enrollmentId")
+    List<Long> findInvoiceIdsByProgramEnrollmentId(@Param("enrollmentId") Long enrollmentId);
+
+    @Query("select distinct l.invoice.id from InvoiceLine l where l.courseEnrollmentId = :enrollmentId")
+    List<Long> findInvoiceIdsByCourseEnrollmentId(@Param("enrollmentId") Long enrollmentId);
+
     @Query("select distinct i from Invoice i join fetch i.lines l left join fetch l.discount where l.programEnrollmentId = :enrollmentId")
     List<Invoice> findByProgramEnrollmentId(@Param("enrollmentId") Long enrollmentId);
 
