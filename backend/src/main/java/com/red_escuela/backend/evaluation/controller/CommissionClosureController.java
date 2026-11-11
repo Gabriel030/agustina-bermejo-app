@@ -3,9 +3,19 @@ package com.red_escuela.backend.evaluation.controller;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.evaluation.domain.ClosureSectionKind;
 import com.red_escuela.backend.evaluation.domain.ClosureViewerProfile;
+import com.red_escuela.backend.evaluation.dto.ApproveClosureRequest;
 import com.red_escuela.backend.evaluation.dto.ClosurePrerequisiteResponse;
+import com.red_escuela.backend.evaluation.dto.ClosureReasonRequest;
 import com.red_escuela.backend.evaluation.dto.ClosureSheetResponse;
 import com.red_escuela.backend.evaluation.dto.TeacherObservationRequest;
+import com.red_escuela.backend.evaluation.usecase.closure.ApproveClosureCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.ApproveClosureUseCase;
+import com.red_escuela.backend.evaluation.usecase.closure.GrantClosureExceptionCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.GrantClosureExceptionUseCase;
+import com.red_escuela.backend.evaluation.usecase.closure.ReopenClosureCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.ReopenClosureUseCase;
+import com.red_escuela.backend.evaluation.usecase.closure.RevokeClosureExceptionCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.RevokeClosureExceptionUseCase;
 import com.red_escuela.backend.evaluation.usecase.closure.ConfirmClosureCommand;
 import com.red_escuela.backend.evaluation.usecase.closure.ConfirmClosureUseCase;
 import com.red_escuela.backend.evaluation.usecase.closure.GetClosureSheetCommand;
@@ -18,6 +28,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,16 +49,26 @@ public class CommissionClosureController {
     private final ConfirmClosureUseCase confirmClosureUseCase;
     private final RecordClosureObservationUseCase recordClosureObservationUseCase;
     private final GetClosureStudentPrerequisitesUseCase getClosureStudentPrerequisitesUseCase;
+    private final ApproveClosureUseCase approveClosureUseCase;
+    private final ReopenClosureUseCase reopenClosureUseCase;
+    private final GrantClosureExceptionUseCase grantClosureExceptionUseCase;
+    private final RevokeClosureExceptionUseCase revokeClosureExceptionUseCase;
     private final CurrentInstructorService currentInstructorService;
 
     public CommissionClosureController(GetClosureSheetUseCase getClosureSheetUseCase,
             ConfirmClosureUseCase confirmClosureUseCase, RecordClosureObservationUseCase recordClosureObservationUseCase,
             GetClosureStudentPrerequisitesUseCase getClosureStudentPrerequisitesUseCase,
-            CurrentInstructorService currentInstructorService) {
+            ApproveClosureUseCase approveClosureUseCase, ReopenClosureUseCase reopenClosureUseCase,
+            GrantClosureExceptionUseCase grantClosureExceptionUseCase,
+            RevokeClosureExceptionUseCase revokeClosureExceptionUseCase, CurrentInstructorService currentInstructorService) {
         this.getClosureSheetUseCase = getClosureSheetUseCase;
         this.confirmClosureUseCase = confirmClosureUseCase;
         this.recordClosureObservationUseCase = recordClosureObservationUseCase;
         this.getClosureStudentPrerequisitesUseCase = getClosureStudentPrerequisitesUseCase;
+        this.approveClosureUseCase = approveClosureUseCase;
+        this.reopenClosureUseCase = reopenClosureUseCase;
+        this.grantClosureExceptionUseCase = grantClosureExceptionUseCase;
+        this.revokeClosureExceptionUseCase = revokeClosureExceptionUseCase;
         this.currentInstructorService = currentInstructorService;
     }
 
@@ -93,6 +114,68 @@ public class CommissionClosureController {
             @Valid @RequestBody TeacherObservationRequest request) {
         recordClosureObservationUseCase.record(new RecordClosureObservationCommand(
                 ClosureSectionKind.COURSE, id, enrollmentId, currentInstructorId(), request.observation()));
+    }
+
+    @PostMapping("/program-sections/{id}/closure/approve")
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void approveProgramSectionClosure(@PathVariable Long id, @Valid @RequestBody ApproveClosureRequest request) {
+        approveClosureUseCase.approve(new ApproveClosureCommand(ClosureSectionKind.PROGRAM, id, request.book(), request.folio(),
+                request.closeWithoutTeacherConfirmation()));
+    }
+
+    @PostMapping("/program-sections/{id}/closure/reopen")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reopenProgramSectionClosure(@PathVariable Long id, @Valid @RequestBody ClosureReasonRequest request) {
+        reopenClosureUseCase.reopen(new ReopenClosureCommand(ClosureSectionKind.PROGRAM, id, request.reason()));
+    }
+
+    @PutMapping("/program-sections/{id}/closure/students/{enrollmentId}/exception")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void grantProgramSectionException(@PathVariable Long id, @PathVariable Long enrollmentId,
+            @Valid @RequestBody ClosureReasonRequest request) {
+        grantClosureExceptionUseCase.grant(new GrantClosureExceptionCommand(
+                ClosureSectionKind.PROGRAM, id, enrollmentId, request.reason()));
+    }
+
+    @DeleteMapping("/program-sections/{id}/closure/students/{enrollmentId}/exception")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeProgramSectionException(@PathVariable Long id, @PathVariable Long enrollmentId) {
+        revokeClosureExceptionUseCase.revoke(new RevokeClosureExceptionCommand(ClosureSectionKind.PROGRAM, id, enrollmentId));
+    }
+
+    @PostMapping("/course-sections/{id}/closure/approve")
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void approveCourseSectionClosure(@PathVariable Long id, @Valid @RequestBody ApproveClosureRequest request) {
+        approveClosureUseCase.approve(new ApproveClosureCommand(ClosureSectionKind.COURSE, id, request.book(), request.folio(),
+                request.closeWithoutTeacherConfirmation()));
+    }
+
+    @PostMapping("/course-sections/{id}/closure/reopen")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reopenCourseSectionClosure(@PathVariable Long id, @Valid @RequestBody ClosureReasonRequest request) {
+        reopenClosureUseCase.reopen(new ReopenClosureCommand(ClosureSectionKind.COURSE, id, request.reason()));
+    }
+
+    @PutMapping("/course-sections/{id}/closure/students/{enrollmentId}/exception")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void grantCourseSectionException(@PathVariable Long id, @PathVariable Long enrollmentId,
+            @Valid @RequestBody ClosureReasonRequest request) {
+        grantClosureExceptionUseCase.grant(new GrantClosureExceptionCommand(
+                ClosureSectionKind.COURSE, id, enrollmentId, request.reason()));
+    }
+
+    @DeleteMapping("/course-sections/{id}/closure/students/{enrollmentId}/exception")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeCourseSectionException(@PathVariable Long id, @PathVariable Long enrollmentId) {
+        revokeClosureExceptionUseCase.revoke(new RevokeClosureExceptionCommand(ClosureSectionKind.COURSE, id, enrollmentId));
     }
 
     @GetMapping("/commission-closures/{closureId}/students/{enrollmentId}/prerequisites")

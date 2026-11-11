@@ -43,6 +43,7 @@ function student(enrollmentId, lastname, name, overrides = {}) {
     alerts: [],
     exempted: false,
     teacherObservation: null,
+    promotionExempted: false,
     ...overrides,
   };
 }
@@ -112,6 +113,9 @@ export function closureSheet(overrides = {}) {
     summary: summaryOf(students),
     reportNumber: null,
     closedAt: null,
+    reportVersion: 1,
+    book: null,
+    folio: null,
     ...overrides,
   };
 }

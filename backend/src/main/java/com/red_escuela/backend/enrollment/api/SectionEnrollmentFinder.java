@@ -30,11 +30,37 @@ public class SectionEnrollmentFinder {
 
     private final SubjectSectionEnrollmentRepository programEnrollmentRepository;
     private final CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository;
+    private final com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository billingProgramEnrollmentRepository;
+    private final jakarta.persistence.EntityManager entityManager;
 
     public SectionEnrollmentFinder(SubjectSectionEnrollmentRepository programEnrollmentRepository,
-                                   CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository) {
+                                   CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository,
+                                   com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository billingProgramEnrollmentRepository,
+                                   jakarta.persistence.EntityManager entityManager) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.billingProgramEnrollmentRepository = billingProgramEnrollmentRepository;
+        this.entityManager = entityManager;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockBillingProgramEnrollment(Long programEnrollmentId) {
+        billingProgramEnrollmentRepository.findByIdForUpdate(programEnrollmentId)
+                .orElseThrow(() -> new SectionEnrollmentNotFoundException(programEnrollmentId));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public SubjectSectionEnrollment refreshProgramEnrollment(Long id) {
+        SubjectSectionEnrollment enrollment = findProgramEnrollment(id);
+        entityManager.refresh(enrollment);
+        return enrollment;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public CourseSubjectSectionEnrollment refreshCourseEnrollment(Long id) {
+        CourseSubjectSectionEnrollment enrollment = findCourseEnrollment(id);
+        entityManager.refresh(enrollment);
+        return enrollment;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -125,6 +151,14 @@ public class SectionEnrollmentFinder {
 
     public List<CourseSubjectSectionEnrollment> findMembersWithStudentInCourseSection(Long sectionId) {
         return courseEnrollmentRepository.findWithStudentBySectionIdAndStatusIn(sectionId, MEMBER_STATUSES);
+    }
+
+    public List<SubjectSectionEnrollment> findWithdrawnWithStudentInProgramSection(Long sectionId) {
+        return programEnrollmentRepository.findWithStudentBySectionIdAndStatusIn(sectionId, List.of(EnrollmentStatus.WITHDRAWN));
+    }
+
+    public List<CourseSubjectSectionEnrollment> findWithdrawnWithStudentInCourseSection(Long sectionId) {
+        return courseEnrollmentRepository.findWithStudentBySectionIdAndStatusIn(sectionId, List.of(EnrollmentStatus.WITHDRAWN));
     }
 
     public List<SubjectSectionEnrollment> findMembersOfProgramSection(Long sectionId) {

@@ -116,6 +116,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_ANNUAL_UPFRONT_SETTINGS` | no | `InvalidAnnualUpfrontSettingsException` | billing |
 | `INVALID_BILLING_RUN_RANGE` | no | `InvalidBillingRunRangeException` | billing |
 | `INVALID_CERTIFICATE_CODE` | no | `InvalidCertificateCodeException` | graduation |
+| `INVALID_CLOSURE_EXCEPTION_REASON` | no | `InvalidClosureExceptionReasonException` | evaluation |
 | `INVALID_CLOSURE_REOPEN_REASON` | no | `InvalidClosureReopenReasonException` | evaluation |
 | `INVALID_COLLECTION_REMINDER_SCHEDULE` | no | `InvalidCollectionReminderScheduleException` | billing |
 | `INVALID_COLLECTION_REMINDER_SETTINGS` | no | `InvalidCollectionReminderSettingsException` | billing |
@@ -251,6 +252,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGEBACK_NOT_FOUND` | no | `ChargebackNotFoundException` | billing |
 | `CLASSROOM_NOT_FOUND` | no | `ClassroomNotFoundException` | academicstructure |
 | `CLASS_SESSION_NOT_FOUND` | no | `ClassSessionNotFoundException` | attendance |
+| `CLOSURE_EXCEPTION_NOT_FOUND` | no | `ClosureExceptionNotFoundException` | evaluation |
 | `CLOSURE_STUDENT_NOT_FOUND` | no | `ClosureStudentNotFoundException` | evaluation |
 | `CONFIGURATION_VERSION_NOT_FOUND` | no | `ConfigurationVersionNotFoundException` | billing |
 | `COREQUISITE_NOT_FOUND` | no | `CorequisiteNotFoundException` | academicstructure |
@@ -354,9 +356,11 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CLOSURE_ALREADY_CLOSED` | no | `ClosureAlreadyClosedException` | evaluation |
 | `CLOSURE_ALREADY_CONFIRMED` | no | `ClosureAlreadyConfirmedException` | evaluation |
 | `CLOSURE_BEFORE_TERM_END` | no | `ClosureBeforeTermEndException` | evaluation |
+| `CLOSURE_EXCEPTION_ALREADY_GRANTED` | no | `ClosureExceptionAlreadyGrantedException` | evaluation |
 | `CLOSURE_NOT_AVAILABLE` | no | `ClosureNotAvailableException` | evaluation |
 | `CLOSURE_NOT_CLOSED` | no | `ClosureNotClosedException` | evaluation |
 | `CLOSURE_NOT_CONFIRMED` | no | `ClosureNotConfirmedException` | evaluation |
+| `CLOSURE_NOT_REOPENABLE` | no | `ClosureNotReopenableException` | evaluation |
 | `CLOSURE_SNAPSHOT_NOT_RECALCULABLE` | no | `ClosureSnapshotNotRecalculableException` | evaluation |
 | `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | billing |
 | `COHORT_PROMOTION_ALREADY_ACQUIRED` | no | `CohortPromotionAlreadyAcquiredException` | billing |
@@ -651,7 +655,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-sections/{id}/activate` | `CourseSectionController#reactivate` |
 | POST | `/course-sections/{id}/attendance` | `AttendanceController#loadCourseSectionAttendance` |
 | POST | `/course-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelCourseSectionClassSession` |
+| POST | `/course-sections/{id}/closure/approve` | `CommissionClosureController#approveCourseSectionClosure` |
 | POST | `/course-sections/{id}/closure/confirm` | `CommissionClosureController#confirmCourseSectionClosure` |
+| POST | `/course-sections/{id}/closure/reopen` | `CommissionClosureController#reopenCourseSectionClosure` |
 | POST | `/course-sections/{id}/deactivate` | `CourseSectionController#deactivate` |
 | POST | `/course-sections/{id}/grade-items/publish` | `GradePublicationController#publishCourseSectionGradeItem` |
 | POST | `/course-sections/{id}/instructors` | `CourseSectionController#assignInstructor` |
@@ -736,7 +742,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/program-sections/{id}/activate` | `SubjectSectionController#reactivate` |
 | POST | `/program-sections/{id}/attendance` | `AttendanceController#loadProgramSectionAttendance` |
 | POST | `/program-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelProgramSectionClassSession` |
+| POST | `/program-sections/{id}/closure/approve` | `CommissionClosureController#approveProgramSectionClosure` |
 | POST | `/program-sections/{id}/closure/confirm` | `CommissionClosureController#confirmProgramSectionClosure` |
+| POST | `/program-sections/{id}/closure/reopen` | `CommissionClosureController#reopenProgramSectionClosure` |
 | POST | `/program-sections/{id}/deactivate` | `SubjectSectionController#deactivate` |
 | POST | `/program-sections/{id}/grade-items/publish` | `GradePublicationController#publishProgramSectionGradeItem` |
 | POST | `/program-sections/{id}/instructors` | `SubjectSectionController#assignInstructor` |
