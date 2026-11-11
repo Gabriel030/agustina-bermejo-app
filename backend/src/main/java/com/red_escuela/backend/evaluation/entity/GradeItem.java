@@ -50,12 +50,32 @@ public class GradeItem {
     @Column(name = "score")
     private Grade score;
 
+    @Column(name = "original_score")
+    private Grade originalScore;
+
+    @Column(name = "recovery_loaded_by")
+    private Long recoveryLoadedBy;
+
+    @Column(name = "recovery_loaded_at")
+    private LocalDateTime recoveryLoadedAt;
+
     @Column(name = "comments")
     private String comments;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_board_id")
     private ExamBoard examBoard;
+
+    public boolean isRecovered() {
+        return recoveryLoadedAt != null;
+    }
+
+    public void applyRecovery(Grade recoveryScore, Long loadedBy, LocalDateTime loadedAt) {
+        this.originalScore = this.score;
+        this.score = recoveryScore;
+        this.recoveryLoadedBy = loadedBy;
+        this.recoveryLoadedAt = loadedAt;
+    }
 
     @PrePersist
     @PreUpdate

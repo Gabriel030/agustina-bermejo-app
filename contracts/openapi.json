@@ -3293,6 +3293,10 @@
           },
           "promotionMinGrade" : {
             "type" : [ "number", "null" ]
+          },
+          "recoveryQuota" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
           }
         },
         "required" : [ "examCountExpected", "hasFinal", "minApprovalGrade", "minRegularGrade", "name" ],
@@ -4993,6 +4997,10 @@
           },
           "promotionMinGrade" : {
             "type" : [ "number", "null" ]
+          },
+          "recoveryQuota" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "required" : [ "aggregationMethod", "examCountExpected", "finalWeight", "hasFinal", "id", "inUse", "minApprovalGrade", "minRegularGrade", "name", "notes", "promotionMinGrade" ],
@@ -5594,8 +5602,8 @@
             "type" : "integer"
           },
           "kind" : {
-            "enum" : [ "CORRECTION", "FINAL_REVERT" ],
-            "type" : "string"
+            "type" : "string",
+            "x-extensible-enum" : [ "CORRECTION", "FINAL_REVERT", "RECOVERY" ]
           },
           "newScore" : {
             "type" : "number"
@@ -9637,6 +9645,15 @@
           }
         },
         "required" : [ "internal", "name", "personId", "role" ],
+        "type" : "object"
+      },
+      "RecordExamRecoveryRequest" : {
+        "properties" : {
+          "score" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "score" ],
         "type" : "object"
       },
       "RefreshRequest" : {
@@ -32965,6 +32982,133 @@
           }
         },
         "tags" : [ "grade-correction-controller" ]
+      }
+    },
+    "/grade-items/{id}/recovery" : {
+      "post" : {
+        "operationId" : "ExamRecovery_recordExamRecovery",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RecordExamRecoveryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GradeItemAuditResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "exam-recovery-controller" ]
       }
     },
     "/graduation-certificates" : {

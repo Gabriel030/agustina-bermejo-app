@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.note.service;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.api.AdmissionReceiptLookup;
 import com.red_escuela.backend.billing.api.AdmissionReceiptSummary;
+import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -37,16 +38,18 @@ public class SystemAdmissionInvoiceCancellation {
     private final BillingOperationPipeline pipeline;
     private final CancelInvoiceOperation cancelInvoiceOperation;
     private final LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment;
+    private final DiscountConsumptionService discountConsumption;
 
     public SystemAdmissionInvoiceCancellation(InvoiceCreditAccessService invoiceAccess, StudentCurrentAccountService accountService, AdmissionReceiptLookup receiptLookup,
                                               BillingOperationPipeline pipeline, CancelInvoiceOperation cancelInvoiceOperation,
-                                              LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment) {
+                                              LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment, DiscountConsumptionService discountConsumption) {
         this.invoiceAccess = invoiceAccess;
         this.accountService = accountService;
         this.receiptLookup = receiptLookup;
         this.pipeline = pipeline;
         this.cancelInvoiceOperation = cancelInvoiceOperation;
         this.lateFeeAnnulment = lateFeeAnnulment;
+        this.discountConsumption = discountConsumption;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -57,6 +60,7 @@ public class SystemAdmissionInvoiceCancellation {
     @Transactional(propagation = Propagation.MANDATORY)
     public Outcome cancelWhenUnpaid(Long invoiceId, SystemCancellationOrigin origin, String justification) {
         Long accountId = invoiceAccess.findAccountIdOf(invoiceId).orElseThrow(() -> new IllegalStateException("Admission invoice not found: " + invoiceId));
+        discountConsumption.lockEnrollmentsOfDiscountsAppliedOn(invoiceId);
         accountService.lockStudentCurrentAccount(accountId);
         Invoice invoice = invoiceAccess.lockInvoice(invoiceId).orElseThrow(() -> new IllegalStateException("Admission invoice not found: " + invoiceId));
         if (invoice.getDocumentStatus() == InvoiceDocumentStatus.ISSUED && invoice.getPaymentStatus() == InvoicePaymentStatus.CANCELLED) {

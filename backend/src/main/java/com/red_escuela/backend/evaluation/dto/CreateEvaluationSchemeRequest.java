@@ -17,5 +17,6 @@ public record CreateEvaluationSchemeRequest(
         @NotNull BigDecimal minRegularGrade,
         @NotNull BigDecimal minApprovalGrade,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) BigDecimal promotionMinGrade,
-        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String notes) {
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String notes,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Integer recoveryQuota) {
 }
