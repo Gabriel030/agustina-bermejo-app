@@ -37,7 +37,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.api.Tag;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -54,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -314,6 +317,31 @@ class CourseEnrollmentRulesTest {
     }
 
     @Test
+    @Tag("D-457")
+    void withdrawFinishesCancellingModulesAndPromotingWaitlistsBeforeBillingTakesTheAccountLock() {
+        CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment activeModule = subEnrollment(100L, 31L, 21L, EnrollmentStatus.ENROLLED);
+        CourseEnrollment nextInCourse = courseEnrollment(2L, EnrollmentStatus.WAITLISTED);
+        when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
+        givenWithdrawalDates();
+        when(subEnrollmentRepository.findByCourseEnrollmentId(1L)).thenReturn(List.of(activeModule));
+        when(sectionFinder.findCourseSection(31L)).thenReturn(sectionView(31L, 21L));
+        when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 0L)).thenReturn(true);
+        when(courseEnrollmentRepository.findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(COURSE_ID, EnrollmentStatus.WAITLISTED))
+                .thenReturn(Optional.of(nextInCourse));
+
+        service.withdraw(1L, voluntaryWithdrawal());
+
+        InOrder order = inOrder(courseEnrollmentRepository, courseCatalogFinder, sectionFinder, subEnrollmentRepository, withdrawalBillingPort);
+        order.verify(courseEnrollmentRepository).findByIdForUpdate(1L);
+        order.verify(courseCatalogFinder).lockCourse(COURSE_ID);
+        order.verify(sectionFinder).lockCourseSection(31L);
+        order.verify(subEnrollmentRepository).save(activeModule);
+        order.verify(courseEnrollmentRepository).save(nextInCourse);
+        order.verify(withdrawalBillingPort).registerWithdrawalForBilling(any());
+    }
+
+    @Test
     void withdrawLocksTheEnrollmentBeforeTheCourseAndBeforeNotifyingBilling() {
         CourseEnrollment enrollment = courseEnrollment(1L, EnrollmentStatus.ENROLLED);
         when(courseEnrollmentRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
@@ -321,7 +349,7 @@ class CourseEnrollmentRulesTest {
 
         service.withdraw(1L, voluntaryWithdrawal());
 
-        org.mockito.InOrder order = org.mockito.Mockito.inOrder(courseEnrollmentRepository, courseCatalogFinder, withdrawalBillingPort);
+        InOrder order = inOrder(courseEnrollmentRepository, courseCatalogFinder, withdrawalBillingPort);
         order.verify(courseEnrollmentRepository).findByIdForUpdate(1L);
         order.verify(courseCatalogFinder).lockCourse(COURSE_ID);
         order.verify(withdrawalBillingPort).registerWithdrawalForBilling(any());
@@ -340,7 +368,7 @@ class CourseEnrollmentRulesTest {
 
         service.withdraw(1L, voluntaryWithdrawal());
 
-        org.mockito.InOrder order = org.mockito.Mockito.inOrder(courseCatalogFinder, sectionFinder);
+        InOrder order = inOrder(courseCatalogFinder, sectionFinder);
         order.verify(courseCatalogFinder).lockCourse(COURSE_ID);
         order.verify(sectionFinder).lockCourseSection(31L);
         order.verify(sectionFinder).lockCourseSection(32L);

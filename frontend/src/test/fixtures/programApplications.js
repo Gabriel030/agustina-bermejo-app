@@ -35,6 +35,7 @@ export function approvalCheck(overrides = {}) {
     canApprove: true,
     documentation: { complete: true, missingTypes: [], documents: [] },
     debt: { blocksApproval: false, violationCodes: [] },
+    blockingReasons: [],
     ...overrides,
   };
 }

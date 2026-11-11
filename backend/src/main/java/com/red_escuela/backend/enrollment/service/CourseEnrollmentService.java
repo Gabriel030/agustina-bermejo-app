@@ -240,12 +240,12 @@ public class CourseEnrollmentService {
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
         courseEnrollmentRepository.save(enrollment);
-        withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
-                enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
         cancelModuleEnrollments(enrollment, promotesWaitlist);
         if (liberaCupoDelCurso && promotesWaitlist) {
             promoteNextFromCourseWaitlist(enrollment.courseId());
         }
+        withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
+                enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
     }
 
     void cancelModuleEnrollments(CourseEnrollment enrollment) {
