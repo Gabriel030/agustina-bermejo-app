@@ -20,7 +20,14 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     When method post
     Then status 201
     And match response.onboardingStatus == 'PROSPECTO'
-    * def studentId = response.id
+    And assert response.id == null
+    * configure retry = { count: 20, interval: 500 }
+    Given path '/prospects'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And retry until response.filter(x => x.email == emailProspecto).length == 1
+    When method get
+    Then status 200
+    * def studentId = response.filter(x => x.email == emailProspecto)[0].id
 
     # 2. Sin sesión no se puede agregar documentación — 401
     Given path '/prospects', studentId, 'documents'

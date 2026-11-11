@@ -8,6 +8,11 @@ public record ProspectResponse(
         String username, String email, StudentOnboardingStatus onboardingStatus,
         String status, Boolean emailVerified) {
 
+    public static ProspectResponse acknowledged() {
+        return new ProspectResponse(null, null, null, null, null, null, null,
+                StudentOnboardingStatus.PROSPECTO, null, null);
+    }
+
     public static ProspectResponse from(StudentOnboardingSummary summary) {
         return new ProspectResponse(
                 summary.studentId(),

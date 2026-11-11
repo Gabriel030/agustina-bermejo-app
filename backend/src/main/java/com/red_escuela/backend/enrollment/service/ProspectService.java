@@ -24,6 +24,7 @@ import com.red_escuela.backend.identity.api.StudentOnboardingSummary;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -68,12 +69,14 @@ public class ProspectService {
         this.clock = clock;
     }
 
-    @Transactional
-    public StudentOnboardingSummary createProspect(CreateProspectRequest request) {
-        StudentOnboardingSummary prospect = studentOnboarding.registerProspect(new NewProspect(
-                request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId(), null));
-        emailVerificationSender.sendVerificationToStudent(prospect.studentId());
-        return prospect;
+    public void createProspect(CreateProspectRequest request) {
+        try {
+            studentOnboarding.registerProspectIfEmailIsFree(new NewProspect(
+                    request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId(), null))
+                    .ifPresent(prospect -> emailVerificationSender.sendVerificationToStudent(prospect.studentId()));
+        } catch (DataIntegrityViolationException concurrentRegistration) {
+            return;
+        }
     }
 
     @Transactional
