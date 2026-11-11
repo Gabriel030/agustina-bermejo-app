@@ -87,11 +87,46 @@ describe('PreceptorMesaExamen', () => {
 
     const inscriptos = (await screen.findByText('Inscriptos')).parentElement;
     expect(within(inscriptos).getByText('3')).toBeInTheDocument();
-    expect(screen.getAllByText('Rindió')).toHaveLength(2);
+    expect(screen.getByText('Aprobado')).toBeInTheDocument();
+    expect(screen.getByText('Desaprobado')).toBeInTheDocument();
     expect(screen.getByText('Ausente')).toBeInTheDocument();
     expect(screen.queryByText('ABSENT')).not.toBeInTheDocument();
     expect(screen.queryByText('GRADED')).not.toBeInTheDocument();
     expect(screen.getByText('10')).toBeInTheDocument();
+  });
+
+  it('shows the tribunal teacher the sheet to load grades without the management buttons', async () => {
+    const pasada = mesa({ examDate: '2020-01-10T18:00:00' });
+    server.use(
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([pasada])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(pasada)),
+      http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([anotado(1, 'REGISTERED')])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PreceptorMesaExamen role="docente" />);
+
+    await abrirMesa(user);
+
+    expect(await screen.findByLabelText('Nota del final de Alumno 1')).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Cerrar acta' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancelar mesa' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Dar de baja a/ })).not.toBeInTheDocument();
+  });
+
+  it('shows the preceptor the sheet read only and keeps the management buttons', async () => {
+    const pasada = mesa({ examDate: '2020-01-10T18:00:00' });
+    server.use(
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([pasada])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(pasada)),
+      http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([anotado(1, 'REGISTERED')])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PreceptorMesaExamen />);
+
+    await abrirMesa(user);
+
+    expect(await screen.findByRole('button', { name: 'Cerrar acta' })).toBeEnabled();
+    expect(screen.queryByLabelText('Nota del final de Alumno 1')).not.toBeInTheDocument();
   });
 
   it('no deja cerrar el acta antes de la fecha del examen', async () => {
@@ -160,7 +195,7 @@ describe('PreceptorMesaExamen', () => {
     renderWithProviders(<PreceptorMesaExamen />);
 
     await abrirMesa(user);
-    await user.click(await screen.findByRole('button', { name: 'Dar de baja' }));
+    await user.click(await screen.findByRole('button', { name: 'Dar de baja a Alumno 1' }));
 
     await vi.waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('Esta inscripción ya no se puede dar de baja.'));
   });

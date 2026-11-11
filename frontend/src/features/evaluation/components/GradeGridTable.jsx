@@ -21,9 +21,12 @@ import {
 } from '../lib/gradeGrid';
 import { GradeEntryCell } from './GradeEntryCell';
 import { GradeReadCell } from './GradeReadCell';
+import { BOARD_RESULT } from '../lib/examBoardGrades';
+import { buildBoardColumns } from './examBoardColumns';
 
 const STICKY_LEFT = 'sticky left-0 z-20 w-[112px] min-w-[112px] max-w-[112px] bg-dialog-bg whitespace-normal shadow-(--sh-sticky-left) md:w-[170px] md:min-w-[170px] md:max-w-[170px]';
 const STICKY_RIGHT = 'sticky right-0 z-20 min-w-[56px] bg-dialog-bg text-right shadow-(--sh-sticky-right) md:min-w-[72px]';
+const NO_COLUMNS = [];
 const FINAL_DISABLED_REASON = 'Se carga desde la mesa de examen';
 
 function PublishHeader({ column, students, hasDrafts, onPublish }) {
@@ -55,13 +58,14 @@ function PublishHeader({ column, students, hasDrafts, onPublish }) {
   );
 }
 
-export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, readOnly = false, onChange, onSettle, onRetry, onOpenStudent, onOpenCell, onPublish }) {
+export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course', board, drafts = {}, statuses = {}, readOnly = false, onChange, onSettle, onRetry, onOpenStudent, onOpenCell, onPublish }) {
   'use no memo';
   const scrollRef = useRef(null);
   const [moreToRight, setMoreToRight] = useState(false);
 
+  const boardMode = mode === 'board';
   const tableColumns = useMemo(
-    () => [
+    () => boardMode ? buildBoardColumns() : [
       {
         id: 'student',
         header: 'Alumno',
@@ -132,15 +136,15 @@ export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, 
         cell: ({ row }) => <b className="text-ink">{row.original.finalScore == null ? '—' : formatScore(row.original.finalScore)}</b>,
       },
     ],
-    [columns],
+    [columns, boardMode],
   );
 
   const table = useReactTable({
     data: students,
     columns: tableColumns,
-    getRowId: (row) => String(row.enrollmentId),
-    meta: { drafts, statuses, readOnly, onChange, onSettle, onRetry, onOpenStudent, onOpenCell },
-    state: { columnVisibility: { condition: false } },
+    getRowId: (row) => String(boardMode ? row.id : row.enrollmentId),
+    meta: { drafts, statuses, readOnly, onChange, onSettle, onRetry, onOpenStudent, onOpenCell, board },
+    state: { columnVisibility: boardMode ? {} : { condition: false } },
     initialState: { sorting: [{ id: 'student', desc: false }] },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -160,18 +164,19 @@ export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, 
       node.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
-  }, [columns.length, students.length]);
+  }, [columns.length, students.length, boardMode]);
 
-  const conditionColumn = table.getColumn('condition');
-  const conditionOptions = Array.from(conditionColumn.getFacetedUniqueValues().entries())
-    .map(([value, count]) => ({ value, count, label: GRID_CONDITION[value]?.label ?? value }))
+  const filterColumn = table.getColumn(boardMode ? 'result' : 'condition');
+  const filterLabels = boardMode ? BOARD_RESULT : GRID_CONDITION;
+  const filterOptions = Array.from(filterColumn.getFacetedUniqueValues().entries())
+    .map(([value, count]) => ({ value, count, label: filterLabels[value]?.label ?? value }))
     .sort((a, b) => a.label.localeCompare(b.label, 'es'));
   const sortDirection = table.getColumn('student').getIsSorted();
   const SortIcon = sortDirection === 'asc' ? ChevronUp : sortDirection === 'desc' ? ChevronDown : ChevronsUpDown;
   const rows = table.getRowModel().rows;
 
   return (
-    <div className="relative min-w-0 max-w-full">
+    <div className="relative min-w-0 max-w-full" data-board-grid={boardMode ? '' : undefined}>
       <div ref={scrollRef} className="max-h-[62vh] max-w-full overflow-auto rounded-xl">
         <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
           <TableHeader className="bg-dialog-bg">
@@ -184,7 +189,7 @@ export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, 
                     key={header.id}
                     className={cn(
                       'sticky top-0 z-10 bg-dialog-bg px-1.5',
-                      header.column.id !== 'student' && header.column.id !== 'finalScore' && 'text-right',
+                      header.column.id !== 'student' && header.column.id !== 'finalScore' && header.column.columnDef.meta?.align !== 'left' && 'text-right',
                       sticky === 'left' && `${STICKY_LEFT} z-30`,
                       sticky === 'right' && `${STICKY_RIGHT} z-30 whitespace-normal`,
                     )}
@@ -199,18 +204,32 @@ export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, 
                           Alumno
                           <SortIcon className="size-3.5" />
                         </button>
-                        {conditionOptions.length > 1 && (
+                        {!boardMode && filterOptions.length > 1 && (
                           <ColumnFilter
                             label="Condición"
-                            options={conditionOptions}
-                            selected={conditionColumn.getFilterValue()}
-                            onChange={(value) => conditionColumn.setFilterValue(value)}
+                            options={filterOptions}
+                            selected={filterColumn.getFilterValue()}
+                            onChange={(value) => filterColumn.setFilterValue(value)}
                           />
                         )}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-end gap-1">
-                        <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                      <div className={cn('flex flex-col gap-1', header.column.columnDef.meta?.align === 'left' ? 'items-start' : 'items-end')}>
+                        {boardMode && header.column.id === 'result' ? (
+                          <div className="flex items-center gap-1">
+                            <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                            {filterOptions.length > 1 && (
+                              <ColumnFilter
+                                label="Resultado"
+                                options={filterOptions}
+                                selected={filterColumn.getFilterValue()}
+                                onChange={(value) => filterColumn.setFilterValue(value)}
+                              />
+                            )}
+                          </div>
+                        ) : (
+                          <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                        )}
                         {header.column.columnDef.meta?.column?.date && (
                           <span className="text-[10.5px] font-medium normal-case tracking-normal text-ink-faint">
                             {header.column.columnDef.meta.column.date.slice(8, 10)}/{header.column.columnDef.meta.column.date.slice(5, 7)}
@@ -241,7 +260,7 @@ export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, 
                       key={cell.id}
                       className={cn(
                         'border-t border-border px-1.5 py-1.5',
-                        cell.column.id !== 'student' && 'text-right',
+                        cell.column.id !== 'student' && cell.column.columnDef.meta?.align !== 'left' && 'text-right',
                         sticky === 'left' && STICKY_LEFT,
                         sticky === 'right' && STICKY_RIGHT,
                       )}
@@ -254,7 +273,7 @@ export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, 
             ))}
             {!rows.length && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={columns.length + 2} className="py-6 text-center text-ink-faint">
+                <TableCell colSpan={table.getVisibleLeafColumns().length} className="py-6 text-center text-ink-faint">
                   Ningún alumno con estos filtros.
                 </TableCell>
               </TableRow>
