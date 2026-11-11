@@ -106,6 +106,9 @@ export function DocenteComisionDetalle() {
             </div>
           )}
         </div>
+        <Button variant="outline" asChild>
+          <Link to={`/docente/mis-comisiones/${sectionId}/cierre${sufijoTipo}`}>Cierre</Link>
+        </Button>
         {tab === 'avisos' && !cerrada && (
           <Button variant="gradient" onClick={irANuevoAviso}>
             Nuevo aviso
