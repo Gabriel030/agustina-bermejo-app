@@ -183,4 +183,32 @@ class ProgramPrerequisiteEvaluatorTest {
 
         assertThat(evaluator.areAllMetOrSubjectOutsidePlan(ENROLLMENT_ID, 99L)).isTrue();
     }
+
+    @Test
+    void unmetForApprovalListsOnlyPrerequisitesNotApprovedNorWaived() {
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.PASSED_COURSEWORK, "C10"),
+                new PrerequisiteView(11L, "Analisis I", RequirementType.PASSED_COURSEWORK, "C11"));
+        studentHas(10L, EnrollmentStatus.REGULAR);
+        studentHas(11L, EnrollmentStatus.APPROVED);
+
+        assertThat(evaluator.findUnmetForApprovalOrEmptyOutsidePlan(ENROLLMENT_ID, SUBJECT_ID))
+                .containsExactly(new PrerequisiteAssessment(
+                        10L, "Algebra I", RequirementType.PASSED_COURSEWORK, PrerequisiteStanding.REGULAR, true));
+    }
+
+    @Test
+    void unmetForApprovalIsEmptyWhenAWaiverIsApproved() {
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.PASSED_COURSEWORK, "C10"));
+        studentHas(10L, EnrollmentStatus.REGULAR);
+        when(approvalRepository.hasApproved(ENROLLMENT_ID, SUBJECT_ID, ExceptionType.PREREQUISITE_WAIVER)).thenReturn(true);
+
+        assertThat(evaluator.findUnmetForApprovalOrEmptyOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isEmpty();
+    }
+
+    @Test
+    void unmetForApprovalIsEmptyWhenTheSubjectIsOutsideThePlan() {
+        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+
+        assertThat(evaluator.findUnmetForApprovalOrEmptyOutsidePlan(ENROLLMENT_ID, 99L)).isEmpty();
+    }
 }

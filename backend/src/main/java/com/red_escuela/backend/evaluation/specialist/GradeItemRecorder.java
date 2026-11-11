@@ -55,6 +55,7 @@ public class GradeItemRecorder {
     private final GraduationRequestTriggerPort graduationRequestTrigger;
     private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
+    private final FinalExamPrerequisiteChecker finalExamPrerequisiteChecker;
     private final GradeItemPublicationLockChecker publicationLock;
     private final PublishedGradeItemSelector publishedGradeItemSelector;
     private final FinalGradeRevertAuditor finalGradeRevertAuditor;
@@ -74,6 +75,7 @@ public class GradeItemRecorder {
             GraduationRequestTriggerPort graduationRequestTrigger,
             AbsenceFreeStatusChecker absenceFreeStatusChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
+            FinalExamPrerequisiteChecker finalExamPrerequisiteChecker,
             GradeItemPublicationLockChecker publicationLock,
             PublishedGradeItemSelector publishedGradeItemSelector,
             FinalGradeRevertAuditor finalGradeRevertAuditor,
@@ -91,6 +93,7 @@ public class GradeItemRecorder {
         this.graduationRequestTrigger = graduationRequestTrigger;
         this.absenceFreeStatusChecker = absenceFreeStatusChecker;
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
+        this.finalExamPrerequisiteChecker = finalExamPrerequisiteChecker;
         this.publicationLock = publicationLock;
         this.publishedGradeItemSelector = publishedGradeItemSelector;
         this.finalGradeRevertAuditor = finalGradeRevertAuditor;
@@ -133,6 +136,7 @@ public class GradeItemRecorder {
                 .orElseGet(GradeItem::new);
         boolean correction = isFinalCorrection(gradeItem, request);
         requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular(), correction);
+        requirePrerequisitesApprovedForFinalExam(request, enrollment, correction);
         auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.PROGRAM,
                 enrollment.getSubjectSection().getId(), enrollmentId);
         gradeItem.setProgramSubjectSectionEnrollment(enrollment);
@@ -391,6 +395,14 @@ public class GradeItemRecorder {
 
     private boolean isFinalCorrection(GradeItem existing, CreateGradeItemRequest request) {
         return request.type() == GradeItemType.FINAL && existing.getId() != null;
+    }
+
+    private void requirePrerequisitesApprovedForFinalExam(
+            CreateGradeItemRequest request, SubjectSectionEnrollment enrollment, boolean correction) {
+        if (request.type() == GradeItemType.FINAL && !correction) {
+            finalExamPrerequisiteChecker.requireAllApprovedOrWaived(
+                    enrollment.getProgramEnrollment().getId(), enrollment.subjectId(), enrollment.getId());
+        }
     }
 
     private void requireEligibleForFinalExam(CreateGradeItemRequest request, Long enrollmentId, boolean regular, boolean correction) {
