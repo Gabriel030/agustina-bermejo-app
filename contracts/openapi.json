@@ -2253,6 +2253,325 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "ClosurePrerequisiteResponse" : {
+        "properties" : {
+          "met" : {
+            "type" : "boolean"
+          },
+          "requirementType" : {
+            "enum" : [ "APPROVED", "PASSED_COURSEWORK" ],
+            "type" : "string"
+          },
+          "studentStatus" : {
+            "enum" : [ "APPROVED", "REGULAR", "NOT_TAKEN", "WAIVED" ],
+            "type" : "string"
+          },
+          "subjectCode" : {
+            "type" : "string"
+          },
+          "subjectName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "met", "requirementType", "studentStatus", "subjectCode", "subjectName" ],
+        "type" : "object"
+      },
+      "ClosureSheetAdministrativeResponse" : {
+        "properties" : {
+          "documentsComplete" : {
+            "type" : "boolean"
+          },
+          "missingDocuments" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "payments" : {
+            "enum" : [ "OK", "NOT_OK", "NOT_VERIFIED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentsComplete", "payments" ],
+        "type" : "object"
+      },
+      "ClosureSheetAvailabilityResponse" : {
+        "properties" : {
+          "blockedReason" : {
+            "enum" : [ "PUBLISHED_GRADES_INCOMPLETE", "ALREADY_CONFIRMED", "ALREADY_CLOSED", null ],
+            "type" : [ "string", "null" ]
+          },
+          "canApprove" : {
+            "type" : "boolean"
+          },
+          "canConfirm" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "canApprove", "canConfirm" ],
+        "type" : "object"
+      },
+      "ClosureSheetColumnResponse" : {
+        "properties" : {
+          "published" : {
+            "type" : "boolean"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "enum" : [ "EXAM", "TP", "FINAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "published", "sequenceNumber", "type" ],
+        "type" : "object"
+      },
+      "ClosureSheetGradeResponse" : {
+        "properties" : {
+          "published" : {
+            "type" : "boolean"
+          },
+          "retakeScore" : {
+            "type" : "number"
+          },
+          "score" : {
+            "type" : "number"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "enum" : [ "EXAM", "TP", "FINAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "published", "sequenceNumber", "type" ],
+        "type" : "object"
+      },
+      "ClosureSheetRequirementsResponse" : {
+        "properties" : {
+          "attendance" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "correlatives" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "coursework" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "grade" : {
+            "type" : [ "boolean", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ClosureSheetResponse" : {
+        "properties" : {
+          "availability" : {
+            "$ref" : "#/components/schemas/ClosureSheetAvailabilityResponse"
+          },
+          "closedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "closureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "columns" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClosureSheetColumnResponse"
+            },
+            "type" : "array"
+          },
+          "instructors" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SectionInstructorSummary"
+            },
+            "type" : "array"
+          },
+          "programName" : {
+            "type" : [ "string", "null" ]
+          },
+          "reportNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "scheme" : {
+            "$ref" : "#/components/schemas/ClosureSheetSchemeResponse"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "DRAFT_AVAILABLE", "TEACHER_CONFIRMED", "CLOSED", "REOPENED" ],
+            "type" : "string"
+          },
+          "students" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClosureSheetStudentResponse"
+            },
+            "type" : "array"
+          },
+          "subjectName" : {
+            "type" : "string"
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/ClosureSheetSummaryResponse"
+          },
+          "termEndDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "termLabel" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "availability", "closureId", "columns", "instructors", "scheme", "sectionId", "sectionName", "status", "students", "subjectName", "summary" ],
+        "type" : "object"
+      },
+      "ClosureSheetSchemeResponse" : {
+        "properties" : {
+          "examCountExpected" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxAbsenceRate" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "minApprovalGrade" : {
+            "type" : "number"
+          },
+          "minRegularGrade" : {
+            "type" : "number"
+          },
+          "promotionMinGrade" : {
+            "type" : "number"
+          },
+          "retakeQuota" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "tpCountExpected" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "examCountExpected", "retakeQuota", "tpCountExpected" ],
+        "type" : "object"
+      },
+      "ClosureSheetStudentResponse" : {
+        "properties" : {
+          "administrative" : {
+            "$ref" : "#/components/schemas/ClosureSheetAdministrativeResponse"
+          },
+          "alerts" : {
+            "items" : {
+              "enum" : [ "UNMET_PREREQUISITE", "EXAM_WITHOUT_COURSEWORK" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "attendancePercent" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "average" : {
+            "type" : "number"
+          },
+          "dni" : {
+            "type" : "string"
+          },
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enrollmentStatus" : {
+            "enum" : [ "ENROLLED", "IN_PROGRESS", "REGULAR", "APPROVED", "FAILED", "WITHDRAWN", "WAITLISTED", "WAITLIST_EXPIRED" ],
+            "type" : "string"
+          },
+          "exempted" : {
+            "type" : "boolean"
+          },
+          "grades" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClosureSheetGradeResponse"
+            },
+            "type" : "array"
+          },
+          "lastname" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "requirements" : {
+            "$ref" : "#/components/schemas/ClosureSheetRequirementsResponse"
+          },
+          "retakesUsed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "suggestedResult" : {
+            "enum" : [ "PROMOTES", "PROMOTION_CONDITIONAL", "GOES_TO_FINAL", "FAILED", "FREE", "PENDING" ],
+            "type" : "string"
+          },
+          "teacherObservation" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "administrative", "alerts", "dni", "enrollmentId", "enrollmentStatus", "exempted", "grades", "lastname", "name", "requirements", "retakesUsed", "suggestedResult" ],
+        "type" : "object"
+      },
+      "ClosureSheetSummaryResponse" : {
+        "properties" : {
+          "conditional" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "free" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "goToFinal" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pending" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "promote" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "conditional", "failed", "free", "goToFinal", "pending", "promote" ],
+        "type" : "object"
+      },
       "CollectionReminderImpactRequest" : {
         "properties" : {
           "effectiveFrom" : {
@@ -11962,6 +12281,17 @@
           }
         },
         "required" : [ "columns", "correctionDeadline", "sectionId", "students" ],
+        "type" : "object"
+      },
+      "TeacherObservationRequest" : {
+        "properties" : {
+          "observation" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "observation" ],
         "type" : "object"
       },
       "TeachingSectionResponse" : {
@@ -22078,6 +22408,134 @@
         "tags" : [ "collection-reminder-impact-controller" ]
       }
     },
+    "/commission-closures/{closureId}/students/{enrollmentId}/prerequisites" : {
+      "get" : {
+        "operationId" : "CommissionClosure_getStudentPrerequisites",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "closureId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "enrollmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ClosurePrerequisiteResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-controller" ]
+      }
+    },
     "/course-enrollments/{id}" : {
       "get" : {
         "operationId" : "CourseEnrollment_get",
@@ -25248,6 +25706,361 @@
           }
         },
         "tags" : [ "attendance-controller" ]
+      }
+    },
+    "/course-sections/{id}/closure-sheet" : {
+      "get" : {
+        "operationId" : "CommissionClosure_getCourseSectionClosureSheet",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClosureSheetResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-controller" ]
+      }
+    },
+    "/course-sections/{id}/closure/confirm" : {
+      "post" : {
+        "operationId" : "CommissionClosure_confirmCourseSectionClosure",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-controller" ]
+      }
+    },
+    "/course-sections/{id}/closure/students/{enrollmentId}/observation" : {
+      "put" : {
+        "operationId" : "CommissionClosure_recordCourseSectionObservation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "enrollmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TeacherObservationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-controller" ]
       }
     },
     "/course-sections/{id}/deactivate" : {
@@ -54308,6 +55121,361 @@
           }
         },
         "tags" : [ "attendance-controller" ]
+      }
+    },
+    "/program-sections/{id}/closure-sheet" : {
+      "get" : {
+        "operationId" : "CommissionClosure_getProgramSectionClosureSheet",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClosureSheetResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-controller" ]
+      }
+    },
+    "/program-sections/{id}/closure/confirm" : {
+      "post" : {
+        "operationId" : "CommissionClosure_confirmProgramSectionClosure",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-controller" ]
+      }
+    },
+    "/program-sections/{id}/closure/students/{enrollmentId}/observation" : {
+      "put" : {
+        "operationId" : "CommissionClosure_recordProgramSectionObservation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "enrollmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TeacherObservationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-controller" ]
       }
     },
     "/program-sections/{id}/deactivate" : {

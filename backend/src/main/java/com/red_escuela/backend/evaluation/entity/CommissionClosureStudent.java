@@ -56,4 +56,8 @@ public class CommissionClosureStudent {
 
     @Column(name = "teacher_observation", length = 500)
     private String teacherObservation;
+
+    public void changeTeacherObservation(String observation) {
+        this.teacherObservation = observation;
+    }
 }

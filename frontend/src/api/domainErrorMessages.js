@@ -15,6 +15,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   CLOSURE_NOT_AVAILABLE: 'Todavía no hay notas publicadas para armar el cierre.',
   CLOSURE_NOT_CLOSED: 'El acta se puede descargar recién cuando el cierre esté cerrado.',
   CLOSURE_NOT_CONFIRMED: 'El docente todavía no confirmó el cierre.',
+  CLOSURE_STUDENT_NOT_FOUND: 'El alumno no figura en el cierre de esta comisión.',
   CLOSURE_SNAPSHOT_NOT_RECALCULABLE: 'El cierre ya fue confirmado o cerrado: no se puede recalcular.',
   CLASS_ON_HOLIDAY: 'La clase cae en un feriado.',
   CURRENCY_MISMATCH: 'La moneda no coincide con la del registro.',

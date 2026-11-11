@@ -142,7 +142,7 @@ describe('DocenteClosureSheet', () => {
   });
 
   it('hidesTheConfirmationBarOnceTheClosureIsClosed', async () => {
-    renderSheet(closureSheet({ status: 'CLOSED', availability: { canConfirm: false, canApprove: false, blockedReason: 'CLOSED' } }));
+    renderSheet(closureSheet({ status: 'CLOSED', availability: { canConfirm: false, canApprove: false, blockedReason: 'ALREADY_CLOSED' } }));
 
     expect(await screen.findByText('Cerrado')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Confirmar cierre' })).not.toBeInTheDocument();
