@@ -308,4 +308,49 @@ class CommissionClosureSheetIT extends AbstractIntegrationTest {
                 ClosureSectionKind.PROGRAM, section.getId(), enrollmentId, teacherInstructorId, "Otra"))
                 .isInstanceOf(ClosureAlreadyConfirmedException.class);
     }
+
+    @Test
+    void observationSurvivesWhenTheStudentBecomesPendingAndPendingStudentsCanBeObserved() {
+        SubjectSection section = persistCommission();
+        publishExam(section.getId(), 1);
+        publishExam(section.getId(), 2);
+        ClosureSheetResponse sheet = sheetReader.readSheet(
+                ClosureSectionKind.PROGRAM, section.getId(), ClosureViewerProfile.TEACHER, teacherInstructorId);
+        Long observedId = sheet.students().get(0).enrollmentId();
+        Long pendingId = sheet.students().get(1).enrollmentId();
+        observationRecorder.recordObservation(ClosureSectionKind.PROGRAM, section.getId(), observedId, teacherInstructorId, "Seguimiento");
+        entityManager.createQuery("delete from GradeItem g where g.programSubjectSectionEnrollment.id in :ids and g.sequenceNumber = 2")
+                .setParameter("ids", List.of(observedId, pendingId)).executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+
+        ClosureSheetResponse recalculated = sheetReader.readSheet(
+                ClosureSectionKind.PROGRAM, section.getId(), ClosureViewerProfile.STAFF, null);
+        observationRecorder.recordObservation(ClosureSectionKind.PROGRAM, section.getId(), pendingId, teacherInstructorId, "Pendiente");
+        entityManager.flush();
+        entityManager.clear();
+        ClosureSheetResponse again = sheetReader.readSheet(
+                ClosureSectionKind.PROGRAM, section.getId(), ClosureViewerProfile.STAFF, null);
+
+        assertThat(recalculated.students()).filteredOn(row -> row.enrollmentId().equals(observedId)).singleElement()
+                .satisfies(row -> {
+                    assertThat(row.suggestedResult()).isEqualTo(com.red_escuela.backend.evaluation.domain.ClosureSuggestedResult.PENDING);
+                    assertThat(row.teacherObservation()).isEqualTo("Seguimiento");
+                });
+        assertThat(again.students()).filteredOn(row -> row.enrollmentId().equals(pendingId)).singleElement()
+                .satisfies(row -> assertThat(row.teacherObservation()).isEqualTo("Pendiente"));
+        assertThat(again.students()).filteredOn(row -> row.enrollmentId().equals(observedId)).singleElement()
+                .satisfies(row -> assertThat(row.teacherObservation()).isEqualTo("Seguimiento"));
+    }
+
+    @Test
+    void creatingTheDraftClosureTwiceKeepsASingleClosureWithoutError() {
+        SubjectSection section = persistCommission();
+
+        closureRepository.insertDraftIfAbsent(SectionKind.PROGRAM, section.getId());
+        int secondInsert = closureRepository.insertDraftIfAbsent(SectionKind.PROGRAM, section.getId());
+
+        assertThat(secondInsert).isZero();
+        assertThat(closureRepository.findBySectionKindAndSectionId(SectionKind.PROGRAM, section.getId())).isPresent();
+    }
 }

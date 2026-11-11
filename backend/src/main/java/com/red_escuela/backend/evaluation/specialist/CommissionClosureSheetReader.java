@@ -7,7 +7,6 @@ import com.red_escuela.backend.evaluation.domain.ClosureSectionKind;
 import com.red_escuela.backend.evaluation.domain.ClosureStudentAssessment;
 import com.red_escuela.backend.evaluation.domain.ClosureViewerProfile;
 import com.red_escuela.backend.evaluation.dto.ClosureSheetResponse;
-import com.red_escuela.backend.evaluation.entity.ClosureStatus;
 import com.red_escuela.backend.evaluation.entity.CommissionClosure;
 import com.red_escuela.backend.evaluation.exception.ClosureNotAvailableException;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureRepository;
@@ -59,10 +58,7 @@ public class CommissionClosureSheetReader {
         if (!closureColumnsFinder.hasAnyPublished(kind, sectionId)) {
             throw new ClosureNotAvailableException(sectionId);
         }
-        return closureRepository.save(CommissionClosure.builder()
-                .sectionKind(kind)
-                .sectionId(sectionId)
-                .status(ClosureStatus.DRAFT_AVAILABLE)
-                .build());
+        closureRepository.insertDraftIfAbsent(kind, sectionId);
+        return closureRepository.findBySectionKindAndSectionId(kind, sectionId).orElseThrow();
     }
 }

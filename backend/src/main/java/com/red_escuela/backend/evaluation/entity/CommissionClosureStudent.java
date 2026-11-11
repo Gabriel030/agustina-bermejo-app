@@ -33,7 +33,7 @@ public class CommissionClosureStudent {
     private Long enrollmentId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "final_condition", nullable = false)
+    @Column(name = "final_condition")
     private ClosureFinalCondition finalCondition;
 
     @Column(name = "promotion_grade")

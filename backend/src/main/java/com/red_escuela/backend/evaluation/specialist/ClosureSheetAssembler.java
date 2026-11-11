@@ -154,7 +154,7 @@ public class ClosureSheetAssembler {
         List<ClosureSheetGradeResponse> grades = gradesOf(columns, items);
         Boolean coursework = courseworkOf(context.scheme(), items);
         CommissionClosureStudent snapshot = snapshotRows.get(enrollmentId);
-        ClosureSuggestedResult result = !closure.isOpenForTeacher() && snapshot != null
+        ClosureSuggestedResult result = !closure.isOpenForTeacher() && snapshot != null && snapshot.getFinalCondition() != null
                 ? ClosureSuggestedResult.valueOf(snapshot.getFinalCondition().name())
                 : ClosureSuggestedResult.of(assessment.finalCondition());
         return new ClosureSheetStudentResponse(enrollmentId, enrollment.person().getLastname(), enrollment.person().getName(),

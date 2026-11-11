@@ -23,13 +23,16 @@ public class ClosureTeacherObservationRecorder {
     private final SectionTeachingFinder sectionTeachingFinder;
     private final CommissionClosureRepository closureRepository;
     private final CommissionClosureStudentRepository closureStudentRepository;
+    private final CommissionClosureSnapshotRecorder snapshotRecorder;
 
     public ClosureTeacherObservationRecorder(SectionFinder sectionFinder, SectionTeachingFinder sectionTeachingFinder,
-            CommissionClosureRepository closureRepository, CommissionClosureStudentRepository closureStudentRepository) {
+            CommissionClosureRepository closureRepository, CommissionClosureStudentRepository closureStudentRepository,
+            CommissionClosureSnapshotRecorder snapshotRecorder) {
         this.sectionFinder = sectionFinder;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.closureRepository = closureRepository;
         this.closureStudentRepository = closureStudentRepository;
+        this.snapshotRecorder = snapshotRecorder;
     }
 
     @Transactional
@@ -46,8 +49,13 @@ public class ClosureTeacherObservationRecorder {
         if (closure.getStatus() == ClosureStatus.CLOSED) {
             throw new ClosureAlreadyClosedException(closureId);
         }
+        boolean inCommission = snapshotRecorder.recordSnapshot(closureId).assessments().stream()
+                .anyMatch(assessment -> assessment.enrollmentId().equals(enrollmentId));
+        if (!inCommission) {
+            throw new ClosureStudentNotFoundException(enrollmentId);
+        }
         CommissionClosureStudent row = closureStudentRepository.findByClosureIdAndEnrollmentId(closureId, enrollmentId)
-                .orElseThrow(() -> new ClosureStudentNotFoundException(enrollmentId));
+                .orElseGet(() -> CommissionClosureStudent.builder().closureId(closureId).enrollmentId(enrollmentId).build());
         String trimmed = observation == null ? "" : observation.trim();
         row.changeTeacherObservation(trimmed.isEmpty() ? null : trimmed);
         closureStudentRepository.save(row);
