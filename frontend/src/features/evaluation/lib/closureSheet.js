@@ -103,7 +103,7 @@ export function blockedMessage(sheet) {
       : 'No se puede confirmar hasta publicar todas las evaluaciones.';
   }
   if (blockedReason === 'ALREADY_CONFIRMED') return 'Ya confirmaste el cierre.';
-  if (blockedReason === 'CLOSED') return 'El cierre ya está cerrado.';
+  if (blockedReason === 'ALREADY_CLOSED') return 'El cierre ya está cerrado.';
   return BLOCKED_REASON_FALLBACK;
 }
 

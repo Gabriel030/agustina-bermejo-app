@@ -1,0 +1,125 @@
+package com.red_escuela.backend.evaluation.controller;
+
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
+import com.red_escuela.backend.evaluation.domain.ClosureSectionKind;
+import com.red_escuela.backend.evaluation.domain.ClosureViewerProfile;
+import com.red_escuela.backend.evaluation.dto.ClosurePrerequisiteResponse;
+import com.red_escuela.backend.evaluation.dto.ClosureSheetResponse;
+import com.red_escuela.backend.evaluation.dto.TeacherObservationRequest;
+import com.red_escuela.backend.evaluation.usecase.closure.ConfirmClosureCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.ConfirmClosureUseCase;
+import com.red_escuela.backend.evaluation.usecase.closure.GetClosureSheetCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.GetClosureSheetUseCase;
+import com.red_escuela.backend.evaluation.usecase.closure.GetClosureStudentPrerequisitesCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.GetClosureStudentPrerequisitesUseCase;
+import com.red_escuela.backend.evaluation.usecase.closure.RecordClosureObservationCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.RecordClosureObservationUseCase;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Set;
+
+@RestController
+public class CommissionClosureController {
+
+    private static final Set<String> STAFF_AUTHORITIES = Set.of("ROLE_PRECEPTOR", "ROLE_ADMINISTRATIVO", "ROLE_DIRECTOR");
+
+    private final GetClosureSheetUseCase getClosureSheetUseCase;
+    private final ConfirmClosureUseCase confirmClosureUseCase;
+    private final RecordClosureObservationUseCase recordClosureObservationUseCase;
+    private final GetClosureStudentPrerequisitesUseCase getClosureStudentPrerequisitesUseCase;
+    private final CurrentInstructorService currentInstructorService;
+
+    public CommissionClosureController(GetClosureSheetUseCase getClosureSheetUseCase,
+            ConfirmClosureUseCase confirmClosureUseCase, RecordClosureObservationUseCase recordClosureObservationUseCase,
+            GetClosureStudentPrerequisitesUseCase getClosureStudentPrerequisitesUseCase,
+            CurrentInstructorService currentInstructorService) {
+        this.getClosureSheetUseCase = getClosureSheetUseCase;
+        this.confirmClosureUseCase = confirmClosureUseCase;
+        this.recordClosureObservationUseCase = recordClosureObservationUseCase;
+        this.getClosureStudentPrerequisitesUseCase = getClosureStudentPrerequisitesUseCase;
+        this.currentInstructorService = currentInstructorService;
+    }
+
+    @GetMapping("/program-sections/{id}/closure-sheet")
+    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR')")
+    public ClosureSheetResponse getProgramSectionClosureSheet(@PathVariable Long id, Authentication authentication) {
+        return readSheet(ClosureSectionKind.PROGRAM, id, authentication);
+    }
+
+    @GetMapping("/course-sections/{id}/closure-sheet")
+    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR')")
+    public ClosureSheetResponse getCourseSectionClosureSheet(@PathVariable Long id, Authentication authentication) {
+        return readSheet(ClosureSectionKind.COURSE, id, authentication);
+    }
+
+    @PostMapping("/program-sections/{id}/closure/confirm")
+    @PreAuthorize("hasRole('DOCENTE')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmProgramSectionClosure(@PathVariable Long id) {
+        confirmClosureUseCase.confirm(new ConfirmClosureCommand(ClosureSectionKind.PROGRAM, id, currentInstructorId()));
+    }
+
+    @PostMapping("/course-sections/{id}/closure/confirm")
+    @PreAuthorize("hasRole('DOCENTE')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmCourseSectionClosure(@PathVariable Long id) {
+        confirmClosureUseCase.confirm(new ConfirmClosureCommand(ClosureSectionKind.COURSE, id, currentInstructorId()));
+    }
+
+    @PutMapping("/program-sections/{id}/closure/students/{enrollmentId}/observation")
+    @PreAuthorize("hasRole('DOCENTE')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void recordProgramSectionObservation(@PathVariable Long id, @PathVariable Long enrollmentId,
+            @Valid @RequestBody TeacherObservationRequest request) {
+        recordClosureObservationUseCase.record(new RecordClosureObservationCommand(
+                ClosureSectionKind.PROGRAM, id, enrollmentId, currentInstructorId(), request.observation()));
+    }
+
+    @PutMapping("/course-sections/{id}/closure/students/{enrollmentId}/observation")
+    @PreAuthorize("hasRole('DOCENTE')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void recordCourseSectionObservation(@PathVariable Long id, @PathVariable Long enrollmentId,
+            @Valid @RequestBody TeacherObservationRequest request) {
+        recordClosureObservationUseCase.record(new RecordClosureObservationCommand(
+                ClosureSectionKind.COURSE, id, enrollmentId, currentInstructorId(), request.observation()));
+    }
+
+    @GetMapping("/commission-closures/{closureId}/students/{enrollmentId}/prerequisites")
+    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR')")
+    public List<ClosurePrerequisiteResponse> getStudentPrerequisites(@PathVariable Long closureId,
+            @PathVariable Long enrollmentId, Authentication authentication) {
+        ClosureViewerProfile viewer = viewerOf(authentication);
+        return getClosureStudentPrerequisitesUseCase.get(new GetClosureStudentPrerequisitesCommand(
+                closureId, enrollmentId, viewer, instructorIdFor(viewer)));
+    }
+
+    private ClosureSheetResponse readSheet(ClosureSectionKind kind, Long sectionId, Authentication authentication) {
+        ClosureViewerProfile viewer = viewerOf(authentication);
+        return getClosureSheetUseCase.get(new GetClosureSheetCommand(kind, sectionId, viewer, instructorIdFor(viewer)));
+    }
+
+    private ClosureViewerProfile viewerOf(Authentication authentication) {
+        boolean staff = authentication.getAuthorities().stream()
+                .anyMatch(authority -> STAFF_AUTHORITIES.contains(authority.getAuthority()));
+        return staff ? ClosureViewerProfile.STAFF : ClosureViewerProfile.TEACHER;
+    }
+
+    private Long instructorIdFor(ClosureViewerProfile viewer) {
+        return viewer == ClosureViewerProfile.TEACHER ? currentInstructorId() : null;
+    }
+
+    private Long currentInstructorId() {
+        return currentInstructorService.resolveCurrentInstructor().getId();
+    }
+}
