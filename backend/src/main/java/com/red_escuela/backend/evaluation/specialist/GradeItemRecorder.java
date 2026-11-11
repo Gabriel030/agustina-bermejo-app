@@ -218,7 +218,7 @@ public class GradeItemRecorder {
         var current = rebuild ? EnrollmentStatus.ENROLLED : enrollment.statusAssumingRegularWhen(finalCorrection);
         Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().restrictPromotionWhenPrerequisitesUnmet(
                 outcomeCalculator.calculate(scheme, items, current, maxFinalExamAttempts),
-                () -> programPrerequisiteEvaluator.areAllMetOrSubjectOutsidePlan(enrollment.getProgramEnrollment().getId(), enrollment.subjectId()))
+                () -> programPrerequisiteEvaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(enrollment.getProgramEnrollment().getId(), enrollment.subjectId()))
                 .outcome();
         CourseworkOutcome result = outcomeCalculator.regularityPolicy().holdWhileFree(
                 calculated,
@@ -301,8 +301,7 @@ public class GradeItemRecorder {
     }
 
     private static boolean isRebuildable(EnrollmentStatus status, FinalGradeType finalGradeType) {
-        return status == EnrollmentStatus.FAILED
-                || (status == EnrollmentStatus.APPROVED && finalGradeType == FinalGradeType.PROMOTION);
+        return CourseworkOutcomeCalculator.isRebuildable(status, finalGradeType);
     }
 
     public List<GradeItem> listByProgramEnrollment(Long enrollmentId) {

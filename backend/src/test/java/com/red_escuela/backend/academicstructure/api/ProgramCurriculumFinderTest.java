@@ -77,7 +77,7 @@ class ProgramCurriculumFinderTest {
         when(prerequisiteRepository.findByProgramSubjectId(1L)).thenReturn(List.of(link));
 
         assertThat(finder.findPrerequisites(1L))
-                .containsExactly(new PrerequisiteView(12L, "Analisis", RequirementType.values()[0]));
+                .containsExactly(new PrerequisiteView(12L, "Analisis", RequirementType.values()[0], "AN12"));
     }
 
     @Test
@@ -99,6 +99,7 @@ class ProgramCurriculumFinderTest {
         var subject = new Subject();
         subject.setId(subjectId);
         subject.setName(name);
+        subject.setCode("AN" + subjectId);
         var entry = new ProgramSubject();
         entry.setId(id);
         entry.setSubject(subject);

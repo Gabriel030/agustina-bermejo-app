@@ -1,6 +1,7 @@
 package com.red_escuela.backend.evaluation.policy;
 
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
@@ -22,6 +23,11 @@ public final class CourseworkOutcomeCalculator {
 
     public RegularityPolicy regularityPolicy() {
         return regularityPolicy;
+    }
+
+    public static boolean isRebuildable(EnrollmentStatus status, FinalGradeType finalGradeType) {
+        return status == EnrollmentStatus.FAILED
+                || (status == EnrollmentStatus.APPROVED && finalGradeType == FinalGradeType.PROMOTION);
     }
 
     public Optional<CourseworkOutcome> calculate(

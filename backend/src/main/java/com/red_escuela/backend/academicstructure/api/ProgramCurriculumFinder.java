@@ -63,7 +63,8 @@ public class ProgramCurriculumFinder {
 
     private PrerequisiteView toPrerequisiteView(ProgramSubjectPrerequisite prerequisite) {
         var subject = prerequisite.getPrerequisiteProgramSubject().getSubject();
-        return new PrerequisiteView(subject.getId(), subject.getName(), prerequisite.getRequirementType());
+        return new PrerequisiteView(subject.getId(), subject.getName(), prerequisite.getRequirementType(),
+                subject.getCode());
     }
 
     private ElectiveGroupRequirementView toElectiveGroupRequirementView(ProgramElectiveGroup group) {

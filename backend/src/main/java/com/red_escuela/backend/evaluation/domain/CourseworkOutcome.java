@@ -6,6 +6,10 @@ import com.red_escuela.backend.shared.domain.Grade;
 
 public record CourseworkOutcome(EnrollmentStatus status, Grade finalScore, FinalGradeType finalGradeType) {
 
+    public boolean isPromotion() {
+        return status == EnrollmentStatus.APPROVED && finalGradeType == FinalGradeType.PROMOTION;
+    }
+
     public boolean passesCoursework() {
         return status == EnrollmentStatus.REGULAR
                 || (status == EnrollmentStatus.APPROVED && finalGradeType == FinalGradeType.PROMOTION);

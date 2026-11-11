@@ -55,6 +55,14 @@ public class ProgramPrerequisiteEvaluator {
                 .orElse(true);
     }
 
+    public boolean areAllApprovedOrWaivedOrSubjectOutsidePlan(Long programEnrollmentId, Long subjectId) {
+        Long programId = findProgramEnrollment(programEnrollmentId).getProgram().getId();
+        return programCurriculumFinder.findProgramSubject(programId, subjectId)
+                .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject).stream()
+                        .allMatch(assessment -> requirementPolicy.isMetForApproval(assessment.standing())))
+                .orElse(true);
+    }
+
     private ProgramEnrollment findProgramEnrollment(Long programEnrollmentId) {
         return programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));

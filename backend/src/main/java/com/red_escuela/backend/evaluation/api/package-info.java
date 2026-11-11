@@ -1,5 +1,5 @@
 /**
- * <b>Qué es</b>: contrato de evaluación hacia otros módulos: buscadores de notas, mesas de examen y esquemas, vistas y el puerto {@code GraduationRequestTriggerPort}.
+ * <b>Qué es</b>: contrato de evaluación hacia otros módulos: buscadores de notas, mesas de examen y esquemas, vistas y los puertos {@code GraduationRequestTriggerPort} y {@code StudentPaymentsStandingPort}.
  *
  * <p><b>Expone</b>: todo el paquete, como interfaz con nombre {@code api}.
  *
