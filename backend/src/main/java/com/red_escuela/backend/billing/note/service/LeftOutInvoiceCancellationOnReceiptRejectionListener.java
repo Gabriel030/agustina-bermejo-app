@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.note.service;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -38,16 +39,18 @@ public class LeftOutInvoiceCancellationOnReceiptRejectionListener {
     private final StudentCurrentAccountService accountService;
     private final BillingOperationPipeline pipeline;
     private final CancelInvoiceOperation cancelInvoiceOperation;
+    private final DiscountConsumptionService discountConsumption;
 
     public LeftOutInvoiceCancellationOnReceiptRejectionListener(InvoiceCreditAccessService invoices, WithdrawalInvoiceAccess invoiceAccess, WithdrawalFactsFinder withdrawalFacts,
                                                          StudentCurrentAccountService accountService, BillingOperationPipeline pipeline,
-                                                         CancelInvoiceOperation cancelInvoiceOperation) {
+                                                         CancelInvoiceOperation cancelInvoiceOperation, DiscountConsumptionService discountConsumption) {
         this.invoices = invoices;
         this.invoiceAccess = invoiceAccess;
         this.withdrawalFacts = withdrawalFacts;
         this.accountService = accountService;
         this.pipeline = pipeline;
         this.cancelInvoiceOperation = cancelInvoiceOperation;
+        this.discountConsumption = discountConsumption;
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
@@ -62,6 +65,7 @@ public class LeftOutInvoiceCancellationOnReceiptRejectionListener {
         if (accountId.isEmpty()) {
             return false;
         }
+        discountConsumption.lockEnrollmentsOfDiscountsAppliedOn(invoiceId);
         accountService.lockStudentCurrentAccount(accountId.get());
         Optional<Invoice> locked = invoices.lockInvoice(invoiceId).filter(this::isStillOpenAndUnpaid);
         if (locked.isEmpty()) {

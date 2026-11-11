@@ -28,7 +28,7 @@ import { buildBoardColumns } from './examBoardColumns';
 const STICKY_LEFT = 'sticky left-0 z-20 w-[112px] min-w-[112px] max-w-[112px] bg-dialog-bg whitespace-normal shadow-(--sh-sticky-left) md:w-[170px] md:min-w-[170px] md:max-w-[170px]';
 const STICKY_RIGHT = 'sticky right-0 z-20 min-w-[56px] bg-dialog-bg text-right shadow-(--sh-sticky-right) md:min-w-[72px]';
 const NO_COLUMNS = [];
-const FINAL_DISABLED_REASON = 'Requiere condición regular';
+const FINAL_DISABLED_REASON = 'Se carga desde la mesa de examen';
 
 function PublishHeader({ column, students, hasDrafts, boardHref, onPublish }) {
   if (column.type === 'FINAL') {
@@ -126,7 +126,7 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
               saved={saved}
               draft={drafts[key]}
               status={statuses[key]}
-              disabledReason={column.type === 'FINAL' && !student.finalEnabled ? FINAL_DISABLED_REASON : null}
+              disabledReason={column.type === 'FINAL' ? FINAL_DISABLED_REASON : null}
               locked={isColumnLocked(column)}
               onChange={(text) => onChange(key, saved, { score: text })}
               onBlur={() => onSettle(key)}

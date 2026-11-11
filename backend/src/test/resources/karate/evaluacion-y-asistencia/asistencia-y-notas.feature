@@ -88,6 +88,12 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 6 }
+    When method post
+    Then status 201
+
+    Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
+    And header Authorization = 'Bearer ' + docente.accessToken
     And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7 }
     When method post
     Then status 201
@@ -103,12 +109,6 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     When method get
     Then status 200
     And match response[0].status == 'ENROLLED'
-
-    Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
-    And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 6 }
-    When method post
-    Then status 201
 
     Given path '/program-sections', sectionId, 'grade-items', 'publish'
     And header Authorization = 'Bearer ' + docente.accessToken
@@ -185,6 +185,12 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 5 }
+    When method post
+    Then status 201
+
+    Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
+    And header Authorization = 'Bearer ' + docente.accessToken
     And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 2 }
     When method post
     Then status 201
@@ -192,12 +198,6 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
     And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 3 }
-    When method post
-    Then status 201
-
-    Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
-    And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 1 }
     When method post
     Then status 201
 

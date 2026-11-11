@@ -66,6 +66,17 @@ describe('SolicitudDeIngresoDetalle', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
+  it('shows the blocking reasons and blocks approving when the student is not active', async () => {
+    mockReview({ check: approvalCheck({ canApprove: false, blockingReasons: ['STUDENT_NOT_ACTIVE', 'ALREADY_ENROLLED_IN_PROGRAM'] }) });
+    renderDetail();
+
+    expect(await screen.findByText('El alumno no está activo.')).toBeInTheDocument();
+    expect(screen.getByText('El alumno ya está inscripto en esta carrera.')).toBeInTheDocument();
+    const approve = screen.getByRole('button', { name: 'Aprobar solicitud' });
+    expect(approve).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getAllByText(/Aprobar está deshabilitado: el alumno no está activo/).length).toBeGreaterThan(0);
+  });
+
   it('shows the debt before approving and blocks the approval', async () => {
     mockReview({
       check: approvalCheck({ canApprove: false, debt: { blocksApproval: true, violationCodes: ['OVERDUE_DEBT'] } }),
