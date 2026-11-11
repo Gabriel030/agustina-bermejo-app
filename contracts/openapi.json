@@ -2772,6 +2772,133 @@
         "required" : [ "changeReason", "decidedById", "decisionReason", "directPublication", "effectiveFrom", "id", "proposedById", "status", "values" ],
         "type" : "object"
       },
+      "CommissionClosureCountsResponse" : {
+        "properties" : {
+          "all" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "closed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "draftAvailable" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reopened" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "teacherConfirmed" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "all", "closed", "draftAvailable", "reopened", "teacherConfirmed" ],
+        "type" : "object"
+      },
+      "CommissionClosureListItemResponse" : {
+        "properties" : {
+          "book" : {
+            "type" : [ "string", "null" ]
+          },
+          "closureId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "folio" : {
+            "type" : [ "string", "null" ]
+          },
+          "instructorNames" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "promoteCount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "reportNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "reportVersion" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionKind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "DRAFT_AVAILABLE", "TEACHER_CONFIRMED", "CLOSED", "REOPENED" ],
+            "type" : "string"
+          },
+          "statusDate" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "statusFact" : {
+            "enum" : [ "CONFIRMED", "REOPENED", "CLOSED", "NOT_DELIVERED" ],
+            "type" : "string"
+          },
+          "studentCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjectName" : {
+            "type" : "string"
+          },
+          "termId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "termLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "toReviewCount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "instructorNames", "sectionId", "sectionKind", "sectionName", "status", "statusFact", "studentCount", "subjectName", "termId" ],
+        "type" : "object"
+      },
+      "CommissionClosurePageResponse" : {
+        "properties" : {
+          "counts" : {
+            "$ref" : "#/components/schemas/CommissionClosureCountsResponse"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CommissionClosureListItemResponse"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "counts", "items", "page", "size", "totalElements" ],
+        "type" : "object"
+      },
       "CompleteRefundRequest" : {
         "properties" : {
           "completedOn" : {
@@ -22449,6 +22576,156 @@
           }
         },
         "tags" : [ "collection-reminder-impact-controller" ]
+      }
+    },
+    "/commission-closures" : {
+      "get" : {
+        "operationId" : "CommissionClosureList_listCommissionClosures",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "DRAFT_AVAILABLE", "TEACHER_CONFIRMED", "CLOSED", "REOPENED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "termId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 10,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CommissionClosurePageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-list-controller" ]
       }
     },
     "/commission-closures/{closureId}/export" : {
