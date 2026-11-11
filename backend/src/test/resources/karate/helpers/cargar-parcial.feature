@@ -10,3 +10,10 @@ Feature: Auxiliar — cargar un parcial (EXAM) sobre una cursada
     And request { type: 'EXAM', sequenceNumber: '#(seq)', date: '2026-04-01T00:00:00', score: '#(score)' }
     When method post
     Then status 201
+
+    Given url baseUrl
+    And path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docenteToken
+    And request { gradeType: 'EXAM', sequenceNumber: '#(seq)' }
+    When method post
+    Then status 200

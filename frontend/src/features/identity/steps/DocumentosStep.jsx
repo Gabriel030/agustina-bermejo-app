@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useRef } from 'react';
 import { Upload, CheckCircle2, FileText } from 'lucide-react';
 
@@ -44,15 +45,16 @@ function DocumentoRow({ label, subido, isUploading, onChange }) {
         )}
         <p className="text-[13px] font-medium text-ink">{label}</p>
       </div>
-      <button
+      <Button
+        variant="text"
+        size="inline"
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isUploading}
-        className="flex items-center gap-1.5 text-[12px] font-medium text-brand hover:text-accent-2 disabled:opacity-50"
-      >
+        className="gap-1.5 text-[12px] font-medium text-brand hover:text-accent-2 disabled:opacity-50">
         <Upload size={13} />
         {subido ? 'Reemplazar' : 'Subir'}
-      </button>
+      </Button>
       <input
         ref={inputRef}
         type="file"

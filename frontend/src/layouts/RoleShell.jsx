@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, m } from 'motion/react';
 import { Sidebar } from '@/components/Sidebar';
@@ -9,10 +10,40 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorFallback } from '@/components/ErrorFallback';
 import { SkipToContent } from '@/components/SkipToContent';
 import { SystemBar } from '@/pwa/SystemBar';
+import { isDesignB } from '@/theme/design';
+
+const HEADING_WAIT_MS = 2000;
+
+function useFocusHeadingOnNavigation(mainRef, pathname) {
+  const previousPath = useRef(pathname);
+  useEffect(() => {
+    if (previousPath.current === pathname) return undefined;
+    previousPath.current = pathname;
+    const main = mainRef.current;
+    if (!main || !isDesignB()) return undefined;
+    const focusHeading = () => {
+      const heading = main.querySelector('h1');
+      if (!heading) return false;
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+      return true;
+    };
+    if (focusHeading()) return undefined;
+    const observer = new MutationObserver(() => {
+      if (focusHeading()) observer.disconnect();
+    });
+    observer.observe(main, { childList: true, subtree: true });
+    const timer = setTimeout(() => observer.disconnect(), HEADING_WAIT_MS);
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+  }, [mainRef, pathname]);
+}
 
 // Estructura compartida por los 5 layouts de rol: sidebar + área de contenido.
 // Lo que varía por rol (título, ítems de nav) lo define cada *Layout.jsx.
-export function RoleShell({ titulo, items }) {
+export function RoleShell({ titulo, items, groups }) {
   const location = useLocation();
   // useOutlet() (no <Outlet /> directo): captura el elemento ya resuelto de la
   // ruta actual en esta pasada de render. Con <Outlet /> puesto directo dentro
@@ -23,6 +54,8 @@ export function RoleShell({ titulo, items }) {
   // la pantalla vieja saliendo y el otro la nueva entrando.
   const element = useOutlet();
   const breadcrumbItems = useBreadcrumb();
+  const mainRef = useRef(null);
+  useFocusHeadingOnNavigation(mainRef, location.pathname);
 
   return (
     // h-screen + overflow-hidden en la raíz: el shell ocupa exactamente el viewport
@@ -33,17 +66,17 @@ export function RoleShell({ titulo, items }) {
     // flex-col en base/md, flex-row recién en lg: — el Sidebar fijo (hidden lg:flex)
     // colapsa a un menú hamburguesa (MobileMenu, drawer lateral) en pantallas chicas,
     // no a una bottom tab bar — decisión revisada con el usuario (ver docs/context/frontend.md).
-    <div className="flex h-screen flex-col gap-5 overflow-hidden p-5 lg:flex-row">
+    <div className="flex h-screen flex-col gap-(--shell-gap) overflow-hidden p-(--shell-pad) lg:flex-row">
       <SkipToContent />
       <MeshBackground />
-      <Sidebar titulo={titulo} items={items} />
+      <Sidebar titulo={titulo} items={items} groups={groups} />
       {/* Columna de contenido junto al Sidebar, en mobile y desktop por igual —
           apila TopHeader arriba de <main>. Antes este wrapper colapsaba con
           lg:contents porque solo contenía <main>; con TopHeader también
           persistiendo en desktop, colapsarlo lo deja como columna angosta
           suelta en el flex-row de arriba en vez de ocupar el resto del ancho. */}
-      <div className="flex min-w-0 flex-1 flex-col gap-5 overflow-hidden">
-        <TopHeader titulo={titulo} items={items} />
+      <div className="flex min-w-0 flex-1 flex-col gap-(--shell-gap) overflow-hidden">
+        <TopHeader titulo={titulo} items={items} groups={groups} />
         <SystemBar />
         {/* min-w-0: sin esto, un flex item no se achica más allá del ancho
             intrínseco de su contenido (default min-width:auto) — con una
@@ -51,7 +84,12 @@ export function RoleShell({ titulo, items }) {
             empuja todo el layout más allá del viewport en mobile, rompiendo
             la regla de "nunca scroll horizontal del body". Encontrado
             verificando Catálogo en 495px de ancho. */}
-        <main id="main-content" tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-y-auto focus:outline-none">
+        <main
+          ref={mainRef}
+          id="main-content"
+          tabIndex={-1}
+          className="flex min-w-0 flex-1 flex-col overflow-y-auto focus:outline-none design-b:px-4 design-b:py-5 sm:design-b:px-8 sm:design-b:py-6"
+        >
           {/* Breadcrumb: vive acá (no en cada página) porque es el único lugar que
               todas las rutas de rol comparten — ver useBreadcrumb.js para el mapeo
               ruta→items. No forma parte de la animación de entrada/salida de abajo

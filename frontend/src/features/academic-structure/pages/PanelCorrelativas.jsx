@@ -15,6 +15,7 @@ import {
   useRemoveCorequisite,
   useProgramSubjects,
 } from '@/features/academic-structure/hooks/usePrograms';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const REQUIREMENT_TYPE_OPTIONS = [
   { value: 'APPROVED', label: 'Aprobada' },
@@ -48,13 +49,15 @@ function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
           <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{selected.subjectCode}</span>
           <p className="text-[13.5px] font-medium text-ink">{selected.subjectName}</p>
         </div>
-        <button
+        <Button
+          variant="subtle"
+          size="inline"
           type="button"
           onClick={() => onSelect(null)}
-          className="text-[12px] text-ink-faint underline hover:text-ink"
-        >
+          className="text-[12px] underline"
+          >
           Cambiar
-        </button>
+        </Button>
       </div>
     );
   }
@@ -93,17 +96,16 @@ function CampoSelect({ label, value, onChange, options }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
-      <select
+      <NativeSelect
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
@@ -313,14 +315,15 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
                     {p.minGrade != null && ` · nota mín. ${p.minGrade}`}
                   </span>
                 </div>
-                <button
+                <Button
+                  variant="ghost-destructive"
+                  size="icon-sm"
                   type="button"
                   onClick={() => handleRemove(p.id)}
                   disabled={removePrerequisite.isPending}
-                  className="shrink-0 rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-danger/10 hover:text-danger"
-                >
+                  className="shrink-0">
                   <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -367,14 +370,15 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
                     {c.corequisiteSubjectName}
                   </span>
                 </div>
-                <button
+                <Button
+                  variant="ghost-destructive"
+                  size="icon-sm"
                   type="button"
                   onClick={() => handleRemoveCorequisite(c.id)}
                   disabled={removeCorequisite.isPending}
-                  className="shrink-0 rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-danger/10 hover:text-danger"
-                >
+                  className="shrink-0">
                   <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>

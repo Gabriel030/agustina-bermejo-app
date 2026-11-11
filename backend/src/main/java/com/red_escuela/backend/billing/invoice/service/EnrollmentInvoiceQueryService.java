@@ -28,6 +28,11 @@ public class EnrollmentInvoiceQueryService {
     }
 
     @Transactional(readOnly = true)
+    public List<Long> findInvoiceIdsOfEnrollment(Long programEnrollmentId, Long courseEnrollmentId) {
+        return programEnrollmentId != null ? invoiceRepository.findInvoiceIdsByProgramEnrollmentId(programEnrollmentId) : invoiceRepository.findInvoiceIdsByCourseEnrollmentId(courseEnrollmentId);
+    }
+
+    @Transactional(readOnly = true)
     public List<Invoice> findInvoicesOfEnrollment(Long programEnrollmentId, Long courseEnrollmentId) {
         return programEnrollmentId != null ? invoiceRepository.findByProgramEnrollmentId(programEnrollmentId) : invoiceRepository.findByCourseEnrollmentId(courseEnrollmentId);
     }

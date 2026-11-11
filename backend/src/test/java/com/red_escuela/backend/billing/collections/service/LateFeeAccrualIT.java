@@ -67,9 +67,11 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -579,6 +581,38 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
             executor.shutdownNow();
         }
         assertThat(summaryOf(origin)).containsExactly("2113-03-12..2113-03-31:20:4000.00");
+    }
+
+    @Test
+    @Tag("D-332")
+    void lateFeeIssuingTakesTheEnrollmentLockBeforeTheAccountLockLikeTheMonthlyRunSoNeitherDeadlocks() throws Exception {
+        arrange(2115);
+        publishDefaults(2115);
+        ProgramEnrollment programEnrollment = programEnrollment();
+        Invoice origin = programInstallmentDueOn(programEnrollment, d(2115, 3, 11));
+        Long accountId = origin.getStudentCurrentAccountId();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            CountDownLatch enrollmentLocked = new CountDownLatch(1);
+            Future<Void> monthlyRunLike = executor.submit(() -> {
+                transactionTemplate.executeWithoutResult(status -> {
+                    jdbc.queryForList("select id from program_enrollment where id = ? for update", Long.class, programEnrollment.getId());
+                    enrollmentLocked.countDown();
+                    await().atMost(Duration.ofSeconds(30)).until(() -> jdbc.queryForObject(
+                            "select count(*) from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and pid <> pg_backend_pid() "
+                                    + "and (query ilike '%program_enrollment%' or query ilike 'insert into invoice%')", Long.class) > 0);
+                    accountService.lockStudentCurrentAccount(accountId);
+                });
+                return null;
+            });
+            assertThat(enrollmentLocked.await(30, TimeUnit.SECONDS)).isTrue();
+            Future<Integer> lateFeeAccrual = executor.submit(() -> accrualService.reconcileLateFeesOfInvoice(origin.getId(), d(2115, 4, 1)));
+            monthlyRunLike.get(60, TimeUnit.SECONDS);
+            assertThat(lateFeeAccrual.get(60, TimeUnit.SECONDS)).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+        }
     }
 
     @Test

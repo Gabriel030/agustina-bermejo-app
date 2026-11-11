@@ -1,12 +1,14 @@
+import { SHIFT_LABELS } from './shifts';
+
 export const MODULE_MINUTES = 40;
 export const RECESS_MINUTES = 15;
 export const MODULES_PER_RECESS = 3;
 export const MINIMUM_MODULES = 3;
 
 export const SHIFTS = [
-  { id: 'MORNING', label: 'Mañana', start: '08:00', end: '12:30' },
-  { id: 'AFTERNOON', label: 'Tarde', start: '13:30', end: '18:00' },
-  { id: 'NIGHT', label: 'Noche', start: '18:30', end: '22:30' },
+  { id: 'MORNING', label: SHIFT_LABELS.MORNING, start: '08:00', end: '12:30' },
+  { id: 'AFTERNOON', label: SHIFT_LABELS.AFTERNOON, start: '13:30', end: '18:00' },
+  { id: 'EVENING', label: SHIFT_LABELS.EVENING, start: '18:30', end: '22:30' },
 ];
 
 export function toMinutes(time) {

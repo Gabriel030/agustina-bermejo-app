@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.note.service;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.api.AdmissionReceiptLookup;
 import com.red_escuela.backend.billing.api.AdmissionReceiptSummary;
+import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import com.red_escuela.backend.billing.note.service.SystemAdmissionInvoiceCancellation.Outcome;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
@@ -37,10 +38,11 @@ class SystemAdmissionInvoiceCancellationOrderTest {
     private final InvoiceCreditAccessService invoiceAccess = mock(InvoiceCreditAccessService.class);
     private final StudentCurrentAccountService accountService = mock(StudentCurrentAccountService.class);
     private final AdmissionReceiptLookup receiptLookup = mock(AdmissionReceiptLookup.class);
+    private final DiscountConsumptionService discountConsumption = mock(DiscountConsumptionService.class);
     private final BillingOperationPipeline pipeline = mock(BillingOperationPipeline.class);
     private final CancelInvoiceOperation operation = mock(CancelInvoiceOperation.class);
     private final SystemAdmissionInvoiceCancellation cancellation = new SystemAdmissionInvoiceCancellation(invoiceAccess, accountService, receiptLookup, pipeline, operation,
-            mock(LateFeeAnnulmentOnInstallmentCancellation.class));
+            mock(LateFeeAnnulmentOnInstallmentCancellation.class), discountConsumption);
 
     private Invoice unpaidInvoice() {
         Invoice invoice = mock(Invoice.class);
@@ -57,7 +59,7 @@ class SystemAdmissionInvoiceCancellationOrderTest {
     }
 
     @Test
-    void theAccountIsLockedFirstThenTheInvoiceThenTheReceiptsAreReadAndOnlyThenTheInvoiceIsCancelled() {
+    void theEnrollmentsOfTheAppliedDiscountsAreLockedFirstThenTheAccountThenTheInvoiceThenTheReceiptsAreReadAndOnlyThenTheInvoiceIsCancelled() {
         unpaidInvoice();
         when(receiptLookup.findLatestReceiptByInvoiceIds(Set.of(INVOICE_ID))).thenReturn(Map.of());
         pipelineReturnsACreditNote();
@@ -65,7 +67,8 @@ class SystemAdmissionInvoiceCancellationOrderTest {
         Outcome outcome = cancellation.cancelWhenUnpaid(INVOICE_ID);
 
         assertThat(outcome).isEqualTo(Outcome.CANCELLED);
-        InOrder order = inOrder(accountService, invoiceAccess, receiptLookup, pipeline);
+        InOrder order = inOrder(discountConsumption, accountService, invoiceAccess, receiptLookup, pipeline);
+        order.verify(discountConsumption).lockEnrollmentsOfDiscountsAppliedOn(INVOICE_ID);
         order.verify(accountService).lockStudentCurrentAccount(ACCOUNT_ID);
         order.verify(invoiceAccess).lockInvoice(INVOICE_ID);
         order.verify(receiptLookup).findLatestReceiptByInvoiceIds(Set.of(INVOICE_ID));

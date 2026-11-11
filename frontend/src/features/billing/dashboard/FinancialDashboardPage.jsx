@@ -26,6 +26,7 @@ import { DASHBOARD_TABS, FINANCIAL_PANELS } from './financialPanels';
 import { MonthKpis, TodayKpis } from './KpiBlocks';
 import { ALL_SCOPE, OfferCombobox } from './OfferCombobox';
 import { MetricPanel } from './MetricPanel';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const ALL_TYPES = 'ALL';
 const INVOICE_TYPE_OPTIONS = [
@@ -128,16 +129,18 @@ function DebtorsTable({ data, isLoading, isError, onRetry }) {
             onClick={() => openStudent(d.studentId)}
           >
             <TableCell className="pl-4 font-medium text-ink">
-              <button
+              <Button
+                variant="link"
+                size="inline"
                 type="button"
-                className="text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={(event) => {
                   event.stopPropagation();
                   openStudent(d.studentId);
                 }}
               >
                 {d.fullName}
-              </button>
+              </Button>
             </TableCell>
             <TableCell className="text-ink-soft">{d.dni}</TableCell>
             <TableCell className="text-ink-soft">{d.enrollmentName}</TableCell>
@@ -166,21 +169,21 @@ function DebtorsSection() {
           <span className="font-heading text-[14.5px] font-semibold text-ink">Alumnos con deuda vencida</span>
           <span className="text-xs text-ink-soft">· todas las monedas</span>
         </div>
-        <select
+        <NativeSelect
+          className="w-auto"
           aria-label="Ordenar por"
           value={sortBy}
           onChange={(e) => {
             setSortBy(e.target.value);
             setPage(0);
           }}
-          className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <DebtorsTable data={data?.items} isLoading={isLoading} isError={isError} onRetry={() => refetch()} />
       <Paginador page={page + 1} totalPages={totalPages} onChange={(next) => setPage(next - 1)} />
@@ -259,7 +262,7 @@ export function FinancialDashboardPage() {
             <SlidersHorizontal />
             <span className="hidden sm:inline">Filtros</span>
             {activeFilters > 0 && (
-              <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold leading-[18px] text-white">{activeFilters}</span>
+              <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold leading-[18px] text-on-accent">{activeFilters}</span>
             )}
           </Button>
         </PopoverTrigger>

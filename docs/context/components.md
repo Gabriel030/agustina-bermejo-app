@@ -70,7 +70,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 ## 4b. Acciones
 | Componente | Uso | API relevante |
 |---|---|---|
-| `Button` [ui] | Toda acción | `variant`: `default` `outline` `secondary` `ghost` `destructive` `link` `gradient` (CTA primario, 1 por vista); `size`: `default` `xs` `sm` `lg` `icon`; `loading`; `asChild` (sin `loading`) |
+| `Button` [ui] | Toda acción | `variant`: `default` `outline` `secondary` `ghost` `destructive` `link` (subrayado al hover) `text` (texto de acento sin subrayado) `subtle` (volver / acción discreta) `ghost-destructive` (ícono que se vuelve rojo) `row` / `row-card` (fila clicable, con `size="row"`) `gradient` (CTA primario, 1 por vista); `size`: `default` `xs` `sm` `lg` `icon` `icon-xs` `icon-sm` `inline` (texto en línea, sin alto ni padding); `loading`; `asChild` (sin `loading`) |
 | `ThemeToggle` [shared] | Switch claro/oscuro | — |
 
 ## 5. Feedback y estados

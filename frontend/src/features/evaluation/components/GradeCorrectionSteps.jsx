@@ -46,9 +46,9 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
 
   return (
     <div className="flex flex-col gap-4">
-      <button type="button" onClick={onBack} disabled={correct.isPending} className="w-fit text-left text-[13px] font-semibold text-primary hover:underline disabled:opacity-50">
+      <Button variant="link" size="inline" type="button" onClick={onBack} disabled={correct.isPending} className="w-fit text-left text-[13px] font-semibold disabled:opacity-50">
         {`← ${studentName}`}
-      </button>
+      </Button>
       <Stepper pasos={STEPS} pasoActual={step} pasosVisitados={step === 'confirm' ? ['data', 'confirm'] : ['data']} />
       <div>
         <h3 className="font-heading text-lg font-semibold text-ink">{step === 'data' ? 'Corregir nota' : 'Confirmar corrección'}</h3>

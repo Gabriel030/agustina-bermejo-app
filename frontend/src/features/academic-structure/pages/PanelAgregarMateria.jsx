@@ -10,6 +10,7 @@ import {
   useElectiveGroups,
   useProgramElectiveGroups,
 } from '@/features/academic-structure/hooks/usePrograms';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const CATEGORY_OPTIONS = [
   { value: 'MANDATORY', label: 'Obligatoria' },
@@ -36,19 +37,18 @@ function CampoSelect({ id, label, value, onChange, options, required }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
-      <select
+      <NativeSelect
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
@@ -175,13 +175,15 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
                 </span>
                 <p className="text-[13.5px] font-medium text-ink">{selectedSubject.name}</p>
               </div>
-              <button
+              <Button
+                variant="subtle"
+                size="inline"
                 type="button"
                 onClick={() => setSelectedSubjectId(null)}
-                className="text-[12px] text-ink-faint underline hover:text-ink"
-              >
+                className="text-[12px] underline"
+                >
                 Cambiar
-              </button>
+              </Button>
             </div>
 
             <CampoSelect

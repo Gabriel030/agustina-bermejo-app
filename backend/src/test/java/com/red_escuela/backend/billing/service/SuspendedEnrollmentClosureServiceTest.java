@@ -87,6 +87,7 @@ class SuspendedEnrollmentClosureServiceTest {
         when(standingQuery.findStandingOfProgramEnrollment(ENROLLMENT_ID)).thenReturn(Optional.of(new EnrollmentPaymentStandingView(ENROLLMENT_ID, 41L,
                 EnrollmentPaymentStatus.SUSPENDED, LocalDate.of(2027, 4, 1), LocalDateTime.of(2027, 4, 12, 10, 0))));
         when(enrollments.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
+        when(enrollments.findByIdForUpdate(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         return enrollment;
     }
 
@@ -100,7 +101,8 @@ class SuspendedEnrollmentClosureServiceTest {
         YearCycle cycle = YearCycle.of(template, YearBillingTerms.initial(0), 2027);
         when(cycleFactory.cyclesOf(any(), anyInt())).thenReturn(List.of(cycle));
         ProgramEnrollmentService enrollmentService = new ProgramEnrollmentService(enrollments, null, null, null, null, null, null, null, null, null,
-                new EnrollmentWithdrawalDateResolver(clock), port, null, clock);
+                new EnrollmentWithdrawalDateResolver(clock), port, null,
+                mock(com.red_escuela.backend.enrollment.service.ProgramEnrollmentSectionWithdrawer.class), clock);
         logs.start();
         closureLogger.addAppender(logs);
         return new SuspendedEnrollmentClosureService(enrollments, templates, mock(TermRepository.class), invoices, enrollmentService, clock,

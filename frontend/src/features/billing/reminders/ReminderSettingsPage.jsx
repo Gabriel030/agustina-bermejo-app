@@ -270,9 +270,9 @@ export function ReminderSettingsPage() {
             <TabsContent value={tab} className="flex flex-col gap-5">
               {exception && (
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <button type="button" onClick={() => { discard(); setException(null); }} className="text-sm font-semibold text-primary hover:underline">
+                  <Button variant="link" size="inline" type="button" onClick={() => { discard(); setException(null); }} className="text-sm font-semibold">
                     ← Volver a {GROUP_LABELS[tab]}
-                  </button>
+                  </Button>
                   <h2 className="font-heading text-lg font-semibold text-ink">{exceptionName}</h2>
                   {!exception.isNew && !readOnly && (
                     <Button variant="outline" size="sm" onClick={() => { setRemoving(true); setStep('confirm'); }}>

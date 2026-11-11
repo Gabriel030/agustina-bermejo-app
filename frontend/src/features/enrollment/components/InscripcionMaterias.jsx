@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -88,9 +89,9 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <button type="button" onClick={onCerrar} className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+        <Button variant="subtle" size="inline" type="button" onClick={onCerrar} className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-soft">
           <ArrowLeft className="h-4 w-4" /> Volver a mis materias
-        </button>
+        </Button>
       </div>
 
       {confirmacion && (
@@ -142,9 +143,9 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
               <div className="font-heading text-[15px] font-semibold text-ink">{materiaSeleccionada.subjectName}</div>
               <div className="text-xs text-ink-faint">Elegí una comisión</div>
             </div>
-            <button type="button" onClick={volverAMaterias} className="text-xs font-bold text-primary hover:underline">
+            <Button variant="link" size="inline" type="button" onClick={volverAMaterias} className="text-xs font-bold">
               Cambiar materia
-            </button>
+            </Button>
           </div>
 
           {cargandoComisiones ? (

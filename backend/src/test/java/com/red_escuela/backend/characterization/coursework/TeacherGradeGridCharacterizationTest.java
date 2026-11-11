@@ -92,6 +92,8 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
         Classroom classroom = classroom("grid3", "8100003", persistScheme(2, true, null), null);
         loadGrade(classroom, GradeItemType.EXAM, 1, "6");
         loadGrade(classroom, GradeItemType.EXAM, 2, "6");
+        publishItem(classroom, GradeItemType.EXAM, 1);
+        publishItem(classroom, GradeItemType.EXAM, 2);
 
         getAs(classroom.teacher(), gridPath(classroom))
                 .andExpect(jsonPath("$.students[0].condition").value("REGULAR"))
@@ -111,6 +113,8 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
         Classroom classroom = classroom("grid4", "8100004", persistScheme(2, true, null), null);
         loadGrade(classroom, GradeItemType.EXAM, 1, "2");
         loadGrade(classroom, GradeItemType.EXAM, 2, "3");
+        publishItem(classroom, GradeItemType.EXAM, 1);
+        publishItem(classroom, GradeItemType.EXAM, 2);
 
         getAs(classroom.teacher(), gridPath(classroom))
                 .andExpect(jsonPath("$.students[0].condition").value("FAILED"))

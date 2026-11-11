@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, TriangleAlert } from 'lucide-react';
@@ -17,9 +18,12 @@ const GRADUATION_TYPES = new Set([
   'GRADUATION_REQUEST_DEBT_BLOCKED',
   'GRADUATION_REQUEST_APPROVED',
   'GRADUATION_REQUEST_REJECTED',
+  'GRADUATION_REQUEST_OUTDATED',
 ]);
 
 const ATTENDANCE_CHANGE_TYPES = new Set(['ATTENDANCE_CHANGE_REQUEST_APPROVED', 'ATTENDANCE_CHANGE_REQUEST_REJECTED']);
+
+const OFFER_CYCLE_TYPES = new Set(['OFFER_CYCLE_APPROVED', 'OFFER_CYCLE_REJECTED']);
 
 const GRADE_TYPES =new Set(['GRADES_PUBLISHED', 'GRADE_CORRECTED']);
 
@@ -60,6 +64,16 @@ export function NotificationBell() {
       navigate('/docente/tomar-asistencia?tab=pedidos');
       return;
     }
+    if (n.type === 'OFFER_CYCLE_SUBMITTED' && n.relatedEntityId) {
+      setOpen(false);
+      navigate(`/director/aprobaciones/oferta-academica/${n.relatedEntityId}`);
+      return;
+    }
+    if (OFFER_CYCLE_TYPES.has(n.type)) {
+      setOpen(false);
+      navigate(`${staffBasePath}/oferta-academica`);
+      return;
+    }
     if (GRADE_TYPES.has(n.type)) {
       setOpen(false);
       navigate('/alumno/mis-carreras?tab=notas');
@@ -73,6 +87,11 @@ export function NotificationBell() {
     if (n.type === 'DRAFT_INVOICES_AWAITING_REVIEW' && n.relatedEntityId) {
       setOpen(false);
       navigate(`${staffBasePath}/emision-mensual/${n.relatedEntityId}/borradores`);
+      return;
+    }
+    if (n.type === 'PROGRAM_APPLICATION_RECEIVED') {
+      setOpen(false);
+      navigate(n.relatedEntityId ? `${staffBasePath}/solicitudes-de-ingreso/${n.relatedEntityId}` : `${staffBasePath}/solicitudes-de-ingreso`);
       return;
     }
     if (n.type === 'PROGRAM_APPLICATION_APPROVED' && n.relatedEntityId) {
@@ -107,7 +126,7 @@ export function NotificationBell() {
           {!loadFailed && noLeidas > 0 && (
             <span
               aria-hidden="true"
-              className="absolute -right-1 -top-1 flex h-4 min-w-4 animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-white motion-reduce:animate-none"
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-on-accent motion-reduce:animate-none design-b:animate-none"
             >
               {noLeidas > 9 ? '9+' : noLeidas}
             </span>
@@ -119,7 +138,7 @@ export function NotificationBell() {
         align="end"
         aria-label="Notificaciones"
         sideOffset={8}
-        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-2xl backdrop-blur-[28px] backdrop-saturate-[1.6]"
+        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay backdrop-blur-[28px] backdrop-saturate-[1.6]"
       >
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-[13px] font-semibold text-ink">
           Notificaciones
@@ -130,14 +149,15 @@ export function NotificationBell() {
             <div role="alert" className="flex flex-col items-center gap-2 px-4 py-6 text-center">
               <TriangleAlert aria-hidden="true" className="h-5 w-5 text-warning" />
               <p className="text-sm text-ink-soft">No pudimos cargar tus notificaciones.</p>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 type="button"
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-neutral-bg/60 disabled:opacity-60"
-              >
+                className="px-3 font-semibold text-ink">
                 Reintentar
-              </button>
+              </Button>
             </div>
           ) : lista.length === 0 ? (
             <EmptyState title="Nada por ahora" className="py-6" />

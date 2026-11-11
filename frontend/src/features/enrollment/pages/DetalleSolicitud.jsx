@@ -213,13 +213,15 @@ export function DetalleSolicitud() {
             {invoice.receiptStatus === 'PENDING_REVIEW' ? (
               <div className="flex flex-col items-end gap-1.5">
                 <StatusPill tone="warning">Pago en revisión</StatusPill>
-                <button
+                <Button
+                  variant="text"
+                  size="inline"
                   type="button"
                   onClick={() => navigate(`/alumno/pagos/${invoice.id}/transferencia`, { state: originState })}
-                  className="text-[12.5px] font-semibold text-primary"
-                >
+                  className="text-[12.5px] font-semibold"
+                  >
                   Ver estado del pago
-                </button>
+                </Button>
               </div>
             ) : (
               <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${invoice.id}/seleccion`, { state: originState })}>

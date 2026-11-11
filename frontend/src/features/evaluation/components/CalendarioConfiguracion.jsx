@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
@@ -10,7 +11,7 @@ import {
   esFeriado,
 } from '@/lib/calendario';
 
-const TONO_BG = { success: 'bg-success text-white', warning: 'bg-warning text-white', accent: 'bg-brand text-white', accent2: 'bg-accent-2 text-white' };
+const TONO_BG = { success: 'bg-success text-on-accent', warning: 'bg-warning text-on-accent', accent: 'bg-brand text-on-accent', accent2: 'bg-accent-2 text-on-accent' };
 const MESES_POR_PAGINA = 5;
 
 function DiaCelda({ dia, eventos, feriado }) {
@@ -71,25 +72,27 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
         </div>
         {totalPaginas > 1 && (
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="icon-sm"
               type="button"
               onClick={() => setPagina((p) => Math.max(0, p - 1))}
               disabled={paginaActual === 0}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface text-ink-faint disabled:opacity-40"
-            >
+              className="text-ink-faint disabled:opacity-40">
               <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
+            </Button>
             <span className="text-[11px] font-semibold text-ink-faint">
               {mesesVisibles[0]?.anio} · página {paginaActual + 1}/{totalPaginas}
             </span>
-            <button
+            <Button
+              variant="outline"
+              size="icon-sm"
               type="button"
               onClick={() => setPagina((p) => Math.min(totalPaginas - 1, p + 1))}
               disabled={paginaActual === totalPaginas - 1}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface text-ink-faint disabled:opacity-40"
-            >
+              className="text-ink-faint disabled:opacity-40">
               <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           </div>
         )}
       </div>

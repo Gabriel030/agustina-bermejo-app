@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
@@ -111,13 +112,15 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
         {aviso.body}
       </div>
       {desborda && (
-        <button
+        <Button
+          variant="text"
+          size="inline"
           type="button"
           onClick={alternar}
-          className="mt-1 text-[12px] font-semibold text-primary"
-        >
+          className="mt-1 text-[12px] font-semibold"
+          >
           {expandido ? 'Ver menos' : 'Ver más'}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -167,7 +170,7 @@ export function AlumnoInicio() {
       {/* Identidad + estado de pago */}
       <GlassCard className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-2 to-brand font-heading text-base font-bold text-white">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-2 to-brand font-heading text-base font-bold text-on-accent">
             {iniciales(usuario?.nombre, usuario?.apellido)}
           </div>
           <div>
@@ -237,13 +240,15 @@ export function AlumnoInicio() {
                 );
               })}
               {novedades.length > NOVEDADES_INICIAL && (
-                <button
+                <Button
+                  variant="text"
+                  size="inline"
                   type="button"
                   onClick={() => setVerTodos((v) => !v)}
-                  className="mt-1 self-start text-[12.5px] font-semibold text-primary"
-                >
+                  className="mt-1 self-start text-[12.5px] font-semibold"
+                  >
                   {verTodos ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
-                </button>
+                </Button>
               )}
             </div>
           )}

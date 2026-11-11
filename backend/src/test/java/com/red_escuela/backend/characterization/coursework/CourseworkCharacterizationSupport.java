@@ -236,6 +236,12 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
                 .content(objectMapper.writeValueAsString(body)));
     }
 
+    protected void publishItem(Classroom classroom, com.red_escuela.backend.evaluation.entity.GradeItemType type, int sequence) throws Exception {
+        postJson(classroom.teacher(), "/program-sections/" + classroom.section().getId() + "/grade-items/publish",
+                new com.red_escuela.backend.evaluation.dto.PublishGradeItemRequest(type, sequence))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    }
+
     protected ResultActions postEmpty(Person actor, String path) throws Exception {
         return mockMvc.perform(post(path).header("Authorization", bearer(actor)));
     }

@@ -39,13 +39,13 @@ export function BannerCarousel() {
 
   return (
     <GlassCard
-      className="relative overflow-hidden bg-gradient-to-br from-brand to-accent-2 p-6 text-white"
+      className="relative overflow-hidden bg-gradient-to-br from-brand to-accent-2 p-6 text-on-accent"
       onMouseEnter={() => setPausado(true)}
       onMouseLeave={() => setPausado(false)}
     >
-      <div className="text-[11px] font-bold uppercase tracking-wide text-white/75">Novedad institucional</div>
+      <div className="text-[11px] font-bold uppercase tracking-wide text-on-accent/75">Novedad institucional</div>
       <div className="mt-1 font-heading text-lg font-bold">{slide.titulo}</div>
-      <div className="mt-1 text-[13px] text-white/85">{slide.texto}</div>
+      <div className="mt-1 text-[13px] text-on-accent/85">{slide.texto}</div>
 
       <div className="mt-4 flex items-center gap-1.5">
         {SLIDES.map((_, i) => (
@@ -54,7 +54,7 @@ export function BannerCarousel() {
             type="button"
             aria-label={`Ir al slide ${i + 1}`}
             onClick={() => setIndice(i)}
-            className={cn('h-1.5 rounded-full transition-all', i === indice ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60')}
+            className={cn('h-1.5 rounded-full transition-all', i === indice ? 'w-5 bg-on-accent' : 'w-1.5 bg-on-accent/40 hover:bg-on-accent/60')}
           />
         ))}
       </div>
@@ -63,7 +63,7 @@ export function BannerCarousel() {
         type="button"
         aria-label="Slide anterior"
         onClick={anterior}
-        className="absolute left-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/30"
+        className="absolute left-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-on-accent/15 text-on-accent transition-colors hover:bg-on-accent/30"
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
@@ -71,7 +71,7 @@ export function BannerCarousel() {
         type="button"
         aria-label="Slide siguiente"
         onClick={siguiente}
-        className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/30"
+        className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-on-accent/15 text-on-accent transition-colors hover:bg-on-accent/30"
       >
         <ChevronRight className="h-5 w-5" />
       </button>

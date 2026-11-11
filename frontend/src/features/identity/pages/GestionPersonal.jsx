@@ -43,11 +43,12 @@ function useDebounce(value, delay) {
 
 function FilaPersonal({ persona, onClick }) {
   return (
-    <button
+    <Button
+      variant="row"
+      size="row"
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
-    >
+      >
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-[14px] font-medium text-ink">
           {persona.apellido}, {persona.nombre}
@@ -63,7 +64,7 @@ function FilaPersonal({ persona, onClick }) {
         </div>
         <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />
       </div>
-    </button>
+    </Button>
   );
 }
 

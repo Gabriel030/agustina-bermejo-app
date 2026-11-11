@@ -18,4 +18,9 @@ public class ProgramEnrollmentApplicationFinder {
         return applicationRepository.findById(id)
                 .orElseThrow(() -> new ProgramEnrollmentApplicationNotFoundException(id));
     }
+
+    public ProgramEnrollmentApplication findLockedOrThrow(Long id) {
+        return applicationRepository.findLockedById(id)
+                .orElseThrow(() -> new ProgramEnrollmentApplicationNotFoundException(id));
+    }
 }

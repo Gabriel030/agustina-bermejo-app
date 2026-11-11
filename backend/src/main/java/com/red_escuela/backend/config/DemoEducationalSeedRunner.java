@@ -233,12 +233,14 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         long studentId = findStudentId(api, GRADUATING_STUDENT);
         long programEnrollmentId = api.post(ADMIN, "/students/" + studentId + "/program-enrollments", Map.of("programId", programId)).get("id").asLong();
         long sectionEnrollmentId = api.post(ADMIN, "/program-enrollments/" + programEnrollmentId + "/section-enrollments", Map.of("sectionId", sectionId)).get("id").asLong();
-        loadApprovingGrades(api, "/section-enrollments/" + sectionEnrollmentId + "/grade-items");
+        loadApprovingGrades(api, "/section-enrollments/" + sectionEnrollmentId + "/grade-items", "/program-sections/" + sectionId + "/grade-items/publish");
     }
 
-    private void loadApprovingGrades(DemoApiClient api, String gradeItemsPath) {
+    private void loadApprovingGrades(DemoApiClient api, String gradeItemsPath, String publishPath) {
         api.post(TEACHER, gradeItemsPath, Map.of("type", "EXAM", "sequenceNumber", 1, "date", "2026-06-10T00:00:00", "score", 7));
         api.post(TEACHER, gradeItemsPath, Map.of("type", "EXAM", "sequenceNumber", 2, "date", "2026-08-12T00:00:00", "score", 8));
+        api.post(TEACHER, publishPath, Map.of("gradeType", "EXAM", "sequenceNumber", 1));
+        api.post(TEACHER, publishPath, Map.of("gradeType", "EXAM", "sequenceNumber", 2));
         api.post(TEACHER, gradeItemsPath, Map.of("type", "FINAL", "date", "2026-09-20T00:00:00", "score", 8));
     }
 
@@ -299,7 +301,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         api.post(ADMIN, "/students/" + findStudentId(api, COURSE_STUDENT) + "/course-enrollments", Map.of("courseId", courseId));
         for (Long sectionId : moduleSectionIds.subList(0, 2)) {
             long sectionEnrollmentId = api.get(TEACHER, "/course-sections/" + sectionId + "/roster").get(0).get("enrollmentId").asLong();
-            loadApprovingGrades(api, "/course-section-enrollments/" + sectionEnrollmentId + "/grade-items");
+            loadApprovingGrades(api, "/course-section-enrollments/" + sectionEnrollmentId + "/grade-items", "/course-sections/" + sectionId + "/grade-items/publish");
         }
     }
 }

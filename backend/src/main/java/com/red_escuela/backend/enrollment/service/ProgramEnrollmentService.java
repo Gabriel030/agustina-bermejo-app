@@ -61,6 +61,7 @@ public class ProgramEnrollmentService {
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard;
+    private final ProgramEnrollmentSectionWithdrawer sectionWithdrawer;
     private final Clock clock;
 
     public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
@@ -76,6 +77,7 @@ public class ProgramEnrollmentService {
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard,
+            ProgramEnrollmentSectionWithdrawer sectionWithdrawer,
             Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentFinder = studentFinder;
@@ -90,6 +92,7 @@ public class ProgramEnrollmentService {
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
         this.documentCompletenessGuard = documentCompletenessGuard;
+        this.sectionWithdrawer = sectionWithdrawer;
         this.clock = clock;
     }
 
@@ -153,7 +156,8 @@ public class ProgramEnrollmentService {
 
     @Transactional
     public void withdraw(Long id, EnrollmentWithdrawal withdrawal) {
-        ProgramEnrollment enrollment = findOrThrow(id);
+        ProgramEnrollment enrollment = programEnrollmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
                 && enrollment.getStatus() != ProgramEnrollmentStatus.PAUSED) {
             throw new CannotWithdrawException(
@@ -161,6 +165,7 @@ public class ProgramEnrollmentService {
         }
         LocalDate effectiveDate = withdrawalDateResolver.resolveEffectiveDate(withdrawal, enrollment.getEnrollmentDate());
         LocalDate registeredOn = withdrawalDateResolver.registrationDate();
+        sectionWithdrawer.withdrawOpenEnrollmentsOf(id);
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
         programEnrollmentRepository.save(enrollment);

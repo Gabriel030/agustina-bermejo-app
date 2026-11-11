@@ -78,6 +78,8 @@ describe('notificaciones', () => {
     expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_CREATED).toBe('Solicitud de egreso registrada');
     expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_PENDING_REVIEW).toBe('Egreso pendiente de revisión');
     expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_VERIFIED).toBe('Egreso verificado por Administración');
+    expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_OUTDATED).toBe('Egreso desactualizado');
+    expect(TONO_NOTIFICACION.GRADUATION_REQUEST_OUTDATED).toBe('warning');
     expect(TONO_NOTIFICACION.GRADUATION_REQUEST_PENDING_REVIEW).toBe('warning');
     expect(TONO_NOTIFICACION.GRADUATION_REQUEST_VERIFIED).toBe('accent2');
   });
@@ -85,6 +87,11 @@ describe('notificaciones', () => {
   it('labels and tones the graduation request blocked by debt', () => {
     expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_DEBT_BLOCKED).toBe('Egreso detenido por deuda');
     expect(TONO_NOTIFICACION.GRADUATION_REQUEST_DEBT_BLOCKED).toBe('warning');
+  });
+
+  it('labels and tones the application received by the staff', () => {
+    expect(TIPO_NOTIFICACION_LABEL.PROGRAM_APPLICATION_RECEIVED).toBe('Nueva solicitud de ingreso');
+    expect(TONO_NOTIFICACION.PROGRAM_APPLICATION_RECEIVED).toBe('warning');
   });
 
   it('labels the real emitted types added in the audit', () => {

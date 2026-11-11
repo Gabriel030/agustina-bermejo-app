@@ -57,6 +57,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ANNUAL_UPFRONT_RECEIPT_LATE` | no | `AnnualUpfrontReceiptLateException` | billing |
 | `ANNUAL_UPFRONT_RECEIPT_MUST_BE_ALONE` | no | `AnnualUpfrontReceiptMustBeAloneException` | billing |
 | `ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED` | no | `AnnualUpfrontTermsNotAcceptedException` | billing |
+| `APPLICATION_DECISION_IDEMPOTENCY_KEY_INVALID` | no | `ApplicationDecisionIdempotencyKeyInvalidException` | enrollment |
 | `APPLICATION_DOCUMENT_TOO_LARGE` | no | `ApplicationDocumentTooLargeException` | enrollment |
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
@@ -80,6 +81,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CURRENCY_MISMATCH` | no | `CurrencyMismatchException` | shared |
 | `CURRENCY_REQUIRED` | no | `CurrencyRequiredException` | billing |
 | `CURRICULAR_YEAR_OUT_OF_RANGE` | no | `CurricularYearOutOfRangeException` | academicstructure |
+| `CYCLE_DECISION_IDEMPOTENCY_KEY_INVALID` | no | `CycleDecisionIdempotencyKeyInvalidException` | academicstructure |
 | `CYCLE_INCOMPLETE` | no | `CycleIncompleteException` | academicstructure |
 | `DIRECTOR_APPROVAL_SUBJECT_REQUIRED` | no | `DirectorApprovalSubjectRequiredException` | enrollment |
 | `DISCOUNT_CLOSURE_REASON_REQUIRED` | no | `DiscountClosureReasonRequiredException` | billing |
@@ -144,6 +146,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_PRICE_AMOUNT` | no | `InvalidPriceAmountException` | billing |
 | `INVALID_PROGRAM_SUBJECT_CATEGORY` | no | `InvalidProgramSubjectCategoryException` | academicstructure |
 | `INVALID_REGISTRATION_WINDOW` | no | `InvalidRegistrationWindowException` | academicstructure |
+| `INVALID_RESOLVED_APPLICATION_STATUS` | no | `InvalidResolvedApplicationStatusException` | enrollment |
 | `INVALID_SCHOLARSHIP_PERIOD` | no | `InvalidScholarshipPeriodException` | billing |
 | `INVALID_SECTION_CHANGE` | no | `InvalidSectionChangeException` | enrollment |
 | `INVALID_SECTION_EVALUATION_CONFIG_TRANSITION` | no | `InvalidSectionEvaluationConfigTransitionException` | evaluation |
@@ -236,6 +239,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ANNUAL_UPFRONT_ENROLLMENT_NOT_FOUND` | no | `AnnualUpfrontEnrollmentNotFoundException` | billing |
 | `ANNUAL_UPFRONT_REQUEST_NOT_FOUND` | no | `AnnualUpfrontRequestNotFoundException` | billing |
 | `ANNUAL_UPFRONT_TERMS_NOT_FOUND` | no | `AnnualUpfrontTermsNotFoundException` | billing |
+| `APPLICATION_DOCUMENT_NOT_FOUND` | no | `ApplicationDocumentNotFoundException` | enrollment |
 | `ATTENDANCE_CHANGE_REQUEST_NOT_FOUND` | no | `AttendanceChangeRequestNotFoundException` | attendance |
 | `ATTENDANCE_NOT_FOUND` | no | `AttendanceNotFoundException` | attendance |
 | `AUTHORIZATION_REQUEST_NOT_FOUND` | no | `AuthorizationRequestNotFoundException` | billing |
@@ -327,6 +331,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED` | no | `AnnualUpfrontPlanCannotBeChangedException` | billing |
 | `ANNUAL_UPFRONT_REQUEST_REJECTED` | no | `AnnualUpfrontRequestRejectedException` | billing |
 | `ANNUAL_UPFRONT_TERMS_OUTDATED` | no | `AnnualUpfrontTermsOutdatedException` | billing |
+| `APPLICATION_DECISION_IDEMPOTENCY_KEY_CONFLICT` | no | `ApplicationDecisionIdempotencyKeyConflictException` | enrollment |
 | `APPLICATION_DOCUMENTS_INCOMPLETE` | no | `ApplicationDocumentsIncompleteException` | enrollment |
 | `APPLICATION_DOCUMENTS_LOCKED` | no | `ApplicationDocumentsLockedException` | enrollment |
 | `ATTENDANCE_ALREADY_RECORDED` | no | `AttendanceAlreadyRecordedException` | attendance |
@@ -357,6 +362,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT` | no | `CreditNoteRefundExceedsPaidAmountException` | billing |
 | `CURRENT_ACCOUNT_ENTRY_SOURCE_MISMATCH` | no | `CurrentAccountEntrySourceMismatchException` | billing |
 | `CYCLE_ALREADY_IN_PROGRESS` | no | `CycleAlreadyInProgressException` | academicstructure |
+| `CYCLE_DECISION_IDEMPOTENCY_KEY_CONFLICT` | no | `CycleDecisionIdempotencyKeyConflictException` | academicstructure |
 | `CYCLE_NOT_EDITABLE` | no | `CycleNotEditableException` | academicstructure |
 | `CYCLE_NOT_PENDING_APPROVAL` | no | `CycleNotPendingApprovalException` | academicstructure |
 | `DIRECTOR_ALREADY_EXISTS` | no | `DirectorAlreadyExistsException` | identity |
@@ -555,12 +561,16 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 
 | Método | Ruta | Handler |
 |---|---|---|
+| POST | `/academic-offering-cycles/{id}/approve` | `AcademicOfferingCycleController#approve` |
+| POST | `/academic-offering-cycles/{id}/reject` | `AcademicOfferingCycleController#reject` |
 | POST | `/course-enrollments/{id}/invoices/ad-hoc` | `CourseEnrollmentController#createAdHocInvoice` |
 | POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/me/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitOwnReceipt` |
 | POST | `/me/course-enrollments` | `MeEnrollmentController#enrollInCourse` |
 | POST | `/me/refund-requests` | `RefundController#requestOwnRefund` |
 | POST | `/platform/provisioning/first-director` | `PlatformProvisioningController#provisionFirstDirector` |
+| POST | `/program-enrollment-applications/{id}/approve` | `ProgramEnrollmentApplicationController#approve` |
+| POST | `/program-enrollment-applications/{id}/reject` | `ProgramEnrollmentApplicationController#reject` |
 | POST | `/program-enrollments/{id}/invoices/ad-hoc` | `ProgramEnrollmentController#createAdHocInvoice` |
 | POST | `/students/{studentId}/annual-upfront-requests/{requestId}/cash-payment` | `AnnualUpfrontCashPaymentController#registerAnnualUpfrontCashPayment` |
 | POST | `/students/{studentId}/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitReceiptOnBehalfOfStudent` |
@@ -572,8 +582,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | Método | Ruta | Handler |
 |---|---|---|
 | POST | `/academic-offering-cycles` | `AcademicOfferingCycleController#create` |
-| POST | `/academic-offering-cycles/{id}/approve` | `AcademicOfferingCycleController#approve` |
-| POST | `/academic-offering-cycles/{id}/reject` | `AcademicOfferingCycleController#reject` |
 | POST | `/academic-offering-cycles/{id}/sections` | `AcademicOfferingCycleController#createSection` |
 | POST | `/academic-offering-cycles/{id}/submit` | `AcademicOfferingCycleController#submit` |
 | POST | `/annual-upfront-terms/versions` | `AnnualUpfrontTermsController#publishNewTermsVersion` |
@@ -694,8 +702,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/prices/{priceId}/versions` | `PriceController#publishPriceVersion` |
 | POST | `/prices/{priceId}/versions/impact` | `PriceController#getPriceChangeImpact` |
 | POST | `/prices/{priceId}/versions/validation` | `PriceController#validatePriceChange` |
-| POST | `/program-enrollment-applications/{id}/approve` | `ProgramEnrollmentApplicationController#approve` |
-| POST | `/program-enrollment-applications/{id}/reject` | `ProgramEnrollmentApplicationController#reject` |
 | POST | `/program-enrollments/{id}/advance-billing-year` | `ProgramEnrollmentController#advanceAcademicYear` |
 | POST | `/program-enrollments/{id}/advance-enrollment-fee` | `AdvanceEnrollmentFeeController#requestForStudent` |
 | POST | `/program-enrollments/{id}/enrollment-fee-exemptions` | `EnrollmentFeeController#grant` |

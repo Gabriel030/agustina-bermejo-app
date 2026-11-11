@@ -16,8 +16,18 @@ public class ProgramEnrollmentApplicationRejection {
 
     @Transactional
     public ProgramEnrollmentApplication reject(Long applicationId, Person decidedBy, String reason) {
-        ProgramEnrollmentApplication application = applicationFinder.findOrThrow(applicationId);
+        return reject(applicationId, decidedBy, reason, null);
+    }
+
+    @Transactional
+    public ProgramEnrollmentApplication reject(Long applicationId, Person decidedBy, String reason, String idempotencyKey) {
+        String key = ApplicationDecisionIdempotencyKeys.normalize(idempotencyKey);
+        ProgramEnrollmentApplication application = applicationFinder.findLockedOrThrow(applicationId);
+        if (ApplicationDecisionIdempotencyKeys.isReplayOfRejection(application, key)) {
+            return application;
+        }
         application.reject(decidedBy, reason);
+        application.recordDecisionKey(key);
         return application;
     }
 }

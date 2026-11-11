@@ -2,10 +2,14 @@ package com.red_escuela.backend.enrollment.repository;
 
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,7 +17,33 @@ public interface ProgramEnrollmentApplicationRepository extends JpaRepository<Pr
 
     List<ProgramEnrollmentApplication> findByStudentIdOrderByRequestedAtDesc(Long studentId);
 
+    @EntityGraph(attributePaths = {"student.person", "program", "programCohort", "decidedBy"})
     List<ProgramEnrollmentApplication> findByStatusOrderByRequestedAtAsc(ProgramEnrollmentApplicationStatus status);
+
+    @EntityGraph(attributePaths = {"student.person", "program", "programCohort", "decidedBy"})
+    @Query(value = """
+            select a from ProgramEnrollmentApplication a
+            where a.status in :statuses
+              and (lower(concat(coalesce(a.student.person.name, ''), ' ', coalesce(a.student.person.lastname, ''))) like :pattern escape '!'
+                   or coalesce(a.student.person.dni, '') like :dniPattern escape '!')
+            order by a.decidedAt desc, a.id desc
+            """,
+            countQuery = """
+            select count(a) from ProgramEnrollmentApplication a
+            where a.status in :statuses
+              and (lower(concat(coalesce(a.student.person.name, ''), ' ', coalesce(a.student.person.lastname, ''))) like :pattern escape '!'
+                   or coalesce(a.student.person.dni, '') like :dniPattern escape '!')
+            """)
+    Page<ProgramEnrollmentApplication> searchByStatuses(@Param("statuses") Collection<ProgramEnrollmentApplicationStatus> statuses,
+                                                        @Param("pattern") String pattern,
+                                                        @Param("dniPattern") String dniPattern, Pageable pageable);
+
+    @Query("""
+            select a.id as applicationId, concat(str(c.intake), ' ', str(extract(year from c.cursadaStart))) as name
+            from ProgramEnrollmentApplication a join a.programCohort c
+            where a.id in :ids
+            """)
+    List<ApplicationCohortName> findCohortNamesByApplicationIds(@Param("ids") Collection<Long> ids);
 
     Optional<ProgramEnrollmentApplication> findByStudentIdAndProgramIdAndStatus(
             Long studentId, Long programId, ProgramEnrollmentApplicationStatus status);

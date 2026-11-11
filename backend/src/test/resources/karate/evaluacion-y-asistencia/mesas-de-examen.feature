@@ -80,7 +80,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     """
     for (var i = 1; i <= 2; i++) {
       var res = karate.call('classpath:karate/helpers/cargar-parcial.feature',
-        { baseUrl: baseUrl, docenteToken: docente.accessToken, sectionEnrollmentId: sectionEnrollmentId, seq: i, score: 7 });
+        { baseUrl: baseUrl, docenteToken: docente.accessToken, sectionId: sectionId, sectionEnrollmentId: sectionEnrollmentId, seq: i, score: 7 });
     }
     """
 
@@ -89,6 +89,12 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'TP', sequenceNumber: 1 }
+    When method post
+    Then status 200
 
     Given path '/program-enrollments', programEnrollmentId, 'section-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -213,7 +219,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     """
     for (var i = 1; i <= 2; i++) {
       karate.call('classpath:karate/helpers/cargar-parcial.feature',
-        { baseUrl: baseUrl, docenteToken: docente.accessToken, sectionEnrollmentId: sectionEnrollmentId, seq: i, score: 7 });
+        { baseUrl: baseUrl, docenteToken: docente.accessToken, sectionId: sectionId, sectionEnrollmentId: sectionEnrollmentId, seq: i, score: 7 });
     }
     """
 
@@ -222,6 +228,12 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'TP', sequenceNumber: 1 }
+    When method post
+    Then status 200
 
     * def nombreMateriaOtra = 'Materia QA mesas otra ' + java.lang.System.nanoTime()
     * def codigoMateriaOtra = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
@@ -330,7 +342,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     """
     for (var i = 1; i <= 2; i++) {
       karate.call('classpath:karate/helpers/cargar-parcial.feature',
-        { baseUrl: baseUrl, docenteToken: docente.accessToken, sectionEnrollmentId: sectionEnrollmentId, seq: i, score: 7 });
+        { baseUrl: baseUrl, docenteToken: docente.accessToken, sectionId: sectionId, sectionEnrollmentId: sectionEnrollmentId, seq: i, score: 7 });
     }
     """
 
@@ -339,6 +351,12 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'TP', sequenceNumber: 1 }
+    When method post
+    Then status 200
 
     Given path '/exam-boards'
     And header Authorization = 'Bearer ' + adminToken
@@ -404,7 +422,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     """
     for (var i = 1; i <= 2; i++) {
       karate.call('classpath:karate/helpers/cargar-parcial.feature',
-        { baseUrl: baseUrl, docenteToken: docente.accessToken, sectionEnrollmentId: sectionEnrollmentId, seq: i, score: 7 });
+        { baseUrl: baseUrl, docenteToken: docente.accessToken, sectionId: sectionId, sectionEnrollmentId: sectionEnrollmentId, seq: i, score: 7 });
     }
     """
 
@@ -413,6 +431,12 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'TP', sequenceNumber: 1 }
+    When method post
+    Then status 200
 
     Given path '/exam-boards'
     And header Authorization = 'Bearer ' + adminToken
@@ -512,6 +536,12 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'TP', sequenceNumber: 1 }
+    When method post
+    Then status 200
 
     Given path '/exam-boards'
     And header Authorization = 'Bearer ' + adminToken

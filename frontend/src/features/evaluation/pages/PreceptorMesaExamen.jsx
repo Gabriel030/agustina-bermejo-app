@@ -66,14 +66,14 @@ function AvatarTribunal({ tribunal }) {
       {visibles.map((t, i) => (
         <div
           key={t.id}
-          className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-gradient-to-br from-brand to-accent-2 text-[11px] font-bold text-white"
+          className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-gradient-to-br from-brand to-accent-2 text-[11px] font-bold text-on-accent"
           style={{ marginLeft: i === 0 ? 0 : -8 }}
         >
           {iniciales(t.name)}
         </div>
       ))}
       {restantes > 0 && (
-        <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-neutral-ink text-[11px] font-bold text-white" style={{ marginLeft: -8 }}>
+        <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-neutral-ink text-[11px] font-bold text-on-accent" style={{ marginLeft: -8 }}>
           +{restantes}
         </div>
       )}
@@ -136,14 +136,16 @@ function TablaAnotados({ anotados, soloLectura, onDarDeBaja, dandoDeBaja }) {
             <div><StatusPill tone={config.tone}>{config.label}</StatusPill></div>
             <div>
               {a.status === 'REGISTERED' && !soloLectura && (
-                <button
+                <Button
+                  variant="link"
+                  size="inline"
                   type="button"
                   disabled={dandoDeBaja}
                   onClick={() => onDarDeBaja(a.id)}
-                  className="text-[12.5px] font-semibold text-danger hover:underline disabled:opacity-50"
-                >
+                  className="text-[12.5px] font-semibold text-danger disabled:opacity-50"
+                  >
                   Dar de baja
-                </button>
+                </Button>
               )}
             </div>
           </div>

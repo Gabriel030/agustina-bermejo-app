@@ -1,18 +1,16 @@
-com.red_escuela.backend.academicstructure.usecase.cycle.ApproveCycleService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleService.create(com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService.createSection(java.lang.Long, com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleService.reject(java.lang.Long, java.lang.String) declares @Transactional
 com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementService.create(com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementCommand) declares @Transactional
 com.red_escuela.backend.announcement.usecase.broadcast.DeleteAnnouncementService.delete(java.lang.Long) declares @Transactional
 com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementService.update(com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementCommand) declares @Transactional
+com.red_escuela.backend.attendance.usecase.changerequest.ApproveAttendanceChangeRequestService.approve(java.lang.Long) declares @Transactional
+com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestService.reject(com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.ApproveAttendanceJustificationService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.CancelCourseSectionClassSessionService.cancel(com.red_escuela.backend.attendance.usecase.record.CancelCourseSectionClassSessionCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.CancelProgramSectionClassSessionService.cancel(com.red_escuela.backend.attendance.usecase.record.CancelProgramSectionClassSessionCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.JustifyAttendanceService.justify(com.red_escuela.backend.attendance.usecase.record.JustifyAttendanceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.LoadCourseSectionAttendanceService.load(com.red_escuela.backend.attendance.usecase.record.LoadCourseSectionAttendanceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.LoadProgramSectionAttendanceService.load(com.red_escuela.backend.attendance.usecase.record.LoadProgramSectionAttendanceCommand) declares @Transactional
-com.red_escuela.backend.attendance.usecase.changerequest.ApproveAttendanceChangeRequestService.approve(java.lang.Long) declares @Transactional
-com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestService.reject(com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand) declares @Transactional
 com.red_escuela.backend.billing.usecase.billingperiod.CreateBillingPeriodService.create(com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateProgramCohortRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateService.create(java.lang.Long, java.lang.Long, java.lang.Integer, com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest) declares @Transactional

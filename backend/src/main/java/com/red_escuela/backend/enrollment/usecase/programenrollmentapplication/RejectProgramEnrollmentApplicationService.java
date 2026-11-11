@@ -15,6 +15,7 @@ public class RejectProgramEnrollmentApplicationService implements RejectProgramE
 
     @Override
     public ProgramEnrollmentApplication reject(RejectProgramEnrollmentApplicationCommand command) {
-        return applicationRejection.reject(command.id(), command.decidedBy(), command.reason());
+        return applicationRejection.reject(command.id(), command.decidedBy(), command.reason(), command.idempotencyKey());
     }
+
 }

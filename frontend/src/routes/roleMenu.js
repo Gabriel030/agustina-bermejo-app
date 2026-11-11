@@ -19,6 +19,7 @@ const paymentMethods = { slug: 'medios-de-pago', label: 'Medios de pago', icon: 
 const annualTerms = { slug: 'terminos-del-pago-anual', label: 'Términos del pago anual', icon: ScrollText };
 const financial ={ slug: 'financiero', label: 'Financiero', icon: BarChart2 };
 const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText };
+const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicitudes de ingreso', icon: UserPlus };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const approvals = { slug: 'aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 };
@@ -40,6 +41,7 @@ export const ROLE_MENU = {
   preceptor: [
     inicio,
     alumnos,
+    enrollmentApplications,
     academicOffering,
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     solicitudes,
@@ -49,6 +51,7 @@ export const ROLE_MENU = {
     inicio,
     alumnos,
     personal,
+    enrollmentApplications,
     invoicing,
     discounts,
     prices,
@@ -97,6 +100,52 @@ export function menuItemsFor(role) {
   return ROLE_MENU[role]
     .filter((entry) => !entry.hidden)
     .map(({ slug, to, label, icon }) => ({ to: to ?? `/${role}/${slug}`, label, icon }));
+}
+
+const MENU_GROUPS = {
+  director: [
+    { id: 'main', label: null, slugs: ['inicio', 'aprobaciones'] },
+    { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal'] },
+    {
+      id: 'academic',
+      label: 'Académico',
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'periodos', 'constancias'],
+    },
+    {
+      id: 'billing',
+      label: 'Facturación',
+      slugs: [
+        'facturacion',
+        'descuentos',
+        'precios',
+        'recordatorios-de-pago',
+        'medios-de-pago',
+        'terminos-del-pago-anual',
+        'emision-mensual',
+        'financiero',
+      ],
+    },
+    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto'] },
+  ],
+};
+
+export function menuGroupSlugs(role) {
+  return (MENU_GROUPS[role] ?? []).flatMap((group) => group.slugs);
+}
+
+export function groupMenuItems(role, items) {
+  const definitions = MENU_GROUPS[role];
+  if (!definitions) return null;
+  const prefix = `/${role}/`;
+  const slugOf = (item) => (item.to.startsWith(prefix) ? item.to.slice(prefix.length) : null);
+  const known = new Set(menuGroupSlugs(role));
+  return definitions
+    .map((group, index) => {
+      const own = items.filter((item) => group.slugs.includes(slugOf(item)));
+      const unmapped = index === 0 ? items.filter((item) => !known.has(slugOf(item))) : [];
+      return { id: group.id, label: group.label, items: [...own, ...unmapped] };
+    })
+    .filter((group) => group.items.length > 0);
 }
 
 export function pageLabels() {

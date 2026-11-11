@@ -1,6 +1,7 @@
 import { Check, Minus } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { BILLING_EFFECT_QUESTIONS, BILLING_MODES, BILLING_MODE_INFO, modeAvailability } from '@/features/platform/lib/featureCatalog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export function BillingModePanel({ billing, onSelectMode }) {
   return (
@@ -38,32 +39,32 @@ export function BillingModePanel({ billing, onSelectMode }) {
           })}
         </div>
       </fieldset>
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="text-xs text-ink-faint">
-            <th scope="col" className="py-1 pr-2"><span className="sr-only">Pregunta</span></th>
+      <Table className="w-full text-left text-sm">
+        <TableHeader>
+          <TableRow className="text-xs text-ink-faint">
+            <TableHead scope="col" className="py-1 pr-2"><span className="sr-only">Pregunta</span></TableHead>
             {BILLING_MODES.map((mode) => (
-              <th key={mode} scope="col" className="py-1 text-center font-semibold">{BILLING_MODE_INFO[mode].label}</th>
+              <TableHead key={mode} scope="col" className="py-1 text-center font-semibold">{BILLING_MODE_INFO[mode].label}</TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {BILLING_EFFECT_QUESTIONS.map((question, index) => (
-            <tr key={question} className="border-t border-line">
-              <th scope="row" className="py-1.5 pr-2 font-medium text-ink">{question}</th>
+            <TableRow key={question} className="border-t border-line">
+              <TableHead scope="row" className="h-auto py-1.5 pr-2 text-sm font-medium normal-case tracking-normal text-ink whitespace-normal">{question}</TableHead>
               {BILLING_MODES.map((mode) => {
                 const yes = BILLING_MODE_INFO[mode].effects[index];
                 return (
-                  <td key={mode} className="py-1.5 text-center">
+                  <TableCell key={mode} className="py-1.5 text-center">
                     {yes ? <Check className="mx-auto h-4 w-4 text-success" aria-hidden="true" /> : <Minus className="mx-auto h-4 w-4 text-ink-faint" aria-hidden="true" />}
                     <span className="sr-only">{yes ? 'Sí' : 'No'}</span>
-                  </td>
+                  </TableCell>
                 );
               })}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </GlassCard>
   );
 }

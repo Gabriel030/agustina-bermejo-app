@@ -53,6 +53,7 @@ import {
   useAprobarComprobante,
   useRechazarComprobante,
 } from '@/hooks/useBilling';
+import { Input } from '@/components/ui/input';
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -148,15 +149,16 @@ function InvoicesTable({ invoices, billing }) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     type="button"
                     aria-expanded={open}
                     aria-controls={`invoice-detail-${inv.id}`}
                     aria-label={`Ver detalle de ${concept}`}
-                    className="rounded-lg p-1 text-ink-faint"
-                  >
+                    className="text-ink-faint">
                     {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </button>
+                  </Button>
                 </TableCell>
               </TableRow>
               {open && (
@@ -392,12 +394,12 @@ function TabFacturacion() {
         <GlassCard className="p-4">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
-            <input
+            <Input
               type="text"
               placeholder="Buscar alumno por nombre o DNI…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
+              className="pl-9 pr-3"
             />
           </div>
 
@@ -613,14 +615,16 @@ function TabComprobantes() {
               )}
               <ReceiptInstallments invoices={receipt.invoices} />
               {receipt.filePath && (
-                <button
+                <Button
+                  variant="link"
+                  size="inline"
                   type="button"
                   onClick={() => openReceiptFile(receipt.id)}
-                  className="mt-1.5 inline-flex items-center gap-1 text-sm text-brand hover:underline"
-                >
+                  className="mt-1.5 inline-flex items-center gap-1 text-sm text-brand"
+                  >
                   <Receipt size={13} />
                   Ver comprobante
-                </button>
+                </Button>
               )}
             </div>
             <div className="flex shrink-0 gap-2">

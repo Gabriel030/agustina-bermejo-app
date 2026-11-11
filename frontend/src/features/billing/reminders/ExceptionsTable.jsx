@@ -60,9 +60,9 @@ export function ExceptionsTable({ group, exceptions, names, selectedId, canAdd, 
         header: group === 'PROGRAMS' ? 'Carrera' : 'Curso',
         accessorFn: (exception) => nameOf(exception.targetId),
         cell: ({ row }) => (
-          <button type="button" onClick={() => onSelect(row.original.targetId)} className="text-left font-semibold text-primary hover:underline">
+          <Button variant="link" size="inline" type="button" onClick={() => onSelect(row.original.targetId)} className="text-left font-semibold">
             {nameOf(row.original.targetId)}
-          </button>
+          </Button>
         ),
         meta: { cardTitle: true },
       },

@@ -10,6 +10,7 @@ import { useConfigsPendientes } from '@/features/evaluation';
 import { useEgresosPendientes } from '@/features/graduation';
 import { useExcepcionesPendientes } from '@/features/enrollment';
 import { useAuthorizationRequests } from '@/features/billing';
+import { usePendingOfferCycles } from '@/features/academic-structure';
 import { ageLabel } from '@/lib/aprobaciones';
 import { TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
 
@@ -77,6 +78,7 @@ export function DirectorAprobaciones() {
   const graduationsQuery = useEgresosPendientes();
   const exceptionsQuery = useExcepcionesPendientes();
   const billingQuery = useAuthorizationRequests(BILLING_PENDING_SEARCH);
+  const offerQuery = usePendingOfferCycles();
 
   const listaPendientes = configsQuery.data ?? [];
   const listaEgresosPendientes = graduationsQuery.data ?? [];
@@ -90,7 +92,7 @@ export function DirectorAprobaciones() {
         <p className="mt-0.5 text-sm text-ink-soft">Trámites esperando tu decisión</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link to="/director/aprobaciones/egresos" className="block rounded-[inherit]">
           <StatCard label="Egresos por aprobar">
             <PendingCounter query={graduationsQuery} />
@@ -104,6 +106,11 @@ export function DirectorAprobaciones() {
         <Link to="/director/aprobaciones/configuracion-evaluacion" className="block rounded-[inherit]">
           <StatCard label="Config. de evaluación pendientes">
             <PendingCounter query={configsQuery} />
+          </StatCard>
+        </Link>
+        <Link to="/director/aprobaciones/oferta-academica" className="block rounded-[inherit]">
+          <StatCard label="Oferta por aprobar">
+            <PendingCounter query={offerQuery} />
           </StatCard>
         </Link>
         <Link to="/director/aprobaciones/facturacion" className="block rounded-[inherit]">

@@ -225,7 +225,8 @@ public class CourseEnrollmentService {
 
     @Transactional
     public void withdraw(Long id, EnrollmentWithdrawal withdrawal) {
-        CourseEnrollment enrollment = findOrThrow(id);
+        CourseEnrollment enrollment = courseEnrollmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new CourseEnrollmentNotFoundException(id));
         if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.WAITLISTED) {
             throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED/WAITLISTED, no se puede dar de baja");
         }
@@ -239,12 +240,12 @@ public class CourseEnrollmentService {
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
         courseEnrollmentRepository.save(enrollment);
-        withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
-                enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
         cancelModuleEnrollments(enrollment, promotesWaitlist);
         if (liberaCupoDelCurso && promotesWaitlist) {
             promoteNextFromCourseWaitlist(enrollment.courseId());
         }
+        withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
+                enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
     }
 
     void cancelModuleEnrollments(CourseEnrollment enrollment) {

@@ -53,9 +53,9 @@ export function AlumnoMateriaDetalle() {
     return (
       <GlassCard className="flex flex-1 flex-col items-center justify-center gap-2 p-12 text-center">
         <div className="font-heading text-xl font-semibold text-ink">Materia no encontrada</div>
-        <button type="button" onClick={() => navigate('/alumno/mis-carreras/materias')} className="text-sm font-semibold text-primary">
+        <Button variant="text" size="inline" type="button" onClick={() => navigate('/alumno/mis-carreras/materias')} className="text-sm font-semibold">
           Volver a Materias
-        </button>
+        </Button>
       </GlassCard>
     );
   }

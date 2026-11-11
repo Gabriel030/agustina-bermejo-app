@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { Fragment } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Copy, Receipt } from 'lucide-react';
@@ -47,17 +48,18 @@ function PaymentBlock({ payment }) {
         {payment.externalReference && (
           <span className="inline-flex items-center gap-1">
             Ref. {payment.externalReference}
-            <button
+            <Button
+              variant="ghost"
+              size="icon-xs"
               type="button"
               aria-label="Copiar referencia"
               onClick={(event) => {
-                event.stopPropagation();
-                copyReference(payment.externalReference);
-              }}
-              className="rounded p-0.5 text-ink-faint transition-colors hover:text-ink"
-            >
+ event.stopPropagation();
+ copyReference(payment.externalReference);
+ }}
+ className="text-ink-faint">
               <Copy size={12} />
-            </button>
+            </Button>
           </span>
         )}
         {payment.registeredByName && <span>Registrado por {payment.registeredByName}</span>}
@@ -97,16 +99,18 @@ function ReceiptBlock({ receipt, onViewReceipt }) {
         <span className="flex items-center gap-3">
           <StatusPill tone={status.tone}>{status.label}</StatusPill>
           {onViewReceipt && (
-            <button
+            <Button
+              variant="link"
+              size="inline"
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
                 onViewReceipt(receipt.id);
               }}
-              className="text-brand hover:underline"
+              className="text-brand"
             >
               Ver comprobante
-            </button>
+            </Button>
           )}
         </span>
       </div>
@@ -190,9 +194,9 @@ export function InvoiceDetail({ invoice, onViewReceipt, onViewPayments, reviewLi
         <PaymentBlock key={payment.paymentId} payment={payment} />
       ))}
       {onViewPayments && payments.length > 0 && (
-        <button type="button" onClick={onViewPayments} className="w-fit text-sm font-semibold text-brand hover:underline">
+        <Button variant="link" size="inline" type="button" onClick={onViewPayments} className="w-fit text-sm font-semibold text-brand">
           Ver en Pagos del alumno
-        </button>
+        </Button>
       )}
       {creditNotes.map((creditNote) => (
         <CreditNoteBlock key={creditNote.creditNoteId} creditNote={creditNote} />

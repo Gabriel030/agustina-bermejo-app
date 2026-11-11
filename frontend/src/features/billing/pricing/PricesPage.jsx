@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
@@ -125,9 +126,9 @@ export function PricesPage() {
           <div className="flex flex-wrap items-center gap-3">
             <Buscador value={search} onChange={setSearch} placeholder="Buscar por carrera o curso" />
             {filter && (
-              <button type="button" onClick={() => setFilter(null)} className="text-sm font-semibold text-primary hover:underline">
+              <Button variant="link" size="inline" type="button" onClick={() => setFilter(null)} className="text-sm font-semibold">
                 Quitar filtro: {FILTERS.find((item) => item.key === filter).label}
-              </button>
+              </Button>
             )}
           </div>
           {groups.length === 0 ? (

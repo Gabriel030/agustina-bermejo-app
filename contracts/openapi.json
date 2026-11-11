@@ -38,8 +38,19 @@
           "rejectionReason" : {
             "type" : [ "string", "null" ]
           },
+          "sectionCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "status" : {
             "type" : "string"
+          },
+          "submittedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "submittedByName" : {
+            "type" : [ "string", "null" ]
           },
           "termId" : {
             "format" : "int64",
@@ -49,7 +60,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "courseId", "courseName", "createdAt", "createdByName", "decidedAt", "decidedByName", "id", "programId", "programName", "rejectionReason", "status", "termId", "termName" ],
+        "required" : [ "courseId", "courseName", "createdAt", "createdByName", "decidedAt", "decidedByName", "id", "programId", "programName", "rejectionReason", "sectionCount", "status", "submittedAt", "submittedByName", "termId", "termName" ],
         "type" : "object"
       },
       "AcademicSettingsRequest" : {
@@ -2485,6 +2496,44 @@
         "required" : [ "city", "country", "dni", "documentType", "floor", "number", "postalCode", "state", "street" ],
         "type" : "object"
       },
+      "Conflict" : {
+        "properties" : {
+          "classroomId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "classroomName" : {
+            "type" : "string"
+          },
+          "dayOfWeek" : {
+            "type" : "string"
+          },
+          "endTime" : {
+            "type" : "string"
+          },
+          "instructorId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "instructorName" : {
+            "type" : [ "string", "null" ]
+          },
+          "otherSection" : {
+            "$ref" : "#/components/schemas/Side"
+          },
+          "ownSection" : {
+            "$ref" : "#/components/schemas/Side"
+          },
+          "startTime" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "classroomId", "classroomName", "dayOfWeek", "endTime", "instructorId", "instructorName", "otherSection", "ownSection", "startTime", "type" ],
+        "type" : "object"
+      },
       "CorequisiteResponse" : {
         "properties" : {
           "corequisiteProgramSubjectId" : {
@@ -3921,6 +3970,21 @@
         "required" : [ "monthlyCollected", "monthlyDebt", "monthlyProjected", "totalDebt" ],
         "type" : "object"
       },
+      "CycleConflictsResponse" : {
+        "properties" : {
+          "conflicts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Conflict"
+            },
+            "type" : "array"
+          },
+          "hasConflicts" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "conflicts", "hasConflicts" ],
+        "type" : "object"
+      },
       "CycleOccupancyResponse" : {
         "properties" : {
           "cycleId" : {
@@ -3999,6 +4063,21 @@
         "allOf" : [ {
           "$ref" : "#/components/schemas/MetricValue"
         } ]
+      },
+      "DebtCheck" : {
+        "properties" : {
+          "blocksApproval" : {
+            "type" : "boolean"
+          },
+          "violationCodes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "blocksApproval", "violationCodes" ],
+        "type" : "object"
       },
       "DebtorSummaryResponse" : {
         "properties" : {
@@ -4443,6 +4522,28 @@
           }
         },
         "required" : [ "violations" ],
+        "type" : "object"
+      },
+      "DocumentationSummary" : {
+        "properties" : {
+          "complete" : {
+            "type" : "boolean"
+          },
+          "documents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StudentDocumentResponse"
+            },
+            "type" : "array"
+          },
+          "missingTypes" : {
+            "items" : {
+              "enum" : [ "DNI_FRENTE", "DNI_DORSO", "ANALITICO_SECUNDARIO" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "complete", "documents", "missingTypes" ],
         "type" : "object"
       },
       "DraftInvoiceBatchResponse" : {
@@ -8694,6 +8795,47 @@
         "required" : [ "electiveGroupId", "maxAllowed", "minRequired", "programId" ],
         "type" : "object"
       },
+      "ProgramEnrollmentApplicationApprovalCheckResponse" : {
+        "properties" : {
+          "applicationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "blockingReasons" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "canApprove" : {
+            "type" : "boolean"
+          },
+          "debt" : {
+            "$ref" : "#/components/schemas/DebtCheck"
+          },
+          "documentation" : {
+            "$ref" : "#/components/schemas/DocumentationSummary"
+          }
+        },
+        "required" : [ "applicationId", "blockingReasons", "canApprove", "debt", "documentation" ],
+        "type" : "object"
+      },
+      "ProgramEnrollmentApplicationPage" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProgramEnrollmentApplicationResponse"
+            },
+            "type" : "array"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "totalElements" ],
+        "type" : "object"
+      },
       "ProgramEnrollmentApplicationResponse" : {
         "properties" : {
           "admissionInvoice" : {
@@ -8707,6 +8849,16 @@
             "format" : "date-time",
             "type" : [ "string", "null" ]
           },
+          "decidedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "documentation" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DocumentationSummary"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
@@ -8714,6 +8866,9 @@
           "programCohortId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "programCohortName" : {
+            "type" : [ "string", "null" ]
           },
           "programEnrollmentId" : {
             "format" : "int64",
@@ -8736,12 +8891,21 @@
           "status" : {
             "type" : "string"
           },
+          "studentDni" : {
+            "type" : [ "string", "null" ]
+          },
+          "studentEmail" : {
+            "type" : [ "string", "null" ]
+          },
+          "studentFullName" : {
+            "type" : [ "string", "null" ]
+          },
           "studentId" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "admissionInvoice", "decidedAt", "id", "programCohortId", "programEnrollmentId", "programId", "programName", "rejectionReason", "requestedAt", "status", "studentId" ],
+        "required" : [ "admissionInvoice", "decidedAt", "decidedByName", "documentation", "id", "programCohortId", "programCohortName", "programEnrollmentId", "programId", "programName", "rejectionReason", "requestedAt", "status", "studentDni", "studentEmail", "studentFullName", "studentId" ],
         "type" : "object"
       },
       "ProgramEnrollmentResponse" : {
@@ -10779,6 +10943,26 @@
         "required" : [ "endTime", "shift", "startTime" ],
         "type" : "object"
       },
+      "Side" : {
+        "properties" : {
+          "cycleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "subjectName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "cycleId", "sectionId", "sectionName", "subjectName" ],
+        "type" : "object"
+      },
       "SlotInfo" : {
         "properties" : {
           "classroomId" : {
@@ -12762,10 +12946,134 @@
             "format" : "int64",
             "type" : "integer"
           }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "204" : {
             "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "academic-offering-cycle-controller" ]
+      }
+    },
+    "/academic-offering-cycles/{id}/conflicts" : {
+      "get" : {
+        "operationId" : "AcademicOfferingCycle_getConflicts",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleConflictsResponse"
+                }
+              }
+            },
+            "description" : "OK"
           },
           "400" : {
             "content" : {
@@ -12988,6 +13296,13 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "requestBody" : {
@@ -48993,9 +49308,261 @@
         "tags" : [ "program-enrollment-application-controller" ]
       }
     },
-    "/program-enrollment-applications/{id}/approve" : {
-      "post" : {
-        "operationId" : "ProgramEnrollmentApplication_approve",
+    "/program-enrollment-applications/history" : {
+      "get" : {
+        "operationId" : "ProgramEnrollmentApplicationReview_history",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "search",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 10,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramEnrollmentApplicationPage"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-enrollment-application-review-controller" ]
+      }
+    },
+    "/program-enrollment-applications/pending" : {
+      "get" : {
+        "operationId" : "ProgramEnrollmentApplicationReview_pending",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ProgramEnrollmentApplicationResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-enrollment-application-review-controller" ]
+      }
+    },
+    "/program-enrollment-applications/{id}" : {
+      "get" : {
+        "operationId" : "ProgramEnrollmentApplicationReview_get",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -49107,7 +49674,374 @@
             "description" : "Service Unavailable"
           }
         },
+        "tags" : [ "program-enrollment-application-review-controller" ]
+      }
+    },
+    "/program-enrollment-applications/{id}/approval-check" : {
+      "get" : {
+        "operationId" : "ProgramEnrollmentApplicationReview_approvalCheck",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramEnrollmentApplicationApprovalCheckResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-enrollment-application-review-controller" ]
+      }
+    },
+    "/program-enrollment-applications/{id}/approve" : {
+      "post" : {
+        "operationId" : "ProgramEnrollmentApplication_approve",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramEnrollmentApplicationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
         "tags" : [ "program-enrollment-application-controller" ]
+      }
+    },
+    "/program-enrollment-applications/{id}/documents/{documentId}/file" : {
+      "get" : {
+        "operationId" : "ProgramEnrollmentApplicationReview_documentFile",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "documentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-enrollment-application-review-controller" ]
       }
     },
     "/program-enrollment-applications/{id}/reject" : {
@@ -49120,6 +50054,13 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "requestBody" : {

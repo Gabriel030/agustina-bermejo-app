@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.invoice.service.ProgramAdmissionInvoiceIs
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
+import com.red_escuela.backend.enrollment.service.ApplicationDecisionIdempotencyKeys;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Student;
@@ -39,7 +40,11 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
     @Override
     @Transactional
     public ProgramEnrollmentApplication approve(ApproveProgramEnrollmentApplicationCommand command) {
-        ProgramEnrollmentApplication application = applicationFinder.findOrThrow(command.id());
+        String idempotencyKey = ApplicationDecisionIdempotencyKeys.normalize(command.idempotencyKey());
+        ProgramEnrollmentApplication application = applicationFinder.findLockedOrThrow(command.id());
+        if (ApplicationDecisionIdempotencyKeys.isReplayOfApproval(application, idempotencyKey)) {
+            return application;
+        }
         if (application.getStatus() != ProgramEnrollmentApplicationStatus.PENDING) {
             throw new InvalidProgramEnrollmentApplicationStateException(application.getId(), application.getStatus());
         }
@@ -49,6 +54,7 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
 
         Invoice admissionInvoice = programAdmissionInvoiceIssuer.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
         application.approve(command.decidedBy(), admissionInvoice);
+        ApplicationDecisionIdempotencyKeys.remember(application, idempotencyKey);
         programApplicantRoleGranter.grantStudentRole(student);
         eventPublisher.publishEvent(ProgramApplicationApprovedEvent.approvedFor(application.getId(), student.getPerson().getId(), application.getProgram().getName()));
         return application;

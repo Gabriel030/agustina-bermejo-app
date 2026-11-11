@@ -13,6 +13,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   GRADUATION_REQUEST_DEBT_BLOCKED: 'Egreso detenido por deuda',
   GRADUATION_REQUEST_APPROVED: 'Egreso aprobado',
   GRADUATION_REQUEST_REJECTED: 'Egreso rechazado',
+  GRADUATION_REQUEST_OUTDATED: 'Egreso desactualizado',
   DIRECTOR_APPROVAL_REQUEST_APPROVED: 'Excepción aprobada',
   DIRECTOR_APPROVAL_REQUEST_REJECTED: 'Excepción rechazada',
   COURSE_WAITLIST_EXPIRED: 'Lista de espera vencida',
@@ -26,6 +27,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   ENROLLMENT_FEE_EXEMPTION_GRANTED: 'Matrícula exonerada',
   ENROLLMENT_FEE_EXEMPTION_REVOKED: 'Exoneración de matrícula revocada',
   PROGRAM_APPLICATION_APPROVED: 'Solicitud aprobada',
+  PROGRAM_APPLICATION_RECEIVED: 'Nueva solicitud de ingreso',
   PROGRAM_ENROLLMENT_STALLED: 'Inscripción pendiente de revisión',
   PAYMENT_LEFT_AS_ACCOUNT_CREDIT: 'Pago a saldo a favor',
   GATEWAY_PAYMENT_WITH_GATEWAY_OFF: 'Pago online con la pasarela apagada',
@@ -57,6 +59,9 @@ export const TIPO_NOTIFICACION_LABEL = {
   PRICE_CHANGE_APPROVED: 'Precio aprobado',
   PRICE_CHANGE_REJECTED: 'Precio rechazado',
   DISCOUNT_QUOTA_EXHAUSTED: 'Cupo de promoción agotado',
+  OFFER_CYCLE_SUBMITTED: 'Oferta enviada a aprobación',
+  OFFER_CYCLE_APPROVED: 'Oferta aprobada',
+  OFFER_CYCLE_REJECTED: 'Oferta rechazada',
 };
 
 export const TONO_NOTIFICACION = {
@@ -74,6 +79,7 @@ export const TONO_NOTIFICACION = {
   GRADUATION_REQUEST_DEBT_BLOCKED: 'warning',
   GRADUATION_REQUEST_APPROVED: 'success',
   GRADUATION_REQUEST_REJECTED: 'danger',
+  GRADUATION_REQUEST_OUTDATED: 'warning',
   DIRECTOR_APPROVAL_REQUEST_APPROVED: 'success',
   DIRECTOR_APPROVAL_REQUEST_REJECTED: 'danger',
   COURSE_WAITLIST_EXPIRED: 'warning',
@@ -87,6 +93,7 @@ export const TONO_NOTIFICACION = {
   ENROLLMENT_FEE_EXEMPTION_GRANTED: 'success',
   ENROLLMENT_FEE_EXEMPTION_REVOKED: 'warning',
   PROGRAM_APPLICATION_APPROVED: 'success',
+  PROGRAM_APPLICATION_RECEIVED: 'warning',
   PROGRAM_ENROLLMENT_STALLED: 'warning',
   PAYMENT_LEFT_AS_ACCOUNT_CREDIT: 'accent2',
   GATEWAY_PAYMENT_WITH_GATEWAY_OFF: 'warning',
@@ -118,6 +125,9 @@ export const TONO_NOTIFICACION = {
   PRICE_CHANGE_APPROVED: 'success',
   PRICE_CHANGE_REJECTED: 'danger',
   DISCOUNT_QUOTA_EXHAUSTED: 'warning',
+  OFFER_CYCLE_SUBMITTED: 'warning',
+  OFFER_CYCLE_APPROVED: 'success',
+  OFFER_CYCLE_REJECTED: 'danger',
 };
 
 export const ETIQUETA_NOTIFICACION_DESCONOCIDA = 'Notificación';

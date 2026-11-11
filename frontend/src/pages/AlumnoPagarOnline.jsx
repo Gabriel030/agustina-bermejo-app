@@ -69,14 +69,16 @@ function OnlinePaymentRedirect({ invoiceId }) {
 
   return (
     <PageContainer className="max-w-lg">
-      <button
+      <Button
+        variant="subtle"
+        size="inline"
         type="button"
         onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
-        className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
-      >
+        className="flex items-center gap-1.5 text-sm"
+        >
         <ChevronLeft size={16} />
         Volver
-      </button>
+      </Button>
 
       <h1 className="text-xl font-bold">Pagar con tarjeta</h1>
 
@@ -100,7 +102,7 @@ function OnlinePaymentRedirect({ invoiceId }) {
             </div>
             <a
               href={data.initPoint}
-              className="rounded-xl bg-gradient-to-br from-brand to-accent-2 px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+              className="rounded-xl bg-gradient-to-br from-brand to-accent-2 px-6 py-3 font-semibold text-on-accent shadow-sm transition-opacity hover:opacity-90"
             >
               Ir a Mercado Pago
             </a>

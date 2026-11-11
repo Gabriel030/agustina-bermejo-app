@@ -3,7 +3,9 @@ import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/GlassCard';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { useAuth } from '@/context/AuthContext';
+import { NavGroups } from '@/components/NavGroups';
 import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
+import { isDesignB } from '@/theme/design';
 
 // El fondo del ítem activo ya no lo pinta el propio NavLink — es un único
 // degradé que vive detrás de todos (ver SidebarIndicator) y se desliza de una
@@ -11,8 +13,9 @@ import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
 // `nav-item-activo` es solo un marcador para que el indicador sepa a qué
 // elemento seguir — no aplica ningún estilo por sí solo.
 const NAV_ITEM_BASE =
-  'relative z-10 flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:translate-x-[3px]';
-const NAV_ITEM_ACTIVO = 'nav-item-activo text-white';
+  'relative z-10 flex shrink-0 items-center gap-2.5 rounded-control px-3 py-2.5 text-sm font-medium transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:translate-x-[3px] design-b:min-h-10 design-b:py-0 design-b:hover:translate-x-0';
+const NAV_ITEM_ACTIVO =
+  "nav-item-activo text-(--nav-active-fg) design-b:font-bold design-b:before:absolute design-b:before:inset-y-2 design-b:before:left-0 design-b:before:w-[3px] design-b:before:rounded-r-[3px] design-b:before:bg-(color:--accent) design-b:before:content-['']";
 const NAV_ITEM_INACTIVO = 'text-ink-soft hover:bg-neutral-bg hover:text-ink';
 
 function ItemNav({ to, label, icon: Icon }) {
@@ -29,15 +32,17 @@ function ItemNav({ to, label, icon: Icon }) {
  * sus propios `items` (ya definidos en el mockup correspondiente), en vez de un
  * único componente con menús condicionales por rol.
  */
-export function Sidebar({ titulo, items }) {
+export function Sidebar({ titulo, items, groups }) {
   const { usuario, logout } = useAuth();
   const { containerRef, rect } = useSlidingIndicator('.nav-item-activo');
 
   // "Opciones" se separa del resto de la navegación de contenido y se agrupa
   // visualmente junto a "Cerrar sesión" (pedido explícito del usuario) — el
   // resto de los roles que no tienen ese ítem no se ven afectados.
+  const designB = isDesignB();
   const principales = items.filter((item) => item.label !== 'Opciones');
-  const opciones = items.find((item) => item.label === 'Opciones');
+  const opciones = designB ? undefined : items.find((item) => item.label === 'Opciones');
+  const grouped = designB && groups;
 
   return (
     // hidden lg:flex: en base/md este layout colapsa al menú hamburguesa
@@ -45,7 +50,7 @@ export function Sidebar({ titulo, items }) {
     // h-full + min-h-0: dentro del shell (h-screen), el sidebar ocupa toda la
     // altura disponible pero no la excede — habilita que solo el <nav> de abajo
     // scrollee cuando hay muchos ítems, dejando título y "Cerrar sesión" fijos.
-    <GlassCard className="hidden h-full w-64 shrink-0 flex-col gap-6 overflow-hidden p-5 lg:flex">
+    <GlassCard className="hidden h-full w-64 shrink-0 flex-col gap-6 overflow-hidden p-5 lg:flex design-b:rounded-none design-b:border-0 design-b:border-r">
       <div className="shrink-0">
         <InstitutionBrand layout="horizontal" />
         <div className="mt-4 text-sm font-semibold text-ink-faint">{titulo}</div>
@@ -67,13 +72,15 @@ export function Sidebar({ titulo, items }) {
         {rect && (
           <div
             aria-hidden="true"
-            className="absolute left-0 z-0 rounded-lg bg-gradient-to-br from-brand to-accent-2 shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            className="absolute left-0 z-0 rounded-control bg-(image:--nav-indicator-bg) shadow-sm design-b:bg-none design-b:bg-(color:--nav-indicator-bg) design-b:shadow-none transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
             style={{ transform: `translateY(${rect.top}px)`, width: rect.width, height: rect.height }}
           />
         )}
-        {principales.map((item) => (
-          <ItemNav key={item.to} {...item} />
-        ))}
+        {grouped ? (
+          <NavGroups groups={groups} renderItem={(item) => <ItemNav {...item} />} />
+        ) : (
+          principales.map((item) => <ItemNav key={item.to} {...item} />)
+        )}
       </nav>
 
       <div className="shrink-0 border-t border-border pt-3">

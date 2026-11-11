@@ -113,13 +113,15 @@ function RequestCard({ item, busy, onApprove, onReject }) {
         <div className="text-[13px] text-ink">{item.reason}</div>
         {item.kind === 'justification' &&
           (item.hasAttachment ? (
-            <button
+            <Button
+              variant="link"
+              size="inline"
               type="button"
               onClick={() => openJustificationAttachment(item.ref)}
-              className="text-[12.5px] font-bold text-brand hover:underline"
-            >
+              className="text-[12.5px] font-bold text-brand"
+              >
               Ver adjunto
-            </button>
+            </Button>
           ) : (
             <div className="text-[12.5px] text-ink-faint">Sin adjunto</div>
           ))}

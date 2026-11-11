@@ -17,11 +17,15 @@ const PreceptorPeriodos = lazyPage(() => import('@/features/academic-structure/p
 const PreceptorPeriodoForm = lazyPage(() => import('@/features/academic-structure/pages/PreceptorPeriodoForm'), 'PreceptorPeriodoForm');
 const AdministrativoHolidays = lazyPage(() => import('@/features/academic-structure/pages/AdministrativoHolidays'), 'AdministrativoHolidays');
 const PreceptorNuevoCiclo = lazyPage(() => import('@/features/academic-structure/pages/PreceptorNuevoCiclo'), 'PreceptorNuevoCiclo');
+const DirectorOfertaPorAprobar = lazyPage(() => import('@/features/academic-structure/pages/DirectorOfertaPorAprobar'), 'DirectorOfertaPorAprobar');
+const DirectorOfertaCicloDetalle = lazyPage(() => import('@/features/academic-structure/pages/DirectorOfertaCicloDetalle'), 'DirectorOfertaCicloDetalle');
 
 export const routes = {
   public: [],
   shared: [],
   role: [
+    { roles: ['director'], path: 'aprobaciones/oferta-academica', element: <DirectorOfertaPorAprobar /> },
+    { roles: ['director'], path: 'aprobaciones/oferta-academica/:id', element: <DirectorOfertaCicloDetalle /> },
     { roles: ['administrativo'], path: 'gestion-academica', element: <AdministrativoSubjects /> },
     { roles: ['administrativo'], path: 'gestion-academica/nueva', element: <AdministrativoSubjectWizard /> },
     { roles: ['administrativo'], path: 'gestion-academica/:id', element: <AdministrativoSubjectWizard /> },
