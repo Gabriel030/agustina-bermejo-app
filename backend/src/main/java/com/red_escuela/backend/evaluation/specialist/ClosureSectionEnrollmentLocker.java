@@ -22,10 +22,16 @@ public class ClosureSectionEnrollmentLocker {
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockMembersInAscendingOrder(SectionKind kind, Long sectionId) {
         if (kind == SectionKind.PROGRAM) {
+            programEnrollmentIdsOf(sectionId).forEach(sectionEnrollmentFinder::lockBillingProgramEnrollment);
             memberIdsOfProgramSection(sectionId).forEach(sectionEnrollmentFinder::lockProgramEnrollment);
         } else {
             memberIdsOfCourseSection(sectionId).forEach(sectionEnrollmentFinder::lockCourseEnrollment);
         }
+    }
+
+    public List<Long> programEnrollmentIdsOf(Long sectionId) {
+        return sectionEnrollmentFinder.findMembersOfProgramSection(sectionId).stream()
+                .map(enrollment -> enrollment.getProgramEnrollment().getId()).distinct().sorted().toList();
     }
 
     public List<Long> memberIds(SectionKind kind, Long sectionId) {

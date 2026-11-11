@@ -19,19 +19,25 @@ class ClosureSectionEnrollmentLockerTest {
 
     @Test
     void locksProgramEnrollmentsInAscendingIdOrderWhateverOrderTheyAreLoaded() {
-        when(finder.findMembersOfProgramSection(5L)).thenReturn(List.of(enrollment(30L), enrollment(10L), enrollment(20L)));
+        when(finder.findMembersOfProgramSection(5L)).thenReturn(List.of(enrollment(30L, 3L), enrollment(10L, 9L), enrollment(20L, 1L)));
 
         locker.lockMembersInAscendingOrder(SectionKind.PROGRAM, 5L);
 
         InOrder order = inOrder(finder);
+        order.verify(finder).lockBillingProgramEnrollment(1L);
+        order.verify(finder).lockBillingProgramEnrollment(3L);
+        order.verify(finder).lockBillingProgramEnrollment(9L);
         order.verify(finder).lockProgramEnrollment(10L);
         order.verify(finder).lockProgramEnrollment(20L);
         order.verify(finder).lockProgramEnrollment(30L);
     }
 
-    private SubjectSectionEnrollment enrollment(Long id) {
+    private SubjectSectionEnrollment enrollment(Long id, Long programEnrollmentId) {
         SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
         enrollment.setId(id);
+        com.red_escuela.backend.enrollment.entity.ProgramEnrollment programEnrollment = new com.red_escuela.backend.enrollment.entity.ProgramEnrollment();
+        programEnrollment.setId(programEnrollmentId);
+        enrollment.setProgramEnrollment(programEnrollment);
         return enrollment;
     }
 }

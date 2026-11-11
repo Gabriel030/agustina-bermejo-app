@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.specialist;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentOutcomeRecorder;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -30,6 +31,18 @@ class ClosureOutcomeApplierTest {
     private final GraduationRequestTriggerPort graduation = mock(GraduationRequestTriggerPort.class);
     private final ClosureOutcomeApplier applier = new ClosureOutcomeApplier(recorder, finder, graduation);
 
+    private SubjectSectionEnrollment programEnrollment(Long id, EnrollmentStatus status, Long programEnrollmentId) {
+        SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
+        enrollment.setId(id);
+        enrollment.setStatus(status);
+        ProgramEnrollment programEnrollment = new ProgramEnrollment();
+        programEnrollment.setId(programEnrollmentId);
+        enrollment.setProgramEnrollment(programEnrollment);
+        when(finder.refreshProgramEnrollment(id)).thenReturn(enrollment);
+        when(finder.findProgramEnrollment(id)).thenReturn(enrollment);
+        return enrollment;
+    }
+
     private CommissionClosureStudent row(Long enrollmentId, ClosureFinalCondition condition, String grade) {
         return CommissionClosureStudent.builder().enrollmentId(enrollmentId).finalCondition(condition)
                 .promotionGrade(grade == null ? null : Grade.of(new BigDecimal(grade))).build();
@@ -38,11 +51,7 @@ class ClosureOutcomeApplierTest {
     @Test
     void promotedStudentsAreApprovedWithTheirDecimalGradeAndGraduationIsRequestedOnce() {
         Grade grade = Grade.of(new BigDecimal("8.50"));
-        SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
-        ProgramEnrollment programEnrollment = new ProgramEnrollment();
-        programEnrollment.setId(77L);
-        enrollment.setProgramEnrollment(programEnrollment);
-        when(finder.findProgramEnrollment(1L)).thenReturn(enrollment);
+        programEnrollment(1L, EnrollmentStatus.IN_PROGRESS, 77L);
 
         applier.applyClosedResults(SectionKind.PROGRAM, List.of(row(1L, ClosureFinalCondition.PROMOTES, "8.50")));
 
@@ -51,17 +60,36 @@ class ClosureOutcomeApplierTest {
     }
 
     @Test
-    void finalGoersBecomeRegularAndFailedBecomeFailedWithoutRequestingGraduation() {
+    void finalGoersBecomeRegularAndFailedBecomeFailedFlaggingTheGraduationRequestAsOutdated() {
+        programEnrollment(1L, EnrollmentStatus.IN_PROGRESS, 71L);
+        programEnrollment(2L, EnrollmentStatus.IN_PROGRESS, 72L);
         applier.applyClosedResults(SectionKind.PROGRAM, List.of(
                 row(1L, ClosureFinalCondition.GOES_TO_FINAL, null), row(2L, ClosureFinalCondition.FAILED, null)));
 
         verify(recorder).recordProgramOutcome(1L, EnrollmentStatus.REGULAR, null, null, true);
         verify(recorder).recordProgramOutcome(2L, EnrollmentStatus.FAILED, null, null, true);
-        verifyNoInteractions(graduation);
+        verify(graduation).flagGraduationRequestOutdated(71L);
+        verify(graduation).flagGraduationRequestOutdated(72L);
+        verify(graduation, never()).requestGraduationIfEligible(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void studentsWhoWithdrewOrGraduatedByFinalExamSinceTheSnapshotAreSkipped() {
+        programEnrollment(1L, EnrollmentStatus.WITHDRAWN, 71L);
+        SubjectSectionEnrollment approvedByFinal = programEnrollment(2L, EnrollmentStatus.APPROVED, 72L);
+        approvedByFinal.setFinalGradeType(FinalGradeType.FINAL_EXAM);
+
+        applier.applyClosedResults(SectionKind.PROGRAM, List.of(
+                row(1L, ClosureFinalCondition.PROMOTES, "8.00"), row(2L, ClosureFinalCondition.GOES_TO_FINAL, null)));
+
+        verifyNoInteractions(recorder, graduation);
     }
 
     @Test
     void freeStudentsAreLeftUntouchedAndCourseSectionsNeverRequestGraduation() {
+        CourseSubjectSectionEnrollment courseEnrollment = new CourseSubjectSectionEnrollment();
+        courseEnrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
+        when(finder.refreshCourseEnrollment(org.mockito.ArgumentMatchers.anyLong())).thenReturn(courseEnrollment);
         applier.applyClosedResults(SectionKind.COURSE, List.of(
                 row(1L, ClosureFinalCondition.FREE, null), row(2L, ClosureFinalCondition.PROMOTES, "9.00")));
 

@@ -2,6 +2,7 @@ package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 import com.red_escuela.backend.evaluation.domain.ClosureSectionKind;
 import com.red_escuela.backend.evaluation.entity.ClosureAuditAction;
 import com.red_escuela.backend.evaluation.entity.ClosureStatus;
@@ -27,16 +28,21 @@ public class CommissionClosureReopener {
     static final int MINIMUM_REASON_LENGTH = 10;
 
     private final SectionFinder sectionFinder;
+    private final ClosureSectionEnrollmentLocker enrollmentLocker;
+    private final GraduationRequestTriggerPort graduationRequestTrigger;
     private final CommissionClosureRepository closureRepository;
     private final CommissionClosureAuditRepository auditRepository;
     private final CurrentActorFinder currentActorFinder;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
-    public CommissionClosureReopener(SectionFinder sectionFinder, CommissionClosureRepository closureRepository,
+    public CommissionClosureReopener(SectionFinder sectionFinder, ClosureSectionEnrollmentLocker enrollmentLocker,
+            GraduationRequestTriggerPort graduationRequestTrigger, CommissionClosureRepository closureRepository,
             CommissionClosureAuditRepository auditRepository, CurrentActorFinder currentActorFinder,
             ApplicationEventPublisher eventPublisher, Clock clock) {
         this.sectionFinder = sectionFinder;
+        this.enrollmentLocker = enrollmentLocker;
+        this.graduationRequestTrigger = graduationRequestTrigger;
         this.closureRepository = closureRepository;
         this.auditRepository = auditRepository;
         this.currentActorFinder = currentActorFinder;
@@ -59,6 +65,9 @@ public class CommissionClosureReopener {
             throw new ClosureNotReopenableException(closureId);
         }
         closure.reopen();
+        if (kind == SectionKind.PROGRAM) {
+            enrollmentLocker.programEnrollmentIdsOf(sectionId).forEach(graduationRequestTrigger::flagGraduationRequestOutdated);
+        }
         closureRepository.save(closure);
         auditRepository.save(CommissionClosureAudit.builder()
                 .closureId(closureId)

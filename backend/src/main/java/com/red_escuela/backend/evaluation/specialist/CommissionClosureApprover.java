@@ -99,7 +99,8 @@ public class CommissionClosureApprover {
         List<CommissionClosureStudent> rows = settleConditionalPromotions(closureId);
         outcomeApplier.applyClosedResults(kind, rows);
         Long actorPersonId = currentActorFinder.currentPersonId();
-        closure.close(actorPersonId, now, reportNumberAllocator.allocateNextReportNumber(), book.trim(), folio.trim(), withoutConfirmation);
+        closure.close(actorPersonId, now,
+                closure.getReportNumber() == null ? reportNumberAllocator.allocateNextReportNumber() : null, book.trim(), folio.trim(), withoutConfirmation);
         closureRepository.save(closure);
         auditRepository.save(CommissionClosureAudit.builder()
                 .closureId(closureId)

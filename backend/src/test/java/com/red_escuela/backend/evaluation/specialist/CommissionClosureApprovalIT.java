@@ -315,6 +315,19 @@ class CommissionClosureApprovalIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aStudentWhoWithdrewAfterTheTeacherConfirmationKeepsTheWithdrawnStatus() {
+        confirmedSection();
+        enrollment(0).setStatus(EnrollmentStatus.WITHDRAWN);
+        flushAndClear();
+
+        approver.approveClosure(ClosureSectionKind.PROGRAM, sectionId, "L", "F", false);
+        flushAndClear();
+
+        assertThat(enrollment(0).getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(enrollment(2).getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
+    }
+
+    @Test
     void approvingWithoutTeacherConfirmationRequiresTheFlagAndLeavesAnAuditTrail() {
         SubjectSection section = persistCommission();
         sectionId = section.getId();
@@ -389,6 +402,8 @@ class CommissionClosureApprovalIT extends AbstractIntegrationTest {
         approver.approveClosure(ClosureSectionKind.PROGRAM, sectionId, "Libro 3", "Folio 13", false);
         flushAndClear();
         assertThat(closure().getReportNumber()).isEqualTo(number);
+        assertThat(jdbcTemplate.queryForObject("select last_number from closure_report_number_counter where report_year = 2026", Integer.class))
+                .isEqualTo(1);
         assertThat(closure().getReportVersion()).isEqualTo(2);
         assertThat(closure().getStatus()).isEqualTo(ClosureStatus.CLOSED);
     }
