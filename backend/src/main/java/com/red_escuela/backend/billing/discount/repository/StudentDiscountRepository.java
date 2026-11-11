@@ -56,6 +56,13 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
             """)
     List<DiscountEnrollmentIds> findEnrollmentsOfDiscountsLiveOnInvoice(@Param("invoiceId") Long invoiceId);
 
+    @Query("""
+            select distinct new com.red_escuela.backend.billing.discount.domain.DiscountEnrollmentIds(s.programEnrollmentId, s.courseEnrollmentId)
+            from StudentDiscount s
+            where s.id in (select d.studentDiscountId from InvoiceDiscount d join d.invoiceLine l where l.invoice.id in :invoiceIds and d.consumptionReleasedAt is null)
+            """)
+    List<DiscountEnrollmentIds> findEnrollmentsOfDiscountsLiveOnInvoices(@Param("invoiceIds") Collection<Long> invoiceIds);
+
     Optional<StudentDiscount> findFirstByProgramEnrollmentIdAndOriginAndStatusAndFromPeriodOrderByIdAsc(Long programEnrollmentId, StudentDiscountOrigin origin,
                                                                                                          StudentDiscountStatus status, YearMonth fromPeriod);
 
