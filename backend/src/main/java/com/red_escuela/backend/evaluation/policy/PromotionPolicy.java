@@ -3,12 +3,14 @@ package com.red_escuela.backend.evaluation.policy;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
+import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 
 public final class PromotionPolicy {
 
@@ -31,5 +33,17 @@ public final class PromotionPolicy {
         return CourseworkGrades.aggregate(scheme.getAggregationMethod(), items)
                 .filter(aggregate -> aggregate.meets(scheme.getMinApprovalGrade()))
                 .map(aggregate -> new CourseworkOutcome(EnrollmentStatus.APPROVED, aggregate, FinalGradeType.PROMOTION));
+    }
+
+    public PrerequisiteGatedOutcome restrictPromotionWhenPrerequisitesUnmet(
+            Optional<CourseworkOutcome> outcome, BooleanSupplier prerequisitesMet) {
+        if (outcome.isEmpty() || !isPromotion(outcome.get()) || prerequisitesMet.getAsBoolean()) {
+            return PrerequisiteGatedOutcome.unchanged(outcome);
+        }
+        return PrerequisiteGatedOutcome.restrictedToFinal(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null));
+    }
+
+    private static boolean isPromotion(CourseworkOutcome outcome) {
+        return outcome.status() == EnrollmentStatus.APPROVED && outcome.finalGradeType() == FinalGradeType.PROMOTION;
     }
 }

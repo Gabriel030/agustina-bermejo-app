@@ -16,6 +16,10 @@ public final class CourseworkOutcomeCalculator {
     private final PromotionPolicy promotionPolicy = new PromotionPolicy();
     private final RegularityPolicy regularityPolicy = new RegularityPolicy();
 
+    public PromotionPolicy promotionPolicy() {
+        return promotionPolicy;
+    }
+
     public RegularityPolicy regularityPolicy() {
         return regularityPolicy;
     }

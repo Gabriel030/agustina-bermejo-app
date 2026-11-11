@@ -31,7 +31,11 @@ import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -680,6 +684,58 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(enrollment.getFinalScore()).isEqualTo(Grade.of(BigDecimal.valueOf(7.5)));
         assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.enrollment.entity.FinalGradeType.PROMOTION);
+    }
+
+    private void persistProgramSubjectWithUnmetPrerequisite(Program program, Subject subject, Subject prerequisiteSubject) {
+        ProgramSubject target = persistProgramSubject(program, subject);
+        ProgramSubject prerequisite = persistProgramSubject(program, prerequisiteSubject);
+        ProgramSubjectPrerequisite link = new ProgramSubjectPrerequisite();
+        link.setProgramSubject(target);
+        link.setPrerequisiteProgramSubject(prerequisite);
+        link.setRequirementType(RequirementType.APPROVED);
+        entityManager.persist(link);
+    }
+
+    private ProgramSubject persistProgramSubject(Program program, Subject subject) {
+        ProgramSubject programSubject = new ProgramSubject();
+        programSubject.setProgram(program);
+        programSubject.setSubject(subject);
+        programSubject.setCredits(10);
+        programSubject.setCurricularYear(1);
+        programSubject.setCurricularTerm(CurricularTerm.FIRST);
+        programSubject.setStatus(StatusType.ACTIVE);
+        entityManager.persist(programSubject);
+        return programSubject;
+    }
+
+    @Test
+    void examsAbovePromotionGradeLeaveEnrollmentRegularWhenAPrerequisiteIsUnmet() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000091", institution);
+        Instructor instructor = persistInstructor("71000092");
+        Subject subject = persistSubject("MateriaPromocionBloqueada");
+        Subject prerequisiteSubject = persistSubject("CorrelativaPromocionBloqueada");
+        Term term = persistTerm();
+        EvaluationScheme scheme = persistScheme(2, 0, true, 7.0);
+        SubjectSection section = persistSection(subject, term, scheme);
+        assignInstructor(section, instructor);
+        Program program = persistProgram("CarreraPromocionBloqueada");
+        persistProgramSubjectWithUnmetPrerequisite(program, subject, prerequisiteSubject);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        entityManager.flush();
+
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null, null));
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(9.0), null, null, null));
+
+        publishLoadedItems(enrollment, instructor);
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(enrollment.getFinalScore()).isNull();
+        assertThat(enrollment.getFinalGradeType()).isNull();
     }
 
     @Test

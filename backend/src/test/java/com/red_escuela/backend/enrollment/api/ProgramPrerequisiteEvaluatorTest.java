@@ -126,4 +126,29 @@ class ProgramPrerequisiteEvaluatorTest {
     void anUnknownProgramEnrollmentIsRejected() {
         assertThatThrownBy(() -> evaluator.assess(404L, SUBJECT_ID)).isInstanceOf(ProgramEnrollmentNotFoundException.class);
     }
+
+    @Test
+    void allMetIsFalseWhenAnyPrerequisiteIsUnmet() {
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED),
+                new PrerequisiteView(11L, "Analisis I", RequirementType.APPROVED));
+        studentHas(10L, EnrollmentStatus.APPROVED);
+        studentHas(11L, EnrollmentStatus.REGULAR);
+
+        assertThat(evaluator.areAllMetOrSubjectOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isFalse();
+    }
+
+    @Test
+    void allMetIsTrueWhenEveryPrerequisiteIsMetOrWaived() {
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED));
+        when(approvalRepository.hasApproved(ENROLLMENT_ID, SUBJECT_ID, ExceptionType.PREREQUISITE_WAIVER)).thenReturn(true);
+
+        assertThat(evaluator.areAllMetOrSubjectOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isTrue();
+    }
+
+    @Test
+    void allMetIsTrueForASubjectOutsideThePlan() {
+        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+
+        assertThat(evaluator.areAllMetOrSubjectOutsidePlan(ENROLLMENT_ID, 99L)).isTrue();
+    }
 }

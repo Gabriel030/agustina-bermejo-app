@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.specialist;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
 import com.red_escuela.backend.evaluation.policy.CourseworkOutcomeCalculator;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
+import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentOutcomeRecorder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
@@ -60,6 +61,7 @@ public class GradeItemRecorder {
     private final AcademicReferenceFinder academicReferenceFinder;
     private final ExamBoardTakenChecker examBoardTakenChecker;
     private final CourseworkApprovalChecker courseworkApprovalChecker;
+    private final ProgramPrerequisiteEvaluator programPrerequisiteEvaluator;
 
     public GradeItemRecorder(
             GradeItemRepository gradeItemRepository,
@@ -77,7 +79,8 @@ public class GradeItemRecorder {
             FinalGradeRevertAuditor finalGradeRevertAuditor,
             AcademicReferenceFinder academicReferenceFinder,
             ExamBoardTakenChecker examBoardTakenChecker,
-            CourseworkApprovalChecker courseworkApprovalChecker) {
+            CourseworkApprovalChecker courseworkApprovalChecker,
+            ProgramPrerequisiteEvaluator programPrerequisiteEvaluator) {
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -94,6 +97,7 @@ public class GradeItemRecorder {
         this.academicReferenceFinder = academicReferenceFinder;
         this.examBoardTakenChecker = examBoardTakenChecker;
         this.courseworkApprovalChecker = courseworkApprovalChecker;
+        this.programPrerequisiteEvaluator = programPrerequisiteEvaluator;
     }
 
     @Transactional
@@ -212,8 +216,12 @@ public class GradeItemRecorder {
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
         boolean rebuild = rebuildFromItems && isRebuildable(enrollment.getStatus(), enrollment.getFinalGradeType());
         var current = rebuild ? EnrollmentStatus.ENROLLED : enrollment.statusAssumingRegularWhen(finalCorrection);
-        CourseworkOutcome result = outcomeCalculator.regularityPolicy().holdWhileFree(
+        Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().restrictPromotionWhenPrerequisitesUnmet(
                 outcomeCalculator.calculate(scheme, items, current, maxFinalExamAttempts),
+                () -> programPrerequisiteEvaluator.areAllMetOrSubjectOutsidePlan(enrollment.getProgramEnrollment().getId(), enrollment.subjectId()))
+                .outcome();
+        CourseworkOutcome result = outcomeCalculator.regularityPolicy().holdWhileFree(
+                calculated,
                 current, () -> absenceFreeStatusChecker.isProgramEnrollmentFreeByAbsences(enrollmentId)).orElse(null);
         if (result == null && (finalCorrection || rebuild)) {
             result = new CourseworkOutcome(current, null, null);
