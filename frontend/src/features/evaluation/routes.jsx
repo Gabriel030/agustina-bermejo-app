@@ -3,6 +3,7 @@ const PreceptorMesaExamen = lazyPage(() => import('@/features/evaluation/pages/P
 const DirectorAprobacionesConfigEvaluacion = lazyPage(() => import('@/features/evaluation/pages/DirectorAprobacionesConfigEvaluacion'), 'DirectorAprobacionesConfigEvaluacion');
 const DirectorEsquemasEvaluacion = lazyPage(() => import('@/features/evaluation/pages/DirectorEsquemasEvaluacion'), 'DirectorEsquemasEvaluacion');
 const DirectorRevisarConfiguracion = lazyPage(() => import('@/features/evaluation/pages/DirectorRevisarConfiguracion'), 'DirectorRevisarConfiguracion');
+const DocenteClosureSheet = lazyPage(() => import('@/features/evaluation/pages/DocenteClosureSheet'), 'DocenteClosureSheet');
 const DirectorSectionGrades = lazyPage(() => import('@/features/evaluation/pages/DirectorSectionGrades'), 'DirectorSectionGrades');
 
 export const routes = {
@@ -13,6 +14,7 @@ export const routes = {
     { roles: ['administrativo'], path: 'mesas-de-examen', element: <PreceptorMesaExamen role="administrativo" /> },
     { roles: ['docente'], path: 'mesas-de-examen', element: <PreceptorMesaExamen role="docente" /> },
     { roles: ['director'], path: 'mesas-de-examen', element: <PreceptorMesaExamen role="director" /> },
+    { roles: ['docente'], path: 'mis-comisiones/:sectionId/cierre', element: <DocenteClosureSheet /> },
     { roles: ['director'], path: 'esquemas-evaluacion', element: <DirectorEsquemasEvaluacion /> },
     { roles: ['director'], path: 'revisar-configuracion/:sectionId', element: <DirectorRevisarConfiguracion /> },
     { roles: ['director'], path: 'aprobaciones/configuracion-evaluacion', element: <DirectorAprobacionesConfigEvaluacion /> },

@@ -204,4 +204,24 @@ describe('DataTable', () => {
       expect(bodyNames()).toEqual(['Beta', 'Gamma']);
     });
   });
+
+  it('filters by the controlled column filters and reports changes made from the header filter', async () => {
+    const onColumnFiltersChange = vi.fn();
+    const user = userEvent.setup();
+    renderTable({ columnFilters: [{ id: 'status', value: ['B'] }], onColumnFiltersChange });
+
+    expect(bodyNames()).toEqual(['Alfa']);
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por estado' }));
+    await user.click(screen.getByRole('checkbox', { name: /Activo/ }));
+
+    expect(onColumnFiltersChange).toHaveBeenCalled();
+  });
+
+  it('renders the cell of a rowHeader column as a row header', () => {
+    const withHeader = [{ ...columns[0], meta: { rowHeader: true } }, columns[1]];
+    renderTable({ columns: withHeader });
+
+    expect(screen.getByRole('rowheader', { name: 'Beta' })).toHaveAttribute('scope', 'row');
+  });
 });

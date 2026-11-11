@@ -16,7 +16,24 @@ function domainCodes() {
   return [...new Set([...section.matchAll(/^\| `([A-Z][A-Z_0-9]+)` \|/gm)].map((match) => match[1]))];
 }
 
+const CODES_PENDING_BACKEND_CATALOG = [
+  'CLOSURE_ALREADY_CLOSED',
+  'CLOSURE_ALREADY_CONFIRMED',
+  'CLOSURE_BEFORE_TERM_END',
+  'CLOSURE_NOT_AVAILABLE',
+  'CLOSURE_NOT_CLOSED',
+  'CLOSURE_NOT_CONFIRMED',
+  'INVALID_CLOSURE_REOPEN_REASON',
+  'PUBLISHED_GRADES_INCOMPLETE',
+];
+
 describe('describeError', () => {
+  it('pendingBackendCodesLeaveTheAllowlistOnceTheCatalogHasThem', () => {
+    const inCatalog = new Set(domainCodes());
+
+    expect(CODES_PENDING_BACKEND_CATALOG.filter((code) => inCatalog.has(code))).toEqual([]);
+  });
+
   it('mapsEveryTransversalCodeOfTheBackendCatalog', () => {
     const codes = transversalCodes();
 
@@ -34,7 +51,7 @@ describe('describeError', () => {
   });
 
   it('mapsNoCodeThatTheCatalogDoesNotKnow', () => {
-    const known = new Set([...transversalCodes(), ...domainCodes()]);
+    const known = new Set([...transversalCodes(), ...domainCodes(), ...CODES_PENDING_BACKEND_CATALOG]);
 
     const stale = Object.keys(ERROR_MESSAGES).filter((code) => !known.has(code));
     expect(stale).toEqual([]);
