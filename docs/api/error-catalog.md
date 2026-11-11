@@ -104,6 +104,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `FEATURE_CHANGE_REASON_INVALID` | no | `FeatureChangeReasonInvalidException` | platform |
 | `FEATURE_VALUE_INVALID` | no | `FeatureValueInvalidException` | platform |
 | `FINAL_EXAM_REQUIRES_REGULAR_STUDENT` | no | `FinalExamRequiresRegularStudentException` | evaluation |
+| `FINAL_GRADE_REQUIRES_EXAM_BOARD` | no | `FinalGradeRequiresExamBoardException` | evaluation |
 | `GATEWAY_CURRENCY_NOT_SUPPORTED` | no | `GatewayCurrencyNotSupportedException` | billing |
 | `GRADE_ITEM_TYPE_NOT_PUBLISHABLE` | no | `GradeItemTypeNotPublishableException` | evaluation |
 | `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
@@ -505,7 +506,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
 | `STUDENT_HAS_ACTIVE_ENROLLMENTS` | no | `StudentHasActiveEnrollmentsException` | identity |
 | `STUDENT_HAS_DEBT` | no | `StudentHasDebtException` | graduation |
+| `SUBJECT_ALREADY_APPROVED` | no | `SubjectAlreadyApprovedException` | enrollment |
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
+| `SUBJECT_ALREADY_REGULAR` | no | `SubjectAlreadyRegularException` | enrollment |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |

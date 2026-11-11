@@ -233,15 +233,32 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         long studentId = findStudentId(api, GRADUATING_STUDENT);
         long programEnrollmentId = api.post(ADMIN, "/students/" + studentId + "/program-enrollments", Map.of("programId", programId)).get("id").asLong();
         long sectionEnrollmentId = api.post(ADMIN, "/program-enrollments/" + programEnrollmentId + "/section-enrollments", Map.of("sectionId", sectionId)).get("id").asLong();
-        loadApprovingGrades(api, "/section-enrollments/" + sectionEnrollmentId + "/grade-items", "/program-sections/" + sectionId + "/grade-items/publish");
+        FinalExamBoard board = new FinalExamBoard("subjectId", subjectId, "programSectionEnrollmentId", sectionEnrollmentId, termId, instructorId);
+        loadApprovingGrades(api, "/section-enrollments/" + sectionEnrollmentId + "/grade-items", "/program-sections/" + sectionId + "/grade-items/publish", board);
     }
 
-    private void loadApprovingGrades(DemoApiClient api, String gradeItemsPath, String publishPath) {
+    private record FinalExamBoard(String ownerKey, long ownerId, String registrationKey, long enrollmentId, long termId, long instructorId) {
+    }
+
+    private long createFinalExamBoard(DemoApiClient api, FinalExamBoard board) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put(board.ownerKey(), board.ownerId());
+        request.put("termId", board.termId());
+        request.put("examDate", "2026-09-20T00:00:00");
+        long examBoardId = api.post(ADMIN, "/exam-boards", request).get("id").asLong();
+        api.post(ADMIN, "/exam-boards/" + examBoardId + "/tribunal", Map.of("instructorId", board.instructorId()));
+        api.post(ADMIN, "/exam-boards/" + examBoardId + "/registrations",
+                Map.of("examBoardId", examBoardId, board.registrationKey(), board.enrollmentId()));
+        return examBoardId;
+    }
+
+    private void loadApprovingGrades(DemoApiClient api, String gradeItemsPath, String publishPath, FinalExamBoard board) {
         api.post(TEACHER, gradeItemsPath, Map.of("type", "EXAM", "sequenceNumber", 1, "date", "2026-06-10T00:00:00", "score", 7));
         api.post(TEACHER, gradeItemsPath, Map.of("type", "EXAM", "sequenceNumber", 2, "date", "2026-08-12T00:00:00", "score", 8));
         api.post(TEACHER, publishPath, Map.of("gradeType", "EXAM", "sequenceNumber", 1));
         api.post(TEACHER, publishPath, Map.of("gradeType", "EXAM", "sequenceNumber", 2));
-        api.post(TEACHER, gradeItemsPath, Map.of("type", "FINAL", "date", "2026-09-20T00:00:00", "score", 8));
+        api.post(TEACHER, gradeItemsPath, Map.of("type", "FINAL", "date", "2026-09-20T00:00:00", "score", 8,
+                "examBoardId", createFinalExamBoard(api, board)));
     }
 
     private void recordAttendance(DemoApiClient api, long sectionId, long sectionEnrollmentId) {
@@ -285,9 +302,11 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         course.put("durationMonths", 3);
         long courseId = api.post(ADMIN, "/courses", course).get("id").asLong();
         List<Long> moduleSectionIds = new ArrayList<>();
+        List<Long> moduleIds = new ArrayList<>();
         int order = 1;
         for (String module : COURSE_MODULES) {
             long moduleId = api.post(ADMIN, "/courses/" + courseId + "/subjects", Map.of("name", module, "sortOrder", order++)).get("id").asLong();
+            moduleIds.add(moduleId);
             Map<String, Object> section = new LinkedHashMap<>();
             section.put("name", "Comisión única");
             section.put("termId", termId);
@@ -299,9 +318,11 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
             moduleSectionIds.add(sectionId);
         }
         api.post(ADMIN, "/students/" + findStudentId(api, COURSE_STUDENT) + "/course-enrollments", Map.of("courseId", courseId));
-        for (Long sectionId : moduleSectionIds.subList(0, 2)) {
+        for (int index = 0; index < 2; index++) {
+            long sectionId = moduleSectionIds.get(index);
             long sectionEnrollmentId = api.get(TEACHER, "/course-sections/" + sectionId + "/roster").get(0).get("enrollmentId").asLong();
-            loadApprovingGrades(api, "/course-section-enrollments/" + sectionEnrollmentId + "/grade-items", "/course-sections/" + sectionId + "/grade-items/publish");
+            loadApprovingGrades(api, "/course-section-enrollments/" + sectionEnrollmentId + "/grade-items", "/course-sections/" + sectionId + "/grade-items/publish",
+                    new FinalExamBoard("courseSubjectId", moduleIds.get(index), "courseSectionEnrollmentId", sectionEnrollmentId, termId, instructorId));
         }
     }
 }

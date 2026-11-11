@@ -179,6 +179,29 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         return entry;
     }
 
+    protected Long examBoardIdForFinal(Classroom classroom) {
+        com.red_escuela.backend.evaluation.entity.ExamBoard board = new com.red_escuela.backend.evaluation.entity.ExamBoard();
+        board.setSubject(classroom.subject());
+        board.setTerm(classroom.section().getTerm());
+        board.setExamDate(LocalDateTime.now());
+        board.setStatus(com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED);
+        entityManager.persist(board);
+        com.red_escuela.backend.evaluation.entity.ExamBoardInstructor tribunal =
+                new com.red_escuela.backend.evaluation.entity.ExamBoardInstructor();
+        tribunal.setExamBoard(board);
+        tribunal.setInstructor(classroom.instructor());
+        entityManager.persist(tribunal);
+        com.red_escuela.backend.evaluation.entity.ExamBoardRegistration registration =
+                new com.red_escuela.backend.evaluation.entity.ExamBoardRegistration();
+        registration.setExamBoard(board);
+        registration.setProgramSubjectSectionEnrollment(classroom.enrollment());
+        registration.setStatus(com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus.REGISTERED);
+        registration.setRegisteredAt(LocalDateTime.now());
+        entityManager.persist(registration);
+        entityManager.flush();
+        return board.getId();
+    }
+
     protected Classroom persistClassroom(String key, String dniBase, EvaluationScheme scheme, Percentage maxAbsenceRate,
                                          int programCredits, int subjectCredits, InstructorRole teacherRole) {
         Person teacher = persistPerson(key + ".teacher", dniBase + "1", "DOCENTE");

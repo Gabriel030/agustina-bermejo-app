@@ -176,7 +176,7 @@ class ExamRecoveryRecorderTest extends AbstractIntegrationTest {
 
     private void load(Fixture fixture, GradeItemType type, int sequence, double score) {
         gradeItemRecorder.loadProgramEnrollmentGrade(fixture.enrollment().getId(), fixture.instructor().getId(),
-                new CreateGradeItemRequest(type, sequence, null, LocalDateTime.now(), BigDecimal.valueOf(score), null, null));
+                new CreateGradeItemRequest(type, sequence, null, LocalDateTime.now(), BigDecimal.valueOf(score), null, null, null));
     }
 
     private void publish(Fixture fixture, GradeItemType type, int sequence) {

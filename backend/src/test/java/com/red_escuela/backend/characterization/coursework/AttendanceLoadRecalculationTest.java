@@ -44,7 +44,7 @@ class AttendanceLoadRecalculationTest extends CourseworkCharacterizationSupport 
         for (int sequence = 1; sequence <= 2; sequence++) {
             postJson(classroom.teacher(), "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
                     new CreateGradeItemRequest(GradeItemType.EXAM, sequence, null, LocalDateTime.of(2026, 6, 1, 10, 0),
-                            new BigDecimal("7"), null, null))
+                            new BigDecimal("7"), null, null, null))
                     .andExpect(status().isCreated());
             publishItem(classroom, GradeItemType.EXAM, sequence);
         }
