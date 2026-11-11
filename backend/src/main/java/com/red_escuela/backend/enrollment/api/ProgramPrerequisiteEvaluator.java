@@ -56,11 +56,16 @@ public class ProgramPrerequisiteEvaluator {
     }
 
     public boolean areAllApprovedOrWaivedOrSubjectOutsidePlan(Long programEnrollmentId, Long subjectId) {
+        return findUnmetForApprovalOrEmptyOutsidePlan(programEnrollmentId, subjectId).isEmpty();
+    }
+
+    public List<PrerequisiteAssessment> findUnmetForApprovalOrEmptyOutsidePlan(Long programEnrollmentId, Long subjectId) {
         Long programId = findProgramEnrollment(programEnrollmentId).getProgram().getId();
         return programCurriculumFinder.findProgramSubject(programId, subjectId)
                 .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject).stream()
-                        .allMatch(assessment -> requirementPolicy.isMetForApproval(assessment.standing())))
-                .orElse(true);
+                        .filter(assessment -> !requirementPolicy.isMetForApproval(assessment.standing()))
+                        .toList())
+                .orElse(List.of());
     }
 
     private ProgramEnrollment findProgramEnrollment(Long programEnrollmentId) {
