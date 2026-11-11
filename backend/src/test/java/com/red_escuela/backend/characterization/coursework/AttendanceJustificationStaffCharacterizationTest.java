@@ -327,7 +327,7 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
 
         mockMvc.perform(multipart(path).file(proof)
                         .header("Authorization", bearer(other.teacher())))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
         assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.ABSENT);
 
         mockMvc.perform(multipart(path).file(proof)

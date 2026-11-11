@@ -118,15 +118,15 @@ class ProspectByStaffIT extends AbstractIntegrationTest {
 
     @Test
     void publicCreationLeavesTheActorNull() throws Exception {
-        String response = mockMvc.perform(post("/prospects")
+        String email = "public-" + UUID.randomUUID() + "@example.com";
+        mockMvc.perform(post("/prospects")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createBody("public-" + UUID.randomUUID() + "@example.com")))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        Long studentId = objectMapper.readTree(response).get("id").asLong();
+                        .content(createBody(email)))
+                .andExpect(status().isCreated());
 
         Long registeredBy = jdbc.queryForObject(
-                "select registered_by_person_id from student where id = ?", Long.class, studentId);
+                "select s.registered_by_person_id from student s join person p on p.id = s.person_id where p.email = ?",
+                Long.class, email);
         assertThat(registeredBy).isNull();
     }
 

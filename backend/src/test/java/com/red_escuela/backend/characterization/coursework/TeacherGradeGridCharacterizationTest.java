@@ -158,7 +158,7 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
         Person stranger = persistPerson("grid8.stranger", "81000089", "DOCENTE");
         persistInstructor(stranger);
 
-        getAs(stranger, gridPath(classroom)).andExpect(status().isForbidden());
+        getAs(stranger, gridPath(classroom)).andExpect(status().isNotFound());
     }
 
     @Test
@@ -270,7 +270,7 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
         Person stranger = persistPerson("gridc2.stranger", "82000029", "DOCENTE");
         persistInstructor(stranger);
 
-        getAs(stranger, "/course-sections/" + classroom.section().getId() + "/grade-grid").andExpect(status().isForbidden());
+        getAs(stranger, "/course-sections/" + classroom.section().getId() + "/grade-grid").andExpect(status().isNotFound());
     }
 
     @Test
