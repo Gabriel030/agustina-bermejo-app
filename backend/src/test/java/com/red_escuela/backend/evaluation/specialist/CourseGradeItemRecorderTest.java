@@ -182,16 +182,42 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
     }
 
     private CreateGradeItemRequest request(GradeItemType type, int number, double score, Double weight, LocalDateTime date) {
-        return new CreateGradeItemRequest(type, number, weight, date, BigDecimal.valueOf(score), null, null);
+        return new CreateGradeItemRequest(type, number, weight, date, BigDecimal.valueOf(score), null, null, null);
     }
 
     private CreateGradeItemRequest boardRequest(Long examBoardId) {
         return new CreateGradeItemRequest(
-                GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7), null, examBoardId);
+                GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7), null, examBoardId, null);
     }
 
     private void load(Setup s, CreateGradeItemRequest request) {
-        gradeItemService.loadCourseEnrollmentGrade(s.enrollment().getId(), s.instructor().getId(), request);
+        gradeItemService.loadCourseEnrollmentGrade(
+                s.enrollment().getId(), s.instructor().getId(), throughBoardWhenFinal(s, request));
+    }
+
+    private CreateGradeItemRequest throughBoardWhenFinal(Setup s, CreateGradeItemRequest request) {
+        if (request.type() != GradeItemType.FINAL || request.examBoardId() != null) {
+            return request;
+        }
+        ExamBoard board = new ExamBoard();
+        board.setCourseSubject(s.courseSubject());
+        board.setTerm(s.term());
+        board.setExamDate(LocalDateTime.now());
+        board.setStatus(ExamBoardStatus.SCHEDULED);
+        entityManager.persist(board);
+        ExamBoardInstructor tribunal = new ExamBoardInstructor();
+        tribunal.setExamBoard(board);
+        tribunal.setInstructor(s.instructor());
+        entityManager.persist(tribunal);
+        ExamBoardRegistration registration = new ExamBoardRegistration();
+        registration.setExamBoard(board);
+        registration.setCourseSubjectSectionEnrollment(s.enrollment());
+        registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
+        registration.setRegisteredAt(LocalDateTime.now());
+        entityManager.persist(registration);
+        entityManager.flush();
+        return new CreateGradeItemRequest(request.type(), request.sequenceNumber(), request.weight(), request.date(),
+                request.score(), request.comments(), board.getId(), "Correccion del acta");
     }
 
     private void publishLoadedItems(Setup s) {
@@ -213,7 +239,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         ExamBoard board = new ExamBoard();
         board.setCourseSubject(s.courseSubject());
         board.setTerm(s.term());
-        board.setExamDate(LocalDateTime.now().plusDays(3));
+        board.setExamDate(LocalDateTime.now().minusDays(1));
         board.setStatus(status);
         entityManager.persist(board);
         entityManager.flush();
@@ -451,7 +477,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         ExamBoard board = persistExamBoard(s, ExamBoardStatus.SCHEDULED);
         registerInBoard(s, board, ExamBoardRegistrationStatus.REGISTERED);
         CreateGradeItemRequest request = new CreateGradeItemRequest(
-                GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7), null, board.getId());
+                GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7), null, board.getId(), null);
 
         assertBoardGradeRejected(s, persistTribunalMember(board), request);
     }

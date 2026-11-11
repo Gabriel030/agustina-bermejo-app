@@ -53,10 +53,16 @@ public class EvaluationSchemeManager {
     }
 
     private void applyRequest(EvaluationScheme scheme, CreateEvaluationSchemeRequest request) {
+        int recoveryQuota = request.recoveryQuota() == null ? EvaluationScheme.DEFAULT_RECOVERY_QUOTA : request.recoveryQuota();
+        if (recoveryQuota < 0 || recoveryQuota > EvaluationScheme.MAX_RECOVERY_QUOTA) {
+            throw new InvalidEvaluationSchemeException(
+                    "la cantidad de recuperatorios va de 0 a " + EvaluationScheme.MAX_RECOVERY_QUOTA);
+        }
         try {
             scheme.define(request.name(), request.examCountExpected(), request.hasFinal(), request.finalWeight(),
                     request.aggregationMethod(), Grade.of(request.minRegularGrade()), Grade.of(request.minApprovalGrade()),
                     Grade.ofNullable(request.promotionMinGrade()), request.notes());
+            scheme.setRecoveryQuota(recoveryQuota);
         } catch (InvalidGradeException exception) {
             throw new InvalidEvaluationSchemeException(exception.getMessage());
         }

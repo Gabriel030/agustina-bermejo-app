@@ -1,7 +1,7 @@
 /**
  * <b>Qué es</b>: módulo de evaluación: ítems de nota, publicación y corrección, mesas de examen con sus inscripciones y tribunal, esquemas y configuración de evaluación por comisión.
  *
- * <p><b>Expone</b>: {@code api} (buscadores de notas, mesas y esquemas, y el puerto {@code GraduationRequestTriggerPort}) y los eventos de {@code events} como interfaces con nombre.
+ * <p><b>Expone</b>: {@code api} (buscadores de notas, mesas y esquemas, y los puertos {@code GraduationRequestTriggerPort} y {@code StudentPaymentsStandingPort}) y los eventos de {@code events} como interfaces con nombre.
  *
  * <p><b>No hacer</b>: acceder a repositorios o entidades de otro módulo; notificar desde acá: se publica un evento y {@code notification} lo recibe.
  *

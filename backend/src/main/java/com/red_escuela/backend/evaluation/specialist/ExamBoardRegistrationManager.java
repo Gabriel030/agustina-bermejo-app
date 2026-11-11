@@ -44,6 +44,7 @@ public class ExamBoardRegistrationManager {
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final LateExamApprovalChecker lateExamApprovalChecker;
     private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
+    private final FinalExamPrerequisiteChecker finalExamPrerequisiteChecker;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final Clock clock;
 
@@ -52,6 +53,7 @@ public class ExamBoardRegistrationManager {
             SectionEnrollmentFinder sectionEnrollmentFinder,
             LateExamApprovalChecker lateExamApprovalChecker,
             AbsenceFreeStatusChecker absenceFreeStatusChecker,
+            FinalExamPrerequisiteChecker finalExamPrerequisiteChecker,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             Clock clock) {
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
@@ -60,6 +62,7 @@ public class ExamBoardRegistrationManager {
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.lateExamApprovalChecker = lateExamApprovalChecker;
         this.absenceFreeStatusChecker = absenceFreeStatusChecker;
+        this.finalExamPrerequisiteChecker = finalExamPrerequisiteChecker;
         this.clock = clock;
     }
 
@@ -99,6 +102,8 @@ public class ExamBoardRegistrationManager {
         if (examBoard.getSubject() == null || !examBoard.getSubject().getId().equals(subjectId)) {
             throw new ExamBoardSubjectMismatchException(examBoardId, enrollmentId);
         }
+        finalExamPrerequisiteChecker.requireAllApprovedOrWaived(
+                enrollment.getProgramEnrollment().getId(), subjectId, enrollmentId);
 
         examBoardRegistrationRepository
                 .findByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatus(

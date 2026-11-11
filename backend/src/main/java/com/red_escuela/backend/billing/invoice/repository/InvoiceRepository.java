@@ -111,6 +111,22 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
     @Query("select distinct i from Invoice i join fetch i.lines l left join fetch l.discount where l.courseEnrollmentId = :enrollmentId")
     List<Invoice> findByCourseEnrollmentId(@Param("enrollmentId") Long enrollmentId);
 
+    @Query("""
+            select distinct pe.student.id from Invoice i join i.lines l join ProgramEnrollment pe on pe.id = l.programEnrollmentId
+            where pe.student.id in :studentIds
+            and (i.paymentStatus = com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.OVERDUE
+                 or (i.paymentStatus = com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PENDING and i.dueDate < :today))
+            """)
+    List<Long> findStudentIdsWithOverdueProgramInvoices(@Param("studentIds") Collection<Long> studentIds, @Param("today") LocalDate today);
+
+    @Query("""
+            select distinct ce.student.id from Invoice i join i.lines l join CourseEnrollment ce on ce.id = l.courseEnrollmentId
+            where ce.student.id in :studentIds
+            and (i.paymentStatus = com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.OVERDUE
+                 or (i.paymentStatus = com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PENDING and i.dueDate < :today))
+            """)
+    List<Long> findStudentIdsWithOverdueCourseInvoices(@Param("studentIds") Collection<Long> studentIds, @Param("today") LocalDate today);
+
     default List<Invoice> findByProgramEnrollmentIdOrderByPeriod(Long enrollmentId) {
         return findByProgramEnrollmentId(enrollmentId).stream().sorted(PERIOD_ORDER).toList();
     }

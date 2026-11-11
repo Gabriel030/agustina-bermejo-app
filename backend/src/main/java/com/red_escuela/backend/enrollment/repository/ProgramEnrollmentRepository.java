@@ -14,6 +14,15 @@ import java.util.List;
 
 @Repository
 public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnrollment, Long> {
+    interface ProgramIdOfEnrollment {
+        Long getEnrollmentId();
+
+        Long getProgramId();
+    }
+
+    @Query("select e.id as enrollmentId, e.program.id as programId from ProgramEnrollment e where e.id in :ids")
+    List<ProgramIdOfEnrollment> findProgramIdsByIdIn(@Param("ids") Collection<Long> ids);
+
     boolean existsByStudentIdAndStatusIn(Long studentId, Collection<ProgramEnrollmentStatus> statuses);
 
     List<ProgramEnrollment> findByStudentId(Long studentId);

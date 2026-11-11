@@ -67,6 +67,28 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
     Optional<SubjectSectionEnrollment> findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(
             Long subjectSectionId, EnrollmentStatus status);
 
+    List<SubjectSectionEnrollment> findBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(
+            Long subjectSectionId, EnrollmentStatus status);
+
+    interface PrerequisiteStatusRow {
+        Long getProgramEnrollmentId();
+
+        Long getSubjectId();
+
+        EnrollmentStatus getStatus();
+    }
+
+    @Query("""
+            select e.programEnrollment.id as programEnrollmentId, e.subjectSection.subject.id as subjectId, e.status as status
+            from SubjectSectionEnrollment e
+            where e.programEnrollment.id in :programEnrollmentIds and e.subjectSection.subject.id in :subjectIds
+            and e.status in :statuses
+            """)
+    List<PrerequisiteStatusRow> findPrerequisiteStatusRows(
+            @Param("programEnrollmentIds") java.util.Collection<Long> programEnrollmentIds,
+            @Param("subjectIds") java.util.Collection<Long> subjectIds,
+            @Param("statuses") java.util.Collection<EnrollmentStatus> statuses);
+
     List<SubjectSectionEnrollment> findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
             Long programEnrollmentId, Long subjectId, List<EnrollmentStatus> statuses);
 

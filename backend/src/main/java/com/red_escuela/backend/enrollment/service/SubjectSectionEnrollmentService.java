@@ -8,19 +8,16 @@ import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
-import com.red_escuela.backend.academicstructure.domain.RequirementType;
-import com.red_escuela.backend.enrollment.entity.ExceptionType;
-import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
 import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
-import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSectionView;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.api.TermEnrollmentWindowFinder;
 import com.red_escuela.backend.academicstructure.api.TermEnrollmentWindowView;
+import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
@@ -32,7 +29,6 @@ import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -60,10 +56,11 @@ public class SubjectSectionEnrollmentService {
     private final AcademicReferenceFinder academicReferenceFinder;
     private final ProgramCurriculumFinder programCurriculumFinder;
     private final InvoiceRepository invoiceRepository;
-    private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
+    private final ProgramPrerequisiteEvaluator prerequisiteEvaluator;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final SectionWaitlistPromoter waitlistPromoter;
+    private final SubjectRetakeGuard subjectRetakeGuard;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -73,11 +70,13 @@ public class SubjectSectionEnrollmentService {
             AcademicReferenceFinder academicReferenceFinder,
             ProgramCurriculumFinder programCurriculumFinder,
             InvoiceRepository invoiceRepository,
-            DirectorApprovalRequestRepository directorApprovalRequestRepository,
+            ProgramPrerequisiteEvaluator prerequisiteEvaluator,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             StudentEnrollmentEligibility studentEnrollmentEligibility,
             SectionWaitlistPromoter waitlistPromoter,
+            SubjectRetakeGuard subjectRetakeGuard,
             Clock clock) {
+        this.subjectRetakeGuard = subjectRetakeGuard;
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.waitlistPromoter = waitlistPromoter;
@@ -88,7 +87,7 @@ public class SubjectSectionEnrollmentService {
         this.academicReferenceFinder = academicReferenceFinder;
         this.programCurriculumFinder = programCurriculumFinder;
         this.invoiceRepository = invoiceRepository;
-        this.directorApprovalRequestRepository = directorApprovalRequestRepository;
+        this.prerequisiteEvaluator = prerequisiteEvaluator;
         this.clock = clock;
     }
 
@@ -115,6 +114,7 @@ public class SubjectSectionEnrollmentService {
             throw new AlreadyEnrolledInSubjectException(programEnrollmentId, subjectId);
         }
 
+        subjectRetakeGuard.requireNotAlreadyPassed(programEnrollmentId, subjectId, null);
         validatePrerequisites(programEnrollment, subjectId);
 
         Optional<SubjectSectionEnrollment> existente = subjectSectionEnrollmentRepository
@@ -195,6 +195,8 @@ public class SubjectSectionEnrollmentService {
             throw new InvalidSectionChangeException(
                     "changeSection es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");
         }
+        subjectRetakeGuard.requireNotAlreadyPassed(origen.getProgramEnrollment().getId(), origen.subjectId(), origen.getId());
+        validatePrerequisites(origen.getProgramEnrollment(), origen.subjectId());
         validateEnrollmentWindow(destino.termId());
         if (countOccupiedSeats(destino.id()) >= capacityOf(destino)) {
             throw new SectionFullException(destino.id());
@@ -328,30 +330,13 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void validatePrerequisites(ProgramEnrollment programEnrollment, Long subjectId) {
-        ProgramSubjectView programSubject = programCurriculumFinder
-                .findProgramSubject(programEnrollment.getProgram().getId(), subjectId)
-                .orElseThrow(() -> new SubjectNotInProgramPlanException(
-                        subjectId, programEnrollment.getProgram().getId()));
-        if (directorApprovalRequestRepository.hasApproved(
-                programEnrollment.getId(), subjectId, ExceptionType.PREREQUISITE_WAIVER)) {
-            return;
-        }
-
-        for (PrerequisiteView prereq : programCurriculumFinder.findPrerequisites(programSubject.id())) {
-            List<EnrollmentStatus> estadosQueSirven = prereq.requirementType() == RequirementType.APPROVED
-                    ? List.of(EnrollmentStatus.APPROVED)
-                    : List.of(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
-
-            boolean cumplida = !subjectSectionEnrollmentRepository
-                    .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                            programEnrollment.getId(), prereq.prerequisiteSubjectId(),
-                            estadosQueSirven)
-                    .isEmpty();
-            if (!cumplida) {
-                throw new PrerequisiteNotMetException(
-                        "No se cumple la correlatividad: " + prereq.prerequisiteSubjectName());
-            }
-        }
+        prerequisiteEvaluator.assess(programEnrollment.getId(), subjectId).stream()
+                .filter(assessment -> !assessment.met())
+                .findFirst()
+                .ifPresent(assessment -> {
+                    throw new PrerequisiteNotMetException(
+                            "No se cumple la correlatividad: " + assessment.subjectName());
+                });
     }
 
     private void validateActiveProgramEnrollment(ProgramEnrollment programEnrollment) {

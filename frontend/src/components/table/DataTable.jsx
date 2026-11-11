@@ -268,6 +268,8 @@ export function DataTable({
   compact = false,
   initialColumnVisibility = {},
   initialExpanded = {},
+  columnFilters,
+  onColumnFiltersChange,
   pageSize,
   className,
 }) {
@@ -301,6 +303,7 @@ export function DataTable({
       expanded: initialExpanded,
       ...(pageSize ? { pagination: { pageIndex: 0, pageSize } } : {}),
     },
+    ...(columnFilters !== undefined ? { state: { columnFilters }, onColumnFiltersChange } : {}),
     defaultColumn: { filterFn: multiSelectFilter, enableColumnFilter: false },
     getRowCanExpand: () => Boolean(renderExpanded),
     autoResetExpanded: false,
@@ -401,10 +404,13 @@ export function DataTable({
             >
               {row.getVisibleCells().map((cell) => {
                 const meta = cell.column.columnDef.meta ?? {};
+                const CellComponent = meta.rowHeader ? TableHead : TableCell;
                 return (
-                  <TableCell
+                  <CellComponent
                     key={cell.id}
+                    {...(meta.rowHeader ? { scope: 'row' } : {})}
                     className={cn(
+                      meta.rowHeader && 'h-auto p-2 text-sm font-normal normal-case tracking-normal text-foreground',
                       meta.align === 'right' && 'text-right',
                       meta.sticky && STICKY_CELL_CLASS,
                       compact && 'border-t border-border py-1',
@@ -413,7 +419,7 @@ export function DataTable({
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+                  </CellComponent>
                 );
               })}
             </TableRow>
@@ -446,7 +452,7 @@ export function DataTable({
       <div
         ref={overflow.scrollRef}
         onScroll={overflow.measure}
-        className="max-h-[calc(100dvh-13rem)] w-full overflow-auto rounded-xl"
+        className="max-h-[calc(100dvh-13rem)] w-full overflow-auto overscroll-x-contain rounded-xl"
       >
         {tableNode}
       </div>

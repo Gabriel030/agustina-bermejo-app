@@ -2,6 +2,7 @@ package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSectionView;
+import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Component;
@@ -14,9 +15,14 @@ public class SectionWaitlistPromoter {
 
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final SectionFinder sectionFinder;
+    private final SubjectRetakeGuard subjectRetakeGuard;
+    private final ProgramPrerequisiteEvaluator prerequisiteEvaluator;
 
     public SectionWaitlistPromoter(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-                                   SectionFinder sectionFinder) {
+                                   SectionFinder sectionFinder, SubjectRetakeGuard subjectRetakeGuard,
+                                   ProgramPrerequisiteEvaluator prerequisiteEvaluator) {
+        this.prerequisiteEvaluator = prerequisiteEvaluator;
+        this.subjectRetakeGuard = subjectRetakeGuard;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.sectionFinder = sectionFinder;
     }
@@ -32,7 +38,13 @@ public class SectionWaitlistPromoter {
             return;
         }
         subjectSectionEnrollmentRepository
-                .findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
+                .findBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
+                .stream()
+                .filter(candidate -> !subjectRetakeGuard.isAlreadyPassed(
+                        candidate.getProgramEnrollment().getId(), candidate.subjectId(), candidate.getId()))
+                .filter(candidate -> prerequisiteEvaluator.areAllMetOrSubjectOutsidePlan(
+                        candidate.getProgramEnrollment().getId(), candidate.subjectId()))
+                .findFirst()
                 .ifPresent(next -> {
                     next.setStatus(EnrollmentStatus.ENROLLED);
                     subjectSectionEnrollmentRepository.save(next);

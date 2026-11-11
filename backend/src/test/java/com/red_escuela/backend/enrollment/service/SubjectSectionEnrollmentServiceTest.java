@@ -10,6 +10,9 @@ import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
+import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -252,6 +255,92 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         subjectSectionEnrollmentService.withdraw(seated.getId());
 
         assertThat(subjectSectionEnrollmentService.get(waiting.getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    private void persistUnmetPrerequisite(ProgramSubject target, ProgramSubject prerequisite) {
+        ProgramSubjectPrerequisite link = new ProgramSubjectPrerequisite();
+        link.setProgramSubject(target);
+        link.setPrerequisiteProgramSubject(prerequisite);
+        link.setRequirementType(RequirementType.APPROVED);
+        entityManager.persist(link);
+    }
+
+    private SubjectSectionEnrollment persistWaitlisted(
+            Student student, ProgramEnrollment programEnrollment, SubjectSection section, LocalDateTime enrolledAt) {
+        SubjectSectionEnrollment row = new SubjectSectionEnrollment();
+        row.setStudent(student);
+        row.setProgramEnrollment(programEnrollment);
+        row.setSubjectSection(section);
+        row.setStatus(EnrollmentStatus.WAITLISTED);
+        row.setEnrolledAt(enrolledAt);
+        row.setAttemptNumber(1);
+        entityManager.persist(row);
+        return row;
+    }
+
+    @Test
+    void changeSectionIsRejectedWhenAPrerequisiteIsNoLongerMetAndKeepsTheOriginEnrollment() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("64000001", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaConCorrelativaCambio");
+        Subject prerequisiteSubject = persistSubject("CorrelativaCambio");
+        Program program = persistProgram("CarreraCorrelativaCambio");
+        ProgramSubject target = persistProgramSubject(program, subject);
+        ProgramSubject prerequisite = persistProgramSubject(program, prerequisiteSubject);
+        Term term = persistTerm(null, null);
+        SubjectSection sectionA = persistSubjectSection(subject, term, null);
+        SubjectSection sectionB = persistSubjectSection(subject, term, null);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+        SubjectSectionEnrollment original = subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(sectionA.getId()));
+        persistUnmetPrerequisite(target, prerequisite);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.changeSection(
+                original.getId(), new ChangeSectionRequest(sectionB.getId())))
+                .isInstanceOf(PrerequisiteNotMetException.class);
+        assertThat(subjectSectionEnrollmentService.get(original.getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void waitlistPromotionSkipsACandidateWhoseCorrelativeIsUnmetAndPromotesTheNextOne() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaConCorrelativaLista");
+        Subject prerequisiteSubject = persistSubject("CorrelativaLista");
+        Program program = persistProgram("CarreraCorrelativaLista");
+        ProgramSubject target = persistProgramSubject(program, subject);
+        ProgramSubject prerequisite = persistProgramSubject(program, prerequisiteSubject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, 1);
+        Student seatedStudent = persistStudent("64000002", StatusType.ACTIVE, institution);
+        Student blockedStudent = persistStudent("64000003", StatusType.ACTIVE, institution);
+        Student eligibleStudent = persistStudent("64000004", StatusType.ACTIVE, institution);
+        ProgramEnrollment seatedEnrollment = persistProgramEnrollment(seatedStudent, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment blockedEnrollment = persistProgramEnrollment(blockedStudent, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment eligibleEnrollment = persistProgramEnrollment(eligibleStudent, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+        SubjectSectionEnrollment seated = subjectSectionEnrollmentService.enroll(
+                seatedEnrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+        SubjectSectionEnrollment blocked = persistWaitlisted(
+                blockedStudent, blockedEnrollment, section, LocalDateTime.of(2026, 1, 1, 10, 0));
+        SubjectSectionEnrollment eligible = persistWaitlisted(
+                eligibleStudent, eligibleEnrollment, section, LocalDateTime.of(2026, 1, 2, 10, 0));
+        persistUnmetPrerequisite(target, prerequisite);
+        SubjectSectionEnrollment passedPrerequisite = new SubjectSectionEnrollment();
+        passedPrerequisite.setStudent(eligibleStudent);
+        passedPrerequisite.setProgramEnrollment(eligibleEnrollment);
+        passedPrerequisite.setSubjectSection(persistSubjectSection(prerequisiteSubject, term, null));
+        passedPrerequisite.setStatus(EnrollmentStatus.APPROVED);
+        passedPrerequisite.setEnrolledAt(LocalDateTime.of(2025, 1, 1, 10, 0));
+        passedPrerequisite.setAttemptNumber(1);
+        entityManager.persist(passedPrerequisite);
+        entityManager.flush();
+
+        subjectSectionEnrollmentService.withdraw(seated.getId());
+
+        assertThat(subjectSectionEnrollmentService.get(blocked.getId()).getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+        assertThat(subjectSectionEnrollmentService.get(eligible.getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }
 
     @Test

@@ -15,9 +15,11 @@ public record CreateGradeItemRequest(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Double weight,
         @NotNull LocalDateTime date, @NotNull BigDecimal score,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String comments,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Long examBoardId) implements SelfValidatingRequest {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Long examBoardId,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String reason) implements SelfValidatingRequest {
     public CreateGradeItemRequest {
         RequestLimits.requireMaxLength("comments", comments, 255);
+        RequestLimits.requireMaxLength("reason", reason, 500);
         RequestLimits.requireAtMost("sequenceNumber", sequenceNumber, 1000);
     }
 }

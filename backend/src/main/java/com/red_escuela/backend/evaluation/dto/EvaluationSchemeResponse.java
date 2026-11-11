@@ -9,7 +9,8 @@ import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 public record EvaluationSchemeResponse(
         Long id, String name, Integer examCountExpected, Boolean hasFinal, Double finalWeight,
         String aggregationMethod, BigDecimal minRegularGrade, BigDecimal minApprovalGrade,
-        @Schema(nullable = true) BigDecimal promotionMinGrade, String notes, boolean inUse) {
+        @Schema(nullable = true) BigDecimal promotionMinGrade, String notes, boolean inUse,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) Integer recoveryQuota) {
 
     public static EvaluationSchemeResponse from(EvaluationScheme scheme, boolean inUse) {
         return new EvaluationSchemeResponse(
@@ -18,6 +19,6 @@ public record EvaluationSchemeResponse(
                 scheme.getAggregationMethod() == null ? null : scheme.getAggregationMethod().name(),
                 Grade.valueOrNull(scheme.getMinRegularGrade()), Grade.valueOrNull(scheme.getMinApprovalGrade()),
                 Grade.valueOrNull(scheme.getPromotionMinGrade()),
-                scheme.getNotes(), inUse);
+                scheme.getNotes(), inUse, scheme.getRecoveryQuota());
     }
 }

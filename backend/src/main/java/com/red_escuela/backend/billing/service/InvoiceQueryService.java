@@ -39,7 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -196,6 +198,15 @@ public class InvoiceQueryService {
             }
         }
         return false;
+    }
+
+    public Set<Long> findStudentIdsWithOverdueDebt(Collection<Long> studentIds, LocalDate today) {
+        if (studentIds.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> withDebt = new HashSet<>(invoiceRepository.findStudentIdsWithOverdueProgramInvoices(studentIds, today));
+        withDebt.addAll(invoiceRepository.findStudentIdsWithOverdueCourseInvoices(studentIds, today));
+        return withDebt;
     }
 
     private String resolvePriceVersionDescription(Invoice invoice) {
