@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   boardAccess,
   boardChangeRows,
+  boardCorrectionForm,
+  boardRoleCaps,
   boardRowResult,
+  buildCorrectionPayload,
   buildFinalGradesPayload,
+  correctionAccess,
+  correctionChangeRows,
   hasInvalidBoardDraft,
   patchBoardDraft,
   summarizeBoardSave,
@@ -63,5 +68,45 @@ describe('examBoardGrades', () => {
 
   it('summarizes what was saved', () => {
     expect(summarizeBoardSave([{ absent: false }, { absent: false }, { absent: true }])).toBe('Se guardaron 2 notas y 1 ausente.');
+  });
+
+  it('lets only the docente grade and the preceptor and administrativo manage', () => {
+    expect(boardRoleCaps('docente')).toEqual({ grades: true, manages: false });
+    expect(boardRoleCaps('preceptor')).toEqual({ grades: false, manages: true });
+    expect(boardRoleCaps('administrativo')).toEqual({ grades: false, manages: true });
+    expect(boardRoleCaps('director')).toEqual({ grades: false, manages: false });
+  });
+
+  it('offers the correction only to the docente on a saved grade, blocked once closed', () => {
+    const saved = row(1, { finalScore: 8 });
+    const open = { status: 'SCHEDULED', examDate: '2020-01-01T10:00:00' };
+    expect(correctionAccess({ role: 'docente', mesa: open, row: saved })).toBe('enabled');
+    expect(correctionAccess({ role: 'docente', mesa: { ...open, examDate: '2999-01-01T10:00:00' }, row: saved })).toBe('none');
+    expect(correctionAccess({ role: 'docente', mesa: { ...open, status: 'CLOSED' }, row: saved })).toBe('closed');
+    expect(correctionAccess({ role: 'docente', mesa: { ...open, status: 'CANCELED' }, row: saved })).toBe('none');
+    expect(correctionAccess({ role: 'preceptor', mesa: open, row: saved })).toBe('none');
+    expect(correctionAccess({ role: 'docente', mesa: open, row: row(2) })).toBe('none');
+  });
+
+  it('requires a reason of 5 to 500 characters and a different grade or Ausente', () => {
+    const saved = row(1, { finalScore: 8 });
+    const base = { row: saved, scoreText: '5', absent: false, reasonText: 'Error' };
+    expect(boardCorrectionForm(base).ready).toBe(true);
+    expect(boardCorrectionForm({ ...base, reasonText: 'Err' }).ready).toBe(false);
+    expect(boardCorrectionForm({ ...base, reasonText: 'x'.repeat(501) }).reasonTooLong).toBe(true);
+    expect(boardCorrectionForm({ ...base, scoreText: '8' }).unchanged).toBe(true);
+    expect(boardCorrectionForm({ ...base, scoreText: '11' }).scoreInvalid).toBe(true);
+    expect(boardCorrectionForm({ ...base, scoreText: '' }).ready).toBe(false);
+    expect(boardCorrectionForm({ ...base, scoreText: '', absent: true }).ready).toBe(true);
+  });
+
+  it('builds the correction payload with the reason and the change rows with the difference', () => {
+    const saved = row(1, { finalScore: 8, minApprovalGrade: 6 });
+    const grade = boardCorrectionForm({ row: saved, scoreText: '4,5', absent: false, reasonText: ' Error de carga ' });
+    expect(buildCorrectionPayload(saved, grade)).toEqual({ items: [{ registrationId: 1, score: 4.5, reason: 'Error de carga' }] });
+    expect(correctionChangeRows(saved, grade)[0]).toMatchObject({ today: '8', next: '4,5', difference: '−3,5' });
+    const absent = boardCorrectionForm({ row: saved, scoreText: '', absent: true, reasonText: 'No asistió' });
+    expect(buildCorrectionPayload(saved, absent)).toEqual({ items: [{ registrationId: 1, absent: true, reason: 'No asistió' }] });
+    expect(correctionChangeRows(saved, absent)[1]).toMatchObject({ next: 'Ausente' });
   });
 });

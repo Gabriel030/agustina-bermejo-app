@@ -17,6 +17,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { formatearFecha } from '@/lib/comisiones';
 import { ReprogramarMesaDialog } from '@/features/evaluation/components/ReprogramarMesaDialog';
 import { CancelarMesaDialog } from '@/features/evaluation/components/CancelarMesaDialog';
+import { boardRoleCaps } from '@/features/evaluation/lib/examBoardGrades';
 import { ExamBoardGradesSection } from '@/features/evaluation/components/ExamBoardGradesSection';
 import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion, useReprogramarMesa, useCancelarMesa } from '@/features/evaluation/hooks/useMesasDeExamen';
 
@@ -147,7 +148,7 @@ function DetalleMesa({ mesaId, role }) {
   const conNotaFinal = (anotados ?? []).some((a) => a.finalScore != null);
   const modificable = mesa.status === 'SCHEDULED';
   const sinNota = (anotados ?? []).filter((a) => a.status === 'REGISTERED' && a.finalScore == null).length;
-  const gestiona = role === 'preceptor';
+  const gestiona = boardRoleCaps(role).manages;
   const ahora = new Date();
   const examenPendiente = ahora < new Date(mesa.examDate);
   const ventanaAbierta = soloLectura

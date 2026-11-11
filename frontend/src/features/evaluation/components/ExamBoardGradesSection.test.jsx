@@ -192,7 +192,7 @@ describe('ExamBoardGradesSection', () => {
     renderSection({ mesa: board({ status: 'CLOSED' }), rows: [registration(1, { status: 'GRADED', finalScore: 8, result: 'PASSED' })] });
 
     expect(screen.queryByLabelText(/Nota del final de/)).not.toBeInTheDocument();
-    expect(screen.getByText('Las notas quedaron firmes. Si hay un error, hablá con Dirección.')).toBeInTheDocument();
+    expect(screen.getByText('Las notas quedaron firmes y ya no se pueden corregir. Si hay un error, hablá con Dirección.')).toBeInTheDocument();
     expect(screen.getByText('8')).toBeInTheDocument();
   });
 
