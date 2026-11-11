@@ -142,6 +142,31 @@ export function closureConfirmPath(sectionId = 7, kind = 'program') {
   return `${API}/${kind}-sections/${sectionId}/closure/confirm`;
 }
 
+export function closureActionPath(action, sectionId = 7, kind = 'program') {
+  return `${API}/${kind}-sections/${sectionId}/closure/${action}`;
+}
+
+export function closureExceptionPath(enrollmentId, sectionId = 7, kind = 'program') {
+  return `${API}/${kind}-sections/${sectionId}/closure/students/${enrollmentId}/exception`;
+}
+
+export function closureExportPath(closureId = 31) {
+  return `${API}/commission-closures/${closureId}/export`;
+}
+
+export function closedClosureSheet(overrides = {}) {
+  return closureSheet({
+    status: 'CLOSED',
+    availability: { canConfirm: false, canApprove: false, blockedReason: 'ALREADY_CLOSED' },
+    reportNumber: 'ACTA-2026-0042',
+    reportVersion: 1,
+    book: 'L28',
+    folio: '93',
+    closedAt: '2026-07-14T10:00:00',
+    ...overrides,
+  });
+}
+
 export function closurePrerequisitesPath(closureId = 31) {
   return `${API}/commission-closures/${closureId}/students/:enrollmentId/prerequisites`;
 }
