@@ -7,6 +7,13 @@ Feature: Auxiliar — cargar un parcial (EXAM) sobre una cursada
     Given url baseUrl
     And path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docenteToken
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-03-01T00:00:00', score: 7 }
+    When method post
+    Then status 201
+
+    Given url baseUrl
+    And path '/section-enrollments', sectionEnrollmentId, 'grade-items'
+    And header Authorization = 'Bearer ' + docenteToken
     And request { type: 'EXAM', sequenceNumber: '#(seq)', date: '2026-04-01T00:00:00', score: '#(score)' }
     When method post
     Then status 201
