@@ -71,7 +71,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void approvedRequirementWithOnlyRegularStandingIsNotMet() {
-        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED));
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED, "C10"));
         studentHas(10L, EnrollmentStatus.REGULAR);
 
         List<PrerequisiteAssessment> result = evaluator.assess(ENROLLMENT_ID, SUBJECT_ID);
@@ -82,7 +82,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void passedCourseworkRequirementWithRegularStandingIsMet() {
-        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.PASSED_COURSEWORK));
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.PASSED_COURSEWORK, "C10"));
         studentHas(10L, EnrollmentStatus.REGULAR);
 
         assertThat(evaluator.assess(ENROLLMENT_ID, SUBJECT_ID)).extracting(PrerequisiteAssessment::met).containsExactly(true);
@@ -90,7 +90,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void aPrerequisiteTheStudentNeverTookIsNotMet() {
-        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.PASSED_COURSEWORK));
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.PASSED_COURSEWORK, "C10"));
         studentHas(10L);
 
         assertThat(evaluator.assess(ENROLLMENT_ID, SUBJECT_ID)).containsExactly(new PrerequisiteAssessment(
@@ -99,12 +99,44 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void anApprovedWaiverMarksEveryPrerequisiteAsWaivedWithoutQueryingTheStudentHistory() {
-        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED));
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED, "C10"));
         when(approvalRepository.hasApproved(ENROLLMENT_ID, SUBJECT_ID, ExceptionType.PREREQUISITE_WAIVER)).thenReturn(true);
 
         assertThat(evaluator.assess(ENROLLMENT_ID, SUBJECT_ID)).containsExactly(new PrerequisiteAssessment(
                 10L, "Algebra I", RequirementType.APPROVED, PrerequisiteStanding.WAIVED, true));
         verify(sectionRepository, never()).findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(any(), any(), any());
+    }
+
+    @Test
+    void aRegularPrerequisiteLetsTheStudentEnrollButNotApprove() {
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.PASSED_COURSEWORK, "C10"));
+        studentHas(10L, EnrollmentStatus.REGULAR);
+
+        assertThat(evaluator.areAllMetOrSubjectOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isTrue();
+        assertThat(evaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isFalse();
+    }
+
+    @Test
+    void anApprovedPrerequisiteAllowsApproval() {
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.PASSED_COURSEWORK, "C10"));
+        studentHas(10L, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
+
+        assertThat(evaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isTrue();
+    }
+
+    @Test
+    void aWaivedPrerequisiteAllowsApprovalWithoutHistory() {
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED, "C10"));
+        when(approvalRepository.hasApproved(ENROLLMENT_ID, SUBJECT_ID, ExceptionType.PREREQUISITE_WAIVER)).thenReturn(true);
+
+        assertThat(evaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isTrue();
+    }
+
+    @Test
+    void aSubjectOutsideThePlanDoesNotBlockApproval() {
+        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+
+        assertThat(evaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(ENROLLMENT_ID, 99L)).isTrue();
     }
 
     @Test
@@ -129,8 +161,8 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void allMetIsFalseWhenAnyPrerequisiteIsUnmet() {
-        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED),
-                new PrerequisiteView(11L, "Analisis I", RequirementType.APPROVED));
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED, "C10"),
+                new PrerequisiteView(11L, "Analisis I", RequirementType.APPROVED, "C11"));
         studentHas(10L, EnrollmentStatus.APPROVED);
         studentHas(11L, EnrollmentStatus.REGULAR);
 
@@ -139,7 +171,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void allMetIsTrueWhenEveryPrerequisiteIsMetOrWaived() {
-        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED));
+        prerequisites(new PrerequisiteView(10L, "Algebra I", RequirementType.APPROVED, "C10"));
         when(approvalRepository.hasApproved(ENROLLMENT_ID, SUBJECT_ID, ExceptionType.PREREQUISITE_WAIVER)).thenReturn(true);
 
         assertThat(evaluator.areAllMetOrSubjectOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isTrue();

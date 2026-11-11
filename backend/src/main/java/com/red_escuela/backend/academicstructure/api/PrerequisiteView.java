@@ -5,5 +5,5 @@ import org.springframework.modulith.NamedInterface;
 
 @NamedInterface("api")
 public record PrerequisiteView(Long prerequisiteSubjectId, String prerequisiteSubjectName,
-                               RequirementType requirementType) {
+                               RequirementType requirementType, String prerequisiteSubjectCode) {
 }

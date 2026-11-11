@@ -7,7 +7,9 @@ import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,9 +26,24 @@ public class PublishedGradeItemSelector {
         if (items.isEmpty()) {
             return items;
         }
-        Set<String> publishedSlots = publicationRepository.findBySectionKindAndSectionId(kind, sectionId).stream()
+        return filterPublished(items, publishedSlotsOf(kind, sectionId));
+    }
+
+    public Map<Long, List<GradeItem>> selectPublishedByEnrollment(
+            SectionKind kind, Long sectionId, Map<Long, List<GradeItem>> itemsByEnrollment) {
+        Set<String> publishedSlots = publishedSlotsOf(kind, sectionId);
+        Map<Long, List<GradeItem>> published = new HashMap<>();
+        itemsByEnrollment.forEach((enrollmentId, items) -> published.put(enrollmentId, filterPublished(items, publishedSlots)));
+        return published;
+    }
+
+    private Set<String> publishedSlotsOf(SectionKind kind, Long sectionId) {
+        return publicationRepository.findBySectionKindAndSectionId(kind, sectionId).stream()
                 .map(publication -> slotOf(publication.getGradeItemType(), publication.getSequenceNumber()))
                 .collect(Collectors.toSet());
+    }
+
+    private List<GradeItem> filterPublished(List<GradeItem> items, Set<String> publishedSlots) {
         return items.stream()
                 .filter(item -> item.getType() == GradeItemType.FINAL
                         || publishedSlots.contains(slotOf(

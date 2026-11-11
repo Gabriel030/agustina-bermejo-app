@@ -22,6 +22,10 @@ public final class PrerequisiteRequirementPolicy {
         return PrerequisiteStanding.NOT_TAKEN;
     }
 
+    public boolean isMetForApproval(PrerequisiteStanding standing) {
+        return standing == PrerequisiteStanding.APPROVED || standing == PrerequisiteStanding.WAIVED;
+    }
+
     public boolean isMet(RequirementType requirementType, PrerequisiteStanding standing) {
         return switch (standing) {
             case WAIVED, APPROVED -> true;
