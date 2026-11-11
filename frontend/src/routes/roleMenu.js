@@ -1,4 +1,4 @@
-import { BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText } from 'lucide-react';
+import { BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -22,6 +22,7 @@ const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText
 const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicitudes de ingreso', icon: UserPlus };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
+const closures = { slug: 'cierres-de-comision', label: 'Cierres de comisión', icon: FileSignature };
 const approvals = { slug: 'aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 };
 
 export const ROLE_MENU = {
@@ -54,6 +55,7 @@ export const ROLE_MENU = {
     personal,
     enrollmentApplications,
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
+    closures,
     invoicing,
     discounts,
     prices,
@@ -79,6 +81,7 @@ export const ROLE_MENU = {
     academicManagement,
     { slug: 'esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
+    closures,
     { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
     invoicing,
     discounts,
@@ -112,7 +115,7 @@ const MENU_GROUPS = {
     {
       id: 'academic',
       label: 'Académico',
-      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'periodos', 'constancias'],
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias'],
     },
     {
       id: 'billing',

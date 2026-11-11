@@ -62,7 +62,7 @@ describe('role menu manifest', () => {
 
   it('drops groups left without visible items', () => {
     const withoutAcademic = menuItemsFor('director').filter(
-      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'periodos', 'constancias'].some((slug) => item.to.endsWith(slug)),
+      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias'].some((slug) => item.to.endsWith(slug)),
     );
     expect(groupMenuItems('director', withoutAcademic).map((group) => group.id)).not.toContain('academic');
   });
@@ -90,5 +90,19 @@ describe('role menu manifest', () => {
   it('lists the exam boards of the director under the academic group', () => {
     const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
     expect(academic.items.map((item) => item.to)).toContain('/director/mesas-de-examen');
+  });
+
+  it.each(['administrativo', 'director'])('exposes the commission closures list to %s with its route', (role) => {
+    expect(pagesFor(role)).toContain('cierres-de-comision');
+    expect(roleRoutesFor(role).map((route) => route.path)).toContain('cierres-de-comision');
+  });
+
+  it.each(['docente', 'preceptor', 'alumno', 'platform_admin'])('keeps the commission closures list away from %s', (role) => {
+    expect(pagesFor(role)).not.toContain('cierres-de-comision');
+  });
+
+  it('lists the commission closures of the director under the academic group', () => {
+    const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
+    expect(academic.items.map((item) => item.to)).toContain('/director/cierres-de-comision');
   });
 });
