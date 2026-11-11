@@ -15,6 +15,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   CLOSURE_NOT_AVAILABLE: 'Todavía no hay notas publicadas para armar el cierre.',
   CLOSURE_EXCEPTION_ALREADY_GRANTED: 'El alumno ya tiene una excepción vigente en este cierre.',
   CLOSURE_EXCEPTION_NOT_FOUND: 'El alumno no tiene una excepción vigente en este cierre.',
+  CLOSURE_NOT_FOUND: 'No encontramos el cierre pedido.',
+  INVALID_CLOSURE_EXPORT_FORMAT: 'El formato de exportación no es válido: elegí xlsx o pdf.',
   CLOSURE_NOT_CLOSED: 'El acta se puede descargar recién cuando el cierre esté cerrado.',
   CLOSURE_NOT_REOPENABLE: 'Solo se puede reabrir un acta que ya está cerrada.',
   CLOSURE_NOT_CONFIRMED: 'El docente todavía no confirmó el cierre.',

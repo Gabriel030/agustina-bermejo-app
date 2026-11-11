@@ -495,3 +495,4 @@ POST,/course-sections/{id}/closure/approve,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
 POST,/course-sections/{id}/closure/reopen,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 PUT,/course-sections/{id}/closure/students/{enrollmentId}/exception,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 DELETE,/course-sections/{id}/closure/students/{enrollmentId}/exception,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+GET,/commission-closures/{closureId}/export,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,

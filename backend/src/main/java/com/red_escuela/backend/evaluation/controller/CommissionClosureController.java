@@ -1,9 +1,11 @@
 package com.red_escuela.backend.evaluation.controller;
 
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
+import com.red_escuela.backend.evaluation.domain.ClosureExportFormat;
 import com.red_escuela.backend.evaluation.domain.ClosureSectionKind;
 import com.red_escuela.backend.evaluation.domain.ClosureViewerProfile;
 import com.red_escuela.backend.evaluation.dto.ApproveClosureRequest;
+import com.red_escuela.backend.evaluation.dto.ClosureExportFile;
 import com.red_escuela.backend.evaluation.dto.ClosurePrerequisiteResponse;
 import com.red_escuela.backend.evaluation.dto.ClosureReasonRequest;
 import com.red_escuela.backend.evaluation.dto.ClosureSheetResponse;
@@ -16,6 +18,8 @@ import com.red_escuela.backend.evaluation.usecase.closure.ReopenClosureCommand;
 import com.red_escuela.backend.evaluation.usecase.closure.ReopenClosureUseCase;
 import com.red_escuela.backend.evaluation.usecase.closure.RevokeClosureExceptionCommand;
 import com.red_escuela.backend.evaluation.usecase.closure.RevokeClosureExceptionUseCase;
+import com.red_escuela.backend.evaluation.usecase.closure.ExportClosureCommand;
+import com.red_escuela.backend.evaluation.usecase.closure.ExportClosureUseCase;
 import com.red_escuela.backend.evaluation.usecase.closure.ConfirmClosureCommand;
 import com.red_escuela.backend.evaluation.usecase.closure.ConfirmClosureUseCase;
 import com.red_escuela.backend.evaluation.usecase.closure.GetClosureSheetCommand;
@@ -25,7 +29,11 @@ import com.red_escuela.backend.evaluation.usecase.closure.GetClosureStudentPrere
 import com.red_escuela.backend.evaluation.usecase.closure.RecordClosureObservationCommand;
 import com.red_escuela.backend.evaluation.usecase.closure.RecordClosureObservationUseCase;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,9 +42,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 
@@ -53,6 +63,7 @@ public class CommissionClosureController {
     private final ReopenClosureUseCase reopenClosureUseCase;
     private final GrantClosureExceptionUseCase grantClosureExceptionUseCase;
     private final RevokeClosureExceptionUseCase revokeClosureExceptionUseCase;
+    private final ExportClosureUseCase exportClosureUseCase;
     private final CurrentInstructorService currentInstructorService;
 
     public CommissionClosureController(GetClosureSheetUseCase getClosureSheetUseCase,
@@ -60,7 +71,8 @@ public class CommissionClosureController {
             GetClosureStudentPrerequisitesUseCase getClosureStudentPrerequisitesUseCase,
             ApproveClosureUseCase approveClosureUseCase, ReopenClosureUseCase reopenClosureUseCase,
             GrantClosureExceptionUseCase grantClosureExceptionUseCase,
-            RevokeClosureExceptionUseCase revokeClosureExceptionUseCase, CurrentInstructorService currentInstructorService) {
+            RevokeClosureExceptionUseCase revokeClosureExceptionUseCase, ExportClosureUseCase exportClosureUseCase,
+            CurrentInstructorService currentInstructorService) {
         this.getClosureSheetUseCase = getClosureSheetUseCase;
         this.confirmClosureUseCase = confirmClosureUseCase;
         this.recordClosureObservationUseCase = recordClosureObservationUseCase;
@@ -69,6 +81,7 @@ public class CommissionClosureController {
         this.reopenClosureUseCase = reopenClosureUseCase;
         this.grantClosureExceptionUseCase = grantClosureExceptionUseCase;
         this.revokeClosureExceptionUseCase = revokeClosureExceptionUseCase;
+        this.exportClosureUseCase = exportClosureUseCase;
         this.currentInstructorService = currentInstructorService;
     }
 
@@ -185,6 +198,19 @@ public class CommissionClosureController {
         ClosureViewerProfile viewer = viewerOf(authentication);
         return getClosureStudentPrerequisitesUseCase.get(new GetClosureStudentPrerequisitesCommand(
                 closureId, enrollmentId, viewer, instructorIdFor(viewer)));
+    }
+
+    @GetMapping("/commission-closures/{closureId}/export")
+    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR')")
+    public ResponseEntity<byte[]> exportClosure(@PathVariable Long closureId, @RequestParam String format,
+            Authentication authentication) {
+        ClosureViewerProfile viewer = viewerOf(authentication);
+        ClosureExportFile file = exportClosureUseCase.export(new ExportClosureCommand(closureId,
+                ClosureExportFormat.fromParameter(format), viewer, instructorIdFor(viewer)));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(file.fileName(), StandardCharsets.UTF_8).build().toString())
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .body(file.content());
     }
 
     private ClosureSheetResponse readSheet(ClosureSectionKind kind, Long sectionId, Authentication authentication) {
