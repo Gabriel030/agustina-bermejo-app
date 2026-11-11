@@ -117,6 +117,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_BILLING_RUN_RANGE` | no | `InvalidBillingRunRangeException` | billing |
 | `INVALID_CERTIFICATE_CODE` | no | `InvalidCertificateCodeException` | graduation |
 | `INVALID_CLOSURE_EXCEPTION_REASON` | no | `InvalidClosureExceptionReasonException` | evaluation |
+| `INVALID_CLOSURE_EXPORT_FORMAT` | no | `InvalidClosureExportFormatException` | evaluation |
 | `INVALID_CLOSURE_REOPEN_REASON` | no | `InvalidClosureReopenReasonException` | evaluation |
 | `INVALID_COLLECTION_REMINDER_SCHEDULE` | no | `InvalidCollectionReminderScheduleException` | billing |
 | `INVALID_COLLECTION_REMINDER_SETTINGS` | no | `InvalidCollectionReminderSettingsException` | billing |
@@ -253,6 +254,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CLASSROOM_NOT_FOUND` | no | `ClassroomNotFoundException` | academicstructure |
 | `CLASS_SESSION_NOT_FOUND` | no | `ClassSessionNotFoundException` | attendance |
 | `CLOSURE_EXCEPTION_NOT_FOUND` | no | `ClosureExceptionNotFoundException` | evaluation |
+| `CLOSURE_NOT_FOUND` | no | `ClosureNotFoundException` | evaluation |
 | `CLOSURE_STUDENT_NOT_FOUND` | no | `ClosureStudentNotFoundException` | evaluation |
 | `CONFIGURATION_VERSION_NOT_FOUND` | no | `ConfigurationVersionNotFoundException` | billing |
 | `COREQUISITE_NOT_FOUND` | no | `CorequisiteNotFoundException` | academicstructure |

@@ -1,6 +1,18 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import tools.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.evaluation.domain.ClosureExportFormat;
+import com.red_escuela.backend.evaluation.dto.ClosureExportFile;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -97,6 +109,8 @@ class CommissionClosureApprovalIT extends AbstractIntegrationTest {
     private CommissionClosureAuditRepository auditRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private ClosureExporter closureExporter;
 
     private int sequence = 83000000;
     private Institution institution;
@@ -450,6 +464,59 @@ class CommissionClosureApprovalIT extends AbstractIntegrationTest {
         int counted = sheet.summary().promote() + sheet.summary().goToFinal() + sheet.summary().failed() + sheet.summary().free()
                 + sheet.summary().pending() + sheet.summary().conditional();
         assertThat(counted).isEqualTo(4);
+    }
+
+    private String spreadsheetTextOf(ClosureExportFile file) throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(file.content()))) {
+            return StreamSupport.stream(workbook.getSheetAt(0).spliterator(), false)
+                    .flatMap(row -> StreamSupport.stream(((Row) row).spliterator(), false))
+                    .map(cell -> ((Cell) cell).getStringCellValue())
+                    .collect(Collectors.joining("|"));
+        }
+    }
+
+    private String pdfTextOf(ClosureExportFile file) throws IOException {
+        try (PDDocument document = Loader.loadPDF(file.content())) {
+            return new PDFTextStripper().getText(document);
+        }
+    }
+
+    @Test
+    void theDraftSpreadsheetIsExportableAndLabelledAsDraftWhileThePdfIsRejectedBeforeTheClosing() throws IOException {
+        confirmedSection();
+        Long closureId = closure().getId();
+
+        ClosureExportFile spreadsheet = closureExporter.export(closureId, ClosureExportFormat.XLSX, ClosureViewerProfile.STAFF, null);
+
+        assertThat(spreadsheet.fileName()).endsWith("-borrador.xlsx").matches("[A-Za-z0-9._-]+");
+        assertThat(spreadsheetTextOf(spreadsheet)).contains("BORRADOR, sin valor de acta", "Pagos al día");
+        assertThatThrownBy(() -> closureExporter.export(closureId, ClosureExportFormat.PDF, ClosureViewerProfile.STAFF, null))
+                .isInstanceOf(ClosureNotClosedException.class);
+    }
+
+    @Test
+    void theClosedActaPdfCarriesTheReportNumberAndNeitherPaymentsNorDocuments() throws IOException {
+        confirmedSection();
+        approver.approveClosure(ClosureSectionKind.PROGRAM, sectionId, "Libro 3", "Folio 12", false);
+        flushAndClear();
+
+        ClosureExportFile pdf = closureExporter.export(closure().getId(), ClosureExportFormat.PDF, ClosureViewerProfile.STAFF, null);
+
+        assertThat(pdf.fileName()).isEqualTo("cierre-sheet-subject-sheet-section-acta-ACTA-2026-0001-v1.pdf");
+        assertThat(pdfTextOf(pdf)).contains("ACTA-2026-0001", "Libro 3", "Folio 12").doesNotContain("Pagos", "Legajo");
+    }
+
+    @Test
+    void theTeacherSpreadsheetOmitsThePaymentsAndMissingDocumentsColumns() throws IOException {
+        confirmedSection();
+        Long closureId = closure().getId();
+        actAs(teacherPersonId);
+
+        ClosureExportFile teacherFile = closureExporter.export(closureId, ClosureExportFormat.XLSX, ClosureViewerProfile.TEACHER, teacherInstructorId);
+
+        assertThat(spreadsheetTextOf(teacherFile)).contains("Apellido").doesNotContain("Pagos al día", "Documentos faltantes");
+        assertThatThrownBy(() -> closureExporter.export(closureId, ClosureExportFormat.XLSX, ClosureViewerProfile.TEACHER, teacherInstructorId + 1000))
+                .isInstanceOf(NotOwnSectionException.class);
     }
 
     private Long directorPersonId() {

@@ -22451,6 +22451,131 @@
         "tags" : [ "collection-reminder-impact-controller" ]
       }
     },
+    "/commission-closures/{closureId}/export" : {
+      "get" : {
+        "operationId" : "CommissionClosure_exportClosure",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "closureId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "format",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "commission-closure-controller" ]
+      }
+    },
     "/commission-closures/{closureId}/students/{enrollmentId}/prerequisites" : {
       "get" : {
         "operationId" : "CommissionClosure_getStudentPrerequisites",

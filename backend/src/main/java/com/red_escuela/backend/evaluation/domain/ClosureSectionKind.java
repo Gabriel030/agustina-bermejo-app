@@ -12,6 +12,10 @@ public enum ClosureSectionKind {
         this.sectionKind = sectionKind;
     }
 
+    public static ClosureSectionKind of(SectionKind sectionKind) {
+        return sectionKind == SectionKind.PROGRAM ? PROGRAM : COURSE;
+    }
+
     public SectionKind toSectionKind() {
         return sectionKind;
     }
