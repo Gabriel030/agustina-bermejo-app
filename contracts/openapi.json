@@ -5006,6 +5006,50 @@
         "required" : [ "aggregationMethod", "examCountExpected", "finalWeight", "hasFinal", "id", "inUse", "minApprovalGrade", "minRegularGrade", "name", "notes", "promotionMinGrade" ],
         "type" : "object"
       },
+      "ExamBoardFinalGradeEntryRequest" : {
+        "properties" : {
+          "absent" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          },
+          "registrationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "score" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "registrationId" ],
+        "type" : "object"
+      },
+      "ExamBoardFinalGradesRequest" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ExamBoardFinalGradeEntryRequest"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "items" ],
+        "type" : "object"
+      },
+      "ExamBoardFinalGradesResponse" : {
+        "properties" : {
+          "registrations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ExamBoardRegistrationSummaryResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "registrations" ],
+        "type" : "object"
+      },
       "ExamBoardRegistrationResponse" : {
         "properties" : {
           "enrollmentId" : {
@@ -5039,12 +5083,35 @@
           "dni" : {
             "type" : "string"
           },
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enrollmentKind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
           "finalScore" : {
             "type" : [ "number", "null" ]
+          },
+          "gradeItemId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "minApprovalGrade" : {
+            "type" : "number"
+          },
+          "priorCondition" : {
+            "enum" : [ "REGULAR", "FREE" ],
+            "type" : "string"
+          },
+          "result" : {
+            "enum" : [ "PASSED", "FAILED", "ABSENT", null ],
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -5053,7 +5120,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attemptNumber", "carrera", "dni", "finalScore", "id", "status", "studentName" ],
+        "required" : [ "attemptNumber", "carrera", "dni", "enrollmentId", "enrollmentKind", "finalScore", "gradeItemId", "id", "minApprovalGrade", "priorCondition", "result", "status", "studentName" ],
         "type" : "object"
       },
       "ExamBoardResponse" : {
@@ -31685,6 +31752,133 @@
           }
         },
         "tags" : [ "exam-board-controller" ]
+      }
+    },
+    "/exam-boards/{id}/final-grades" : {
+      "put" : {
+        "operationId" : "ExamBoardFinalGrades_recordFinalGrades",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExamBoardFinalGradesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExamBoardFinalGradesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "exam-board-final-grades-controller" ]
       }
     },
     "/exam-boards/{id}/registrations" : {

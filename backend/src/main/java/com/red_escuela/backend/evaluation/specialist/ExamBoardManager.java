@@ -1,8 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import java.time.Clock;
-import com.red_escuela.backend.shared.domain.Grade;
-import java.math.BigDecimal;
 import com.red_escuela.backend.evaluation.dto.CreateExamBoardRequest;
 import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationSummaryResponse;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
@@ -12,7 +10,6 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.exception.ExamBoardCanceledException;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
-import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
@@ -24,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
 import com.red_escuela.backend.evaluation.exception.NotExamBoardTribunalMemberException;
@@ -39,6 +35,7 @@ public class ExamBoardManager {
     private final AcademicReferenceFinder academicReferenceFinder;
     private final HolidayFinder holidayFinder;
     private final GradeItemRepository gradeItemRepository;
+    private final ExamBoardRegistrationSummaryBuilder summaryBuilder;
     private final Clock clock;
 
     public ExamBoardManager(ExamBoardRepository examBoardRepository,
@@ -47,6 +44,7 @@ public class ExamBoardManager {
             AcademicReferenceFinder academicReferenceFinder,
             HolidayFinder holidayFinder,
             GradeItemRepository gradeItemRepository,
+            ExamBoardRegistrationSummaryBuilder summaryBuilder,
             Clock clock) {
         this.holidayFinder = holidayFinder;
         this.gradeItemRepository = gradeItemRepository;
@@ -54,6 +52,7 @@ public class ExamBoardManager {
         this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.academicReferenceFinder = academicReferenceFinder;
+        this.summaryBuilder = summaryBuilder;
         this.clock = clock;
     }
 
@@ -104,7 +103,8 @@ public class ExamBoardManager {
 
     @Transactional
     public ExamBoard close(Long examBoardId) {
-        ExamBoard examBoard = findOrThrow(examBoardId);
+        ExamBoard examBoard = examBoardRepository.findByIdForUpdate(examBoardId)
+                .orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
         if (examBoard.getStatus() == ExamBoardStatus.CANCELED) {
             throw new ExamBoardCanceledException(examBoardId);
         }
@@ -135,8 +135,7 @@ public class ExamBoardManager {
     }
 
     public List<ExamBoardRegistrationSummaryResponse> listRegistrantsWithDetail(Long examBoardId) {
-        List<GradeItem> grades = gradeItemRepository.findByExamBoardId(examBoardId);
-        return listRegistrants(examBoardId).stream().map(registration -> toSummary(registration, grades)).toList();
+        return summaryBuilder.build(examBoardId, listRegistrants(examBoardId));
     }
 
     public ExamBoard get(Long id) {
@@ -161,16 +160,6 @@ public class ExamBoardManager {
         }
     }
 
-    private BigDecimal finalScoreOf(ExamBoardRegistration registration, List<GradeItem> grades) {
-        return grades.stream()
-                .filter(grade -> sameEnrollment(grade, registration))
-                .map(GradeItem::getScore)
-                .filter(Objects::nonNull)
-                .findFirst()
-                .map(Grade::value)
-                .orElse(null);
-    }
-
     private boolean sameEnrollment(GradeItem grade, ExamBoardRegistration registration) {
         if (registration.getProgramSubjectSectionEnrollment() != null) {
             return grade.getProgramSubjectSectionEnrollment() != null
@@ -178,26 +167,6 @@ public class ExamBoardManager {
         }
         return grade.getCourseSubjectSectionEnrollment() != null
                 && grade.getCourseSubjectSectionEnrollment().getId().equals(registration.getCourseSubjectSectionEnrollment().getId());
-    }
-
-    private ExamBoardRegistrationSummaryResponse toSummary(ExamBoardRegistration registration, List<GradeItem> grades) {
-        String carrera;
-        Integer attemptNumber;
-        Person person;
-        if (registration.getProgramSubjectSectionEnrollment() != null) {
-            var enrollment = registration.getProgramSubjectSectionEnrollment();
-            carrera = enrollment.getProgramEnrollment().getProgram().getName();
-            attemptNumber = enrollment.getAttemptNumber();
-            person = enrollment.getStudent().getPerson();
-        } else {
-            var enrollment = registration.getCourseSubjectSectionEnrollment();
-            carrera = "Curso suelto";
-            attemptNumber = enrollment.getAttemptNumber();
-            person = enrollment.getStudent().getPerson();
-        }
-        return new ExamBoardRegistrationSummaryResponse(
-                registration.getId(), person.getName() + " " + person.getLastname(), person.getDni(),
-                carrera, attemptNumber, registration.getStatus().name(), finalScoreOf(registration, grades));
     }
 
     private ExamBoard findOrThrow(Long id) {

@@ -131,6 +131,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_ENROLLMENT_FEE_CONFIGURATION` | no | `InvalidEnrollmentFeeConfigurationException` | billing |
 | `INVALID_EVALUATION_DATE` | no | `InvalidEvaluationDateException` | evaluation |
 | `INVALID_EVALUATION_SCHEME` | no | `InvalidEvaluationSchemeException` | evaluation |
+| `INVALID_EXAM_BOARD_FINAL_GRADE_ENTRY` | no | `InvalidExamBoardFinalGradeEntryException` | evaluation |
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
 | `INVALID_GRADE_CORRECTION_REASON` | no | `InvalidGradeCorrectionReasonException` | evaluation |
 | `INVALID_GRADE_ITEM_WEIGHT` | no | `InvalidGradeItemWeightException` | evaluation |
@@ -384,9 +385,11 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EVALUATION_SCHEME_IN_USE` | no | `EvaluationSchemeInUseException` | evaluation |
 | `EXAM_BOARD_CANCELED` | no | `ExamBoardCanceledException` | evaluation |
 | `EXAM_BOARD_CLOSED` | no | `ExamBoardClosedException` | evaluation |
+| `EXAM_BOARD_FINAL_GRADE_ROW_REJECTED` | no | `ExamBoardFinalGradeRowRejectedException` | evaluation |
 | `EXAM_BOARD_HAS_GRADES` | no | `ExamBoardHasGradesException` | evaluation |
 | `EXAM_BOARD_NOT_YET_TAKEN` | no | `ExamBoardNotYetTakenException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
+| `EXAM_BOARD_REGISTRATION_WITHDRAWN` | no | `ExamBoardRegistrationWithdrawnException` | evaluation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
 | `GRADE_CORRECTION_NO_CHANGE` | no | `GradeCorrectionNoChangeException` | evaluation |

@@ -239,7 +239,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         ExamBoard board = new ExamBoard();
         board.setCourseSubject(s.courseSubject());
         board.setTerm(s.term());
-        board.setExamDate(LocalDateTime.now().plusDays(3));
+        board.setExamDate(LocalDateTime.now().minusDays(1));
         board.setStatus(status);
         entityManager.persist(board);
         entityManager.flush();

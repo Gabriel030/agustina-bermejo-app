@@ -74,7 +74,7 @@ class GradeItemExamBoardScopeTest extends ExamBoardChangeFixture {
     @Test
     void tribunalMemberLoadsTheFinalOfAStudentRegisteredInTheBoard() {
         Scenario s = scenario("72100001");
-        ExamBoard board = examBoard(s.subject(), s.term(), LocalDateTime.now().plusDays(2));
+        ExamBoard board = examBoard(s.subject(), s.term(), LocalDateTime.now().minusDays(1));
         Instructor member = tribunalMember(board, "72100002");
         registration(board, s.enrollment());
         entityManager.flush();
@@ -88,7 +88,7 @@ class GradeItemExamBoardScopeTest extends ExamBoardChangeFixture {
     @Test
     void tribunalMemberCannotGradeAStudentNotRegisteredInTheBoard() {
         Scenario s = scenario("72100011");
-        ExamBoard board = examBoard(s.subject(), s.term(), LocalDateTime.now().plusDays(2));
+        ExamBoard board = examBoard(s.subject(), s.term(), LocalDateTime.now().minusDays(1));
         Instructor member = tribunalMember(board, "72100012");
 
         assertRejectedWithoutSaving(s, member, request(GradeItemType.FINAL, board.getId()));
@@ -97,7 +97,7 @@ class GradeItemExamBoardScopeTest extends ExamBoardChangeFixture {
     @Test
     void tribunalMemberCannotGradeAStudentWhoWithdrewFromTheBoard() {
         Scenario s = scenario("72100021");
-        ExamBoard board = examBoard(s.subject(), s.term(), LocalDateTime.now().plusDays(2));
+        ExamBoard board = examBoard(s.subject(), s.term(), LocalDateTime.now().minusDays(1));
         Instructor member = tribunalMember(board, "72100022");
         withdrawnRegistration(board, s.enrollment());
 
@@ -108,7 +108,7 @@ class GradeItemExamBoardScopeTest extends ExamBoardChangeFixture {
     void tribunalMemberCannotGradeThroughABoardOfAnotherSubject() {
         Scenario s = scenario("72100031");
         Subject otherSubject = subject("Otra materia", null);
-        ExamBoard otherBoard = examBoard(otherSubject, s.term(), LocalDateTime.now().plusDays(2));
+        ExamBoard otherBoard = examBoard(otherSubject, s.term(), LocalDateTime.now().minusDays(1));
         Instructor member = tribunalMember(otherBoard, "72100032");
         registration(otherBoard, s.enrollment());
 
@@ -118,7 +118,7 @@ class GradeItemExamBoardScopeTest extends ExamBoardChangeFixture {
     @Test
     void tribunalMemberCannotLoadANonFinalItemThroughTheBoard() {
         Scenario s = scenario("72100041");
-        ExamBoard board = examBoard(s.subject(), s.term(), LocalDateTime.now().plusDays(2));
+        ExamBoard board = examBoard(s.subject(), s.term(), LocalDateTime.now().minusDays(1));
         Instructor member = tribunalMember(board, "72100042");
         registration(board, s.enrollment());
 

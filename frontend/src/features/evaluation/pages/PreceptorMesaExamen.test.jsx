@@ -42,7 +42,21 @@ function mesa(extra = {}) {
 }
 
 function anotado(id, status, finalScore = null) {
-  return { id, studentName: `Alumno ${id}`, dni: `${id}`, carrera: 'PEI', attemptNumber: 1, status, finalScore };
+  return {
+    id,
+    studentName: `Alumno ${id}`,
+    dni: `${id}`,
+    carrera: 'PEI',
+    attemptNumber: 1,
+    status,
+    finalScore,
+    enrollmentId: 100 + id,
+    enrollmentKind: 'PROGRAM',
+    priorCondition: 'REGULAR',
+    minApprovalGrade: 6,
+    gradeItemId: finalScore === null ? null : 500 + id,
+    result: finalScore === null ? null : finalScore >= 6 ? 'PASSED' : 'FAILED',
+  };
 }
 
 async function abrirMesa(user, tab) {
