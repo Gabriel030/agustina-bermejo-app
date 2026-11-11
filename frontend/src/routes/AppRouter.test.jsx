@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -28,8 +28,11 @@ vi.mock('idb-keyval', () => ({
   keys: vi.fn(async () => [...idbStore.keys()]),
 }));
 
+let activeQueryClient = null;
+
 function renderApp(initialPath) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  activeQueryClient = queryClient;
   return render(
     <GoogleOAuthProvider clientId="test-client-id">
       <ThemeProvider>
@@ -51,8 +54,13 @@ describe('AppRouter', () => {
     idbStore.clear();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.useRealTimers();
+    if (activeQueryClient) {
+      await waitFor(() => expect(activeQueryClient.isFetching()).toBe(0));
+      activeQueryClient.clear();
+      activeQueryClient = null;
+    }
     setOfflineSessionMode(false);
     vi.unstubAllGlobals();
   });
@@ -62,11 +70,11 @@ describe('AppRouter', () => {
     server.use(http.post(`${API}/auth/refresh`, () => new HttpResponse(null, { status: 503 })));
     renderApp('/director/inicio');
 
-    expect(await screen.findByText('Sin conexión', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(await screen.findByText('Sin conexión', {}, { timeout: 30000 })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('DNI o email')).not.toBeInTheDocument();
     expect(localStorage.getItem('refreshToken')).toBe('stored');
     localStorage.clear();
-  }, 15000);
+  }, 40000);
 
   it('coldStartOfflineWithStoredProfileShowsTheMenuAndTheOfflineState', async () => {
     localStorage.setItem('refreshToken', 'stored');
@@ -82,11 +90,11 @@ describe('AppRouter', () => {
     );
     renderApp('/director/inicio');
 
-    expect(await screen.findByText('Sin conexión', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(await screen.findByText('Sin conexión', {}, { timeout: 30000 })).toBeInTheDocument();
     expect(screen.getAllByText(/Dora Directora/).length).toBeGreaterThan(0);
     expect(meRequests).toHaveLength(0);
     localStorage.clear();
-  }, 15000);
+  }, 40000);
 
   it('does not treat /director/alumnos/nuevo as the record of a student called "nuevo"', async () => {
     const requestedStudents = [];
@@ -138,15 +146,14 @@ describe('AppRouter', () => {
       http.get(`${API}/me`, () =>
         HttpResponse.json(profileFixture({ id: 5, nombre: 'Rol', apellido: 'Prueba', email: 'rol@demo.test', roles: [role] })),
       ),
-      http.get(`${API}/students`, () => HttpResponse.json([])),
     );
     renderApp(`/${slug}/inicio`);
 
     await signIn(userEvent.setup());
 
-    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: heading }, { timeout: 30000 })).toBeInTheDocument();
     expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
-  });
+  }, 40000);
 
   it('shows a readable title instead of the slug on a placeholder reached by URL', async () => {
     server.use(

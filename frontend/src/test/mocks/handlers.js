@@ -169,6 +169,7 @@ export const handlers = [
   ),
   http.get(`${API}/me/teaching-sections`, () => HttpResponse.json([])),
   http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+  http.get(`${API}/students`, () => HttpResponse.json([])),
   http.get(`${API}/students/:id/documents`, () => HttpResponse.json([])),
   http.get(`${API}/terms`, () => HttpResponse.json([])),
   http.get(`${API}/subjects`, () => HttpResponse.json([])),
