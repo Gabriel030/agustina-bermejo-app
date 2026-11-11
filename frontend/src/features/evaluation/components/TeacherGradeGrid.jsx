@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/Skeleton';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { describeError } from '@/api/describeError';
 import { Button } from '@/components/ui/button';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { usePublishGradeItem, useSaveGradeCells, useTeacherGradeGrid } from '../hooks/useTeacherGradeGrid';
 import {
   collectPendingJobs,
@@ -21,32 +22,6 @@ import {
 } from '../lib/gradeGrid';
 import { GradeGridTable } from './GradeGridTable';
 import { GradeStudentSheet } from './GradeStudentSheet';
-
-const UNSAVED_MESSAGE = 'Tenés notas sin guardar. Si salís las perdés.';
-
-function useUnsavedChangesGuard(active) {
-  useEffect(() => {
-    if (!active) return undefined;
-    const beforeUnload = (event) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    const interceptLink = (event) => {
-      const anchor = event.target.closest?.('a[href]');
-      if (!anchor || anchor.target === '_blank' || !anchor.getAttribute('href').startsWith('/')) return;
-      if (!window.confirm(UNSAVED_MESSAGE)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
-    window.addEventListener('beforeunload', beforeUnload);
-    document.addEventListener('click', interceptLink, true);
-    return () => {
-      window.removeEventListener('beforeunload', beforeUnload);
-      document.removeEventListener('click', interceptLink, true);
-    };
-  }, [active]);
-}
 
 function PublishDialog({ column, students, pending, onCancel, onConfirm }) {
   const label = column ? gradeColumnLabel(column) : '';
@@ -234,6 +209,7 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
         onRetry={retryCell}
         onOpenStudent={setOpenEnrollmentId}
         onPublish={setPublishing}
+        finalBoardHref="/docente/mesas-de-examen"
       />
       <PublishDialog
         column={publishing}

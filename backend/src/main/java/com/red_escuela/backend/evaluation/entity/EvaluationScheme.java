@@ -45,9 +45,14 @@ public class EvaluationScheme {
     @Column(name = "promotion_min_grade")
     private Grade promotionMinGrade;
 
+    @Column(name = "recovery_quota", nullable = false)
+    private int recoveryQuota = DEFAULT_RECOVERY_QUOTA;
+
     @Column(name = "notes", length = 1000)
     private String notes;
 
+    public static final int DEFAULT_RECOVERY_QUOTA = 1;
+    public static final int MAX_RECOVERY_QUOTA = 10;
     private static final int MAX_EXAM_COUNT = 4;
 
     public void define(String name, Integer examCountExpected, Boolean hasFinal, Double finalWeight,

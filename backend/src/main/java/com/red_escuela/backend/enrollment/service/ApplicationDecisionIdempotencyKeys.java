@@ -4,6 +4,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.enrollment.exception.ApplicationDecisionIdempotencyKeyConflictException;
 import com.red_escuela.backend.enrollment.exception.ApplicationDecisionIdempotencyKeyInvalidException;
+import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 
 public final class ApplicationDecisionIdempotencyKeys {
 
@@ -13,10 +14,21 @@ public final class ApplicationDecisionIdempotencyKeys {
     }
 
     public static boolean isReplayOfApproval(ProgramEnrollmentApplication application, String key) {
+        if (application.wasDecidedWithKey(key) && application.getStatus() == ProgramEnrollmentApplicationStatus.EXPIRED) {
+            throw new InvalidProgramEnrollmentApplicationStateException(application.getId(), application.getStatus());
+        }
+        return isReplayOf(application, key, ProgramEnrollmentApplicationStatus.APPROVED);
+    }
+
+    public static boolean isReplayOfRejection(ProgramEnrollmentApplication application, String key) {
+        return isReplayOf(application, key, ProgramEnrollmentApplicationStatus.REJECTED);
+    }
+
+    private static boolean isReplayOf(ProgramEnrollmentApplication application, String key, ProgramEnrollmentApplicationStatus decision) {
         if (!application.wasDecidedWithKey(key)) {
             return false;
         }
-        if (application.getStatus() == ProgramEnrollmentApplicationStatus.APPROVED || application.getStatus() == ProgramEnrollmentApplicationStatus.EXPIRED) {
+        if (application.getStatus() == decision) {
             return true;
         }
         throw new ApplicationDecisionIdempotencyKeyConflictException(application.getId());

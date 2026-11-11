@@ -119,7 +119,7 @@ class LateFeeCorrectionSequencesIT extends AbstractLateFeeCorrectionIT {
             invariants.assertAllBillingInvariantsHold();
             List<Long> ownCharges = new ArrayList<>();
             origins.forEach(origin -> chargesOf(origin).forEach(charge -> ownCharges.add((Long) charge.get("id"))));
-            assertThat(chargeRepository.findChargeIdsWithDaysAfterTheEnrollmentEndAfter(0L, 100_000)).as("sequence " + sequence).doesNotContainAnyElementsOf(ownCharges);
+            assertThat(chargeRepository.findChargeIdsWithDaysAfterTheEnrollmentEndAfter(0L, 100_000)).as("sequence " + sequence).noneMatch(ownCharges::contains);
             MutableClock.INSTANCE.reset();
         }
     }

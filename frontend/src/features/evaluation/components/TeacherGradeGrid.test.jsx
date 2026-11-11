@@ -56,7 +56,7 @@ describe('TeacherGradeGrid', () => {
     toastMock.error.mockClear();
   });
 
-  it('builds one column per scheme item, orders students and disables the final for a non regular student', async () => {
+  it('builds one column per scheme item, orders students and disables the final column for every student', async () => {
     useGrid();
     renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
 
@@ -65,9 +65,19 @@ describe('TeacherGradeGrid', () => {
     expect(screen.getByRole('columnheader', { name: /TP 1/ })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Final/ })).toBeInTheDocument();
     expect(screen.getByLabelText('Final de Acosta, Joaquín')).toBeDisabled();
-    expect(screen.getByLabelText('Final de Benítez, Lucía')).toBeEnabled();
+    expect(screen.getByLabelText('Final de Benítez, Lucía')).toBeDisabled();
+    expect(screen.getAllByLabelText('Se carga desde la mesa de examen')).toHaveLength(2);
     const rows = screen.getAllByRole('row');
     expect(within(rows[1]).getByText('Acosta, Joaquín')).toBeInTheDocument();
+  });
+
+  it('links the final column to the exam boards screen of the docente', async () => {
+    useGrid();
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
+
+    await screen.findByLabelText('Parcial 1 de Benítez, Lucía');
+
+    expect(screen.getByRole('link', { name: 'Ver mesa' })).toHaveAttribute('href', '/docente/mesas-de-examen');
   });
 
   it('shows the previous to new correction and posts every modified cell once', async () => {

@@ -104,6 +104,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `FEATURE_CHANGE_REASON_INVALID` | no | `FeatureChangeReasonInvalidException` | platform |
 | `FEATURE_VALUE_INVALID` | no | `FeatureValueInvalidException` | platform |
 | `FINAL_EXAM_REQUIRES_REGULAR_STUDENT` | no | `FinalExamRequiresRegularStudentException` | evaluation |
+| `FINAL_GRADE_REQUIRES_EXAM_BOARD` | no | `FinalGradeRequiresExamBoardException` | evaluation |
 | `GATEWAY_CURRENCY_NOT_SUPPORTED` | no | `GatewayCurrencyNotSupportedException` | billing |
 | `GRADE_ITEM_TYPE_NOT_PUBLISHABLE` | no | `GradeItemTypeNotPublishableException` | evaluation |
 | `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
@@ -130,6 +131,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_ENROLLMENT_FEE_CONFIGURATION` | no | `InvalidEnrollmentFeeConfigurationException` | billing |
 | `INVALID_EVALUATION_DATE` | no | `InvalidEvaluationDateException` | evaluation |
 | `INVALID_EVALUATION_SCHEME` | no | `InvalidEvaluationSchemeException` | evaluation |
+| `INVALID_EXAM_BOARD_FINAL_GRADE_ENTRY` | no | `InvalidExamBoardFinalGradeEntryException` | evaluation |
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
 | `INVALID_GRADE_CORRECTION_REASON` | no | `InvalidGradeCorrectionReasonException` | evaluation |
 | `INVALID_GRADE_ITEM_WEIGHT` | no | `InvalidGradeItemWeightException` | evaluation |
@@ -383,14 +385,18 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EVALUATION_SCHEME_IN_USE` | no | `EvaluationSchemeInUseException` | evaluation |
 | `EXAM_BOARD_CANCELED` | no | `ExamBoardCanceledException` | evaluation |
 | `EXAM_BOARD_CLOSED` | no | `ExamBoardClosedException` | evaluation |
+| `EXAM_BOARD_FINAL_GRADE_ROW_REJECTED` | no | `ExamBoardFinalGradeRowRejectedException` | evaluation |
 | `EXAM_BOARD_HAS_GRADES` | no | `ExamBoardHasGradesException` | evaluation |
 | `EXAM_BOARD_NOT_YET_TAKEN` | no | `ExamBoardNotYetTakenException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
+| `EXAM_BOARD_REGISTRATION_WITHDRAWN` | no | `ExamBoardRegistrationWithdrawnException` | evaluation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
 | `GRADE_CORRECTION_NO_CHANGE` | no | `GradeCorrectionNoChangeException` | evaluation |
 | `GRADE_CORRECTION_PERIOD_ENDED` | no | `GradeCorrectionPeriodEndedException` | evaluation |
+| `GRADE_ITEM_ALREADY_RECOVERED` | no | `GradeItemAlreadyRecoveredException` | evaluation |
 | `GRADE_ITEM_NOT_PUBLISHED` | no | `GradeItemNotPublishedException` | evaluation |
+| `GRADE_ITEM_NOT_RECOVERABLE` | no | `GradeItemNotRecoverableException` | evaluation |
 | `GRADE_ITEM_PUBLISHED_LOCKED` | no | `GradeItemPublishedLockedException` | evaluation |
 | `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
@@ -463,6 +469,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PAYMENT_RECEIPT_ALREADY_PENDING` | no | `PaymentReceiptAlreadyPendingException` | billing |
 | `PAYMENT_RECEIPT_ALREADY_REVIEWED` | no | `PaymentReceiptAlreadyReviewedException` | billing |
 | `PENDING_BANK_TRANSFER_ON_INVOICE` | no | `PendingBankTransferOnInvoiceException` | billing |
+| `PENDING_COURSEWORK` | no | `PendingCourseworkException` | evaluation |
 | `PENDING_COURSE_ENROLLMENT_APPLICATION` | no | `PendingCourseEnrollmentApplicationException` | enrollment |
 | `PENDING_DEBT` | no | `PendingDebtException` | billing |
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
@@ -480,6 +487,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `RECEIPT_INVOICE_NOT_PAYABLE` | no | `ReceiptInvoiceNotPayableException` | billing |
 | `RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST` | no | `ReceiptMustCoverOldestInvoicesFirstException` | billing |
 | `RECEIPT_TRANSFER_DATE_MISMATCH` | no | `ReceiptTransferDateMismatchException` | billing |
+| `RECOVERY_QUOTA_EXCEEDED` | no | `RecoveryQuotaExceededException` | evaluation |
 | `REFUND_BLOCKED_BY_OVERDUE_DEBT` | no | `RefundBlockedByOverdueDebtException` | billing |
 | `REFUND_EXCEEDS_AVAILABLE_AMOUNT` | no | `RefundExceedsAvailableAmountException` | billing |
 | `REFUND_METHOD_MISMATCH` | no | `RefundMethodMismatchException` | billing |
@@ -501,7 +509,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
 | `STUDENT_HAS_ACTIVE_ENROLLMENTS` | no | `StudentHasActiveEnrollmentsException` | identity |
 | `STUDENT_HAS_DEBT` | no | `StudentHasDebtException` | graduation |
+| `SUBJECT_ALREADY_APPROVED` | no | `SubjectAlreadyApprovedException` | enrollment |
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
+| `SUBJECT_ALREADY_REGULAR` | no | `SubjectAlreadyRegularException` | enrollment |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
@@ -661,6 +671,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/exam-boards/{id}/reschedule` | `ExamBoardChangeController#reschedule` |
 | POST | `/exam-boards/{id}/tribunal` | `ExamBoardController#assignTribunal` |
 | POST | `/grade-items/{id}/corrections` | `GradeCorrectionController#correctPublishedGrade` |
+| POST | `/grade-items/{id}/recovery` | `ExamRecoveryController#recordExamRecovery` |
 | POST | `/graduation-certificates` | `GraduationCertificateController#issue` |
 | POST | `/graduation-requests/{id}/approve` | `GraduationRequestController#approve` |
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |

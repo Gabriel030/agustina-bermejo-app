@@ -14,9 +14,11 @@ public class SectionWaitlistPromoter {
 
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final SectionFinder sectionFinder;
+    private final SubjectRetakeGuard subjectRetakeGuard;
 
     public SectionWaitlistPromoter(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-                                   SectionFinder sectionFinder) {
+                                   SectionFinder sectionFinder, SubjectRetakeGuard subjectRetakeGuard) {
+        this.subjectRetakeGuard = subjectRetakeGuard;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.sectionFinder = sectionFinder;
     }
@@ -32,7 +34,11 @@ public class SectionWaitlistPromoter {
             return;
         }
         subjectSectionEnrollmentRepository
-                .findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
+                .findBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
+                .stream()
+                .filter(candidate -> !subjectRetakeGuard.isAlreadyPassed(
+                        candidate.getProgramEnrollment().getId(), candidate.subjectId(), candidate.getId()))
+                .findFirst()
                 .ifPresent(next -> {
                     next.setStatus(EnrollmentStatus.ENROLLED);
                     subjectSectionEnrollmentRepository.save(next);

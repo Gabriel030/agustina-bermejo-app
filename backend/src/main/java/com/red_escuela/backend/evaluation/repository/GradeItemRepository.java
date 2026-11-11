@@ -25,6 +25,8 @@ public interface GradeItemRepository extends JpaRepository<GradeItem, Long> {
 
     List<GradeItem> findByExamBoardIdAndProgramSubjectSectionEnrollmentId(Long examBoardId, Long enrollmentId);
 
+    List<GradeItem> findByExamBoardIdAndCourseSubjectSectionEnrollmentId(Long examBoardId, Long enrollmentId);
+
     Optional<GradeItem> findByProgramSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
             Long enrollmentId, GradeItemType type, Integer sequenceNumber);
 

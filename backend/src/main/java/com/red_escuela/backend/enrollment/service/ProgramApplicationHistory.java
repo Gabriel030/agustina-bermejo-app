@@ -17,6 +17,7 @@ import java.util.Locale;
 public class ProgramApplicationHistory {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_SEARCH_LENGTH = 100;
     private static final List<ProgramEnrollmentApplicationStatus> RESOLVED = List.of(
             ProgramEnrollmentApplicationStatus.APPROVED, ProgramEnrollmentApplicationStatus.REJECTED, ProgramEnrollmentApplicationStatus.EXPIRED);
 
@@ -32,7 +33,7 @@ public class ProgramApplicationHistory {
     public ProgramEnrollmentApplicationPage searchResolved(String status, String search, int page, int size) {
         List<ProgramEnrollmentApplicationStatus> statuses = statusesOf(status);
         PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE));
-        Page<ProgramEnrollmentApplication> result = applicationRepository.searchByStatuses(statuses, patternOf(search), pageRequest);
+        Page<ProgramEnrollmentApplication> result = applicationRepository.searchByStatuses(statuses, patternOf(search), dniPatternOf(search), pageRequest);
         return new ProgramEnrollmentApplicationPage(reviewViews.viewsOf(result.getContent()), result.getTotalElements());
     }
 
@@ -52,10 +53,31 @@ public class ProgramApplicationHistory {
     }
 
     private String patternOf(String search) {
-        if (search == null || search.isBlank()) {
+        String term = termOf(search);
+        if (term.isEmpty()) {
             return "%";
         }
-        String escaped = search.trim().toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_");
-        return "%" + escaped + "%";
+        return "%" + escapeLike(term.toLowerCase(Locale.ROOT)) + "%";
+    }
+
+    private String dniPatternOf(String search) {
+        String term = termOf(search);
+        if (term.isEmpty()) {
+            return "%";
+        }
+        String digits = term.replaceAll("[.\\s-]", "");
+        return "%" + escapeLike(digits.isEmpty() ? term : digits) + "%";
+    }
+
+    private String termOf(String search) {
+        if (search == null) {
+            return "";
+        }
+        String term = search.trim();
+        return term.length() > MAX_SEARCH_LENGTH ? term.substring(0, MAX_SEARCH_LENGTH) : term;
+    }
+
+    private String escapeLike(String value) {
+        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 }

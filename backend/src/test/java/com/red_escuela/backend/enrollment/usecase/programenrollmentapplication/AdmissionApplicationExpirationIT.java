@@ -408,4 +408,44 @@ class AdmissionApplicationExpirationIT extends AbstractIntegrationTest {
                 ProgramEnrollmentApplicationStatus.PENDING)).isEmpty();
         assertThat(applicationRepository.existsApprovedWithUnpaidAdmissionInvoice(application.getStudent().getId(), application.getProgram().getId())).isFalse();
     }
+
+    @Test
+    @Tag("D-252")
+    void replayingAnApprovalWithTheSameKeyAfterTheApplicationExpiredIsRejectedAsAnInvalidState() {
+        ProgramEnrollmentApplication application = requestApplication();
+        Person preceptor = persistPreceptor();
+        transactionTemplate.execute(status -> approveUseCase.approve(
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-1")).getAdmissionInvoice().getId());
+        MutableClock.INSTANCE.setDate(ADMISSION_END.plusDays(1));
+        assertThat(expiration.expireWhenAdmissionClosedAndUnpaid(application.getId())).isTrue();
+
+        assertThatThrownBy(() -> transactionTemplate.execute(status -> approveUseCase.approve(
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-1"))))
+                .isInstanceOf(com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException.class);
+    }
+
+    @Test
+    @Tag("D-252")
+    void simultaneousApprovalsWithTheSameAndADifferentKeyIssueASingleAdmissionInvoice() throws Exception {
+        ProgramEnrollmentApplication application = requestApplication();
+        Person preceptor = persistPreceptor();
+        java.util.concurrent.Callable<Long> sameKey = () -> transactionTemplate.execute(status -> approveUseCase.approve(
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-same")).getAdmissionInvoice().getId());
+        java.util.concurrent.Callable<Long> otherKey = () -> transactionTemplate.execute(status -> approveUseCase.approve(
+                new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor).withIdempotencyKey("key-other")).getAdmissionInvoice().getId());
+
+        List<com.red_escuela.backend.config.ConcurrentRace.Outcome<Long>> outcomes =
+                com.red_escuela.backend.config.ConcurrentRace.run(List.of(sameKey, sameKey, otherKey));
+
+        List<Long> invoiceIds = outcomes.stream().filter(com.red_escuela.backend.config.ConcurrentRace.Outcome::succeeded)
+                .map(com.red_escuela.backend.config.ConcurrentRace.Outcome::value).distinct().toList();
+        assertThat(invoiceIds).hasSize(1);
+        assertThat(outcomes).filteredOn(outcome -> !outcome.succeeded())
+                .allSatisfy(outcome -> assertThat(outcome.failure()).isInstanceOf(com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException.class));
+        assertThat(outcomes).filteredOn(com.red_escuela.backend.config.ConcurrentRace.Outcome::succeeded).isNotEmpty();
+        Long accountId = jdbc.queryForObject("select student_current_account_id from invoice where id = ?", Long.class, invoiceIds.get(0));
+        assertThat(jdbc.queryForObject("select count(*) from invoice where student_current_account_id = ?", Long.class, accountId)).isEqualTo(1L);
+        assertThat(statusOf(application)).isEqualTo(ProgramEnrollmentApplicationStatus.APPROVED);
+        invariants.assertAllBillingInvariantsHold();
+    }
 }

@@ -25,17 +25,18 @@ public interface ProgramEnrollmentApplicationRepository extends JpaRepository<Pr
             select a from ProgramEnrollmentApplication a
             where a.status in :statuses
               and (lower(concat(coalesce(a.student.person.name, ''), ' ', coalesce(a.student.person.lastname, ''))) like :pattern escape '!'
-                   or coalesce(a.student.person.dni, '') like :pattern escape '!')
+                   or coalesce(a.student.person.dni, '') like :dniPattern escape '!')
             order by a.decidedAt desc, a.id desc
             """,
             countQuery = """
             select count(a) from ProgramEnrollmentApplication a
             where a.status in :statuses
               and (lower(concat(coalesce(a.student.person.name, ''), ' ', coalesce(a.student.person.lastname, ''))) like :pattern escape '!'
-                   or coalesce(a.student.person.dni, '') like :pattern escape '!')
+                   or coalesce(a.student.person.dni, '') like :dniPattern escape '!')
             """)
     Page<ProgramEnrollmentApplication> searchByStatuses(@Param("statuses") Collection<ProgramEnrollmentApplicationStatus> statuses,
-                                                        @Param("pattern") String pattern, Pageable pageable);
+                                                        @Param("pattern") String pattern,
+                                                        @Param("dniPattern") String dniPattern, Pageable pageable);
 
     @Query("""
             select a.id as applicationId, concat(str(c.intake), ' ', str(extract(year from c.cursadaStart))) as name

@@ -62,7 +62,7 @@ describe('role menu manifest', () => {
 
   it('drops groups left without visible items', () => {
     const withoutAcademic = menuItemsFor('director').filter(
-      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'periodos', 'constancias'].some((slug) => item.to.endsWith(slug)),
+      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'periodos', 'constancias'].some((slug) => item.to.endsWith(slug)),
     );
     expect(groupMenuItems('director', withoutAcademic).map((group) => group.id)).not.toContain('academic');
   });
@@ -76,5 +76,19 @@ describe('role menu manifest', () => {
 
   it('has no grouping for roles without a definition', () => {
     expect(groupMenuItems('alumno', menuItemsFor('alumno'))).toBeNull();
+  });
+
+  it.each(['docente', 'preceptor', 'administrativo', 'director'])('exposes the exam boards screen to %s with its route', (role) => {
+    expect(pagesFor(role)).toContain('mesas-de-examen');
+    expect(roleRoutesFor(role).map((route) => route.path)).toContain('mesas-de-examen');
+  });
+
+  it.each(['alumno', 'platform_admin'])('keeps the exam boards screen away from %s', (role) => {
+    expect(pagesFor(role)).not.toContain('mesas-de-examen');
+  });
+
+  it('lists the exam boards of the director under the academic group', () => {
+    const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
+    expect(academic.items.map((item) => item.to)).toContain('/director/mesas-de-examen');
   });
 });
