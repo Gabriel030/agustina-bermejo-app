@@ -40,14 +40,30 @@ public class ProgramPrerequisiteEvaluator {
     }
 
     public List<PrerequisiteAssessment> assess(Long programEnrollmentId, Long subjectId) {
-        ProgramEnrollment programEnrollment = programEnrollmentRepository.findById(programEnrollmentId)
-                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
+        ProgramEnrollment programEnrollment = findProgramEnrollment(programEnrollmentId);
         Long programId = programEnrollment.getProgram().getId();
         ProgramSubjectView programSubject = programCurriculumFinder.findProgramSubject(programId, subjectId)
                 .orElseThrow(() -> new SubjectNotInProgramPlanException(subjectId, programId));
+        return assessPrerequisites(programEnrollmentId, subjectId, programSubject);
+    }
+
+    public boolean areAllMetOrSubjectOutsidePlan(Long programEnrollmentId, Long subjectId) {
+        Long programId = findProgramEnrollment(programEnrollmentId).getProgram().getId();
+        return programCurriculumFinder.findProgramSubject(programId, subjectId)
+                .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject).stream()
+                        .allMatch(PrerequisiteAssessment::met))
+                .orElse(true);
+    }
+
+    private ProgramEnrollment findProgramEnrollment(Long programEnrollmentId) {
+        return programEnrollmentRepository.findById(programEnrollmentId)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
+    }
+
+    private List<PrerequisiteAssessment> assessPrerequisites(
+            Long programEnrollmentId, Long subjectId, ProgramSubjectView programSubject) {
         boolean waived = directorApprovalRequestRepository.hasApproved(
                 programEnrollmentId, subjectId, ExceptionType.PREREQUISITE_WAIVER);
-
         return programCurriculumFinder.findPrerequisites(programSubject.id()).stream()
                 .map(prerequisite -> waived
                         ? assessment(prerequisite, PrerequisiteStanding.WAIVED)
