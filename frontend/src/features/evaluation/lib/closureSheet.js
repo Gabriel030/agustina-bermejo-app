@@ -9,6 +9,8 @@ export const CLOSURE_RESULT = {
   PENDING: { label: 'Pendiente', kpiLabel: 'Pendientes', tone: 'neutral', order: 5, summaryKey: 'pending' },
 };
 
+export const MIN_REASON_LENGTH = 10;
+
 export const RESULT_FILTER_ID = 'resultFilter';
 export const WITHDRAWN_FILTER_VALUE = 'WITHDRAWN';
 
@@ -156,4 +158,72 @@ export function activeStudents(sheet) {
 
 export function withdrawnCount(sheet) {
   return sheet.students.length - activeStudents(sheet).length;
+}
+
+export const STAFF_STATUS_DESCRIPTION = {
+  DRAFT_AVAILABLE: 'Calculado por el sistema con las notas publicadas. El docente todavía no entregó la planilla.',
+  TEACHER_CONFIRMED: 'El docente entregó la planilla. Falta la aprobación del Administrativo.',
+  CLOSED: 'El cierre está aprobado y no se puede modificar.',
+  REOPENED: 'Dirección reabrió el cierre. El docente tiene que revisar la planilla y volver a confirmarla.',
+};
+
+export const EXPORT_FORMATS = {
+  xlsx: { label: 'Planilla de cálculo (.xlsx)', fallbackName: 'cierre.xlsx' },
+  pdf: { label: 'PDF del acta', fallbackName: 'acta.pdf' },
+};
+
+export function closedWithoutTeacher(sheet) {
+  return sheet.status !== 'TEACHER_CONFIRMED';
+}
+
+export function canApproveClosure(sheet) {
+  return sheet.availability.canApprove === true && sheet.status !== 'CLOSED';
+}
+
+export function approveBlockedMessage(sheet) {
+  if (canApproveClosure(sheet)) return null;
+  const { blockedReason } = sheet.availability;
+  if (blockedReason === 'PUBLISHED_GRADES_INCOMPLETE') {
+    const labels = unpublishedColumns(sheet).map(columnLabel);
+    return labels.length > 0 ? `No se puede cerrar hasta publicar: ${labels.join(', ')}.` : 'No se puede cerrar hasta publicar todas las evaluaciones.';
+  }
+  if (sheet.status === 'CLOSED' || blockedReason === 'ALREADY_CLOSED') return 'El acta ya está cerrada.';
+  return 'No se puede cerrar el acta en este momento.';
+}
+
+export function approveHint(sheet) {
+  const blocked = approveBlockedMessage(sheet);
+  if (blocked) return blocked;
+  const pending = conditionalWithoutException(sheet);
+  const prefix = pending > 0 ? `Hay ${pending} ${pending === 1 ? 'alumno con promoción condicionada que va' : 'alumnos con promoción condicionada que van'} a final, salvo que Dirección los exceptúe. ` : '';
+  const tail = closedWithoutTeacher(sheet) ? 'El docente no confirmó: el acta deja constancia de ello.' : 'Aprobar emite el acta con libro y folio y no se puede modificar.';
+  return `${prefix}${tail}`;
+}
+
+export function conditionalWithoutException(sheet) {
+  return activeStudents(sheet).filter((row) => row.suggestedResult === 'PROMOTION_CONDITIONAL' && !row.promotionExempted).length;
+}
+
+export function approvalTotals(sheet) {
+  const active = activeStudents(sheet);
+  const count = (...results) => active.filter((row) => results.includes(row.suggestedResult)).length;
+  return {
+    promote: count('PROMOTES') + active.filter((row) => row.suggestedResult === 'PROMOTION_CONDITIONAL' && row.promotionExempted).length,
+    goToFinal: count('GOES_TO_FINAL') + conditionalWithoutException(sheet),
+    failed: count('FAILED', 'FREE'),
+    pending: count('PENDING'),
+  };
+}
+
+export function canGrantException(row, sheet) {
+  return sheet.status !== 'CLOSED' && !isWithdrawn(row) && row.suggestedResult === 'PROMOTION_CONDITIONAL' && row.promotionExempted !== true;
+}
+
+export function canRevokeException(row, sheet) {
+  return sheet.status !== 'CLOSED' && !isWithdrawn(row) && row.promotionExempted === true;
+}
+
+export function missingDocumentsText(row) {
+  const missing = row.administrative?.missingDocuments ?? [];
+  return missing.length > 0 ? `falta ${missing.join(', ')}` : null;
 }

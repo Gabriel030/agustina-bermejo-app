@@ -13,6 +13,7 @@ import {
   formatAverage,
   formatScore,
   isWithdrawn,
+  missingDocumentsText,
   paymentsFilterValue,
   resultFilterLabel,
   resultFilterValue,
@@ -46,7 +47,7 @@ function gradeCell(row, column) {
   );
 }
 
-export function buildClosureColumns(sheet, { onOpenPrerequisites }) {
+export function buildClosureColumns(sheet, { onOpenPrerequisites, detail = false, rowActions = null }) {
   const exams = examColumns(sheet);
   return [
     {
@@ -124,6 +125,16 @@ export function buildClosureColumns(sheet, { onOpenPrerequisites }) {
     requirementColumn('gradeOk', 'No', 'Ambos parciales con nota de promoción', (row) => row.requirements.grade),
     {
       ...requirementColumn('documents', 'Le', 'Legajo completo', (row) => row.administrative.documentsComplete),
+      cell: ({ row }) => {
+        if (isWithdrawn(row.original)) return null;
+        const missing = detail ? missingDocumentsText(row.original) : null;
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <ClosureRequirementMark label="Legajo completo" value={row.original.administrative.documentsComplete} />
+            {missing && <span className="text-xs text-ink-faint">{missing}</span>}
+          </span>
+        );
+      },
       accessorFn: (row) => (isWithdrawn(row) ? 'WITHDRAWN' : documentsFilterValue(row)),
       filterFn: multiSelectFilter,
       enableColumnFilter: true,
@@ -142,5 +153,15 @@ export function buildClosureColumns(sheet, { onOpenPrerequisites }) {
       enableSorting: false,
       cell: ({ row }) => <ClosureAlertsCell row={row.original} onOpenPrerequisites={onOpenPrerequisites} />,
     },
+    ...(rowActions
+      ? [
+          {
+            id: 'actions',
+            header: () => <span className="sr-only">Acciones</span>,
+            enableSorting: false,
+            cell: ({ row }) => rowActions(row.original),
+          },
+        ]
+      : []),
   ];
 }

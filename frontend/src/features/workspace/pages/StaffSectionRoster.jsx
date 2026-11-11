@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ClipboardList, Megaphone } from 'lucide-react';
+import { ClipboardList, FileCheck2, Megaphone } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatCard } from '@/components/StatCard';
@@ -155,6 +155,10 @@ export function StaffSectionRoster() {
                 Notas
               </Button>
             )}
+            <Button variant="outline" className="max-md:flex-1" disabled={!cycle} onClick={() => navigate(`${basePath}/cierre-de-comision/${sectionId}?type=${sectionType}`)}>
+              <FileCheck2 className="mr-1.5 h-4 w-4" />
+              Cierre
+            </Button>
             <Button variant="outline" className="max-md:flex-1" onClick={() => navigate(`${basePath}/oferta-academica/ciclos/${cycleId}/comisiones/${sectionId}/avisos`)}>
               <Megaphone className="mr-1.5 h-4 w-4" />
               Avisos y lectura

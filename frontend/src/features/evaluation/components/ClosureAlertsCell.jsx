@@ -18,6 +18,7 @@ export function ClosureAlertsCell({ row, onOpenPrerequisites }) {
       </span>
     );
   });
+  if (row.promotionExempted) items.push(<span key="promotionExempted" className="px-1.5 text-xs font-semibold text-ink-soft">★ Exceptuado por Dirección</span>);
   if (row.exempted) items.push(<span key="exempted" className="px-1.5 text-xs font-semibold text-ink-soft">★ Exceptuado</span>);
   if (row.teacherObservation) items.push(<span key="obs" title={row.teacherObservation} aria-label={`Observación del docente: ${row.teacherObservation}`} role="img" className="px-1.5 text-xs text-ink-soft">✎</span>);
   return items.length > 0 ? <div className="flex items-center gap-0.5">{items}</div> : <span className="text-xs text-ink-faint">—</span>;
