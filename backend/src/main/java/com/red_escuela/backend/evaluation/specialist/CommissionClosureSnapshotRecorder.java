@@ -41,11 +41,14 @@ public class CommissionClosureSnapshotRecorder {
         List<ClosureStudentAssessment> assessments = requirementsCalculator.calculate(closure.getSectionKind(), closure.getSectionId());
         Map<Long, CommissionClosureStudent> existing = closureStudentRepository.findByClosureId(closureId).stream()
                 .collect(Collectors.toMap(CommissionClosureStudent::getEnrollmentId, Function.identity()));
-        List<ClosureStudentAssessment> decided = assessments.stream().filter(a -> a.finalCondition().isPresent()).toList();
-        Set<Long> decidedIds = decided.stream().map(ClosureStudentAssessment::enrollmentId).collect(Collectors.toSet());
+        Set<Long> assessedIds = assessments.stream().map(ClosureStudentAssessment::enrollmentId).collect(Collectors.toSet());
         closureStudentRepository.deleteAll(existing.values().stream()
-                .filter(row -> !decidedIds.contains(row.getEnrollmentId())).toList());
-        closureStudentRepository.saveAll(decided.stream()
+                .filter(row -> !assessedIds.contains(row.getEnrollmentId())
+                        || (row.getTeacherObservation() == null && isPending(assessments, row.getEnrollmentId())))
+                .toList());
+        closureStudentRepository.saveAll(assessments.stream()
+                .filter(a -> a.finalCondition().isPresent() || existing.get(a.enrollmentId()) != null
+                        && existing.get(a.enrollmentId()).getTeacherObservation() != null)
                 .map(assessment -> snapshotRowOf(closureId, assessment, existing.get(assessment.enrollmentId())))
                 .toList());
         List<Long> pending = assessments.stream().filter(a -> a.finalCondition().isEmpty())
@@ -59,7 +62,7 @@ public class CommissionClosureSnapshotRecorder {
                 .id(previous == null ? null : previous.getId())
                 .closureId(closureId)
                 .enrollmentId(assessment.enrollmentId())
-                .finalCondition(assessment.finalCondition().orElseThrow())
+                .finalCondition(assessment.finalCondition().orElse(null))
                 .promotionGrade(assessment.promotionGrade())
                 .attendanceOk(assessment.attendanceOk())
                 .gradeOk(assessment.gradeOk())
@@ -68,5 +71,9 @@ public class CommissionClosureSnapshotRecorder {
                 .correlativesOk(assessment.correlativesOk())
                 .teacherObservation(previous == null ? null : previous.getTeacherObservation())
                 .build();
+    }
+
+    private boolean isPending(List<ClosureStudentAssessment> assessments, Long enrollmentId) {
+        return assessments.stream().anyMatch(a -> a.enrollmentId().equals(enrollmentId) && a.finalCondition().isEmpty());
     }
 }

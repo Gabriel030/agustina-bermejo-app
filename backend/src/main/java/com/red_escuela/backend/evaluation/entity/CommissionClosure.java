@@ -74,4 +74,36 @@ public class CommissionClosure {
     @Version
     @Column(name = "lock_version", nullable = false)
     private Long lockVersion;
+
+    public boolean isOpenForTeacher() {
+        return status == ClosureStatus.DRAFT_AVAILABLE || status == ClosureStatus.REOPENED;
+    }
+
+    public void close(Long closerPersonId, LocalDateTime at, String reportNumber, String book, String folio,
+            boolean withoutTeacherConfirmation) {
+        this.status = ClosureStatus.CLOSED;
+        this.closedById = closerPersonId;
+        this.closedAt = at;
+        this.book = book;
+        this.folio = folio;
+        this.closedWithoutTeacherConfirmation = withoutTeacherConfirmation;
+        if (this.reportNumber == null) {
+            this.reportNumber = reportNumber;
+        }
+    }
+
+    public void reopen() {
+        this.status = ClosureStatus.REOPENED;
+        this.reportVersion = reportVersion + 1;
+        this.confirmedById = null;
+        this.confirmedAt = null;
+        this.deliveredAt = null;
+    }
+
+    public void confirmByTeacher(Long confirmerPersonId, LocalDateTime at) {
+        this.status = ClosureStatus.TEACHER_CONFIRMED;
+        this.confirmedById = confirmerPersonId;
+        this.confirmedAt = at;
+        this.deliveredAt = at;
+    }
 }

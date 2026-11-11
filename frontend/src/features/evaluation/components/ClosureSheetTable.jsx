@@ -7,8 +7,8 @@ import { buildClosureColumns } from './closureColumns';
 const HIDDEN_COLUMNS = { [RESULT_FILTER_ID]: false };
 const INITIAL_SORTING = [{ id: 'student', desc: false }];
 
-export function ClosureSheetTable({ sheet, columnFilters, onColumnFiltersChange, onOpenPrerequisites }) {
-  const columns = useMemo(() => buildClosureColumns(sheet, { onOpenPrerequisites }), [sheet, onOpenPrerequisites]);
+export function ClosureSheetTable({ sheet, columnFilters, onColumnFiltersChange, onOpenPrerequisites, detail = false, rowActions = null }) {
+  const columns = useMemo(() => buildClosureColumns(sheet, { onOpenPrerequisites, detail, rowActions }), [sheet, onOpenPrerequisites, detail, rowActions]);
   return (
     <DataTable
       columns={columns}

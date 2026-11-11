@@ -32,7 +32,7 @@ function student(enrollmentId, lastname, name, overrides = {}) {
     lastname,
     name,
     dni: `40000${enrollmentId}`,
-    enrollmentStatus: 'ACTIVE',
+    enrollmentStatus: 'IN_PROGRESS',
     grades: [grade(1, 8), grade(2, 9)],
     retakesUsed: 0,
     average: 8.5,
@@ -43,6 +43,7 @@ function student(enrollmentId, lastname, name, overrides = {}) {
     alerts: [],
     exempted: false,
     teacherObservation: null,
+    promotionExempted: false,
     ...overrides,
   };
 }
@@ -112,6 +113,9 @@ export function closureSheet(overrides = {}) {
     summary: summaryOf(students),
     reportNumber: null,
     closedAt: null,
+    reportVersion: 1,
+    book: null,
+    folio: null,
     ...overrides,
   };
 }
@@ -126,23 +130,64 @@ export function closureSheetWithUnpublishedExam() {
 }
 
 export const closurePrerequisites = [
-  { subjectCode: 'ANAT', subjectName: 'Anatomía y Fisiología I', requirementType: 'APPROVED', studentStatus: 'REGULAR', finalScore: null, met: false, academicRecordLink: null },
-  { subjectCode: 'SALU', subjectName: 'Introducción a la Salud Pública', requirementType: 'PASSED_COURSEWORK', studentStatus: 'WAIVED', finalScore: null, met: true, academicRecordLink: null },
+  { subjectCode: 'ANAT', subjectName: 'Anatomía y Fisiología I', requirementType: 'APPROVED', studentStatus: 'REGULAR', met: false },
+  { subjectCode: 'SALU', subjectName: 'Introducción a la Salud Pública', requirementType: 'PASSED_COURSEWORK', studentStatus: 'WAIVED', met: true },
 ];
 
-const plannedEndpoint = (path) => new RegExp(`^${API.replace(/[.]/g, '\\.')}${path}$`);
-
 export function closureSheetPath(sectionId = 7, kind = 'program') {
-  return plannedEndpoint(`/${kind}-sections/${sectionId}/closure-sheet`);
+  return `${API}/${kind}-sections/${sectionId}/closure-sheet`;
 }
 
 export function closureConfirmPath(sectionId = 7, kind = 'program') {
-  return plannedEndpoint(`/${kind}-sections/${sectionId}/closure/confirm`);
+  return `${API}/${kind}-sections/${sectionId}/closure/confirm`;
+}
+
+export function closureActionPath(action, sectionId = 7, kind = 'program') {
+  return `${API}/${kind}-sections/${sectionId}/closure/${action}`;
+}
+
+export function closureExceptionPath(enrollmentId, sectionId = 7, kind = 'program') {
+  return `${API}/${kind}-sections/${sectionId}/closure/students/${enrollmentId}/exception`;
+}
+
+export function closureExportPath(closureId = 31) {
+  return `${API}/commission-closures/${closureId}/export`;
+}
+
+export function closedClosureSheet(overrides = {}) {
+  return closureSheet({
+    status: 'CLOSED',
+    availability: { canConfirm: false, canApprove: false, blockedReason: 'ALREADY_CLOSED' },
+    reportNumber: 'ACTA-2026-0042',
+    reportVersion: 1,
+    book: 'L28',
+    folio: '93',
+    closedAt: '2026-07-14T10:00:00',
+    ...overrides,
+  });
+}
+
+export function closurePrerequisitesPath(closureId = 31) {
+  return `${API}/commission-closures/${closureId}/students/:enrollmentId/prerequisites`;
+}
+
+function withoutNulls(value) {
+  if (Array.isArray(value)) {
+    return value.map(withoutNulls);
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== null).map(([key, entry]) => [key, withoutNulls(entry)]));
+  }
+  return value;
+}
+
+export function closureSheetResponse(sheet) {
+  return HttpResponse.json(withoutNulls(sheet));
 }
 
 export function mockClosureSheetEndpoints(server, sheet, { sectionId = 7, kind = 'program' } = {}) {
   server.use(
-    http.get(closureSheetPath(sectionId, kind), () => HttpResponse.json(sheet)),
-    http.get(plannedEndpoint(`/commission-closures/${sheet.closureId}/students/\\d+/prerequisites`), () => HttpResponse.json(closurePrerequisites)),
+    http.get(closureSheetPath(sectionId, kind), () => closureSheetResponse(sheet)),
+    http.get(closurePrerequisitesPath(sheet.closureId), () => HttpResponse.json(closurePrerequisites)),
   );
 }
