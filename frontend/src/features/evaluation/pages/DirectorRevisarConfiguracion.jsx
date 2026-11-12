@@ -26,7 +26,7 @@ function ValorFecha({ label, valor }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-semibold text-ink-soft">{label}</label>
-      <Input value={formatearFecha(valor) ?? '—'} readOnly className="cursor-default text-[13.5px]" />
+      <Input value={formatearFecha(valor) ?? '—'} readOnly className="cursor-default text-size-13-5" />
     </div>
   );
 }
@@ -104,7 +104,7 @@ export function DirectorRevisarConfiguracion() {
 
   return (
     <PageContainer>
-      <Link to={CONFIG_TRAY} className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+      <Link to={CONFIG_TRAY} className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink">
         ← Configuración de evaluación
       </Link>
       <div>
@@ -116,9 +116,9 @@ export function DirectorRevisarConfiguracion() {
         </div>
         {config.instructors?.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-[11.5px] font-semibold text-ink-faint">Instructores:</span>
+            <span className="text-size-11-5 font-semibold text-ink-faint">Instructores:</span>
             {config.instructors.map((i) => (
-              <span key={i.name} className="rounded-full bg-accent-soft px-2.5 py-1 text-[11.5px] font-bold text-primary">
+              <span key={i.name} className="rounded-full bg-accent-soft px-2.5 py-1 text-size-11-5 font-bold text-primary">
                 {i.name} <span className="font-semibold opacity-75">· {ROL_INSTRUCTOR_LABEL[i.role] ?? i.role}</span>
               </span>
             ))}
@@ -128,35 +128,35 @@ export function DirectorRevisarConfiguracion() {
 
       <GlassCard className="flex flex-wrap items-center gap-7 p-4">
         <div>
-          <div className="text-[11px] font-semibold uppercase text-ink-faint">Apertura del cuatrimestre</div>
+          <div className="text-size-11 font-semibold uppercase text-ink-faint">Apertura del cuatrimestre</div>
           <div className="text-sm font-bold text-ink">{formatearFecha(config.termStartDate) ?? '—'}</div>
         </div>
         <div>
-          <div className="text-[11px] font-semibold uppercase text-ink-faint">Cierre del cuatrimestre</div>
+          <div className="text-size-11 font-semibold uppercase text-ink-faint">Cierre del cuatrimestre</div>
           <div className="text-sm font-bold text-ink">{formatearFecha(config.termEndDate) ?? '—'}</div>
         </div>
         <div>
-          <div className="text-[11px] font-semibold uppercase text-warning">Apertura de inscripción</div>
+          <div className="text-size-11 font-semibold uppercase text-warning">Apertura de inscripción</div>
           <div className="text-sm font-bold text-ink">{formatearFecha(config.termEnrollmentStart) ?? '—'}</div>
         </div>
       </GlassCard>
 
       <GlassCard className="p-5">
-        <div className="mb-4 flex items-center gap-2 font-heading text-[15px] font-semibold text-ink">
+        <div className="mb-4 flex items-center gap-2 font-heading text-size-15 font-semibold text-ink">
           Esquema institucional vigente
           <span className="text-xs font-normal text-ink-faint">· {config.evaluationSchemeName ?? 'Sin asignar'}</span>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <div className="text-[11.5px] font-semibold uppercase text-ink-faint">Mínimo para quedar regular</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">Mínimo para quedar regular</div>
             <div className="font-heading text-xl font-bold text-ink">{config.minRegularGrade ?? '—'}</div>
           </div>
           <div>
-            <div className="text-[11.5px] font-semibold uppercase text-ink-faint">Nota para aprobar el final</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">Nota para aprobar el final</div>
             <div className="font-heading text-xl font-bold text-ink">{config.minApprovalGrade ?? '—'}</div>
           </div>
           <div>
-            <div className="text-[11.5px] font-semibold uppercase text-ink-faint">¿Es promocional?</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">¿Es promocional?</div>
             {config.promotionMinGrade ? (
               <div className="font-heading text-xl font-bold text-success">
                 Sí <span className="text-sm font-semibold text-ink-faint">· corte {config.promotionMinGrade}</span>
@@ -166,14 +166,14 @@ export function DirectorRevisarConfiguracion() {
             )}
           </div>
           <div>
-            <div className="text-[11.5px] font-semibold uppercase text-ink-faint">Parciales esperados</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">Parciales esperados</div>
             <div className="font-heading text-xl font-bold text-ink">{cantidadParciales}</div>
           </div>
         </div>
       </GlassCard>
 
       <GlassCard className="flex flex-col gap-5 p-5">
-        <div className="font-heading text-[15px] font-semibold text-ink">Configuración propuesta por el Docente</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">Configuración propuesta por el Docente</div>
 
         <div className="flex flex-col gap-3">
           <label className="text-xs font-semibold text-ink-soft">Trabajos prácticos ({config.tpCount ?? '—'})</label>

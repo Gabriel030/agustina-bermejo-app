@@ -19,7 +19,7 @@ function Row({ icon: Icon, blocked = false, title, children, action }) {
       </div>
       <div className="min-w-56 flex-1">
         <b className="text-sm font-bold text-ink">{title}</b>
-        <p className={`mt-0.5 text-[13px] ${blocked ? 'text-danger' : 'text-ink-soft'}`}>{children}</p>
+        <p className={`mt-0.5 text-size-13 ${blocked ? 'text-danger' : 'text-ink-soft'}`}>{children}</p>
       </div>
       {action}
     </div>

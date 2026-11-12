@@ -94,22 +94,22 @@ export function AlumnoMateriaDetalle() {
       <GlassCard className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Profesor</div>
-          <div className="mt-1 text-[13.5px] font-semibold text-ink">{inscripcion.instructorTitular ?? 'A confirmar'}</div>
+          <div className="mt-1 text-size-13-5 font-semibold text-ink">{inscripcion.instructorTitular ?? 'A confirmar'}</div>
         </div>
         <div>
           <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Adjunto</div>
-          <div className="mt-1 text-[13.5px] font-semibold text-ink">{inscripcion.instructorAdjunto ?? '—'}</div>
+          <div className="mt-1 text-size-13-5 font-semibold text-ink">{inscripcion.instructorAdjunto ?? '—'}</div>
         </div>
         <div>
           <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Horarios</div>
-          <div className="mt-1 text-[13.5px] font-semibold text-ink">{inscripcion.schedule ?? 'A confirmar'}</div>
+          <div className="mt-1 text-size-13-5 font-semibold text-ink">{inscripcion.schedule ?? 'A confirmar'}</div>
         </div>
       </GlassCard>
 
       <SeccionAsistencia sectionEnrollmentId={id} />
 
       <GlassCard className="flex flex-col gap-4 p-5">
-        <div className="font-heading text-[15px] font-semibold text-ink">Notas</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">Notas</div>
         {cargandoNotas ? (
           <Skeleton className="h-16" />
         ) : (

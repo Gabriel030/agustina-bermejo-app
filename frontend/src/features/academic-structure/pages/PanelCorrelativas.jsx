@@ -46,15 +46,15 @@ function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
     return (
       <div className="flex items-start justify-between rounded-xl bg-neutral-bg/60 px-3 py-2">
         <div>
-          <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{selected.subjectCode}</span>
-          <p className="text-[13.5px] font-medium text-ink">{selected.subjectName}</p>
+          <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{selected.subjectCode}</span>
+          <p className="text-size-13-5 font-medium text-ink">{selected.subjectName}</p>
         </div>
         <Button
           variant="subtle"
           size="inline"
           type="button"
           onClick={() => onSelect(null)}
-          className="text-[12px] underline"
+          className="text-size-12 underline"
           >
           Cambiar
         </Button>
@@ -80,12 +80,12 @@ function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
             onClick={() => onSelect(ps)}
             className="flex flex-col gap-0.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-neutral-bg/60"
           >
-            <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{ps.subjectCode}</span>
-            <span className="text-[13.5px] font-medium text-ink">{ps.subjectName}</span>
+            <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{ps.subjectCode}</span>
+            <span className="text-size-13-5 font-medium text-ink">{ps.subjectName}</span>
           </button>
         ))}
         {!isLoading && !isError && candidates.length === 0 && (
-          <p className="py-3 text-center text-[13px] text-ink-faint">No hay otras materias en el plan que coincidan.</p>
+          <p className="py-3 text-center text-size-13 text-ink-faint">No hay otras materias en el plan que coincidan.</p>
         )}
       </div>
     </div>
@@ -95,7 +95,7 @@ function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
 function CampoSelect({ label, value, onChange, options }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
+      <label className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">{label}</label>
       <NativeSelect
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -138,9 +138,9 @@ function FormAgregarCorrelativa({ programId, programSubjectId, onCancel }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-surface-border bg-neutral-bg/30 p-3">
-      <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Nueva correlativa</p>
+      <p className="text-size-12 font-semibold uppercase tracking-wide text-ink-faint">Nueva correlativa</p>
       <div className="flex flex-col gap-1.5">
-        <span className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Materia correlativa *</span>
+        <span className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">Materia correlativa *</span>
         <PlanSubjectPicker
           programId={programId}
           excludeId={programSubjectId}
@@ -157,7 +157,7 @@ function FormAgregarCorrelativa({ programId, programSubjectId, onCancel }) {
       />
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+        <label className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
           Nota mínima (opcional)
         </label>
         <Input
@@ -171,7 +171,7 @@ function FormAgregarCorrelativa({ programId, programSubjectId, onCancel }) {
         />
       </div>
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
+      {error && <p className="text-size-13 text-danger">{error}</p>}
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onCancel}>
@@ -207,21 +207,21 @@ function FormAgregarCorequisito({ programId, programSubjectId, onCancel }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-surface-border bg-neutral-bg/30 p-3">
-      <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Nuevo co-requisito</p>
+      <p className="text-size-12 font-semibold uppercase tracking-wide text-ink-faint">Nuevo co-requisito</p>
       <div className="flex flex-col gap-1.5">
-        <span className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Materia co-requisito *</span>
+        <span className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">Materia co-requisito *</span>
         <PlanSubjectPicker
           programId={programId}
           excludeId={programSubjectId}
           selected={selected}
           onSelect={setSelected}
         />
-        <p className="text-[11px] text-ink-faint">
+        <p className="text-size-11 text-ink-faint">
           El vínculo no es simétrico: si querés bloqueo mutuo, agregalo desde la otra materia también.
         </p>
       </div>
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
+      {error && <p className="text-size-13 text-danger">{error}</p>}
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onCancel}>
@@ -281,14 +281,14 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
         </SheetHeader>
 
         {subjectName && (
-          <p className="text-[13px] text-ink-faint">
+          <p className="text-size-13 text-ink-faint">
             Para <span className="font-medium text-ink">{subjectName}</span>
           </p>
         )}
 
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Correlativas</p>
-          <p className="text-[11px] text-ink-faint">Condición previa para cursar esta materia.</p>
+          <p className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Correlativas</p>
+          <p className="text-size-11 text-ink-faint">Condición previa para cursar esta materia.</p>
         </div>
 
         {isLoading && <Skeleton rows={3} />}
@@ -296,7 +296,7 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
         {isError && <LoadErrorState error={error} onRetry={refetch} resource="las correlativas" bare />}
 
         {!isLoading && !isError && (prerequisites ?? []).length === 0 && !showForm && (
-          <p className="text-[13px] text-ink-faint">Sin correlativas definidas.</p>
+          <p className="text-size-13 text-ink-faint">Sin correlativas definidas.</p>
         )}
 
         {!isLoading && !isError && (prerequisites ?? []).length > 0 && (
@@ -304,13 +304,13 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
             {prerequisites.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-3 py-2">
                 <div className="min-w-0">
-                  <span className="block text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+                  <span className="block text-size-11 font-bold uppercase tracking-widest text-ink-faint">
                     {p.prerequisiteSubjectCode}
                   </span>
-                  <span className="block truncate text-[13.5px] font-medium text-ink">
+                  <span className="block truncate text-size-13-5 font-medium text-ink">
                     {p.prerequisiteSubjectName}
                   </span>
-                  <span className="text-[12px] text-ink-faint">
+                  <span className="text-size-12 text-ink-faint">
                     {REQUIREMENT_TYPE_LABELS[p.requirementType] ?? p.requirementType}
                     {p.minGrade != null && ` · nota mín. ${p.minGrade}`}
                   </span>
@@ -344,8 +344,8 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
         <div className="my-1 border-t border-neutral-bg" />
 
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Co-requisitos</p>
-          <p className="text-[11px] text-ink-faint">Materia que debe cursarse simultáneamente.</p>
+          <p className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Co-requisitos</p>
+          <p className="text-size-11 text-ink-faint">Materia que debe cursarse simultáneamente.</p>
         </div>
 
         {loadingCorequisites && <Skeleton rows={2} />}
@@ -355,7 +355,7 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
         )}
 
         {!loadingCorequisites && !corequisitesFailed && (corequisites ?? []).length === 0 && !showCoreqForm && (
-          <p className="text-[13px] text-ink-faint">Sin co-requisitos definidos.</p>
+          <p className="text-size-13 text-ink-faint">Sin co-requisitos definidos.</p>
         )}
 
         {!loadingCorequisites && !corequisitesFailed && (corequisites ?? []).length > 0 && (
@@ -363,10 +363,10 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
             {corequisites.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3 py-2">
                 <div className="min-w-0">
-                  <span className="block text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+                  <span className="block text-size-11 font-bold uppercase tracking-widest text-ink-faint">
                     {c.corequisiteSubjectCode}
                   </span>
-                  <span className="block truncate text-[13.5px] font-medium text-ink">
+                  <span className="block truncate text-size-13-5 font-medium text-ink">
                     {c.corequisiteSubjectName}
                   </span>
                 </div>

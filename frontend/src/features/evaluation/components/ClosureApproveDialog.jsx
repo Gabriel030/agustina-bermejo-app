@@ -71,7 +71,7 @@ export function ClosureApproveDialog({ open, sheet, pending, onClose, onApprove 
               </div>
             </div>
             {error && (
-              <div role="alert" className="text-[12px] font-semibold text-danger">
+              <div role="alert" className="text-size-12 font-semibold text-danger">
                 {error}
               </div>
             )}

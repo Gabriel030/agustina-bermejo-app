@@ -89,7 +89,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <Button variant="subtle" size="inline" type="button" onClick={onCerrar} className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-soft">
+        <Button variant="subtle" size="inline" type="button" onClick={onCerrar} className="flex items-center gap-1.5 text-size-13 font-semibold text-ink-soft">
           <ArrowLeft className="h-4 w-4" /> Volver a mis materias
         </Button>
       </div>
@@ -97,7 +97,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
       {confirmacion && (
         <GlassCard className="flex items-center gap-3 bg-success-bg p-4">
           <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
-          <div className="text-[13.5px] font-semibold text-ink">
+          <div className="text-size-13-5 font-semibold text-ink">
             Te inscribiste a {confirmacion.subjectName} — {confirmacion.sectionName}. Podés elegir otra materia para seguir anotándote.
           </div>
         </GlassCard>
@@ -106,7 +106,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
       {/* Paso 1: elegir materia */}
       {!materiaSeleccionada && (
         <GlassCard className="flex flex-col gap-3 p-5">
-          <div className="font-heading text-[15px] font-semibold text-ink">Elegí una materia</div>
+          <div className="font-heading text-size-15 font-semibold text-ink">Elegí una materia</div>
           {cargandoMaterias ? (
             <div className="flex flex-col gap-2">
               <Skeleton className="h-12" />
@@ -124,7 +124,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
                   className="flex items-center justify-between rounded-xl border border-border px-4 py-3 text-left transition-colors hover:border-brand hover:bg-neutral-bg"
                 >
                   <div>
-                    <div className="text-[13.5px] font-semibold text-ink">{fila.subjectName}</div>
+                    <div className="text-size-13-5 font-semibold text-ink">{fila.subjectName}</div>
                     <div className="text-xs text-ink-faint">{fila.curricularYear ? `${fila.curricularYear}° año` : ''}</div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-ink-faint" />
@@ -140,7 +140,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
         <GlassCard className="flex flex-col gap-4 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-heading text-[15px] font-semibold text-ink">{materiaSeleccionada.subjectName}</div>
+              <div className="font-heading text-size-15 font-semibold text-ink">{materiaSeleccionada.subjectName}</div>
               <div className="text-xs text-ink-faint">Elegí una comisión</div>
             </div>
             <Button variant="link" size="inline" type="button" onClick={volverAMaterias} className="text-xs font-bold">
@@ -176,7 +176,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[13.5px] font-semibold text-ink">{comision.name}</span>
+                      <span className="text-size-13-5 font-semibold text-ink">{comision.name}</span>
                       <span className="text-xs font-semibold text-ink-faint">{horario.label}</span>
                     </div>
                     {conflicto && (

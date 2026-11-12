@@ -29,7 +29,7 @@ export function SeccionDestinatarios({ segmentos, cargandoSegmentos, spec, onCha
   return (
     <GlassCard className="flex flex-col gap-4 p-5">
       <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] font-semibold text-ink" htmlFor="segmento">
+        <label className="text-size-13 font-semibold text-ink" htmlFor="segmento">
           ¿A quiénes les llega?
         </label>
         <Select value={spec.key} onValueChange={elegirSegmento}>
@@ -56,13 +56,13 @@ export function SeccionDestinatarios({ segmentos, cargandoSegmentos, spec, onCha
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-accent-soft/60 px-4 py-3.5">
         <div>
           <div
-            className={`font-heading text-[26px] font-bold leading-none tabular-nums text-ink transition-opacity ${
+            className={`font-heading text-size-26 font-bold leading-none tabular-nums text-ink transition-opacity ${
               recalculando ? 'opacity-40' : ''
             }`}
           >
             {alcanzados}
           </div>
-          <div className="mt-1 text-[12.5px] text-ink-soft">
+          <div className="mt-1 text-size-12-5 text-ink-soft">
             {alcanzados === 1 ? `de ${total} alumnos — es uno solo` : `de ${total} alumnos de la comisión`}
           </div>
         </div>
@@ -72,7 +72,7 @@ export function SeccionDestinatarios({ segmentos, cargandoSegmentos, spec, onCha
       </div>
 
       {preview?.label && spec.key !== 'ALL' && (
-        <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-[12.5px] leading-relaxed text-ink-soft">
+        <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-2" aria-hidden="true" />
           <span>
             Se le envía a quienes <span className="font-bold text-ink">{preview.label.toLowerCase()}</span>.
@@ -81,7 +81,7 @@ export function SeccionDestinatarios({ segmentos, cargandoSegmentos, spec, onCha
       )}
 
       {preview?.hasUngradedInstances && (
-        <div className="nota-fila flex items-start gap-2.5 border-l-warning py-0.5 pl-3 text-[12.5px] leading-relaxed text-ink-soft">
+        <div className="nota-fila flex items-start gap-2.5 border-l-warning py-0.5 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden="true" />
           <span>
             <span className="font-bold text-ink">Hay instancias sin corregir.</span> Los alumnos sin nota cargada no
@@ -91,7 +91,7 @@ export function SeccionDestinatarios({ segmentos, cargandoSegmentos, spec, onCha
       )}
 
       {nadie && (
-        <div className="nota-fila flex items-start gap-2.5 border-l-danger py-0.5 pl-3 text-[12.5px] leading-relaxed text-ink-soft">
+        <div className="nota-fila flex items-start gap-2.5 border-l-danger py-0.5 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" aria-hidden="true" />
           <span>
             <span className="font-bold text-ink">Ningún alumno cumple esta condición hoy.</span> Si lo mandás igual no

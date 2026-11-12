@@ -77,7 +77,7 @@ export function LegajoAlumno() {
                 <h1 className="font-heading text-xl font-bold text-ink">
                   {legajo.apellido}, {legajo.nombre}
                 </h1>
-                {legajo.dni && <p className="text-[13px] text-ink-faint">DNI {legajo.dni}</p>}
+                {legajo.dni && <p className="text-size-13 text-ink-faint">DNI {legajo.dni}</p>}
               </div>
               {badge && (
                 <StatusPill tone={badge.tone}>{badge.label}</StatusPill>

@@ -4,8 +4,8 @@ import { isMinor, missingDocumentsSummary, SEX_OPTIONS } from '@/features/identi
 function Row({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-[12px] text-ink-faint flex-shrink-0">{label}</span>
-      <span className="text-[13px] text-ink text-right">{value}</span>
+      <span className="text-size-12 text-ink-faint flex-shrink-0">{label}</span>
+      <span className="text-size-13 text-ink text-right">{value}</span>
     </div>
   );
 }
@@ -17,15 +17,15 @@ export function ReviewStep({ values, missingDocuments }) {
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-semibold text-ink">Revisar y confirmar</h2>
-      <p className="text-[13px] text-ink-soft">Revisá los datos: al confirmar, el alumno recibe un email para elegir su contraseña.</p>
+      <p className="text-size-13 text-ink-soft">Revisá los datos: al confirmar, el alumno recibe un email para elegir su contraseña.</p>
       <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Datos básicos</p>
+        <p className="text-size-12 font-semibold uppercase tracking-wide text-ink-faint">Datos básicos</p>
         <Row label="Nombre" value={`${nombre} ${apellido}`} />
         <Row label="Email" value={email} />
         {telefono && <Row label="Teléfono" value={telefono} />}
       </div>
       <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Datos personales</p>
+        <p className="text-size-12 font-semibold uppercase tracking-wide text-ink-faint">Datos personales</p>
         <Row label={documentLabel(documentType)} value={dni} />
         {birthDate && <Row label="Fecha de nacimiento" value={birthDate.split('-').reverse().join('/')} />}
         {sexLabel && <Row label="Sexo" value={sexLabel} />}
@@ -37,15 +37,15 @@ export function ReviewStep({ values, missingDocuments }) {
       </div>
       {minor && (
         <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Responsables</p>
+          <p className="text-size-12 font-semibold uppercase tracking-wide text-ink-faint">Responsables</p>
           <Row label="Tutor" value={`${guardianName} · ${guardianRelationship} · DNI ${guardianDni}`} />
           <Row label="Contacto del tutor" value={[guardianPhone, guardianEmail].filter(Boolean).join(' · ')} />
           <Row label="Emergencia" value={`${emergencyName} · ${emergencyRelationship} · ${emergencyPhone}`} />
         </div>
       )}
       <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Documentación</p>
-        <p className="text-[13px] text-ink">{missingDocumentsSummary(missingDocuments)}</p>
+        <p className="text-size-12 font-semibold uppercase tracking-wide text-ink-faint">Documentación</p>
+        <p className="text-size-13 text-ink">{missingDocumentsSummary(missingDocuments)}</p>
       </div>
     </div>
   );

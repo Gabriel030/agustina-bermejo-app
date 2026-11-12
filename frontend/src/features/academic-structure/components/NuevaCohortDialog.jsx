@@ -90,14 +90,14 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {missingTemplates && (
-            <p className="rounded-xl bg-warning-bg px-3 py-2 text-[13px] text-ink">
+            <p className="rounded-xl bg-warning-bg px-3 py-2 text-size-13 text-ink">
               Esta carrera todavía no tiene un año lectivo configurado, que define cuántas cuotas se facturan en el año.
               Dirección tiene que cargarla antes de abrir una cohorte.
             </p>
           )}
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+            <label className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
               Año lectivo
             </label>
             <NativeSelect
@@ -115,7 +115,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+            <label className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
               Semestre de ingreso
             </label>
             <NativeSelect
@@ -134,7 +134,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+              <label className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
                 Inicio admisión
               </label>
               <Input
@@ -145,7 +145,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+              <label className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
                 Fin admisión
               </label>
               <Input
@@ -158,7 +158,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+            <label className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
               Inicio de cursada
             </label>
             <Input
@@ -172,7 +172,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
           <div className="flex flex-col gap-1">
             <label
               htmlFor="cohort-entry-fee-discount"
-              className="text-[11px] font-bold uppercase tracking-widest text-ink-faint"
+              className="text-size-11 font-bold uppercase tracking-widest text-ink-faint"
             >
               Descuento de la matrícula de ingreso (%)
             </label>
@@ -186,7 +186,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               onChange={(e) => setEntryFeeDiscount(e.target.value)}
               placeholder={intake === 'SECOND' ? '50 (por defecto)' : '0 (sin descuento)'}
             />
-            <p className="text-[12px] text-ink-faint">
+            <p className="text-size-12 text-ink-faint">
               Si lo dejás vacío se usa el valor por defecto: 50% para el 2do semestre y sin descuento para el 1er semestre.
             </p>
           </div>

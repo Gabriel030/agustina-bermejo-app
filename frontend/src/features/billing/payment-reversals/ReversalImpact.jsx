@@ -6,7 +6,7 @@ import { formatMoney, invoiceStatusInfo } from '@/lib/billing';
 function Group({ title, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <h4 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{title}</h4>
+      <h4 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{title}</h4>
       {children}
     </div>
   );

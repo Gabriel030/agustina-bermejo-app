@@ -18,11 +18,11 @@ function HolidayRow({ holiday, selected, onSelect }) {
       )}
     >
       <span className="flex w-10 flex-none flex-col tabular-nums">
-        <span className="font-heading text-[17px] font-bold leading-tight text-ink">{isoDay(holiday.date)}</span>
-        <span className="text-[11px] uppercase tracking-wider text-ink-faint">{weekdayShort(holiday.date)}</span>
+        <span className="font-heading text-size-17 font-bold leading-tight text-ink">{isoDay(holiday.date)}</span>
+        <span className="text-size-11 uppercase tracking-wider text-ink-faint">{weekdayShort(holiday.date)}</span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        <span className="w-full truncate text-[13.5px] font-medium text-ink" title={holiday.name}>{holiday.name}</span>
+        <span className="w-full truncate text-size-13-5 font-medium text-ink" title={holiday.name}>{holiday.name}</span>
         <HolidayTypePill type={holiday.type} />
       </span>
       <ChevronRight aria-hidden="true" className="size-4 flex-none text-ink-faint" />
@@ -36,7 +36,7 @@ export function HolidayList({ holidays, year, loading, scopeMonth, selectedId, o
 
   return (
     <GlassCard className="flex max-h-[640px] flex-col gap-1 overflow-auto p-2">
-      <h2 className="px-3 pb-1 pt-2 font-heading text-[15px] font-semibold text-ink">
+      <h2 className="px-3 pb-1 pt-2 font-heading text-size-15 font-semibold text-ink">
         {scopeMonth === null ? `Feriados de ${year}` : `Feriados de ${monthName(scopeMonth).toLowerCase()}`}
       </h2>
       {loading && (
@@ -57,7 +57,7 @@ export function HolidayList({ holidays, year, loading, scopeMonth, selectedId, o
       )}
       {!loading && groups.map((group) => (
         <section key={group.month} aria-label={monthName(group.month)} className="flex flex-col gap-1">
-          <h3 className="sticky top-0 z-[1] bg-popover px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+          <h3 className="sticky top-0 z-[1] bg-popover px-3 pb-1 pt-3 text-size-11 font-bold uppercase tracking-widest text-ink-faint">
             {monthName(group.month)}
           </h3>
           {group.holidays.map((holiday) => (

@@ -18,8 +18,8 @@ export function CertificateVerdict({ icon, tone, title, message, role = 'status'
         <Icon className="size-[34px]" strokeWidth={2.2} aria-hidden="true" />
       </div>
       <div className="min-w-0">
-        <h1 className="font-heading text-[23px] font-bold text-balance sm:text-[26px]">{title}</h1>
-        <p className="mt-1 text-[14.5px]">{message}</p>
+        <h1 className="font-heading text-[23px] font-bold text-balance sm:text-size-26">{title}</h1>
+        <p className="mt-1 text-size-14-5">{message}</p>
         {children}
       </div>
     </div>

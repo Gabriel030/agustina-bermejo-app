@@ -157,20 +157,20 @@ export function TabAlumnos({ type, sectionId }) {
       <div className="grid grid-cols-3 gap-3">
         <Stagger>
           <StatCard label="Inscriptos" className="p-3 md:p-5">
-            <span className="font-heading text-[22px] font-bold text-ink md:text-[26px]">{rows.length}</span>
+            <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{rows.length}</span>
           </StatCard>
           <StatCard label="En riesgo" className="p-3 md:p-5">
-            <span className="font-heading text-[22px] font-bold text-danger md:text-[26px]">{atRiskCount}</span>
+            <span className="font-heading text-size-22 font-bold text-danger md:text-size-26">{atRiskCount}</span>
           </StatCard>
           <StatCard label="Faltas acumuladas" className="p-3 md:p-5">
-            <span className="font-heading text-[22px] font-bold text-ink md:text-[26px]">{totalAbsences}</span>
+            <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{totalAbsences}</span>
           </StatCard>
         </Stagger>
       </div>
       <GlassCard className="flex flex-col gap-3 p-3 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Buscador value={search} onChange={setSearch} placeholder="Buscar por nombre o DNI" />
-          {note && <span className="text-[12.5px] text-ink-faint">{note}</span>}
+          {note && <span className="text-size-12-5 text-ink-faint">{note}</span>}
         </div>
         <DataTable
           columns={COLUMNS}

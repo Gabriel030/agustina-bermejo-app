@@ -27,7 +27,7 @@ export function TermsAcceptanceRow({ terms, checked, onCheckedChange }) {
         checked={checked}
         onCheckedChange={(value) => onCheckedChange(value === true)}
       />
-      <div className="flex flex-col gap-0.5 text-[13px] leading-snug">
+      <div className="flex flex-col gap-0.5 text-size-13 leading-snug">
         <Label htmlFor="annual-terms" className="font-normal text-ink-soft">
           Acepto los términos y condiciones del pago anual
         </Label>

@@ -9,7 +9,7 @@ function Chip({ activo, onClick, rol, children }) {
       role={rol}
       {...estado}
       onClick={onClick}
-      className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+      className={`rounded-xl border px-3.5 py-1.5 text-size-12-5 font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
         activo
           ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-on-accent'
           : 'border-border text-ink-soft hover:border-brand hover:text-ink'
@@ -26,8 +26,8 @@ export function ParametrosDeSegmento({ segmento, spec, onChange }) {
   if (segmento.needsThreshold) {
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-ink">¿Desde cuántas inasistencias?</span>
-        <div className="flex items-center gap-2.5 text-[13.5px] text-ink-soft">
+        <span className="text-size-13 font-semibold text-ink">¿Desde cuántas inasistencias?</span>
+        <div className="flex items-center gap-2.5 text-size-13-5 text-ink-soft">
           <span>Alumnos con</span>
           <Input
             type="number"
@@ -59,7 +59,7 @@ export function ParametrosDeSegmento({ segmento, spec, onChange }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-ink" id="et-instancias">
+        <span className="text-size-13 font-semibold text-ink" id="et-instancias">
           ¿En cuáles?
         </span>
         <div className="flex flex-wrap gap-2" role="group" aria-labelledby="et-instancias">
@@ -72,7 +72,7 @@ export function ParametrosDeSegmento({ segmento, spec, onChange }) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-ink" id="et-cuantificador">
+        <span className="text-size-13 font-semibold text-ink" id="et-cuantificador">
           ¿Tiene que cumplirse en…?
         </span>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="et-cuantificador">

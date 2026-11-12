@@ -97,9 +97,9 @@ export function DocenteComisionDetalle() {
           </div>
           {config?.instructors?.length > 0 && (
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="text-[11.5px] font-semibold text-ink-faint">Instructores:</span>
+              <span className="text-size-11-5 font-semibold text-ink-faint">Instructores:</span>
               {config.instructors.map((i) => (
-                <span key={i.name} className="rounded-full bg-accent-soft px-2.5 py-1 text-[11.5px] font-bold text-primary">
+                <span key={i.name} className="rounded-full bg-accent-soft px-2.5 py-1 text-size-11-5 font-bold text-primary">
                   {i.name} <span className="font-semibold opacity-75">· {ROL_INSTRUCTOR_LABEL[i.role] ?? i.role}</span>
                 </span>
               ))}
@@ -143,7 +143,7 @@ export function DocenteComisionDetalle() {
       ) : (
         <>
           {cerrada && (
-            <div className="nota-fila flex items-start gap-2.5 py-1 pl-3 text-[12.5px] leading-relaxed text-ink-soft">
+            <div className="nota-fila flex items-start gap-2.5 py-1 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
               El cuatrimestre de esta comisión ya cerró: los avisos quedan como registro y no se pueden crear, editar ni
               eliminar.
             </div>

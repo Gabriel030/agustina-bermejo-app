@@ -47,7 +47,7 @@ function DatoField({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-4 py-2.5">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{label}</p>
+        <p className="text-size-11 font-semibold uppercase tracking-wide text-ink-faint">{label}</p>
         <p className="mt-0.5 font-mono font-semibold">{value}</p>
       </div>
       <Button

@@ -5,7 +5,7 @@ import { lostPeriodsOf } from './studentDiscountView';
 function Block({ title, children }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <h4 className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{title}</h4>
+      <h4 className="text-size-11 font-bold uppercase tracking-wide text-ink-faint">{title}</h4>
       {children}
     </div>
   );

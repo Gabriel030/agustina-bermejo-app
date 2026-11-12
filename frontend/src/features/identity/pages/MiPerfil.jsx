@@ -39,7 +39,7 @@ const PASSWORD_ERROR_MESSAGES = {
 function CampoFormulario({ label, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[13px] font-medium text-ink-soft">{label}</label>
+      <label className="text-size-13 font-medium text-ink-soft">{label}</label>
       {children}
     </div>
   );
@@ -120,9 +120,9 @@ function AvatarUpload() {
         </div>
       </button>
       <div>
-        <p className="text-[13px] font-medium text-ink">Foto de perfil</p>
-        <p className="text-[11px] text-ink-faint">JPG o PNG, máx. 5 MB</p>
-        {subir.isPending && <p className="text-[11px] text-ink-faint">Subiendo...</p>}
+        <p className="text-size-13 font-medium text-ink">Foto de perfil</p>
+        <p className="text-size-11 text-ink-faint">JPG o PNG, máx. 5 MB</p>
+        {subir.isPending && <p className="text-size-11 text-ink-faint">Subiendo...</p>}
       </div>
       <input
         ref={fileRef}
@@ -285,7 +285,7 @@ function TabDatosPropiosForm({ perfil }) {
   return (
     <form onSubmit={guardar} className="flex flex-col gap-5">
       {pendingEmail && (
-        <div role="status" className="flex flex-col gap-2 rounded-xl bg-warning-bg px-3 py-2.5 text-[12.5px] text-warning">
+        <div role="status" className="flex flex-col gap-2 rounded-xl bg-warning-bg px-3 py-2.5 text-size-12-5 text-warning">
           <p>
             <b>Te enviamos un enlace a {pendingEmail.email};</b> hasta confirmarlo seguís usando el actual. Vence en 48 h ({pendingEmail.deadline}). Si guardás otro email, reemplaza este pedido.
           </p>
@@ -299,7 +299,7 @@ function TabDatosPropiosForm({ perfil }) {
           {resendOpen && (
             <div className="flex flex-wrap items-end gap-2">
               <div className="min-w-[200px] flex-1">
-                <label htmlFor="resend-password" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+                <label htmlFor="resend-password" className="mb-1 block text-size-11 font-semibold uppercase tracking-wider text-ink-faint">
                   Contraseña actual
                 </label>
                 <InputContrasena
@@ -311,7 +311,7 @@ function TabDatosPropiosForm({ perfil }) {
                   aria-describedby={resendError ? 'resend-password-error' : undefined}
                 />
                 {resendError && (
-                  <p id="resend-password-error" role="alert" className="mt-1 text-[12.5px] text-danger">
+                  <p id="resend-password-error" role="alert" className="mt-1 text-size-12-5 text-danger">
                     {resendError}
                   </p>
                 )}
@@ -326,8 +326,8 @@ function TabDatosPropiosForm({ perfil }) {
       <AvatarUpload />
       {perfil?.legajo && (
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">Legajo</span>
-          <span className="rounded-full bg-accent-soft px-3 py-0.5 text-[13px] font-semibold text-brand">
+          <span className="text-size-11 font-medium uppercase tracking-wider text-ink-faint">Legajo</span>
+          <span className="rounded-full bg-accent-soft px-3 py-0.5 text-size-13 font-semibold text-brand">
             #{perfil.legajo}
           </span>
         </div>
@@ -383,7 +383,7 @@ function TabDatosPropiosForm({ perfil }) {
       </div>
 
       <div className="border-t border-border pt-4">
-        <p className="mb-3 text-[13px] font-medium text-ink-soft">Domicilio</p>
+        <p className="mb-3 text-size-13 font-medium text-ink-soft">Domicilio</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <CampoFormulario label="Calle">
             <Input
@@ -439,15 +439,15 @@ function TabDatosPropiosForm({ perfil }) {
         </div>
       </div>
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
-      {guardado && <p className="text-[13px] text-success">Datos guardados.</p>}
+      {error && <p className="text-size-13 text-danger">{error}</p>}
+      {guardado && <p className="text-size-13 text-success">Datos guardados.</p>}
 
       {confirmRows ? (
         <div className="flex flex-col gap-3 rounded-2xl border border-border bg-neutral-bg/30 p-4">
-          <h3 className="font-heading text-[15px] font-semibold text-ink">Confirmá los cambios sensibles</h3>
+          <h3 className="font-heading text-size-15 font-semibold text-ink">Confirmá los cambios sensibles</h3>
           <ChangeDiffTable rows={confirmRows} />
           <div>
-            <label htmlFor="current-password" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+            <label htmlFor="current-password" className="mb-1 block text-size-11 font-semibold uppercase tracking-wider text-ink-faint">
               Contraseña actual
             </label>
             <InputContrasena
@@ -462,12 +462,12 @@ function TabDatosPropiosForm({ perfil }) {
               aria-describedby={passwordError ? 'current-password-error' : undefined}
             />
             {passwordError && (
-              <p id="current-password-error" role="alert" className="mt-1 text-[12.5px] text-danger">
+              <p id="current-password-error" role="alert" className="mt-1 text-size-12-5 text-danger">
                 {passwordError}
               </p>
             )}
           </div>
-          <p className="text-[13px] text-ink-soft">
+          <p className="text-size-13 text-ink-soft">
             {confirmRows.some((row) => row.key === 'email')
               ? 'El email nuevo no rige hasta que lo confirmes con el enlace que te enviamos. Mientras tanto seguís ingresando con el actual.'
               : 'El documento se actualiza en el momento.'}
@@ -534,7 +534,7 @@ function TabSeguridad() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4">
-        <h3 className="text-[14px] font-semibold text-ink">Cambiar contraseña</h3>
+        <h3 className="text-size-14 font-semibold text-ink">Cambiar contraseña</h3>
         <form onSubmit={guardarContrasena} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <CampoFormulario label="Contraseña actual">
@@ -551,7 +551,7 @@ function TabSeguridad() {
                 onChange={(e) => setPass((p) => ({ ...p, nueva: e.target.value }))}
                 required
               />
-              <span className="text-[11.5px] text-ink-faint">Mínimo 8 caracteres, con una mayúscula y un número.</span>
+              <span className="text-size-11-5 text-ink-faint">Mínimo 8 caracteres, con una mayúscula y un número.</span>
             </CampoFormulario>
             <CampoFormulario label="Confirmar nueva contraseña">
               <InputContrasena
@@ -561,7 +561,7 @@ function TabSeguridad() {
               />
             </CampoFormulario>
           </div>
-          {errorPass && <p className="text-[13px] text-danger">{errorPass}</p>}
+          {errorPass && <p className="text-size-13 text-danger">{errorPass}</p>}
           <div className="flex justify-end">
             <Button type="submit" disabled={cambiarContrasena.isPending}>
               {cambiarContrasena.isPending ? 'Guardando...' : 'Cambiar contraseña'}
@@ -571,7 +571,7 @@ function TabSeguridad() {
       </div>
 
       <div className="border-t border-border pt-6">
-        <h3 className="mb-3 text-[14px] font-semibold text-ink">Sesiones activas</h3>
+        <h3 className="mb-3 text-size-14 font-semibold text-ink">Sesiones activas</h3>
         {cargandoSesiones ? (
           <div className="flex flex-col gap-2">
             {[...Array(2)].map((_, i) => (
@@ -583,10 +583,10 @@ function TabSeguridad() {
             {sesiones.map((s) => (
               <div key={s.id} className="flex items-center justify-between rounded-lg border border-border px-4 py-2.5">
                 <div>
-                  <div className="text-[13px] font-medium text-ink">
+                  <div className="text-size-13 font-medium text-ink">
                     Sesión #{s.id}
                   </div>
-                  <div className="text-[11px] text-ink-faint">
+                  <div className="text-size-11 text-ink-faint">
                     Iniciada: {new Date(s.createdAt).toLocaleString('es-AR')}
                   </div>
                 </div>
@@ -594,10 +594,10 @@ function TabSeguridad() {
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-ink-faint">No hay sesiones activas.</p>
+          <p className="text-size-13 text-ink-faint">No hay sesiones activas.</p>
         )}
-        {errorSesiones && <p className="mt-2 text-[13px] text-danger">{errorSesiones}</p>}
-        {sesionesRevocadas && <p className="mt-2 text-[13px] text-success">Todas las sesiones fueron cerradas.</p>}
+        {errorSesiones && <p className="mt-2 text-size-13 text-danger">{errorSesiones}</p>}
+        {sesionesRevocadas && <p className="mt-2 text-size-13 text-success">Todas las sesiones fueron cerradas.</p>}
         <div className="mt-4 flex justify-end">
           <Button
             variant="outline"
@@ -619,7 +619,7 @@ export function MiPerfil() {
     <PageContainer>
       <div>
         <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">Mi perfil</h1>
-        <p className="mt-1 text-[13px] text-ink-faint">Administrá tus datos personales, seguridad y notificaciones.</p>
+        <p className="mt-1 text-size-13 text-ink-faint">Administrá tus datos personales, seguridad y notificaciones.</p>
       </div>
 
       <InstallPrompt />
