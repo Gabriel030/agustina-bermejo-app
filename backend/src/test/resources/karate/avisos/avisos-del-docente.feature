@@ -112,14 +112,14 @@ Feature: Avisos del docente (AnnouncementController, MeAnnouncementController)
     And match puntero.message contains nombreMateria
     And match puntero.message !contains 'Aula 204'
 
-  Scenario: Un docente que no dicta la comisión no puede publicar — 403
+  Scenario: Un docente que no dicta la comisión no puede publicar — 404
     * def otroDocente = fixtures.createTeacherWithToken()
 
     Given path '/subject-sections', sectionId, 'announcements'
     And header Authorization = 'Bearer ' + otroDocente.accessToken
     And request { title: 'No debería poder', body: 'Cuerpo cualquiera.', category: 'REMINDER', urgent: false }
     When method post
-    Then status 403
+    Then status 404
 
   Scenario: Sin sesión — 401
     Given path '/subject-sections', sectionId, 'announcements'

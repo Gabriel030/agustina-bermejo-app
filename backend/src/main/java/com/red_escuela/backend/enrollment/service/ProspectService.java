@@ -24,6 +24,7 @@ import com.red_escuela.backend.identity.api.StudentOnboardingSummary;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,6 +41,7 @@ import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 
 @Service
 public class ProspectService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ProspectService.class);
     private final StudentFinder studentFinder;
     private final StudentOnboarding studentOnboarding;
     private final StudentDocumentRepository studentDocumentRepository;
@@ -68,12 +70,30 @@ public class ProspectService {
         this.clock = clock;
     }
 
-    @Transactional
-    public StudentOnboardingSummary createProspect(CreateProspectRequest request) {
-        StudentOnboardingSummary prospect = studentOnboarding.registerProspect(new NewProspect(
-                request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId(), null));
-        emailVerificationSender.sendVerificationToStudent(prospect.studentId());
-        return prospect;
+    public void createProspect(CreateProspectRequest request) {
+        try {
+            studentOnboarding.registerProspectIfEmailIsFree(new NewProspect(
+                    request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId(), null))
+                    .ifPresent(this::sendVerificationWithoutFailingTheRegistration);
+        } catch (DataIntegrityViolationException violation) {
+            if (!violatesEmailUniqueness(violation)) {
+                throw violation;
+            }
+        }
+    }
+
+    private void sendVerificationWithoutFailingTheRegistration(StudentOnboardingSummary prospect) {
+        try {
+            emailVerificationSender.sendVerificationToStudent(prospect.studentId());
+        } catch (RuntimeException failure) {
+            log.warn("Verification email for prospect {} could not be sent: {}", prospect.studentId(),
+                    failure.getClass().getSimpleName());
+        }
+    }
+
+    private static boolean violatesEmailUniqueness(DataIntegrityViolationException violation) {
+        Throwable cause = violation.getMostSpecificCause();
+        return cause.getMessage() != null && cause.getMessage().contains("uk_person_email");
     }
 
     @Transactional

@@ -5,6 +5,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,11 @@ public class BasePersonCreator {
     public BasePersonCreator(PersonRepository personRepository, AddressRepository addressRepository) {
         this.personRepository = personRepository;
         this.addressRepository = addressRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isEmailRegistered(String email) {
+        return personRepository.findByEmail(EmailAddress.of(email)).isPresent();
     }
 
     @Transactional

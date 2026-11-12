@@ -225,7 +225,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     Then status 200
     And match response[0].status == 'FAILED'
 
-  Scenario: Un Docente que no integra la comisión no puede cargar asistencia ni notas — 403
+  Scenario: Un Docente que no integra la comisión no puede cargar asistencia ni notas — 404
     * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
     * def otroDocente = fixtures.createTeacherWithToken()
 
@@ -247,13 +247,13 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     And header Authorization = 'Bearer ' + otroDocente.accessToken
     And request { classDate: '2026-03-10', entries: [{ enrollmentId: '#(sectionEnrollmentId)', status: 'PRESENT' }] }
     When method post
-    Then status 403
+    Then status 404
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + otroDocente.accessToken
     And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7 }
     When method post
-    Then status 403
+    Then status 404
 
   Scenario: Justificar una ausencia — 200, y listar asistencia/notas (Preceptor/Administrativo/Director)
     * def directorToken = fixtures.tokenForRole('DIRECTOR')
