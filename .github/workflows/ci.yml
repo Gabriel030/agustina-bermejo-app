@@ -247,7 +247,7 @@ jobs:
             maven-${{ runner.os }}-
 
       - name: Download the JaCoCo execution data of the shards
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: jacoco-exec-*
           path: backend/target/jacoco-shards
@@ -399,7 +399,7 @@ jobs:
 
       - name: Download the shard reports
         if: needs.changes.outputs.reuse_backend != 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: shard-reports-*
           path: shards
@@ -488,7 +488,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download the report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: test-report-comment
