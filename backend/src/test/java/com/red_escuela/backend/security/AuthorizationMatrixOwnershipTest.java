@@ -42,7 +42,7 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("instructorOwnedRows")
-    void instructorOfAnotherSectionGets403(OwnershipCase ownershipCase) throws Exception {
+    void instructorOfAnotherSectionGets404(OwnershipCase ownershipCase) throws Exception {
         assertOwnerPassesAndStrangerGetsExpectedStatus(ownershipCase);
     }
 

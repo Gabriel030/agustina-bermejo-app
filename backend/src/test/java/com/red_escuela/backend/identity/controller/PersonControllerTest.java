@@ -129,6 +129,19 @@ class PersonControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void putMeWithOversizedFieldsReturns400() throws Exception {
+        Person propio = persistPersonWithRole("propio6", "60555666", "ALUMNO");
+        String token = jwtService.generateAccessToken(propio);
+        String tooLong = "x".repeat(201);
+
+        mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"street\":\"" + tooLong + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void putMeWithExistingDniReturns400() throws Exception {
         persistPersonWithRole("propio4", "60111333", "ALUMNO");
         Person propio = persistPersonWithRole("propio5", "60222444", "ALUMNO");
