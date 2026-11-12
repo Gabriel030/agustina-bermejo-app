@@ -22,12 +22,15 @@ import {
   OFFLINE_PROFILE_KEY,
   OFFLINE_OWNER_KEY,
   claimOfflineCache,
+  OFFLINE_ENTRY_PREFIX,
+  createOfflinePersister,
   offlineDehydrateOptions,
-  offlinePersister,
   purgeOfflineData,
   readOfflineProfile,
   storeOfflineProfile,
 } from './offlinePersistence'
+
+let offlinePersister
 
 function build(client, queryKey, options) {
   return client.getQueryCache().build(client, { queryKey, ...options })
@@ -43,16 +46,18 @@ beforeEach(() => {
     store.delete(name)
   })
   vi.spyOn(console, 'warn').mockImplementation(() => {})
+  offlinePersister = createOfflinePersister({ throttleMs: 0 })
 })
 
 const SECRET = 'confidential-notification-text'
+const entryNames = () => [...store.keys()].filter((name) => String(name).startsWith(OFFLINE_ENTRY_PREFIX))
 const keyNames = () => [...store.keys()].filter((name) => String(name).startsWith('offline-key:'))
 
 function persistedPayload(overrides = {}) {
   return {
     buster: OFFLINE_BUSTER,
     timestamp: Date.now(),
-    clientState: { queries: [{ queryKey: ['n'], state: { data: SECRET } }], mutations: [] },
+    clientState: { queries: [{ queryKey: ['n'], queryHash: '["n"]', state: { data: SECRET, dataUpdatedAt: 1000 } }], mutations: [] },
     ...overrides,
   }
 }
@@ -91,11 +96,13 @@ describe('purgeOfflineData', () => {
     client.setQueryData(['me', 'notifications'], [1])
     await persistAs(7)
     expect(keyNames()).toHaveLength(1)
+    expect(entryNames()).toHaveLength(1)
     await purgeOfflineData(client)
     expect(client.getQueryCache().getAll()).toHaveLength(0)
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
     expect(store.has(OFFLINE_OWNER_KEY)).toBe(false)
     expect(keyNames()).toHaveLength(0)
+    expect(entryNames()).toHaveLength(0)
   })
 
   it('logoutDeletesKeyFirstEvenWhenBlobDeleteFails', async () => {
@@ -114,13 +121,14 @@ describe('purgeOfflineData', () => {
 })
 
 describe('claimOfflineCache', () => {
-  it('ownerChangeDiscardsPreviousBlobAndKey', async () => {
+  it('ownerChangeDiscardsPreviousEntriesAndKey', async () => {
     const client = new QueryClient()
     client.setQueryData(['me', 'notifications'], [1])
     await persistAs(1)
     await claimOfflineCache(2, client)
     expect(client.getQueryCache().getAll()).toHaveLength(0)
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
     expect(keyNames()).toHaveLength(0)
     expect(store.get(OFFLINE_OWNER_KEY)).toBe(2)
   })
@@ -134,24 +142,29 @@ describe('claimOfflineCache', () => {
     expect(await offlinePersister.restoreClient()).toEqual(payload)
   })
 
-  it('blobDoesNotDecryptWithAnotherUsersKey', async () => {
+  it('entriesDoNotDecryptWithAnotherUsersKey', async () => {
     await persistAs(1)
-    const blob = store.get(OFFLINE_CACHE_KEY)
+    const [name] = entryNames()
+    const entry = store.get(name)
     store.clear()
+    offlinePersister = createOfflinePersister({ throttleMs: 0 })
     await persistAs(2)
-    store.set(OFFLINE_CACHE_KEY, blob)
+    store.set(name, entry)
     expect(await offlinePersister.restoreClient()).toBeUndefined()
-    expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
   })
 })
 
 describe('encrypted cache', () => {
-  it('rawIndexedDbValueContainsNoPlaintext', async () => {
+  it('rawIndexedDbValuesContainNoPlaintextAndNoBase64', async () => {
     await persistAs(5)
-    const raw = String(store.get(OFFLINE_CACHE_KEY))
-    expect(raw).not.toContain(SECRET)
-    expect(raw).not.toContain('queries')
-    expect(JSON.parse(raw)).toEqual({ v: 1, iv: expect.any(String), ct: expect.any(String) })
+    const [name] = entryNames()
+    const entry = store.get(name)
+    expect(Object.keys(entry).sort()).toEqual(['ct', 'iv', 'updatedAt', 'v'])
+    expect(Object.prototype.toString.call(entry.ct)).toBe('[object ArrayBuffer]')
+    expect(new TextDecoder('latin1').decode(entry.ct)).not.toContain(SECRET)
+    expect(name).not.toContain('"n"')
+    expect(JSON.stringify(store.get(OFFLINE_CACHE_KEY))).not.toContain(SECRET)
   })
 
   it('exportKeyRejectsForNonExtractableKey', async () => {
@@ -164,11 +177,12 @@ describe('encrypted cache', () => {
 
   it('ivIsDifferentOnEveryWrite', async () => {
     await persistAs(5)
-    const first = JSON.parse(store.get(OFFLINE_CACHE_KEY)).iv
-    store.delete(OFFLINE_CACHE_KEY)
-    await offlinePersister.persistClient(persistedPayload({ timestamp: 2 }))
-    await vi.waitFor(() => expect(store.has(OFFLINE_CACHE_KEY)).toBe(true))
-    expect(JSON.parse(store.get(OFFLINE_CACHE_KEY)).iv).not.toBe(first)
+    const [name] = entryNames()
+    const first = Array.from(store.get(name).iv).join(',')
+    const changed = persistedPayload()
+    changed.clientState.queries[0].state.dataUpdatedAt = 2000
+    await offlinePersister.persistClient(changed)
+    expect(Array.from(store.get(name).iv).join(',')).not.toBe(first)
   })
 
   it('restoreRoundTripsThePersistedClient', async () => {
@@ -176,61 +190,79 @@ describe('encrypted cache', () => {
     expect(await offlinePersister.restoreClient()).toEqual(payload)
   })
 
-  it('blobDoesNotDecryptWhenAadUserDiffers', async () => {
+  it('entriesDoNotDecryptWhenAadUserDiffers', async () => {
     await persistAs(5)
     store.set(OFFLINE_OWNER_KEY, 6)
     store.set('offline-key:6', store.get('offline-key:5'))
     expect(await offlinePersister.restoreClient()).toBeUndefined()
-    expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
   })
 
-  it('blobDoesNotDecryptWhenAadBusterDiffers', async () => {
+  it('entryMovedToAnotherNameDoesNotDecrypt', async () => {
+    await persistAs(5)
+    const [name] = entryNames()
+    store.set(`${OFFLINE_ENTRY_PREFIX}moved`, store.get(name))
+    store.delete(name)
+    expect(await offlinePersister.restoreClient()).toBeUndefined()
+    expect(entryNames()).toHaveLength(0)
+  })
+
+  it('manifestFromAnotherBusterDiscardsEverything', async () => {
     vi.resetModules()
     await persistAs(5)
-    const blob = store.get(OFFLINE_CACHE_KEY)
     vi.stubEnv('VITE_APP_VERSION', 'another-version')
     const reloaded = await import('./offlinePersistence')
     expect(reloaded.OFFLINE_BUSTER).toBe('another-version')
-    store.set(OFFLINE_CACHE_KEY, blob)
-    expect(await reloaded.offlinePersister.restoreClient()).toBeUndefined()
+    expect(await reloaded.createOfflinePersister().restoreClient()).toBeUndefined()
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
     vi.unstubAllEnvs()
   })
 
   it('tamperedCiphertextIsDiscardedAndStartsEmpty', async () => {
     await persistAs(5)
-    const envelope = JSON.parse(store.get(OFFLINE_CACHE_KEY))
-    const flipped = envelope.ct.startsWith('A') ? `B${envelope.ct.slice(1)}` : `A${envelope.ct.slice(1)}`
-    store.set(OFFLINE_CACHE_KEY, JSON.stringify({ ...envelope, ct: flipped }))
+    const [name] = entryNames()
+    new Uint8Array(store.get(name).ct)[0] ^= 1
     expect(await offlinePersister.restoreClient()).toBeUndefined()
-    expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
-    expect(keyNames()).toHaveLength(0)
+    expect(entryNames()).toHaveLength(0)
   })
 
   it('tamperedIvIsDiscarded', async () => {
     await persistAs(5)
-    const envelope = JSON.parse(store.get(OFFLINE_CACHE_KEY))
-    const flipped = envelope.iv.startsWith('A') ? `B${envelope.iv.slice(1)}` : `A${envelope.iv.slice(1)}`
-    store.set(OFFLINE_CACHE_KEY, JSON.stringify({ ...envelope, iv: flipped }))
+    const [name] = entryNames()
+    store.get(name).iv[0] ^= 1
     expect(await offlinePersister.restoreClient()).toBeUndefined()
-    expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
   })
 
-  it('garbageBlobIsDiscardedWithoutThrowing', async () => {
+  it('oneTamperedEntryDoesNotDiscardTheOthers', async () => {
+    const payload = persistedPayload()
+    payload.clientState.queries.push({ queryKey: ['m'], queryHash: '["m"]', state: { data: 'other', dataUpdatedAt: 5 } })
+    await persistAs(5, payload)
+    const [first] = entryNames()
+    new Uint8Array(store.get(first).ct)[0] ^= 1
+    const restored = await offlinePersister.restoreClient()
+    expect(restored.clientState.queries).toHaveLength(1)
+    expect(entryNames()).toHaveLength(1)
+  })
+
+  it('garbageManifestIsDiscardedWithoutThrowing', async () => {
     await persistAs(5)
     store.set(OFFLINE_CACHE_KEY, 'not json at all')
     expect(await offlinePersister.restoreClient()).toBeUndefined()
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
   })
 
-  it('missingKeyWithExistingBlobDiscardsBlob', async () => {
+  it('missingKeyWithExistingEntriesDiscardsThem', async () => {
     await persistAs(5)
     store.delete('offline-key:5')
     expect(await offlinePersister.restoreClient()).toBeUndefined()
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
   })
 
-  it('legacyPlaintextBlobIsDiscardedOnFirstRestore', async () => {
+  it('legacySingleBlobIsDiscardedOnFirstRestore', async () => {
     localStorage.setItem('refreshToken', 'token')
     store.set(OFFLINE_OWNER_KEY, 5)
     store.set(OFFLINE_CACHE_KEY, JSON.stringify(persistedPayload()))
@@ -238,19 +270,20 @@ describe('encrypted cache', () => {
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
   })
 
-  it('blobWithoutOwnerIsDiscarded', async () => {
+  it('entriesWithoutOwnerAreDiscarded', async () => {
     await persistAs(5)
     store.delete(OFFLINE_OWNER_KEY)
     expect(await offlinePersister.restoreClient()).toBeUndefined()
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
   })
 
   it('nothingIsPersistedWithoutOwner', async () => {
     localStorage.setItem('refreshToken', 'token')
     await offlinePersister.persistClient(persistedPayload())
-    await new Promise((resolve) => setTimeout(resolve, 20))
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
     expect(keyNames()).toHaveLength(0)
+    expect(entryNames()).toHaveLength(0)
   })
 
   it('noWebCryptoMeansNothingIsPersisted', async () => {
@@ -259,8 +292,8 @@ describe('encrypted cache', () => {
     vi.spyOn(localStorage, 'setItem')
     store.set(OFFLINE_OWNER_KEY, 5)
     await offlinePersister.persistClient(persistedPayload())
-    await new Promise((resolve) => setTimeout(resolve, 20))
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
+    expect(entryNames()).toHaveLength(0)
     expect(localStorage.setItem).not.toHaveBeenCalled()
   })
 
@@ -269,9 +302,81 @@ describe('encrypted cache', () => {
     localStorage.setItem('refreshToken', 'token')
     vi.spyOn(localStorage, 'setItem')
     await offlinePersister.persistClient(persistedPayload())
-    await new Promise((resolve) => setTimeout(resolve, 20))
     expect(localStorage.setItem).not.toHaveBeenCalled()
     expect(store.size).toBe(0)
+  })
+})
+
+describe('incremental persistence', () => {
+  const query = (name, dataUpdatedAt, data = name) => ({
+    queryKey: [name],
+    queryHash: JSON.stringify([name]),
+    state: { data, dataUpdatedAt },
+  })
+  const client = (...queries) => persistedPayload({ clientState: { queries, mutations: [] } })
+  const entryWrites = () => idb.set.mock.calls.filter(([name]) => String(name).startsWith(OFFLINE_ENTRY_PREFIX))
+
+  async function prepare() {
+    localStorage.setItem('refreshToken', 'token')
+    store.set(OFFLINE_OWNER_KEY, 7)
+    await offlinePersister.persistClient(client(query('a', 1), query('b', 2)))
+    idb.set.mockClear()
+  }
+
+  it('onlyTheChangedQueryIsRewritten', async () => {
+    await prepare()
+    await offlinePersister.persistClient(client(query('a', 1), query('b', 3)))
+    expect(entryWrites()).toHaveLength(1)
+    expect(entryNames()).toHaveLength(2)
+  })
+
+  it('anUnchangedClientWritesNothing', async () => {
+    await prepare()
+    await offlinePersister.persistClient(client(query('a', 1), query('b', 2)))
+    expect(idb.set).not.toHaveBeenCalled()
+  })
+
+  it('aQueryThatLeftTheClientIsRemovedFromStorage', async () => {
+    await prepare()
+    await offlinePersister.persistClient(client(query('a', 1)))
+    expect(entryNames()).toHaveLength(1)
+    const restored = await offlinePersister.restoreClient()
+    expect(restored.clientState.queries.map((item) => item.queryKey)).toEqual([['a']])
+  })
+
+  it('restoredEntriesAreNotRewrittenWhenNothingChanged', async () => {
+    await prepare()
+    const fresh = createOfflinePersister({ throttleMs: 0 })
+    await fresh.restoreClient()
+    idb.set.mockClear()
+    await fresh.persistClient(client(query('a', 1), query('b', 2)))
+    expect(idb.set).not.toHaveBeenCalled()
+  })
+
+  it('burstsOfChangesAreCoalescedIntoOneFlush', async () => {
+    localStorage.setItem('refreshToken', 'token')
+    store.set(OFFLINE_OWNER_KEY, 7)
+    const throttled = createOfflinePersister({ throttleMs: 30 })
+    const flushes = [1, 2, 3].map((tick) => throttled.persistClient(client(query('a', tick))))
+    await Promise.all(flushes)
+    expect(entryWrites()).toHaveLength(1)
+    expect(Array.from(store.values()).some((value) => value?.timestamp !== undefined)).toBe(true)
+  })
+
+  it('theOldestQueriesAreDroppedWhenTheBudgetIsExceeded', async () => {
+    localStorage.setItem('refreshToken', 'token')
+    store.set(OFFLINE_OWNER_KEY, 7)
+    const small = createOfflinePersister({ throttleMs: 0, budgetBytes: 600 })
+    const big = 'x'.repeat(120)
+    const queries = [query('old', 1, big), query('mid', 2, big), query('new', 3, big)]
+    await small.persistClient(client(...queries))
+    const restored = await small.restoreClient()
+    const names = restored.clientState.queries.map((item) => item.queryKey[0]).sort()
+    expect(names).toEqual(['mid', 'new'])
+    expect(small.stats().bytes).toBeLessThanOrEqual(600)
+    idb.set.mockClear()
+    await small.persistClient(client(...queries))
+    expect(idb.set).not.toHaveBeenCalled()
   })
 })
 

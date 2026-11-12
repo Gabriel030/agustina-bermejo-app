@@ -48,4 +48,16 @@ describe('offline hydration', () => {
     await persistQueryClientRestore({ queryClient: target, persister, maxAge: OFFLINE_MAX_AGE_MS })
     expect(target.getQueryData(['me', 'schedule'])).toBeUndefined()
   })
+
+  it('catalogQueriesMarkedN0cSurviveHydration', async () => {
+    const persister = memoryPersister()
+    const source = new QueryClient()
+    const catalog = offlineQuery('N0c', { queryKey: ['terminos'], queryFn: () => [] })
+    source.getQueryCache().build(source, catalog).setData([{ id: 1 }], { updatedAt: UPDATED_AT })
+    await persistQueryClientSave({ queryClient: source, persister, dehydrateOptions: offlineDehydrateOptions })
+    const target = new QueryClient()
+    await persistQueryClientRestore({ queryClient: target, persister, maxAge: OFFLINE_MAX_AGE_MS })
+    expect(target.getQueryData(['terminos'])).toEqual([{ id: 1 }])
+    expect(target.getQueryCache().find({ queryKey: ['terminos'] }).meta.offlineLevel).toBe('N0c')
+  })
 })

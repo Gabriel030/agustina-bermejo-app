@@ -1,5 +1,6 @@
 export const OFFLINE_LEVELS = Object.freeze({
   N0: 'N0',
+  N0c: 'N0c',
   N1: 'N1',
   N2: 'N2',
 })
