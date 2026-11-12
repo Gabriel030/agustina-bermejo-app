@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
+import { offlineQuery } from '@/api/offlineQuery';
 import { holidaysOfYear } from '@/features/academic-structure/lib/holidays';
 
 const HOLIDAYS_KEY = ['holidays'];
 
 export function useHolidays(year) {
-  return useQuery({
-    queryKey: [...HOLIDAYS_KEY, year],
-    queryFn: async () => holidaysOfYear(await apiFetch(`/holidays?year=${year}`), year),
-  });
+  return useQuery(
+    offlineQuery('N0c', {
+      queryKey: [...HOLIDAYS_KEY, year],
+      queryFn: async () => holidaysOfYear(await apiFetch(`/holidays?year=${year}`), year),
+    }),
+  );
 }
 
 function useInvalidateHolidays() {
