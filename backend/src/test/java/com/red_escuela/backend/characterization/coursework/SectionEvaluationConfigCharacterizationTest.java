@@ -180,7 +180,7 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
 
         putJson(assistantRoom.teacher(), configPath(assistantRoom), proposal()).andExpect(status().isForbidden());
         postEmpty(assistantRoom.teacher(), configPath(assistantRoom) + "/submit").andExpect(status().isForbidden());
-        putJson(leadRoom.teacher(), configPath(assistantRoom), proposal()).andExpect(status().isForbidden());
+        putJson(leadRoom.teacher(), configPath(assistantRoom), proposal()).andExpect(status().isNotFound());
         getAs(assistantRoom.teacher(), configPath(assistantRoom)).andExpect(status().isOk());
     }
 

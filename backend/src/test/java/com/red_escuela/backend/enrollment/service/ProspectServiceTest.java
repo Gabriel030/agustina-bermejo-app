@@ -50,15 +50,58 @@ class ProspectServiceTest {
     void createProspectPublicSendsVerificationAndLeavesActorNull() {
         StudentOnboardingSummary summary = mock(StudentOnboardingSummary.class);
         when(summary.studentId()).thenReturn(5L);
-        when(studentOnboarding.registerProspect(any(NewProspect.class))).thenReturn(summary);
+        when(studentOnboarding.registerProspectIfEmailIsFree(any(NewProspect.class))).thenReturn(java.util.Optional.of(summary));
 
         service.createProspect(new CreateProspectRequest("Ana", "Perez", "ana@test.com", null, 1L));
 
         ArgumentCaptor<NewProspect> captor = ArgumentCaptor.forClass(NewProspect.class);
-        verify(studentOnboarding).registerProspect(captor.capture());
+        verify(studentOnboarding).registerProspectIfEmailIsFree(captor.capture());
         assertThat(captor.getValue().registeredByPersonId()).isNull();
         verify(emailVerificationSender).sendVerificationToStudent(5L);
         verifyNoInteractions(currentActorFinder);
+    }
+
+    @Test
+    void createProspectPublicSendsNothingWhenTheEmailIsAlreadyRegistered() {
+        when(studentOnboarding.registerProspectIfEmailIsFree(any(NewProspect.class))).thenReturn(java.util.Optional.empty());
+
+        service.createProspect(new CreateProspectRequest("Ana", "Perez", "ana@test.com", null, 1L));
+
+        verifyNoInteractions(emailVerificationSender);
+    }
+
+    @Test
+    void createProspectPublicSwallowsAConcurrentDuplicateRegistration() {
+        when(studentOnboarding.registerProspectIfEmailIsFree(any(NewProspect.class)))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("x",
+                        new RuntimeException("duplicate key value violates unique constraint \"uk_person_email_normalized\"")));
+
+        service.createProspect(new CreateProspectRequest("Ana", "Perez", "ana@test.com", null, 1L));
+
+        verifyNoInteractions(emailVerificationSender);
+    }
+
+    @Test
+    void createProspectPublicPropagatesOtherIntegrityViolations() {
+        when(studentOnboarding.registerProspectIfEmailIsFree(any(NewProspect.class)))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("x",
+                        new RuntimeException("null value in column \"name\" violates not-null constraint")));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.createProspect(new CreateProspectRequest("Ana", "Perez", "ana@test.com", null, 1L)))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void createProspectPublicDoesNotFailWhenTheVerificationEmailFails() {
+        StudentOnboardingSummary summary = mock(StudentOnboardingSummary.class);
+        when(summary.studentId()).thenReturn(5L);
+        when(studentOnboarding.registerProspectIfEmailIsFree(any(NewProspect.class))).thenReturn(java.util.Optional.of(summary));
+        org.mockito.Mockito.doThrow(new IllegalStateException("smtp down")).when(emailVerificationSender).sendVerificationToStudent(5L);
+
+        service.createProspect(new CreateProspectRequest("Ana", "Perez", "ana@test.com", null, 1L));
+
+        verify(emailVerificationSender).sendVerificationToStudent(5L);
     }
 
     @Test

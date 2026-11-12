@@ -37,7 +37,8 @@ public class ProspectController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ProspectResponse createProspect(@Valid @RequestBody CreateProspectRequest request) {
-        return ProspectResponse.from(prospectService.createProspect(request));
+        prospectService.createProspect(request);
+        return ProspectResponse.acknowledged();
     }
 
     @PostMapping("/{id}/documents")

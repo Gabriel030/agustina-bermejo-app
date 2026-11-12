@@ -163,7 +163,7 @@ class GradeCorrectionCharacterizationTest extends CourseworkCharacterizationSupp
         getAs(director, staffGrid).andExpect(status().isOk())
                 .andExpect(jsonPath("$.students[0].enrollmentId").value(classroom.enrollment().getId()));
         getAs(director, teacherGrid).andExpect(status().isForbidden());
-        getAs(stranger, teacherGrid).andExpect(status().isForbidden());
+        getAs(stranger, teacherGrid).andExpect(status().isNotFound());
         getAs(stranger, staffGrid).andExpect(status().isForbidden());
         getAs(classroom.teacher(), staffGrid).andExpect(status().isForbidden());
         getAs(classroom.student(), staffGrid).andExpect(status().isForbidden());
