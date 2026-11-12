@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ChevronLeft, Plus, CheckCircle2 } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
+import { ChoiceChip } from '@/components/ChoiceChip';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -243,14 +244,16 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
           <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Tipo</label>
           <div className="flex gap-2">
             {[{ value: 'programa', label: 'Carrera' }, { value: 'curso', label: 'Curso' }].map((op) => (
-              <button
+              <ChoiceChip
                 key={op.value}
-                type="button"
+                shape="rounded"
+                size="lg"
+                strong
+                selected={state.tipo === op.value}
                 onClick={() => { dispatch({ type: 'SET', campo: 'tipo', valor: op.value }); dispatch({ type: 'SET', campo: 'programaId', valor: '' }); dispatch({ type: 'SET', campo: 'cursoId', valor: '' }); }}
-                className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-colors ${state.tipo === op.value ? 'bg-accent-soft text-brand' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
               >
                 {op.label}
-              </button>
+              </ChoiceChip>
             ))}
           </div>
         </div>
@@ -406,14 +409,9 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
         <label className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Día</label>
         <div className="flex flex-wrap gap-1.5">
           {DIAS.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => setDia(d.id)}
-              className={`rounded-lg px-3 py-1 text-[12px] transition-colors ${dia === d.id ? 'bg-accent-soft font-medium text-brand' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
-            >
+            <ChoiceChip key={d.id} shape="rounded" size="xs" selected={dia === d.id} onClick={() => setDia(d.id)}>
               {d.label}
-            </button>
+            </ChoiceChip>
           ))}
         </div>
       </div>

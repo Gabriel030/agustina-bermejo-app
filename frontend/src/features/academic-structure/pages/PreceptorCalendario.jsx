@@ -6,7 +6,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/EmptyState';
-import { cn } from '@/lib/utils';
+import { ChoiceChip } from '@/components/ChoiceChip';
 import { useClassroomsAvailability } from '@/features/academic-structure/hooks/useClassrooms';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { ClassroomAvailabilityPicker } from '@/features/academic-structure/components/ClassroomAvailabilityPicker';
@@ -18,17 +18,9 @@ import { NativeSelect } from '@/components/ui/native-select';
 
 function SegmentedButton({ active, onClick, children }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        'shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors',
-        active ? 'bg-accent text-on-accent' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg',
-      )}
-    >
+    <ChoiceChip shape="pill" size="md" tone="solid" strong selected={active} onClick={onClick} className="shrink-0">
       {children}
-    </button>
+    </ChoiceChip>
   );
 }
 

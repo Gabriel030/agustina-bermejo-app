@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Users, Calendar, ClipboardList } from 'lucid
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
+import { ChoiceChip } from '@/components/ChoiceChip';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
@@ -207,20 +208,12 @@ export function PreceptorDetalleCarrera() {
         </div>
 
         <div className="flex gap-2 border-b border-surface-border pb-2">
-          <button
-            type="button"
-            onClick={() => setVerAnteriores(false)}
-            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${!verAnteriores ? 'bg-accent-soft font-medium text-brand' : 'text-ink-faint hover:text-ink'}`}
-          >
+          <ChoiceChip tone="text" selected={!verAnteriores} onClick={() => setVerAnteriores(false)}>
             Actuales
-          </button>
-          <button
-            type="button"
-            onClick={() => setVerAnteriores(true)}
-            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${verAnteriores ? 'bg-accent-soft font-medium text-brand' : 'text-ink-faint hover:text-ink'}`}
-          >
+          </ChoiceChip>
+          <ChoiceChip tone="text" selected={verAnteriores} onClick={() => setVerAnteriores(true)}>
             Anteriores
-          </button>
+          </ChoiceChip>
         </div>
 
         {loadingCiclos ? (
