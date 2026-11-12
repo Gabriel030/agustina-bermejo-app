@@ -42,7 +42,7 @@ export function ChartFrame({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <h3 className="min-w-0 font-heading text-[15px] font-semibold text-ink">{title}</h3>
+            <h3 className="min-w-0 font-heading text-size-15 font-semibold text-ink">{title}</h3>
             {info && <InfoTip label={`Qué muestra ${title}`}>{info}</InfoTip>}
           </div>
           {subtitle && <p className="text-xs text-ink-soft">{subtitle}</p>}

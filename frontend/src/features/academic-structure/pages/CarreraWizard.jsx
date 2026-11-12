@@ -124,7 +124,7 @@ function Paso1Datos({ state, dispatch }) {
       />
 
       {countErrors(errors) > 0 && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-size-13 text-danger">
           {invalidFieldsSummary(errors)}
         </p>
       )}
@@ -214,12 +214,12 @@ function Paso2Contenido({ state, dispatch }) {
       </FormField>
 
       {countErrors(errors) > 0 && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-size-13 text-danger">
           {invalidFieldsSummary(errors)}
         </p>
       )}
       {submitError && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-size-13 text-danger">
           {submitError}
         </p>
       )}
@@ -268,7 +268,7 @@ export function CarreraWizard() {
         <div>
           <Link
             to="/administrativo/gestion-academica?section=carreras"
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Carreras

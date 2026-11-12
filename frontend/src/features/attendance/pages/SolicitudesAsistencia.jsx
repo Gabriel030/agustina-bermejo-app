@@ -90,16 +90,16 @@ function RequestCard({ item, busy, onApprove, onReject }) {
   return (
     <GlassCard className="flex flex-col gap-3 p-4" data-testid={`attendance-request-${item.key}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="font-heading text-[14.5px] font-semibold text-ink">{item.title}</div>
+        <div className="font-heading text-size-14-5 font-semibold text-ink">{item.title}</div>
         <div className="flex items-center gap-2">
           <StatusPill tone={item.kind === 'justification' ? 'accent' : 'neutral'}>
             {item.kind === 'justification' ? 'Justificación' : 'Corrección'}
           </StatusPill>
-          <span className="text-[12.5px] text-ink-faint">{item.caption}</span>
+          <span className="text-size-12-5 text-ink-faint">{item.caption}</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px] sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-size-12-5 sm:grid-cols-4">
         {item.fields.map((f) => (
           <div key={f.label}>
             <div className="text-ink-faint">{f.label}</div>
@@ -109,8 +109,8 @@ function RequestCard({ item, busy, onApprove, onReject }) {
       </div>
 
       <div>
-        <div className="text-[12.5px] text-ink-faint">Motivo</div>
-        <div className="text-[13px] text-ink">{item.reason}</div>
+        <div className="text-size-12-5 text-ink-faint">Motivo</div>
+        <div className="text-size-13 text-ink">{item.reason}</div>
         {item.kind === 'justification' &&
           (item.hasAttachment ? (
             <Button
@@ -118,12 +118,12 @@ function RequestCard({ item, busy, onApprove, onReject }) {
               size="inline"
               type="button"
               onClick={() => openJustificationAttachment(item.ref)}
-              className="text-[12.5px] font-bold text-brand"
+              className="text-size-12-5 font-bold text-brand"
               >
               Ver adjunto
             </Button>
           ) : (
-            <div className="text-[12.5px] text-ink-faint">Sin adjunto</div>
+            <div className="text-size-12-5 text-ink-faint">Sin adjunto</div>
           ))}
       </div>
 
@@ -229,7 +229,7 @@ export function SolicitudesAsistencia() {
       )}
 
       {!isLoading && tab !== 'correction' && justificationTotal > 0 && (
-        <div className="flex flex-col items-center gap-2 text-[12.5px] text-ink-soft" data-testid="justifications-pagination">
+        <div className="flex flex-col items-center gap-2 text-size-12-5 text-ink-soft" data-testid="justifications-pagination">
           <span>Mostrando {justificationItems.length} de {justificationTotal} justificaciones</span>
           {hiddenJustifications > 0 && (
             <Button

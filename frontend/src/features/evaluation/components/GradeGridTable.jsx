@@ -33,7 +33,7 @@ const FINAL_DISABLED_REASON = 'Se carga desde la mesa de examen';
 function PublishHeader({ column, students, hasDrafts, boardHref, onPublish }) {
   if (column.type === 'FINAL') {
     return boardHref ? (
-      <Link to={boardHref} className="text-[12px] font-semibold text-primary underline-offset-2 hover:underline">
+      <Link to={boardHref} className="text-size-12 font-semibold text-primary underline-offset-2 hover:underline">
         Ver mesa
       </Link>
     ) : null;
@@ -90,7 +90,7 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
                 size="inline"
                 type="button"
                 onClick={() => onOpenStudent(row.original.enrollmentId)}
-                className="text-left text-[13px] font-semibold leading-tight text-ink"
+                className="text-left text-size-13 font-semibold leading-tight text-ink"
                 >
                 {`${row.original.lastname}, ${row.original.name}`}
               </Button>
@@ -238,7 +238,7 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
                           <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
                         )}
                         {header.column.columnDef.meta?.column?.date && (
-                          <span className="text-[10.5px] font-medium normal-case tracking-normal text-ink-faint">
+                          <span className="text-size-10-5 font-medium normal-case tracking-normal text-ink-faint">
                             {header.column.columnDef.meta.column.date.slice(8, 10)}/{header.column.columnDef.meta.column.date.slice(5, 7)}
                           </span>
                         )}

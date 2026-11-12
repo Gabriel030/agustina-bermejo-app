@@ -38,7 +38,7 @@ function Campo({ label, value }) {
   if (!value) return null;
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">{label}</span>
+      <span className="text-size-11 font-medium uppercase tracking-wider text-ink-faint">{label}</span>
       <Input value={value} readOnly className="cursor-default" />
     </div>
   );
@@ -84,7 +84,7 @@ export function LegajoPersonal() {
                     <h1 className="font-heading text-xl font-bold text-ink">
                       {legajo.apellido}, {legajo.nombre}
                     </h1>
-                    <p className="text-[13px] text-ink-faint">
+                    <p className="text-size-13 text-ink-faint">
                       {ETIQUETA_ROL[legajo.role] ?? legajo.role} · DNI {legajo.dni}
                     </p>
                   </div>
@@ -101,14 +101,14 @@ export function LegajoPersonal() {
               </div>
 
               {pendingEmail && (
-                <div role="status" className="rounded-xl bg-warning-bg px-3 py-2.5 text-[12.5px] text-warning">
+                <div role="status" className="rounded-xl bg-warning-bg px-3 py-2.5 text-size-12-5 text-warning">
                   Enviamos un enlace de confirmación a <b>{pendingEmail.email}</b>. Hasta que {legajo.nombre} lo confirme, sigue usando el email actual. Vence en 48 h ({pendingEmail.deadline}).
                 </div>
               )}
 
               <div className="flex flex-col gap-6">
                 <div>
-                  <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Datos personales</h3>
+                  <h3 className="mb-3 text-size-11 font-semibold uppercase tracking-wider text-ink-faint">Datos personales</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Campo label="Nombre" value={legajo.nombre} />
                     <Campo label="Apellido" value={legajo.apellido} />
@@ -121,7 +121,7 @@ export function LegajoPersonal() {
 
                 {legajo.domicilio && (legajo.domicilio.street || legajo.domicilio.city) && (
                   <div>
-                    <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Domicilio</h3>
+                    <h3 className="mb-3 text-size-11 font-semibold uppercase tracking-wider text-ink-faint">Domicilio</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <Campo label="Calle" value={legajo.domicilio.street} />
                       <Campo label="Número" value={legajo.domicilio.number} />
@@ -135,19 +135,19 @@ export function LegajoPersonal() {
 
                 {puedeAccionar && (
                   <div className="flex flex-col gap-4">
-                    <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Acciones</h3>
+                    <h3 className="text-size-11 font-semibold uppercase tracking-wider text-ink-faint">Acciones</h3>
                     <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
                       <div className="flex items-center justify-between gap-4 px-4 py-3">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[14px] font-medium text-ink">Resetear contraseña</span>
-                          <span className="text-[12px] text-ink-faint">Envía un link de recuperación al email del personal.</span>
+                          <span className="text-size-14 font-medium text-ink">Resetear contraseña</span>
+                          <span className="text-size-12 text-ink-faint">Envía un link de recuperación al email del personal.</span>
                         </div>
                         <Button variant="gradient" size="sm" onClick={() => setResetOpen(true)}>
                           Resetear contraseña
                         </Button>
                       </div>
                       {resetBlocked && (
-                        <div role="alert" className="bg-danger-bg px-4 py-3 text-[12.5px] text-danger">
+                        <div role="alert" className="bg-danger-bg px-4 py-3 text-size-12-5 text-danger">
                           No se puede resetear la contraseña: hay un cambio de email pendiente o reciente. Probá de nuevo pasadas 24 horas.
                         </div>
                       )}
@@ -155,8 +155,8 @@ export function LegajoPersonal() {
                       {puedeGestionarBaja && (
                         <div className="flex items-center justify-between gap-4 px-4 py-3">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-[14px] font-medium text-ink">Dar de baja</span>
-                            <span className="text-[12px] text-ink-faint">Marca al personal como inactivo. Puede reactivarse más adelante.</span>
+                            <span className="text-size-14 font-medium text-ink">Dar de baja</span>
+                            <span className="text-size-12 text-ink-faint">Marca al personal como inactivo. Puede reactivarse más adelante.</span>
                           </div>
                           <Button variant="destructive" size="sm" onClick={() => setBajaOpen(true)}>
                             Dar de baja
@@ -167,8 +167,8 @@ export function LegajoPersonal() {
                       {puedeReactivar && (
                         <div className="flex items-center justify-between gap-4 px-4 py-3">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-[14px] font-medium text-ink">Reactivar</span>
-                            <span className="text-[12px] text-ink-faint">Restaura el acceso al sistema para este miembro del personal.</span>
+                            <span className="text-size-14 font-medium text-ink">Reactivar</span>
+                            <span className="text-size-12 text-ink-faint">Restaura el acceso al sistema para este miembro del personal.</span>
                           </div>
                           <Button variant="gradient" size="sm" onClick={() => setReactivarOpen(true)}>
                             Reactivar
@@ -180,8 +180,8 @@ export function LegajoPersonal() {
                 )}
 
                 <div>
-                  <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Comisiones</h3>
-                  <p className="text-[13px] text-ink-faint">Disponible en la Épica 10 — Gestión académica.</p>
+                  <h3 className="mb-2 text-size-11 font-semibold uppercase tracking-wider text-ink-faint">Comisiones</h3>
+                  <p className="text-size-13 text-ink-faint">Disponible en la Épica 10 — Gestión académica.</p>
                 </div>
               </div>
             </>

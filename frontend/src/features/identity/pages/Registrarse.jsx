@@ -126,7 +126,7 @@ export function Registrarse() {
               required
               disabled={enviando}
             />
-            <div className="mt-1 text-[11.5px] text-ink-faint">Este email va a ser tu usuario para ingresar.</div>
+            <div className="mt-1 text-size-11-5 text-ink-faint">Este email va a ser tu usuario para ingresar.</div>
           </div>
 
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
@@ -151,7 +151,7 @@ export function Registrarse() {
               />
             </div>
           </div>
-          <div className="-mt-1.5 text-[11.5px] text-ink-faint">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con una mayúscula y un número.</div>
+          <div className="-mt-1.5 text-size-11-5 text-ink-faint">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con una mayúscula y un número.</div>
 
           {errorInstitucion && (
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
@@ -165,13 +165,13 @@ export function Registrarse() {
               type="submit"
               disabled={enviando || !institutionId}
               variant="gradient"
-              className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
+              className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
             >
               {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
             </Button>
           </m.div>
 
-          <div className="-mt-1 text-center text-[11.5px] text-ink-faint">
+          <div className="-mt-1 text-center text-size-11-5 text-ink-faint">
             Al crear tu cuenta entrás directo — todavía no hay verificación de email.
           </div>
         </form>

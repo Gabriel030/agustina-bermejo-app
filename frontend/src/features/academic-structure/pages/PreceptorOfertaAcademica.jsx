@@ -56,8 +56,8 @@ function FilaPrograma({ programa, navigate }) {
       onClick={() => navigate(`${basePath}/oferta-academica/carreras/${programa.id}`)}
       >
       <div className="min-w-0">
-        <span className="block truncate text-[14px] font-medium text-ink">{programa.name}</span>
-        <span className="text-[12px] text-ink-faint">{programa.totalYears} {programa.totalYears === 1 ? 'año' : 'años'}</span>
+        <span className="block truncate text-size-14 font-medium text-ink">{programa.name}</span>
+        <span className="text-size-12 text-ink-faint">{programa.totalYears} {programa.totalYears === 1 ? 'año' : 'años'}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <BadgeCiclo ciclo={cicloActivo} failed={ciclosFailed} />
@@ -80,8 +80,8 @@ function FilaCurso({ curso, navigate }) {
       onClick={() => navigate(`${basePath}/oferta-academica/cursos/${curso.id}`)}
       >
       <div className="min-w-0">
-        <span className="block truncate text-[14px] font-medium text-ink">{curso.name}</span>
-        <span className="text-[12px] text-ink-faint">{formatCourseDuration(curso.durationMonths)}</span>
+        <span className="block truncate text-size-14 font-medium text-ink">{curso.name}</span>
+        <span className="text-size-12 text-ink-faint">{formatCourseDuration(curso.durationMonths)}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <BadgeCiclo ciclo={cicloActivo} failed={ciclosFailed} />

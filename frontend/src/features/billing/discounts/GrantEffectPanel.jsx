@@ -25,7 +25,7 @@ export function GrantEffectPanel({ preview, values, isLoading, isReady, isError 
     body = (
       <ul className="flex flex-col gap-2">
         {describeGrantEffect(preview, values).map((line) => (
-          <li key={line.text} className="grid grid-cols-[8px_minmax(0,1fr)] items-start gap-2.5 text-[13px] leading-snug text-ink">
+          <li key={line.text} className="grid grid-cols-[8px_minmax(0,1fr)] items-start gap-2.5 text-size-13 leading-snug text-ink">
             <span aria-hidden="true" className={cn('mt-1.5 size-2 rounded-full', DOT_TONES[line.tone])} />
             <span>{line.text}</span>
           </li>

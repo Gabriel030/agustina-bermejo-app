@@ -25,14 +25,14 @@ function SegmentedButton({ active, onClick, children }) {
 }
 
 function FieldTitle({ children }) {
-  return <h2 className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{children}</h2>;
+  return <h2 className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">{children}</h2>;
 }
 
 function PeriodSelect({ termId, onChange }) {
   const { data: terms } = useTerminos();
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor="calendar-period" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+      <label htmlFor="calendar-period" className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
         Período
       </label>
       <NativeSelect
@@ -79,7 +79,7 @@ export function PreceptorCalendario() {
         <div>
           <Link
             to={`${basePath}/oferta-academica`}
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Oferta académica
@@ -133,7 +133,7 @@ export function PreceptorCalendario() {
               <ClassroomModuleSelector shift={shift} selection={selection} onChange={setSelection} />
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="classroom-seats" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+                <label htmlFor="classroom-seats" className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
                   Cupo
                 </label>
                 <Input

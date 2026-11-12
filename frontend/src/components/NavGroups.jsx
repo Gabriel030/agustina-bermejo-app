@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const GROUP_HEADING = 'text-[11px] font-bold uppercase tracking-[0.08em] text-ink-faint';
+const GROUP_HEADING = 'text-size-11 font-bold uppercase tracking-[0.08em] text-ink-faint';
 
 function isActivePath(item, pathname) {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);

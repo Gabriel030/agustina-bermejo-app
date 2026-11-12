@@ -155,7 +155,7 @@ export function Login() {
               type="submit"
               variant="gradient"
               disabled={enviando || cooldown.active}
-              className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
+              className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
             >
               {enviando ? 'Ingresando…' : cooldown.active ? `Reintentar en ${cooldown.secondsLeft} s` : 'Ingresar'}
             </Button>
@@ -169,7 +169,7 @@ export function Login() {
 
           {googleIdTokenPendiente ? (
             <div className="flex flex-col gap-2.5 rounded-2xl border border-border bg-accent-soft/40 p-3.5 text-center">
-              <div className="text-[13px] font-medium text-ink">
+              <div className="text-size-13 font-medium text-ink">
                 No encontramos una cuenta con ese email. ¿Querés crear una cuenta nueva?
               </div>
               <div className="flex gap-2">

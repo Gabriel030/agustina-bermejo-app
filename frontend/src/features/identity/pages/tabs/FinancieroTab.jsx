@@ -61,12 +61,12 @@ function HabilitarDialog({ obligacion, programEnrollmentId, onClose }) {
           <DialogTitle>Permitir inscripción sin matrícula paga</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <p className="text-[13px] text-ink-soft">
+          <p className="text-size-13 text-ink-soft">
             El alumno va a poder inscribirse a materias, mesas y pedir certificados sin tener paga la matrícula. La deuda se
             mantiene: la factura sigue pendiente hasta que se pague. La habilitación dura hasta que la revoques.
           </p>
           <div className="flex flex-col gap-1">
-            <label htmlFor="habilitacion-motivo" className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Motivo</label>
+            <label htmlFor="habilitacion-motivo" className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Motivo</label>
             <Textarea
               id="habilitacion-motivo"
               value={motivo}
@@ -74,7 +74,7 @@ function HabilitarDialog({ obligacion, programEnrollmentId, onClose }) {
               maxLength={1000}
               rows={3}
             />
-            <p className="text-[12px] text-ink-faint">
+            <p className="text-size-12 text-ink-faint">
               {motivo.trim().length}/{MIN_MOTIVO} caracteres como mínimo
             </p>
           </div>
@@ -105,7 +105,7 @@ function MatriculaDeInscripcion({ inscripcion }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+      <h3 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
         Matrícula — {inscripcion.programName ?? `Carrera ${inscripcion.programId}`}
       </h3>
       {isLoading ? (
@@ -116,9 +116,9 @@ function MatriculaDeInscripcion({ inscripcion }) {
         <EmptyState title="Sin matrícula configurada" description="La carrera no tiene un año lectivo con matrícula para este período." />
       ) : (
         <div className="overflow-x-auto">
-          <Table className="w-full min-w-[480px] text-left text-[13px]">
+          <Table className="w-full min-w-[480px] text-left text-size-13">
             <TableHeader>
-              <TableRow className="text-[11px] uppercase tracking-widest text-ink-faint">
+              <TableRow className="text-size-11 uppercase tracking-widest text-ink-faint">
                 <TableHead className="py-2 pr-3 font-bold">Matrícula</TableHead>
                 <TableHead className="py-2 pr-3 font-bold">Estado</TableHead>
                 <TableHead className="py-2 pr-3 font-bold">Vence</TableHead>
@@ -150,12 +150,12 @@ function MatriculaDeInscripcion({ inscripcion }) {
 
       {habilitaciones?.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h4 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Habilitaciones</h4>
+          <h4 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Habilitaciones</h4>
           {habilitaciones.map((h) => (
             <div key={h.id} className="flex flex-wrap items-start justify-between gap-2 rounded-2xl px-4 py-3 hover:bg-neutral-bg/60">
               <div className="min-w-0">
-                <p className="text-[13px] text-ink">{h.reason}</p>
-                <p className="text-[12px] text-ink-faint">
+                <p className="text-size-13 text-ink">{h.reason}</p>
+                <p className="text-size-12 text-ink-faint">
                   Otorgada por {h.grantedByName} el {formatearFecha(h.grantedAt)}
                   {h.revokedAt ? ` · Revocada por ${h.revokedByName} el ${formatearFecha(h.revokedAt)}` : ''}
                 </p>
@@ -219,14 +219,14 @@ function optionLabel(option) {
 function EnrollmentSelector({ options, value, onChange }) {
   if (options.length === 1) {
     return (
-      <p className="text-[13px] text-ink-soft">
+      <p className="text-size-13 text-ink-soft">
         Inscripción: <span className="font-semibold text-ink">{optionLabel(options[0])}</span>
       </p>
     );
   }
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Label htmlFor="financial-enrollment" className="text-[13px] font-semibold">Inscripción</Label>
+      <Label htmlFor="financial-enrollment" className="text-size-13 font-semibold">Inscripción</Label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger id="financial-enrollment" className="h-10 min-w-64">
           <SelectValue />
@@ -271,7 +271,7 @@ function EnrollmentFinance({ studentId, roleBase }) {
 export function FinancieroTab({ studentId, puedeHabilitar = false, roleBase }) {
   if (!puedeHabilitar) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-[13px] text-ink-faint">
+      <div className="flex min-h-[200px] items-center justify-center text-size-13 text-ink-faint">
         Disponible próximamente
       </div>
     );

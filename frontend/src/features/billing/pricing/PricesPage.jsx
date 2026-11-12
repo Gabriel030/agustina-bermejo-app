@@ -44,18 +44,18 @@ function PriceRow({ price, to }) {
       className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60 md:grid-cols-[1.4fr_1fr_1.2fr_auto]"
     >
       <div className="min-w-0">
-        <p className="text-[14px] font-semibold text-ink">{conceptOf(price)}</p>
+        <p className="text-size-14 font-semibold text-ink">{conceptOf(price)}</p>
         {advance && (
-          <p className="text-[12px] text-ink-faint">
+          <p className="text-size-12 text-ink-faint">
             Anticipada {advance.appliesToLectiveYear} · {formatMoney(advance.finalAmount)} desde {formatDate(advance.effectiveFrom)}
           </p>
         )}
       </div>
-      <div className="col-start-1 text-[13px] text-ink md:col-start-auto">
+      <div className="col-start-1 text-size-13 text-ink md:col-start-auto">
         {price.currentVersion ? (
           <>
             <span className="font-semibold tabular-nums">{formatMoney(price.currentVersion.finalAmount)}</span>
-            <span className="ml-2 text-[12px] text-ink-faint">desde {formatDate(price.currentVersion.effectiveFrom)}</span>
+            <span className="ml-2 text-size-12 text-ink-faint">desde {formatDate(price.currentVersion.effectiveFrom)}</span>
           </>
         ) : (
           <span className="text-ink-faint">—</span>
@@ -63,7 +63,7 @@ function PriceRow({ price, to }) {
       </div>
       <div className="col-start-1 flex flex-col gap-0.5 md:col-start-auto">
         <StatusPill tone={status.tone}>{status.label}</StatusPill>
-        {note && <span className="text-[12px] text-ink-faint">{note}</span>}
+        {note && <span className="text-size-12 text-ink-faint">{note}</span>}
       </div>
       <ChevronRight className="col-start-2 row-span-3 row-start-1 h-4 w-4 text-ink-faint md:col-start-auto md:row-span-1 md:row-start-auto" aria-hidden="true" />
     </Link>
@@ -139,7 +139,7 @@ export function PricesPage() {
             groups.map((group) => (
               <GlassCard key={group.key} className="flex flex-col gap-1 p-3">
                 <div className="flex items-center gap-2 px-4 pb-1 pt-2">
-                  <h2 className="font-heading text-[15px] font-semibold text-ink">{group.name}</h2>
+                  <h2 className="font-heading text-size-15 font-semibold text-ink">{group.name}</h2>
                   <StatusPill>{group.kind}</StatusPill>
                 </div>
                 {group.prices.map((price) => (

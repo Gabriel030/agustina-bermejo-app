@@ -45,7 +45,7 @@ Diseños registrados hoy: `b` (default desde 26-A P6) y `vl` (Vidrio Líquido, r
 
 ## Qué NO se centraliza con tokens
 
-Estructura y layout (orden y agrupación de ítems del menú, qué se muestra o se oculta por pantalla, grillas, anchos máximos), tipografía por pantalla (`text-[13px]` y similares: son tamaños, no color), y los textos. Cambiar eso es trabajo de componente, no de tokens.
+Estructura y layout (orden y agrupación de ítems del menú, qué se muestra o se oculta por pantalla, grillas, anchos máximos), tipografía por pantalla (`text-size-13` y similares, tokens de tamaño en `index.css`: son tamaños, no color), y los textos. Cambiar eso es trabajo de componente, no de tokens.
 
 ## Cuántos usos tiene cada componente
 

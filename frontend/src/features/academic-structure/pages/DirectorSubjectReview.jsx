@@ -24,14 +24,14 @@ function SubjectReviewRow({ subject, onApprove, onReject, isActing }) {
     >
       <div className="min-w-0 sm:flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{subject.code}</span>
+          <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{subject.code}</span>
         </div>
-        <span className="block text-[14px] font-medium text-ink sm:truncate">{subject.name}</span>
+        <span className="block text-size-14 font-medium text-ink sm:truncate">{subject.name}</span>
         {subject.gradeMode && (
-          <span className="text-[12px] text-ink-faint">{GRADE_MODE_LABELS[subject.gradeMode] ?? subject.gradeMode}</span>
+          <span className="text-size-12 text-ink-faint">{GRADE_MODE_LABELS[subject.gradeMode] ?? subject.gradeMode}</span>
         )}
         {subject.description && (
-          <p className="mt-1 line-clamp-2 text-[12px] text-ink-faint">{subject.description}</p>
+          <p className="mt-1 line-clamp-2 text-size-12 text-ink-faint">{subject.description}</p>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
@@ -110,7 +110,7 @@ export function DirectorSubjectReview() {
         </div>
 
         <div className="mb-3 px-4">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+          <h2 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
             Pendientes de aprobación
           </h2>
         </div>

@@ -252,7 +252,7 @@ export function NewPriceVersionPage() {
           {startMode === 'date' && (
             <Input aria-label="Fecha de vigencia" type="date" min={today} className="max-w-[200px]" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} />
           )}
-          <p className="text-[12px] text-ink-faint">Rige desde el {formatDate(start)}.</p>
+          <p className="text-size-12 text-ink-faint">Rige desde el {formatDate(start)}.</p>
         </div>
 
         <div className="flex flex-col gap-1.5">

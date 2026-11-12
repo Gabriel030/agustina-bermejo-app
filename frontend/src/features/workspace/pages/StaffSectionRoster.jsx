@@ -53,7 +53,7 @@ function buildColumns() {
       meta: { stickyStart: true, filterColumnId: 'atRisk', headerClassName: 'min-w-[148px] max-w-[148px]' },
       cell: ({ row }) => (
         <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
-          <span className="text-[13px] font-semibold leading-tight text-ink">{row.original.studentName}</span>
+          <span className="text-size-13 font-semibold leading-tight text-ink">{row.original.studentName}</span>
           {row.original.atRisk && <RiskPill />}
         </div>
       ),
@@ -165,7 +165,7 @@ export function StaffSectionRoster() {
             </Button>
           </div>
         </div>
-        {section && <p className="text-[12.5px] text-ink-faint">{describeSection(section)}</p>}
+        {section && <p className="text-size-12-5 text-ink-faint">{describeSection(section)}</p>}
       </div>
 
       {loading ? (
@@ -204,13 +204,13 @@ export function StaffSectionRoster() {
           <div className="grid grid-cols-3 gap-3">
             <Stagger>
               <StatCard label="Inscriptos" className="p-3 md:p-5">
-                <span className="font-heading text-[22px] font-bold text-ink md:text-[26px]">{total}</span>
+                <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{total}</span>
               </StatCard>
               <StatCard label="En riesgo" className="p-3 md:p-5">
-                <span className="font-heading text-[22px] font-bold text-danger md:text-[26px]">{atRiskCount}</span>
+                <span className="font-heading text-size-22 font-bold text-danger md:text-size-26">{atRiskCount}</span>
               </StatCard>
               <StatCard label="Asist. media" className="p-3 md:p-5">
-                <span className="font-heading text-[22px] font-bold text-ink md:text-[26px]">{formatPercent(averagePercent)}</span>
+                <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{formatPercent(averagePercent)}</span>
               </StatCard>
             </Stagger>
           </div>

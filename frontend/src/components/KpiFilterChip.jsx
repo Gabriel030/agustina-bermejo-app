@@ -20,7 +20,7 @@ const chip = cva(
 );
 
 const COUNT = {
-  card: 'text-[22px] leading-tight font-bold tabular-nums text-ink',
+  card: 'text-size-22 leading-tight font-bold tabular-nums text-ink',
   inline: 'font-heading text-xl font-bold tabular-nums text-ink',
 };
 

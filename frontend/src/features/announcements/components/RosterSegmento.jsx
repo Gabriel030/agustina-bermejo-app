@@ -39,13 +39,13 @@ export function RosterSegmento({ abierto, titulo, descripcion, destinatarios, se
 
         {!isLoading && !isError && lista.length > 0 && (
           <div className="max-h-80 overflow-auto rounded-xl border border-border">
-            <Table className="w-full border-collapse text-[12.5px]">
+            <Table className="w-full border-collapse text-size-12-5">
               <TableHeader>
                 <TableRow>
                   {['Legajo', 'Alumno', ...columnas.map((c) => c.label)].map((encabezado) => (
                     <TableHead
                       key={encabezado}
-                      className="sticky top-0 border-b border-border bg-surface px-2.5 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-[0.04em] text-ink-faint"
+                      className="sticky top-0 border-b border-border bg-surface px-2.5 py-1.5 text-left text-size-10-5 font-bold uppercase tracking-[0.04em] text-ink-faint"
                     >
                       {encabezado}
                     </TableHead>

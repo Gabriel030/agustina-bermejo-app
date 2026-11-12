@@ -81,7 +81,7 @@ function InasistenciasJustificadas({ registros }) {
       <div className="mb-2 text-xs font-semibold text-ink-faint">Inasistencias justificadas</div>
       <div className="flex flex-col gap-1.5">
         {justificadas.map((r) => (
-          <div key={r.id} className="flex flex-col gap-1 rounded-lg border border-border px-3 py-2 text-[13px]">
+          <div key={r.id} className="flex flex-col gap-1 rounded-lg border border-border px-3 py-2 text-size-13">
             <div className="flex items-center justify-between">
               <span className="text-ink">
                 {new Date(`${r.classDate}T00:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -110,7 +110,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
   if (cargandoResumen) {
     return (
       <GlassCard className="flex flex-col gap-4 p-5">
-        <div className="font-heading text-[15px] font-semibold text-ink">Asistencia</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">Asistencia</div>
         <Skeleton className="h-24" />
       </GlassCard>
     );
@@ -140,7 +140,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
   return (
     <GlassCard className="flex flex-col gap-5 p-5">
       <div className="flex items-center gap-2">
-        <div className="font-heading text-[15px] font-semibold text-ink">Asistencia</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">Asistencia</div>
         <StaleStamp dataUpdatedAt={dataUpdatedAt} isFetching={actualizandoResumen} isError={errorResumen} hasData={resumen !== undefined} />
       </div>
 
@@ -192,7 +192,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
                         disabled={dia.status !== 'ABSENT'}
                         onClick={() => setDiaSeleccionado(dia)}
                         title={TITULO_DIA[dia.status] ?? 'Justificar'}
-                        className={`flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-bold ${COLOR_DIA[dia.status] ?? 'bg-neutral-bg text-ink-faint'}`}
+                        className={`flex h-7 w-7 items-center justify-center rounded-lg text-size-11 font-bold ${COLOR_DIA[dia.status] ?? 'bg-neutral-bg text-ink-faint'}`}
                       >
                         {Number(dia.classDate.split('-')[2])}
                       </button>
@@ -233,7 +233,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
             }`}
           >
             <Upload className="h-5 w-5 text-ink-faint" />
-            <span className="text-[13px] font-semibold text-ink">{archivo ? archivo.name : 'Subir comprobante'}</span>
+            <span className="text-size-13 font-semibold text-ink">{archivo ? archivo.name : 'Subir comprobante'}</span>
             <span className="text-xs text-ink-faint">PDF o JPG, hasta 5MB</span>
             <input type="file" accept="application/pdf,image/jpeg" className="hidden" onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
           </label>

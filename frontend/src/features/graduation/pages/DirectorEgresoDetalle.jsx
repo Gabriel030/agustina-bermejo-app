@@ -99,7 +99,7 @@ export function DirectorEgresoDetalle() {
     <PageContainer>
       <Link
         to={GRADUATIONS_TRAY}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
+        className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink"
       >
         ← Egresos
       </Link>
@@ -137,17 +137,17 @@ export function DirectorEgresoDetalle() {
 
       {missingMandatorySubjects.length > 0 && (
         <GlassCard className="flex flex-col gap-2 p-4">
-          <div className="font-heading text-[16px] font-semibold text-ink">Obligatorias que faltan</div>
+          <div className="font-heading text-size-16 font-semibold text-ink">Obligatorias que faltan</div>
           <ul className="flex flex-col gap-1">
             {missingMandatorySubjects.map((subjectName) => (
-              <li key={subjectName} className="rounded-xl px-3 py-1.5 text-[13.5px] text-ink">{subjectName}</li>
+              <li key={subjectName} className="rounded-xl px-3 py-1.5 text-size-13-5 text-ink">{subjectName}</li>
             ))}
           </ul>
         </GlassCard>
       )}
 
       <GlassCard className="flex flex-col gap-3 p-4">
-        <div className="font-heading text-[16px] font-semibold text-ink">Asistencia por materia</div>
+        <div className="font-heading text-size-16 font-semibold text-ink">Asistencia por materia</div>
         {cargandoAsistencia ? (
           <Skeleton className="h-24" />
         ) : (asistencia ?? []).length === 0 ? (
@@ -156,8 +156,8 @@ export function DirectorEgresoDetalle() {
           <div className="flex flex-col gap-1">
             {asistencia.map((a) => (
               <div key={a.subjectName} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-neutral-bg/40">
-                <div className="text-[13.5px] text-ink">{a.subjectName}</div>
-                <div className="text-[13.5px] font-semibold text-ink">
+                <div className="text-size-13-5 text-ink">{a.subjectName}</div>
+                <div className="text-size-13-5 font-semibold text-ink">
                   {a.attendancePercent == null ? '—' : `${Math.round(a.attendancePercent)}%`}
                 </div>
               </div>
@@ -169,17 +169,17 @@ export function DirectorEgresoDetalle() {
       {!soloLectura && (
         <div className="flex flex-col items-end gap-2">
           {progresoFailed && (
-            <div role="alert" className="flex items-center gap-2 text-[13px] font-semibold text-danger">
+            <div role="alert" className="flex items-center gap-2 text-size-13 font-semibold text-danger">
               No pudimos verificar los requisitos del plan, por eso no se puede aprobar.
               <Button size="sm" variant="outline" onClick={() => refetchProgreso()}>Reintentar</Button>
             </div>
           )}
           {!progresoFailed && !meetsRequirements && (
-            <div role="alert" className="text-[13px] font-semibold text-danger">
+            <div role="alert" className="text-size-13 font-semibold text-danger">
               No se puede aprobar: el alumno todavía no cumple los requisitos del plan para egresar.
             </div>
           )}
-          {decisionError && <div role="alert" className="text-[13px] font-semibold text-danger">{decisionError}</div>}
+          {decisionError && <div role="alert" className="text-size-13 font-semibold text-danger">{decisionError}</div>}
           <div className="flex justify-end gap-2">
             <Button variant="outline" disabled={deciding} onClick={() => setModalRechazo(true)}>Rechazar</Button>
             <Button
@@ -194,7 +194,7 @@ export function DirectorEgresoDetalle() {
       )}
 
       {soloLectura && egreso.status === 'REJECTED' && egreso.rejectionReason && (
-        <div className="text-[13px] font-semibold text-danger">Motivo del rechazo: &ldquo;{egreso.rejectionReason}&rdquo;</div>
+        <div className="text-size-13 font-semibold text-danger">Motivo del rechazo: &ldquo;{egreso.rejectionReason}&rdquo;</div>
       )}
 
       <ModalAprobacion

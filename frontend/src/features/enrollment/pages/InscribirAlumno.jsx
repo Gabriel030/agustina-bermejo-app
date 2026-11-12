@@ -321,7 +321,7 @@ export function InscribirAlumno() {
       <h1 className="font-heading text-xl font-bold text-ink">
         {studentName ? `Inscribir a ${studentName}` : 'Inscribir alumno'}
       </h1>
-      {legajo.data?.dni && <span className="text-[13px] text-ink-faint">DNI {legajo.data.dni}</span>}
+      {legajo.data?.dni && <span className="text-size-13 text-ink-faint">DNI {legajo.data.dni}</span>}
     </div>
   );
 

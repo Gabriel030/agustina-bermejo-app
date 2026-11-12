@@ -43,7 +43,7 @@ import { ageLabel, MIN_REJECTION_REASON_LENGTH } from '@/lib/aprobaciones';
 function ReadOnlyField({ id, label, value }) {
   return (
     <div className="flex flex-col gap-1">
-      <Label htmlFor={id} className="text-[12px] text-ink-faint">
+      <Label htmlFor={id} className="text-size-12 text-ink-faint">
         {label}
       </Label>
       <Input id={id} readOnly value={value ?? '—'} />
@@ -87,8 +87,8 @@ function DocumentationCard({ application }) {
           return (
             <li key={type} className="flex flex-wrap items-center gap-3 border-b border-border py-2.5 last:border-b-0">
               <div className="min-w-40 flex-1">
-                <b className="block text-[14px] text-ink">{label}</b>
-                <small className="text-[12px] text-ink-faint">
+                <b className="block text-size-14 text-ink">{label}</b>
+                <small className="text-size-12 text-ink-faint">
                   {document ? `Subido el ${formatearFecha(document.uploadedAt) ?? '—'}` : 'Todavía no lo subió'}
                 </small>
               </div>
@@ -121,12 +121,12 @@ function CheckRow({ ok, title, children }) {
     <div className="flex items-start gap-3 py-2">
       <span
         aria-hidden="true"
-        className={`grid size-[22px] shrink-0 place-items-center rounded-full text-[12px] font-bold ${ok ? 'bg-success-bg text-success-ink' : 'bg-danger-bg text-danger-ink'}`}
+        className={`grid size-[22px] shrink-0 place-items-center rounded-full text-size-12 font-bold ${ok ? 'bg-success-bg text-success-ink' : 'bg-danger-bg text-danger-ink'}`}
       >
         {ok ? '✓' : '!'}
       </span>
       <div className="flex flex-col items-start gap-1">
-        <b className="text-[14px] text-ink">
+        <b className="text-size-14 text-ink">
           {title}
           <span className="sr-only">{ok ? ': en regla' : ': bloquea la aprobación'}</span>
         </b>
@@ -148,7 +148,7 @@ function BeforeApprovingCard({ check, application, basePath }) {
   if (check.isError) {
     return (
       <GlassCard className="flex flex-wrap items-center gap-3 p-4">
-        <span role="alert" className="text-[13.5px] text-ink-soft">
+        <span role="alert" className="text-size-13-5 text-ink-soft">
           No pudimos verificar la documentación y la deuda del alumno.
         </span>
         <Button type="button" variant="outline" size="sm" onClick={() => check.refetch()}>
@@ -165,7 +165,7 @@ function BeforeApprovingCard({ check, application, basePath }) {
     <GlassCard className="flex flex-col gap-1 p-4">
       <h2 className="font-heading text-base font-semibold text-ink">Antes de aprobar</h2>
       <CheckRow ok={documentationOk} title="Documentación obligatoria">
-        <p className="text-[12.5px] text-ink-faint">
+        <p className="text-size-12-5 text-ink-faint">
           {documentationOk
             ? 'DNI (frente y dorso) y analítico cargados.'
             : `Falta ${missingDocumentsText(data.documentation?.missingTypes)}. Hasta que la suba no se puede aprobar.`}
@@ -179,7 +179,7 @@ function BeforeApprovingCard({ check, application, basePath }) {
       {blockingReasonMessages(data).length > 0 && (
         <CheckRow ok={false} title="Estado de la solicitud y del alumno">
           {blockingReasonMessages(data).map((message) => (
-            <p key={message} className="text-[12.5px] text-ink-faint">
+            <p key={message} className="text-size-12-5 text-ink-faint">
               {message}
             </p>
           ))}
@@ -189,11 +189,11 @@ function BeforeApprovingCard({ check, application, basePath }) {
         {debtBlocks ? (
           <>
             {debtMessages(data.debt).map((message) => (
-              <p key={message} className="text-[12.5px] text-ink-faint">
+              <p key={message} className="text-size-12-5 text-ink-faint">
                 {message}
               </p>
             ))}
-            <p className="text-[12.5px] text-ink-faint">Tiene que regularizarla antes de que se apruebe el ingreso.</p>
+            <p className="text-size-12-5 text-ink-faint">Tiene que regularizarla antes de que se apruebe el ingreso.</p>
             {basePath === '/administrativo' && (
               <Button asChild variant="link" size="inline">
                 <Link to={`${studentPath}?view=financiero`}>Ir al Financiero del alumno</Link>
@@ -201,7 +201,7 @@ function BeforeApprovingCard({ check, application, basePath }) {
             )}
           </>
         ) : (
-          <p className="text-[12.5px] text-ink-faint">Sin deuda que bloquee la inscripción.</p>
+          <p className="text-size-12-5 text-ink-faint">Sin deuda que bloquee la inscripción.</p>
         )}
       </CheckRow>
     </GlassCard>
@@ -218,18 +218,18 @@ function ResolutionCard({ application }) {
         <ReadOnlyField id="resolved-at" label="Fecha" value={formatearFecha(application.decidedAt)} />
       </div>
       {application.status === 'REJECTED' && application.rejectionReason && (
-        <div className="rounded-2xl bg-danger-bg px-4 py-3 text-[13.5px] font-medium text-danger-ink">
+        <div className="rounded-2xl bg-danger-bg px-4 py-3 text-size-13-5 font-medium text-danger-ink">
           <b>Motivo del rechazo (lo ve el alumno):</b> {application.rejectionReason}
         </div>
       )}
       {application.status === 'APPROVED' && invoice && (
-        <div className="rounded-2xl bg-success-bg px-4 py-3 text-[13.5px] font-medium text-success-ink">
+        <div className="rounded-2xl bg-success-bg px-4 py-3 text-size-13-5 font-medium text-success-ink">
           Matrícula de ingreso · {formatMoney(invoice.total)}
           {invoice.dueDate ? ` · vence ${formatearFecha(invoice.dueDate)}` : ''}
         </div>
       )}
       {application.status === 'EXPIRED' && (
-        <div className="rounded-2xl bg-neutral-bg px-4 py-3 text-[13.5px] font-medium text-neutral-ink">
+        <div className="rounded-2xl bg-neutral-bg px-4 py-3 text-size-13-5 font-medium text-neutral-ink">
           La matrícula de ingreso no se pagó a tiempo: la aprobación venció.
         </div>
       )}
@@ -345,7 +345,7 @@ export function SolicitudDeIngresoDetalle() {
 
   return (
     <PageContainer>
-      <Link to={listPath} className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+      <Link to={listPath} className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink">
         ← Volver a Solicitudes de ingreso
       </Link>
 
@@ -364,7 +364,7 @@ export function SolicitudDeIngresoDetalle() {
 
       <div role="status" aria-live="polite">
         {conflict && (
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-warning-bg px-4 py-3 text-[13.5px] font-medium text-warning-ink">
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-warning-bg px-4 py-3 text-size-13-5 font-medium text-warning-ink">
             <span>
               <b>Otra persona ya resolvió esta solicitud.</b> No se hizo ningún cambio.
             </span>

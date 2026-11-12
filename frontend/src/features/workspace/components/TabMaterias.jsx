@@ -110,8 +110,8 @@ export function TabMaterias({ carreraId }) {
                 onClick={() => navigate(`/alumno/mis-carreras/materias/${inscripcion.id}`)}
                 className="gap-3 justify-start"
                 >
-                <span className="text-[13px] font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
-                <span className="flex-1 text-[13.5px] font-semibold text-ink">
+                <span className="text-size-13 font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
+                <span className="flex-1 text-size-13-5 font-semibold text-ink">
                   {inscripcion.subjectName}
                   {inscripcion.attemptNumber > 1 && (
                     <span className="ml-1.5 text-xs font-semibold text-ink-faint">· {inscripcion.attemptNumber}° intento</span>
@@ -124,7 +124,7 @@ export function TabMaterias({ carreraId }) {
                 <div className="flex flex-col items-end gap-0.5">
                   <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
                   {inscripcion.status === 'APPROVED' && inscripcion.finalGradeType && (
-                    <span className="text-[11px] text-ink-faint">{FINAL_GRADE_TYPE_LABEL[inscripcion.finalGradeType]}</span>
+                    <span className="text-size-11 text-ink-faint">{FINAL_GRADE_TYPE_LABEL[inscripcion.finalGradeType]}</span>
                   )}
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />

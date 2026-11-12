@@ -155,12 +155,12 @@ function stepperApprovalStatus(approvalStatus) {
 function FieldGroup({ label, required, children, hint, htmlFor }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-[13px] font-semibold text-ink">
+      <label htmlFor={htmlFor} className="text-size-13 font-semibold text-ink">
         {label}
         {required && <span className="ml-1 text-danger">*</span>}
       </label>
       {children}
-      {hint && <p className="text-[11px] text-ink-faint">{hint}</p>}
+      {hint && <p className="text-size-11 text-ink-faint">{hint}</p>}
     </div>
   );
 }
@@ -278,7 +278,7 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
   if (state.approvalStatus === 'locked') {
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-center">
-        <p className="text-[14px] text-ink-faint">
+        <p className="text-size-14 text-ink-faint">
           Completá los pasos anteriores y guardá la materia para enviarla a aprobación.
         </p>
       </div>
@@ -292,8 +292,8 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
           <Send className="h-7 w-7 text-ink-faint" />
         </div>
         <div>
-          <p className="text-[16px] font-semibold text-ink">Borrador guardado</p>
-          <p className="mt-1 text-[13px] text-ink-faint">
+          <p className="text-size-16 font-semibold text-ink">Borrador guardado</p>
+          <p className="mt-1 text-size-13 text-ink-faint">
             <span className="font-bold">{state.code}</span> — {state.name} fue guardada como borrador.
             Cuando esté lista, enviala a aprobación del director.
           </p>
@@ -312,8 +312,8 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
           <Clock className="h-7 w-7 text-warning" />
         </div>
         <div>
-          <p className="text-[16px] font-semibold text-ink">Pendiente de aprobación</p>
-          <p className="mt-1 text-[13px] text-ink-faint">
+          <p className="text-size-16 font-semibold text-ink">Pendiente de aprobación</p>
+          <p className="mt-1 text-size-13 text-ink-faint">
             La materia fue enviada al director para su revisión. Vas a ser notificado cuando sea aprobada o rechazada.
           </p>
         </div>
@@ -326,8 +326,8 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
       <div className="flex flex-col items-center gap-4 py-8 text-center">
         <CheckCircle2 className="h-14 w-14 text-success" />
         <div>
-          <p className="text-[16px] font-semibold text-ink">Materia activa</p>
-          <p className="mt-1 text-[13px] text-ink-faint">
+          <p className="text-size-16 font-semibold text-ink">Materia activa</p>
+          <p className="mt-1 text-size-13 text-ink-faint">
             <span className="font-bold">{state.code}</span> — {state.name} fue aprobada y está activa en el banco de materias.
           </p>
         </div>
@@ -343,8 +343,8 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
           <PowerOff className="h-7 w-7 text-ink-faint" />
         </div>
         <div>
-          <p className="text-[16px] font-semibold text-ink">Materia inactiva</p>
-          <p className="mt-1 text-[13px] text-ink-faint">
+          <p className="text-size-16 font-semibold text-ink">Materia inactiva</p>
+          <p className="mt-1 text-size-13 text-ink-faint">
             <span className="font-bold">{state.code}</span> — {state.name} está dada de baja. Reactivala para volver a usarla desde el banco.
           </p>
         </div>
@@ -358,9 +358,9 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
       <div className="flex flex-col items-center gap-4 py-8 text-center">
         <XCircle className="h-14 w-14 text-danger" />
         <div>
-          <p className="text-[16px] font-semibold text-ink">Solicitud rechazada</p>
-          {state.rejectionReason && <p className="mt-1 text-[13px] text-ink">Motivo: {state.rejectionReason}</p>}
-          <p className="mt-1 text-[13px] text-ink-faint">
+          <p className="text-size-16 font-semibold text-ink">Solicitud rechazada</p>
+          {state.rejectionReason && <p className="mt-1 text-size-13 text-ink">Motivo: {state.rejectionReason}</p>}
+          <p className="mt-1 text-size-13 text-ink-faint">
             Revisá los datos en los pasos anteriores y volvé a enviarla.
           </p>
         </div>
@@ -378,7 +378,7 @@ function ReviewLockNotice() {
   return (
     <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3">
       <Clock className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-      <p className="text-[13px] text-ink">
+      <p className="text-size-13 text-ink">
         Está en revisión de dirección: los datos no se pueden editar hasta que la apruebe o la rechace.
       </p>
     </div>
@@ -539,7 +539,7 @@ function WizardForm({ isEdit, existingSubject }) {
             )}
            </div>
             {isLastEditableStep && missing.length > 0 && (
-              <p role="status" className="max-w-sm text-right text-[12px] text-ink-faint">
+              <p role="status" className="max-w-sm text-right text-size-12 text-ink-faint">
                 Para guardar falta completar: {missing.join(', ')}.
               </p>
             )}
