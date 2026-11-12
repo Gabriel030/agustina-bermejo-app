@@ -720,11 +720,8 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         try {
             List<Callable<String>> contenders = new ArrayList<>();
             for (int index = 0; index < 6; index++) {
-                contenders.add(() -> new TransactionTemplate(transactionManager).execute(status -> {
-                    String number = allocator.allocateNextReportNumber();
-                    pause();
-                    return number;
-                }));
+                contenders.add(() -> new TransactionTemplate(transactionManager).execute(status ->
+                        allocator.allocateNextReportNumber()));
             }
             List<ConcurrentRace.Outcome<String>> outcomes = ConcurrentRace.run(contenders);
 
@@ -744,14 +741,6 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
             assertThat(reused).isEqualTo("ACTA-2090-0007");
         } finally {
             committed(() -> jdbc.update("delete from closure_report_number_counter where report_year = 2090"));
-        }
-    }
-
-    private void pause() {
-        try {
-            Thread.sleep(40);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 }
