@@ -323,5 +323,54 @@ class ShardTimingsTest(unittest.TestCase):
         self.assertEqual(shards.WINDOW, history['runs'])
 
 
+class WarmUpShardsTest(unittest.TestCase):
+    WARM = ['com/x/ApplicationContextWarmUpFirstForkIT', 'com/x/ApplicationContextWarmUpSecondForkIT']
+
+    def setUp(self):
+        self.original = (shards.discover, shards.load_timings, shards.fork_count)
+        self.regular = ['com/x/C%d' % i for i in range(10)]
+        shards.discover = lambda: sorted(self.regular + self.WARM)
+        shards.load_timings = lambda: {}
+        shards.fork_count = lambda: 2
+
+    def tearDown(self):
+        shards.discover, shards.load_timings, shards.fork_count = self.original
+
+    def test_every_shard_runs_every_warm_up_class(self):
+        for index in range(3):
+            selected = shards.shard_classes(index, 3)
+            for name in self.WARM:
+                self.assertIn(name, selected)
+
+    def test_warm_up_classes_do_not_take_a_regular_slot(self):
+        _, assigned = shards.assign(3)
+        names = [name for _, group in assigned for name in group]
+        self.assertEqual(sorted(self.regular), sorted(names))
+
+    def test_regular_classes_still_belong_to_exactly_one_shard(self):
+        seen = []
+        for index in range(3):
+            seen += [n for n in shards.shard_classes(index, 3) if n not in self.WARM]
+        self.assertEqual(sorted(self.regular), sorted(seen))
+
+    def test_verify_fails_when_warm_ups_do_not_match_the_fork_count(self):
+        shards.fork_count = lambda: 3
+        with self.assertRaises(SystemExit):
+            shards.verify(3)
+
+    def test_verify_accepts_one_warm_up_per_fork(self):
+        shards.verify(3)
+
+    def test_the_real_pom_fork_count_equals_the_real_warm_up_classes(self):
+        shards.discover, shards.fork_count = self.original[0], self.original[2]
+        self.assertEqual(shards.fork_count(), len(shards.warmups(shards.discover())))
+
+    def test_warm_up_names_sort_before_every_other_test_class(self):
+        shards.discover = self.original[0]
+        qualified = sorted(c.replace('/', '.') for c in shards.discover())
+        warm = [c.replace('/', '.') for c in shards.warmups(shards.discover())]
+        self.assertEqual(sorted(warm), qualified[:len(warm)])
+
+
 if __name__ == '__main__':
     unittest.main()

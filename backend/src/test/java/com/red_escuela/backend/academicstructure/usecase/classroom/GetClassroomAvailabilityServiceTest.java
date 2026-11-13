@@ -9,7 +9,6 @@ import com.red_escuela.backend.academicstructure.entity.Classroom;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 import org.hibernate.SessionFactory;
@@ -30,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@SlowTest(reason = "When it is the first class of its shard its time includes the one-time start-up of the shared Spring context")
 class GetClassroomAvailabilityServiceTest extends AbstractIntegrationTest {
 
     @Autowired
