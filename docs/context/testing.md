@@ -26,7 +26,6 @@ prueba encuentra bugs que los demás no ven.
 | Spring Modulith (`ModularityTest`) | Límites de módulos | ¿Ningún módulo accede a internos de otro ni aparecen dependencias o ciclos nuevos? | En uso |
 | `BillingDecisionCoverageTest` | Cobertura de decisiones | ¿Cada decisión de negocio vigente (D-xxx del registro) tiene al menos un test con su `@Tag`? | En uso |
 | JUnit sobre HTTP (`characterization/`) | Caracterización | ¿Quedó fijado el comportamiento actual antes de refactorizar, para detectar cambios no buscados? | En uso |
-| Karate | API (regresión HTTP) | ¿La API responde lo esperado (status, body, códigos de error) en los flujos de punta a punta? | En uso |
 | Awaitility | Procesos asíncronos | ¿El efecto en segundo plano ocurrió? (esperar siempre por el propio eventId, nunca por conteos globales) | En uso |
 | Vitest + RTL + MSW | Front unitario/componente | ¿El componente muestra y reacciona bien ante cada respuesta del backend? | En uso |
 | Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | En uso (solo local: `scripts/system-tests.sh`) |
@@ -44,7 +43,7 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 |---|---|---|
 | Una regla de negocio pura (Policy, Value Object, cálculo, máquina de estados) | JUnit puro con bordes (cero, negativo, límite, redondeo) y **cada transición válida e inválida** | Es barato y ahí viven la mayoría de los bugs de lógica |
 | Algo que guarda o lee de la base (servicio, repository) | Integración con Testcontainers (Postgres real) | Constraints, triggers, índices únicos y cascadas solo aparecen contra la base real |
-| Un endpoint (controller, DTO, código de error) | MockMvc con status, JSON y `code` de error; un escenario de Karate si es un flujo de punta a punta | El front depende del contrato exacto |
+| Un endpoint (controller, DTO, código de error) | MockMvc con status, JSON y `code` de error (los IT con MockMvc son la cobertura HTTP del repo) | El front depende del contrato exacto |
 | Una pantalla o un componente | Vitest + RTL + MSW con cada respuesta posible del backend: ok, error, vacío y cargando | Testea lo que ve el usuario, no la implementación |
 | Una migración que transforma datos existentes | Integración que carga datos con la forma vieja, migra y verifica el resultado | Un esquema vacío no prueba una migración de datos |
 | Un refactor grande de algo que ya funciona | Caracterización **antes** de tocar, y que siga verde después | Cualquier diferencia de comportamiento sale a la luz |
@@ -67,7 +66,7 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 
 ### Dónde corre cada cosa y cómo queda constancia
 
-El repo es público (los runners estándar no cobran minutos; lo que cuesta es el tiempo de espera y el tope de 20 jobs concurrentes), así que en el CI corre: `./mvnw clean verify` (JUnit, Testcontainers, Karate, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT corre en GitHub** como job `mutation`, en paralelo a los shards de `backend-tests`, y es parte del agregador `backend` (requisito de merge). **Playwright, k6 y OWASP Dependency-Check siguen corriendo solo en local**, mientras se programa, con el semáforo de CI.
+El repo es público (los runners estándar no cobran minutos; lo que cuesta es el tiempo de espera y el tope de 20 jobs concurrentes), así que en el CI corre: `./mvnw clean verify` (JUnit, Testcontainers, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT corre en GitHub** como job `mutation`, en paralelo a los shards de `backend-tests`, y es parte del agregador `backend` (requisito de merge). **Playwright, k6 y OWASP Dependency-Check siguen corriendo solo en local**, mientras se programa, con el semáforo de CI.
 
 ### PIT en GitHub
 
@@ -181,13 +180,10 @@ El tier se elige con la propiedad `test.exploration` (`pr` por defecto, `nightly
 | Grupo | Tests | PR contra `develop` | Push a `develop` | PR/push a `master` | Nightly |
 |---|---|---|---|---|---|
 | `migration` | los 19 tests `*Migration*` | solo si el diff toca `db/migration/**`, un test `*Migrat*`, `backend/pom.xml`, `scripts/` o `.github/` | siempre | siempre | siempre |
-| `karate` | `KarateSuiteTest` | siempre, salvo que el diff sea solo lógica de billing (ver abajo) | siempre | siempre | siempre |
 | `docs` | `ModuleDocumentationTest` | nunca | nunca | siempre | siempre |
 
-  Karate cubre endpoints de billing (`procesos-administrativos`: pagos, notas de crédito, cobranza, descuentos, comprobantes), por eso solo se saltea cuando todos los archivos del diff son `.md` o código de billing que **no** está en `controller`, `dto`, `api`, `usecase`, `service`, `events`, `gateway`, `infrastructure`, `entity` ni `repository` (main) ni en `billing/support` (tests). Cualquier otro archivo de backend, `contracts/`, `scripts/` o `.github/` lo activa.
-
-  Cuando el push a `develop` reutiliza los tests de un PR verde (mismo árbol) y ese PR se saltó `migration` o `karate`, el job `backend-extra-tests` corre solo esos grupos. El registro `tested-tree.json` del PR guarda qué grupos corrió; un registro sin esos campos cuenta como «no corrió».
-- **Nightly (`nightly-tests.yml`):** corre la suite completa en 8 shards con `-Dtest.exploration=nightly -Dtest.excludedGroups=none` (migration, Karate, docs y tests `@NightlyTest` incluidos). Se saltea si `develop` no cambió desde la última corrida verde. `schedule` solo corre desde la rama por defecto: hasta el próximo release se dispara a mano con `workflow_dispatch`.
+  Cuando el push a `develop` reutiliza los tests de un PR verde (mismo árbol) y ese PR se saltó `migration`, el job `backend-extra-tests` corre solo ese grupo. El registro `tested-tree.json` del PR guarda qué grupos corrió; un registro sin esos campos cuenta como «no corrió».
+- **Nightly (`nightly-tests.yml`):** corre la suite completa en 8 shards con `-Dtest.exploration=nightly -Dtest.excludedGroups=none` (migration, docs y tests `@NightlyTest` incluidos). Se saltea si `develop` no cambió desde la última corrida verde. `schedule` solo corre desde la rama por defecto: hasta el próximo release se dispara a mano con `workflow_dispatch`.
 - **Regla R5 (`BillingDecisionCoverageTest`):** cada decisión D-xxx vigente implementada o parcial necesita **al menos un test del tier PR**, es decir, con su `@Tag("D-xxx")`, sin `@NightlyTest`, sin `@Tag("nightly")`, sin `@Tag("migration")` y sin `@Disabled`. Si movés el único test de una decisión a nightly, el build falla con `R5 D-xxx ... sin test del tier PR`. Agregá un test liviano de PR en vez de saltear la regla.
 
 ### Reglas para no pagar contextos y esperas de más
@@ -316,100 +312,24 @@ positivo en una aserción de rol otorgado, porque toda la prueba corría en una
 
 ### Qué capa cubre qué — regla para no testear lo mismo dos veces
 
-Tres capas pueden pegarle al mismo endpoint: el `*ServiceTest` de integración, un
-test de controller con MockMvc, y un `Scenario` de Karate. **Cada caso va en una
-sola.** La pregunta que decide no es "¿qué herramienta uso?", es "¿qué estoy
-verificando?":
+Dos capas pueden pegarle al mismo endpoint: el `*ServiceTest` de integración y un
+test de controller con MockMvc. **Cada caso va en una sola.**
 
 | Lo que quiero verificar | Dónde va |
 |---|---|
 | Que la **regla de negocio** sea correcta (invariantes, cálculos, transiciones de estado, qué pasa con un dato borde) | `*ServiceTest` — integración con Postgres real |
-| Que el **contrato HTTP** sea correcto: status code exacto, forma del JSON, público vs. protegido, autorización por rol, y flujos de varios pasos encadenando respuestas reales | **Karate** |
-| Lo que Karate **no puede expresar bien**: concurrencia, rate limiting, control fino del reloj, multipart, o cualquier cosa que necesite manipular el entorno desde Java | **MockMvc** |
+| Que el **contrato HTTP** sea correcto: status code exacto, forma del JSON, público vs. protegido, autorización por rol | Test de controller con MockMvc |
 
-**El default del contrato HTTP es Karate, no un test de controller.** MockMvc es la
-excepción, y el test tiene que dejar claro por qué no podía ser un `Scenario`.
+Desde el 14-nov-2026 las pruebas de extremo a extremo HTTP con Karate ya no forman
+parte del repo (se eliminó la suite completa): los IT con MockMvc cubren los endpoints.
+Los flujos de varios pasos encadenando respuestas reales se verifican a mano con Bruno
+y, en el navegador, con Playwright (solo local).
 
-Los dos MockMvc que hoy **no** están duplicados en Karate son exactamente
-`RateLimitingTest` y `EnrollmentConcurrencyTest` — esa es la línea natural: ahí hacía
-falta control del reloj y de los hilos que Gherkin no da.
-
-**Por qué existe esta regla.** Se escribió después de medirlo: `AuthControllerTest`
-tiene 8 tests con MockMvc y `karate/auth/` tiene 21 escenarios, y el solapamiento es
-casi total — login happy path, credenciales inválidas 401, body inválido 400, refresh,
-logout, forgot-password, verify-reset-code y reset-password están **en las dos**, sobre
-la misma app levantada con el mismo Testcontainers. Se paga dos veces por la misma
-cobertura. No pasó por descuido: hasta ahora este documento distinguía Karate de Bruno
-pero nunca dijo nada sobre MockMvc, así que no había con qué decidir.
-
-Al mismo tiempo, Karate **no** es redundante en general: es la única cobertura de
-contrato HTTP de `inscripciones-academicas` (23 escenarios), `evaluacion-y-asistencia`
-(13), `procesos-administrativos` (12), `autoservicio` (7) y `catalogo` (4). Solo 16 de
-63 archivos de test Java usan MockMvc, y se concentran en `identity`, `enrollment` y
-`academicstructure`.
-
-**No se limpia retroactivamente**: los duplicados que ya existen se dejan salvo pedido
-explícito, mismo criterio que el resto de las convenciones de este proyecto. La regla
-aplica a lo que se escriba de acá en adelante.
-
-Se usan **dos herramientas, cada una para lo que sirve mejor** — no son
-redundantes, hay que mantener las dos actualizadas cuando se agrega o cambia
-un endpoint:
-
-- **[Karate](https://karatelabs.github.io/karate/)** (`backend/src/test/resources/karate/`)
-  es el gate de regresión **automático**: corre en CI dentro del job `backend`
-  existente (`KarateSuiteTest`, `@SpringBootTest` con `RANDOM_PORT`, Postgres
-  de Testcontainers propio — ver más abajo por qué propio y no el compartido).
-  Es donde vive la cobertura que tiene que sostenerse sola en cada PR, sin que
-  nadie la dispare a mano.
-- **[Bruno](https://www.usebruno.com/)** (`qa/bruno/`) es para **explorar a
-  mano** — CLI (`bru`, `npm install -g @usebruno/cli`) o GUI
-  (`brew install --cask bruno`) contra un backend real corriendo. Sirve para
-  investigar un bug interactivamente, probar algo puntual sin escribir código,
-  o que alguien no-técnico corra un caso reproducible. **No corre en CI** —
-  correrla ahí además de Karate pagaría el mismo costo dos veces por la misma
-  cobertura (ver "Antes de dar una tarea por terminada" más abajo: agregar a
-  ambas, no una u otra).
-
-### Karate — regresión automática en CI
-
-Feature files en `backend/src/test/resources/karate/<dominio>/*.feature`,
-corridos por `KarateSuiteTest` (`backend/src/test/java/.../karate/`). Cada
-`Scenario` es un caso de uso con su criterio de aceptación en el nombre — la
-sintaxis Gherkin (`Given`/`When`/`Then`) es la documentación, no hace falta un
-comentario aparte explicando "qué" prueba. `Scenario Outline` + `Examples` para
-variantes con la misma aserción (ej. varios formatos de contraseña inválida,
-todos esperando 400) — no un Scenario por variante cuando el criterio es
-idéntico.
-
-**Por qué `KarateSuiteTest` NO extiende `AbstractIntegrationTest`** (el
-Postgres singleton compartido por el resto de la suite): la clase a propósito
-no es `@Transactional` — si lo fuera, todos los `.feature` correrían en una
-única transacción de test y enmascararían bugs reales de boundary
-transaccional, el mismo problema de arriba. Sin rollback, cada fila que un
-`.feature` crea queda en la base — y varios tests de otras clases asumen
-"cuento todas las filas de la tabla y espero exactamente N", asunción que
-dejaría de ser cierta si Karate ensuciara el Postgres compartido (confirmado:
-pasó de verdad al probarlo, 4 tests de otras clases empezaron a fallar). Fix:
-`KarateSuiteTest` levanta su propio contenedor de Testcontainers, nunca
-comparte el de `AbstractIntegrationTest` — nadie necesita limpiar nada
-manualmente, el contenedor entero se descarta al terminar la corrida.
-
-**Setup que no tiene sentido hacer por HTTP** (crear un token de staff sin un
-flujo de alta completo, sembrar una institución) vive en
-`KarateFixtures`/`KarateSpringContext` (puente Java, `Java.type(...)` desde el
-`.feature`) — usa los repositories (`.save()`, transaccionales por sí solos),
-nunca `EntityManager.persist()` crudo, por el mismo motivo de arriba (sin
-`@Transactional` en la clase, no hay transacción externa donde flushear).
-
-**Correr:**
-```bash
-./mvnw test -Dtest=KarateSuiteTest              # toda la suite de Karate
-./mvnw test -Dtest=KarateSuiteTest#testAuth      # una sola carpeta/@Karate.Test
-./mvnw clean verify                              # la suite completa, incluye Karate
-```
-Genera un reporte HTML en `target/karate-reports/karate-summary.html` en cada
-corrida.
+**[Bruno](https://www.usebruno.com/)** (`qa/bruno/`) es para **explorar a
+mano** — CLI (`bru`, `npm install -g @usebruno/cli`) o GUI
+(`brew install --cask bruno`) contra un backend real corriendo. Sirve para
+investigar un bug interactivamente, probar algo puntual sin escribir código,
+o que alguien no-técnico corra un caso reproducible. **No corre en CI.**
 
 ### Bruno — exploración manual
 
@@ -439,7 +359,7 @@ reales del dominio (no solo "campo faltante" genérico — pensar como QA senior
 ¿qué pasa si mando un id que pertenece a otra entidad? ¿un duplicado por una
 vía que el código no valida explícito pero que un constraint de DB sí
 rechaza? ¿el status code de "sin sesión" es el mismo en todos los endpoints
-protegidos?) — **en las dos herramientas**, Karate y Bruno, no solo una. Ver
+protegidos?) — en MockMvc (o el `*ServiceTest`) y en Bruno. Ver
 `qa/bruno/BACKFILL.md` para el estado de cobertura sobre los endpoints
 existentes.
 

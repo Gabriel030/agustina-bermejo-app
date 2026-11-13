@@ -29,7 +29,6 @@ jobs:
       frontend: ${{ steps.changes.outputs.frontend }}
       lockfile: ${{ steps.changes.outputs.lockfile }}
       run_migration: ${{ steps.changes.outputs.run_migration }}
-      run_karate: ${{ steps.changes.outputs.run_karate }}
       run_docs: ${{ steps.changes.outputs.run_docs }}
       extra_groups: ${{ steps.changes.outputs.extra_groups }}
       reuse_backend: ${{ steps.changes.outputs.reuse_backend }}
@@ -153,7 +152,6 @@ jobs:
         working-directory: backend
         env:
           RUN_MIGRATION: ${{ needs.changes.outputs.run_migration }}
-          RUN_KARATE: ${{ needs.changes.outputs.run_karate }}
           RUN_DOCS: ${{ needs.changes.outputs.run_docs }}
           COVERAGE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'coverage') }}
         run: |
@@ -161,7 +159,6 @@ jobs:
           [ "$COVERAGE" = "true" ] && coverage_profile=coverage
           excluded=()
           [ "$RUN_MIGRATION" = "true" ] || excluded+=(migration)
-          [ "$RUN_KARATE" = "true" ] || excluded+=(karate)
           [ "$RUN_DOCS" = "true" ] || excluded+=(docs)
           if [ "${#excluded[@]}" -eq 0 ]; then
             groups=none
@@ -647,8 +644,5 @@ jobs:
 
   # Nota: qa/bruno/ es la colección de exploración MANUAL (GUI/CLI local, contra
   # docker-compose.qa.yml — Postgres descartable, ver ese archivo). No corre en CI a
-  # propósito: correrla acá además de Karate sería pagar el mismo costo dos veces
-  # (levantar el backend real completo) por la misma cobertura. La regresión
-  # automática de contrato HTTP vive en Karate, dentro del job `backend` de arriba
-  # (KarateSuiteTest, @SpringBootTest RANDOM_PORT + el mismo Testcontainers que ya
-  # usa el resto de la suite) — ver docs/context/testing.md.
+  # propósito: levantar el backend real completo en cada PR no se justifica; la regresión
+  # automática de contrato HTTP vive en los IT con MockMvc del job `backend` de arriba.
