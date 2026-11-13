@@ -49,7 +49,7 @@ public class ExamBoardRegistrationSummaryBuilder {
         if (program) {
             var enrollment = registration.getProgramSubjectSectionEnrollment();
             scheme = enrollment.getSubjectSection().getEvaluationScheme();
-            regular = enrollment.isRegular();
+            regular = enrollment.hasRegularCoursework();
             enrollmentId = enrollment.getId();
             carrera = enrollment.getProgramEnrollment().getProgram().getName();
             attemptNumber = enrollment.getAttemptNumber();
@@ -57,7 +57,7 @@ public class ExamBoardRegistrationSummaryBuilder {
         } else {
             var enrollment = registration.getCourseSubjectSectionEnrollment();
             scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
-            regular = enrollment.isRegular();
+            regular = enrollment.hasRegularCoursework();
             enrollmentId = enrollment.getId();
             carrera = LOOSE_COURSE_LABEL;
             attemptNumber = enrollment.getAttemptNumber();

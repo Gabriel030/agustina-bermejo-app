@@ -57,7 +57,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   DRAFT_INVOICES_AWAITING_REVIEW: 'Facturas por revisar',
   GRADES_PUBLISHED: 'Notas publicadas',
   GRADE_CORRECTED: 'Nota corregida',
-  SUBJECT_APPROVAL_REVERTED: 'Materia otra vez regular',
+  SUBJECT_APPROVAL_REVERTED: 'Cursada otra vez regular',
   LATE_PAYMENT_SETTINGS_CREATED: 'Nueva configuración de mora',
   AUTHORIZATION_REQUESTED: 'Autorización pendiente',
   AUTHORIZATION_REQUEST_EXPIRED: 'Propuesta vencida sin decidir',

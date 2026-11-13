@@ -121,7 +121,7 @@ describe('DocenteComisionDetalle', () => {
 
     expect(await screen.findByText('Acosta, Joaquín')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Alumnos' })).toHaveAttribute('data-state', 'active');
-    expect(screen.getByText('3 de 3 faltas permitidas')).toBeInTheDocument();
+    expect(screen.getByText('3 de 3 inasistencias permitidas')).toBeInTheDocument();
     expect(screen.getByText('Al límite')).toBeInTheDocument();
   });
 

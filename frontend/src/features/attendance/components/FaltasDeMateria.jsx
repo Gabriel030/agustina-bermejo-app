@@ -53,7 +53,7 @@ function ActionCell({ entry, canJustify, solicitudesPath, onJustify, studentName
   return (
     <Button
       variant="outline"
-      aria-label={`Justificar la falta del ${formatIsoDate(entry.classDate)} de ${studentName}`}
+      aria-label={`Justificar la inasistencia del ${formatIsoDate(entry.classDate)} de ${studentName}`}
       onClick={() => onJustify(entry)}
     >
       Justificar
@@ -69,14 +69,14 @@ export function FaltasDeMateria({ sectionEnrollmentId, studentName, subjectLabel
 
   if (attendance.isLoading) {
     return (
-      <div className="flex flex-col gap-2 p-3" aria-busy="true" aria-label="Cargando faltas">
+      <div className="flex flex-col gap-2 p-3" aria-busy="true" aria-label="Cargando inasistencias">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
     );
   }
   if (attendance.isError) {
-    return <LoadErrorState bare error={attendance.error} onRetry={() => attendance.refetch()} resource="las faltas" />;
+    return <LoadErrorState bare error={attendance.error} onRetry={() => attendance.refetch()} resource="las inasistencias" />;
   }
 
   const absences = listAbsences(attendance.data);
@@ -84,9 +84,9 @@ export function FaltasDeMateria({ sectionEnrollmentId, studentName, subjectLabel
 
   return (
     <div className="flex flex-col gap-2 p-3">
-      <h3 className="font-heading text-size-13 font-semibold text-ink">Faltas</h3>
+      <h3 className="font-heading text-size-13 font-semibold text-ink">Inasistencias</h3>
       {absences.length === 0 ? (
-        <p className="text-size-13 text-ink-faint">Sin faltas registradas.</p>
+        <p className="text-size-13 text-ink-faint">Sin inasistencias registradas.</p>
       ) : compact ? (
         <ul className="flex flex-col gap-2">
           {absences.map((entry) => (

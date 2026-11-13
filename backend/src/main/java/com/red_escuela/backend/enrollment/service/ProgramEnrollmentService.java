@@ -191,7 +191,7 @@ public class ProgramEnrollmentService {
         return new ProgramProgressResponse(
                 progress.programEnrollmentId(), progress.accumulatedCredits(), progress.requiredCredits(),
                 progress.pendingMandatorySubjects(), electiveGroups, progress.eligibleToComplete(),
-                progress.regular(), Optional.ofNullable(progress.overallAverage()).map(Grade::value).orElse(null));
+                progress.hasActiveCoursework(), Optional.ofNullable(progress.overallAverage()).map(Grade::value).orElse(null));
     }
 
     public boolean hasOnlyFinalExamsLeft(Long id) {
@@ -213,8 +213,8 @@ public class ProgramEnrollmentService {
                 .toList();
     }
 
-    public boolean hasActiveEnrollment(Long programEnrollmentId) {
-        return programProgressReader.hasActiveEnrollment(programEnrollmentId);
+    public boolean hasActiveCoursework(Long programEnrollmentId) {
+        return programProgressReader.hasActiveCoursework(programEnrollmentId);
     }
 
     public List<ProgramSubjectView> listApprovedSubjects(Long programEnrollmentId) {

@@ -61,7 +61,7 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.GRADES_PUBLISHED).toBe('success');
     expect(TIPO_NOTIFICACION_LABEL.GRADE_CORRECTED).toBe('Nota corregida');
     expect(TONO_NOTIFICACION.GRADE_CORRECTED).toBe('accent2');
-    expect(TIPO_NOTIFICACION_LABEL.SUBJECT_APPROVAL_REVERTED).toBe('Materia otra vez regular');
+    expect(TIPO_NOTIFICACION_LABEL.SUBJECT_APPROVAL_REVERTED).toBe('Cursada otra vez regular');
     expect(TONO_NOTIFICACION.SUBJECT_APPROVAL_REVERTED).toBe('warning');
   expect(TIPO_NOTIFICACION_LABEL.CLOSURE_EXCEPTION_GRANTED_TEACHER).toBe('Planilla del cierre actualizada');
   expect(TONO_NOTIFICACION.CLOSURE_EXCEPTION_GRANTED_TEACHER).toBe('warning');

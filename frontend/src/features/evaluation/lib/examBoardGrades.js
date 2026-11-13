@@ -6,7 +6,7 @@ export const BOARD_RESULT = {
   FAILED: { tone: 'danger', label: 'Desaprobado' },
   ABSENT: { tone: 'neutral', label: 'Ausente' },
   PENDING: { tone: 'accent', label: 'Pendiente' },
-  NOT_REGULAR: { tone: 'warning', label: 'No regular' },
+  NOT_REGULAR: { tone: 'warning', label: 'Sin cursada regular' },
 };
 
 export function isSavedAbsent(row) {

@@ -99,7 +99,7 @@ public class RegularCertificateIssuer {
         Long actorId = currentActorFinder.currentPersonId();
         rejectIfStillValid(command, studentId, actorId, now);
         RegularityVerdict verdict = regularityEvaluator.evaluate(command.kind(), command.enrollmentId());
-        if (!verdict.regular()) {
+        if (!verdict.institutionallyRegular()) {
             recordRequest(command, studentId, actorId, now, RegularRequestOutcome.NOT_REGULAR,
                     verdict.reasons().stream().map(RegularityReason::name).toList());
             throw new NotRegularException();

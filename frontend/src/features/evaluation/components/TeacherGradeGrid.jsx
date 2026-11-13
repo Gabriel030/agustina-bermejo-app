@@ -177,7 +177,7 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
     <GlassCard className="flex min-w-0 flex-col gap-3 p-3 md:p-4">
       <p className="text-size-12-5 leading-relaxed text-ink-soft">
         {grid.evaluationSchemeName ? `${grid.evaluationSchemeName}. ` : ''}
-        {summary ? `${summary}. ` : ''}El final solo se carga a alumnos regulares.
+        {summary ? `${summary}. ` : ''}El final solo se carga a alumnos con cursada regular.
       </p>
       <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-dialog-bg py-2">
         <span className="text-size-12-5 text-ink-soft" aria-live="polite">

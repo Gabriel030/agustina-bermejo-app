@@ -165,6 +165,23 @@ class ArchitectureTest {
     }
 
     @Test
+    void regularCourseworkMethodsAreNamedByWhatTheyAnswer() {
+        ArchitectureRules.regularCourseworkMethodsAreNotCalledIsRegular().check(MAIN_CLASSES);
+        assertThatThrownBy(() -> ArchitectureRules.regularCourseworkMethodsAreNotCalledIsRegular().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("isRegular")
+                .hasMessageContaining("hasActiveEnrollment");
+    }
+
+    @Test
+    void institutionalRegularityRulesAreNamedInstitutional() {
+        ArchitectureRules.institutionalRegularityRulesKeepTheirInstitutionalName().check(MAIN_CLASSES);
+        assertThatThrownBy(() -> ArchitectureRules.institutionalRegularityRulesKeepTheirInstitutionalName().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("RegularityRule");
+    }
+
+    @Test
     @Tag("D-051")
     void businessExceptionsAreThrownOnlyByPolicyEvaluation() {
         ArchitectureRules.businessExceptionsAreThrownOnlyByPolicyEvaluation(ArchitectureRules.V2_BILLING_PACKAGES).check(MAIN_CLASSES);

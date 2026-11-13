@@ -277,6 +277,23 @@ public final class ArchitectureRules {
         };
     }
 
+    public static ArchRule regularCourseworkMethodsAreNotCalledIsRegular() {
+        return noMethods()
+                .should().haveName("isRegular")
+                .orShould().haveName("hasActiveEnrollment")
+                .allowEmptyShould(true)
+                .because("a course enrollment answers hasRegularCoursework() and the program progress answers hasActiveCoursework(); a bare isRegular() hides which of the four meanings of regular it is");
+    }
+
+    public static ArchRule institutionalRegularityRulesKeepTheirInstitutionalName() {
+        return noClasses()
+                .should().haveSimpleName("RegularityRule")
+                .orShould().haveSimpleName("ProgramRegularityRule")
+                .orShould().haveSimpleName("CourseRegularityRule")
+                .allowEmptyShould(true)
+                .because("the rules that decide the institutional regular student are InstitutionalRegularityRule and its derivatives");
+    }
+
     public static ArchRule billingV2EntitiesHaveNoPublicSetters(Class<? extends java.lang.annotation.Annotation> entityAnnotation, String... v2Packages) {
         return noMethods()
                 .that().areDeclaredInClassesThat().resideInAnyPackage(v2Packages)

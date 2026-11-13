@@ -15,7 +15,7 @@ import { SeccionAsistencia } from '@/features/attendance';
 const ESTADOS_QUE_ADMITEN_BAJA = new Set(['ENROLLED', 'IN_PROGRESS']);
 
 const BADGE_ESTADO = {
-  REGULAR: { label: 'Regular', tone: 'success' },
+  REGULAR: { label: 'Cursada regular', tone: 'success' },
   IN_PROGRESS: { label: 'En curso', tone: 'accent' },
   WAITLISTED: { label: 'En lista de espera', tone: 'warning' },
   WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral' },

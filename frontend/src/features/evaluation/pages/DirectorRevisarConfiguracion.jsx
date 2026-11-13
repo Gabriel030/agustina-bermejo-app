@@ -148,7 +148,7 @@ export function DirectorRevisarConfiguracion() {
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">Mínimo para quedar regular</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">Mínimo para la cursada regular</div>
             <div className="font-heading text-xl font-bold text-ink">{config.minRegularGrade ?? '—'}</div>
           </div>
           <div>

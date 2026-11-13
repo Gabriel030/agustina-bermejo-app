@@ -231,7 +231,7 @@ describe('PreceptorNuevoCiclo', () => {
     await user.selectOptions(screen.getByLabelText('Aula'), '3');
     await user.click(screen.getByRole('radio', { name: 'Con límite de ausentismo' }));
     await user.type(screen.getByLabelText('Porcentaje máximo de ausentismo'), '25');
-    expect(screen.getByText(/en 40 clases dictadas, desde la ausencia número 11/)).toBeInTheDocument();
+    expect(screen.getByText(/en 40 clases dictadas, desde la inasistencia número 11/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Agregar comisión' }));
 
     await waitFor(() => expect(body).not.toBeNull());
