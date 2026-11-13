@@ -245,5 +245,86 @@ class ShardTimingsTest(unittest.TestCase):
         self.assertEqual(shards.WINDOW, history['runs'])
 
 
+class ContextShardingTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.original = (shards.TEST_ROOT, shards.TIMINGS)
+        shards.TEST_ROOT = os.path.join(self.root, 'java')
+        shards.TIMINGS = os.path.join(self.root, 'timings.txt')
+        self.write('Base', '@Tag("integration")\n@AutoConfigureMockMvc\npublic abstract class Base {}')
+
+    def tearDown(self):
+        shards.TEST_ROOT, shards.TIMINGS = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def write(self, name, source):
+        with open(os.path.join(self.root, 'java', name + '.java') if os.path.isdir(os.path.join(self.root, 'java'))
+                  else self.make_dir(name), 'w', encoding='utf-8') as handle:
+            handle.write(source)
+
+    def make_dir(self, name):
+        os.makedirs(shards.TEST_ROOT, exist_ok=True)
+        return os.path.join(shards.TEST_ROOT, name + '.java')
+
+    def spring(self, name, extra=''):
+        self.write(name, '@SpringBootTest\n@ActiveProfiles("test")\n%sclass %s extends Base {}' % (extra, name))
+
+    def contexts(self):
+        sources = shards.read_sources()
+        return {c: shards.context_of(c, sources) for c in shards.discover()}
+
+    def test_same_annotations_share_the_context_and_other_mocks_do_not(self):
+        self.spring('AIT')
+        self.spring('BIT', '@Transactional\n')
+        self.spring('CIT', '@SharedMockBeans\n')
+        self.spring('DIT', '@SharedMockBeans\n@Transactional\n')
+        contexts = self.contexts()
+        self.assertEqual(contexts['AIT'], contexts['BIT'])
+        self.assertEqual(contexts['CIT'], contexts['DIT'])
+        self.assertNotEqual(contexts['AIT'], contexts['CIT'])
+
+    def test_plain_unit_tests_have_no_spring_context(self):
+        self.write('PlainTest', 'class PlainTest {}')
+        self.assertIsNone(self.contexts()['PlainTest'])
+
+    def test_a_mock_declared_in_the_class_makes_its_own_context(self):
+        self.spring('AIT')
+        self.write('BIT', '@SpringBootTest\n@ActiveProfiles("test")\nclass BIT extends Base {\n    @MockitoBean\n    private Mailer mailer;\n}')
+        contexts = self.contexts()
+        self.assertNotEqual(contexts['AIT'], contexts['BIT'])
+
+    def test_the_context_of_a_parent_class_is_inherited(self):
+        self.write('Parent', '@SharedSpyBeans\nabstract class Parent extends Base {}')
+        self.write('ChildIT', '@SpringBootTest\n@ActiveProfiles("test")\nclass ChildIT extends Parent {}')
+        self.spring('AIT')
+        contexts = self.contexts()
+        self.assertNotEqual(contexts['AIT'], contexts['ChildIT'])
+
+    def test_each_variant_context_lands_in_a_single_shard(self):
+        for name in ('A1IT', 'A2IT', 'A3IT', 'A4IT', 'A5IT', 'A6IT'):
+            self.spring(name)
+        for name in ('M1IT', 'M2IT', 'M3IT'):
+            self.spring(name, '@SharedMockBeans\n')
+        self.spring('S1IT', '@SharedSpyBeans\n')
+        _, assigned = shards.assign(3)
+        homes = [i for i, (_, names) in enumerate(assigned) if {'M1IT', 'M2IT', 'M3IT'} & set(names)]
+        self.assertEqual(1, len(homes))
+        self.assertEqual({'M1IT', 'M2IT', 'M3IT'}, {n for n in assigned[homes[0]][1] if n.startswith('M')})
+
+    def test_assignment_keeps_every_class_exactly_once(self):
+        for index in range(12):
+            self.spring('T%dIT' % index, '@SharedMockBeans\n' if index % 3 == 0 else '')
+        classes, assigned = shards.assign(4)
+        flat = [n for _, names in assigned for n in names]
+        self.assertEqual(sorted(classes), sorted(flat))
+
+    def test_the_time_of_a_class_is_the_sum_of_its_test_cases_not_the_context_startup(self):
+        import xml.etree.ElementTree as ET
+        suite = ET.fromstring('<testsuite name="a.B" time="30"><testcase time="0.5"/><testcase time="1.5"/></testsuite>')
+        self.assertEqual(2.0, shards.body_seconds(suite))
+        empty = ET.fromstring('<testsuite name="a.B" time="3"/>')
+        self.assertEqual(3.0, shards.body_seconds(empty))
+
+
 if __name__ == '__main__':
     unittest.main()
