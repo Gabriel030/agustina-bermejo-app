@@ -360,7 +360,18 @@ class ProgramEnrollmentRulesTest {
             assertThat(group.cantidadAprobada()).isEqualTo(1);
         });
         assertThat(response.esRegular()).isTrue();
+        assertThat(response.hasActiveCoursework()).isTrue();
         assertThat(response.promedioGeneral()).isEqualByComparingTo("7.50");
+    }
+
+    @Test
+    void progressWithoutActiveCourseworkReportsItInTheNewAndTheDeprecatedField() {
+        when(programProgressReader.calculateProgress(1L)).thenReturn(new ProgramProgressView(1L, 0, 120, List.of(), List.of(), false, false, null));
+
+        ProgramProgressResponse response = service.calculateProgress(1L);
+
+        assertThat(response.hasActiveCoursework()).isFalse();
+        assertThat(response.esRegular()).isFalse();
     }
 
     @Test
