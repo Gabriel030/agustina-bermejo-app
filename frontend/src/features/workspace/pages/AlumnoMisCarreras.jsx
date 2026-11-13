@@ -17,6 +17,7 @@ import { TabNotas } from '@/features/evaluation';
 import { TabAsistencia } from '@/features/attendance';
 import { TabMesasDeExamen } from '@/features/evaluation';
 import { GraduationRequestAction } from '@/features/graduation';
+import { describeRegularity, useMyRegularity } from '@/features/identity';
 import { useMisMatriculaciones, useMiProgreso } from '@/features/enrollment';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
@@ -48,6 +49,8 @@ export function AlumnoMisCarreras() {
   const tab = requestedTab === 'egreso' ? 'tramites' : requestedTab;
 
   const { data: progreso } = useMiProgreso(matricula?.id);
+  const { data: regularity } = useMyRegularity('PROGRAM', graduated ? null : matricula?.id);
+  const regularityView = regularity ? describeRegularity(regularity) : null;
   const { data: planDeEstudio } = useProgramaPlanDeEstudio(matricula?.programId);
   const totalMateriasPlan = planDeEstudio?.length;
   // Mismo cruce plan+inscripciones que usan las pestañas Materias/Notas (React Query
@@ -126,6 +129,14 @@ export function AlumnoMisCarreras() {
               </StatusPill>
             )}
           </div>
+          {regularityView && (
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <StatusPill tone={regularityView.tone}>{regularityView.label}</StatusPill>
+              {regularityView.details.length > 0 && (
+                <span className="text-size-12 text-ink-faint">{regularityView.details.join(' · ')}</span>
+              )}
+            </div>
+          )}
           <div className="mt-1 text-sm text-ink-faint">Progreso del plan de estudios</div>
         </div>
         {/* Siempre visible, aunque haya una sola carrera — predecible, no aparece/desaparece

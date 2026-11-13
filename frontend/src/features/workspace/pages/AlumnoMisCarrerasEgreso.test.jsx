@@ -9,6 +9,16 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
 
 const API = 'http://localhost:8080';
+const REGULAR_STUDENT = {
+  kind: 'PROGRAM',
+  enrollmentId: 5,
+  regular: true,
+  reasons: [],
+  attendanceControlled: true,
+  billingMode: 'FULL',
+  institutionallyRegular: true,
+  paymentStanding: 'VERIFIED',
+};
 
 function ownRequest(overrides = {}) {
   return {
@@ -69,6 +79,7 @@ function mockEgreso({ own = ownRequest(), post } = {}) {
         history: [],
       }),
     ),
+    http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
     http.get(`${API}/*`, () => HttpResponse.json([])),
   );
 }

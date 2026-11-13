@@ -400,6 +400,36 @@ class StudentRegularCertificateIntegrationTest extends AbstractIntegrationTest {
         assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).hasSize(1);
     }
 
+    private ResultActions regularity(String token) throws Exception {
+        return mockMvc.perform(get("/me/regular-certificates/eligibility").param("kind", "PROGRAM")
+                .param("enrollmentId", enrollmentId.toString()).header("Authorization", "Bearer " + token));
+    }
+
+    @Test
+    void b115StudentSeesOwnRegularityWithPaymentStandingAndNoAmounts() throws Exception {
+        setBillingMode("FULL");
+        addOverdueInstallment();
+
+        String body = regularity(studentToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.institutionallyRegular").value(false))
+                .andExpect(jsonPath("$.paymentStanding").value("OVERDUE"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(body).doesNotContainIgnoringCase("amount").doesNotContain("15000");
+    }
+
+    @Test
+    void b116StudentWithGoodStandingAndAttendanceIsInstitutionallyRegular() throws Exception {
+        regularity(studentToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.institutionallyRegular").value(true))
+                .andExpect(jsonPath("$.reasons").isEmpty());
+    }
+
+    @Test
+    void b117AnotherStudentGetsNotFoundWithoutRegularityDataForSomeoneElse() throws Exception {
+        regularity(strangerToken).andExpect(status().isNotFound());
+        assertThat(regularity(strangerToken).andReturn().getResponse().getContentAsString()).doesNotContain("institutionallyRegular");
+    }
+
     @Test
     void b113StaffCannotUseTheStudentEndpoints() throws Exception {
         submit(staffToken).andExpect(status().is4xxClientError());
