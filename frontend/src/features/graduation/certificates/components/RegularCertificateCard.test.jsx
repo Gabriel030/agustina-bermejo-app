@@ -16,6 +16,9 @@ function certificate(overrides = {}) {
   return {
     id: 31,
     code: CODE,
+    studentId: 1,
+    studentName: 'Ana Perez',
+    programName: 'Tecnicatura',
     kind: 'PROGRAM',
     enrollmentId: 5,
     status: 'VALID',
@@ -47,6 +50,8 @@ function stateBody(overrides = {}) {
 const pendingRequestBody = {
   id: 77,
   studentId: 1,
+  studentName: 'Ana Perez',
+  programName: 'Tecnicatura',
   kind: 'PROGRAM',
   enrollmentId: 5,
   channel: 'STUDENT_PORTAL',
