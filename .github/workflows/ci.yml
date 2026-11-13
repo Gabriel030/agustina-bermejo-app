@@ -547,7 +547,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     name: frontend-tests (${{ matrix.shard }})
     steps:
       - uses: actions/checkout@v7
@@ -565,7 +565,7 @@ jobs:
 
       - name: Run the frontend test shard
         working-directory: frontend
-        run: npm run test -- --shard=${{ matrix.shard }}/2
+        run: npm run test -- --shard=${{ matrix.shard }}/3
 
   frontend-checks:
     runs-on: ubuntu-latest
