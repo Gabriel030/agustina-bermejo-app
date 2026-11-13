@@ -71,10 +71,6 @@ export default defineConfig([
       // React 19 con el runtime automático de JSX no requiere "React" en scope.
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/purity': 'off',
-      'react-hooks/immutability': 'off',
-      'react-hooks/preserve-manual-memoization': 'off',
     },
   },
   {
@@ -84,6 +80,17 @@ export default defineConfig([
     files: ['src/components/ui/**/*.jsx', 'src/context/**/*.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: [
+      'src/context/AuthContext.jsx',
+      'src/features/attendance/pages/DocenteTomarAsistencia.jsx',
+      'src/features/billing/dashboard/OfferCombobox.jsx',
+      'src/pages/AdministrativoFacturacion.jsx',
+    ],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
   {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 import { toast } from 'sonner';
@@ -52,11 +52,11 @@ export function AlumnoPagarOnline() {
 function OnlinePaymentRedirect({ invoiceId }) {
   const { goTo } = usePaymentReturn();
   const { mutate, isPending, error, data } = useCrearPreferenciaMp();
-  const [initiated, setInitiated] = useState(false);
+  const initiatedRef = useRef(false);
 
   useEffect(() => {
-    if (!initiated) {
-      setInitiated(true);
+    if (!initiatedRef.current) {
+      initiatedRef.current = true;
       mutate(invoiceId);
     }
   }, [invoiceId]);
