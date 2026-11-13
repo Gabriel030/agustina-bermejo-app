@@ -16,7 +16,6 @@ import com.red_escuela.backend.academicstructure.exception.SectionCapacityExceed
 import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -36,7 +35,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SlowTest(reason = "When it is the first class of its shard its time includes the one-time start-up of the shared Spring context")
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

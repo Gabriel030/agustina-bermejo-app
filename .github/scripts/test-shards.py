@@ -15,6 +15,10 @@ Uso:
   test-shards.py use <dir>                    copia el promedio de <dir>/samples.json como timings.txt si hay al menos
                                               MIN_HISTORY corridas; si no, se queda con el timings.txt versionado
 
+Las clases de calentamiento (ApplicationContextWarmUp*ForkIT) no se reparten: se agregan a TODOS los shards, una
+por cada JVM de surefire (forkCount del pom), y el pom ordena la ejecucion alfabeticamente por nombre completo para
+que corran primero. Cada JVM paga en ellas el arranque del contexto de Spring y ninguna clase real lo absorbe.
+
 Las clases que no figuran en timings.txt reciben como peso el promedio de las medidas
 (minimo 1 s) y se reparten igual, de modo que ninguna queda afuera.
 """
@@ -30,6 +34,9 @@ DEFAULT_WEIGHT = 1.0
 WINDOW = 8
 MIN_HISTORY = 3
 NAME = re.compile(r'(^Test.*|.*Test|.*Tests|.*TestCase|.*IT|.*Properties)\.java$')
+WARMUP = re.compile(r'(^|/)ApplicationContextWarmUp\w*ForkIT$')
+POM = os.path.join(ROOT, 'backend', 'pom.xml')
+FORK_COUNT = re.compile(r'<test\.forkCount>\s*(\d+)\s*</test\.forkCount>')
 ABSTRACT = re.compile(r'^\s*(public\s+)?abstract\s+class\s', re.M)
 
 
@@ -46,6 +53,18 @@ def discover():
             rel = os.path.relpath(path, TEST_ROOT)[:-len('.java')]
             found.append(rel.replace(os.sep, '/'))
     return sorted(found)
+
+
+def warmups(classes):
+    return sorted(c for c in classes if WARMUP.search(c))
+
+
+def fork_count():
+    with open(POM, encoding='utf-8') as handle:
+        match = FORK_COUNT.search(handle.read())
+    if not match:
+        sys.exit('test.forkCount not found in backend/pom.xml')
+    return int(match.group(1))
 
 
 def parse_timings(path):
@@ -71,9 +90,10 @@ def default_weight(timings):
 
 def assign(count):
     classes = discover()
+    skipped = set(warmups(classes))
     timings = load_timings()
     fallback = default_weight(timings)
-    weighted = [(timings.get(c, fallback), c) for c in classes]
+    weighted = [(timings.get(c, fallback), c) for c in classes if c not in skipped]
     known = sorted((w for w in weighted if w[1] in timings), key=lambda w: (-w[0], w[1]))
     unknown = sorted((w for w in weighted if w[1] not in timings), key=lambda w: w[1])
     shards = [[0.0, []] for _ in range(count)]
@@ -85,20 +105,23 @@ def assign(count):
 
 
 def select(index, count):
-    _, shards = assign(count)
-    print(','.join(sorted(shards[index][1])))
+    print(','.join(shard_classes(index, count)))
 
 
 def verify(count):
     classes, shards = assign(count)
+    warm_up = warmups(classes)
     assigned = [name for _, names in shards for name in names]
     duplicated = sorted({n for n in assigned if assigned.count(n) > 1})
-    missing = sorted(set(classes) - set(assigned))
+    missing = sorted(set(classes) - set(assigned) - set(warm_up))
     extra = sorted(set(assigned) - set(classes))
+    if len(warm_up) != fork_count():
+        print('warm-up classes: %d, forkCount: %d, they must match' % (len(warm_up), fork_count()))
+        sys.exit(1)
     for i, (weight, names) in enumerate(shards):
         print('shard %d: %d classes, ~%ds' % (i, len(names), round(weight)))
     unlisted = sorted(set(classes) - set(load_timings()))
-    print('classes: %d, without timing: %d' % (len(classes), len(unlisted)))
+    print('classes: %d, without timing: %d, warm-up in every shard: %d' % (len(classes), len(unlisted), len(warm_up)))
     if duplicated or missing or extra:
         print('duplicated=%s missing=%s extra=%s' % (duplicated, missing, extra))
         sys.exit(1)
@@ -225,8 +248,8 @@ def accumulate(args):
 
 
 def shard_classes(index, count):
-    _, shards = assign(count)
-    return sorted(shards[index][1])
+    classes, shards = assign(count)
+    return sorted(set(shards[index][1]) | set(warmups(classes)))
 
 
 def list_shard(args):

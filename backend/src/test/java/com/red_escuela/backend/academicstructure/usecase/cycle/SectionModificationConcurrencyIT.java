@@ -16,7 +16,6 @@ import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotR
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.exception.ConflictException;
-import com.red_escuela.backend.testsupport.SlowTest;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
@@ -40,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SlowTest(reason = "Runs concurrent proposal scenarios against the shared Spring context, and when it is the first class of its shard its time includes the one-time context start-up")
 @SpringBootTest
 @ActiveProfiles("test")
 class SectionModificationConcurrencyIT extends AbstractIntegrationTest {
