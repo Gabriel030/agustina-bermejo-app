@@ -9,5 +9,6 @@ import java.util.List;
 
 public record RegularCertificateRequestResponse(Long id, Long studentId, RegularityKind kind, Long enrollmentId,
                                                 RegularCertificateChannel channel, RegularRequestOutcome outcome,
-                                                List<String> reasons, LocalDateTime requestedAt, Long certificateId) {
+                                                List<String> reasons, LocalDateTime requestedAt, Long certificateId,
+                                                String rejectionReason) {
 }

@@ -11,6 +11,6 @@ final class RegularRequestResponses {
     static RegularCertificateRequestResponse of(RegularCertificateRequest request) {
         return new RegularCertificateRequestResponse(request.getId(), request.getStudentId(), request.getKind(),
                 request.enrollmentId(), request.getChannel(), request.getOutcome(), request.getReasons(),
-                request.getRequestedAt(), request.getCertificateId());
+                request.getRequestedAt(), request.getCertificateId(), request.getRejectionReason());
     }
 }

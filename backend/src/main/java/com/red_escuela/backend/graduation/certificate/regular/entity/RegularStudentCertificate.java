@@ -128,6 +128,17 @@ public class RegularStudentCertificate {
         }
     }
 
+    public boolean isRevocable() {
+        return status == RegularCertificateStatus.VALID;
+    }
+
+    public void revoke(String reason, Long directorId, LocalDateTime now) {
+        this.status = RegularCertificateStatus.REVOKED;
+        this.revokedAt = now;
+        this.revokedById = directorId;
+        this.revocationReason = reason;
+    }
+
     public void replacePdf(String newSha256, String newPath) {
         this.pdfSha256 = newSha256;
         this.pdfPath = newPath;

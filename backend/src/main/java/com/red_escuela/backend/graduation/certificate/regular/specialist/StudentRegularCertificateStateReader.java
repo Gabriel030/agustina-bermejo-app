@@ -49,31 +49,39 @@ public class StudentRegularCertificateStateReader {
                 .filter(certificate -> certificate.status() == RegularCertificateStatus.VALID).findFirst();
         if (valid.isPresent()) {
             return response(kind, enrollmentId, StudentRegularCertificateState.VALID, staffConfirmationRequired, valid.get(), null,
-                    null, List.of(), history);
+                    null, null, List.of(), history);
         }
         Optional<RegularCertificateRequest> pending = pendingOf(kind, enrollmentId);
         if (pending.isPresent()) {
             return response(kind, enrollmentId, StudentRegularCertificateState.PENDING, staffConfirmationRequired, null,
-                    RegularRequestResponses.of(pending.get()), null, List.of(), history);
+                    RegularRequestResponses.of(pending.get()), null, null, List.of(), history);
         }
+        String lastRejection = latestOf(kind, enrollmentId).filter(RegularCertificateRequest::wasRejectedByStaff)
+                .map(RegularCertificateRequest::getRejectionReason).orElse(null);
         RegularityVerdict verdict = regularityEvaluator.evaluate(kind, enrollmentId);
         if (!verdict.institutionallyRegular()) {
             return response(kind, enrollmentId, StudentRegularCertificateState.UNAVAILABLE, staffConfirmationRequired, null, null,
-                    unavailabilityOf(verdict), verdict.reasons().stream().map(RegularityReason::name).toList(), history);
+                    unavailabilityOf(verdict), lastRejection, verdict.reasons().stream().map(RegularityReason::name).toList(), history);
         }
         if (!staffConfirmationRequired
                 && (!overdueDebtProbe.isEnrollmentFeePaid(kind, enrollmentId) || overdueDebtProbe.hasOverdueDebt(studentId))) {
             return response(kind, enrollmentId, StudentRegularCertificateState.UNAVAILABLE, false, null, null,
-                    RegularUnavailabilityType.PAYMENTS, List.of(), history);
+                    RegularUnavailabilityType.PAYMENTS, lastRejection, List.of(), history);
         }
         return response(kind, enrollmentId, StudentRegularCertificateState.AVAILABLE, staffConfirmationRequired, null, null, null,
-                List.of(), history);
+                lastRejection, List.of(), history);
     }
 
     private Optional<RegularCertificateRequest> pendingOf(RegularityKind kind, Long enrollmentId) {
         return kind == RegularityKind.PROGRAM
                 ? requestRepository.findFirstByProgramEnrollmentIdAndOutcomeOrderByRequestedAtDesc(enrollmentId, RegularRequestOutcome.PENDING_STAFF)
                 : requestRepository.findFirstByCourseEnrollmentIdAndOutcomeOrderByRequestedAtDesc(enrollmentId, RegularRequestOutcome.PENDING_STAFF);
+    }
+
+    private Optional<RegularCertificateRequest> latestOf(RegularityKind kind, Long enrollmentId) {
+        return kind == RegularityKind.PROGRAM
+                ? requestRepository.findFirstByProgramEnrollmentIdOrderByRequestedAtDescIdDesc(enrollmentId)
+                : requestRepository.findFirstByCourseEnrollmentIdOrderByRequestedAtDescIdDesc(enrollmentId);
     }
 
     private RegularUnavailabilityType unavailabilityOf(RegularityVerdict verdict) {
@@ -85,9 +93,9 @@ public class StudentRegularCertificateStateReader {
     private StudentRegularCertificateStateResponse response(RegularityKind kind, Long enrollmentId, StudentRegularCertificateState state,
                                                             boolean staffConfirmationRequired, RegularCertificateResponse certificate,
                                                             RegularCertificateRequestResponse pendingRequest,
-                                                            RegularUnavailabilityType unavailableType, List<String> reasons,
-                                                            List<RegularCertificateResponse> history) {
+                                                            RegularUnavailabilityType unavailableType, String rejectionReason,
+                                                            List<String> reasons, List<RegularCertificateResponse> history) {
         return new StudentRegularCertificateStateResponse(kind, enrollmentId, state, staffConfirmationRequired, certificate,
-                pendingRequest, unavailableType, reasons, history);
+                pendingRequest, unavailableType, rejectionReason, reasons, history);
     }
 }
