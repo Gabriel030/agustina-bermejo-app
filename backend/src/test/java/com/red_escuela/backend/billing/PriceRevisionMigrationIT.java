@@ -60,7 +60,7 @@ class PriceRevisionMigrationIT {
                     100, 100, 100, 0, 0, 0, 'ARS', 'ARS', 'ARS', 'ARS', 'ARS', 'ARS', now(), now()) returning id
                 """, Long.class, accountId);
         Long programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values ('Enfermería', true, 3, 'ARS') returning id", Long.class);
-        jdbc.update("insert into term (year_number, status, start_date, end_date) values (2025, true, timestamp '2025-03-01 00:00:00', timestamp '2025-12-15 00:00:00')");
+        jdbc.update("insert into term (year_number, status, start_date, end_date) values (2025, 'ACTIVE', timestamp '2025-03-01 00:00:00', timestamp '2025-12-15 00:00:00')");
         Long termId = jdbc.queryForObject("select max(id) from term", Long.class);
         Long courseId = jdbc.queryForObject("insert into course (name, term_id, currency) values ('Primeros Auxilios', ?, 'ARS') returning id", Long.class, termId);
         return new Seed(jdbc, personId, accountId, invoiceId, programId, courseId);
