@@ -31,7 +31,7 @@ export function DarDeBajaModal({ open, onClose, onConfirmar, isPending, error })
         <DialogHeader>
           <DialogTitle>Dar de baja al alumno</DialogTitle>
           <DialogDescription>
-            Esta acción no se puede deshacer. El alumno será dado de baja del sistema.
+            El alumno será dado de baja del sistema. Podés reactivarlo después desde su legajo.
           </DialogDescription>
         </DialogHeader>
 

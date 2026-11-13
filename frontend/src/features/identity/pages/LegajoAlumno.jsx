@@ -8,9 +8,11 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
 import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import { describeError } from '@/api/describeError';
-import { useWithdrawStudent, useResetStudentPassword } from '@/features/identity/hooks/useAccionesLegajo';
+import { useWithdrawStudent, useReactivateStudent, useResetStudentPassword } from '@/features/identity/hooks/useAccionesLegajo';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { ModalMotivo } from '@/components/ModalMotivo';
 import { DarDeBajaModal } from '@/features/identity/components/DarDeBajaModal';
 import { ResetPasswordModal } from '@/features/identity/components/ResetPasswordModal';
 import { DatosPersonalesTab } from './tabs/DatosPersonalesTab';
@@ -31,6 +33,7 @@ export function LegajoAlumno() {
 
   const [bajaOpen, setBajaOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [reactivarOpen, setReactivarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get('view') === 'financiero' ? 'financiero' : 'datos-personales');
   const [enrollmentKey, setEnrollmentKey] = useState(null);
   const [sectionEnrollmentId, setSectionEnrollmentId] = useState(null);
@@ -48,11 +51,26 @@ export function LegajoAlumno() {
 
   const [withdrawError, setWithdrawError] = useState(null);
   const withdrawMutation = useWithdrawStudent(id);
+  const reactivateMutation = useReactivateStudent(id);
   const resetMutation = useResetStudentPassword(id);
 
   const rolBase = usuario?.roles[0]?.toLowerCase();
   const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo';
   const puededarDeBaja = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status !== 'DELETED';
+
+  const puedeReactivar = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status === 'DELETED';
+
+  async function confirmarReactivar(reason) {
+    try {
+      await reactivateMutation.mutateAsync(reason);
+      setReactivarOpen(false);
+      toast.success('Alumno reactivado');
+    } catch (error) {
+      toast.error(describeError(error).message);
+      return false;
+    }
+    return true;
+  }
 
   const absences = {
     studentName: legajo ? `${legajo.nombre} ${legajo.apellido}` : '',
@@ -113,6 +131,8 @@ export function LegajoAlumno() {
                 legajo={legajo}
                 puedeAccionar={puedeAccionar}
                 puedeDarDeBaja={puededarDeBaja}
+                puedeReactivar={puedeReactivar}
+                onReactivar={() => setReactivarOpen(true)}
                 onReset={() => setResetOpen(true)}
                 onBaja={() => setBajaOpen(true)}
               />
@@ -158,6 +178,21 @@ export function LegajoAlumno() {
         }}
         isPending={withdrawMutation.isPending}
         error={withdrawError}
+      />
+
+      <ModalMotivo
+        open={reactivarOpen}
+        onClose={() => setReactivarOpen(false)}
+        onConfirmar={confirmarReactivar}
+        confirmando={reactivateMutation.isPending}
+        requerido
+        minLength={5}
+        showCounter
+        titulo="Reactivar alumno"
+        descripcion="El alumno vuelve a poder ingresar y conserva su historia académica. Las inscripciones a carreras finalizadas o dadas de baja no se reactivan. Dejá el motivo: queda registrado."
+        placeholder="Motivo de la reactivación"
+        confirmarLabel="Reactivar"
+        mensajeRequerido="El motivo de la reactivación es obligatorio."
       />
 
       <ResetPasswordModal

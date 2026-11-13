@@ -528,6 +528,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
 | `STUDENT_HAS_ACTIVE_ENROLLMENTS` | no | `StudentHasActiveEnrollmentsException` | identity |
 | `STUDENT_HAS_DEBT` | no | `StudentHasDebtException` | graduation |
+| `STUDENT_NOT_WITHDRAWN` | no | `StudentNotWithdrawnException` | identity |
 | `SUBJECT_ALREADY_APPROVED` | no | `SubjectAlreadyApprovedException` | enrollment |
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
 | `SUBJECT_ALREADY_REGULAR` | no | `SubjectAlreadyRegularException` | enrollment |
@@ -785,6 +786,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/student-discounts/{id}/revocation` | `StudentDiscountController#revokeStudentDiscount` |
 | POST | `/students/{id}/course-enrollments` | `CourseEnrollmentController#enroll` |
 | POST | `/students/{id}/program-enrollments` | `ProgramEnrollmentController#enroll` |
+| POST | `/students/{id}/reactivate` | `StudentController#reactivate` |
 | POST | `/students/{id}/reset-password` | `StudentController#resetPassword` |
 | POST | `/students/{id}/withdraw` | `StudentController#withdraw` |
 | POST | `/students/{studentId}/cash-payments/preview` | `StudentPaymentController#previewCashPayment` |
