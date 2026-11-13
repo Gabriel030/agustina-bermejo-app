@@ -1,5 +1,7 @@
 # Backfill de cobertura QA — seguimiento
 
+**Nota (14-nov-2026):** la suite de Karate se eliminó del repo. Las menciones a Karate de este documento son históricas; hoy los IT con MockMvc cubren los endpoints y Bruno queda como exploración manual.
+
 No es documentación de producto, es el checklist de avance del backfill
 completo sobre los 155 endpoints existentes (decisión del usuario,
 2026-08-27: cubrir todo antes de seguir con fases nuevas del roadmap, no solo

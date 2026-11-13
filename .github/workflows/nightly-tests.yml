@@ -87,7 +87,7 @@ jobs:
           restore-keys: |
             maven-${{ runner.os }}-
 
-      - name: Run the shard with the nightly tier, migration, Karate and docs included
+      - name: Run the shard with the nightly tier, migration and docs included
         working-directory: backend
         run: ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 6)" -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false -Dtest.exploration=nightly -Dtest.excludedGroups=none
 
