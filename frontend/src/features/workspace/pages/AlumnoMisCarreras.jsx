@@ -10,13 +10,13 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CertificateActions } from '@/features/workspace/components/CertificateActions';
+import { TabTramites } from '@/features/workspace/components/TabTramites';
 import { TabMaterias } from '@/features/workspace/components/TabMaterias';
 import { TabPlanDeEstudio } from '@/features/workspace/components/TabPlanDeEstudio';
 import { TabNotas } from '@/features/evaluation';
 import { TabAsistencia } from '@/features/attendance';
 import { TabMesasDeExamen } from '@/features/evaluation';
-import { GraduationTab, GraduationRequestAction } from '@/features/graduation';
+import { GraduationRequestAction } from '@/features/graduation';
 import { useMisMatriculaciones, useMiProgreso } from '@/features/enrollment';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
@@ -44,7 +44,8 @@ export function AlumnoMisCarreras() {
   const carreraParam = searchParams.get('carrera');
   const matricula = activas.find((m) => m.id === Number(carreraParam)) ?? activas[0];
   const graduated = matricula?.status === 'COMPLETED';
-  const tab = searchParams.get('tab') ?? 'materias';
+  const requestedTab = searchParams.get('tab') ?? 'materias';
+  const tab = requestedTab === 'egreso' ? 'tramites' : requestedTab;
 
   const { data: progreso } = useMiProgreso(matricula?.id);
   const { data: planDeEstudio } = useProgramaPlanDeEstudio(matricula?.programId);
@@ -131,8 +132,7 @@ export function AlumnoMisCarreras() {
             según cuántas carreras tenga el alumno (decisión de producto). En la URL
             (?carrera=) para que el breadcrumb pueda volver acá sin perder la carrera elegida. */}
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <CertificateActions key={`certificates-${matricula.id}`} carreraId={matricula.id} />
-          {tab === 'egreso' && <GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
+          {tab === 'tramites' &&<GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
           <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
             <SelectTrigger>
               <SelectValue />
@@ -179,7 +179,7 @@ export function AlumnoMisCarreras() {
           <TabsTrigger value="mesas-de-examen">Mesas de examen</TabsTrigger>
           <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
           <TabsTrigger value="plan-de-estudio">Plan de estudio</TabsTrigger>
-          <TabsTrigger value="egreso">Egreso</TabsTrigger>
+          <TabsTrigger value="tramites">Trámites</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -192,7 +192,7 @@ export function AlumnoMisCarreras() {
       {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
       {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
       {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
-      {tab === 'egreso' && <GraduationTab key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
+      {tab === 'tramites' && <TabTramites key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
     </PageContainer>
   );
 }

@@ -9,6 +9,10 @@ import com.red_escuela.backend.graduation.certificate.regular.usecase.CancelStud
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetStudentRegularCertificatePdfUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetStudentRegularCertificateStateUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.SubmitRegularCertificateUseCase;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -43,6 +47,11 @@ public class MeRegularCertificateController {
     }
 
     @PostMapping("/me/regular-certificates")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Constancia emitida en el acto",
+                    content = @Content(schema = @Schema(implementation = RegularCertificateSubmissionResponse.class))),
+            @ApiResponse(responseCode = "202", description = "Pedido pendiente de confirmación de administración",
+                    content = @Content(schema = @Schema(implementation = RegularCertificateSubmissionResponse.class)))})
     public ResponseEntity<RegularCertificateSubmissionResponse> submit(@Valid @RequestBody SubmitRegularCertificateRequest request) {
         RegularCertificateSubmissionResponse response = submitUseCase.submit(request);
         return ResponseEntity.status(response.wasIssued() ? HttpStatus.CREATED : HttpStatus.ACCEPTED).body(response);

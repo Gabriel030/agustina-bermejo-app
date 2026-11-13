@@ -1,6 +1,9 @@
 package com.red_escuela.backend.graduation.certificate.regular.dto;
 
-public record RegularCertificateSubmissionResponse(RegularCertificateResponse certificate, RegularCertificateRequestResponse request) {
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public record RegularCertificateSubmissionResponse(@Schema(nullable = true) RegularCertificateResponse certificate,
+                                                  @Schema(nullable = true) RegularCertificateRequestResponse request) {
 
     public static RegularCertificateSubmissionResponse issued(RegularCertificateResponse certificate) {
         return new RegularCertificateSubmissionResponse(certificate, null);

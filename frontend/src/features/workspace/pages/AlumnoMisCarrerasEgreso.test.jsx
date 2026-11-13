@@ -55,6 +55,19 @@ function mockEgreso({ own = ownRequest(), post } = {}) {
       current = ownRequest({ request: detail('REQUESTED') });
       return HttpResponse.json({ id: 9, status: 'REQUESTED', programEnrollmentId: 5, programName: 'Tecnicatura', studentId: 1, studentName: 'Ana Pérez', requestedAt: '2026-10-31T10:00:00', decidedAt: null, rejectionReason: null }, { status: 201 });
     }),
+    http.get(`${API}/me/regular-certificates`, () =>
+      HttpResponse.json({
+        kind: 'PROGRAM',
+        enrollmentId: 5,
+        state: 'AVAILABLE',
+        staffConfirmationRequired: true,
+        certificate: null,
+        pendingRequest: null,
+        unavailableType: null,
+        reasons: [],
+        history: [],
+      }),
+    ),
     http.get(`${API}/*`, () => HttpResponse.json([])),
   );
 }
@@ -65,7 +78,7 @@ function renderEgreso() {
       <AlumnoMisCarreras />
       <Toaster />
     </>,
-    { route: '/alumno/mis-carreras?tab=egreso' },
+    { route: '/alumno/mis-carreras?tab=tramites' },
   );
 }
 
