@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.controller;
 
+import com.red_escuela.backend.identity.dto.ReactivateStudentRequest;
 import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
@@ -8,6 +9,8 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.usecase.student.GetStudentRecordUseCase;
 import com.red_escuela.backend.identity.usecase.student.ListStudentsCommand;
 import com.red_escuela.backend.identity.usecase.student.ListStudentsUseCase;
+import com.red_escuela.backend.identity.usecase.student.ReactivateStudentCommand;
+import com.red_escuela.backend.identity.usecase.student.ReactivateStudentUseCase;
 import com.red_escuela.backend.identity.usecase.student.ResetStudentPasswordUseCase;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
@@ -33,13 +36,16 @@ public class StudentController {
     private final GetStudentRecordUseCase getStudentRecordUseCase;
     private final WithdrawStudentUseCase withdrawStudentUseCase;
     private final ResetStudentPasswordUseCase resetStudentPasswordUseCase;
+    private final ReactivateStudentUseCase reactivateStudentUseCase;
 
     public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
-                              WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase) {
+                              WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
+                              ReactivateStudentUseCase reactivateStudentUseCase) {
         this.listStudentsUseCase = listStudentsUseCase;
         this.getStudentRecordUseCase = getStudentRecordUseCase;
         this.withdrawStudentUseCase = withdrawStudentUseCase;
         this.resetStudentPasswordUseCase = resetStudentPasswordUseCase;
+        this.reactivateStudentUseCase = reactivateStudentUseCase;
     }
 
     @GetMapping
@@ -64,6 +70,13 @@ public class StudentController {
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void withdraw(@PathVariable Long id, @Valid @RequestBody WithdrawStudentRequest request) {
         withdrawStudentUseCase.withdraw(new WithdrawStudentCommand(id, request));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public void reactivate(@PathVariable Long id, @Valid @RequestBody ReactivateStudentRequest request) {
+        reactivateStudentUseCase.reactivate(new ReactivateStudentCommand(id, request));
     }
 
     @PostMapping("/{id}/reset-password")
