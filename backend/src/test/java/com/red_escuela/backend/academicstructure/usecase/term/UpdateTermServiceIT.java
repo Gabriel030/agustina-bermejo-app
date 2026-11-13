@@ -8,7 +8,6 @@ import com.red_escuela.backend.shared.domain.TermEnrollmentWindowRequiredExcepti
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.shared.domain.InvalidDateRangeException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.testsupport.SlowTest;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@SlowTest(reason = "When it is the first class of its shard its time includes the one-time start-up of the shared Spring context")
 class UpdateTermServiceIT extends AbstractIntegrationTest {
 
     @Autowired
