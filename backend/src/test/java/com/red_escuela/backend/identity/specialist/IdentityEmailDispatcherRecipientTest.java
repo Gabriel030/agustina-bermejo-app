@@ -72,6 +72,19 @@ class IdentityEmailDispatcherRecipientTest {
         verifyNoInteractions(emailService);
     }
 
+    @Test
+    void sendsOneLockoutNoticeToTheAccountOwner() {
+        Person person = mock(Person.class);
+        when(person.getName()).thenReturn("Ana");
+        when(person.emailValue()).thenReturn("ana@example.com");
+        when(personRepository.findById(7L)).thenReturn(Optional.of(person));
+
+        dispatcher.onPasswordResetLockoutNotice(
+                new com.red_escuela.backend.identity.events.PasswordResetLockoutNoticeEvent(UUID.randomUUID(), "corr", Instant.now(), 7L));
+
+        verify(emailService).sendPasswordResetLockoutNotice("Ana", "ana@example.com");
+    }
+
     private MailRecipient recipientFor(String name, String username, String email) {
         Person person = mock(Person.class);
         when(person.getId()).thenReturn(7L);

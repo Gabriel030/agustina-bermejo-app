@@ -2,6 +2,8 @@ package com.red_escuela.backend.identity.specialist;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.RefreshToken;
+import com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache;
+import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +17,7 @@ import static org.mockito.Mockito.when;
 class SessionRevokerTest {
 
     private final RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
-    private final SessionRevoker sessionRevoker = new SessionRevoker(refreshTokenRepository);
+    private final SessionRevoker sessionRevoker = new SessionRevoker(refreshTokenRepository, mock(PersonRepository.class), mock(AccountAccessStateCache.class));
 
     @Test
     void marksEveryRefreshTokenOfThePersonAsRevoked() {

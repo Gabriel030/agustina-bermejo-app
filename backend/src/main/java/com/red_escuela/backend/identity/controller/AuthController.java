@@ -134,7 +134,7 @@ public class AuthController {
         if (!rateLimiter.tryConsumeForgotPassword(httpRequest.getRemoteAddr())) {
             throw new RateLimitExceededException("Demasiados intentos, esperá un momento antes de reintentar");
         }
-        String resetToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(request.email(), request.code()));
+        String resetToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(request.email(), request.code(), httpRequest.getRemoteAddr()));
         return VerifyResetCodeResponse.from(resetToken);
     }
 

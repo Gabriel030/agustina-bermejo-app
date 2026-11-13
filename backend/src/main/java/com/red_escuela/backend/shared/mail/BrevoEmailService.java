@@ -77,6 +77,14 @@ public class BrevoEmailService implements EmailService {
         sendChangeMessage(previousEmail, "Se pidió cambiar el email de tu cuenta", body);
     }
 
+    @Override
+    public void sendPasswordResetLockoutNotice(String recipientName, String email) {
+        String body = "<p>Hola " + HtmlUtils.htmlEscape(recipientName) + ",</p>"
+                + "<p>Hubo varios intentos fallidos de recuperar la contraseña de tu cuenta.</p>"
+                + "<p>Si fuiste vos, esperá un rato antes de volver a intentarlo. Si no fuiste vos, ignorá este mensaje: tu contraseña no cambió.</p>";
+        sendChangeMessage(email, "Intentos fallidos de recuperar tu contraseña", body);
+    }
+
     private void sendChangeMessage(String recipient, String subject, String htmlBody) {
         try {
             MimeMessage message = mailSender.createMimeMessage();

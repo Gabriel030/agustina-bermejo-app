@@ -3,6 +3,7 @@ package com.red_escuela.backend.identity.service;
 import com.red_escuela.backend.identity.domain.StudentStatusChangeRecorder;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.events.StudentReactivatedEvent;
+import com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.exception.StudentNotWithdrawnException;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -17,12 +18,14 @@ public class StudentReactivator {
     private final StudentRepository studentRepository;
     private final StudentStatusChangeRecorder studentStatusChangeRecorder;
     private final ApplicationEventPublisher eventPublisher;
+    private final AccountAccessStateCache accountAccessStateCache;
 
     public StudentReactivator(StudentRepository studentRepository, StudentStatusChangeRecorder studentStatusChangeRecorder,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher, AccountAccessStateCache accountAccessStateCache) {
         this.studentRepository = studentRepository;
         this.studentStatusChangeRecorder = studentStatusChangeRecorder;
         this.eventPublisher = eventPublisher;
+        this.accountAccessStateCache = accountAccessStateCache;
     }
 
     @Transactional
@@ -37,6 +40,7 @@ public class StudentReactivator {
         student.setWithdrawalDetail(null);
         student.setWithdrawnAt(null);
         studentRepository.save(student);
+        accountAccessStateCache.evictNowAndAfterCommit(student.getPerson().getId());
         studentStatusChangeRecorder.recordReactivation(student, reason);
         eventPublisher.publishEvent(StudentReactivatedEvent.of(student.getId(), student.getPerson().getId()));
     }
