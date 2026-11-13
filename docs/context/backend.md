@@ -114,7 +114,7 @@ cases de `billing` para el flujo de baja.
 
 **Migrado al patrón Use Case (2026-09-08)**: `billing/usecase/<subdominio>/`
 (`invoice`, `payment`, `paymentreceipt`, `creditnote`,
-`promotion`, `paymentplan`, `billingperiod`, `latepaymentsettings`, `cohort`)
+`promotion`, `paymentplan`, `latepaymentsettings`, `cohort`)
 tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
 controller invoca directo. Lo que queda en `billing/service/` son
 colaboradores de una sola responsabilidad, no use cases — tres categorías:
@@ -170,7 +170,7 @@ de Spring Modulith entrega al menos una vez. Un handler de pre que pide
 autorización abre un `AuthorizationRequest` (`billing.authorization`) y la
 operación no se procesa hasta que se aprueba.
 
-Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT):
+Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT, que corre solo en local):
 `BillingDecisionCoverageTest` exige un `@Tag("D-xxx")` por cada decisión
 `implementada`/`parcial` de `docs/billing/decision-registry.md` (fuente de
 verdad, columna Implementación); `PolicyCatalogTest` compara
@@ -512,6 +512,21 @@ CI. Una migración ya aplicada en `master` nunca se renumera. Ver
 la migración, nunca se deja que Hibernate lo genere. Constraints de integridad
 (NOT NULL, unique, índices parciales de Postgres para reglas tipo "solo un X activo
 por Y") van en la migración SQL, no solo a nivel de validación Java.
+
+**Enums persistidos como STRING**: cada columna `@Enumerated(EnumType.STRING)` lleva un CHECK
+`<tabla>_<columna>_enum` con exactamente las constantes del enum de Java
+(`EnumCheckConstraintsTest` lo exige contra el esquema que migra Flyway). Agregar, quitar o renombrar
+una constante exige una migración que reemplace el CHECK (`drop constraint` + `add constraint ... not valid` +
+`validate constraint`) y sumar la entrada al bloque de `docs/release/pre-migration-checks.sql`. Las excepciones
+deliberadas (CHECK distinto del enum) se declaran con su razón en `INTENTIONAL_DIFFERENCES` del test. Los enums
+extensibles de `OpenApiConfig` crecen igual: la migración del CHECK va en el mismo PR que el valor nuevo.
+
+Los CHECK se agregan en dos migraciones por área: `ADD CONSTRAINT ... NOT VALID` (instantáneo) y,
+aparte, `VALIDATE CONSTRAINT` (V209/V210 agregan, V211/V212 validan). Flyway corre cada archivo en su
+propia transacción, así `VALIDATE` toma SHARE UPDATE EXCLUSIVE y no bloquea escrituras. Cada `ADD` igual
+pide ACCESS EXCLUSIVE hasta el COMMIT de su archivo, y la app corre con `lock_timeout` de 10 s
+(`application.properties:151`): desplegar estas migraciones con la app parada, o al menos sin transacciones
+largas ni el job nocturno vivo, o el `ADD` fallará por timeout.
 
 ## Seguridad
 

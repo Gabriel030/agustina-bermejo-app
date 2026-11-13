@@ -103,8 +103,8 @@ export function TabAsistencia({ carreraId }) {
                   className="gap-3 justify-start"
                   >
                   {abierto ? <ChevronDown className="h-4 w-4 shrink-0 text-ink-faint" /> : <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />}
-                  <span className="text-[13px] font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
-                  <span className="flex-1 text-[13.5px] font-semibold text-ink">{inscripcion.subjectName}</span>
+                  <span className="text-size-13 font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
+                  <span className="flex-1 text-size-13-5 font-semibold text-ink">{inscripcion.subjectName}</span>
                   {inscripcion.curricularYear != null && (
                     <span className="hidden text-xs text-ink-faint sm:inline">{inscripcion.curricularYear}° año</span>
                   )}

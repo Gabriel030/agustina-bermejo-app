@@ -140,7 +140,7 @@ export function NotificationBell() {
         sideOffset={8}
         className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay backdrop-blur-[28px] backdrop-saturate-[1.6]"
       >
-        <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-[13px] font-semibold text-ink">
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-size-13 font-semibold text-ink">
           Notificaciones
           <StaleStamp dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} isError={isError} hasData={notificaciones !== undefined} />
         </div>

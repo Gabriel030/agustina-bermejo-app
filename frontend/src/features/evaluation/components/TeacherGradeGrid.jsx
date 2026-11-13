@@ -38,7 +38,7 @@ function PublishDialog({ column, students, pending, onCancel, onConfirm }) {
       onConfirm={onConfirm}
     >
       {missing > 0 && (
-        <p className="text-[12.5px] text-warning">
+        <p className="text-size-12-5 text-warning">
           {missing === 1 ? '1 alumno todavía no tiene nota' : `${missing} alumnos todavía no tienen nota`} en {label} y ya no podrás cargarla.
         </p>
       )}
@@ -175,12 +175,12 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
 
   return (
     <GlassCard className="flex min-w-0 flex-col gap-3 p-3 md:p-4">
-      <p className="text-[12.5px] leading-relaxed text-ink-soft">
+      <p className="text-size-12-5 leading-relaxed text-ink-soft">
         {grid.evaluationSchemeName ? `${grid.evaluationSchemeName}. ` : ''}
         {summary ? `${summary}. ` : ''}El final solo se carga a alumnos regulares.
       </p>
       <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-dialog-bg py-2">
-        <span className="text-[12.5px] text-ink-soft" aria-live="polite">
+        <span className="text-size-12-5 text-ink-soft" aria-live="polite">
           {dirty ? (
             <>
               <b className="text-ink">{Object.keys(drafts).length}</b> sin guardar
@@ -195,7 +195,7 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
         </Button>
       </div>
       {columns.some((column) => column.type !== 'FINAL' && column.published === true) && (
-        <p id="published-grade-note" className="text-[12.5px] text-ink-faint">
+        <p id="published-grade-note" className="text-size-12-5 text-ink-faint">
           Las notas publicadas quedan bloqueadas. Si hay un error, pedíselo a Dirección.
         </p>
       )}

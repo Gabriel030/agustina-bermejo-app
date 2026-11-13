@@ -19,5 +19,7 @@ public interface GraduationRequestRepository extends JpaRepository<GraduationReq
 
     Optional<GraduationRequest> findFirstByProgramEnrollmentIdOrderByIdDesc(Long programEnrollmentId);
 
+    boolean existsByProgramEnrollmentIdAndStatus(Long programEnrollmentId, GraduationRequestStatus status);
+
     boolean existsByProgramEnrollmentIdAndStatusNot(Long programEnrollmentId, GraduationRequestStatus status);
 }

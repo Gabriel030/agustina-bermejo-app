@@ -6,7 +6,7 @@ const NOMBRE_INSTITUCION = 'Agustina Bermejo';
 const INICIALES_INSTITUCION = 'AB';
 
 const TAMANIOS = {
-  sm: { avatar: 'h-9 w-9 rounded-xl text-sm', nombre: 'text-[13px] font-bold' },
+  sm: { avatar: 'h-9 w-9 rounded-xl text-sm', nombre: 'text-size-13 font-bold' },
   lg: { avatar: 'h-[52px] w-[52px] rounded-[17px] text-xl', nombre: 'text-lg font-bold tracking-tight' },
 };
 

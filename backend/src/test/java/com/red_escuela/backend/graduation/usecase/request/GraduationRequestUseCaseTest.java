@@ -1,7 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.request;
 
 import com.red_escuela.backend.testsupport.TermFixtures;
-import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Grade;
 
@@ -57,7 +56,6 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 @Transactional
 @org.springframework.test.context.event.RecordApplicationEvents
-@SharedSpyBeans
 class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired

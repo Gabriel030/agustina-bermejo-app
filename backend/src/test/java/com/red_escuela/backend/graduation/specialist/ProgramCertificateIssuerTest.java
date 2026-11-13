@@ -179,7 +179,7 @@ class ProgramCertificateIssuerTest extends AbstractIntegrationTest {
         authenticateAsPerson("ADMIN90000002");
 
         assertThatThrownBy(() -> certificateService.issueRegularCertificate(enrollment.getId()))
-                .isInstanceOf(CertificateNotEligibleException.class);
+                .isInstanceOf(CertificateNotEligibleException.class).hasMessageContaining("no está al día con sus pagos");
     }
 
     @Test

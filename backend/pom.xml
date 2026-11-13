@@ -171,7 +171,7 @@
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
 			<artifactId>pdfbox</artifactId>
-			<version>3.0.3</version>
+			<version>3.0.8</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.zxing</groupId>
@@ -267,19 +267,6 @@
 			<groupId>net.jqwik</groupId>
 			<artifactId>jqwik</artifactId>
 			<version>${jqwik.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<!--
-			QA de contrato HTTP con criterios de aceptación legibles (ver
-			docs/context/testing.md, "QA de contrato HTTP (Karate)") — a diferencia de
-			los tests de MockMvc, estos corren contra el server HTTP real levantado por
-			@SpringBootTest(webEnvironment = RANDOM_PORT), mismo Testcontainers que el
-			resto de la suite, sin necesidad de un job de CI separado.
-		-->
-		<dependency>
-			<groupId>com.intuit.karate</groupId>
-			<artifactId>karate-junit5</artifactId>
-			<version>1.4.1</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

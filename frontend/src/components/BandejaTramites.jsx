@@ -101,7 +101,7 @@ export function BandejaTramites({
       {volverA && (
         <Link
           to={volverA}
-          className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
+          className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink"
         >
           ← {volverLabel}
         </Link>
@@ -124,7 +124,7 @@ export function BandejaTramites({
             <SelectItem value="antiguos">Más antiguos primero</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex min-w-0 flex-wrap items-center gap-2 text-[12.5px] text-ink-faint">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-size-12-5 text-ink-faint">
           <label className="flex items-center gap-2">
             Desde
             <Input

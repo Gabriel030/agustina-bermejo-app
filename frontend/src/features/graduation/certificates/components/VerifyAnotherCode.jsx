@@ -54,7 +54,7 @@ export function VerifyAnotherCode({ onSubmit, disabled = false }) {
               Verificar
             </Button>
           </form>
-          <p className="text-[13px] text-ink-faint">Está impreso debajo del QR. Con o sin guiones.</p>
+          <p className="text-size-13 text-ink-faint">Está impreso debajo del QR. Con o sin guiones.</p>
         </>
       )}
     </div>

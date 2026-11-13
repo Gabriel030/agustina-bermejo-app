@@ -33,4 +33,10 @@ public class StudentStatusChangeRecorder {
         studentStatusChangeRepository.save(new StudentStatusChange(student.getId(), StudentStatusChangeType.WITHDRAWN,
                 student.getWithdrawalDetail(), actorPersonId, now));
     }
+
+    public void recordReactivation(Student student, String reason) {
+        Long actorPersonId = Long.valueOf(SecurityContextHolder.getContext().getAuthentication().getName());
+        studentStatusChangeRepository.save(new StudentStatusChange(student.getId(), StudentStatusChangeType.REACTIVATED, reason,
+                actorPersonId, ApplicationTime.now()));
+    }
 }

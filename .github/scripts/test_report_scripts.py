@@ -1,0 +1,330 @@
+import importlib.util
+import json
+import os
+import shutil
+import tempfile
+import unittest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def load(name, file):
+    spec = importlib.util.spec_from_file_location(name, os.path.join(HERE, file))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+report = load('test_report', 'test-report.py')
+shards = load('test_shards', 'test-shards.py')
+
+
+def write_report(directory, name, seconds):
+    os.makedirs(directory, exist_ok=True)
+    with open(os.path.join(directory, 'TEST-%s.xml' % name), 'w', encoding='utf-8') as handle:
+        handle.write('<testsuite name="%s" time="%s" tests="1" errors="0" skipped="0" failures="0"></testsuite>' % (name, seconds))
+
+
+def write_source(root, name, body):
+    path = os.path.join(root, name + '.java')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as handle:
+        handle.write(body)
+
+
+class Args:
+    def __init__(self, **values):
+        self.__dict__.update(dict(
+            shard=0, meta_out=None, max_contexts=22, enforcement='block',
+            baseline=None, changed=None, test_root='', out='', shards='', reports=''))
+        self.__dict__.update(values)
+
+
+class ReportTest(unittest.TestCase):
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = self.tmp.name
+        self.sources = os.path.join(self.root, 'src')
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def make_shards(self, seconds=3.0):
+        shards = os.path.join(self.root, 'shards')
+        for shard in range(2):
+            directory = os.path.join(shards, 'shard-%d' % shard)
+            write_report(os.path.join(directory, 'reports'), 'com.acme.A%dIT' % shard, seconds)
+            with open(os.path.join(directory, 'contexts.txt'), 'w', encoding='utf-8') as handle:
+                for index in range(12):
+                    handle.write('hash%d\tcom.acme.A\n' % (index + shard * 6))
+            with open(os.path.join(directory, 'meta.json'), 'w', encoding='utf-8') as handle:
+                json.dump({'start': 100, 'end': 160 + shard, 'test_seconds': seconds}, handle)
+        return shards
+
+    def test_shard_meta_records_the_clock_and_the_summed_time_and_never_fails(self):
+        reports = os.path.join(self.root, 'reports')
+        write_report(reports, 'com.acme.SlowIT', 500.0)
+        meta = os.path.join(self.root, 'out', 'meta.json')
+        os.environ['SHARD_START'] = '1000'
+        os.environ['SHARD_END'] = '5000'
+        try:
+            status = report.shard_meta(Args(shard=3, reports=reports, meta_out=meta))
+        finally:
+            os.environ.pop('SHARD_START')
+            os.environ.pop('SHARD_END')
+        self.assertEqual(0, status)
+        with open(meta, encoding='utf-8') as handle:
+            self.assertEqual({'shard': 3, 'start': 1000, 'end': 5000, 'test_seconds': 500.0}, json.load(handle))
+
+    def test_shard_meta_without_reports_writes_an_empty_record(self):
+        meta = os.path.join(self.root, 'out', 'meta.json')
+        self.assertEqual(0, report.shard_meta(Args(reports=os.path.join(self.root, 'none'), meta_out=meta)))
+        with open(meta, encoding='utf-8') as handle:
+            self.assertEqual(0.0, json.load(handle)['test_seconds'])
+
+    def test_aggregate_counts_unique_contexts_and_fails_over_the_cap(self):
+        shards = self.make_shards()
+        out = os.path.join(self.root, 'out')
+        status = report.aggregate(Args(shards=shards, out=out, test_root=self.sources))
+        self.assertEqual(0, status)
+        with open(os.path.join(out, 'metrics.json'), encoding='utf-8') as handle:
+            metrics = json.load(handle)
+        self.assertEqual(18, metrics['contexts'])
+        self.assertEqual(61, metrics['wall_seconds'])
+        self.assertEqual(1, report.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17)))
+        self.assertEqual(0, report.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17, enforcement='warn')))
+
+    def test_aggregate_never_fails_because_of_how_long_the_tests_took(self):
+        shards = self.make_shards(seconds=900.0)
+        write_source(self.sources, 'com/acme/A0IT', '@SlowTest(reason = "long scenario")\nclass A0IT {}\n')
+        out = os.path.join(self.root, 'out')
+        self.assertEqual(0, report.aggregate(Args(shards=shards, out=out, test_root=self.sources)))
+        with open(os.path.join(out, 'report.md'), encoding='utf-8') as handle:
+            text = handle.read()
+        self.assertIn('Shard 0: 1:00 de reloj', text)
+        self.assertIn('long scenario', text)
+        self.assertNotIn('BUDGET', text)
+
+
+class FlakyReportTest(unittest.TestCase):
+
+    def test_report_lists_tests_that_passed_only_on_the_rerun(self):
+        with tempfile.TemporaryDirectory() as root:
+            directory = os.path.join(root, 'shards', 'shard-0')
+            reports = os.path.join(directory, 'reports')
+            os.makedirs(reports)
+            with open(os.path.join(reports, 'TEST-com.acme.SteadyIT.xml'), 'w', encoding='utf-8') as handle:
+                handle.write('<testsuite name="com.acme.SteadyIT" time="1" tests="1"><testcase classname="com.acme.SteadyIT" name="steady"/></testsuite>')
+            with open(os.path.join(reports, 'TEST-com.acme.WobblyIT.xml'), 'w', encoding='utf-8') as handle:
+                handle.write('<testsuite name="com.acme.WobblyIT" time="2" tests="2">'
+                             '<testcase classname="com.acme.WobblyIT" name="stable"/>'
+                             '<testcase classname="com.acme.WobblyIT" name="wobbles"><flakyFailure message="boom"/></testcase></testsuite>')
+            out = os.path.join(root, 'out')
+            report.aggregate(Args(shards=os.path.join(root, 'shards'), out=out, test_root=os.path.join(root, 'src')))
+            with open(os.path.join(out, 'report.md'), encoding='utf-8') as handle:
+                text = handle.read()
+            self.assertIn('com.acme.WobblyIT.wobbles', text)
+            self.assertNotIn('com.acme.WobblyIT.stable', text)
+            self.assertNotIn('com.acme.SteadyIT.steady', text)
+
+    def test_report_has_no_flaky_section_when_nothing_was_retried(self):
+        with tempfile.TemporaryDirectory() as root:
+            reports = os.path.join(root, 'shards', 'shard-0', 'reports')
+            write_report(reports, 'com.acme.SteadyIT', 1.0)
+            out = os.path.join(root, 'out')
+            report.aggregate(Args(shards=os.path.join(root, 'shards'), out=out, test_root=os.path.join(root, 'src')))
+            with open(os.path.join(out, 'report.md'), encoding='utf-8') as handle:
+                self.assertNotIn('flaky', handle.read())
+
+
+class ShardTimingsTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.original = shards.TIMINGS
+        shards.TIMINGS = os.path.join(self.root, 'timings.txt')
+        with open(shards.TIMINGS, 'w', encoding='utf-8') as handle:
+            handle.write('5.00 a/A\n')
+
+    def tearDown(self):
+        shards.TIMINGS = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def write_history(self, runs, samples):
+        directory = os.path.join(self.root, 'baseline')
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, 'samples.json'), 'w', encoding='utf-8') as handle:
+            json.dump({'runs': runs, 'samples': samples}, handle)
+        return directory
+
+    def test_merge_keeps_only_the_last_window_of_samples(self):
+        history = {'runs': 3, 'samples': {'a/A': [1.0, 2.0, 3.0]}}
+        merged = shards.merge_run(history, {'a/A': 10.0}, {'a/A'}, window=3)
+        self.assertEqual([2.0, 3.0, 10.0], merged['samples']['a/A'])
+        self.assertEqual(3, merged['runs'])
+
+    def test_average_smooths_a_single_noisy_run(self):
+        history = {'runs': 3, 'samples': {'a/A': [4.0, 5.0, 6.0]}}
+        merged = shards.merge_run(history, {'a/A': 29.0}, {'a/A'})
+        self.assertEqual(11.0, shards.averages(merged['samples'])['a/A'])
+
+    def test_merge_drops_classes_that_no_longer_exist(self):
+        history = {'runs': 1, 'samples': {'a/A': [1.0], 'a/Gone': [9.0]}}
+        merged = shards.merge_run(history, {'a/A': 2.0}, {'a/A'})
+        self.assertEqual({'a/A'}, set(merged['samples']))
+
+    def test_class_not_measured_keeps_its_history(self):
+        history = {'runs': 2, 'samples': {'a/A': [1.0, 3.0]}}
+        merged = shards.merge_run(history, {}, {'a/A'})
+        self.assertEqual([1.0, 3.0], merged['samples']['a/A'])
+
+    def test_legacy_baseline_without_history_seeds_one_run(self):
+        directory = os.path.join(self.root, 'legacy')
+        os.makedirs(directory)
+        with open(os.path.join(directory, 'timings.txt'), 'w', encoding='utf-8') as handle:
+            handle.write('7.00 a/A\n')
+        history = shards.read_history(directory)
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [7.0]}, history['samples'])
+
+    def test_missing_baseline_seeds_from_the_versioned_timings(self):
+        history = shards.read_history(os.path.join(self.root, 'absent'))
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [5.0]}, history['samples'])
+
+    def test_use_ignores_a_baseline_with_too_little_history(self):
+        directory = self.write_history(shards.MIN_HISTORY - 1, {'a/A': [90.0, 90.0]})
+        shards.use(directory)
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+
+    def test_use_ignores_a_legacy_single_run_baseline(self):
+        directory = os.path.join(self.root, 'legacy')
+        os.makedirs(directory)
+        with open(os.path.join(directory, 'timings.txt'), 'w', encoding='utf-8') as handle:
+            handle.write('90.00 a/A\n')
+        shards.use(directory)
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+
+    def test_use_applies_the_average_once_there_is_enough_history(self):
+        directory = self.write_history(shards.MIN_HISTORY, {'a/A': [10.0, 20.0, 30.0]})
+        shards.use(directory)
+        self.assertEqual({'a/A': 20.0}, shards.load_timings())
+
+    def write_raw(self, content):
+        directory = os.path.join(self.root, 'raw')
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, 'samples.json'), 'w', encoding='utf-8') as handle:
+            handle.write(content)
+        return directory
+
+    def test_corrupt_history_seeds_from_the_versioned_timings(self):
+        history = shards.read_history(self.write_raw('{not json'))
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [5.0]}, history['samples'])
+
+    def test_history_without_samples_key_seeds_from_the_versioned_timings(self):
+        history = shards.read_history(self.write_raw('{"runs": 5}'))
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [5.0]}, history['samples'])
+
+    def test_use_with_runs_but_no_samples_keeps_the_versioned_timings(self):
+        shards.use(self.write_raw('{"runs": 5}'))
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+        self.assertGreater(os.path.getsize(shards.TIMINGS), 0)
+
+    def test_use_with_corrupt_history_keeps_the_versioned_timings(self):
+        shards.use(self.write_raw('{not json'))
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+
+    def test_history_never_exceeds_the_window(self):
+        history = {'runs': 1, 'samples': {}}
+        for index in range(shards.WINDOW + 4):
+            history = shards.merge_run(history, {'a/A': float(index)}, {'a/A'})
+        self.assertEqual(shards.WINDOW, len(history['samples']['a/A']))
+        self.assertEqual(float(shards.WINDOW + 3), history['samples']['a/A'][-1])
+        self.assertEqual(shards.WINDOW, history['runs'])
+
+
+class ContextShardingTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.original = (shards.TEST_ROOT, shards.TIMINGS)
+        shards.TEST_ROOT = os.path.join(self.root, 'java')
+        shards.TIMINGS = os.path.join(self.root, 'timings.txt')
+        self.write('Base', '@Tag("integration")\n@AutoConfigureMockMvc\npublic abstract class Base {}')
+
+    def tearDown(self):
+        shards.TEST_ROOT, shards.TIMINGS = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def write(self, name, source):
+        with open(os.path.join(self.root, 'java', name + '.java') if os.path.isdir(os.path.join(self.root, 'java'))
+                  else self.make_dir(name), 'w', encoding='utf-8') as handle:
+            handle.write(source)
+
+    def make_dir(self, name):
+        os.makedirs(shards.TEST_ROOT, exist_ok=True)
+        return os.path.join(shards.TEST_ROOT, name + '.java')
+
+    def spring(self, name, extra=''):
+        self.write(name, '@SpringBootTest\n@ActiveProfiles("test")\n%sclass %s extends Base {}' % (extra, name))
+
+    def contexts(self):
+        sources = shards.read_sources()
+        return {c: shards.context_of(c, sources) for c in shards.discover()}
+
+    def test_same_annotations_share_the_context_and_other_mocks_do_not(self):
+        self.spring('AIT')
+        self.spring('BIT', '@Transactional\n')
+        self.spring('CIT', '@SharedMockBeans\n')
+        self.spring('DIT', '@SharedMockBeans\n@Transactional\n')
+        contexts = self.contexts()
+        self.assertEqual(contexts['AIT'], contexts['BIT'])
+        self.assertEqual(contexts['CIT'], contexts['DIT'])
+        self.assertNotEqual(contexts['AIT'], contexts['CIT'])
+
+    def test_plain_unit_tests_have_no_spring_context(self):
+        self.write('PlainTest', 'class PlainTest {}')
+        self.assertIsNone(self.contexts()['PlainTest'])
+
+    def test_a_mock_declared_in_the_class_makes_its_own_context(self):
+        self.spring('AIT')
+        self.write('BIT', '@SpringBootTest\n@ActiveProfiles("test")\nclass BIT extends Base {\n    @MockitoBean\n    private Mailer mailer;\n}')
+        contexts = self.contexts()
+        self.assertNotEqual(contexts['AIT'], contexts['BIT'])
+
+    def test_the_context_of_a_parent_class_is_inherited(self):
+        self.write('Parent', '@SharedSpyBeans\nabstract class Parent extends Base {}')
+        self.write('ChildIT', '@SpringBootTest\n@ActiveProfiles("test")\nclass ChildIT extends Parent {}')
+        self.spring('AIT')
+        contexts = self.contexts()
+        self.assertNotEqual(contexts['AIT'], contexts['ChildIT'])
+
+    def test_each_variant_context_lands_in_a_single_shard(self):
+        for name in ('A1IT', 'A2IT', 'A3IT', 'A4IT', 'A5IT', 'A6IT'):
+            self.spring(name)
+        for name in ('M1IT', 'M2IT', 'M3IT'):
+            self.spring(name, '@SharedMockBeans\n')
+        self.spring('S1IT', '@SharedSpyBeans\n')
+        _, assigned = shards.assign(3)
+        homes = [i for i, (_, names) in enumerate(assigned) if {'M1IT', 'M2IT', 'M3IT'} & set(names)]
+        self.assertEqual(1, len(homes))
+        self.assertEqual({'M1IT', 'M2IT', 'M3IT'}, {n for n in assigned[homes[0]][1] if n.startswith('M')})
+
+    def test_assignment_keeps_every_class_exactly_once(self):
+        for index in range(12):
+            self.spring('T%dIT' % index, '@SharedMockBeans\n' if index % 3 == 0 else '')
+        classes, assigned = shards.assign(4)
+        flat = [n for _, names in assigned for n in names]
+        self.assertEqual(sorted(classes), sorted(flat))
+
+    def test_the_time_of_a_class_is_the_sum_of_its_test_cases_not_the_context_startup(self):
+        import xml.etree.ElementTree as ET
+        suite = ET.fromstring('<testsuite name="a.B" time="30"><testcase time="0.5"/><testcase time="1.5"/></testsuite>')
+        self.assertEqual(2.0, shards.body_seconds(suite))
+        empty = ET.fromstring('<testsuite name="a.B" time="3"/>')
+        self.assertEqual(3.0, shards.body_seconds(empty))
+
+
+if __name__ == '__main__':
+    unittest.main()

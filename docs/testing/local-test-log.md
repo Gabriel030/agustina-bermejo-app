@@ -5,7 +5,7 @@ Las herramientas pesadas (PIT, Playwright, k6, OWASP Dependency-Check) **no corr
 Reglas:
 
 - Una fila por corrida, la más reciente arriba. No se borran filas.
-- Desde el 15-oct-2026 PIT corre en GitHub (job `mutation` de `ci.yml`) y ya no exige fila acá; las filas de PIT de abajo son histórico. Se anotan las herramientas que siguen siendo locales (Playwright, k6, Dependency-Check).
+- Desde el 14-nov-2026 PIT ya no corre en el CI: se corre a mano en local y no exige fila acá; las filas de PIT de abajo son histórico. Se anotan las herramientas que siguen siendo locales (Playwright, k6, Dependency-Check).
 - **Commit**: el SHA sobre el que se corrió (antes del commit que agrega la fila).
 - **Área**: paquetes o flujos que cubre la corrida; es lo que se busca acá antes de modificar algo.
 - Si una corrida falla y se arregla, se anotan las dos (la roja dice qué encontró).

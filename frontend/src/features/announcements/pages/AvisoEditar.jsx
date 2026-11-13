@@ -144,9 +144,9 @@ export function AvisoEditar() {
         />
       ) : (
         <GlassCard className="flex flex-col gap-3 p-5">
-          <h2 className="font-heading text-[15px] font-semibold text-ink">Destinatarios</h2>
+          <h2 className="font-heading text-size-15 font-semibold text-ink">Destinatarios</h2>
           <Input readOnly aria-label="Destinatarios" className="cursor-default" value={aviso.audienceLabel} />
-          <span className="text-[11.5px] text-ink-faint">
+          <span className="text-size-11-5 text-ink-faint">
             {esCurso
               ? 'Un curso suelto no tiene esquema de evaluación, así que el aviso le llega a todo el curso.'
               : 'Un aviso ya enviado no cambia de destinatarios: la lista quedó congelada en el momento del envío.'}
@@ -188,7 +188,7 @@ export function AvisoEditar() {
               <Label htmlFor="avisar-cambio" className="font-normal">
                 Avisar a los alumnos de este cambio
               </Label>
-              <span id="avisar-cambio-motivo" className="text-[11.5px] text-ink-faint">
+              <span id="avisar-cambio-motivo" className="text-size-11-5 text-ink-faint">
                 {motivoDeCasilla}
               </span>
             </div>

@@ -65,7 +65,7 @@ function CampoFecha({ label, value, onChange, disabled, error, min, max }) {
         />
         {completo && !disabled && <Check className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />}
       </div>
-      {error && <span className="text-[11.5px] font-semibold text-danger">{error}</span>}
+      {error && <span className="text-size-11-5 font-semibold text-danger">{error}</span>}
     </div>
   );
 }
@@ -162,35 +162,35 @@ export function DocenteConfiguracionEvaluacion() {
 
       <GlassCard className="flex flex-wrap items-center gap-7 p-4">
         <div>
-          <div className="text-[11px] font-semibold uppercase text-ink-faint">Apertura del cuatrimestre</div>
+          <div className="text-size-11 font-semibold uppercase text-ink-faint">Apertura del cuatrimestre</div>
           <div className="text-sm font-bold text-ink">{formatearFecha(config.termStartDate) ?? '—'}</div>
         </div>
         <div>
-          <div className="text-[11px] font-semibold uppercase text-ink-faint">Cierre del cuatrimestre</div>
+          <div className="text-size-11 font-semibold uppercase text-ink-faint">Cierre del cuatrimestre</div>
           <div className="text-sm font-bold text-ink">{formatearFecha(config.termEndDate) ?? '—'}</div>
         </div>
         <div>
-          <div className="text-[11px] font-semibold uppercase text-warning">Apertura de inscripción</div>
+          <div className="text-size-11 font-semibold uppercase text-warning">Apertura de inscripción</div>
           <div className="text-sm font-bold text-ink">{formatearFecha(config.termEnrollmentStart) ?? '—'}</div>
         </div>
       </GlassCard>
 
       <GlassCard className="p-5">
-        <div className="mb-4 flex items-center gap-2 font-heading text-[15px] font-semibold text-ink">
+        <div className="mb-4 flex items-center gap-2 font-heading text-size-15 font-semibold text-ink">
           Esquema institucional vigente
           <span className="text-xs font-normal text-ink-faint">· {config.evaluationSchemeName ?? 'Sin asignar'}</span>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <div className="text-[11.5px] font-semibold uppercase text-ink-faint">Mínimo para quedar regular</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">Mínimo para quedar regular</div>
             <div className="font-heading text-xl font-bold text-ink">{config.minRegularGrade ?? '—'}</div>
           </div>
           <div>
-            <div className="text-[11.5px] font-semibold uppercase text-ink-faint">Nota para aprobar el final</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">Nota para aprobar el final</div>
             <div className="font-heading text-xl font-bold text-ink">{config.minApprovalGrade ?? '—'}</div>
           </div>
           <div>
-            <div className="text-[11.5px] font-semibold uppercase text-ink-faint">¿Es promocional?</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">¿Es promocional?</div>
             {config.promotionMinGrade ? (
               <div className="font-heading text-xl font-bold text-success">
                 Sí <span className="text-sm font-semibold text-ink-faint">· corte {config.promotionMinGrade}</span>
@@ -200,7 +200,7 @@ export function DocenteConfiguracionEvaluacion() {
             )}
           </div>
           <div>
-            <div className="text-[11.5px] font-semibold uppercase text-ink-faint">Parciales esperados</div>
+            <div className="text-size-11-5 font-semibold uppercase text-ink-faint">Parciales esperados</div>
             <div className="font-heading text-xl font-bold text-ink">{cantidadParciales}</div>
           </div>
         </div>
@@ -212,13 +212,13 @@ export function DocenteConfiguracionEvaluacion() {
       </GlassCard>
 
       <GlassCard className="flex flex-col gap-5 p-5">
-        <div className="font-heading text-[15px] font-semibold text-ink">Configuración de esta comisión</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">Configuración de esta comisión</div>
 
         <div className="flex flex-col gap-3">
           <label className="text-xs font-semibold text-ink-soft">Trabajos prácticos</label>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-semibold text-ink-faint">Cantidad</span>
+            <span className="text-size-11 font-semibold text-ink-faint">Cantidad</span>
             <div className="flex gap-2">
               {[1, 2, 3].map((n) => (
                 <button

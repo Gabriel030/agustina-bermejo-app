@@ -63,7 +63,7 @@ export function ModulosPlataforma() {
           const active = rows.filter((row) => row.code !== BILLING_CODE && isFeatureAvailable(row.code, features) && row.enabled).length;
           return (
             <section key={group.id} aria-labelledby={`group-${group.id}`} className="flex flex-col gap-3">
-              <h2 id={`group-${group.id}`} className="font-heading text-[16px] font-semibold text-ink">
+              <h2 id={`group-${group.id}`} className="font-heading text-size-16 font-semibold text-ink">
                 {group.title}
                 <span className="ml-2 text-xs font-medium text-ink-faint">{active} activos</span>
               </h2>

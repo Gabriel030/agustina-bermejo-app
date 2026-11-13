@@ -34,7 +34,7 @@ class LegacyScholarshipDropMigrationTest {
         Long institutionId = jdbc.queryForObject("insert into institution (name) values (?) returning id", Long.class, "Inst " + username);
         Long studentId = jdbc.queryForObject("insert into student (person_id, institution_id, onboarding_status) values (?, ?, 'CONFIRMADO') returning id",
                 Long.class, personId, institutionId);
-        Long termId = jdbc.queryForObject("insert into term (year_number, status) values (2026, true) returning id", Long.class);
+        Long termId = jdbc.queryForObject("insert into term (year_number, status) values (2026, 'ACTIVE') returning id", Long.class);
         Long courseId = jdbc.queryForObject("insert into course (name, term_id, currency) values (?, ?, 'ARS') returning id", Long.class, "Curso " + username, termId);
         Long enrollmentId = jdbc.queryForObject("insert into course_enrollment (course_id, student_id, status) values (?, ?, 'ENROLLED') returning id",
                 Long.class, courseId, studentId);

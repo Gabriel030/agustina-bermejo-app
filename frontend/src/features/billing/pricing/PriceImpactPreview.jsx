@@ -5,8 +5,8 @@ import { formatDate, formatMoney, formatSignedMoney } from '@/lib/billing';
 function Metric({ label, children }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{label}</span>
-      <span className="text-[15px] font-semibold tabular-nums text-ink">{children}</span>
+      <span className="text-size-11 font-bold uppercase tracking-wide text-ink-faint">{label}</span>
+      <span className="text-size-15 font-semibold tabular-nums text-ink">{children}</span>
     </div>
   );
 }
@@ -33,7 +33,7 @@ export function PriceImpactPreview({ impact, effectiveFrom }) {
       ) : (
         <p className="text-sm text-ink-soft">Completá el precio y la vigencia para ver el impacto.</p>
       )}
-      {effectiveFrom && <p className="text-[12px] text-ink-faint">Aplica desde el {formatDate(effectiveFrom)}.</p>}
+      {effectiveFrom && <p className="text-size-12 text-ink-faint">Aplica desde el {formatDate(effectiveFrom)}.</p>}
     </GlassCard>
   );
 }

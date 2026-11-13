@@ -52,7 +52,7 @@ function iniciales(nombre) {
 
 function AvatarTribunal({ tribunal }) {
   if (!tribunal || tribunal.length === 0) {
-    return <div className="mt-2 text-[13px] text-ink-faint">Sin asignar</div>;
+    return <div className="mt-2 text-size-13 text-ink-faint">Sin asignar</div>;
   }
   const visibles = tribunal.slice(0, 2);
   const restantes = tribunal.length - visibles.length;
@@ -61,14 +61,14 @@ function AvatarTribunal({ tribunal }) {
       {visibles.map((t, i) => (
         <div
           key={t.id}
-          className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-gradient-to-br from-brand to-accent-2 text-[11px] font-bold text-on-accent"
+          className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-gradient-to-br from-brand to-accent-2 text-size-11 font-bold text-on-accent"
           style={{ marginLeft: i === 0 ? 0 : -8 }}
         >
           {iniciales(t.name)}
         </div>
       ))}
       {restantes > 0 && (
-        <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-neutral-ink text-[11px] font-bold text-on-accent" style={{ marginLeft: -8 }}>
+        <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-neutral-ink text-size-11 font-bold text-on-accent" style={{ marginLeft: -8 }}>
           +{restantes}
         </div>
       )}
@@ -196,7 +196,7 @@ function DetalleMesa({ mesaId, role }) {
           <h2 className="font-heading text-xl font-bold text-ink">Mesa de examen · {materia}</h2>
           <p className="mt-0.5 text-sm text-ink-soft">{formatearFecha(mesa.examDate)}</p>
           {mesa.rescheduledFrom && (
-            <p className="mt-0.5 text-[12.5px] text-ink-faint">Reprogramada · estaba fijada para el {formatearFecha(mesa.rescheduledFrom)}</p>
+            <p className="mt-0.5 text-size-12-5 text-ink-faint">Reprogramada · estaba fijada para el {formatearFecha(mesa.rescheduledFrom)}</p>
           )}
         </div>
         <StatusPill tone={ESTADO_MESA[mesa.status]?.tone ?? 'neutral'}>{ESTADO_MESA[mesa.status]?.label ?? mesa.status}</StatusPill>
@@ -204,9 +204,9 @@ function DetalleMesa({ mesaId, role }) {
 
       {cancelada && (
         <GlassCard className="flex flex-col gap-1 p-4" role="status">
-          <div className="text-[13px] font-bold uppercase tracking-wide text-danger">Mesa cancelada</div>
+          <div className="text-size-13 font-bold uppercase tracking-wide text-danger">Mesa cancelada</div>
           <div className="text-sm text-ink">{mesa.cancelReason}</div>
-          {mesa.canceledAt && <div className="text-[12.5px] text-ink-faint">Cancelada el {formatearFecha(mesa.canceledAt)}</div>}
+          {mesa.canceledAt && <div className="text-size-12-5 text-ink-faint">Cancelada el {formatearFecha(mesa.canceledAt)}</div>}
         </GlassCard>
       )}
 
@@ -226,7 +226,7 @@ function DetalleMesa({ mesaId, role }) {
 
       <GlassCard className="flex flex-col gap-3 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="font-heading text-[16px] font-semibold text-ink">Alumnos anotados</div>
+          <div className="font-heading text-size-16 font-semibold text-ink">Alumnos anotados</div>
           {gestiona && <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" disabled={!modificable || conNotaFinal} onClick={() => setReprogramando(true)}>
               Reprogramar
@@ -243,12 +243,12 @@ function DetalleMesa({ mesaId, role }) {
           </div>}
         </div>
         {gestiona && modificable && conNotaFinal && (
-          <div className="text-[12px] font-semibold text-danger" role="alert">
+          <div className="text-size-12 font-semibold text-danger" role="alert">
             Hay alumnos con nota final cargada: no se puede reprogramar ni cancelar la mesa.
           </div>
         )}
         {gestiona && !soloLectura && examenPendiente && (
-          <div className="text-[12px] text-ink-faint">El acta se cierra después del examen, cuando ya se pueden cargar las notas.</div>
+          <div className="text-size-12 text-ink-faint">El acta se cierra después del examen, cuando ya se pueden cargar las notas.</div>
         )}
         <ExamBoardGradesSection
           mesa={mesa}

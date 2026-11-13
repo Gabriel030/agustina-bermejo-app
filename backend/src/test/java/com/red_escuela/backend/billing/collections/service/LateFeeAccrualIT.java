@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.testsupport.TermFixtures;
-import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -82,7 +81,6 @@ import static org.awaitility.Awaitility.await;
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @SlowTest(reason = "Twenty-nine accrual scenarios that each seed invoices and payments and run the real late fee reconciliation against Postgres")
-@SharedSpyBeans
 class LateFeeAccrualIT extends AbstractIntegrationTest {
     private static final StatusChangeActor ACTOR = new StatusChangeActor(null, "LateFeeAccrualIT");
 

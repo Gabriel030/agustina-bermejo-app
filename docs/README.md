@@ -11,6 +11,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | Documento | Para qué | Estado |
 |---|---|---|
 | [backend.md](context/backend.md) | Convenciones de backend: entidades, casos de uso, servicios, controllers, migraciones | vigente |
+| [data-retention.md](context/data-retention.md) | Retención de datos operativos: jobs, plazos `app.retention.*` y qué se conserva | vigente |
 | [frontend.md](context/frontend.md) | Convenciones de frontend, flujo de diseño con `ux-advisor`, rutas por rol | vigente |
 | [design-system.md](context/design-system.md) | Sistema de diseño: cómo registrar un diseño nuevo cambiando solo los tokens | vigente |
 | [components.md](context/components.md) | Qué componente usar y cómo listarlos en una spec | vigente |
@@ -27,6 +28,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | Documento | Para qué | Estado |
 |---|---|---|
 | [release/migration-smoke.md](release/migration-smoke.md) | Pasos para probar la cadena de migraciones de master (V110) a develop sobre Postgres en Docker | vigente |
+| [release/institution-sms-credential.md](release/institution-sms-credential.md) | Qué hacer si `institution.sms_password` tenía una credencial cargada antes de V214 | vigente |
 | [../perf/README.md](../perf/README.md) | Como reproducir la medicion de rendimiento: Postgres con pg_stat_statements, perfil `perf`, presupuestos y k6 | vigente |
 
 ## Decisiones de arquitectura (`docs/adr/`)

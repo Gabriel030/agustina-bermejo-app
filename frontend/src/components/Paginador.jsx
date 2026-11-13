@@ -9,10 +9,10 @@ export function Paginador({ page, totalPages, onChange }) {
         type="button"
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
-        className="px-3 text-[12.5px] font-semibold text-ink disabled:opacity-40">
+        className="px-3 text-size-12-5 font-semibold text-ink disabled:opacity-40">
         ← Anterior
       </Button>
-      <span className="text-[12.5px] text-ink-faint">
+      <span className="text-size-12-5 text-ink-faint">
         Página {page} de {totalPages}
       </span>
       <Button
@@ -21,7 +21,7 @@ export function Paginador({ page, totalPages, onChange }) {
         type="button"
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
-        className="px-3 text-[12.5px] font-semibold text-ink disabled:opacity-40">
+        className="px-3 text-size-12-5 font-semibold text-ink disabled:opacity-40">
         Siguiente →
       </Button>
     </div>

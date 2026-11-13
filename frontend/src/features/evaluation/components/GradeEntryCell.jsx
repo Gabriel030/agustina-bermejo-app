@@ -61,14 +61,14 @@ export function GradeEntryCell({ label, studentName, saved, draft, status, disab
         input
       )}
       {correction && (
-        <span className="whitespace-nowrap text-[10px] text-ink-faint">
+        <span className="whitespace-nowrap text-size-10 text-ink-faint">
           {formatScore(correction.previous)} → {formatScore(correction.next)}
         </span>
       )}
       {status === 'saving' && <Loader2 aria-label="Guardando" className="size-3 animate-spin text-ink-faint" />}
       {status === 'saved' && <Check aria-label="Guardada" className="size-3 text-success" />}
       {status === 'error' && (
-        <Button type="button" variant="ghost" size="xs" className="h-7 px-1.5 text-[11px] text-danger" onClick={onRetry}>
+        <Button type="button" variant="ghost" size="xs" className="h-7 px-1.5 text-size-11 text-danger" onClick={onRetry}>
           Reintentar
         </Button>
       )}

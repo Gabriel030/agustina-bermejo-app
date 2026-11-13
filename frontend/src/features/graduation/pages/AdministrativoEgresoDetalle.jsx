@@ -27,8 +27,8 @@ import { ageLabel, decisionErrorMessage, isAlreadyDecided, MIN_REJECTION_REASON_
 function Field({ label, children }) {
   return (
     <div className="flex flex-col gap-1">
-      <dt className="text-[12px] text-ink-faint">{label}</dt>
-      <dd className="text-[14px] font-medium text-ink">{children}</dd>
+      <dt className="text-size-12 text-ink-faint">{label}</dt>
+      <dd className="text-size-14 font-medium text-ink">{children}</dd>
     </div>
   );
 }
@@ -36,14 +36,14 @@ function Field({ label, children }) {
 function ResultBanner({ outcome, summary, studentId }) {
   if (outcome === 'verified') {
     return (
-      <div className="rounded-2xl bg-success-bg px-4 py-3 text-[13.5px] font-medium text-success-ink">
+      <div className="rounded-2xl bg-success-bg px-4 py-3 text-size-13-5 font-medium text-success-ink">
         <b>Deuda verificada.</b> La solicitud pasó al Director para su decisión.
       </div>
     );
   }
   if (outcome === 'debt') {
     return (
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-danger-bg px-4 py-3 text-[13.5px] font-medium text-danger-ink">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-danger-bg px-4 py-3 text-size-13-5 font-medium text-danger-ink">
         <span>
           <b>No se puede verificar:</b> el alumno tiene deuda pendiente
           {summary?.totalDue ? ` por ${formatMoney(summary.totalDue)}` : ''}. La solicitud sigue por verificar.
@@ -132,7 +132,7 @@ export function AdministrativoEgresoDetalle() {
     <PageContainer>
       <Link
         to={GRADUATION_VERIFICATION_TRAY}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
+        className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink"
       >
         ← Volver a Egresos por verificar
       </Link>
@@ -150,7 +150,7 @@ export function AdministrativoEgresoDetalle() {
       </div>
 
       {isActionable && summaryQuery.data && !summaryQuery.data.mustCheckDebt && (
-        <div className="rounded-2xl bg-neutral-bg px-4 py-3 text-[13.5px] font-medium text-neutral-ink">
+        <div className="rounded-2xl bg-neutral-bg px-4 py-3 text-size-13-5 font-medium text-neutral-ink">
           El control de deuda está desactivado en este instituto: la verificación no revisa cuotas.
         </div>
       )}
@@ -181,7 +181,7 @@ export function AdministrativoEgresoDetalle() {
       )}
 
       {graduation.status === 'REJECTED' && graduation.rejectionReason && (
-        <div className="text-[13px] font-semibold text-danger-ink">
+        <div className="text-size-13 font-semibold text-danger-ink">
           Motivo del rechazo: &ldquo;{graduation.rejectionReason}&rdquo;
         </div>
       )}
@@ -192,7 +192,7 @@ export function AdministrativoEgresoDetalle() {
             {verify.isPending ? 'Verificando…' : 'Verificar deuda'}
           </Button>
           <Button variant="outline" disabled={busy} onClick={() => setRejectOpen(true)}>Rechazar egreso</Button>
-          <span className="text-[12px] text-ink-faint">Verificar no se puede deshacer.</span>
+          <span className="text-size-12 text-ink-faint">Verificar no se puede deshacer.</span>
         </div>
       )}
 

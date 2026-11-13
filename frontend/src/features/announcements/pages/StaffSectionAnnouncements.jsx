@@ -48,7 +48,7 @@ function buildColumns(announcementsPath) {
       meta: { cardTitle: true },
       cell: ({ row }) => (
         <div className="flex flex-wrap items-center gap-2 whitespace-normal">
-          <span className="text-[13px] font-semibold text-ink">{row.original.title}</span>
+          <span className="text-size-13 font-semibold text-ink">{row.original.title}</span>
           {row.original.urgent && <StatusPill tone="danger">Urgente</StatusPill>}
         </div>
       ),
@@ -83,7 +83,7 @@ function buildColumns(announcementsPath) {
           <Link
             to={`${announcementsPath}/${row.original.id}`}
             aria-label={`Quién lo abrió de ${row.original.title}`}
-            className="text-[13px] font-semibold text-primary hover:underline"
+            className="text-size-13 font-semibold text-primary hover:underline"
           >
             Quién lo abrió ›
           </Link>
@@ -107,7 +107,7 @@ export function StaffSectionAnnouncements() {
       <div className="flex flex-col gap-1.5">
         <Breadcrumb items={[...breadcrumb, { label: 'Avisos' }]} />
         <h1 className="font-heading text-xl font-bold text-ink md:text-2xl">Avisos de la comisión</h1>
-        {sectionLabel && <p className="text-[12.5px] text-ink-faint">{sectionLabel}</p>}
+        {sectionLabel && <p className="text-size-12-5 text-ink-faint">{sectionLabel}</p>}
       </div>
 
       {isError ? (
@@ -122,7 +122,7 @@ export function StaffSectionAnnouncements() {
         </GlassCard>
       ) : (
         <GlassCard className="flex flex-col gap-3 p-3 md:p-5">
-          <p className="text-[11.5px] text-ink-faint">Lo abrieron marca cuándo se abrió el aviso en Novedades</p>
+          <p className="text-size-11-5 text-ink-faint">Lo abrieron marca cuándo se abrió el aviso en Novedades</p>
           <DataTable
             compact
             columns={columns}

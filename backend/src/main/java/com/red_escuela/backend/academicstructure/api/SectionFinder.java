@@ -4,6 +4,8 @@ import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionNotOpenForEnrollmentException;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
@@ -48,6 +50,28 @@ public class SectionFinder {
                 .orElseThrow(() -> new SectionNotFoundException(id));
         return new ProgramSectionView(section.getId(), section.getSubject().getId(), section.getTerm().getId(),
                 section.getCapacity(), section.getName());
+    }
+
+    public ProgramSectionView findOpenProgramSection(Long id) {
+        SubjectSection section = programSectionRepository.findById(id)
+                .orElseThrow(() -> new SectionNotFoundException(id));
+        requireOpenForEnrollment(section);
+        return new ProgramSectionView(section.getId(), section.getSubject().getId(), section.getTerm().getId(),
+                section.getCapacity(), section.getName());
+    }
+
+    public boolean isProgramSectionOpenForEnrollment(Long id) {
+        return programSectionRepository.findById(id).map(this::isOpenForEnrollment).orElse(false);
+    }
+
+    private void requireOpenForEnrollment(SubjectSection section) {
+        if (!isOpenForEnrollment(section)) {
+            throw new SectionNotOpenForEnrollmentException(section.getId());
+        }
+    }
+
+    private boolean isOpenForEnrollment(SubjectSection section) {
+        return section.getStatus() == StatusType.ACTIVE && section.isOfferingApproved();
     }
 
     public CourseSectionView findCourseSection(Long id) {

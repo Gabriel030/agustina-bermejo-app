@@ -33,8 +33,8 @@ const SEARCH_DEBOUNCE_MS = 300;
 function StudentCell({ application }) {
   return (
     <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
-      <span className="font-heading text-[14px] font-semibold leading-tight text-ink">{application.studentFullName ?? '—'}</span>
-      {application.studentEmail && <span className="text-[12px] text-ink-faint">{application.studentEmail}</span>}
+      <span className="font-heading text-size-14 font-semibold leading-tight text-ink">{application.studentFullName ?? '—'}</span>
+      {application.studentEmail && <span className="text-size-12 text-ink-faint">{application.studentEmail}</span>}
     </div>
   );
 }
@@ -43,8 +43,8 @@ function ProgramCell({ application }) {
   const cohort = cohortLabel(application.programCohortName);
   return (
     <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
-      <span className="text-[13px] text-ink">{application.programName}</span>
-      {cohort && <span className="text-[12px] text-ink-faint">{cohort}</span>}
+      <span className="text-size-13 text-ink">{application.programName}</span>
+      {cohort && <span className="text-size-12 text-ink-faint">{cohort}</span>}
     </div>
   );
 }
@@ -53,8 +53,8 @@ function RequestedCell({ application }) {
   const age = ageLabel(application.requestedAt);
   return (
     <div className="flex flex-col items-start gap-0.5">
-      <span className="text-[13px] text-ink">{formatearFecha(application.requestedAt) ?? '—'}</span>
-      {age && <span className="text-[12px] text-ink-faint">{age}</span>}
+      <span className="text-size-13 text-ink">{formatearFecha(application.requestedAt) ?? '—'}</span>
+      {age && <span className="text-size-12 text-ink-faint">{age}</span>}
     </div>
   );
 }
@@ -125,9 +125,9 @@ function buildColumns({ basePath, history }) {
         enableSorting: false,
         cell: ({ row }) => (
           <div className="flex flex-col items-start gap-0.5">
-            <span className="text-[13px] text-ink">{row.original.decidedByName ?? '—'}</span>
+            <span className="text-size-13 text-ink">{row.original.decidedByName ?? '—'}</span>
             {row.original.decidedAt && (
-              <span className="text-[12px] text-ink-faint">{formatearFecha(row.original.decidedAt)}</span>
+              <span className="text-size-12 text-ink-faint">{formatearFecha(row.original.decidedAt)}</span>
             )}
           </div>
         ),

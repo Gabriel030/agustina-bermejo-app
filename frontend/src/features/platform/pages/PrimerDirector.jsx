@@ -74,7 +74,7 @@ function errorProps(id, error) {
 function Field({ id, label, error, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[13px] font-medium text-ink-soft">{label}</label>
+      <label htmlFor={id} className="text-size-13 font-medium text-ink-soft">{label}</label>
       {children}
       {error && <span id={`${id}-error`} className="text-xs text-danger">{error}</span>}
     </div>
@@ -255,7 +255,7 @@ export function PrimerDirector() {
         )}
 
         <section className="flex flex-col gap-3">
-          <h2 className="font-heading text-[15px] font-semibold text-ink">Institución</h2>
+          <h2 className="font-heading text-size-15 font-semibold text-ink">Institución</h2>
           <Field id="institutionName" label="Nombre de la institución" error={shown.institutionName}>
             <Input id="institutionName" value={effectiveForm.institutionName} onChange={setField('institutionName')} placeholder="Ej. Instituto Superior Nuevo Horizonte" maxLength={FIELD_LIMITS.institutionName} disabled={!!lockedInstitution} {...errorProps('institutionName', shown.institutionName)} />
             {lockedInstitution && <span className="text-xs text-ink-faint">La institución ya existe, se le asigna el Director.</span>}
@@ -263,7 +263,7 @@ export function PrimerDirector() {
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="font-heading text-[15px] font-semibold text-ink">Director</h2>
+          <h2 className="font-heading text-size-15 font-semibold text-ink">Director</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field id="firstName" label="Nombre" error={shown.firstName}>
               <Input id="firstName" value={form.firstName} onChange={setField('firstName')} maxLength={FIELD_LIMITS.firstName} {...errorProps('firstName', shown.firstName)} />
@@ -276,7 +276,7 @@ export function PrimerDirector() {
             <Input id="email" type="email" value={form.email} onChange={setField('email')} placeholder="nombre@institucion.edu.ar" maxLength={FIELD_LIMITS.email} {...errorProps('email', shown.email)} />
           </Field>
           <div className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium text-ink-soft">Documento</span>
+            <span className="text-size-13 font-medium text-ink-soft">Documento</span>
             <DocumentField
               type={form.documentType}
               number={form.documentNumber}
