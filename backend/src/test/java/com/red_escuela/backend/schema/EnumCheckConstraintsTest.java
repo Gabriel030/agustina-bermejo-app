@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,6 +32,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EnumCheckConstraintsTest {
 
     private static final Pattern LITERAL = Pattern.compile("'([^']*)'::");
+
+    private static final Pattern SCRIPT_ENTRY = Pattern.compile("\\('(\\w+)', '(\\w+)', array\\[([^\\]]*)\\]\\)");
+
+    private static final String ENUM_CHECKS = """
+            select t.relname, a.attname, pg_get_constraintdef(c.oid)
+            from pg_constraint c
+            join pg_class t on t.oid = c.conrelid
+            join pg_namespace n on n.oid = t.relnamespace
+            join pg_attribute a on a.attrelid = t.oid and a.attnum = c.conkey[1]
+            where c.contype = 'c' and n.nspname = current_schema() and c.conname = t.relname || '_' || a.attname || '_enum'
+            """;
 
     private static final String CHECKS_ON_COLUMN = """
             select pg_get_constraintdef(c.oid)
@@ -89,11 +101,36 @@ class EnumCheckConstraintsTest {
         }
     }
 
+    @Test
+    void preMigrationCheckListsMatchTheChecksAddedByTheMigrations() throws Exception {
+        Map<String, Set<String>> fromScript = new TreeMap<>();
+        Matcher entries = SCRIPT_ENTRY.matcher(preMigrationCheckBlock());
+        while (entries.find()) {
+            fromScript.put(entries.group(1) + "." + entries.group(2), literalsInArray(entries.group(3)));
+        }
+        Map<String, Set<String>> fromDatabase = new TreeMap<>();
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(latestMigrationVersion())) {
+            new JdbcTemplate(dataSource).query(ENUM_CHECKS, rs -> {
+                fromDatabase.put(rs.getString(1) + "." + rs.getString(2), literalsOf(rs.getString(3)));
+            });
+        }
+        assertThat(fromScript).isNotEmpty().isEqualTo(fromDatabase);
+    }
+
+    private static Set<String> literalsInArray(String array) {
+        Set<String> literals = new TreeSet<>();
+        Matcher matcher = Pattern.compile("'([^']*)'").matcher(array);
+        while (matcher.find()) {
+            literals.add(matcher.group(1));
+        }
+        return literals;
+    }
+
     private static String preMigrationCheckBlock() throws IOException {
         String script = Files.readString(Path.of("..", "docs", "release", "pre-migration-checks.sql"));
-        int start = script.indexOf("do $$");
-        int end = script.indexOf("end $$;", start) + "end $$;".length();
-        return script.substring(start, end);
+        Matcher block = Pattern.compile("(?s)\\bdo \\$\\$.*?\\bend \\$\\$;").matcher(script);
+        assertThat(block.find()).isTrue();
+        return block.group();
     }
 
     private static String latestMigrationVersion() {

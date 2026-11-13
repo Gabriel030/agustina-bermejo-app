@@ -521,6 +521,13 @@ una constante exige una migración que reemplace el CHECK (`drop constraint` + `
 deliberadas (CHECK distinto del enum) se declaran con su razón en `INTENTIONAL_DIFFERENCES` del test. Los enums
 extensibles de `OpenApiConfig` crecen igual: la migración del CHECK va en el mismo PR que el valor nuevo.
 
+Los CHECK se agregan en dos migraciones por área: `ADD CONSTRAINT ... NOT VALID` (instantáneo) y,
+aparte, `VALIDATE CONSTRAINT` (V209/V210 agregan, V211/V212 validan). Flyway corre cada archivo en su
+propia transacción, así `VALIDATE` toma SHARE UPDATE EXCLUSIVE y no bloquea escrituras. Cada `ADD` igual
+pide ACCESS EXCLUSIVE hasta el COMMIT de su archivo, y la app corre con `lock_timeout` de 10 s
+(`application.properties:151`): desplegar estas migraciones con la app parada, o al menos sin transacciones
+largas ni el job nocturno vivo, o el `ADD` fallará por timeout.
+
 ## Seguridad
 
 `SecurityConfig.java`: todo exige JWT salvo `/auth/**` y `POST /prospects`
