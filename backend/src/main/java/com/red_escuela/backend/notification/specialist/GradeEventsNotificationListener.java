@@ -2,6 +2,8 @@ package com.red_escuela.backend.notification.specialist;
 
 import com.red_escuela.backend.notification.domain.GradesPublishedNotification;
 import com.red_escuela.backend.notification.domain.GradeCorrectedNotification;
+import com.red_escuela.backend.notification.domain.SubjectApprovalRevertedNotification;
+import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
 import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
 import com.red_escuela.backend.identity.entity.Person;
@@ -17,6 +19,8 @@ import java.util.List;
 public class GradeEventsNotificationListener {
     static final String NOTIFY_GRADES_PUBLISHED_HANDLER = "GradeEventsNotificationListener.notifyGradesPublished";
     static final String NOTIFY_GRADE_CORRECTED_HANDLER = "GradeEventsNotificationListener.notifyGradeCorrected";
+
+    static final String NOTIFY_SUBJECT_APPROVAL_REVERTED_HANDLER = "GradeEventsNotificationListener.notifySubjectApprovalReverted";
 
     private final ProcessedEffectGuard effectGuard;
     private final ApplicationEventPublisher eventPublisher;
@@ -39,6 +43,13 @@ public class GradeEventsNotificationListener {
     public void notifyGradeCorrected(GradeCorrectedEvent event) {
         effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_GRADE_CORRECTED_HANDLER, () -> eventPublisher.publishEvent(
                 new GradeCorrectedNotification(event.gradeItemId(), event.sectionName(), event.gradeTypeLabel(), event.sequenceNumber(),
+                        entityManager.getReference(Person.class, event.studentPersonId()))));
+    }
+
+    @ApplicationModuleListener
+    public void notifySubjectApprovalReverted(SubjectApprovalRevertedEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_SUBJECT_APPROVAL_REVERTED_HANDLER, () -> eventPublisher.publishEvent(
+                new SubjectApprovalRevertedNotification(event.subjectName(), event.missingPrerequisiteNames(),
                         entityManager.getReference(Person.class, event.studentPersonId()))));
     }
 

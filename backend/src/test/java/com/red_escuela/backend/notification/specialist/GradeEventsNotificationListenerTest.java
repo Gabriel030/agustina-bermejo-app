@@ -3,6 +3,7 @@ package com.red_escuela.backend.notification.specialist;
 import com.red_escuela.backend.notification.domain.PersonRecipient;
 import com.red_escuela.backend.notification.domain.DomainNotificationEvent;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
+import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
 import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.NotificationEvent;
@@ -79,6 +80,17 @@ class GradeEventsNotificationListenerTest {
         assertThat(recipientIds(notification)).containsExactly(10L);
         assertThat(notification.message()).isEqualTo("Se corrigió tu nota de TP 2 en Algebra - Com A");
         assertThat(notification.relatedEntityId()).isEqualTo(55L);
+    }
+
+    @Test
+    void subjectApprovalRevertedNotifiesOnlyTheStudentNamingTheMissingPrerequisite() {
+        listener.notifySubjectApprovalReverted(
+                SubjectApprovalRevertedEvent.revertedFor(10L, "Algebra II", List.of("Algebra I")));
+
+        DomainNotificationEvent notification = published();
+        assertThat(notification.type()).isEqualTo(NotificationType.SUBJECT_APPROVAL_REVERTED);
+        assertThat(recipientIds(notification)).containsExactly(10L);
+        assertThat(notification.message()).contains("Algebra II").contains("Algebra I");
     }
 
     @Test
