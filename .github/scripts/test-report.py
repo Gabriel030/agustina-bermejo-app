@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""Presupuestos de tiempo de la suite de tests del backend.
+"""Reporte informativo de tiempos de la suite de tests del backend y tope de contextos de Spring.
 
 Uso:
-  test-budget.py check-shard --shard N --reports DIR [--meta-out FILE] [--shard-limit error|warn] [limites]
-      falla si una clase supera el limite por clase (o el de @SlowTest); el limite del shard se mide con el
-      reloj del job (SHARD_END - SHARD_START), no con la suma de las JVM, y con --shard-limit warn solo advierte
-  test-budget.py aggregate --shards DIR --out DIR [--baseline FILE] [--changed FILE] [limites]
+  test-report.py shard-meta --shard N --reports DIR --meta-out FILE
+      escribe la duracion del shard (SHARD_END - SHARD_START) y la suma de las JVM; nunca falla
+  test-report.py aggregate --shards DIR --out DIR [--baseline FILE] [--changed FILE] [--max-contexts N]
       une los shards, escribe report.md y metrics.json y falla si hay mas contextos de Spring que el tope
 
-Limites (segundos / cantidad): --max-class 30, --max-slow-class 90, --max-shard 300, --max-contexts 24
+Tope (cantidad): --max-contexts 24
 """
 import argparse
 import glob
@@ -22,20 +21,12 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 TEST_ROOT = os.path.join(ROOT, 'backend', 'src', 'test', 'java')
 MARKER = '<!-- test-time-report -->'
 SLOW = re.compile(r'@SlowTest\s*\(\s*reason\s*=\s*"((?:[^"\\]|\\.)*)"')
-SLOW_MAX = re.compile(r'@SlowTest\s*\(\s*reason\s*=\s*"(?:[^"\\]|\\.)*"\s*,\s*maxSeconds\s*=\s*(\d+)')
 
-DEFAULT_MAX_CLASS = 30.0
-DEFAULT_MAX_SLOW_CLASS = 90.0
-DEFAULT_MAX_SHARD = 300.0
 DEFAULT_MAX_CONTEXTS = 24
 
 
 def add_limits(parser):
-    parser.add_argument('--max-class', type=float, default=DEFAULT_MAX_CLASS)
-    parser.add_argument('--max-slow-class', type=float, default=DEFAULT_MAX_SLOW_CLASS)
-    parser.add_argument('--max-shard', type=float, default=DEFAULT_MAX_SHARD)
     parser.add_argument('--max-contexts', type=int, default=DEFAULT_MAX_CONTEXTS)
-    parser.add_argument('--shard-limit', choices=['error', 'warn'], default='error')
     parser.add_argument('--test-root', default=TEST_ROOT)
     parser.add_argument('--enforcement', choices=['block', 'warn'], default='block')
 
@@ -75,15 +66,6 @@ def slow_reason(test_root, name):
     return match.group(1) if match else None
 
 
-def slow_limit(test_root, name, default):
-    path = os.path.join(test_root, name + '.java')
-    if not os.path.exists(path):
-        return default
-    with open(path, encoding='utf-8') as handle:
-        match = SLOW_MAX.search(handle.read())
-    return max(default, float(match.group(1))) if match else default
-
-
 def short(name):
     return name.rsplit('/', 1)[-1]
 
@@ -99,48 +81,18 @@ def read_contexts(path):
     return found
 
 
-def clock_seconds():
+def shard_meta(args):
+    times = class_times(args.reports)
     start = int(os.environ.get('SHARD_START', '0') or 0)
     end = int(os.environ.get('SHARD_END', '0') or 0)
-    return end - start if start and end >= start else None
-
-
-def check_shard(args):
-    times = class_times(args.reports)
-    shard_seconds = sum(times.values())
-    wall = clock_seconds()
-    failures = []
-    warnings = []
-    slow = {}
-    for name, seconds in sorted(times.items(), key=lambda item: -item[1]):
-        reason = slow_reason(args.test_root, name)
-        if reason is not None:
-            slow[name] = (seconds, reason)
-            limit = slow_limit(args.test_root, name, args.max_slow_class)
-            if seconds > limit:
-                failures.append('%s took %.1fs, above the @SlowTest limit of %.0fs' % (name, seconds, limit))
-        elif seconds > args.max_class:
-            failures.append('%s took %.1fs, above the per-class limit of %.0fs: speed it up or mark it @SlowTest(reason = "...")' % (name, seconds, args.max_class))
-    if wall is not None and wall > args.max_shard:
-        message = 'shard %d took %.0fs of wall clock, above the per-shard limit of %.0fs' % (args.shard, wall, args.max_shard)
-        (warnings if args.shard_limit == 'warn' else failures).append(message)
-    clock_text = '%.0fs of wall clock' % wall if wall is not None else 'wall clock unavailable (the shard limit is not checked)'
-    print('shard %d: %d classes, %.0fs of test time summed over the JVMs, %s (limit %.0fs), %d @SlowTest' % (
-        args.shard, len(times), shard_seconds, clock_text, args.max_shard, len(slow)))
-    for name, seconds in sorted(times.items(), key=lambda item: -item[1])[:5]:
-        print('  %6.1fs %s' % (seconds, short(name)))
-    if args.meta_out:
-        os.makedirs(os.path.dirname(os.path.abspath(args.meta_out)), exist_ok=True)
-        start = int(os.environ.get('SHARD_START', '0') or 0)
-        end = int(os.environ.get('SHARD_END', '0') or 0)
-        with open(args.meta_out, 'w', encoding='utf-8') as out:
-            json.dump({'shard': args.shard, 'start': start, 'end': end, 'test_seconds': shard_seconds}, out)
-    if not times:
-        print('no surefire reports found: nothing to check')
-        return 0
-    for warning in warnings:
-        print('::warning::BUDGET EXCEEDED: ' + warning)
-    return report_failures(failures, args.enforcement)
+    seconds = sum(times.values())
+    wall = end - start if start and end >= start else None
+    print('shard %d: %d classes, %.0fs of test time summed over the JVMs, %s' % (
+        args.shard, len(times), seconds, '%.0fs of wall clock' % wall if wall is not None else 'wall clock unavailable'))
+    os.makedirs(os.path.dirname(os.path.abspath(args.meta_out)), exist_ok=True)
+    with open(args.meta_out, 'w', encoding='utf-8') as out:
+        json.dump({'shard': args.shard, 'start': start, 'end': end, 'test_seconds': seconds}, out)
+    return 0
 
 
 def load_shards(directory):
@@ -222,9 +174,12 @@ def aggregate(args):
     lines.append('| Contextos de Spring distintos | %d / %d | %s |' % (
         len(contexts), args.max_contexts, fmt_delta(len(contexts), baseline.get('contexts'), '')))
     lines.append('')
-    if shard_seconds:
-        lines.append('Shards (tests): ' + ', '.join('%d: %s' % (i, clock(s)) for i, s in enumerate(shard_seconds)) +
-                     ' (suma de JVM) · límite por shard %s de reloj' % clock(args.max_shard))
+    if shards:
+        for index, shard in enumerate(shards):
+            meta = shard['meta']
+            span = meta.get('end', 0) - meta.get('start', 0) if meta.get('start') and meta.get('end') else None
+            lines.append('- Shard %d: %s de reloj, %s de tests sumados (JVM)' % (
+                index, clock(span) if span is not None else 'n/a', clock(shard_seconds[index])))
         lines.append('')
 
     touched = {n: t for n, t in times.items() if n in changed}
@@ -256,8 +211,6 @@ def aggregate(args):
         lines.append('> **Tests flaky (fallaron y pasaron en el reintento): %d.** No los ignores, estabilizalos:' % len(flaky))
         lines.extend('> - `%s`' % name for name in flaky)
         lines.append('')
-    lines.append('Presupuestos: clase %ds, @SlowTest %ds, shard %ds de reloj, contextos %d. Ver `docs/context/testing.md`, sección "Presupuesto de tiempo y pirámide de tests".' % (
-        args.max_class, args.max_slow_class, args.max_shard, args.max_contexts))
 
     os.makedirs(args.out, exist_ok=True)
     with open(os.path.join(args.out, 'report.md'), 'w', encoding='utf-8') as handle:
@@ -283,11 +236,10 @@ def report_failures(failures, enforcement):
 def main():
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest='command', required=True)
-    check = sub.add_parser('check-shard')
-    check.add_argument('--shard', type=int, required=True)
-    check.add_argument('--reports', required=True)
-    check.add_argument('--meta-out')
-    add_limits(check)
+    meta = sub.add_parser('shard-meta')
+    meta.add_argument('--shard', type=int, required=True)
+    meta.add_argument('--reports', required=True)
+    meta.add_argument('--meta-out', required=True)
     agg = sub.add_parser('aggregate')
     agg.add_argument('--shards', required=True)
     agg.add_argument('--out', required=True)
@@ -295,7 +247,7 @@ def main():
     agg.add_argument('--changed')
     add_limits(agg)
     args = parser.parse_args()
-    sys.exit(check_shard(args) if args.command == 'check-shard' else aggregate(args))
+    sys.exit(shard_meta(args) if args.command == 'shard-meta' else aggregate(args))
 
 
 if __name__ == '__main__':

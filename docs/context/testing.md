@@ -148,35 +148,19 @@ Correr todo: `./mvnw clean verify` desde `backend/`. Necesita Docker corriendo (
 levanta Postgres) — ver [docs/context/debugging.md](debugging.md) si Docker no
 está arriba.
 
-## Presupuesto de tiempo y pirámide de tests
+## Reporte de tiempos y pirámide de tests
 
-El CI del backend corre en 6 shards balanceados por tiempo (`.github/scripts/test-shards.py`). Para que ese tiempo no vuelva a crecer, cada corrida pasa por presupuestos que miden la corrida real.
+El CI del backend corre en 6 shards balanceados por tiempo (`.github/scripts/test-shards.py`). No hay presupuesto de tiempo: ningún límite por clase, por `@SlowTest` ni por shard hace fallar el CI (se eliminaron el 13-nov-2026, a pedido de Gabriel, después de cuatro rojos por tiempos al borde sin bug real). Los tiempos se miden y se reportan, nada más.
 
-**Dónde bloquean (decisión de Gabriel, 22-oct-2026):**
-- **En un PR** (`--enforcement warn`), los presupuestos (por clase, por shard y por cantidad de contextos de Spring) son **advertencias**. Aparecen en el comentario del reporte y como `::warning::`, pero no ponen el PR en rojo.
-- **En un push a `develop`** (`--enforcement block`), bloquean como antes.
+**Lo único que bloquea es el tope de contextos de Spring distintos en toda la corrida (24)**, que no es una regla de tiempo: lo hace cumplir `test-report.py aggregate` (parámetro `--max-contexts`), en el job `test-report`, solo en pushes (en un PR es una advertencia). Subirlo es una decisión de producto que va en un PR aparte, con motivo.
 
-Motivo: ~80 % de los rojos de los PRs de billing eran presupuestos (clases de 31-34 s, 25 contextos), no bugs, y cada uno costaba una vuelta más. Si un push a `develop` queda rojo por presupuesto, se corrige en un PR aparte, el mismo día.
-
-### Presupuestos
-
-| Qué | Límite | Quién lo hace cumplir |
-|---|---|---|
-| Una clase de test | 30 s | `test-budget.py check-shard`, en cada shard |
-| Una clase marcada `@SlowTest` | 90 s (o su `maxSeconds`, si lo declara; hoy solo `ModuleDocumentationTest`, 300 s, medida en 142-237 s en pushes a master) | ídem |
-| Un shard (tiempo de **reloj**: `SHARD_END - SHARD_START`, desde el primer paso del job hasta el fin de los tests) | 300 s | ídem; en un PR bloquea, en un push es solo `::warning::` |
-| Contextos de Spring distintos en toda la corrida | 24 | `test-budget.py aggregate`, job `test-report` |
-| Reglas ArchUnit sobre los tests | sin violaciones nuevas | `TestSuiteRulesTest` |
-
-Los límites son constantes de `.github/scripts/test-budget.py` (parámetros `--max-class`, `--max-slow-class`, `--max-shard`, `--max-contexts`). Subirlos es una decisión de producto que va en un PR aparte, con motivo.
-
-**El tope de shard se mide con reloj, no con la suma de las JVM** (decisión de Gabriel del 22-oct-2026; reemplaza la subida de 240 a 300 s hecha en #268). Cada shard corre 2 JVM en paralelo, así que sumar sus tiempos casi duplica el reloj y daba falsos rojos (4 de 10 pushes a `develop`, ninguno por un test). En un push (`--shard-limit warn`) pasarse del tope de shard es una advertencia, no un fallo: así un falso rojo no impide publicar el baseline (círculo vicioso). El tope por clase (30 s, `@SlowTest` 90 s) sigue bloqueando tanto en PRs como en `develop`. Sin `SHARD_START`/`SHARD_END` (corrida local) el tope de shard no se verifica.
+Las reglas ArchUnit sobre los tests (`TestSuiteRulesTest`) no cambian: sin violaciones nuevas.
 
 ### La pirámide de tests
 
 1. **Base, la gran mayoría: tests de dominio puros.** Policies, value objects, cálculos y reglas se testean sin Spring, sin base y sin mocks de infraestructura (JUnit + AssertJ, jqwik donde haya propiedades). Corren en milisegundos. ArchUnit impide que las clases de test de paquetes `..domain..` y `..policy..` usen `@SpringBootTest` o extiendan `AbstractIntegrationTest`.
 2. **Medio: tests de integración solo para persistencia e integración real.** Queries, constraints, transacciones, eventos entre módulos, endpoints. Extienden `AbstractIntegrationTest` (Postgres real, aislamiento por clase con `TestDatabaseIsolation`). No repitas ahí lo que ya cubre un test de dominio.
-3. **Punta: escenarios largos con `@SlowTest`.** Los que recorren meses simulados, concurrencia o varias etapas del pipeline pueden superar 30 s. Se marcan con `@SlowTest(reason = "...")` (`com.red_escuela.backend.testsupport.SlowTest`, que lleva `@Tag("slow")`). El motivo es obligatorio y tiene que explicar por qué no se puede partir en tests más chicos. Aparecen listados en el reporte de cada PR.
+3. **Punta: escenarios largos con `@SlowTest`.** Los que recorren meses simulados, concurrencia o varias etapas del pipeline son lentos. Se marcan con `@SlowTest(reason = "...")` (`com.red_escuela.backend.testsupport.SlowTest`, que lleva `@Tag("slow")`). El motivo es obligatorio y tiene que explicar por qué no se puede partir en tests más chicos. Aparecen listados en el reporte de cada PR; es solo una etiqueta informativa, no tiene un límite de tiempo.
 
 ### Tiers de tests: PR y nightly
 
@@ -255,19 +239,16 @@ python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con
 
 `run` toma el semáforo de CI (`~/.claude/epica18/ci-slot.sh acquire shard-2`) y lo libera al terminar, también si falla; si ese script no existe en la máquina, corre sin él. El reparto usa el `timings.txt` versionado: la CI usa el medido en la última corrida de `develop`, así que si difiere mucho puede variar la composición. Para reproducir con el reparto exacto, bajá el artifact `test-baseline` de esa corrida y corré `python3 .github/scripts/test-shards.py use <carpeta>` (reescribe `timings.txt`; no lo commitees).
 
-### Qué hacer si falla un presupuesto
+### Qué hacer si falla el tope de contextos o ArchUnit
 
 | Falla | Qué hacer |
 |---|---|
-| Una clase supera 30 s | Primero buscá por qué: contexto nuevo evitable, `Thread.sleep`, un proceso global sin acotar, datos de prueba de más. Si es un escenario largo legítimo, partilo; si no se puede, `@SlowTest(reason = "...")`. |
-| Una `@SlowTest` supera 90 s | Partila. El límite alto no es para que crezca. |
-| Un shard supera 300 s de reloj | Casi siempre es una clase lenta nueva (mirá el top del reporte) o un balanceo desactualizado: con cada push a `develop` el promedio móvil se actualiza solo. Un reparto con tiempos estimados parejos puede dar tiempos reales dispares por el costo de los contextos; mirá si fue una sola corrida antes de tocar nada. |
 | Más de 24 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
 | ArchUnit en tests | Leé el mensaje: sleep → Awaitility; `@DirtiesContext` → limpiar estado; `@SpringBootTest` en `domain`/`policy` → test puro; job global → caso de uso con ids. |
 
-**Arranque en frío fuera de la medición.** Cada shard corre 2 JVM (`forkCount=2`) y la primera clase de integración de cada una pagaba, dentro de su tiempo, el arranque de Postgres (Testcontainers), las migraciones de Flyway y el snapshot de `TestDatabaseIsolation` (el bloque `static` de `AbstractIntegrationTest`, unos 12-15 s en CI), además del primer contexto de Spring (8-14 s). Eso llevaba a clases triviales a 26-31 s. `testsupport/SharedInfrastructureWarmUp` (un `LauncherSessionListener` registrado en `META-INF/services`) inicializa esa infraestructura al abrir la sesión de JUnit, antes de que arranque cualquier clase, así que el límite de 30 s mide la clase y no el arranque del fork. Solo actúa con la variable `CI` definida (GitHub Actions la define); en local no cambia nada. El primer contexto de Spring de cada fork lo absorben `ApplicationContextWarmUpFirstForkIT` y `ApplicationContextWarmUpSecondForkIT` (`@SlowTest`, una por JVM: la cantidad tiene que igualar `test.forkCount` del pom, lo verifica `test-shards.py verify`). `test-shards.py` no las reparte: las agrega a TODOS los shards, y el pom fija `runOrder=alphabetical` (por nombre completo; sus nombres empiezan con `Application...` para ordenar antes que el resto) para que surefire las entregue primero, una a cada JVM. Evidencia previa: en el release 14 `CycleApprovalSupportIT` (31,3 s) y `DraftSubjectRulesTest` (30,6 s) eran la primera clase de integración de cada una de las 2 JVM del shard 4. No marques `@SlowTest` una clase solo porque quedó primera: si excede 30 s por arranque, revisá que las clases de calentamiento sigan primero.
+**Arranque en frío.** `testsupport/SharedInfrastructureWarmUp` (un `LauncherSessionListener` registrado en `META-INF/services`) inicializa Postgres (Testcontainers), las migraciones de Flyway y el snapshot de `TestDatabaseIsolation` al abrir la sesión de JUnit, antes de que arranque cualquier clase. Solo actúa con la variable `CI` definida (GitHub Actions la define); en local no cambia nada.
 
-Para reproducir en local: `python3 .github/scripts/test-budget.py check-shard --shard 0 --reports backend/target/surefire-reports` contra los reportes de una corrida (`--max-class 5` fuerza el fallo para ver el mensaje; para probar el tope de shard exportá `SHARD_START` y `SHARD_END` en segundos epoch). Los contextos de una corrida quedan en `backend/target/spring-contexts/contexts.txt` (los escribe `SpringContextCensusListener`, una línea por configuración distinta).
+Para armar el reporte en local: `python3 .github/scripts/test-report.py aggregate --shards DIR --out DIR` sobre carpetas con `reports/`, `contexts.txt` y `meta.json` por shard. Los contextos de una corrida quedan en `backend/target/spring-contexts/contexts.txt` (los escribe `SpringContextCensusListener`, una línea por configuración distinta).
 
 ### Cobertura con JaCoCo
 
