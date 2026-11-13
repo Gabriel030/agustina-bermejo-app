@@ -15,7 +15,7 @@ import {
 } from './examBoardGrades';
 
 function row(id, extra = {}) {
-  return { id, studentName: `Alumno ${id}`, status: 'REGISTERED', finalScore: null, priorCondition: 'REGULAR', minApprovalGrade: 6, result: null, ...extra };
+  return { id, studentName: `Alumno ${id}`, status: 'REGISTERED', finalScore: null, priorCondition: 'REGULAR', finalExamEligibility: { eligible: true, reason: null }, minApprovalGrade: 6, result: null, ...extra };
 }
 
 describe('examBoardGrades', () => {
