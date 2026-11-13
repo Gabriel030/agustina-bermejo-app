@@ -1,6 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
 import java.time.Clock;
+import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResolver;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;

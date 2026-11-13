@@ -17,4 +17,9 @@ public class ProgramSectionAbsenceLimitChecker implements SectionAbsenceLimitPor
     public boolean exceedsAbsenceLimit(Long programSectionEnrollmentId) {
         return attendanceStandingReader.readProgramEnrollmentStanding(programSectionEnrollmentId).exceedsAbsenceLimit();
     }
+
+    @Override
+    public boolean exceedsCourseAbsenceLimit(Long courseSectionEnrollmentId) {
+        return attendanceStandingReader.readCourseEnrollmentStanding(courseSectionEnrollmentId).exceedsAbsenceLimit();
+    }
 }

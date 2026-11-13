@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.dto;
 
+import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResponse;
 import com.red_escuela.backend.evaluation.entity.ExamBoardEnrollmentKind;
 import com.red_escuela.backend.evaluation.entity.ExamBoardFinalResult;
 import com.red_escuela.backend.evaluation.entity.ExamBoardPriorCondition;
@@ -19,8 +20,9 @@ public record ExamBoardRegistrationSummaryResponse(
         @Schema(nullable = true) BigDecimal finalScore,
         Long enrollmentId,
         ExamBoardEnrollmentKind enrollmentKind,
-        ExamBoardPriorCondition priorCondition,
+        @Deprecated @Schema(deprecated = true, description = "Usar finalExamEligibility") ExamBoardPriorCondition priorCondition,
         @Schema(nullable = true) Grade minApprovalGrade,
         @Schema(nullable = true) Long gradeItemId,
-        @Schema(nullable = true) ExamBoardFinalResult result) {
+        @Schema(nullable = true) ExamBoardFinalResult result,
+        FinalExamEligibilityResponse finalExamEligibility) {
 }
