@@ -100,6 +100,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   STANDING_NOT_CONFIRMED: 'La condición del alumno todavía no está confirmada.',
   STUDENT_NOT_ACTIVE: 'El alumno no está activo.',
   STUDENT_NOT_CONFIRMED: 'La inscripción del alumno todavía no está confirmada.',
+  STUDENT_NOT_WITHDRAWN: 'El alumno no está dado de baja, así que no hay nada para reactivar.',
   STUDENT_NOT_REGULAR: 'El alumno no está en condición de regular.',
   SUBJECT_ALREADY_APPROVED: 'La materia ya está aprobada y no se puede volver a cursar.',
   SUBJECT_ALREADY_REGULAR: 'La materia ya está regularizada y no se puede volver a cursar.',

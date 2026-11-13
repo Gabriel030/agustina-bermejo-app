@@ -385,6 +385,7 @@ POST,/students/{id}/course-enrollments,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/students/{id}/documents,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/students/{id}/program-enrollments,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/students/{id}/program-enrollments,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/students/{id}/reactivate,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/students/{id}/reset-password,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/students/{id}/withdraw,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/students/{studentId}/bank-transfer-receipts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,

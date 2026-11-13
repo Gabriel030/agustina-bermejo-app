@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
@@ -151,4 +151,41 @@ describe('LegajoAlumno — failed actions', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Tuvimos un problema de nuestro lado');
     expect(screen.getByRole('button', { name: 'Enviar link' })).toBeEnabled();
   });
+
+  it('reactivatesAWithdrawnStudentWithAReasonAndRefreshesTheRecord', async () => {
+    let body = null;
+    let status = 'DELETED';
+    auth.roles = ['DIRECTOR'];
+    server.use(
+      http.get(`${API}/students/9`, () => HttpResponse.json({ ...STUDENT, status })),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+      http.post(`${API}/students/9/reactivate`, async ({ request }) => {
+        body = await request.json();
+        status = 'ACTIVE';
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Routes>
+        <Route path="/:rol/alumnos/:id" element={<LegajoAlumno />} />
+      </Routes>,
+      { route: '/director/alumnos/9' },
+    );
+    expect(await screen.findByText('Dado de baja')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dar de baja' })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Reactivar alumno' }));
+    await user.type(screen.getByPlaceholderText('Motivo de la reactivación'), 'fue una baja por error');
+    await user.click(screen.getByRole('button', { name: 'Reactivar' }));
+
+    await waitFor(() => expect(body).toEqual({ reason: 'fue una baja por error' }));
+    expect(await screen.findByText('Activo')).toBeInTheDocument();
+  });
+
+  it('doesNotOfferReactivationToPreceptorOrForActiveStudents', async () => {
+    renderAs('preceptor');
+    expect(await screen.findByText('Pérez, Lucía')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivar alumno' })).not.toBeInTheDocument();
+  });
 });
+
