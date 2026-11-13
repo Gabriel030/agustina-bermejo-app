@@ -34,7 +34,7 @@ public class SessionRevoker {
         refreshTokenRepository.saveAll(tokens);
         person.setTokenVersion(person.getTokenVersion() + 1);
         personRepository.save(person);
-        accountAccessStateCache.evict(person.getId());
+        accountAccessStateCache.evictNowAndAfterCommit(person.getId());
     }
 
     @Transactional

@@ -44,9 +44,6 @@ public class PasswordResetCodeIssuer {
             return;
         }
         Person person = personOpt.get();
-        if (person.getResetLockedUntil() != null && person.getResetLockedUntil().isAfter(ApplicationTime.now())) {
-            return;
-        }
 
         String code = generateResetCode();
 

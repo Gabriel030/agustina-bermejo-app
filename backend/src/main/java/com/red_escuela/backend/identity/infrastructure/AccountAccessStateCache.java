@@ -2,10 +2,12 @@ package com.red_escuela.backend.identity.infrastructure;
 
 import com.red_escuela.backend.identity.repository.AccountAccessState;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -16,17 +18,19 @@ public class AccountAccessStateCache {
     private static final int PRUNE_THRESHOLD = 10_000;
 
     private final PersonRepository personRepository;
+    private final Clock clock;
     private final Duration ttl;
     private final ConcurrentHashMap<Long, Entry> entries = new ConcurrentHashMap<>();
 
     public AccountAccessStateCache(PersonRepository personRepository,
-                                   @Value("${auth.access-state-cache-seconds}") long ttlSeconds) {
+                                   Clock clock, @Value("${auth.access-state-cache-seconds}") long ttlSeconds) {
         this.personRepository = personRepository;
+        this.clock = clock;
         this.ttl = Duration.ofSeconds(ttlSeconds);
     }
 
     public Optional<AccountAccessState> find(long personId) {
-        Instant now = ApplicationTime.instant();
+        Instant now = clock.instant();
         Entry cached = entries.get(personId);
         if (cached != null && cached.expiresAt().isAfter(now)) {
             return Optional.of(cached.state());
@@ -39,6 +43,18 @@ public class AccountAccessStateCache {
     public void evict(Long personId) {
         if (personId != null) {
             entries.remove(personId);
+        }
+    }
+
+    public void evictNowAndAfterCommit(Long personId) {
+        evict(personId);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    evict(personId);
+                }
+            });
         }
     }
 

@@ -22,7 +22,7 @@ class AccessTokenVerifierTest {
 
     private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
     private final PersonRepository personRepository = mock(PersonRepository.class);
-    private final AccountAccessStateCache cache = new AccountAccessStateCache(personRepository, 30);
+    private final AccountAccessStateCache cache = new AccountAccessStateCache(personRepository, java.time.Clock.systemUTC(), 30);
     private final AccessTokenVerifier verifier = new AccessTokenVerifier(jwtService, cache);
 
     @Test

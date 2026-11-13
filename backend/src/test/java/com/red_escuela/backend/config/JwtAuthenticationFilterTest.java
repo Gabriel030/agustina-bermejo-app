@@ -31,7 +31,7 @@ class JwtAuthenticationFilterTest {
 
     private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
     private final PersonRepository personRepository = activePersonRepository();
-    private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new AccessTokenVerifier(jwtService, new AccountAccessStateCache(personRepository, 30)));
+    private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new AccessTokenVerifier(jwtService, new AccountAccessStateCache(personRepository, java.time.Clock.systemUTC(), 30)));
 
     private static PersonRepository activePersonRepository() {
         PersonRepository repository = mock(PersonRepository.class);

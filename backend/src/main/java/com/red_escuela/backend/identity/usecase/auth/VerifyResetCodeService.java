@@ -46,7 +46,7 @@ public class VerifyResetCodeService implements VerifyResetCodeUseCase {
         Person person = personRepository.findByEmail(EmailAddress.of(command.email()))
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
-        passwordResetCodeChecker.requireNotLocked(person);
+        passwordResetCodeChecker.requireNotLocked(person, command.ipAddress());
 
         PasswordResetToken resetToken = passwordResetTokenRepository
                 .findFirstByPersonAndUsedFalseAndExpiresAtAfterOrderByCreatedAtDesc(person, ApplicationTime.now())
@@ -56,10 +56,10 @@ public class VerifyResetCodeService implements VerifyResetCodeUseCase {
         byte[] providedHash = TokenHashUtil.sha256Hex(command.code()).getBytes(StandardCharsets.UTF_8);
         if (!MessageDigest.isEqual(expectedHash, providedHash)) {
             registerFailedResetAttempt(resetToken);
-            passwordResetCodeChecker.registerFailedAttempt(person, resetToken);
+            passwordResetCodeChecker.registerFailedAttempt(person, resetToken, command.ipAddress());
             throw new InvalidPasswordResetTokenException();
         }
-        passwordResetCodeChecker.clearFailedAttempts(person);
+        passwordResetCodeChecker.clearFailedAttempts(person, command.ipAddress());
 
         String exchangeToken = secureTokenGenerator.generate();
         resetToken.setExchangeTokenHash(TokenHashUtil.sha256Hex(exchangeToken));

@@ -28,7 +28,7 @@ class ReactivateStaffServiceTest {
     private final PersonRepository personRepository = mock(PersonRepository.class);
 
     private ReactivateStaffService serviceActingAs(String actorRole) {
-        return new ReactivateStaffService(new StaffReactivator(personRepository, policyActingAs(actorRole)));
+        return new ReactivateStaffService(new StaffReactivator(personRepository, policyActingAs(actorRole), mock(com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache.class)));
     }
 
     private Person target(StatusType status, String... roles) {
