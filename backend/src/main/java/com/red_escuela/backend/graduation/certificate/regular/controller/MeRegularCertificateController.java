@@ -2,12 +2,14 @@ package com.red_escuela.backend.graduation.certificate.regular.controller;
 
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateSubmissionResponse;
+import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.StudentRegularCertificateStateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.SubmitRegularCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.CancelStudentRegularRequestUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetStudentRegularCertificatePdfUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetStudentRegularCertificateStateUseCase;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.GetStudentRegularityUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.SubmitRegularCertificateUseCase;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -35,11 +37,14 @@ public class MeRegularCertificateController {
     private final GetStudentRegularCertificateStateUseCase stateUseCase;
     private final GetStudentRegularCertificatePdfUseCase pdfUseCase;
     private final CancelStudentRegularRequestUseCase cancelUseCase;
+    private final GetStudentRegularityUseCase regularityUseCase;
 
     public MeRegularCertificateController(SubmitRegularCertificateUseCase submitUseCase,
                                           GetStudentRegularCertificateStateUseCase stateUseCase,
                                           GetStudentRegularCertificatePdfUseCase pdfUseCase,
-                                          CancelStudentRegularRequestUseCase cancelUseCase) {
+                                          CancelStudentRegularRequestUseCase cancelUseCase,
+                                          GetStudentRegularityUseCase regularityUseCase) {
+        this.regularityUseCase = regularityUseCase;
         this.submitUseCase = submitUseCase;
         this.stateUseCase = stateUseCase;
         this.pdfUseCase = pdfUseCase;
@@ -60,6 +65,11 @@ public class MeRegularCertificateController {
     @GetMapping("/me/regular-certificates")
     public StudentRegularCertificateStateResponse state(@RequestParam RegularityKind kind, @RequestParam Long enrollmentId) {
         return stateUseCase.stateOf(kind, enrollmentId);
+    }
+
+    @GetMapping("/me/regular-certificates/eligibility")
+    public RegularityResponse regularity(@RequestParam RegularityKind kind, @RequestParam Long enrollmentId) {
+        return regularityUseCase.regularityOf(kind, enrollmentId);
     }
 
     @GetMapping("/me/regular-certificates/{id}/pdf")
