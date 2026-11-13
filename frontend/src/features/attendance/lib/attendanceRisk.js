@@ -1,25 +1,15 @@
-const RATE_EPSILON = 1e-9;
-
-export function permittedAbsences(entry) {
-  if (entry.remainingAbsences == null) return null;
-  if (entry.maxAbsenceRate != null && entry.classesHeld > 0) {
-    return Math.floor((entry.maxAbsenceRate * entry.classesHeld) / 100 + RATE_EPSILON);
-  }
-  return entry.absenceCount + entry.remainingAbsences;
-}
-
 function absencesLabel(count) {
   return `${count} ${count === 1 ? 'inasistencia' : 'inasistencias'}`;
 }
 
-export function attendanceRisk(entry, absences = entry.absenceCount) {
-  const permitted = permittedAbsences(entry);
+export function attendanceRisk(entry) {
+  const standing = entry.absenceStanding;
+  const permitted = standing.allowedAbsences;
   if (permitted == null) {
-    return { permitted: null, level: 'ok', text: absencesLabel(absences), pill: null, hint: null };
+    return { permitted: null, level: 'ok', text: absencesLabel(standing.countableAbsences), pill: null, hint: null };
   }
-  const text = `${absences} de ${permitted} inasistencias permitidas`;
-  const remaining = permitted - absences;
-  if (remaining < 0) {
+  const text = `${standing.countableAbsences} de ${permitted} inasistencias permitidas`;
+  if (standing.exceedsAbsenceLimit) {
     return {
       permitted,
       level: 'danger',
@@ -28,7 +18,7 @@ export function attendanceRisk(entry, absences = entry.absenceCount) {
       hint: 'Superó el máximo de inasistencias de la comisión.',
     };
   }
-  if (remaining === 0) {
+  if (standing.remainingAbsences === 0) {
     return {
       permitted,
       level: 'warning',
@@ -37,7 +27,7 @@ export function attendanceRisk(entry, absences = entry.absenceCount) {
       hint: 'Está en el límite: una inasistencia más supera el máximo.',
     };
   }
-  if (remaining === 1) {
+  if (standing.remainingAbsences === 1) {
     return {
       permitted,
       level: 'warning',

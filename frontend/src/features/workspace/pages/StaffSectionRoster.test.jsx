@@ -7,6 +7,7 @@ import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { StaffSectionRoster } from './StaffSectionRoster';
+import { rosterEntryFixture } from '@/test/fixtures/rosterEntries';
 
 const API = 'http://localhost:8080';
 
@@ -41,9 +42,9 @@ const SECTIONS = [
 ];
 
 const ENTRIES = [
-  { enrollmentId: 101, studentId: 11, studentName: 'Acosta, Joaquín', dni: '40.123.456', absenceCount: 7, atRisk: true, attendancePercent: 70.8 },
-  { enrollmentId: 102, studentId: 12, studentName: 'Benítez, Lucía', dni: '41.222.333', absenceCount: 1, atRisk: false, attendancePercent: 95.8 },
-  { enrollmentId: 103, studentId: 13, studentName: 'Cabrera, Julieta', dni: '42.555.666', absenceCount: 0, atRisk: false, attendancePercent: 100 },
+  rosterEntryFixture({ enrollmentId: 101, studentId: 11, dni: '40.123.456', attendancePercent: 70.8 }, { countableAbsences: 7, exceedsAbsenceLimit: true, remainingAbsences: 0 }),
+  rosterEntryFixture({ enrollmentId: 102, studentId: 12, studentName: 'Benítez, Lucía', dni: '41.222.333', attendancePercent: 95.8 }, { countableAbsences: 1, remainingAbsences: 2 }),
+  rosterEntryFixture({ enrollmentId: 103, studentId: 13, studentName: 'Cabrera, Julieta', dni: '42.555.666' }),
 ];
 
 let requestedUrl;

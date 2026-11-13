@@ -70,6 +70,7 @@ describe('AlumnoMisCarreras', () => {
           gruposElectivos: [],
           elegibleParaCompletar: false,
           esRegular,
+          hasActiveCoursework: esRegular,
           promedioGeneral: 8.1,
         }),
       ),
@@ -77,17 +78,17 @@ describe('AlumnoMisCarreras', () => {
     );
   }
 
-  it('labels a program with an active enrollment as such', async () => {
+  it('labels a program with active coursework as such', async () => {
     mockEnrollment(true);
     renderWithProviders(<AlumnoMisCarreras />);
-    expect(await screen.findByText('Inscripción activa')).toBeInTheDocument();
-    expect(screen.queryByText('Sin inscripción activa')).not.toBeInTheDocument();
+    expect(await screen.findByText('Con cursada activa')).toBeInTheDocument();
+    expect(screen.queryByText('Sin cursada activa')).not.toBeInTheDocument();
   });
 
-  it('labels a program without an active enrollment without claiming the student is not attending', async () => {
+  it('labels a program without active coursework without claiming the student is not attending', async () => {
     mockEnrollment(false);
     renderWithProviders(<AlumnoMisCarreras />);
-    expect(await screen.findByText('Sin inscripción activa')).toBeInTheDocument();
+    expect(await screen.findByText('Sin cursada activa')).toBeInTheDocument();
     expect(screen.queryByText('No estás cursando')).not.toBeInTheDocument();
   });
 

@@ -7,6 +7,7 @@ export const BOARD_RESULT = {
   ABSENT: { tone: 'neutral', label: 'Ausente' },
   PENDING: { tone: 'accent', label: 'Pendiente' },
   NOT_REGULAR: { tone: 'warning', label: 'Sin cursada regular' },
+  FREE_BY_ABSENCES: { tone: 'danger', label: 'Libre por inasistencias' },
 };
 
 export function isSavedAbsent(row) {
@@ -14,8 +15,18 @@ export function isSavedAbsent(row) {
 }
 
 export function isBlockedRow(row) {
-  return row.priorCondition === 'FREE' && row.finalScore == null && !isSavedAbsent(row);
+  return row.finalExamEligibility.eligible === false && row.finalScore == null && !isSavedAbsent(row);
 }
+
+export const BLOCK_REASON_TEXT = {
+  COURSEWORK_NOT_REGULAR: 'Requiere cursada regular: no la tiene vigente',
+  FREE_BY_ABSENCES: 'Libre por inasistencias: superó el máximo de la comisión',
+};
+
+export const BLOCK_REASON_RESULT = {
+  COURSEWORK_NOT_REGULAR: 'NOT_REGULAR',
+  FREE_BY_ABSENCES: 'FREE_BY_ABSENCES',
+};
 
 export function isGradableRow(row) {
   return row.status !== 'WITHDRAWN' && row.finalScore == null && !isBlockedRow(row);
@@ -76,7 +87,7 @@ export function boardRowResult(row, draft) {
   if (draft && isSavedAbsent(row)) return 'PENDING';
   if (row.result === 'PASSED' || row.result === 'FAILED' || row.result === 'ABSENT') return row.result;
   if (isSavedAbsent(row)) return 'ABSENT';
-  return isBlockedRow(row) ? 'NOT_REGULAR' : 'PENDING';
+  return isBlockedRow(row) ? (BLOCK_REASON_RESULT[row.finalExamEligibility.reason] ?? 'NOT_REGULAR') : 'PENDING';
 }
 
 export function summarizeBoard(rows, drafts) {
