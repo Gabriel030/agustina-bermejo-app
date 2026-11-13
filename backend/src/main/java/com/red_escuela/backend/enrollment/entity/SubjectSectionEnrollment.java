@@ -70,7 +70,7 @@ public class SubjectSectionEnrollment {
     @Column(name = "final_grade_type")
     private FinalGradeType finalGradeType;
 
-    public boolean isRegular() {
+    public boolean hasRegularCoursework() {
         return status == EnrollmentStatus.REGULAR;
     }
 
