@@ -29,7 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.academicstructure.api.SectionEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
 
 @Service
 public class SubjectSectionService {
@@ -43,6 +45,7 @@ public class SubjectSectionService {
     private final SectionIdentityAssigner identityAssigner;
     private final SectionConflictChecker conflictChecker;
     private final SectionScheduleSlotRepository slotRepository;
+    private final SectionEnrollmentActivityPort enrollmentActivityPort;
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
@@ -54,7 +57,9 @@ public class SubjectSectionService {
             SectionEvaluationSetupPort evaluationSetupPort,
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
-            SectionScheduleSlotRepository slotRepository) {
+            SectionScheduleSlotRepository slotRepository,
+            SectionEnrollmentActivityPort enrollmentActivityPort) {
+        this.enrollmentActivityPort = enrollmentActivityPort;
         this.sectionRepository = sectionRepository;
         this.subjectRepository = subjectRepository;
         this.termRepository = termRepository;
@@ -134,6 +139,9 @@ public class SubjectSectionService {
     @Transactional
     public void deactivate(Long id) {
         SubjectSection section = findOrThrow(id);
+        if (enrollmentActivityPort.hasLiveEnrollmentsInProgramSection(id)) {
+            throw new SectionHasActiveEnrollmentsException(id);
+        }
         section.setStatus(StatusType.INACTIVE);
         sectionRepository.save(section);
     }

@@ -6,7 +6,9 @@ import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.api.SectionEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -43,6 +45,7 @@ public class CourseSectionService {
     private final SectionIdentityAssigner identityAssigner;
     private final SectionConflictChecker conflictChecker;
     private final SectionScheduleSlotRepository slotRepository;
+    private final SectionEnrollmentActivityPort enrollmentActivityPort;
 
     public CourseSectionService(
             CourseSubjectSectionRepository sectionRepository,
@@ -54,7 +57,9 @@ public class CourseSectionService {
             SectionEvaluationSetupPort evaluationSetupPort,
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
-            SectionScheduleSlotRepository slotRepository) {
+            SectionScheduleSlotRepository slotRepository,
+            SectionEnrollmentActivityPort enrollmentActivityPort) {
+        this.enrollmentActivityPort = enrollmentActivityPort;
         this.sectionRepository = sectionRepository;
         this.courseSubjectRepository = courseSubjectRepository;
         this.termRepository = termRepository;
@@ -131,6 +136,9 @@ public class CourseSectionService {
     @Transactional
     public void deactivate(Long id) {
         CourseSubjectSection section = findOrThrow(id);
+        if (enrollmentActivityPort.hasLiveEnrollmentsInCourseSection(id)) {
+            throw new SectionHasActiveEnrollmentsException(id);
+        }
         section.setStatus(StatusType.INACTIVE);
         sectionRepository.save(section);
     }

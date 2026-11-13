@@ -30,6 +30,9 @@ public class SectionWaitlistPromoter {
     @Transactional
     public void promoteNextFromWaitlist(Long sectionId) {
         sectionFinder.lockProgramSection(sectionId);
+        if (!sectionFinder.isProgramSectionOpenForEnrollment(sectionId)) {
+            return;
+        }
         ProgramSectionView section = sectionFinder.findProgramSection(sectionId);
         int capacity = section.capacity() == null ? Integer.MAX_VALUE : section.capacity();
         long occupied = subjectSectionEnrollmentRepository.countBySubjectSectionIdAndStatusIn(

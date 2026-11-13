@@ -98,7 +98,7 @@ public class SubjectSectionEnrollmentService {
         Student student = programEnrollment.getStudent();
         studentEnrollmentEligibility.requireConfirmedAndActive(student);
 
-        ProgramSectionView section = sectionFinder.findProgramSection(request.sectionId());
+        ProgramSectionView section = sectionFinder.findOpenProgramSection(request.sectionId());
         validateEnrollmentWindow(section.termId());
         enrollmentFeeRequirementService.requireForTerm(programEnrollment, academicReferenceFinder.findTerm(section.termId()));
 
@@ -183,7 +183,7 @@ public class SubjectSectionEnrollmentService {
         }
         studentEnrollmentEligibility.requireConfirmedAndActive(origen.getStudent());
 
-        ProgramSectionView destino = sectionFinder.findProgramSection(request.newSectionId());
+        ProgramSectionView destino = sectionFinder.findOpenProgramSection(request.newSectionId());
         if (!destino.subjectId().equals(origen.subjectId())) {
             throw new InvalidSectionChangeException(
                     "La comisión destino tiene que ser de la misma materia que la comisión origen");
