@@ -12,6 +12,7 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.specialist.DemoLearnerAccountsSeeder;
 import com.red_escuela.backend.identity.specialist.LocalSeedRunner;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
+import com.red_escuela.backend.testsupport.NightlyTest;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles({"test", "demo"})
 @TestPropertySource(properties = {"demo.dataset=ci", "demo.seed.enabled=false"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@NightlyTest(reason = "Seeds the demo dataset through the real HTTP API; guards demo data only, not product behavior")
 @SlowTest(reason = "Seeds the demo academic base through the real HTTP API of a started application")
 class DemoSeedIT extends AbstractIntegrationTest {
     private static final List<String> DEMO_USERS = List.of("alumno.demo", "docente.demo", "preceptor.demo", "administrativo.demo", "director.demo");
