@@ -34,7 +34,7 @@ export function LegajoAlumno() {
   const [bajaOpen, setBajaOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [reactivarOpen, setReactivarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(searchParams.get('view') === 'financiero' ? 'financiero' : 'datos-personales');
+  const [activeTab, setActiveTab] = useState(['financiero', 'academico'].includes(searchParams.get('view')) ? searchParams.get('view') : 'datos-personales');
   const [enrollmentKey, setEnrollmentKey] = useState(null);
   const [sectionEnrollmentId, setSectionEnrollmentId] = useState(null);
 

@@ -16,8 +16,8 @@ describe('menuAccess', () => {
     expect(hasRealScreen('alumno', 'inicio')).toBe(true);
     expect(hasRealScreen('docente', 'inicio')).toBe(false);
     expect(hasRealScreen('alumno', 'opciones')).toBe(false);
-    expect(hasRealScreen('administrativo', 'constancias')).toBe(false);
-    expect(hasRealScreen('director', 'constancias')).toBe(false);
+    expect(hasRealScreen('administrativo', 'constancias')).toBe(true);
+    expect(hasRealScreen('director', 'constancias')).toBe(true);
     expect(ROLE_CONFIG.director.pages).toContain('constancias');
     expect(ROLE_CONFIG.preceptor.pages).not.toContain('constancias');
   });
