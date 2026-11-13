@@ -144,6 +144,22 @@ class ArchitectureTest {
     }
 
     @Test
+    void attendanceCountsAreReadOnlyByTheAttendanceStandingReader() {
+        ArchitectureRules.attendanceCountsAreReadOnlyByTheAttendanceStandingReader().check(MAIN_CLASSES);
+    }
+
+    @Test
+    void attendanceCountRuleDetectsCountingOutsideTheReader() {
+        JavaClasses fixture = ImportedApplicationClasses.fixturesIn(ArchitectureRules.ROOT + ".architecture.fixture.attendance");
+
+        assertThatThrownBy(() -> ArchitectureRules.attendanceCountsAreReadOnlyByTheAttendanceStandingReader().check(fixture))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("StrayAbsenceCountingFixture.countWithStatuses")
+                .hasMessageContaining("StrayAbsenceCountingFixture.countWithQuery")
+                .hasMessageContaining("StrayAbsenceCountingFixture.countWithStatusFlag");
+    }
+
+    @Test
     void issuanceRulesDetectViolations() {
         JavaClasses fixture = ImportedApplicationClasses.fixturesIn(ArchitectureRules.ROOT + ".architecture.fixture");
 

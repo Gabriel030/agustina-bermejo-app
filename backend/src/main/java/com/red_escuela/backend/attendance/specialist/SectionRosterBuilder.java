@@ -1,57 +1,55 @@
 package com.red_escuela.backend.attendance.specialist;
 
+import com.red_escuela.backend.attendance.api.AttendanceStanding;
+import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
-import com.red_escuela.backend.attendance.entity.AttendanceStatus;
-import com.red_escuela.backend.attendance.repository.AttendanceRepository;
-import com.red_escuela.backend.attendance.repository.EnrollmentAttendanceCounts;
-import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class SectionRosterBuilder {
 
-    private final AttendanceRepository attendanceRepository;
+    private final AttendanceStandingReader attendanceStandingReader;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
-    private final AttendanceRiskCalculator riskCalculator;
 
-    public SectionRosterBuilder(AttendanceRepository attendanceRepository,
-                                 SectionEnrollmentFinder sectionEnrollmentFinder,
-                                 AttendanceRiskCalculator riskCalculator) {
-        this.attendanceRepository = attendanceRepository;
+    public SectionRosterBuilder(AttendanceStandingReader attendanceStandingReader,
+                                SectionEnrollmentFinder sectionEnrollmentFinder) {
+        this.attendanceStandingReader = attendanceStandingReader;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
-        this.riskCalculator = riskCalculator;
     }
 
     public List<RosterEntryResponse> buildForProgramSection(Long sectionId) {
         List<SubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findActiveWithStudentInProgramSection(sectionId);
-        Map<Long, EnrollmentAttendanceCounts> counts = indexByEnrollment(
-                attendanceRepository.countsByProgramSection(sectionId, AttendanceStatus.presenceStatuses(), AttendanceStatus.absenceStatuses()));
+        if (enrollments.isEmpty()) {
+            return List.of();
+        }
+        Percentage max = enrollments.get(0).getSubjectSection().getMaxAbsenceRate();
+        Map<Long, AttendanceStanding> standings = attendanceStandingReader.readProgramSectionStandings(sectionId, max);
         return enrollments.stream()
                 .map(enrollment -> buildEntry(enrollment.getId(), enrollment.getStudent(),
-                        enrollment.getSubjectSection().getMaxAbsenceRate(), counts.get(enrollment.getId())))
+                        standings.getOrDefault(enrollment.getId(), attendanceStandingReader.emptyStanding(max))))
                 .toList();
     }
 
     public List<RosterEntryResponse> buildForCourseSection(Long sectionId) {
         List<CourseSubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findActiveWithStudentInCourseSection(sectionId);
-        Map<Long, EnrollmentAttendanceCounts> counts = indexByEnrollment(
-                attendanceRepository.countsByCourseSection(sectionId, AttendanceStatus.presenceStatuses(), AttendanceStatus.absenceStatuses()));
+        if (enrollments.isEmpty()) {
+            return List.of();
+        }
+        Percentage max = enrollments.get(0).getCourseSubjectSection().getMaxAbsenceRate();
+        Map<Long, AttendanceStanding> standings = attendanceStandingReader.readCourseSectionStandings(sectionId, max);
         return enrollments.stream()
                 .map(enrollment -> buildEntry(enrollment.getId(), enrollment.getStudent(),
-                        enrollment.getCourseSubjectSection().getMaxAbsenceRate(), counts.get(enrollment.getId())))
+                        standings.getOrDefault(enrollment.getId(), attendanceStandingReader.emptyStanding(max))))
                 .toList();
     }
 
@@ -62,33 +60,13 @@ public class SectionRosterBuilder {
                 .toList();
     }
 
-    private Map<Long, EnrollmentAttendanceCounts> indexByEnrollment(List<EnrollmentAttendanceCounts> counts) {
-        return counts.stream().collect(Collectors.toMap(EnrollmentAttendanceCounts::getEnrollmentId, Function.identity()));
-    }
-
-    private RosterEntryResponse buildEntry(Long enrollmentId, Student student, Percentage maxAbsenceRate,
-                                           EnrollmentAttendanceCounts counts) {
+    private RosterEntryResponse buildEntry(Long enrollmentId, Student student, AttendanceStanding standing) {
         Person person = student.getPerson();
-        long total = counts == null ? 0 : counts.getTotal();
-        long presentes = counts == null ? 0 : counts.getPresent();
-        long absenceCount = counts == null ? 0 : counts.getAbsences();
-        Percentage attendancePercent = Percentage.ratio(presentes, total).orElse(null);
-        boolean atRisk = riskCalculator.evaluate(maxAbsenceRate, total, absenceCount).libre();
         return new RosterEntryResponse(
                 enrollmentId, student.getId(), fullName(person), person.getDni(),
-                absenceCount, attendancePercent, atRisk,
-                total, maxAbsenceRate, remainingAbsences(maxAbsenceRate, total, absenceCount));
-    }
-
-    private Integer remainingAbsences(Percentage maxAbsenceRate, long classesHeld, long absenceCount) {
-        if (maxAbsenceRate == null || classesHeld == 0) {
-            return null;
-        }
-        long allowed = maxAbsenceRate.fraction()
-                .multiply(BigDecimal.valueOf(classesHeld))
-                .setScale(0, RoundingMode.FLOOR)
-                .longValue();
-        return (int) Math.max(0, allowed - absenceCount);
+                standing.countableAbsences(), standing.presencePercent(), standing.exceedsAbsenceLimit(),
+                standing.classesHeld(), standing.maxAbsencePercent(), standing.remainingAbsences(),
+                standing.absencePercent(), standing.pendingJustificationAbsences());
     }
 
     private String fullName(Person person) {
