@@ -38,6 +38,7 @@ import com.red_escuela.backend.shared.domain.Grade;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 
 @Service
@@ -220,9 +221,15 @@ public class GradeItemRecorder {
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
         boolean rebuild = rebuildFromItems && isRebuildable(enrollment.getStatus(), enrollment.getFinalGradeType());
         var current = rebuild ? EnrollmentStatus.ENROLLED : enrollment.statusAssumingRegularWhen(finalCorrection);
-        Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().restrictPromotionWhenPrerequisitesUnmet(
-                outcomeCalculator.calculate(scheme, items, current, maxFinalExamAttempts),
-                () -> programPrerequisiteEvaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(enrollment.getProgramEnrollment().getId(), enrollment.subjectId()))
+        BooleanSupplier prerequisitesMet = () -> programPrerequisiteEvaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(
+                enrollment.getProgramEnrollment().getId(), enrollment.subjectId());
+        if (rebuildFromItems && isApprovedByFinalExam(enrollment) && !prerequisitesMet.getAsBoolean()) {
+            sectionEnrollmentOutcomeRecorder.recordProgramOutcome(enrollmentId, EnrollmentStatus.REGULAR, null, null, true);
+            graduationRequestTrigger.flagGraduationRequestOutdated(enrollment.getProgramEnrollment().getId());
+            return;
+        }
+        Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().restrictApprovalWhenPrerequisitesUnmet(
+                outcomeCalculator.calculate(scheme, items, current, maxFinalExamAttempts), prerequisitesMet)
                 .outcome();
         CourseworkOutcome result = outcomeCalculator.regularityPolicy().holdWhileFree(
                 calculated,
@@ -391,6 +398,10 @@ public class GradeItemRecorder {
         }
         Long actorPersonId = academicReferenceFinder.findInstructor(instructorId).getPerson().getId();
         finalGradeRevertAuditor.recordRevert(existing, newScore, request.reason(), kind, sectionId, enrollmentId, actorPersonId);
+    }
+
+    private static boolean isApprovedByFinalExam(SubjectSectionEnrollment enrollment) {
+        return enrollment.getStatus() == EnrollmentStatus.APPROVED && enrollment.getFinalGradeType() == FinalGradeType.FINAL_EXAM;
     }
 
     private boolean isFinalCorrection(GradeItem existing, CreateGradeItemRequest request) {
