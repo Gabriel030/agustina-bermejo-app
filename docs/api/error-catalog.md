@@ -640,7 +640,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/removal` | `CollectionReminderScheduleController#proposeExceptionRemoval` |
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/validation` | `CollectionReminderScheduleController#validateExceptionChange` |
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/validation` | `CollectionReminderScheduleController#validateGroupChange` |
-| POST | `/billing-periods` | `BillingPeriodController#create` |
 | POST | `/billing-runs/executions` | `BillingRunController#executeTodaysNightlyRun` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
