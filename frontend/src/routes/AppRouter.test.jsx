@@ -155,7 +155,7 @@ describe('AppRouter', () => {
     expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
   }, 40000);
 
-  it('shows a readable title instead of the slug on a placeholder reached by URL', async () => {
+  it('shows the real certificates screen instead of a placeholder when reached by URL', async () => {
     server.use(
       http.get(`${API}/me`, () =>
         HttpResponse.json(profileFixture({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] })),
@@ -165,8 +165,8 @@ describe('AppRouter', () => {
 
     await signIn(userEvent.setup());
 
-    expect(await screen.findByText('Constancias')).toBeInTheDocument();
-    expect(screen.getByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Constancias' })).toBeInTheDocument();
+    expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
     expect(screen.queryByText('constancias')).not.toBeInTheDocument();
   });
 
@@ -218,8 +218,8 @@ describe('AppRouter', () => {
 
     await signIn(userEvent.setup());
 
-    expect(await screen.findByText('Constancias')).toBeInTheDocument();
-    expect(screen.getByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Constancias' })).toBeInTheDocument();
+    expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
   });
 
   it('does not let a director open the platform screens', async () => {
@@ -291,7 +291,7 @@ describe('AppRouter', () => {
     renderApp('/director/constancias');
     const user = userEvent.setup();
     await signIn(user);
-    expect(await screen.findByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Constancias' })).toBeInTheDocument();
 
     server.use(
       http.post(`${API}/auth/refresh`, () => {
@@ -309,6 +309,6 @@ describe('AppRouter', () => {
 
     await signIn(user);
 
-    expect(await screen.findByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Constancias' })).toBeInTheDocument();
   });
 });
