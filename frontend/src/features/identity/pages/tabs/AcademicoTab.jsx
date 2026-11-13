@@ -154,7 +154,7 @@ function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
   const progress = useProgramProgress(programEnrollmentId);
   const sections = useProgramSectionEnrollments(programEnrollmentId);
   const attendance = useProgramAttendanceSummary(programEnrollmentId);
-  const columns = useMemo(buildSubjectColumns, []);
+  const columns = useMemo(() => buildSubjectColumns(), []);
   const rows = useMemo(() => buildSubjectRows(sections.data, attendance.data), [sections.data, attendance.data]);
 
   if (progress.isError || sections.isError) {

@@ -753,11 +753,10 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
 }
 
 function GraficoDeTorta({ segmentos, total, centroValor, centroLabel }) {
-  let acumulado = 0;
-  const stops = segmentos.map((s) => {
-    const desde = acumulado;
-    acumulado += (s.valor / total) * 100;
-    return `var(${s.colorVar}) ${desde}% ${acumulado}%`;
+  const stops = segmentos.map((s, index) => {
+    const desde = segmentos.slice(0, index).reduce((sum, previous) => sum + (previous.valor / total) * 100, 0);
+    const hasta = desde + (s.valor / total) * 100;
+    return `var(${s.colorVar}) ${desde}% ${hasta}%`;
   }).join(', ');
 
   return (

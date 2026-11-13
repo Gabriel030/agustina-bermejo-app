@@ -72,7 +72,9 @@ class PricingAndAttendanceContractJsonTest {
     void rosterHistoryAndSummaryExposeAttendancePercentInPoints() throws Exception {
         Percentage half = Percentage.ofFraction(new BigDecimal("0.5"));
 
-        JsonNode roster = json(new RosterEntryResponse(1L, 2L, "Ana", "30", 1, half, false, 4, half, 1, half, 0));
+        com.red_escuela.backend.attendance.dto.AttendanceStandingResponse standing =
+                new com.red_escuela.backend.attendance.dto.AttendanceStandingResponse(4, 2, 1, half, half, 2, 0, true);
+        JsonNode roster = json(new RosterEntryResponse(1L, 2L, "Ana", "30", 1, half, false, 4, half, 1, half, 0, standing));
         JsonNode history = json(new AttendanceHistoryResponse.StudentHistoryRow(2L, "Ana", Map.of(), half));
         JsonNode summary = json(new SubjectAttendanceSummaryResponse("Matematica", half));
 
@@ -80,6 +82,9 @@ class PricingAndAttendanceContractJsonTest {
         assertThat(history.get("attendancePercent").decimalValue()).isEqualByComparingTo("50");
         assertThat(summary.get("attendancePercent").decimalValue()).isEqualByComparingTo("50");
         assertThat(roster.has("attendancePercentage")).isFalse();
+        assertThat(roster.get("absenceStanding").get("absencePercent").decimalValue()).isEqualByComparingTo("50");
+        assertThat(roster.get("absenceStanding").get("exceedsAbsenceLimit").asBoolean()).isTrue();
+        assertThat(roster.get("absenceStanding").get("pendingJustificationAbsences").asLong()).isEqualTo(1);
     }
 
     @Test

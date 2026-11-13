@@ -58,13 +58,13 @@ class AttendanceExporterTest {
     }
 
     private static List<RosterEntryResponse> rawRoster() {
-        return List.of(new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false, 0, null, null, null, 0));
+        return List.of(new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false, 0, null, null, null, 0, null));
     }
 
     private static List<RosterEntryResponse> report() {
         return List.of(
-                new RosterEntryResponse(1L, 1L, "Ana Perez", "30111222", 4, Percentage.ratio(2, 3).orElseThrow(), true, 6, Percentage.ofPoints(new java.math.BigDecimal("25")), 1, Percentage.ratio(4, 6).orElseThrow(), 1),
-                new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false, 0, null, null, null, 0));
+                new RosterEntryResponse(1L, 1L, "Ana Perez", "30111222", 4, Percentage.ratio(2, 3).orElseThrow(), true, 6, Percentage.ofPoints(new java.math.BigDecimal("25")), 1, Percentage.ratio(4, 6).orElseThrow(), 1, null),
+                new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false, 0, null, null, null, 0, null));
     }
 
     private static List<List<String>> sheetRows(ExportedAttendanceFile file) throws IOException {

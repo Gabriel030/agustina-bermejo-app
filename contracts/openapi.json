@@ -1176,6 +1176,55 @@
         "required" : [ "absencePercent", "calculable", "libre", "maxAbsencePercent" ],
         "type" : "object"
       },
+      "AttendanceStandingResponse" : {
+        "properties" : {
+          "absencePercent" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "allowedAbsences" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "classesHeld" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "countableAbsences" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "exceedsAbsenceLimit" : {
+            "type" : "boolean"
+          },
+          "maxAbsencePercent" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "pendingJustificationAbsences" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "remainingAbsences" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "absencePercent", "allowedAbsences", "classesHeld", "countableAbsences", "exceedsAbsenceLimit", "maxAbsencePercent", "pendingJustificationAbsences", "remainingAbsences" ],
+        "type" : "object"
+      },
       "AudiencePreviewResponse" : {
         "properties" : {
           "count" : {
@@ -5814,6 +5863,19 @@
         "required" : [ "code", "confirmationExpiresAt", "confirmationToken", "currentMode", "currentVersion", "impact", "targetMode" ],
         "type" : "object"
       },
+      "FinalExamEligibilityResponse" : {
+        "properties" : {
+          "eligible" : {
+            "type" : "boolean"
+          },
+          "reason" : {
+            "enum" : [ "COURSEWORK_NOT_REGULAR", "FREE_BY_ABSENCES", null ],
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "eligible", "reason" ],
+        "type" : "object"
+      },
       "FinancialDashboardResponse" : {
         "properties" : {
           "studentsInDebt" : {
@@ -9500,6 +9562,8 @@
             "type" : "boolean"
           },
           "esRegular" : {
+            "deprecated" : true,
+            "description" : "Usar hasActiveCoursework",
             "type" : "boolean"
           },
           "gruposElectivos" : {
@@ -9507,6 +9571,9 @@
               "$ref" : "#/components/schemas/ElectiveGroupProgressResponse"
             },
             "type" : "array"
+          },
+          "hasActiveCoursework" : {
+            "type" : "boolean"
           },
           "obligatoriasPendientes" : {
             "items" : {
@@ -10586,8 +10653,15 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "institutionallyRegular" : {
+            "type" : "boolean"
+          },
           "kind" : {
             "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "paymentStanding" : {
+            "enum" : [ "VERIFIED", "OVERDUE", "TO_CONFIRM" ],
             "type" : "string"
           },
           "reasons" : {
@@ -10598,6 +10672,8 @@
             "type" : "array"
           },
           "regular" : {
+            "deprecated" : true,
+            "description" : "Usar institutionallyRegular",
             "type" : "boolean"
           }
         },
@@ -11027,6 +11103,8 @@
       "RosterEntryResponse" : {
         "properties" : {
           "absenceCount" : {
+            "deprecated" : true,
+            "description" : "Usar absenceStanding.countableAbsences",
             "format" : "int64",
             "type" : "integer"
           },
@@ -11040,7 +11118,12 @@
               "type" : "null"
             } ]
           },
+          "absenceStanding" : {
+            "$ref" : "#/components/schemas/AttendanceStandingResponse"
+          },
           "atRisk" : {
+            "deprecated" : true,
+            "description" : "Usar absenceStanding.exceedsAbsenceLimit",
             "type" : "boolean"
           },
           "attendancePercent" : {
@@ -11188,6 +11271,13 @@
           "enrolledAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "finalExamEligibility" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FinalExamEligibilityResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "finalGradeType" : {
             "type" : "string"

@@ -59,6 +59,29 @@ class SectionRosterBuilderTest {
     }
 
     @Test
+    void b3AbsenceStandingMirrorsTheFlatFieldsAndTheLimitDecision() {
+        givenCourseSection(points(25), enrollment(1L), counts(1L, 8, 4, 4));
+
+        RosterEntryResponse entry = onlyEntry();
+
+        assertThat(entry.absenceStanding().exceedsAbsenceLimit()).isTrue().isEqualTo(entry.atRisk());
+        assertThat(entry.absenceStanding().countableAbsences()).isEqualTo(entry.absenceCount()).isEqualTo(4);
+        assertThat(entry.absenceStanding().classesHeld()).isEqualTo(8);
+        assertThat(entry.absenceStanding().allowedAbsences()).isEqualTo(2);
+        assertThat(entry.absenceStanding().remainingAbsences()).isZero();
+        assertThat(entry.absenceStanding().maxAbsencePercent().points()).isEqualByComparingTo("25");
+        assertThat(entry.absenceStanding().absencePercent()).isEqualTo(entry.absencePercent());
+        assertThat(entry.absenceStanding().pendingJustificationAbsences()).isEqualTo(entry.pendingJustificationAbsences());
+    }
+
+    @Test
+    void b3AbsenceStandingAtTheLimitIsNotOverIt() {
+        givenCourseSection(points(25), enrollment(1L), counts(1L, 8, 6, 2));
+
+        assertThat(onlyEntry().absenceStanding().exceedsAbsenceLimit()).isFalse();
+    }
+
+    @Test
     void remainingAbsencesIsZeroAtTheLimitWithoutBeingAtRisk() {
         givenCourseSection(points(25), enrollment(1L), counts(1L, 8, 6, 2));
 

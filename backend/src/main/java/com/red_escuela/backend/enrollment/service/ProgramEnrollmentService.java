@@ -190,7 +190,8 @@ public class ProgramEnrollmentService {
         return new ProgramProgressResponse(
                 progress.programEnrollmentId(), progress.accumulatedCredits(), progress.requiredCredits(),
                 progress.pendingMandatorySubjects(), electiveGroups, progress.eligibleToComplete(),
-                progress.hasActiveCoursework(), Optional.ofNullable(progress.overallAverage()).map(Grade::value).orElse(null));
+                progress.hasActiveCoursework(), Optional.ofNullable(progress.overallAverage()).map(Grade::value).orElse(null),
+                progress.hasActiveCoursework());
     }
 
     public boolean hasOnlyFinalExamsLeft(Long id) {
