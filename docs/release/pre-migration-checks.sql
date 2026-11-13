@@ -274,5 +274,9 @@ select count(*) filter (where facebook is not null) as facebook,
        count(*) filter (where sms_password is not null) as sms_password
 from institution;
 
+\echo
+\echo [V215] Filas de billing_period que V215 DESCARTA (configuracion sin efecto en la facturacion; solo informativo):
+select count(*) as billing_period_rows from billing_period;
+
 rollback;
 \echo ===== fin =====
