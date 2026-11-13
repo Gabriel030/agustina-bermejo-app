@@ -474,6 +474,6 @@ class CourseSectionAttendanceServicesTest {
 
     private RosterEntryResponse rosterEntry(Long enrollmentId, long absences) {
         return new RosterEntryResponse(enrollmentId, enrollmentId + 100, "Alumno " + enrollmentId, "DNI" + enrollmentId,
-                absences, Percentage.ofPoints(java.math.BigDecimal.valueOf(80)), absences >= 4, 10, null, null, null, 0);
+                absences, Percentage.ofPoints(java.math.BigDecimal.valueOf(80)), absences >= 4, 10, null, null, null, 0, null);
     }
 }

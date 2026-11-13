@@ -2,6 +2,7 @@ package com.red_escuela.backend.attendance.specialist;
 
 import com.red_escuela.backend.attendance.api.AttendanceStanding;
 import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
+import com.red_escuela.backend.attendance.dto.AttendanceStandingResponse;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
@@ -66,7 +67,8 @@ public class SectionRosterBuilder {
                 enrollmentId, student.getId(), fullName(person), person.getDni(),
                 standing.countableAbsences(), standing.presencePercent(), standing.exceedsAbsenceLimit(),
                 standing.classesHeld(), standing.maxAbsencePercent(), standing.remainingAbsences(),
-                standing.absencePercent(), standing.pendingJustificationAbsences());
+                standing.absencePercent(), standing.pendingJustificationAbsences(),
+                AttendanceStandingResponse.from(standing));
     }
 
     private String fullName(Person person) {

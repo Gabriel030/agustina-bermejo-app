@@ -61,6 +61,7 @@ public class SubjectSectionEnrollmentService {
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final SectionWaitlistPromoter waitlistPromoter;
     private final SubjectRetakeGuard subjectRetakeGuard;
+    private final FinalExamEligibilityResolver finalExamEligibilityResolver;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -75,8 +76,10 @@ public class SubjectSectionEnrollmentService {
             StudentEnrollmentEligibility studentEnrollmentEligibility,
             SectionWaitlistPromoter waitlistPromoter,
             SubjectRetakeGuard subjectRetakeGuard,
+            FinalExamEligibilityResolver finalExamEligibilityResolver,
             Clock clock) {
         this.subjectRetakeGuard = subjectRetakeGuard;
+        this.finalExamEligibilityResolver = finalExamEligibilityResolver;
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.waitlistPromoter = waitlistPromoter;
@@ -245,7 +248,8 @@ public class SubjectSectionEnrollmentService {
                     return SectionEnrollmentResponse.from(
                             enrollment,
                             position == null ? null : position.curricularYear(),
-                            position == null ? null : position.curricularTerm());
+                            position == null ? null : position.curricularTerm())
+                            .withFinalExamEligibility(finalExamEligibilityResolver.resolve(enrollment));
                 })
                 .toList();
     }
