@@ -105,7 +105,7 @@ class PriceVersionConcurrencyIT extends AbstractIntegrationTest {
 
     private long createPrice() throws Exception {
         String body = objectMapper.writeValueAsString(Map.of("name", "Carrera de carreras " + System.nanoTime(), "totalYears", 3, "totalCreditsRequired", 100,
-                "price", Map.of("amount", 100000, "currency", "ARS")));
+                "price", Map.of("amount", 100000, "currency", "ARS"), "enrollmentFeeAmount", Map.of("amount", 50000, "currency", "ARS")));
         String response = mockMvc.perform(post("/programs").contentType(MediaType.APPLICATION_JSON).header("Authorization", "Bearer " + adminToken).content(body))
                 .andReturn().getResponse().getContentAsString();
         long programId = objectMapper.readTree(response).get("id").asLong();

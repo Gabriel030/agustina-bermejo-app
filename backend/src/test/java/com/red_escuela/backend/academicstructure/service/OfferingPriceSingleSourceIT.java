@@ -12,6 +12,7 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -33,6 +34,7 @@ import java.time.YearMonth;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -192,5 +194,50 @@ class OfferingPriceSingleSourceIT extends AbstractIntegrationTest {
         programService.update(program.getId(), same);
 
         assertThat(jdbc.queryForObject("select count(*) from price_version where price_id = ?", Long.class, priceId)).isEqualTo(1L);
+    }
+
+    @Test
+    @Tag("D-536")
+    void aFullDiscountTakesTheFinalPriceToZeroWithoutAZeroListPrice() {
+        Program program = createProgram();
+        LocalDate freeFrom = CREATION_DAY.plusDays(1);
+        MutableClock.INSTANCE.setDate(freeFrom);
+        Long staffId = jdbc.queryForObject("select min(id) from person", Long.class);
+        PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.MONTHLY_INSTALLMENT, "Gratis por descuento", ars("1000"), freeFrom, staffId,
+                "PERCENTAGE", new java.math.BigDecimal("100"));
+
+        var resolution = priceReader.requirePriceVersionEffectiveOn(OfferingReference.ofProgram(program.getId()), FeeType.MONTHLY_INSTALLMENT, freeFrom);
+
+        assertThat(resolution.listAmount().value()).isEqualTo(ars("1000"));
+        assertThat(resolution.finalAmount().value().amount()).isEqualByComparingTo("0");
+        assertThat(listPriceReader.findProgramTuition(program.getId())).contains(ars("1000"));
+    }
+
+    @Test
+    @Tag("D-536")
+    void aLegacyOfferingWithAZeroPriceVersionIsShownWithoutPriceAndNotAsZero() {
+        Long staffId = jdbc.queryForObject("select min(id) from person", Long.class);
+        Long programId = jdbc.queryForObject("insert into program (name, currency) values (?, 'ARS') returning id", Long.class, "Legacy " + UUID.randomUUID());
+        PriceFixtures.persistPriceVersion(programId, null, FeeType.MONTHLY_INSTALLMENT, "Legacy", ars("0"), CREATION_DAY.minusDays(30), staffId);
+
+        assertThat(listPriceReader.findProgramTuition(programId)).isEmpty();
+        assertThat(listPriceReader.findProgramEnrollmentFee(programId)).isEmpty();
+        assertThat(programService.get(programId).priceAsMoney()).isNull();
+    }
+
+    @Test
+    void theListingResolvesTheCurrentPricesOfEveryProgramInOneBatchAndMatchesTheSingleLookup() {
+        Program first = createProgram();
+        Program second = createProgram();
+        raiseProgramPrices(second.getId());
+
+        var tuitions = listPriceReader.findProgramTuitions(java.util.List.of(first.getId(), second.getId()));
+        var fees = listPriceReader.findProgramEnrollmentFees(java.util.List.of(first.getId(), second.getId()));
+
+        assertThat(tuitions).containsEntry(first.getId(), ars("1000")).containsEntry(second.getId(), ars("1200"));
+        assertThat(fees).containsEntry(first.getId(), ars("500")).containsEntry(second.getId(), ars("650"));
+        assertThat(tuitions.get(second.getId())).isEqualTo(listPriceReader.findProgramTuition(second.getId()).orElseThrow());
+        assertThat(programService.list(null, null).stream().filter(program -> program.getId().equals(second.getId())).findFirst().orElseThrow().priceAsMoney())
+                .isEqualTo(ars("1200"));
     }
 }

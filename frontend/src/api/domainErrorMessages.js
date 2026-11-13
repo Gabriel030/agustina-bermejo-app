@@ -85,6 +85,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   NEGATIVE_MONEY_AMOUNT: 'El monto no puede ser negativo.',
   NOT_ELIGIBLE_FOR_GRADUATION: 'Todavía no cumplís las condiciones para egresar.',
   NO_EVALUATION_SCHEME: 'La comisión no tiene un esquema de evaluación.',
+  OFFERING_LIST_PRICE_NOT_POSITIVE: 'El precio es obligatorio y debe ser mayor que cero. Para ofrecerlo gratis, usá un descuento.',
   PREREQUISITE_NOT_MET: 'No cumplís las correlatividades de esta materia.',
   PROGRAM_ENROLLMENT_REQUIRED: 'Primero tenés que estar inscripto en la carrera.',
   REQUEST_FIELD_OUT_OF_RANGE: 'Algún valor está fuera del rango permitido.',

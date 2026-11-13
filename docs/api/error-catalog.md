@@ -168,6 +168,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NEGATIVE_MONEY_AMOUNT` | no | `NegativeMoneyAmountException` | shared |
 | `NOT_ELIGIBLE_FOR_GRADUATION` | no | `NotEligibleForGraduationException` | graduation |
 | `NO_EVALUATION_SCHEME` | no | `NoEvaluationSchemeException` | evaluation |
+| `OFFERING_LIST_PRICE_NOT_POSITIVE` | no | `OfferingListPriceNotPositiveException` | academicstructure |
 | `PAYMENT_DATE_IN_FUTURE` | no | `PaymentDateInFutureException` | billing |
 | `PAYMENT_REJECTION_REASON_REQUIRED` | no | `PaymentRejectionReasonRequiredException` | billing |
 | `PAYMENT_REJECTION_REASON_TOO_LONG` | no | `PaymentRejectionReasonTooLongException` | billing |

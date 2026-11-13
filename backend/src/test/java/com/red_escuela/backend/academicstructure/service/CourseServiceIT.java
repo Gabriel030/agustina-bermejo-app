@@ -8,6 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
+import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
@@ -18,6 +19,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -82,19 +84,43 @@ class CourseServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void aCourseWithoutPriceOrCurrencyDefaultsToPesosAndStartsActive() {
-        Course course = courseService.create(request("Sin precio", null, null, null, null));
+    void aCourseWithAPriceAndNoCurrencyDefaultsToPesosAndStartsActive() {
+        Course course = courseService.create(request("Con precio", ars("1000"), null, null, null));
 
         assertThat(course.getCurrency()).isEqualTo(Currency.ARS);
         assertThat(course.getIsActive()).isEqualTo(StatusType.ACTIVE);
-        assertThat(listPriceReader.findCourseTuition(course.getId())).contains(Money.zero(Currency.ARS));
+        assertThat(listPriceReader.findCourseTuition(course.getId())).contains(ars("1000"));
     }
 
     @Test
-    void theRequestedCurrencyIsUsedWhenTheCourseHasNoPrice() {
-        Course course = courseService.create(request("Moneda pedida", null, Currency.USD, null, null));
+    @Tag("D-536")
+    void aCourseWithoutPriceIsRejectedAndNothingIsSaved() {
+        long before = entityManager.createQuery("select count(c) from Course c", Long.class).getSingleResult();
 
-        assertThat(course.getCurrency()).isEqualTo(Currency.USD);
+        assertThatThrownBy(() -> courseService.create(request("Sin precio", null, null, null, null)))
+                .isInstanceOf(OfferingListPriceNotPositiveException.class);
+        assertThatThrownBy(() -> courseService.create(request("Sin precio en dolares", null, Currency.USD, null, null)))
+                .isInstanceOf(OfferingListPriceNotPositiveException.class);
+
+        assertThat(entityManager.createQuery("select count(c) from Course c", Long.class).getSingleResult()).isEqualTo(before);
+    }
+
+    @Test
+    @Tag("D-536")
+    void aCourseWithAZeroPriceIsRejected() {
+        assertThatThrownBy(() -> courseService.create(request("Precio cero", ars("0"), null, null, null)))
+                .isInstanceOf(OfferingListPriceNotPositiveException.class);
+    }
+
+    @Test
+    @Tag("D-536")
+    void updatingACoursePriceToZeroIsRejectedAndLeavesThePriceUntouched() {
+        Course course = createCourse("Update a cero");
+
+        assertThatThrownBy(() -> courseService.update(course.getId(),
+                new UpdateCourseRequest(null, null, null, ars("0"), null, null, null, null)))
+                .isInstanceOf(OfferingListPriceNotPositiveException.class);
+        assertThat(listPriceReader.findCourseTuition(course.getId())).contains(ars("1000"));
     }
 
     @Test
@@ -120,14 +146,14 @@ class CourseServiceIT extends AbstractIntegrationTest {
 
     @Test
     void creatingACourseInAMissingTermFailsWithNotFound() {
-        CreateCourseRequest request = new CreateCourseRequest("Sin ciclo", MISSING_ID, null, 10, null, 3, null, null, null, null);
+        CreateCourseRequest request = new CreateCourseRequest("Sin ciclo", MISSING_ID, null, 10, ars("100"), 3, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.create(request)).isInstanceOf(TermNotFoundException.class);
     }
 
     @Test
     void aRegistrationWindowThatClosesBeforeItOpensIsRejectedOnCreate() {
-        assertThatThrownBy(() -> courseService.create(request("Ventana invertida", null, null, CLOSING, OPENING)))
+        assertThatThrownBy(() -> courseService.create(request("Ventana invertida", ars("100"), null, CLOSING, OPENING)))
                 .isInstanceOf(InvalidRegistrationWindowException.class);
     }
 

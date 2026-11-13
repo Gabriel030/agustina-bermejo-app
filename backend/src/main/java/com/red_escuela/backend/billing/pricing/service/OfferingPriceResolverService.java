@@ -8,6 +8,9 @@ import com.red_escuela.backend.shared.pricing.OfferingPriceResolver;
 import com.red_escuela.backend.shared.pricing.OfferingReference;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 
@@ -31,5 +34,13 @@ public class OfferingPriceResolverService implements OfferingPriceResolver {
     @Override
     public Optional<Money> findCurrentListPrice(OfferingReference offering, OfferingFee fee) {
         return findListPriceOn(offering, fee, LocalDate.now(clock));
+    }
+
+    @Override
+    public Map<Long, Money> findCurrentListPrices(Collection<Long> offeringIds, boolean programs, OfferingFee fee) {
+        Map<Long, Money> prices = new HashMap<>();
+        priceReader.findPriceVersionsEffectiveOn(offeringIds, programs, FeeType.valueOf(fee.name()), LocalDate.now(clock))
+                .forEach((offeringId, resolution) -> prices.put(offeringId, resolution.listAmount().value()));
+        return prices;
     }
 }

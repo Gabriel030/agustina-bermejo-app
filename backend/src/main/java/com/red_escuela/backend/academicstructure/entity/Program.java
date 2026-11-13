@@ -35,6 +35,12 @@ public class Program {
     @Column(name = "status")
     private StatusType status;
 
+    @Transient
+    private Money listPrice;
+
+    @Transient
+    private Money listEnrollmentFee;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "currency", nullable = false)
@@ -77,6 +83,19 @@ public class Program {
         if (curricularYear < 1 || (totalYears != null && curricularYear > totalYears)) {
             throw new CurricularYearOutOfRangeException(curricularYear, totalYears);
         }
+    }
+
+    public Money priceAsMoney() {
+        return listPrice;
+    }
+
+    public Money enrollmentFeeAsMoney() {
+        return listEnrollmentFee;
+    }
+
+    public void showListPrices(Money tuition, Money enrollmentFee) {
+        listPrice = tuition;
+        listEnrollmentFee = enrollmentFee;
     }
 
     public void requireProgramCurrency(Money money) {

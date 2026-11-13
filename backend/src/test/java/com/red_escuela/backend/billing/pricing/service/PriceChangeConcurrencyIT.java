@@ -84,14 +84,16 @@ class PriceChangeConcurrencyIT extends AbstractIntegrationTest {
 
     private long createProgramPricedAt(String token, String name, int monthlyPrice) throws Exception {
         String body = objectMapper.writeValueAsString(java.util.Map.of("name", name, "totalYears", 3, "totalCreditsRequired", 100,
-                "price", java.util.Map.of("amount", monthlyPrice, "currency", "ARS")));
+                "price", java.util.Map.of("amount", monthlyPrice, "currency", "ARS"),
+                "enrollmentFeeAmount", java.util.Map.of("amount", 50000, "currency", "ARS")));
         String response = mockMvc.perform(post("/programs").contentType(MediaType.APPLICATION_JSON).header("Authorization", "Bearer " + token).content(body))
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).get("id").asLong();
     }
 
     private int putPrice(String token, long programId, int monthlyPrice) throws Exception {
-        String body = objectMapper.writeValueAsString(java.util.Map.of("price", java.util.Map.of("amount", monthlyPrice, "currency", "ARS")));
+        String body = objectMapper.writeValueAsString(java.util.Map.of("price", java.util.Map.of("amount", monthlyPrice, "currency", "ARS"),
+                "enrollmentFeeAmount", java.util.Map.of("amount", 50000, "currency", "ARS")));
         return mockMvc.perform(put("/programs/{id}", programId).contentType(MediaType.APPLICATION_JSON).header("Authorization", "Bearer " + token).content(body))
                 .andReturn().getResponse().getStatus();
     }

@@ -25,6 +25,14 @@ public class CourseResponse {
     private final boolean registrationOpen;
     private final Boolean full;
 
+    public static CourseResponse from(Course course, long occupiedSeats) {
+        return from(course, course.priceAsMoney(), occupiedSeats);
+    }
+
+    public static CourseResponse from(Course course) {
+        return from(course, course.priceAsMoney());
+    }
+
     public static CourseResponse from(Course course, Money price, long occupiedSeats) {
         return baseBuilder(course, price).full(!course.hasCapacityFor(occupiedSeats)).build();
     }

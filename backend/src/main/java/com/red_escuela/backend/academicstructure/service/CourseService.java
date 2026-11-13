@@ -8,6 +8,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
@@ -19,6 +20,7 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import com.red_escuela.backend.shared.pricing.OfferingFee;
 import com.red_escuela.backend.shared.pricing.OfferingPriceCatalog;
@@ -44,6 +46,7 @@ public class CourseService {
 
     @Transactional
     public Course create(CreateCourseRequest request) {
+        requirePositive(request.price());
         Term term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
 
@@ -64,14 +67,16 @@ public class CourseService {
         Course saved = courseRepository.save(course);
 
         Person actor = currentPersonService.resolveCurrentPerson();
-        Money price = Optional.ofNullable(request.price()).orElseGet(() -> Money.zero(saved.getCurrency()));
-        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofCourse(saved.getId()), OfferingFee.MONTHLY_INSTALLMENT, price, actor.getId());
-        return saved;
+        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofCourse(saved.getId()), OfferingFee.MONTHLY_INSTALLMENT, request.price(), actor.getId());
+        return withListPrice(saved);
     }
 
     @Transactional
     public Course update(Long id, UpdateCourseRequest request) {
         Course course = findOrThrow(id);
+        if (request.price() != null) {
+            requirePositive(request.price());
+        }
         Optional.ofNullable(request.name()).ifPresent(course::setName);
         Optional.ofNullable(request.schedule()).ifPresent(course::setSchedule);
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
@@ -81,7 +86,7 @@ public class CourseService {
         Optional.ofNullable(request.registrationStart()).ifPresent(course::setRegistrationStart);
         Optional.ofNullable(request.registrationEnd()).ifPresent(course::setRegistrationEnd);
         course.requireValidRegistrationWindow();
-        return courseRepository.save(course);
+        return withListPrice(courseRepository.save(course));
     }
 
     private void adjustPriceIfChanged(Course course, Money requested) {
@@ -97,14 +102,28 @@ public class CourseService {
     }
 
     public List<Course> list(StatusType status, Boolean visibleInCatalog) {
-        return courseRepository.findAll(Sort.by("name", "id")).stream()
+        List<Course> courses = courseRepository.findAll(Sort.by("name", "id")).stream()
                 .filter(course -> status == null || course.getIsActive() == status)
                 .filter(course -> visibleInCatalog == null || course.isVisibleInCatalog() == visibleInCatalog)
                 .toList();
+        Map<Long, Money> tuitions = listPriceReader.findCourseTuitions(courses.stream().map(Course::getId).toList());
+        courses.forEach(course -> course.showListPrice(tuitions.get(course.getId())));
+        return courses;
     }
 
     public Course get(Long id) {
-        return findOrThrow(id);
+        return withListPrice(findOrThrow(id));
+    }
+
+    private Course withListPrice(Course course) {
+        course.showListPrice(listPriceReader.findCourseTuition(course.getId()).orElse(null));
+        return course;
+    }
+
+    private static void requirePositive(Money price) {
+        if (price == null || price.amount().signum() <= 0) {
+            throw new OfferingListPriceNotPositiveException("la cuota");
+        }
     }
 
     @Transactional

@@ -139,7 +139,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingProgramWithCreditsPersistsAllFields() throws Exception {
         String token = tokenWithRole("admin-academico3", "ADMINISTRATIVO");
         CreateProgramRequest request = new CreateProgramRequest(
-                "Tecnicatura en Sistemas", 3, null, null, 240, null, null, null, null, null);
+                "Tecnicatura en Sistemas", 3, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 240, null, null, null, null, null);
 
         mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -172,7 +172,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         Long groupId = objectMapper.readTree(groupBody).get("id").asLong();
 
         CreateProgramRequest programRequest = new CreateProgramRequest(
-                "Tecnicatura con Electivas", 4, null, null, 200, null, null, null, null, null);
+                "Tecnicatura con Electivas", 4, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 200, null, null, null, null, null);
         String programBody = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -207,7 +207,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Optativas"));
 
         CreateProgramRequest programRequest = new CreateProgramRequest(
-                "Tecnicatura Optativas", 4, null, null, 100, null, null, null, null, null);
+                "Tecnicatura Optativas", 4, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 100, null, null, null, null, null);
         String programBody = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -281,7 +281,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void deactivatingAndReactivatingProgramWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-baja1", "ADMINISTRATIVO");
-        CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, null, null, 100, null, null, null, null, null);
+        CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 100, null, null, null, null, null);
         String body = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -311,7 +311,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(objectMapper.writeValueAsString(
-                                new CreateProgramRequest("Tecnicatura Baja 2", 3, null, null, 100, null, null, null, null, null))))
+                                new CreateProgramRequest("Tecnicatura Baja 2", 3, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 100, null, null, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long id = objectMapper.readTree(body).get("id").asLong();
 
@@ -353,7 +353,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso Baja", term.getId(), null, 20, null, 3, null, null, null);
+                "Curso Baja", term.getId(), null, 20, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null);
         String body = mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -376,7 +376,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingCourseWithNonExistentTermReturns404() throws Exception {
         String token = tokenWithRole("admin-curso2", "ADMINISTRATIVO");
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso sin term", 999999L, null, 10, null, 3, null, null, null);
+                "Curso sin term", 999999L, null, 10, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null);
 
         mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -389,7 +389,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingCourseWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-curso1", "PRECEPTOR");
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso sin permiso", 1L, null, 10, null, 3, null, null, null);
+                "Curso sin permiso", 1L, null, 10, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null);
 
         mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -847,7 +847,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateCourseRequest(
-                                "Curso con módulos", term.getId(), null, 15, null, 3, null, null, null))))
+                                "Curso con módulos", term.getId(), null, 15, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long courseId = objectMapper.readTree(courseBody).get("id").asLong();
 
@@ -890,7 +890,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateCourseRequest(
-                                "Curso con módulo baja", term.getId(), null, 15, null, 3, null, null, null))))
+                                "Curso con módulo baja", term.getId(), null, 15, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long courseId = objectMapper.readTree(courseBody).get("id").asLong();
 
@@ -950,7 +950,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(
-                                new CreateProgramRequest("Tecnicatura quitar grupo", 3, null, null, 50, null, null, null, null, null))))
+                                new CreateProgramRequest("Tecnicatura quitar grupo", 3, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 50, null, null, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long programId = objectMapper.readTree(programBody).get("id").asLong();
 

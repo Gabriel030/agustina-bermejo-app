@@ -60,6 +60,9 @@ public class Course {
     @Column(name = "registration_end")
     private LocalDateTime registrationEnd;
 
+    @Transient
+    private Money listPrice;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "currency", nullable = false)
@@ -77,6 +80,14 @@ public class Course {
     @Enumerated(EnumType.STRING)
     @Column(name = "teaching_mode")
     private TeachingMode teachingMode;
+
+    public Money priceAsMoney() {
+        return listPrice;
+    }
+
+    public void showListPrice(Money tuition) {
+        listPrice = tuition;
+    }
 
     public void requireCourseCurrency(Money money) {
         if (money.currency() != currency) {

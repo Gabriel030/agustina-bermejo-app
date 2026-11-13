@@ -23,6 +23,10 @@ public class ProgramResponse {
     private final String graduationProfile;
     private final String admissionRequirements;
 
+    public static ProgramResponse from(Program program) {
+        return from(program, program.priceAsMoney(), program.enrollmentFeeAsMoney());
+    }
+
     public static ProgramResponse from(Program program, Money price, Money enrollmentFeeAmount) {
         return ProgramResponse.builder()
                 .id(program.getId())

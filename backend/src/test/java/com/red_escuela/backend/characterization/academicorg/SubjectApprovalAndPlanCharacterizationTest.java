@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SubjectApprovalAndPlanCharacterizationTest extends AcademicOrgCharacterizationSupport {
 
     private long createProgram(Person admin, String name) throws Exception {
-        CreateProgramRequest request = new CreateProgramRequest(name, 3, null, null, 10, null, null, null, null, null);
+        CreateProgramRequest request = new CreateProgramRequest(name, 3, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 10, null, null, null, null, null);
         return idOf(postJson(admin, "/programs", request).andExpect(status().isCreated()));
     }
 
