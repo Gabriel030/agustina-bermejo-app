@@ -20,7 +20,6 @@ import {
   useIssueRegularCertificate,
   useIssuedRegularCertificates,
   usePendingRegularRequests,
-  useRegularCertificateHolders,
   useRejectRegularRequest,
   useRevokeRegularCertificate,
 } from '@/features/graduation/certificates/hooks/useStaffRegularCertificates';
@@ -277,8 +276,6 @@ export function StaffRegularCertificates() {
 
   const pending = usePendingRegularRequests();
   const issued = useIssuedRegularCertificates();
-  const pendingHolder = useRegularCertificateHolders(pending.data);
-  const issuedHolder = useRegularCertificateHolders(issued.data);
   const issue = useIssueRegularCertificate();
   const reject = useRejectRegularRequest();
   const revoke = useRevokeRegularCertificate();
@@ -286,8 +283,8 @@ export function StaffRegularCertificates() {
   const [tab, setTab] = useState('pedidos');
   const [dialog, setDialog] = useState(null);
 
-  const pendingRows = pending.data?.map((request) => ({ ...request, ...pendingHolder(request) }));
-  const issuedRows = issued.data?.map((certificate) => ({ ...certificate, ...issuedHolder(certificate) }));
+  const pendingRows = pending.data;
+  const issuedRows = issued.data;
 
   const onAction = useCallback((kind, row) => setDialog({ kind, row }), []);
 

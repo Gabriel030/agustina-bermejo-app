@@ -44,8 +44,9 @@ public class RegularCertificateRequestRejecter {
         String reason = RegularCertificateReason.required(rawReason, () -> new RejectionReasonInvalidException());
         request.rejectByStaff(reason, currentActorFinder.currentPersonId(), LocalDateTime.now(clock));
         repository.save(request);
-        Long personId = factsFinder.find(request.getKind(), request.enrollmentId()).student().getPerson().getId();
+        RegularEnrollmentFacts facts = factsFinder.find(request.getKind(), request.enrollmentId());
+        Long personId = facts.student().getPerson().getId();
         eventPublisher.publishEvent(RegularCertificateRequestRejectedEvent.of(request.getId(), request.getStudentId(), personId, reason));
-        return RegularRequestResponses.of(request);
+        return RegularRequestResponses.of(request, facts);
     }
 }

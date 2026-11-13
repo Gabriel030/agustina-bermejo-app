@@ -116,7 +116,7 @@ public class RegularCertificateIssuer {
         requireRegular(command, studentId, actorId, now);
         if (standingGate.requiresStaffConfirmation()) {
             return RegularCertificateSubmissionResponse.pending(RegularRequestResponses.of(
-                    pendingRequestOf(command, studentId, actorId, now)));
+                    pendingRequestOf(command, studentId, actorId, now), facts));
         }
         StandingResolution standing = resolveStanding(command, studentId, actorId, now);
         return RegularCertificateSubmissionResponse.issued(create(command, facts, standing, actorId, now));
@@ -228,7 +228,7 @@ public class RegularCertificateIssuer {
             meterRegistry.counter("regular_certificate_issued_total", "basis", standing.basis().name()).increment();
             log.info("Constancia de regular emitida: certificateId={}, kind={}, standingBasis={}, billingMode={}, channel={}",
                     saved.getId(), command.kind(), standing.basis(), standing.mode(), command.channel());
-            return toResponse(saved, url);
+            return toResponse(saved, facts.studentName(), url);
         } catch (DataIntegrityViolationException e) {
             fileStore.deleteIfRolledBack(path);
             throw new ConcurrentRegularCertificateIssueException();
@@ -245,8 +245,9 @@ public class RegularCertificateIssuer {
         throw new IllegalStateException("No se pudo generar un código de certificado único");
     }
 
-    private RegularCertificateResponse toResponse(RegularStudentCertificate certificate, String url) {
-        return new RegularCertificateResponse(certificate.getId(), certificate.getCode(), certificate.getKind(),
+    private RegularCertificateResponse toResponse(RegularStudentCertificate certificate, String studentName, String url) {
+        return new RegularCertificateResponse(certificate.getId(), certificate.getCode(), certificate.getStudentId(),
+                studentName, certificate.getSnapshot().titleName(), certificate.getKind(),
                 certificate.enrollmentId(), certificate.getStatus(), certificate.getIssuedAt(), certificate.getExpiresAt(),
                 certificate.getStandingBasis(), certificate.getBillingModeAtIssue(), url);
     }

@@ -5,7 +5,6 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { errorBody } from '@/test/fixtures/errors';
-import { studentFixture } from '@/test/fixtures/students';
 import { StaffRegularCertificates } from '@/features/graduation/certificates/pages/StaffRegularCertificates';
 
 const API = 'http://localhost:8080';
@@ -19,6 +18,8 @@ function request(overrides = {}) {
   return {
     id: 71,
     studentId: 9,
+    studentName: 'Valentina Suárez',
+    programName: 'Tecnicatura en Administración',
     kind: 'PROGRAM',
     enrollmentId: 501,
     channel: 'STUDENT_PORTAL',
@@ -35,6 +36,9 @@ function certificate(overrides = {}) {
   return {
     id: 31,
     code: '7QK3M9XH2VBN4T8RGJDA1B2C3X',
+    studentId: 9,
+    studentName: 'Valentina Suárez',
+    programName: 'Tecnicatura en Administración',
     kind: 'PROGRAM',
     enrollmentId: 501,
     status: 'VALID',
@@ -47,21 +51,7 @@ function certificate(overrides = {}) {
   };
 }
 
-function mockHolders() {
-  server.use(
-    http.get(`${API}/program-enrollments/501`, () =>
-      HttpResponse.json({ id: 501, studentId: 9, programId: 3, programName: 'Tecnicatura en Administración', status: 'ACTIVE', enrollmentDate: '2026-03-01T00:00:00' }),
-    ),
-    http.get(`${API}/program-enrollments/502`, () =>
-      HttpResponse.json({ id: 502, studentId: 10, programId: 4, programName: 'Tecnicatura en Seguridad e Higiene', status: 'ACTIVE', enrollmentDate: '2026-03-01T00:00:00' }),
-    ),
-    http.get(`${API}/students/9`, () => HttpResponse.json(studentFixture({ id: 9, nombre: 'Valentina', apellido: 'Suárez' }))),
-    http.get(`${API}/students/10`, () => HttpResponse.json(studentFixture({ id: 10, nombre: 'Tomás', apellido: 'Herrera' }))),
-  );
-}
-
 function mockLists({ requests = [request()], certificates = [certificate()] } = {}) {
-  mockHolders();
   server.use(
     http.get(`${API}/regular-certificate-requests`, () => HttpResponse.json(requests)),
     http.get(`${API}/regular-certificates`, () => HttpResponse.json(certificates)),
@@ -82,13 +72,13 @@ beforeEach(() => {
 
 describe('StaffRegularCertificates', () => {
   it('lists pending requests with student and program and the count in the tab', async () => {
-    mockLists({ requests: [request(), request({ id: 72, studentId: 10, enrollmentId: 502, requestedAt: '2026-11-10T10:00:00' })] });
+    mockLists({ requests: [request(), request({ id: 72, studentId: 10, studentName: 'Tomás Herrera', programName: 'Tecnicatura en Seguridad e Higiene', enrollmentId: 502, requestedAt: '2026-11-10T10:00:00' })] });
     renderScreen();
 
     const rows = await screen.findAllByRole('row');
-    await waitFor(() => expect(within(screen.getAllByRole('row')[1]).getByText('Herrera, Tomás')).toBeInTheDocument());
+    await waitFor(() => expect(within(screen.getAllByRole('row')[1]).getByText('Tomás Herrera')).toBeInTheDocument());
     expect(rows.length).toBe(3);
-    expect(screen.getByText('Suárez, Valentina')).toBeInTheDocument();
+    expect(screen.getByText('Valentina Suárez')).toBeInTheDocument();
     expect(screen.getByText('Tecnicatura en Administración')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Pedidos/ })).toHaveTextContent('2');
   });
@@ -97,7 +87,7 @@ describe('StaffRegularCertificates', () => {
     mockLists();
     renderScreen();
 
-    await screen.findByText('Suárez, Valentina');
+    await screen.findByText('Valentina Suárez');
     expect(screen.getAllByRole('button', { name: /Confirmar y emitir/ })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: /^Rechazar/ })).not.toBeInTheDocument();
   });
@@ -113,7 +103,7 @@ describe('StaffRegularCertificates', () => {
     );
     renderScreen();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar y emitir la constancia de Suárez, Valentina' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar y emitir la constancia de Valentina Suárez' }));
     await userEvent.type(await screen.findByRole('textbox'), 'Comprobante de octubre revisado');
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirmar y emitir' }));
 
@@ -169,7 +159,7 @@ describe('StaffRegularCertificates', () => {
     );
     renderScreen();
 
-    await openRowMenu('Más acciones de Suárez, Valentina');
+    await openRowMenu('Más acciones de Valentina Suárez');
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Rechazar' }));
     const dialog = await screen.findByRole('dialog');
     await userEvent.type(within(dialog).getByRole('textbox'), 'corto');
@@ -188,7 +178,7 @@ describe('StaffRegularCertificates', () => {
     mockLists();
     renderScreen();
 
-    await screen.findByText('Suárez, Valentina');
+    await screen.findByText('Valentina Suárez');
     await userEvent.click(screen.getByRole('button', { name: /Ver resumen/ }));
 
     expect(await screen.findByRole('link', { name: /Ver asistencia/ })).toHaveAttribute('href', '/director/alumnos/9?view=academico');
@@ -197,7 +187,7 @@ describe('StaffRegularCertificates', () => {
 
   it('lists issued certificates with their status and expiry', async () => {
     mockLists({
-      certificates: [certificate(), certificate({ id: 32, enrollmentId: 502, status: 'REVOKED', issuedAt: '2026-09-22T09:00:00' })],
+      certificates: [certificate(), certificate({ id: 32, studentId: 10, studentName: 'Tomás Herrera', programName: 'Tecnicatura en Seguridad e Higiene', enrollmentId: 502, status: 'REVOKED', issuedAt: '2026-09-22T09:00:00' })],
     });
     renderScreen();
 
@@ -205,11 +195,11 @@ describe('StaffRegularCertificates', () => {
 
     expect(await screen.findByText('Vigente')).toBeInTheDocument();
     expect(screen.getByText('Revocada')).toBeInTheDocument();
-    expect(await screen.findByText('Herrera, Tomás')).toBeInTheDocument();
+    expect(await screen.findByText('Tomás Herrera')).toBeInTheDocument();
   });
 
   it('lets the director revoke a valid certificate with a reason', async () => {
-    mockLists({ certificates: [certificate(), certificate({ id: 32, enrollmentId: 502, status: 'EXPIRED' })] });
+    mockLists({ certificates: [certificate(), certificate({ id: 32, studentId: 10, studentName: 'Tomás Herrera', programName: 'Tecnicatura en Seguridad e Higiene', enrollmentId: 502, status: 'EXPIRED' })] });
     let body;
     server.use(
       http.post(`${API}/regular-certificates/31/revoke`, async ({ request: req }) => {
@@ -220,7 +210,7 @@ describe('StaffRegularCertificates', () => {
     renderScreen();
 
     await userEvent.click(screen.getByRole('tab', { name: 'Emitidas' }));
-    await openRowMenu('Acciones de Suárez, Valentina');
+    await openRowMenu('Acciones de Valentina Suárez');
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Revocar' }));
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent('No se puede deshacer');
@@ -235,7 +225,7 @@ describe('StaffRegularCertificates', () => {
     renderScreen();
 
     await userEvent.click(screen.getByRole('tab', { name: 'Emitidas' }));
-    await openRowMenu('Acciones de Suárez, Valentina');
+    await openRowMenu('Acciones de Valentina Suárez');
 
     expect(await screen.findByRole('menuitem', { name: 'Descargar PDF' })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: 'Revocar' })).not.toBeInTheDocument();
@@ -247,7 +237,7 @@ describe('StaffRegularCertificates', () => {
     renderScreen();
 
     await userEvent.click(screen.getByRole('tab', { name: 'Emitidas' }));
-    await openRowMenu('Acciones de Suárez, Valentina');
+    await openRowMenu('Acciones de Valentina Suárez');
 
     expect(await screen.findByRole('menuitem', { name: 'Copiar enlace de verificación' })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: 'Revocar' })).not.toBeInTheDocument();
@@ -263,8 +253,7 @@ describe('StaffRegularCertificates', () => {
   });
 
   it('shows a retryable error when the pending list fails', async () => {
-    mockHolders();
-    server.use(http.get(`${API}/regular-certificate-requests`, () => new HttpResponse(null, { status: 500 })));
+      server.use(http.get(`${API}/regular-certificate-requests`, () => new HttpResponse(null, { status: 500 })));
     renderScreen();
 
     expect(await screen.findByText('No pudimos cargar los pedidos')).toBeInTheDocument();
