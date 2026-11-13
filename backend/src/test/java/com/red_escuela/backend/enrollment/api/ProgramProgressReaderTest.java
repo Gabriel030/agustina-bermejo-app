@@ -158,8 +158,8 @@ class ProgramProgressReaderTest {
                 List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR)))
                 .thenReturn(true);
 
-        assertThat(reader.calculateProgress(ENROLLMENT_ID).regular()).isTrue();
-        assertThat(reader.hasActiveEnrollment(ENROLLMENT_ID)).isTrue();
+        assertThat(reader.calculateProgress(ENROLLMENT_ID).hasActiveCoursework()).isTrue();
+        assertThat(reader.hasActiveCoursework(ENROLLMENT_ID)).isTrue();
     }
 
     @Test

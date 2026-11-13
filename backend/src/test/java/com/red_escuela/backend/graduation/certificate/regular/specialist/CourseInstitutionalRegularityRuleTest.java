@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class CourseRegularityRuleTest {
+class CourseInstitutionalRegularityRuleTest {
 
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 5);
 
@@ -30,7 +30,7 @@ class CourseRegularityRuleTest {
     private final ActiveSectionEnrollmentFinder activeSectionEnrollmentFinder = mock(ActiveSectionEnrollmentFinder.class);
     private final AttendanceStandingFinder attendanceStandingFinder = mock(AttendanceStandingFinder.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-05T12:00:00Z"), ZoneOffset.UTC);
-    private final CourseRegularityRule rule = new CourseRegularityRule(
+    private final CourseInstitutionalRegularityRule rule = new CourseInstitutionalRegularityRule(
             courseEnrollmentFinder, activeSectionEnrollmentFinder, attendanceStandingFinder, clock);
 
     private void givenEnrollmentWithStatus(EnrollmentStatus status) {
@@ -55,7 +55,7 @@ class CourseRegularityRuleTest {
 
         RegularityVerdict verdict = rule.evaluate(5L);
 
-        assertThat(verdict.regular()).isFalse();
+        assertThat(verdict.institutionallyRegular()).isFalse();
         assertThat(verdict.reasons()).containsExactly(RegularityReason.COURSE_FINISHED);
         verifyNoInteractions(attendanceStandingFinder);
     }
@@ -66,7 +66,7 @@ class CourseRegularityRuleTest {
         givenSections(new ActiveCourseSectionView(1L, TODAY));
         givenStanding(1L, false);
 
-        assertThat(rule.evaluate(5L).regular()).isTrue();
+        assertThat(rule.evaluate(5L).institutionallyRegular()).isTrue();
     }
 
     @Test
@@ -77,7 +77,7 @@ class CourseRegularityRuleTest {
 
             RegularityVerdict verdict = rule.evaluate(5L);
 
-            assertThat(verdict.regular()).as(status.name()).isFalse();
+            assertThat(verdict.institutionallyRegular()).as(status.name()).isFalse();
             assertThat(verdict.reasons()).as(status.name()).containsExactly(RegularityReason.NOT_ENROLLED);
         }
         verifyNoInteractions(activeSectionEnrollmentFinder, attendanceStandingFinder);
@@ -92,7 +92,7 @@ class CourseRegularityRuleTest {
 
         RegularityVerdict verdict = rule.evaluate(5L);
 
-        assertThat(verdict.regular()).isFalse();
+        assertThat(verdict.institutionallyRegular()).isFalse();
         assertThat(verdict.reasons()).containsExactly(RegularityReason.FREE_IN_ACTIVE_SECTION);
     }
 
@@ -103,7 +103,7 @@ class CourseRegularityRuleTest {
         givenStanding(1L, false);
         givenStanding(2L, true);
 
-        assertThat(rule.evaluate(5L).regular()).isFalse();
+        assertThat(rule.evaluate(5L).institutionallyRegular()).isFalse();
     }
 
     @Test
@@ -113,7 +113,7 @@ class CourseRegularityRuleTest {
         givenStanding(1L, true);
         givenStanding(2L, false);
 
-        assertThat(rule.evaluate(5L).regular()).isTrue();
+        assertThat(rule.evaluate(5L).institutionallyRegular()).isTrue();
     }
 
     @Test

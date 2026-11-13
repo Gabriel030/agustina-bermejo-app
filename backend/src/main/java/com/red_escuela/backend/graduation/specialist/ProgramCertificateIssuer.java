@@ -68,7 +68,7 @@ public class ProgramCertificateIssuer {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
         }
         Student student = enrollment.getStudent();
-        boolean cursandoAlgo = programProgressReader.hasActiveEnrollment(programEnrollmentId);
+        boolean cursandoAlgo = programProgressReader.hasActiveCoursework(programEnrollmentId);
         if (!cursandoAlgo) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }

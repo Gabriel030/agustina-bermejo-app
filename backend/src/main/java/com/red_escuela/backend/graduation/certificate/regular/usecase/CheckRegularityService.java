@@ -21,7 +21,7 @@ public class CheckRegularityService implements CheckRegularityUseCase {
     @Override
     public RegularityResponse check(RegularityKind kind, Long enrollmentId) {
         RegularityVerdict verdict = regularityEvaluator.evaluate(kind, enrollmentId);
-        return new RegularityResponse(verdict.kind(), enrollmentId, verdict.regular(), verdict.reasons(),
+        return new RegularityResponse(verdict.kind(), enrollmentId, verdict.institutionallyRegular(), verdict.reasons(),
                 verdict.attendanceControlled(), billingModeGate.currentMode().name());
     }
 }
