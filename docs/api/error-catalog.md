@@ -68,7 +68,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CASH_PAYMENT_BACKDATE_REASON_REQUIRED` | no | `CashPaymentBackdateReasonRequiredException` | billing |
 | `CASH_PAYMENT_DATE_TOO_OLD` | no | `CashPaymentDateTooOldException` | billing |
 | `CASH_PAYMENT_RECEIPT_NUMBER_INVALID` | no | `CashPaymentReceiptNumberInvalidException` | billing |
-| `CERTIFICATE_NOT_ELIGIBLE` | no | `CertificateNotEligibleException` | graduation |
 | `CHANGE_REASON_REQUIRED` | no | `ChangeReasonRequiredException` | billing |
 | `CHARGEBACK_DATE_INVALID` | no | `ChargebackDateInvalidException` | billing |
 | `CHARGEBACK_REFERENCE_INVALID` | no | `ChargebackReferenceInvalidException` | billing |

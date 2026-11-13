@@ -222,7 +222,6 @@ GET,/me/regular-certificates/eligibility,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY
 GET,/me/regular-certificates/{id}/pdf,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 DELETE,/me/regular-certificate-requests/{id},DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/program-enrollments/{id}/certificates/approved-subjects,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,program-enrollment,
-GET,/me/program-enrollments/{id}/certificates/regular,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,program-enrollment,
 GET,/me/program-enrollments/{id}/enrollment-fee-status,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,program-enrollment,
 GET,/me/program-enrollments/{id}/graduation-request,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,program-enrollment,
 POST,/me/program-enrollments/{id}/graduation-request,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,program-enrollment,

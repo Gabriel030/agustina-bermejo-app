@@ -7,10 +7,7 @@ import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import com.red_escuela.backend.graduation.entity.CertificateType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
-import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.graduation.exception.CertificateNotEligibleException;
 import com.red_escuela.backend.graduation.repository.CertificateIssuanceRepository;
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -29,7 +26,6 @@ import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import com.red_escuela.backend.billing.api.StudentOverdueDebtQuery;
 import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
 
@@ -40,49 +36,22 @@ public class ProgramCertificateIssuer {
 
     private final ProgramEnrollmentFinder programEnrollmentFinder;
     private final ProgramProgressReader programProgressReader;
-    private final StudentOverdueDebtQuery studentOverdueDebtQuery;
     private final CertificateIssuanceRepository certificateIssuanceRepository;
     private final CurrentPersonService currentPersonService;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final Clock clock;
 
     public ProgramCertificateIssuer(ProgramEnrollmentFinder programEnrollmentFinder, ProgramProgressReader programProgressReader,
-            StudentOverdueDebtQuery studentOverdueDebtQuery, CertificateIssuanceRepository certificateIssuanceRepository,
+            CertificateIssuanceRepository certificateIssuanceRepository,
             CurrentPersonService currentPersonService,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             Clock clock) {
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.programEnrollmentFinder = programEnrollmentFinder;
         this.programProgressReader = programProgressReader;
-        this.studentOverdueDebtQuery = studentOverdueDebtQuery;
         this.certificateIssuanceRepository = certificateIssuanceRepository;
         this.currentPersonService = currentPersonService;
         this.clock = clock;
-    }
-
-    @Transactional
-    public byte[] issueRegularCertificate(Long programEnrollmentId) {
-        ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
-        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementScope.CERTIFICATE);
-        if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
-            throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
-        }
-        Student student = enrollment.getStudent();
-        boolean cursandoAlgo = programProgressReader.hasActiveCoursework(programEnrollmentId);
-        if (!cursandoAlgo) {
-            throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
-        }
-        if (studentOverdueDebtQuery.hasOverdueDebt(student.getId())) {
-            throw new CertificateNotEligibleException("el alumno no está al día con sus pagos");
-        }
-
-        Person person = student.getPerson();
-        String texto = "Se deja constancia de que " + person.getName() + " " + person.getLastname()
-                + " (" + person.getDocumentType().label() + " " + person.getDni() + ") es alumno/a regular de la carrera "
-                + enrollment.getProgram().getName() + ".";
-        byte[] pdf = generatePdf("Constancia de alumno regular", texto);
-        recordIssuance(enrollment, CertificateType.REGULAR_STUDENT);
-        return pdf;
     }
 
     @Transactional
