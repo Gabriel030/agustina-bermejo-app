@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SlowTest(reason = "Analyzes the dependencies of every class of every module of the application, so its time grows with the code base")
+@SlowTest(reason = "Analyzes the dependencies of every class of every module of the application, so its time grows with the code base", maxSeconds = 150)
 class ModularityTest {
 
     private static final Path BASELINE_DIRECTORY = Path.of("src/test/resources/modulith-baseline");
