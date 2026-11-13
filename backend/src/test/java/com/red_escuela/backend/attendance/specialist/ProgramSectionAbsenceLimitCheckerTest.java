@@ -22,6 +22,13 @@ class ProgramSectionAbsenceLimitCheckerTest {
         assertThat(checker.exceedsAbsenceLimit(2L)).isTrue();
     }
 
+    @Test
+    void courseEnrollmentsAreDecidedByTheCourseStanding() {
+        when(reader.readCourseEnrollmentStanding(3L)).thenReturn(standing(true));
+
+        assertThat(checker.exceedsCourseAbsenceLimit(3L)).isTrue();
+    }
+
     private AttendanceStanding standing(boolean exceeds) {
         return new AttendanceStanding(8, 4, 4, 0, null, null, null, exceeds, null, null);
     }

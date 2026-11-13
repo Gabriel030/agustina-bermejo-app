@@ -53,6 +53,7 @@ function anotado(id, status, finalScore = null) {
     enrollmentId: 100 + id,
     enrollmentKind: 'PROGRAM',
     priorCondition: 'REGULAR',
+    finalExamEligibility: { eligible: true, reason: null },
     minApprovalGrade: 6,
     gradeItemId: finalScore === null ? null : 500 + id,
     result: finalScore === null ? null : finalScore >= 6 ? 'PASSED' : 'FAILED',

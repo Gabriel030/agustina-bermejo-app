@@ -44,6 +44,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   EXAM_DATE_ON_HOLIDAY: 'La fecha del examen cae en un feriado.',
   FEATURE_CHANGE_REASON_INVALID: 'El motivo del cambio no es válido.',
   FEATURE_VALUE_INVALID: 'El valor indicado para esta función no es válido.',
+  FINAL_EXAM_BLOCKED_BY_ABSENCES: 'El alumno está libre por inasistencias: no se puede cargar su nota del final hasta justificarlas.',
   FINAL_EXAM_PREREQUISITES_NOT_APPROVED: 'Para rendir el final todas las correlativas deben estar aprobadas o tener una excepción aprobada.',
   FINAL_EXAM_REQUIRES_REGULAR_STUDENT: 'Para rendir el final tenés que tener la cursada regular.',
   GRADE_ITEM_TYPE_NOT_PUBLISHABLE: 'Este tipo de evaluación no se publica.',
