@@ -9,7 +9,10 @@ export function useActualizarPerfil() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (datos) => apiFetch('/me', { method: 'PUT', body: JSON.stringify(datos) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'], exact: true }),
+    onSuccess: (perfil) => {
+      queryClient.setQueryData(['me'], (actual) => ({ ...actual, ...perfil }));
+      queryClient.invalidateQueries({ queryKey: ['me'], exact: true, refetchType: 'none' });
+    },
   });
 }
 
@@ -74,7 +77,8 @@ export function useSubirAvatar() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me', 'avatar'], exact: true });
-      queryClient.invalidateQueries({ queryKey: ['me'], exact: true });
+      queryClient.setQueryData(['me'], (actual) => (actual ? { ...actual, hasAvatar: true } : actual));
+      queryClient.invalidateQueries({ queryKey: ['me'], exact: true, refetchType: 'none' });
     },
   });
 }

@@ -170,7 +170,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     }
 
     protected Long seedCourseEnrollmentOn(Long invoiceId, Currency currency) {
-        Long termId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) values (2021, true, timestamp '2021-03-01 00:00:00', timestamp '2021-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class);
+        Long termId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) values (2021, 'ACTIVE', timestamp '2021-03-01 00:00:00', timestamp '2021-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class);
         seededTermIds.add(termId);
         Long courseId = jdbc.queryForObject("insert into course (name, term_id, currency) values ('Curso filtrado', ?, ?) returning id", Long.class, termId, currency.name());
         seededCourseIds.add(courseId);

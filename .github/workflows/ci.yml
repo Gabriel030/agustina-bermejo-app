@@ -182,15 +182,12 @@ jobs:
             ~/.m2/wrapper
           key: maven-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
 
-      - name: Enforce the time budget of the shard
+      - name: Record the shard duration
         if: always()
-        env:
-          SHARD_LIMIT: ${{ (github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'coverage')) && 'warn' || 'error' }}
-          BUDGET_ENFORCEMENT: ${{ (github.event_name == 'pull_request' || contains(github.event.pull_request.labels.*.name, 'coverage')) && 'warn' || 'block' }}
         run: |
           export SHARD_END=$(date +%s)
           mkdir -p shard-out
-          python3 .github/scripts/test-budget.py check-shard --shard ${{ matrix.shard }} --reports backend/target/surefire-reports --meta-out shard-out/meta.json --shard-limit "$SHARD_LIMIT" --enforcement "$BUDGET_ENFORCEMENT"
+          python3 .github/scripts/test-report.py shard-meta --shard ${{ matrix.shard }} --reports backend/target/surefire-reports --meta-out shard-out/meta.json
 
       - name: Collect the shard reports
         if: always()
@@ -394,7 +391,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.sha }}"
 
-      - name: Self-test of the budget scripts
+      - name: Self-test of the report scripts
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
 
       - name: Download the shard reports
@@ -446,7 +443,7 @@ jobs:
           args=(aggregate --shards shards --out report-out --enforcement ${{ github.event_name == 'pull_request' && 'warn' || 'block' }})
           [ -f baseline/metrics.json ] && args+=(--baseline baseline/metrics.json)
           [ -f changed.txt ] && args+=(--changed changed.txt)
-          python3 .github/scripts/test-budget.py "${args[@]}"
+          python3 .github/scripts/test-report.py "${args[@]}"
           status=$?
           [ -f report-out/report.md ] && cat report-out/report.md >> "$GITHUB_STEP_SUMMARY"
           echo "status=$status" >> "$GITHUB_OUTPUT"

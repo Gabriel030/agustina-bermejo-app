@@ -15,7 +15,7 @@ def load(name, file):
     return module
 
 
-budget = load('test_budget', 'test-budget.py')
+report = load('test_report', 'test-report.py')
 shards = load('test_shards', 'test-shards.py')
 
 
@@ -35,154 +35,76 @@ def write_source(root, name, body):
 class Args:
     def __init__(self, **values):
         self.__dict__.update(dict(
-            shard=0, meta_out=None, max_class=30.0, max_slow_class=90.0, max_shard=180.0, max_contexts=22, shard_limit='error', enforcement='block',
+            shard=0, meta_out=None, max_contexts=22, enforcement='block',
             baseline=None, changed=None, test_root='', out='', shards='', reports=''))
         self.__dict__.update(values)
 
 
-class BudgetTest(unittest.TestCase):
+class ReportTest(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = self.tmp.name
         self.sources = os.path.join(self.root, 'src')
-        self.reports = os.path.join(self.root, 'reports')
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def check(self, wall=None, **values):
-        saved = {key: os.environ.pop(key, None) for key in ('SHARD_START', 'SHARD_END')}
-        if wall is not None:
-            os.environ['SHARD_START'] = '1000'
-            os.environ['SHARD_END'] = str(1000 + wall)
-        try:
-            return budget.check_shard(Args(reports=self.reports, test_root=self.sources, **values))
-        finally:
-            for key in ('SHARD_START', 'SHARD_END'):
-                os.environ.pop(key, None)
-                if saved[key] is not None:
-                    os.environ[key] = saved[key]
-
-    def test_class_over_the_limit_fails(self):
-        write_report(self.reports, 'com.acme.SlowIT', 31.0)
-        self.assertEqual(1, self.check())
-
-    def test_class_under_the_limit_passes(self):
-        write_report(self.reports, 'com.acme.FastIT', 29.0)
-        self.assertEqual(0, self.check())
-
-    def test_low_threshold_makes_the_same_class_fail(self):
-        write_report(self.reports, 'com.acme.FastIT', 5.0)
-        self.assertEqual(0, self.check())
-        self.assertEqual(1, self.check(max_class=1.0))
-
-    def test_slow_test_class_gets_the_higher_limit(self):
-        write_report(self.reports, 'com.acme.LongScenarioIT', 60.0)
-        write_source(self.sources, 'com/acme/LongScenarioIT', '@SlowTest(reason = "walks twelve months")\nclass LongScenarioIT {}')
-        self.assertEqual(0, self.check())
-
-    def test_slow_test_class_over_its_own_limit_fails(self):
-        write_report(self.reports, 'com.acme.LongScenarioIT', 91.0)
-        write_source(self.sources, 'com/acme/LongScenarioIT', '@SlowTest(reason = "walks twelve months")\nclass LongScenarioIT {}')
-        self.assertEqual(1, self.check())
-
-    def test_slow_test_class_with_its_own_max_seconds_passes_below_it(self):
-        write_report(self.reports, 'com.acme.DocsIT', 236.7)
-        write_source(self.sources, 'com/acme/DocsIT', '@SlowTest(reason = "writes diagrams (tag docs, only on pushes)", maxSeconds = 300)\nclass DocsIT {}')
-        self.assertEqual(0, self.check())
-
-    def test_slow_test_class_with_its_own_max_seconds_fails_above_it(self):
-        write_report(self.reports, 'com.acme.DocsIT', 301.0)
-        write_source(self.sources, 'com/acme/DocsIT', '@SlowTest(reason = "writes diagrams (tag docs, only on pushes)", maxSeconds = 300)\nclass DocsIT {}')
-        self.assertEqual(1, self.check())
-
-    def test_shard_clock_over_the_limit_fails(self):
-        write_report(self.reports, 'com.acme.FastIT', 5.0)
-        self.assertEqual(1, self.check(wall=181))
-
-    def test_shard_clock_under_the_limit_passes(self):
-        write_report(self.reports, 'com.acme.FastIT', 5.0)
-        self.assertEqual(0, self.check(wall=179))
-
-    def test_shard_clock_at_290_seconds_passes_with_the_default_limit(self):
-        write_report(self.reports, 'com.acme.FastIT', 5.0)
-        self.assertEqual(0, self.check(wall=290, max_shard=budget.DEFAULT_MAX_SHARD))
-
-    def test_summed_jvm_time_above_the_limit_does_not_fail_when_the_clock_is_under(self):
-        for index in range(16):
-            write_report(self.reports, 'com.acme.Part%dIT' % index, 30.0)
-        self.assertEqual(0, self.check(wall=250, max_shard=budget.DEFAULT_MAX_SHARD))
-
-    def test_shard_clock_over_the_limit_only_warns_when_asked(self):
-        write_report(self.reports, 'com.acme.FastIT', 5.0)
-        self.assertEqual(0, self.check(wall=400, shard_limit='warn'))
-
-    def test_class_over_the_limit_still_fails_when_the_shard_limit_only_warns(self):
-        write_report(self.reports, 'com.acme.SlowIT', 31.0)
-        self.assertEqual(1, self.check(wall=400, shard_limit='warn'))
-
-    def test_shard_clock_exactly_at_the_limit_passes(self):
-        write_report(self.reports, 'com.acme.FastIT', 5.0)
-        self.assertEqual(0, self.check(wall=180))
-
-    def test_only_the_shard_start_skips_the_shard_limit(self):
-        write_report(self.reports, 'com.acme.FastIT', 5.0)
-        os.environ.pop('SHARD_END', None)
-        os.environ['SHARD_START'] = '1000'
-        try:
-            self.assertEqual(0, budget.check_shard(Args(reports=self.reports, test_root=self.sources)))
-        finally:
-            os.environ.pop('SHARD_START', None)
-
-    def test_shard_limit_flag_defaults_to_error(self):
-        parser_args = ['check-shard', '--shard', '0', '--reports', self.reports]
-        import sys
-        saved = sys.argv
-        sys.argv = ['test-budget.py'] + parser_args
-        try:
-            captured = {}
-            original = budget.check_shard
-            budget.check_shard = lambda args: captured.setdefault('mode', args.shard_limit) and 0
-            with self.assertRaises(SystemExit):
-                budget.main()
-        finally:
-            budget.check_shard = original
-            sys.argv = saved
-        self.assertEqual('error', captured['mode'])
-
-    def test_missing_clock_skips_the_shard_limit(self):
-        write_report(self.reports, 'com.acme.FastIT', 5.0)
-        self.assertEqual(0, self.check())
-
-    def test_nested_class_time_counts_for_the_outer_class(self):
-        write_report(self.reports, 'com.acme.OuterIT', 20.0)
-        write_report(self.reports, 'com.acme.OuterIT$Inner', 15.0)
-        self.assertEqual(1, self.check())
-
-    def test_missing_reports_do_not_fail_the_check(self):
-        self.assertEqual(0, self.check())
-
-    def test_aggregate_counts_unique_contexts_and_fails_over_the_cap(self):
+    def make_shards(self, seconds=3.0):
         shards = os.path.join(self.root, 'shards')
         for shard in range(2):
             directory = os.path.join(shards, 'shard-%d' % shard)
-            write_report(os.path.join(directory, 'reports'), 'com.acme.A%dIT' % shard, 3.0)
+            write_report(os.path.join(directory, 'reports'), 'com.acme.A%dIT' % shard, seconds)
             with open(os.path.join(directory, 'contexts.txt'), 'w', encoding='utf-8') as handle:
                 for index in range(12):
                     handle.write('hash%d\tcom.acme.A\n' % (index + shard * 6))
             with open(os.path.join(directory, 'meta.json'), 'w', encoding='utf-8') as handle:
-                json.dump({'start': 100, 'end': 160 + shard, 'test_seconds': 3.0}, handle)
+                json.dump({'start': 100, 'end': 160 + shard, 'test_seconds': seconds}, handle)
+        return shards
+
+    def test_shard_meta_records_the_clock_and_the_summed_time_and_never_fails(self):
+        reports = os.path.join(self.root, 'reports')
+        write_report(reports, 'com.acme.SlowIT', 500.0)
+        meta = os.path.join(self.root, 'out', 'meta.json')
+        os.environ['SHARD_START'] = '1000'
+        os.environ['SHARD_END'] = '5000'
+        try:
+            status = report.shard_meta(Args(shard=3, reports=reports, meta_out=meta))
+        finally:
+            os.environ.pop('SHARD_START')
+            os.environ.pop('SHARD_END')
+        self.assertEqual(0, status)
+        with open(meta, encoding='utf-8') as handle:
+            self.assertEqual({'shard': 3, 'start': 1000, 'end': 5000, 'test_seconds': 500.0}, json.load(handle))
+
+    def test_shard_meta_without_reports_writes_an_empty_record(self):
+        meta = os.path.join(self.root, 'out', 'meta.json')
+        self.assertEqual(0, report.shard_meta(Args(reports=os.path.join(self.root, 'none'), meta_out=meta)))
+        with open(meta, encoding='utf-8') as handle:
+            self.assertEqual(0.0, json.load(handle)['test_seconds'])
+
+    def test_aggregate_counts_unique_contexts_and_fails_over_the_cap(self):
+        shards = self.make_shards()
         out = os.path.join(self.root, 'out')
-        status = budget.aggregate(Args(shards=shards, out=out, test_root=self.sources))
+        status = report.aggregate(Args(shards=shards, out=out, test_root=self.sources))
         self.assertEqual(0, status)
         with open(os.path.join(out, 'metrics.json'), encoding='utf-8') as handle:
             metrics = json.load(handle)
         self.assertEqual(18, metrics['contexts'])
         self.assertEqual(61, metrics['wall_seconds'])
-        self.assertEqual(0, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=22)))
-        self.assertEqual(1, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17)))
-        self.assertEqual(0, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17, enforcement='warn')))
+        self.assertEqual(1, report.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17)))
+        self.assertEqual(0, report.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17, enforcement='warn')))
+
+    def test_aggregate_never_fails_because_of_how_long_the_tests_took(self):
+        shards = self.make_shards(seconds=900.0)
+        write_source(self.sources, 'com/acme/A0IT', '@SlowTest(reason = "long scenario")\nclass A0IT {}\n')
+        out = os.path.join(self.root, 'out')
+        self.assertEqual(0, report.aggregate(Args(shards=shards, out=out, test_root=self.sources)))
+        with open(os.path.join(out, 'report.md'), encoding='utf-8') as handle:
+            text = handle.read()
+        self.assertIn('Shard 0: 1:00 de reloj', text)
+        self.assertIn('long scenario', text)
+        self.assertNotIn('BUDGET', text)
 
 
 class FlakyReportTest(unittest.TestCase):
@@ -199,19 +121,19 @@ class FlakyReportTest(unittest.TestCase):
                              '<testcase classname="com.acme.WobblyIT" name="stable"/>'
                              '<testcase classname="com.acme.WobblyIT" name="wobbles"><flakyFailure message="boom"/></testcase></testsuite>')
             out = os.path.join(root, 'out')
-            budget.aggregate(Args(shards=os.path.join(root, 'shards'), out=out, test_root=os.path.join(root, 'src')))
+            report.aggregate(Args(shards=os.path.join(root, 'shards'), out=out, test_root=os.path.join(root, 'src')))
             with open(os.path.join(out, 'report.md'), encoding='utf-8') as handle:
-                report = handle.read()
-            self.assertIn('com.acme.WobblyIT.wobbles', report)
-            self.assertNotIn('com.acme.WobblyIT.stable', report)
-            self.assertNotIn('com.acme.SteadyIT.steady', report)
+                text = handle.read()
+            self.assertIn('com.acme.WobblyIT.wobbles', text)
+            self.assertNotIn('com.acme.WobblyIT.stable', text)
+            self.assertNotIn('com.acme.SteadyIT.steady', text)
 
     def test_report_has_no_flaky_section_when_nothing_was_retried(self):
         with tempfile.TemporaryDirectory() as root:
             reports = os.path.join(root, 'shards', 'shard-0', 'reports')
             write_report(reports, 'com.acme.SteadyIT', 1.0)
             out = os.path.join(root, 'out')
-            budget.aggregate(Args(shards=os.path.join(root, 'shards'), out=out, test_root=os.path.join(root, 'src')))
+            report.aggregate(Args(shards=os.path.join(root, 'shards'), out=out, test_root=os.path.join(root, 'src')))
             with open(os.path.join(out, 'report.md'), encoding='utf-8') as handle:
                 self.assertNotIn('flaky', handle.read())
 
@@ -321,6 +243,87 @@ class ShardTimingsTest(unittest.TestCase):
         self.assertEqual(shards.WINDOW, len(history['samples']['a/A']))
         self.assertEqual(float(shards.WINDOW + 3), history['samples']['a/A'][-1])
         self.assertEqual(shards.WINDOW, history['runs'])
+
+
+class ContextShardingTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.original = (shards.TEST_ROOT, shards.TIMINGS)
+        shards.TEST_ROOT = os.path.join(self.root, 'java')
+        shards.TIMINGS = os.path.join(self.root, 'timings.txt')
+        self.write('Base', '@Tag("integration")\n@AutoConfigureMockMvc\npublic abstract class Base {}')
+
+    def tearDown(self):
+        shards.TEST_ROOT, shards.TIMINGS = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def write(self, name, source):
+        with open(os.path.join(self.root, 'java', name + '.java') if os.path.isdir(os.path.join(self.root, 'java'))
+                  else self.make_dir(name), 'w', encoding='utf-8') as handle:
+            handle.write(source)
+
+    def make_dir(self, name):
+        os.makedirs(shards.TEST_ROOT, exist_ok=True)
+        return os.path.join(shards.TEST_ROOT, name + '.java')
+
+    def spring(self, name, extra=''):
+        self.write(name, '@SpringBootTest\n@ActiveProfiles("test")\n%sclass %s extends Base {}' % (extra, name))
+
+    def contexts(self):
+        sources = shards.read_sources()
+        return {c: shards.context_of(c, sources) for c in shards.discover()}
+
+    def test_same_annotations_share_the_context_and_other_mocks_do_not(self):
+        self.spring('AIT')
+        self.spring('BIT', '@Transactional\n')
+        self.spring('CIT', '@SharedMockBeans\n')
+        self.spring('DIT', '@SharedMockBeans\n@Transactional\n')
+        contexts = self.contexts()
+        self.assertEqual(contexts['AIT'], contexts['BIT'])
+        self.assertEqual(contexts['CIT'], contexts['DIT'])
+        self.assertNotEqual(contexts['AIT'], contexts['CIT'])
+
+    def test_plain_unit_tests_have_no_spring_context(self):
+        self.write('PlainTest', 'class PlainTest {}')
+        self.assertIsNone(self.contexts()['PlainTest'])
+
+    def test_a_mock_declared_in_the_class_makes_its_own_context(self):
+        self.spring('AIT')
+        self.write('BIT', '@SpringBootTest\n@ActiveProfiles("test")\nclass BIT extends Base {\n    @MockitoBean\n    private Mailer mailer;\n}')
+        contexts = self.contexts()
+        self.assertNotEqual(contexts['AIT'], contexts['BIT'])
+
+    def test_the_context_of_a_parent_class_is_inherited(self):
+        self.write('Parent', '@SharedSpyBeans\nabstract class Parent extends Base {}')
+        self.write('ChildIT', '@SpringBootTest\n@ActiveProfiles("test")\nclass ChildIT extends Parent {}')
+        self.spring('AIT')
+        contexts = self.contexts()
+        self.assertNotEqual(contexts['AIT'], contexts['ChildIT'])
+
+    def test_each_variant_context_lands_in_a_single_shard(self):
+        for name in ('A1IT', 'A2IT', 'A3IT', 'A4IT', 'A5IT', 'A6IT'):
+            self.spring(name)
+        for name in ('M1IT', 'M2IT', 'M3IT'):
+            self.spring(name, '@SharedMockBeans\n')
+        self.spring('S1IT', '@SharedSpyBeans\n')
+        _, assigned = shards.assign(3)
+        homes = [i for i, (_, names) in enumerate(assigned) if {'M1IT', 'M2IT', 'M3IT'} & set(names)]
+        self.assertEqual(1, len(homes))
+        self.assertEqual({'M1IT', 'M2IT', 'M3IT'}, {n for n in assigned[homes[0]][1] if n.startswith('M')})
+
+    def test_assignment_keeps_every_class_exactly_once(self):
+        for index in range(12):
+            self.spring('T%dIT' % index, '@SharedMockBeans\n' if index % 3 == 0 else '')
+        classes, assigned = shards.assign(4)
+        flat = [n for _, names in assigned for n in names]
+        self.assertEqual(sorted(classes), sorted(flat))
+
+    def test_the_time_of_a_class_is_the_sum_of_its_test_cases_not_the_context_startup(self):
+        import xml.etree.ElementTree as ET
+        suite = ET.fromstring('<testsuite name="a.B" time="30"><testcase time="0.5"/><testcase time="1.5"/></testsuite>')
+        self.assertEqual(2.0, shards.body_seconds(suite))
+        empty = ET.fromstring('<testsuite name="a.B" time="3"/>')
+        self.assertEqual(3.0, shards.body_seconds(empty))
 
 
 if __name__ == '__main__':

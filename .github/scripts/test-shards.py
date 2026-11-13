@@ -31,6 +31,15 @@ WINDOW = 8
 MIN_HISTORY = 3
 NAME = re.compile(r'(^Test.*|.*Test|.*Tests|.*TestCase|.*IT|.*Properties)\.java$')
 ABSTRACT = re.compile(r'^\s*(public\s+)?abstract\s+class\s', re.M)
+CONTEXT_COST = 12.0
+SPRING_TEST = re.compile(r'@SpringBootTest\b')
+CLASS_DECL = re.compile(r'^(?:public\s+)?(?:abstract\s+)?(?:final\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?', re.M)
+CONTEXT_ANNOTATION = re.compile(
+    r'^@(SpringBootTest|ActiveProfiles|TestPropertySource|Import|DirtiesContext|ContextConfiguration|'
+    r'AutoConfigure\w+|SharedMockBeans|SharedSpyBeans|SharedPropertyOverrides|TestConfiguration|MockitoBean|MockitoSpyBean)\b'
+    r'(\((?:[^()]|\([^()]*\))*\))?', re.M | re.S)
+FIELD_OVERRIDE = re.compile(
+    r'@(MockitoBean|MockitoSpyBean)(?:\([^)]*\))?\s+(?:private\s+|protected\s+|public\s+)?(?:final\s+)?([\w<>.,? ]+?)\s+\w+\s*;')
 
 
 def discover():
@@ -46,6 +55,45 @@ def discover():
             rel = os.path.relpath(path, TEST_ROOT)[:-len('.java')]
             found.append(rel.replace(os.sep, '/'))
     return sorted(found)
+
+
+def read_sources():
+    sources = {}
+    for base, _, files in os.walk(TEST_ROOT):
+        for name in files:
+            if name.endswith('.java'):
+                with open(os.path.join(base, name), encoding='utf-8') as handle:
+                    sources[name[:-len('.java')]] = handle.read()
+    return sources
+
+
+def own_context_parts(source):
+    head = source[:CLASS_DECL.search(source).start()] if CLASS_DECL.search(source) else source
+    parts = [re.sub(r'\s+', ' ', m.group(0)) for m in CONTEXT_ANNOTATION.finditer(head)]
+    parts += ['%s:%s' % (m.group(1), re.sub(r'\s+', ' ', m.group(2))) for m in FIELD_OVERRIDE.finditer(source)]
+    return parts
+
+
+def context_signature(simple_name, sources, seen=()):
+    source = sources.get(simple_name)
+    if source is None or simple_name in seen:
+        return None, False
+    parts = own_context_parts(source)
+    spring = bool(SPRING_TEST.search(source))
+    declaration = CLASS_DECL.search(source)
+    if declaration and declaration.group(2):
+        parent_parts, parent_spring = context_signature(declaration.group(2), sources, seen + (simple_name,))
+        if parent_parts is not None:
+            parts = parent_parts + parts
+        spring = spring or parent_spring
+    return parts, spring
+
+
+def context_of(name, sources):
+    parts, spring = context_signature(name.rsplit('/', 1)[-1], sources)
+    if not spring:
+        return None
+    return '|'.join(sorted(set(parts or [])))
 
 
 def parse_timings(path):
@@ -69,34 +117,62 @@ def default_weight(timings):
     return max(DEFAULT_WEIGHT, sum(timings.values()) / len(timings))
 
 
-def assign(count):
+def assign(count, contexts=None):
     classes = discover()
     timings = load_timings()
     fallback = default_weight(timings)
-    weighted = [(timings.get(c, fallback), c) for c in classes]
-    known = sorted((w for w in weighted if w[1] in timings), key=lambda w: (-w[0], w[1]))
-    unknown = sorted((w for w in weighted if w[1] not in timings), key=lambda w: w[1])
+    if contexts is None:
+        sources = read_sources()
+        contexts = {c: context_of(c, sources) for c in classes}
+    weight = {c: timings.get(c, fallback) for c in classes}
+    census = {}
+    for c in classes:
+        if contexts.get(c) is not None:
+            census[contexts[c]] = census.get(contexts[c], 0) + 1
+    common = max(census, key=lambda k: (census[k], k)) if census else None
+    groups = {}
+    singles = []
+    for c in classes:
+        context = contexts.get(c)
+        if context is None or context == common:
+            singles.append(c)
+        else:
+            groups.setdefault(context, []).append(c)
+    units = [(sum(weight[c] for c in members) + CONTEXT_COST, sorted(members)) for members in groups.values()]
+    units.sort(key=lambda u: (-u[0], u[1][0]))
+    known = sorted((c for c in singles if c in timings), key=lambda c: (-weight[c], c))
+    unknown = sorted(c for c in singles if c not in timings)
     shards = [[0.0, []] for _ in range(count)]
-    for weight, name in known + unknown:
+    for unit_weight, members in units:
         lightest = min(range(count), key=lambda i: (shards[i][0], i))
-        shards[lightest][0] += weight
-        shards[lightest][1].append(name)
+        shards[lightest][0] += unit_weight
+        shards[lightest][1].extend(members)
+    for c in known + unknown:
+        lightest = min(range(count), key=lambda i: (shards[i][0], i))
+        shards[lightest][0] += weight[c]
+        shards[lightest][1].append(c)
     return classes, shards
 
 
+def context_starts(names, contexts):
+    return len({contexts[n] for n in names if contexts.get(n) is not None})
+
+
 def select(index, count):
-    _, shards = assign(count)
-    print(','.join(sorted(shards[index][1])))
+    print(','.join(shard_classes(index, count)))
 
 
 def verify(count):
-    classes, shards = assign(count)
+    sources = read_sources()
+    classes = discover()
+    contexts = {c: context_of(c, sources) for c in classes}
+    classes, shards = assign(count, contexts)
     assigned = [name for _, names in shards for name in names]
     duplicated = sorted({n for n in assigned if assigned.count(n) > 1})
     missing = sorted(set(classes) - set(assigned))
     extra = sorted(set(assigned) - set(classes))
     for i, (weight, names) in enumerate(shards):
-        print('shard %d: %d classes, ~%ds' % (i, len(names), round(weight)))
+        print('shard %d: %d classes, ~%ds, %d spring contexts' % (i, len(names), round(weight), context_starts(names, contexts)))
     unlisted = sorted(set(classes) - set(load_timings()))
     print('classes: %d, without timing: %d' % (len(classes), len(unlisted)))
     if duplicated or missing or extra:
@@ -122,6 +198,11 @@ def update(logs):
                 out.write('%.2f %s\n' % (totals[name], name))
 
 
+def body_seconds(suite):
+    cases = [float(case.get('time', '0') or 0) for case in suite.iter('testcase')]
+    return sum(cases) if cases else float(suite.get('time', '0') or 0)
+
+
 def measure_xml(directories):
     import glob
     import xml.etree.ElementTree as ET
@@ -133,7 +214,7 @@ def measure_xml(directories):
             except ET.ParseError:
                 continue
             top = suite.get('name', '').split('$')[0].replace('.', '/')
-            totals[top] = totals.get(top, 0.0) + float(suite.get('time', '0') or 0)
+            totals[top] = totals.get(top, 0.0) + body_seconds(suite)
     return totals
 
 
@@ -225,7 +306,7 @@ def accumulate(args):
 
 
 def shard_classes(index, count):
-    _, shards = assign(count)
+    classes, shards = assign(count)
     return sorted(shards[index][1])
 
 

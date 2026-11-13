@@ -15,6 +15,20 @@ export function useTeacherGradeGrid(sectionId, kind, { staff = false } = {}) {
   });
 }
 
+export function applySavedCell(grid, enrollmentId, item, comments) {
+  if (!grid?.students) return grid;
+  return {
+    ...grid,
+    students: grid.students.map((student) => {
+      if (student.enrollmentId !== enrollmentId) return student;
+      const sameCell = (grade) => grade.type === item.type && grade.sequenceNumber === item.sequenceNumber;
+      const existing = student.grades.find(sameCell);
+      const cell = { ...existing, gradeItemId: item.id, type: item.type, sequenceNumber: item.sequenceNumber, score: item.score, date: item.date, comments: comments ?? null, published: existing?.published ?? false, corrected: existing?.corrected ?? false };
+      return { ...student, grades: existing ? student.grades.map((grade) => (sameCell(grade) ? cell : grade)) : [...student.grades, cell] };
+    }),
+  };
+}
+
 export function useSaveGradeCells(sectionId, kind) {
   const queryClient = useQueryClient();
 
@@ -25,7 +39,10 @@ export function useSaveGradeCells(sectionId, kind) {
           method: 'POST',
           body: JSON.stringify(job.payload),
         }).then(
-          () => onCellResult(job.key, 'saved'),
+          (item) => {
+            queryClient.setQueryData(gridKey(sectionId, kind), (grid) => applySavedCell(grid, job.enrollmentId, item, job.payload.comments));
+            onCellResult(job.key, 'saved');
+          },
           (error) => {
             onCellResult(job.key, 'error');
             throw error;
@@ -33,8 +50,9 @@ export function useSaveGradeCells(sectionId, kind) {
         ),
       ),
     );
-    await queryClient.invalidateQueries({ queryKey: gridKey(sectionId, kind) });
     const failed = results.filter((result) => result.status === 'rejected').length;
+    if (failed) await queryClient.invalidateQueries({ queryKey: gridKey(sectionId, kind) });
+    else queryClient.invalidateQueries({ queryKey: gridKey(sectionId, kind), refetchType: 'none' });
     return { saved: results.length - failed, failed, failedKeys: jobs.filter((_, index) => results[index].status === 'rejected').map((job) => job.key) };
   }
 

@@ -18,7 +18,15 @@ export function useMarcarNotificacionLeida() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id) => apiFetch(`/me/notifications/${id}/read`, { method: 'POST' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me', 'notifications'] }),
-    onError: () => toast.error('No pudimos marcar la notificación como leída. Probá de nuevo.'),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData(['me', 'notifications'], (lista) =>
+        lista?.map((notificacion) => (notificacion.id === id ? { ...notificacion, read: true } : notificacion)),
+      );
+      queryClient.invalidateQueries({ queryKey: ['me', 'notifications'], refetchType: 'none' });
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['me', 'notifications'] });
+      toast.error('No pudimos marcar la notificación como leída. Probá de nuevo.');
+    },
   });
 }
