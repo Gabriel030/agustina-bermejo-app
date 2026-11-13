@@ -6,12 +6,16 @@ import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.specialist.PasswordResetCodeChecker;
 import com.red_escuela.backend.identity.specialist.SecureTokenGenerator;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 
 @UseCase
@@ -21,16 +25,19 @@ public class VerifyResetCodeService implements VerifyResetCodeUseCase {
     private final SecureTokenGenerator secureTokenGenerator;
     private final int passwordResetCodeMaxAttempts;
     private final long passwordResetExchangeTokenExpirationMinutes;
+    private final PasswordResetCodeChecker passwordResetCodeChecker;
 
     public VerifyResetCodeService(PersonRepository personRepository, PasswordResetTokenRepository passwordResetTokenRepository,
                                    SecureTokenGenerator secureTokenGenerator,
                                    @Value("${auth.password-reset-code-max-attempts}") int passwordResetCodeMaxAttempts,
-                                   @Value("${auth.password-reset-exchange-token-expiration-minutes}") long passwordResetExchangeTokenExpirationMinutes) {
+                                   @Value("${auth.password-reset-exchange-token-expiration-minutes}") long passwordResetExchangeTokenExpirationMinutes,
+                                   PasswordResetCodeChecker passwordResetCodeChecker) {
         this.personRepository = personRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.secureTokenGenerator = secureTokenGenerator;
         this.passwordResetCodeMaxAttempts = passwordResetCodeMaxAttempts;
         this.passwordResetExchangeTokenExpirationMinutes = passwordResetExchangeTokenExpirationMinutes;
+        this.passwordResetCodeChecker = passwordResetCodeChecker;
     }
 
     @Override
@@ -39,14 +46,20 @@ public class VerifyResetCodeService implements VerifyResetCodeUseCase {
         Person person = personRepository.findByEmail(EmailAddress.of(command.email()))
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
+        passwordResetCodeChecker.requireNotLocked(person);
+
         PasswordResetToken resetToken = passwordResetTokenRepository
                 .findFirstByPersonAndUsedFalseAndExpiresAtAfterOrderByCreatedAtDesc(person, ApplicationTime.now())
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
-        if (!resetToken.getTokenHash().equals(TokenHashUtil.sha256Hex(command.code()))) {
+        byte[] expectedHash = resetToken.getTokenHash().getBytes(StandardCharsets.UTF_8);
+        byte[] providedHash = TokenHashUtil.sha256Hex(command.code()).getBytes(StandardCharsets.UTF_8);
+        if (!MessageDigest.isEqual(expectedHash, providedHash)) {
             registerFailedResetAttempt(resetToken);
+            passwordResetCodeChecker.registerFailedAttempt(person, resetToken);
             throw new InvalidPasswordResetTokenException();
         }
+        passwordResetCodeChecker.clearFailedAttempts(person);
 
         String exchangeToken = secureTokenGenerator.generate();
         resetToken.setExchangeTokenHash(TokenHashUtil.sha256Hex(exchangeToken));

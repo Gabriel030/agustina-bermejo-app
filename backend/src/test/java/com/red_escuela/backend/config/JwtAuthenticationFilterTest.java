@@ -4,6 +4,10 @@ import com.red_escuela.backend.identity.api.AccessTokenVerifier;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
+import com.red_escuela.backend.identity.repository.AccountAccessState;
+import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache;
+import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
@@ -14,15 +18,26 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class JwtAuthenticationFilterTest {
     private static final String SECRET = "unit-test-secret-does-not-need-to-be-32-bytes";
 
     private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
-    private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new AccessTokenVerifier(jwtService));
+    private final PersonRepository personRepository = activePersonRepository();
+    private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new AccessTokenVerifier(jwtService, new AccountAccessStateCache(personRepository, 30)));
+
+    private static PersonRepository activePersonRepository() {
+        PersonRepository repository = mock(PersonRepository.class);
+        when(repository.findAccessStateById(anyLong())).thenReturn(Optional.of(new AccountAccessState(StatusType.ACTIVE, 0)));
+        return repository;
+    }
 
     @AfterEach
     void clearContext() {

@@ -3,6 +3,10 @@ package com.red_escuela.backend.identity.api;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
+import com.red_escuela.backend.identity.repository.AccountAccessState;
+import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache;
+import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -10,12 +14,16 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AccessTokenVerifierTest {
     private static final String SECRET = "unit-test-secret-does-not-need-to-be-32-bytes";
 
     private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
-    private final AccessTokenVerifier verifier = new AccessTokenVerifier(jwtService);
+    private final PersonRepository personRepository = mock(PersonRepository.class);
+    private final AccountAccessStateCache cache = new AccountAccessStateCache(personRepository, 30);
+    private final AccessTokenVerifier verifier = new AccessTokenVerifier(jwtService, cache);
 
     @Test
     void validTokenYieldsPrincipalWithPersonIdAndRoles() {
@@ -26,10 +34,31 @@ class AccessTokenVerifierTest {
         Set<Role> roles = new HashSet<>();
         roles.add(role);
         person.setRoles(roles);
+        when(personRepository.findAccessStateById(42L)).thenReturn(Optional.of(new AccountAccessState(StatusType.ACTIVE, 0)));
 
         Optional<AuthenticatedPrincipal> principal = verifier.verify(jwtService.generateAccessToken(person));
 
         assertThat(principal).contains(new AuthenticatedPrincipal("42", java.util.List.of("ADMIN")));
+    }
+
+    @Test
+    void tokenWithStaleVersionYieldsEmpty() {
+        Person person = new Person();
+        person.setId(5L);
+        person.setRoles(new HashSet<>());
+        when(personRepository.findAccessStateById(5L)).thenReturn(Optional.of(new AccountAccessState(StatusType.ACTIVE, 1)));
+
+        assertThat(verifier.verify(jwtService.generateAccessToken(person))).isEmpty();
+    }
+
+    @Test
+    void tokenOfInactiveAccountYieldsEmpty() {
+        Person person = new Person();
+        person.setId(6L);
+        person.setRoles(new HashSet<>());
+        when(personRepository.findAccessStateById(6L)).thenReturn(Optional.of(new AccountAccessState(StatusType.INACTIVE, 0)));
+
+        assertThat(verifier.verify(jwtService.generateAccessToken(person))).isEmpty();
     }
 
     @Test

@@ -18,6 +18,9 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
 
     Optional<Person> findByUsername(String username);
 
+    @Query("select new com.red_escuela.backend.identity.repository.AccountAccessState(p.status, p.tokenVersion) from Person p where p.id = :personId")
+    Optional<AccountAccessState> findAccessStateById(@Param("personId") Long personId);
+
     boolean existsByRoles_Name(String roleName);
 
     @Query("select distinct p from Person p left join fetch p.roles where p.id in :personIds")

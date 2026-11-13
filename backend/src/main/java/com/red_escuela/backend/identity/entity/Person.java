@@ -92,6 +92,15 @@ public class Person {
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
 
+    @Column(name = "token_version", nullable = false)
+    private Integer tokenVersion = 0;
+
+    @Column(name = "reset_failed_attempts", nullable = false)
+    private Integer resetFailedAttempts = 0;
+
+    @Column(name = "reset_locked_until")
+    private LocalDateTime resetLockedUntil;
+
     @Column(name = "phone_number")
     private String phoneNumber;
 
