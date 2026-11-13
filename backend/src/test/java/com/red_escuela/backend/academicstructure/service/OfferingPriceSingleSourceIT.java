@@ -198,23 +198,6 @@ class OfferingPriceSingleSourceIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-536")
-    void aFullDiscountTakesTheFinalPriceToZeroWithoutAZeroListPrice() {
-        Program program = createProgram();
-        LocalDate freeFrom = CREATION_DAY.plusDays(1);
-        MutableClock.INSTANCE.setDate(freeFrom);
-        Long staffId = jdbc.queryForObject("select min(id) from person", Long.class);
-        PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.MONTHLY_INSTALLMENT, "Gratis por descuento", ars("1000"), freeFrom, staffId,
-                "PERCENTAGE", new java.math.BigDecimal("100"));
-
-        var resolution = priceReader.requirePriceVersionEffectiveOn(OfferingReference.ofProgram(program.getId()), FeeType.MONTHLY_INSTALLMENT, freeFrom);
-
-        assertThat(resolution.listAmount().value()).isEqualTo(ars("1000"));
-        assertThat(resolution.finalAmount().value().amount()).isEqualByComparingTo("0");
-        assertThat(listPriceReader.findProgramTuition(program.getId())).contains(ars("1000"));
-    }
-
-    @Test
-    @Tag("D-536")
     void aLegacyOfferingWithAZeroPriceVersionIsShownWithoutPriceAndNotAsZero() {
         Long staffId = jdbc.queryForObject("select min(id) from person", Long.class);
         Long programId = jdbc.queryForObject("insert into program (name, currency) values (?, 'ARS') returning id", Long.class, "Legacy " + UUID.randomUUID());

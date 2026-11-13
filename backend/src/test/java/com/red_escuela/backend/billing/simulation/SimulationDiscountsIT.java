@@ -62,6 +62,7 @@ class SimulationDiscountsIT extends AbstractSimulationTest {
         assertThat(creditNotes()).isEqualTo(creditNotesBefore);
     }
 
+    @org.junit.jupiter.api.Tag("D-536")
     @Test
     @Tag("D-150")
     @Tag("D-193")

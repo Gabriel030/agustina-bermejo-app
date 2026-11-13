@@ -5,9 +5,19 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.Percentage;
 
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import java.util.Objects;
 
-public record PriceVersionDraft(Currency priceCurrency, Money baseAmount, MarketingDiscountType discountType, Percentage discountPercentage, Money discountAmount) {
+public record PriceVersionDraft(Currency priceCurrency, Money baseAmount, MarketingDiscountType discountType, Percentage discountPercentage, Money discountAmount,
+                                FeeType feeType) {
+
+    public PriceVersionDraft(Currency priceCurrency, Money baseAmount, MarketingDiscountType discountType, Percentage discountPercentage, Money discountAmount) {
+        this(priceCurrency, baseAmount, discountType, discountPercentage, discountAmount, null);
+    }
+
+    public PriceVersionDraft forFeeType(FeeType newFeeType) {
+        return new PriceVersionDraft(priceCurrency, baseAmount, discountType, discountPercentage, discountAmount, newFeeType);
+    }
 
     public PriceVersionDraft {
         Objects.requireNonNull(priceCurrency, "priceCurrency");

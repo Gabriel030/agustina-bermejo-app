@@ -43,6 +43,8 @@ function estadoInicial() {
     level: '',
     teachingMode: '',
     totalCreditsRequired: '',
+    price: '',
+    enrollmentFee: '',
     totalHoursRequired: '',
     graduationProfile: '',
     admissionRequirements: '',
@@ -145,7 +147,7 @@ function Paso2Contenido({ state, dispatch }) {
   const navigate = useNavigate();
 
   async function handleCrear() {
-    const found = validateProgramFields(state, { requireCredits: true });
+    const found = validateProgramFields(state, { requireCredits: true, requirePrices: true });
     setErrors(found);
     setSubmitError(null);
     if (countErrors(found) > 0) return;
@@ -156,6 +158,8 @@ function Paso2Contenido({ state, dispatch }) {
         ...(state.level && { level: state.level }),
         ...(state.teachingMode && { teachingMode: state.teachingMode }),
         totalCreditsRequired: parseInt(state.totalCreditsRequired),
+        price: { amount: String(parseFloat(state.price)), currency: 'ARS' },
+        enrollmentFeeAmount: { amount: String(parseFloat(state.enrollmentFee)), currency: 'ARS' },
         ...(state.totalHoursRequired && { totalHoursRequired: parseInt(state.totalHoursRequired) }),
         ...(state.graduationProfile.trim() && { graduationProfile: state.graduationProfile.trim() }),
         ...(state.admissionRequirements.trim() && { admissionRequirements: state.admissionRequirements.trim() }),
@@ -179,6 +183,28 @@ function Paso2Contenido({ state, dispatch }) {
             value={state.totalCreditsRequired}
             onChange={(e) => dispatch({ type: 'SET', campo: 'totalCreditsRequired', valor: e.target.value })}
             placeholder="Ej. 180"
+          />
+        </FormField>
+        <FormField id="program-price" label="Cuota mensual" required error={errors.price}>
+          <Input
+            {...fieldProps('program-price', errors.price, true)}
+            type="number"
+            min={0}
+            step={0.01}
+            value={state.price}
+            onChange={(e) => dispatch({ type: 'SET', campo: 'price', valor: e.target.value })}
+            placeholder="Ej. 48000"
+          />
+        </FormField>
+        <FormField id="program-enrollment-fee" label="Matrícula" required error={errors.enrollmentFee}>
+          <Input
+            {...fieldProps('program-enrollment-fee', errors.enrollmentFee, true)}
+            type="number"
+            min={0}
+            step={0.01}
+            value={state.enrollmentFee}
+            onChange={(e) => dispatch({ type: 'SET', campo: 'enrollmentFee', valor: e.target.value })}
+            placeholder="Ej. 95000"
           />
         </FormField>
         <FormField id="program-hours" label="Horas requeridas" error={errors.totalHoursRequired}>
@@ -242,6 +268,8 @@ const FIELD_KEYS = [
   'level',
   'teachingMode',
   'totalCreditsRequired',
+  'price',
+  'enrollmentFee',
   'totalHoursRequired',
   'graduationProfile',
   'admissionRequirements',

@@ -36,6 +36,9 @@ public interface PriceRepository extends JpaRepository<Price, Long> {
     @Query("select p.currency from Price p where p.id = :id")
     Optional<Currency> findCurrencyById(@Param("id") Long id);
 
+    @Query("select p.feeType from Price p where p.id = :id")
+    Optional<FeeType> findFeeTypeById(@Param("id") Long id);
+
     @Query("select distinct p.id from Price p join p.versions v where v.status = com.red_escuela.backend.billing.pricing.domain.PriceVersionStatus.SCHEDULED and v.effectiveFrom <= :today")
     List<Long> findIdsWithScheduledVersionsStartingOnOrBefore(@Param("today") LocalDate today);
 }

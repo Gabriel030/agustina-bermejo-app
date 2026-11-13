@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("D-150")
 class ZeroTotalInvoiceTest {
 
+    @org.junit.jupiter.api.Tag("D-536")
     @Test
     void aFullScholarshipInvoiceIsPaidOnIssuingWithoutAllocations() {
         Invoice invoice = withId(zeroTotalDraft(), 5L);
