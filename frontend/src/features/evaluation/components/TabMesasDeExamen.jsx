@@ -14,6 +14,7 @@ import {
   useDarmeDeBajaDeMesa,
 } from '@/features/evaluation/hooks/useStudentExams';
 import { TIPOLOGIA_LABEL } from '@/lib/notas';
+import { INELIGIBILITY_REASON_TEXT } from '../lib/finalExamEligibility';
 
 const SUB_TABS = [
   { id: 'para-rendir', label: 'Para rendir' },
@@ -34,11 +35,12 @@ const REGISTRATION_ERROR_MESSAGES = {
   STUDENT_FREE_BY_ABSENCES: 'Superaste el máximo de inasistencias: justificalas para poder inscribirte al final.',
 };
 
-export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, misInscripciones }) {
+export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, misInscripciones, eligibility }) {
   const { data: mesas, isLoading, isError, error, refetch } = useMesasDisponibles(subjectId);
   const inscribirme = useInscribirmeAMesa();
   const darmeDeBaja = useDarmeDeBajaDeMesa();
   const [registrationError, setRegistrationError] = useState(null);
+  const ineligibilityText = eligibility?.eligible === false ? INELIGIBILITY_REASON_TEXT[eligibility.reason] : null;
 
   if (isLoading) {
     return (
@@ -114,9 +116,10 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
               </div>
             ) : (
               <div className="flex flex-col items-end gap-1">
-                <Button variant="gradient" onClick={() => inscribirseA(mesa.id)} disabled={inscribirme.isPending || bloqueadaPorOtra}>
+                <Button variant="gradient" onClick={() => inscribirseA(mesa.id)} disabled={inscribirme.isPending || bloqueadaPorOtra || ineligibilityText != null}>
                   {bloqueadaPorOtra ? 'Ya estás inscripto a otro llamado' : inscribirme.isPending ? 'Inscribiendo…' : 'Inscribirme a este llamado'}
                 </Button>
+                {ineligibilityText && <span className="max-w-xs text-right text-size-11 font-medium text-danger">{ineligibilityText}</span>}
                 {registrationError?.examBoardId === mesa.id && (
                   <span className="text-size-11 font-medium text-danger">{registrationError.message}</span>
                 )}
@@ -218,13 +221,18 @@ export function TabMesasDeExamen({ carreraId }) {
                         {inscripcion.curricularYear}° año{inscripcion.curricularTerm && ` · ${TIPOLOGIA_LABEL[inscripcion.curricularTerm]}`}
                       </span>
                     )}
-                    <StatusPill tone="warning">Regular · falta final</StatusPill>
+                    {inscripcion.finalExamEligibility?.reason === 'FREE_BY_ABSENCES' ? (
+                      <StatusPill tone="danger">Libre por inasistencias</StatusPill>
+                    ) : (
+                      <StatusPill tone="warning">Cursada regular · falta final</StatusPill>
+                    )}
                   </Button>
                   {abierto && (
                     <LlamadosDisponibles
                       subjectId={inscripcion.subjectId}
                       programSectionEnrollmentId={inscripcion.id}
                       misInscripciones={misInscripcionesDeEstaMateria}
+                      eligibility={inscripcion.finalExamEligibility}
                     />
                   )}
                 </div>

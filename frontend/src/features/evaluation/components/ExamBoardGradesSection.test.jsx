@@ -217,10 +217,18 @@ describe('ExamBoardGradesSection', () => {
   });
 
   it('shows a student who is not regular as blocked, with a single Sin cursada regular pill', () => {
-    renderSection({ rows: [registration(1, { priorCondition: 'FREE' })] });
+    renderSection({ rows: [registration(1, { finalExamEligibility: { eligible: false, reason: 'COURSEWORK_NOT_REGULAR' } })] });
 
     expect(screen.getByText('Sin cursada regular')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /Requiere cursada regular/ })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nota del final de Alumno 1')).not.toBeInTheDocument();
+  });
+
+  it('shows a student who is free by absences as blocked, with Libre por inasistencias and its reason', () => {
+    renderSection({ rows: [registration(1, { finalExamEligibility: { eligible: false, reason: 'FREE_BY_ABSENCES' } })] });
+
+    expect(screen.getByText('Libre por inasistencias')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /superó el máximo/ })).toBeInTheDocument();
     expect(screen.queryByLabelText('Nota del final de Alumno 1')).not.toBeInTheDocument();
   });
 

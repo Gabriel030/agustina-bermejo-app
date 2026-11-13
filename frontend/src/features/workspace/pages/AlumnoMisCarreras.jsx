@@ -121,8 +121,8 @@ export function AlumnoMisCarreras() {
             <div className="font-heading text-2xl font-bold tracking-tight text-ink">Mis carreras</div>
             {graduated && <StatusPill tone="success">Carrera finalizada</StatusPill>}
             {progreso && !graduated && (
-              <StatusPill tone={progreso.esRegular ? 'success' : 'neutral'}>
-                {progreso.esRegular ? 'Inscripción activa' : 'Sin inscripción activa'}
+              <StatusPill tone={progreso.hasActiveCoursework ? 'success' : 'neutral'}>
+                {progreso.hasActiveCoursework ? 'Con cursada activa' : 'Sin cursada activa'}
               </StatusPill>
             )}
           </div>

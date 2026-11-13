@@ -40,7 +40,12 @@ function RiskPill() {
 }
 
 function toRosterRow(entry) {
-  return { ...entry, attendancePoints: attendancePercentToPoints(entry.attendancePercent) };
+  return {
+    ...entry,
+    exceedsAbsenceLimit: entry.absenceStanding.exceedsAbsenceLimit,
+    countableAbsences: entry.absenceStanding.countableAbsences,
+    attendancePoints: attendancePercentToPoints(entry.attendancePercent),
+  };
 }
 
 function buildColumns() {
@@ -50,18 +55,18 @@ function buildColumns() {
       header: 'Alumno',
       accessorKey: 'studentName',
       sortingFn: (a, b) => a.original.studentName.localeCompare(b.original.studentName, 'es'),
-      meta: { stickyStart: true, filterColumnId: 'atRisk', headerClassName: 'min-w-[148px] max-w-[148px]' },
+      meta: { stickyStart: true, filterColumnId: 'exceedsAbsenceLimit', headerClassName: 'min-w-[148px] max-w-[148px]' },
       cell: ({ row }) => (
         <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
           <span className="text-size-13 font-semibold leading-tight text-ink">{row.original.studentName}</span>
-          {row.original.atRisk && <RiskPill />}
+          {row.original.exceedsAbsenceLimit && <RiskPill />}
         </div>
       ),
     },
     {
-      id: 'atRisk',
+      id: 'exceedsAbsenceLimit',
       header: 'Libre por inasistencias',
-      accessorKey: 'atRisk',
+      accessorKey: 'exceedsAbsenceLimit',
       enableSorting: false,
       enableColumnFilter: true,
       meta: {
@@ -79,11 +84,11 @@ function buildColumns() {
       cell: ({ row }) => <span className="text-ink-faint">{row.original.dni}</span>,
     },
     {
-      id: 'absenceCount',
+      id: 'countableAbsences',
       header: 'Inasistencias',
-      accessorKey: 'absenceCount',
+      accessorKey: 'countableAbsences',
       meta: { align: 'right' },
-      cell: ({ row }) => <span className="tabular-nums">{row.original.absenceCount}</span>,
+      cell: ({ row }) => <span className="tabular-nums">{row.original.countableAbsences}</span>,
     },
     {
       id: 'attendancePercent',
@@ -94,7 +99,7 @@ function buildColumns() {
           <ProgressBar
             className="w-[70px] shrink-0"
             value={row.original.attendancePoints}
-            tone={row.original.atRisk ? 'danger' : 'accent'}
+            tone={row.original.exceedsAbsenceLimit ? 'danger' : 'accent'}
             showValue={false}
           />
           <span className="min-w-[46px] tabular-nums">{formatPercent(row.original.attendancePoints)}</span>
@@ -130,7 +135,7 @@ export function StaffSectionRoster() {
   const visibleEntries = useMemo(() => rosterRows.filter((entry) => matchesSearch(entry, search)), [rosterRows, search]);
 
   const total = entries?.length ?? 0;
-  const atRiskCount = (entries ?? []).filter((entry) => entry.atRisk).length;
+  const atRiskCount = rosterRows.filter((entry) => entry.exceedsAbsenceLimit).length;
   const withPercent = rosterRows.filter((entry) => entry.attendancePoints != null);
   const averagePercent = withPercent.length
     ? withPercent.reduce((sum, entry) => sum + entry.attendancePoints, 0) / withPercent.length
@@ -224,7 +229,7 @@ export function StaffSectionRoster() {
               getRowId={(entry) => String(entry.enrollmentId)}
               initialSorting={[{ id: 'studentName', desc: false }]}
               minWidth={520}
-              initialColumnVisibility={{ atRisk: false }}
+              initialColumnVisibility={{ exceedsAbsenceLimit: false }}
               onRowClick={(entry) => navigate(`${basePath}/alumnos/${entry.studentId}`)}
               emptyState={<EmptyState icon="🔎" title="Sin resultados" description="Probá con otro filtro o búsqueda." />}
             />
