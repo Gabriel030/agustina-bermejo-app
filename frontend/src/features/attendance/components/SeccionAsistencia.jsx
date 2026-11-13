@@ -31,7 +31,7 @@ const TITULO_DIA = {
   LATE: 'Llegada tarde',
   ABSENT: 'Justificar',
   JUSTIFICATION_PENDING: 'Justificación pendiente de aprobación',
-  JUSTIFIED: 'Ausencia justificada',
+  JUSTIFIED: 'Inasistencia justificada',
 };
 
 const ESTADO_JUSTIFICACION = {

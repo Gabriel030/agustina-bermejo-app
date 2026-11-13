@@ -70,7 +70,7 @@ export function JustificarAusenciaDialog({ type, sectionId, absence, onClose }) 
           accept=".pdf,.jpg,.jpeg"
           inputLabel="Comprobante de justificación"
         />
-        <p className="text-size-13 text-ink-faint">Queda pendiente de revisión del preceptor. Mientras tanto la falta sigue contando.</p>
+        <p className="text-size-13 text-ink-faint">Queda pendiente de revisión del preceptor. Mientras tanto la inasistencia sigue contando.</p>
         {submitError && (
           <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">
             {submitError}

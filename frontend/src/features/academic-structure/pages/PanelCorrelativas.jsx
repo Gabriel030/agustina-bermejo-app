@@ -19,12 +19,12 @@ import { NativeSelect } from '@/components/ui/native-select';
 
 const REQUIREMENT_TYPE_OPTIONS = [
   { value: 'APPROVED', label: 'Aprobada' },
-  { value: 'PASSED_COURSEWORK', label: 'Regularizada' },
+  { value: 'PASSED_COURSEWORK', label: 'Cursada regular o aprobada' },
 ];
 
 const REQUIREMENT_TYPE_LABELS = {
   APPROVED: 'Aprobada',
-  PASSED_COURSEWORK: 'Regularizada',
+  PASSED_COURSEWORK: 'Cursada regular o aprobada',
 };
 
 const PREREQUISITE_ERROR_MESSAGES = {

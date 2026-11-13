@@ -100,7 +100,7 @@ describe('LegajoAlumno academic and evaluation tabs', () => {
 
     expect(await screen.findByText('62')).toBeInTheDocument();
     expect(screen.getByText('7,84')).toBeInTheDocument();
-    expect(screen.getByText('Alumno regular')).toBeInTheDocument();
+    expect(screen.getByText('Con cursada activa')).toBeInTheDocument();
     expect(screen.getByText('Todavía no')).toBeInTheDocument();
     const subjectRow = (await screen.findByText('Historia del Arte I')).closest('tr');
     expect(within(subjectRow).getByText('Aprobada')).toBeInTheDocument();

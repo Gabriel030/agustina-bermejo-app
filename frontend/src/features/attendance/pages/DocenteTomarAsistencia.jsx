@@ -705,7 +705,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
             <p className="text-size-13 font-bold text-danger">{rejectionText(celdaSeleccionada.rejection)}</p>
           )}
           {celdaSeleccionada?.status === 'ABSENT' && !celdaSeleccionada.justifiable && (
-            <p className="text-size-13 text-ink-faint">Venció el plazo para justificar esta falta: lo resuelve el preceptor.</p>
+            <p className="text-size-13 text-ink-faint">Venció el plazo para justificar esta inasistencia: lo resuelve el preceptor.</p>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setCeldaSeleccionada(null)}>Cerrar</Button>

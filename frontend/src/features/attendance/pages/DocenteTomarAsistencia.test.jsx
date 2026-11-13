@@ -197,7 +197,7 @@ describe('TabAsistencia', () => {
     renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
 
     await screen.findByText('Ana Gómez');
-    expect(within(rowOf('Ana Gómez')).getByText('0 de 3 faltas permitidas')).toBeInTheDocument();
+    expect(within(rowOf('Ana Gómez')).getByText('0 de 3 inasistencias permitidas')).toBeInTheDocument();
   });
 
   it('tentative absence moves a student to the limit and then over the maximum', async () => {
@@ -206,13 +206,13 @@ describe('TabAsistencia', () => {
     renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
 
     await screen.findByText('Ana Gómez');
-    expect(within(rowOf('Bruno Díaz')).getByText('1 de 3 faltas permitidas')).toBeInTheDocument();
-    expect(within(rowOf('Bruno Díaz')).queryByText('Queda 1 falta')).not.toBeInTheDocument();
+    expect(within(rowOf('Bruno Díaz')).getByText('1 de 3 inasistencias permitidas')).toBeInTheDocument();
+    expect(within(rowOf('Bruno Díaz')).queryByText('Queda 1 inasistencia')).not.toBeInTheDocument();
 
     await user.click(within(rowOf('Bruno Díaz')).getByRole('button', { name: 'Ausente' }));
 
-    expect(within(rowOf('Bruno Díaz')).getByText('2 de 3 faltas permitidas')).toBeInTheDocument();
-    expect(within(rowOf('Bruno Díaz')).getByText('Queda 1 falta')).toBeInTheDocument();
+    expect(within(rowOf('Bruno Díaz')).getByText('2 de 3 inasistencias permitidas')).toBeInTheDocument();
+    expect(within(rowOf('Bruno Díaz')).getByText('Queda 1 inasistencia')).toBeInTheDocument();
   });
 
   it('shows only the absence count when the backend sends no allowance', async () => {
@@ -226,7 +226,7 @@ describe('TabAsistencia', () => {
     renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
 
     await screen.findByText('Ana Gómez');
-    expect(within(rowOf('Ana Gómez')).getByText('2 faltas')).toBeInTheDocument();
+    expect(within(rowOf('Ana Gómez')).getByText('2 inasistencias')).toBeInTheDocument();
   });
 
   it('si la fecha es feriado lo dice en vez de un error genérico', async () => {
@@ -449,7 +449,7 @@ describe('TabAsistencia justification proof', () => {
     await user.upload(screen.getByLabelText('Comprobante de justificación'), new File(['pdf'], 'certificado.pdf', { type: 'application/pdf' }));
     await user.click(screen.getByRole('button', { name: 'Enviar comprobante' }));
 
-    expect(await screen.findByText(/Venció el plazo para justificar esta falta/)).toBeInTheDocument();
+    expect(await screen.findByText(/Venció el plazo para justificar esta inasistencia/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enviar comprobante' })).toBeEnabled();
   });
 });

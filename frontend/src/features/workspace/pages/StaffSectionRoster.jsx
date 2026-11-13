@@ -30,7 +30,7 @@ function RiskPill() {
       <Tooltip>
         <TooltipTrigger asChild>
           <span tabIndex={0} className="inline-flex w-fit rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <StatusPill tone="danger">En riesgo</StatusPill>
+            <StatusPill tone="danger">Libre por inasistencias</StatusPill>
           </span>
         </TooltipTrigger>
         <TooltipContent>Supera el máximo de inasistencias</TooltipContent>
@@ -60,14 +60,14 @@ function buildColumns() {
     },
     {
       id: 'atRisk',
-      header: 'En riesgo',
+      header: 'Libre por inasistencias',
       accessorKey: 'atRisk',
       enableSorting: false,
       enableColumnFilter: true,
       meta: {
         filterable: true,
         filterTitle: 'riesgo',
-        filterLabel: (value) => (value ? 'En riesgo' : 'Sin riesgo'),
+        filterLabel: (value) => (value ? 'Libre por inasistencias' : 'No libre'),
       },
       cell: () => null,
     },
@@ -80,7 +80,7 @@ function buildColumns() {
     },
     {
       id: 'absenceCount',
-      header: 'Ausencias',
+      header: 'Inasistencias',
       accessorKey: 'absenceCount',
       meta: { align: 'right' },
       cell: ({ row }) => <span className="tabular-nums">{row.original.absenceCount}</span>,
@@ -206,7 +206,7 @@ export function StaffSectionRoster() {
               <StatCard label="Inscriptos" className="p-3 md:p-5">
                 <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{total}</span>
               </StatCard>
-              <StatCard label="En riesgo" className="p-3 md:p-5">
+              <StatCard label="Libres por inasistencias" className="p-3 md:p-5">
                 <span className="font-heading text-size-22 font-bold text-danger md:text-size-26">{atRiskCount}</span>
               </StatCard>
               <StatCard label="Asist. media" className="p-3 md:p-5">

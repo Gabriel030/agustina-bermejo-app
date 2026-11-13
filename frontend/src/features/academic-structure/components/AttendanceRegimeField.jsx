@@ -34,7 +34,7 @@ export function AttendanceRegimeField({ value, onChange, lockUnlimited = false }
             </button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-72 text-size-12-5">
-            Se calcula sobre las clases ya dictadas. Las ausencias justificadas no cuentan. Al superar el máximo, el alumno figura como libre en esta comisión.
+            Se calcula sobre las clases ya dictadas. Las inasistencias justificadas no cuentan. Al superar el máximo, el alumno figura como libre en esta comisión.
           </PopoverContent>
         </Popover>
       </div>
