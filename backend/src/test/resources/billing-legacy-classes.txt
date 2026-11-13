@@ -1,6 +1,5 @@
 com.red_escuela.backend.billing.controller.BankTransferReceiptController
 com.red_escuela.backend.billing.controller.BillingConfigurationAlertController
-com.red_escuela.backend.billing.controller.BillingPeriodController
 com.red_escuela.backend.billing.controller.FinancialDashboardController
 com.red_escuela.backend.billing.controller.InvoiceController
 com.red_escuela.backend.billing.controller.LatePaymentSettingsController
@@ -17,10 +16,8 @@ com.red_escuela.backend.billing.dto.AdminInvoiceResponse
 com.red_escuela.backend.billing.dto.AdvanceBillingYearRequest
 com.red_escuela.backend.billing.dto.BankTransferReceiptResponse
 com.red_escuela.backend.billing.dto.BillingConfigurationAlertResponse
-com.red_escuela.backend.billing.dto.BillingPeriodResponse
 com.red_escuela.backend.billing.dto.CoursePricingResponse
 com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest
-com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest
 com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest
 com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest
 com.red_escuela.backend.billing.dto.CreateProgramCohortRequest
@@ -58,7 +55,6 @@ com.red_escuela.backend.billing.entity.BankTransferReceiptStatus
 com.red_escuela.backend.billing.entity.BatchExecutionLog
 com.red_escuela.backend.billing.entity.BatchExecutionStatus
 com.red_escuela.backend.billing.entity.BillingConfigurationAlert
-com.red_escuela.backend.billing.entity.BillingPeriod
 com.red_escuela.backend.billing.entity.CohortIntake
 com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus
 com.red_escuela.backend.billing.entity.InstallmentStatus
@@ -106,7 +102,6 @@ com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcher
 com.red_escuela.backend.billing.repository.BankTransferReceiptRepository
 com.red_escuela.backend.billing.repository.BatchExecutionLogRepository
 com.red_escuela.backend.billing.repository.BillingConfigurationAlertRepository
-com.red_escuela.backend.billing.repository.BillingPeriodRepository
 com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository
 com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository
 com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository
@@ -143,10 +138,6 @@ com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService
 com.red_escuela.backend.billing.service.YearBillingConfigurationApplier
 com.red_escuela.backend.billing.service.YearBillingConfiguredEvent
 com.red_escuela.backend.billing.service.YearBillingConfiguredListener
-com.red_escuela.backend.billing.usecase.billingperiod.CreateBillingPeriodService
-com.red_escuela.backend.billing.usecase.billingperiod.CreateBillingPeriodUseCase
-com.red_escuela.backend.billing.usecase.billingperiod.GetCurrentBillingPeriodService
-com.red_escuela.backend.billing.usecase.billingperiod.GetCurrentBillingPeriodUseCase
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortService
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortUseCase
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateService

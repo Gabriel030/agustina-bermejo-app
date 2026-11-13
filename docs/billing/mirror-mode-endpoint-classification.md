@@ -51,8 +51,6 @@ Billing tiene tres modos (`BillingMode`): `OFF`, `MIRROR` y `FULL`. Con `OFF` to
 | BillingConfigurationAlertController | list | GET | `/billing/configuration-alerts` | READ | Lectura |
 | BillingMetricsController | getFirstMonth | GET | `/billing/metrics/first-month` | READ | Lectura |
 | BillingMetricsController | getPanel | GET | `/billing/metrics/{panel}` | READ | Lectura |
-| BillingPeriodController | create | POST | `/billing-periods` | WRITE | Configuración: crea el período de facturación |
-| BillingPeriodController | current | GET | `/billing-periods/current` | READ | Lectura |
 | BillingRunAlertController | list | GET | `/billing-run-alerts` | READ | Lectura |
 | BillingRunController | list | GET | `/billing-runs` | READ | Lectura |
 | BillingRunController | executeTodaysNightlyRun | POST | `/billing-runs/executions` | WRITE | Ejecuta la corrida nocturna de facturación |
