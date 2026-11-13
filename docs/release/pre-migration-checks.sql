@@ -262,5 +262,17 @@ begin
   end loop;
 end $$;
 
+\echo
+\echo [V214] Columnas legado de institution que V214 DESCARTA (si sms_password > 0, rotar esa credencial en el proveedor de SMS: docs/release/institution-sms-credential.md):
+select count(*) filter (where facebook is not null) as facebook,
+       count(*) filter (where tweeter is not null) as tweeter,
+       count(*) filter (where pref_notas is not null) as pref_notas,
+       count(*) filter (where pref_calendario is not null) as pref_calendario,
+       count(*) filter (where pref_asignar_curso is not null) as pref_asignar_curso,
+       count(*) filter (where sms_url is not null) as sms_url,
+       count(*) filter (where sms_usuario is not null) as sms_usuario,
+       count(*) filter (where sms_password is not null) as sms_password
+from institution;
+
 rollback;
 \echo ===== fin =====

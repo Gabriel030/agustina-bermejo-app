@@ -149,7 +149,7 @@ está arriba.
 
 ## Reporte de tiempos y pirámide de tests
 
-El CI del backend corre en 6 shards balanceados por tiempo (`.github/scripts/test-shards.py`). No hay presupuesto de tiempo: ningún límite por clase, por `@SlowTest` ni por shard hace fallar el CI (se eliminaron el 13-nov-2026, a pedido de Gabriel, después de cuatro rojos por tiempos al borde sin bug real). Los tiempos se miden y se reportan, nada más.
+El CI del backend corre en 8 shards balanceados por tiempo (`.github/scripts/test-shards.py`). No hay presupuesto de tiempo: ningún límite por clase, por `@SlowTest` ni por shard hace fallar el CI (se eliminaron el 13-nov-2026, a pedido de Gabriel, después de cuatro rojos por tiempos al borde sin bug real). Los tiempos se miden y se reportan, nada más.
 
 **Lo único que bloquea es el tope de contextos de Spring distintos en toda la corrida (24)**, que no es una regla de tiempo: lo hace cumplir `test-report.py aggregate` (parámetro `--max-contexts`), en el job `test-report`, solo en pushes (en un PR es una advertencia). Subirlo es una decisión de producto que va en un PR aparte, con motivo.
 
@@ -183,7 +183,7 @@ El tier se elige con la propiedad `test.exploration` (`pr` por defecto, `nightly
 | `docs` | `ModuleDocumentationTest` | nunca | nunca | siempre | siempre |
 
   Cuando el push a `develop` reutiliza los tests de un PR verde (mismo árbol) y ese PR se saltó `migration`, el job `backend-extra-tests` corre solo ese grupo. El registro `tested-tree.json` del PR guarda qué grupos corrió; un registro sin esos campos cuenta como «no corrió».
-- **Nightly (`nightly-tests.yml`):** corre la suite completa en 6 shards con `-Dtest.exploration=nightly -Dtest.excludedGroups=none` (migration, docs y tests `@NightlyTest` incluidos). Se saltea si `develop` no cambió desde la última corrida verde. `schedule` solo corre desde la rama por defecto: hasta el próximo release se dispara a mano con `workflow_dispatch`.
+- **Nightly (`nightly-tests.yml`):** corre la suite completa en 8 shards con `-Dtest.exploration=nightly -Dtest.excludedGroups=none` (migration, docs y tests `@NightlyTest` incluidos). Se saltea si `develop` no cambió desde la última corrida verde. `schedule` solo corre desde la rama por defecto: hasta el próximo release se dispara a mano con `workflow_dispatch`.
 - **Regla R5 (`BillingDecisionCoverageTest`):** cada decisión D-xxx vigente implementada o parcial necesita **al menos un test del tier PR**, es decir, con su `@Tag("D-xxx")`, sin `@NightlyTest`, sin `@Tag("nightly")`, sin `@Tag("migration")` y sin `@Disabled`. Si movés el único test de una decisión a nightly, el build falla con `R5 D-xxx ... sin test del tier PR`. Agregá un test liviano de PR en vez de saltear la regla.
 
 ### Reglas para no pagar contextos y esperas de más
@@ -229,7 +229,7 @@ En eventos `pull_request` los shards corren con `-Dsurefire.rerunFailingTestsCou
 Cada fallo de CI dice en qué shard ocurrió (`backend-tests (N)`). Para correr exactamente las mismas clases, con el mismo algoritmo y los mismos tiempos que la CI:
 
 ```bash
-python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 6)
+python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 8)
 python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con ./mvnw test
 ```
 
