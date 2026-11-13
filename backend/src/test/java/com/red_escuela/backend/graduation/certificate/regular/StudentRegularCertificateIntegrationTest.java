@@ -464,9 +464,18 @@ class StudentRegularCertificateIntegrationTest extends AbstractIntegrationTest {
             assertThat(event.studentId()).isEqualTo(studentId);
             assertThat(event.reason()).isEqualTo("Falta presentar el comprobante de pago");
         });
-        state(studentToken).andExpect(jsonPath("$.state").value("UNAVAILABLE"))
-                .andExpect(jsonPath("$.unavailableType").value("REJECTED"))
+        state(studentToken).andExpect(jsonPath("$.state").value("AVAILABLE"))
                 .andExpect(jsonPath("$.rejectionReason").value("Falta presentar el comprobante de pago"));
+    }
+
+    @Test
+    void b212AfterAStaffRejectionTheStudentCanAskAgainAndTheNewRequestIsPending() throws Exception {
+        reject(staffToken, pendingRequestId(), "Falta presentar el comprobante de pago").andExpect(status().isOk());
+
+        submit(studentToken).andExpect(status().isAccepted()).andExpect(jsonPath("$.request.outcome").value("PENDING_STAFF"));
+
+        state(studentToken).andExpect(jsonPath("$.state").value("PENDING")).andExpect(jsonPath("$.rejectionReason").doesNotExist());
+        assertThat(requests()).hasSize(2);
     }
 
     @Test

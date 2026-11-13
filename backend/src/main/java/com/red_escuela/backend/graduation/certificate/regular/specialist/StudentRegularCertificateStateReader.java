@@ -56,23 +56,20 @@ public class StudentRegularCertificateStateReader {
             return response(kind, enrollmentId, StudentRegularCertificateState.PENDING, staffConfirmationRequired, null,
                     RegularRequestResponses.of(pending.get()), null, null, List.of(), history);
         }
-        Optional<RegularCertificateRequest> rejected = latestOf(kind, enrollmentId).filter(RegularCertificateRequest::wasRejectedByStaff);
-        if (rejected.isPresent()) {
-            return response(kind, enrollmentId, StudentRegularCertificateState.UNAVAILABLE, staffConfirmationRequired, null, null,
-                    RegularUnavailabilityType.REJECTED, rejected.get().getRejectionReason(), List.of(), history);
-        }
+        String lastRejection = latestOf(kind, enrollmentId).filter(RegularCertificateRequest::wasRejectedByStaff)
+                .map(RegularCertificateRequest::getRejectionReason).orElse(null);
         RegularityVerdict verdict = regularityEvaluator.evaluate(kind, enrollmentId);
         if (!verdict.institutionallyRegular()) {
             return response(kind, enrollmentId, StudentRegularCertificateState.UNAVAILABLE, staffConfirmationRequired, null, null,
-                    unavailabilityOf(verdict), null, verdict.reasons().stream().map(RegularityReason::name).toList(), history);
+                    unavailabilityOf(verdict), lastRejection, verdict.reasons().stream().map(RegularityReason::name).toList(), history);
         }
         if (!staffConfirmationRequired
                 && (!overdueDebtProbe.isEnrollmentFeePaid(kind, enrollmentId) || overdueDebtProbe.hasOverdueDebt(studentId))) {
             return response(kind, enrollmentId, StudentRegularCertificateState.UNAVAILABLE, false, null, null,
-                    RegularUnavailabilityType.PAYMENTS, null, List.of(), history);
+                    RegularUnavailabilityType.PAYMENTS, lastRejection, List.of(), history);
         }
         return response(kind, enrollmentId, StudentRegularCertificateState.AVAILABLE, staffConfirmationRequired, null, null, null,
-                null, List.of(), history);
+                lastRejection, List.of(), history);
     }
 
     private Optional<RegularCertificateRequest> pendingOf(RegularityKind kind, Long enrollmentId) {
