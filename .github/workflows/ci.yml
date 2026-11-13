@@ -137,7 +137,7 @@ jobs:
 
       - name: Restore the Maven repository
         id: maven-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository
@@ -170,7 +170,7 @@ jobs:
 
       - name: Save the Maven repository
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 0 && steps.maven-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             ~/.m2/repository
@@ -229,7 +229,7 @@ jobs:
             21
 
       - name: Restore the Maven repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository
@@ -239,7 +239,7 @@ jobs:
             maven-${{ runner.os }}-
 
       - name: Download the JaCoCo execution data of the shards
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: jacoco-exec-*
           path: backend/target/jacoco-shards
@@ -286,7 +286,7 @@ jobs:
             21
 
       - name: Restore the Maven repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository
@@ -319,7 +319,7 @@ jobs:
 
       - name: Download the shard reports
         if: needs.changes.outputs.reuse_backend != 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: shard-reports-*
           path: shards
@@ -408,7 +408,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download the report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: test-report-comment
@@ -475,7 +475,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -497,7 +497,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

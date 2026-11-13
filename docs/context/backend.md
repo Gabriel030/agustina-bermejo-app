@@ -114,7 +114,7 @@ cases de `billing` para el flujo de baja.
 
 **Migrado al patrón Use Case (2026-09-08)**: `billing/usecase/<subdominio>/`
 (`invoice`, `payment`, `paymentreceipt`, `creditnote`,
-`promotion`, `paymentplan`, `billingperiod`, `latepaymentsettings`, `cohort`)
+`promotion`, `paymentplan`, `latepaymentsettings`, `cohort`)
 tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
 controller invoca directo. Lo que queda en `billing/service/` son
 colaboradores de una sola responsabilidad, no use cases — tres categorías:

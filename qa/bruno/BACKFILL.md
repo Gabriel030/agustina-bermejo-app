@@ -199,7 +199,7 @@ service, pero nunca se puede activar desde ninguna pantalla hoy. Entrada
 
 | Controller | Endpoints | Karate | Bruno | Notas |
 |---|---|---|---|---|
-| PricingController | 10 | 🟡 (FeeSchedule + Discount + Promotion, flujo principal) | 🟡 (mismo flujo) | LateFeePolicy/BillingPeriod son CRUD simple sin flujo de negocio encadenado, sin cobertura propia todavía — bajo riesgo (altas triviales, sin cálculo) |
+| PricingController | 10 | 🟡 (FeeSchedule + Discount + Promotion, flujo principal) | 🟡 (mismo flujo) | LateFeePolicy es CRUD simple sin flujo de negocio encadenado, sin cobertura propia todavía — bajo riesgo (altas triviales, sin cálculo) |
 | PaymentReceiptController | 5 | ✅ | ✅ | subir, no duplicar mientras está en revisión (409), rechazar con motivo + reintento sin límite, aprobar crea el Payment real |
 | InvoiceController | +1 (`from-fee-schedule`) | ✅ | ✅ | resuelve FeeSchedule vigente + descuentos/promociones sumados; sin FeeSchedule vigente → 404 |
 
