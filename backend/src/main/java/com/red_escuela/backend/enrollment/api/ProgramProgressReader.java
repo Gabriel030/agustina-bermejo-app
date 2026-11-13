@@ -65,7 +65,7 @@ public class ProgramProgressReader {
 
         return new ProgramProgressView(
                 enrollment.getId(), accumulatedCredits, requiredCredits, pendingMandatory, electiveGroups,
-                eligibleToComplete, hasActiveEnrollment(programEnrollmentId), Grade.average(finalGrades).orElse(null));
+                eligibleToComplete, hasActiveCoursework(programEnrollmentId), Grade.average(finalGrades).orElse(null));
     }
 
     public boolean hasOnlyFinalExamsLeft(Long programEnrollmentId) {
@@ -88,7 +88,7 @@ public class ProgramProgressReader {
                 && !mandatoryPending && coursedCredits >= program.getTotalCreditsRequired() && electiveGroupsMet;
     }
 
-    public boolean hasActiveEnrollment(Long programEnrollmentId) {
+    public boolean hasActiveCoursework(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
                 programEnrollmentId,
                 List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));

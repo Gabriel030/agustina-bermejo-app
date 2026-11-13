@@ -20,6 +20,10 @@ public class NoOpEmailService implements EmailService {
     }
 
     @Override
+    public void sendPasswordResetLockoutNotice(String recipientName, String email) {
+    }
+
+    @Override
     public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail) {
     }
 }

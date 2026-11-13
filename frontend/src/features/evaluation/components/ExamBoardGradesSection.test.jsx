@@ -157,7 +157,7 @@ describe('ExamBoardGradesSection', () => {
     await user.click(await screen.findByRole('button', { name: 'Guardar las notas' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('No se guardó ninguna nota: El alumno no está en condición de regular.');
+    expect(alert).toHaveTextContent('No se guardó ninguna nota: El alumno no tiene la cursada regular.');
     expect(gradeInput(2)).toHaveAttribute('aria-invalid', 'true');
     expect(gradeInput(1)).toHaveValue('7');
 
@@ -215,11 +215,11 @@ describe('ExamBoardGradesSection', () => {
     expect(screen.getByRole('button', { name: 'Dar de baja a Alumno 1' })).toBeInTheDocument();
   });
 
-  it('shows a student who is not regular as blocked, with a single No regular pill', () => {
+  it('shows a student who is not regular as blocked, with a single Sin cursada regular pill', () => {
     renderSection({ rows: [registration(1, { priorCondition: 'FREE' })] });
 
-    expect(screen.getByText('No regular')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Requiere condición regular/ })).toBeInTheDocument();
+    expect(screen.getByText('Sin cursada regular')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Requiere cursada regular/ })).toBeInTheDocument();
     expect(screen.queryByLabelText('Nota del final de Alumno 1')).not.toBeInTheDocument();
   });
 

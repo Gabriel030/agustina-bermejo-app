@@ -3,6 +3,7 @@ package com.red_escuela.backend.identity.specialist;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
+import com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.slf4j.Logger;
@@ -19,11 +20,14 @@ public class StaffReactivator {
 
     private final PersonRepository personRepository;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
+    private final AccountAccessStateCache accountAccessStateCache;
 
     public StaffReactivator(PersonRepository personRepository,
-                             StaffRoleAssignmentPolicy staffRoleAssignmentPolicy) {
+                             StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
+                             AccountAccessStateCache accountAccessStateCache) {
         this.personRepository = personRepository;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
+        this.accountAccessStateCache = accountAccessStateCache;
     }
 
     @Transactional
@@ -41,6 +45,7 @@ public class StaffReactivator {
         }
         person.setStatus(StatusType.ACTIVE);
         personRepository.save(person);
+        accountAccessStateCache.evictNowAndAfterCommit(personId);
         log.info("Personal reactivado: personId={}", personId);
     }
 }

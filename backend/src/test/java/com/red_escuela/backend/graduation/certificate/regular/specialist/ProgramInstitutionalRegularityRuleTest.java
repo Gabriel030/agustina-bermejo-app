@@ -20,13 +20,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class ProgramRegularityRuleTest {
+class ProgramInstitutionalRegularityRuleTest {
 
     private final ProgramEnrollmentFinder programEnrollmentFinder = mock(ProgramEnrollmentFinder.class);
     private final ActiveSectionEnrollmentFinder activeSectionEnrollmentFinder = mock(ActiveSectionEnrollmentFinder.class);
     private final AttendanceStandingFinder attendanceStandingFinder = mock(AttendanceStandingFinder.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-05T12:00:00Z"), ZoneOffset.UTC);
-    private final ProgramRegularityRule rule = new ProgramRegularityRule(
+    private final ProgramInstitutionalRegularityRule rule = new ProgramInstitutionalRegularityRule(
             programEnrollmentFinder, activeSectionEnrollmentFinder, attendanceStandingFinder, clock);
 
     private void givenEnrollmentWithStatus(ProgramEnrollmentStatus status) {
@@ -48,7 +48,7 @@ class ProgramRegularityRuleTest {
 
         RegularityVerdict verdict = rule.evaluate(17L);
 
-        assertThat(verdict.regular()).isTrue();
+        assertThat(verdict.institutionallyRegular()).isTrue();
         assertThat(verdict.reasons()).isEmpty();
         assertThat(verdict.attendanceControlled()).isTrue();
         assertThat(verdict.evaluatedAt()).isEqualTo(clock.instant());
@@ -63,7 +63,7 @@ class ProgramRegularityRuleTest {
 
         RegularityVerdict verdict = rule.evaluate(17L);
 
-        assertThat(verdict.regular()).isFalse();
+        assertThat(verdict.institutionallyRegular()).isFalse();
         assertThat(verdict.reasons()).containsExactly(RegularityReason.FREE_IN_ACTIVE_SECTION);
     }
 
@@ -76,7 +76,7 @@ class ProgramRegularityRuleTest {
 
         RegularityVerdict verdict = rule.evaluate(17L);
 
-        assertThat(verdict.regular()).isFalse();
+        assertThat(verdict.institutionallyRegular()).isFalse();
         assertThat(verdict.reasons()).containsExactly(RegularityReason.FREE_IN_ACTIVE_SECTION);
         assertThat(verdict.attendanceControlled()).isTrue();
     }
@@ -91,7 +91,7 @@ class ProgramRegularityRuleTest {
 
             RegularityVerdict verdict = rule.evaluate(17L);
 
-            assertThat(verdict.regular()).as(status.name()).isFalse();
+            assertThat(verdict.institutionallyRegular()).as(status.name()).isFalse();
             assertThat(verdict.reasons()).as(status.name()).containsExactly(RegularityReason.PROGRAM_NOT_ENROLLED);
         }
         verifyNoInteractions(activeSectionEnrollmentFinder, attendanceStandingFinder);
@@ -104,7 +104,7 @@ class ProgramRegularityRuleTest {
 
         RegularityVerdict verdict = rule.evaluate(17L);
 
-        assertThat(verdict.regular()).isFalse();
+        assertThat(verdict.institutionallyRegular()).isFalse();
         assertThat(verdict.reasons()).containsExactly(RegularityReason.NO_ACTIVE_SECTION);
         verifyNoInteractions(attendanceStandingFinder);
     }
@@ -117,7 +117,7 @@ class ProgramRegularityRuleTest {
 
         RegularityVerdict verdict = rule.evaluate(17L);
 
-        assertThat(verdict.regular()).isTrue();
+        assertThat(verdict.institutionallyRegular()).isTrue();
         assertThat(verdict.attendanceControlled()).isFalse();
     }
 

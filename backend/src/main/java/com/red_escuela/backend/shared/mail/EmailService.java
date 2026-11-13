@@ -8,5 +8,7 @@ public interface EmailService {
 
     void sendEmailChangeVerification(String recipientName, String newEmail, String verificationLink);
 
+    void sendPasswordResetLockoutNotice(String recipientName, String email);
+
     void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail);
 }

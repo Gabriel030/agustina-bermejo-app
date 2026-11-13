@@ -4,7 +4,7 @@ export const CLOSURE_RESULT = {
   PROMOTES: { label: 'Promociona', kpiLabel: 'Total de promociones', tone: 'success', order: 0, summaryKey: 'promote' },
   PROMOTION_CONDITIONAL: { label: 'Promoción condicionada', kpiLabel: 'Promoción condicionada (provisoria)', tone: 'warning', order: 1, summaryKey: 'conditional' },
   GOES_TO_FINAL: { label: 'Va a final', kpiLabel: 'Total que van a final', tone: 'accent', order: 2, summaryKey: 'goToFinal' },
-  FREE: { label: 'Libre', kpiLabel: 'Libres', tone: 'danger', order: 3, summaryKey: 'free' },
+  FREE: { label: 'Libre por inasistencias', kpiLabel: 'Libres por inasistencias', tone: 'danger', order: 3, summaryKey: 'free' },
   FAILED: { label: 'Desaprobado', kpiLabel: 'Desaprobados', tone: 'danger', order: 4, summaryKey: 'failed' },
   PENDING: { label: 'Pendiente', kpiLabel: 'Pendientes', tone: 'neutral', order: 5, summaryKey: 'pending' },
 };
@@ -48,14 +48,14 @@ export const BLOCKED_REASON_FALLBACK = 'No se puede confirmar el cierre en este 
 
 export const PREREQUISITE_STATUS = {
   APPROVED: { label: 'Aprobada', tone: 'success' },
-  REGULAR: { label: 'Regular', tone: 'accent' },
+  REGULAR: { label: 'Cursada regular', tone: 'accent' },
   NOT_TAKEN: { label: 'No cursada', tone: 'danger' },
   WAIVED: { label: 'Exceptuada', tone: 'accent' },
 };
 
 export const REQUIREMENT_TYPE_LABEL = {
   APPROVED: 'aprobada',
-  PASSED_COURSEWORK: 'regular o aprobada',
+  PASSED_COURSEWORK: 'cursada regular o aprobada',
 };
 
 export function isWithdrawn(row) {

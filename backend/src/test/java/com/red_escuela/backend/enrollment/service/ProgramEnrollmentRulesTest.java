@@ -400,11 +400,11 @@ class ProgramEnrollmentRulesTest {
     @Test
     void delegatingQueriesAskTheProgressReader() {
         when(programProgressReader.hasOnlyFinalExamsLeft(1L)).thenReturn(true);
-        when(programProgressReader.hasActiveEnrollment(1L)).thenReturn(true);
+        when(programProgressReader.hasActiveCoursework(1L)).thenReturn(true);
         when(programProgressReader.listApprovedSubjects(1L)).thenReturn(List.of());
 
         assertThat(service.hasOnlyFinalExamsLeft(1L)).isTrue();
-        assertThat(service.hasActiveEnrollment(1L)).isTrue();
+        assertThat(service.hasActiveCoursework(1L)).isTrue();
         assertThat(service.listApprovedSubjects(1L)).isEmpty();
     }
 }

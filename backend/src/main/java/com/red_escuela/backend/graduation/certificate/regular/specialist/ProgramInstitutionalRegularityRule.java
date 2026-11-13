@@ -15,14 +15,14 @@ import java.time.Instant;
 import java.util.List;
 
 @Component
-public class ProgramRegularityRule implements RegularityRule {
+public class ProgramInstitutionalRegularityRule implements InstitutionalRegularityRule {
 
     private final ProgramEnrollmentFinder programEnrollmentFinder;
     private final ActiveSectionEnrollmentFinder activeSectionEnrollmentFinder;
     private final AttendanceStandingFinder attendanceStandingFinder;
     private final Clock clock;
 
-    public ProgramRegularityRule(ProgramEnrollmentFinder programEnrollmentFinder,
+    public ProgramInstitutionalRegularityRule(ProgramEnrollmentFinder programEnrollmentFinder,
                                  ActiveSectionEnrollmentFinder activeSectionEnrollmentFinder,
                                  AttendanceStandingFinder attendanceStandingFinder,
                                  Clock clock) {

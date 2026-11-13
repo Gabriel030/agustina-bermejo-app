@@ -3,6 +3,7 @@ package com.red_escuela.backend.identity.specialist;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
+import com.red_escuela.backend.identity.events.PasswordResetLockoutNoticeEvent;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import com.red_escuela.backend.shared.mail.EmailService;
@@ -41,6 +42,20 @@ public class IdentityEmailDispatcher {
                             emailService.sendPasswordResetCode(recipientOf(person), institutionNameResolver.resolveInstitutionName(), event.code());
                         },
                         () -> log.warn("Password reset email skipped, person not found: personId={}", event.personId())));
+    }
+
+    @ApplicationModuleListener
+    public void onPasswordResetLockoutNotice(PasswordResetLockoutNoticeEvent event) {
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onPasswordResetLockoutNotice", () ->
+                personRepository.findById(event.personId()).ifPresentOrElse(
+                        person -> {
+                            if (hasNoEmail(person)) {
+                                log.warn("Password reset lockout notice skipped, person has no email: personId={}", event.personId());
+                                return;
+                            }
+                            emailService.sendPasswordResetLockoutNotice(displayNameOf(person, person.emailValue()), person.emailValue());
+                        },
+                        () -> log.warn("Password reset lockout notice skipped, person not found: personId={}", event.personId())));
     }
 
     @ApplicationModuleListener

@@ -91,8 +91,8 @@ describe('FaltasDeMateria', () => {
     renderFaltas();
 
     await screen.findByText('05/11/2026');
-    expect(within(rowOf('05/11/2026')).getByRole('button', { name: 'Justificar la falta del 05/11/2026 de Valentina Suárez' })).toBeInTheDocument();
-    expect(within(rowOf('29/10/2026')).getByRole('button', { name: /Justificar la falta del 29\/10\/2026/ })).toBeInTheDocument();
+    expect(within(rowOf('05/11/2026')).getByRole('button', { name: 'Justificar la inasistencia del 05/11/2026 de Valentina Suárez' })).toBeInTheDocument();
+    expect(within(rowOf('29/10/2026')).getByRole('button', { name: /Justificar la inasistencia del 29\/10\/2026/ })).toBeInTheDocument();
     const link = within(rowOf('22/10/2026')).getByRole('link', { name: 'Revisar solicitud' });
     expect(link).toHaveAttribute('href', '/preceptor/solicitudes-de-asistencia?tab=justificaciones');
     expect(within(rowOf('15/10/2026')).queryByRole('button')).not.toBeInTheDocument();
@@ -104,7 +104,7 @@ describe('FaltasDeMateria', () => {
     renderFaltas({ canJustify: false });
 
     await screen.findByText('05/11/2026');
-    expect(screen.queryByRole('button', { name: /Justificar la falta/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Justificar la inasistencia/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Revisar solicitud' })).not.toBeInTheDocument();
     expect(screen.getAllByText('Solo lectura')).toHaveLength(5);
   });
@@ -113,7 +113,7 @@ describe('FaltasDeMateria', () => {
     mockAttendance([entry({ id: 1, status: 'PRESENT', justifiable: null, justificationDeadline: null })]);
     renderFaltas();
 
-    expect(await screen.findByText('Sin faltas registradas.')).toBeInTheDocument();
+    expect(await screen.findByText('Sin inasistencias registradas.')).toBeInTheDocument();
   });
 
   it('shows a loading state and then a retryable error', async () => {
@@ -132,7 +132,7 @@ describe('FaltasDeMateria', () => {
     const user = userEvent.setup();
     renderFaltas();
 
-    expect(screen.getByLabelText('Cargando faltas')).toBeInTheDocument();
+    expect(screen.getByLabelText('Cargando inasistencias')).toBeInTheDocument();
     pending.resolve();
     await user.click(await screen.findByRole('button', { name: 'Reintentar' }));
 
@@ -143,7 +143,7 @@ describe('FaltasDeMateria', () => {
 describe('JustificarFaltaDialog', () => {
   async function openDialog(user, date) {
     await screen.findByText(date);
-    await user.click(within(rowOf(date)).getByRole('button', { name: /Justificar la falta/ }));
+    await user.click(within(rowOf(date)).getByRole('button', { name: /Justificar la inasistencia/ }));
     return screen.findByRole('dialog');
   }
 
@@ -168,11 +168,11 @@ describe('JustificarFaltaDialog', () => {
     expect(within(dialog).getByText('Dentro de plazo')).toBeInTheDocument();
     expect(within(dialog).getByText('Queda registrado a nombre de Ana Ruiz.')).toBeInTheDocument();
     expect(within(dialog).getByText('No se puede deshacer desde esta pantalla.')).toBeInTheDocument();
-    const faltas = within(dialog).getByRole('group', { name: 'Faltas computadas (materia)' });
+    const faltas = within(dialog).getByRole('group', { name: 'Inasistencias computadas (materia)' });
     expect(within(faltas).getByText('4')).toBeInTheDocument();
     expect(within(faltas).getByText('3')).toBeInTheDocument();
     expect(within(faltas).getByText('−1')).toBeInTheDocument();
-    const submit = within(dialog).getByRole('button', { name: 'Justificar falta' });
+    const submit = within(dialog).getByRole('button', { name: 'Justificar inasistencia' });
     expect(submit).toBeDisabled();
 
     await user.type(within(dialog).getByLabelText('Motivo'), 'Certificado médico');
@@ -180,7 +180,7 @@ describe('JustificarFaltaDialog', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(body).toEqual({ reason: 'Certificado médico' });
-    expect(toastMock.success).toHaveBeenCalledWith('Falta del 05/11/2026 justificada');
+    expect(toastMock.success).toHaveBeenCalledWith('Inasistencia del 05/11/2026 justificada');
     await waitFor(() => expect(within(rowOf('05/11/2026')).getByText('Justificada')).toBeInTheDocument());
   });
 
@@ -199,7 +199,7 @@ describe('JustificarFaltaDialog', () => {
 
     expect(within(dialog).getByText(/Plazo vencido el 05\/11\/2026/)).toBeInTheDocument();
     await user.type(within(dialog).getByLabelText('Motivo'), 'Internación');
-    const submit = within(dialog).getByRole('button', { name: 'Justificar falta' });
+    const submit = within(dialog).getByRole('button', { name: 'Justificar inasistencia' });
     expect(submit).toBeDisabled();
     await user.type(within(dialog).getByLabelText('Motivo de la excepción'), 'Entregó el certificado tarde');
     expect(submit).toBeEnabled();
@@ -222,11 +222,11 @@ describe('JustificarFaltaDialog', () => {
     await user.paste('b'.repeat(200));
     expect(within(dialog).getByText('500 de 500 caracteres')).toBeInTheDocument();
     expect(within(dialog).getByText('Quedan 0')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Justificar falta' })).toBeEnabled();
+    expect(within(dialog).getByRole('button', { name: 'Justificar inasistencia' })).toBeEnabled();
 
     await user.type(exception, 'c');
     expect(within(dialog).getByText('Te pasaste 1')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Justificar falta' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Justificar inasistencia' })).toBeDisabled();
   });
 
   it('disables the button while justifying and keeps the dialog open with a Spanish message on a 400', async () => {
@@ -242,14 +242,14 @@ describe('JustificarFaltaDialog', () => {
     renderFaltas();
     const dialog = await openDialog(user, '05/11/2026');
     await user.type(within(dialog).getByLabelText('Motivo'), 'Gripe');
-    await user.click(within(dialog).getByRole('button', { name: 'Justificar falta' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Justificar inasistencia' }));
 
     expect(await within(dialog).findByRole('button', { name: 'Justificando…' })).toBeDisabled();
     pending.resolve();
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('El motivo de la justificación supera los 500 caracteres. Acortalo e intentá de nuevo.');
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Justificar falta' })).toBeEnabled();
+    expect(within(dialog).getByRole('button', { name: 'Justificar inasistencia' })).toBeEnabled();
   });
 
   it('closes the dialog, warns and rereads the list on a 409 because the absence changed', async () => {
@@ -265,10 +265,10 @@ describe('JustificarFaltaDialog', () => {
     renderFaltas();
     const dialog = await openDialog(user, '05/11/2026');
     await user.type(within(dialog).getByLabelText('Motivo'), 'Gripe');
-    await user.click(within(dialog).getByRole('button', { name: 'Justificar falta' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Justificar inasistencia' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(toastMock.warning).toHaveBeenCalledWith('Esta falta ya cambió de estado. Actualizamos la lista.');
+    expect(toastMock.warning).toHaveBeenCalledWith('Esta inasistencia ya cambió de estado. Actualizamos la lista.');
     await waitFor(() => expect(within(rowOf('05/11/2026')).getByRole('link', { name: 'Revisar solicitud' })).toBeInTheDocument());
   });
 
@@ -279,7 +279,7 @@ describe('JustificarFaltaDialog', () => {
     renderFaltas();
     const dialog = await openDialog(user, '05/11/2026');
     await user.type(within(dialog).getByLabelText('Motivo'), 'Gripe');
-    await user.click(within(dialog).getByRole('button', { name: 'Justificar falta' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Justificar inasistencia' }));
 
     expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toBeInTheDocument();

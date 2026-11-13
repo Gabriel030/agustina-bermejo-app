@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { formatScore, scoreTextState } from '../lib/gradeGrid';
 import { isBlockedRow, isGradableRow } from '../lib/examBoardGrades';
 
-export const NOT_REGULAR_REASON = 'Requiere condición regular: perdió la regularidad';
+export const NOT_REGULAR_REASON = 'Requiere cursada regular: no la tiene vigente';
 export const CLOSED_CORRECTION_REASON = 'El acta está cerrada: la nota ya no se puede corregir';
 export const SAVED_ABSENT_HINT = 'Ausente guardado: solo puede pasar a una nota';
 

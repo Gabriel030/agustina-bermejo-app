@@ -136,7 +136,7 @@ export function DirectorEsquemasEvaluacion() {
         <GlassCard className="flex-[1.4] p-2">
           <div className="grid grid-cols-2 gap-3 border-b border-border px-4 py-2.5 text-size-10-5 font-bold uppercase tracking-wide text-ink-faint md:grid-cols-5">
             <div>Nombre</div>
-            <div>Regular</div>
+            <div>Cursada regular</div>
             <div>Aprobar</div>
             <div>Promoción</div>
             <div>Estado</div>
@@ -181,7 +181,7 @@ export function DirectorEsquemasEvaluacion() {
           </Campo>
 
           <div className="grid grid-cols-2 gap-3">
-            <Campo label="Mínimo para quedar regular" htmlFor="esquema-regular">
+            <Campo label="Mínimo para la cursada regular" htmlFor="esquema-regular">
               <Input id="esquema-regular" type="number" step="0.1" min="0" max="10" value={form.minRegularGrade} onChange={(e) => setForm((f) => ({ ...f, minRegularGrade: e.target.value }))} />
             </Campo>
             <Campo label="Nota para aprobar el final" htmlFor="esquema-aprobar">

@@ -27,7 +27,8 @@ class StudentReactivatorTest {
     private final StudentRepository studentRepository = mock(StudentRepository.class);
     private final StudentStatusChangeRecorder recorder = mock(StudentStatusChangeRecorder.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
-    private final StudentReactivator service = new StudentReactivator(studentRepository, recorder, eventPublisher);
+    private final com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache accountAccessStateCache = org.mockito.Mockito.mock(com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache.class);
+    private final StudentReactivator service = new StudentReactivator(studentRepository, recorder, eventPublisher, accountAccessStateCache);
 
     private Student student(StatusType status) {
         Person person = new Person();

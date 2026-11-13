@@ -124,7 +124,7 @@ public class RegularCertificateIssuer {
 
     private void requireRegular(IssueRegularCertificateCommand command, Long studentId, Long actorId, LocalDateTime now) {
         RegularityVerdict verdict = regularityEvaluator.evaluate(command.kind(), command.enrollmentId());
-        if (!verdict.regular()) {
+        if (!verdict.institutionallyRegular()) {
             recordRequest(command, studentId, actorId, now, RegularRequestOutcome.NOT_REGULAR,
                     verdict.reasons().stream().map(RegularityReason::name).toList());
             throw new NotRegularException();

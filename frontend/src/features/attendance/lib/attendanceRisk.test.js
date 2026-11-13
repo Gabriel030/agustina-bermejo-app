@@ -29,14 +29,14 @@ describe('permittedAbsences', () => {
 
 describe('attendanceRisk', () => {
   it('shows no pill when the student is comfortably inside the limit', () => {
-    expect(attendanceRisk(entry())).toMatchObject({ level: 'ok', text: '0 de 3 faltas permitidas', pill: null });
+    expect(attendanceRisk(entry())).toMatchObject({ level: 'ok', text: '0 de 3 inasistencias permitidas', pill: null });
   });
 
   it('warns when one absence is left', () => {
     expect(attendanceRisk(entry({ absenceCount: 2, remainingAbsences: 1 }))).toMatchObject({
       level: 'warning',
-      pill: 'Queda 1 falta',
-      text: '2 de 3 faltas permitidas',
+      pill: 'Queda 1 inasistencia',
+      text: '2 de 3 inasistencias permitidas',
     });
   });
 
@@ -51,7 +51,7 @@ describe('attendanceRisk', () => {
     expect(attendanceRisk(entry({ absenceCount: 4, remainingAbsences: 0 }))).toMatchObject({
       level: 'danger',
       pill: 'Superó el máximo',
-      text: '4 de 3 faltas permitidas',
+      text: '4 de 3 inasistencias permitidas',
     });
   });
 
@@ -63,10 +63,10 @@ describe('attendanceRisk', () => {
     expect(attendanceRisk(entry({ remainingAbsences: null, maxAbsenceRate: null, absenceCount: 1 }))).toEqual({
       permitted: null,
       level: 'ok',
-      text: '1 falta',
+      text: '1 inasistencia',
       pill: null,
       hint: null,
     });
-    expect(attendanceRisk(entry({ remainingAbsences: null, absenceCount: 0 })).text).toBe('0 faltas');
+    expect(attendanceRisk(entry({ remainingAbsences: null, absenceCount: 0 })).text).toBe('0 inasistencias');
   });
 });

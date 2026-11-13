@@ -9,7 +9,7 @@ export function permittedAbsences(entry) {
 }
 
 function absencesLabel(count) {
-  return `${count} ${count === 1 ? 'falta' : 'faltas'}`;
+  return `${count} ${count === 1 ? 'inasistencia' : 'inasistencias'}`;
 }
 
 export function attendanceRisk(entry, absences = entry.absenceCount) {
@@ -17,7 +17,7 @@ export function attendanceRisk(entry, absences = entry.absenceCount) {
   if (permitted == null) {
     return { permitted: null, level: 'ok', text: absencesLabel(absences), pill: null, hint: null };
   }
-  const text = `${absences} de ${permitted} faltas permitidas`;
+  const text = `${absences} de ${permitted} inasistencias permitidas`;
   const remaining = permitted - absences;
   if (remaining < 0) {
     return {
@@ -34,7 +34,7 @@ export function attendanceRisk(entry, absences = entry.absenceCount) {
       level: 'warning',
       text,
       pill: 'Al límite',
-      hint: 'Está en el límite: una falta más supera el máximo.',
+      hint: 'Está en el límite: una inasistencia más supera el máximo.',
     };
   }
   if (remaining === 1) {
@@ -42,8 +42,8 @@ export function attendanceRisk(entry, absences = entry.absenceCount) {
       permitted,
       level: 'warning',
       text,
-      pill: 'Queda 1 falta',
-      hint: 'Le queda 1 falta antes de superar el máximo.',
+      pill: 'Queda 1 inasistencia',
+      hint: 'Le queda 1 inasistencia antes de superar el máximo.',
     };
   }
   return { permitted, level: 'ok', text, pill: null, hint: null };
