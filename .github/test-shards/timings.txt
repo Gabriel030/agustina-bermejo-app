@@ -993,7 +993,6 @@
 0.11 com/red_escuela/backend/identity/usecase/student/ListStudentsServiceTest
 0.56 com/red_escuela/backend/identity/usecase/student/WithdrawStudentServiceTest
 0.01 com/red_escuela/backend/identity/usecase/student/WithdrawStudentWithEnrollmentGuardServiceTest
-32.54 com/red_escuela/backend/karate/KarateSuiteTest
 0.30 com/red_escuela/backend/notification/delivery/EmailDeliveryDispatchJobIT
 5.99 com/red_escuela/backend/notification/delivery/EmailDispatchCapIT
 0.87 com/red_escuela/backend/notification/delivery/NotificationDeliveryIT

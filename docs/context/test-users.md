@@ -21,7 +21,7 @@ Credenciales **solo de desarrollo local** (nunca prod/staging). El campo de logi
 | Base creada por `LocalSeedRunner` (perfil `local`, base nueva) | `Test1234` | `LocalSeedRunner.java:23` |
 | Base local de desarrollo del usuario (`agustina_bermejo`, ya existente) | `Demo1234!` | hash reseteado a mano, ver Obsidian `Usuarios de prueba.md` |
 
-Si una no funciona, probar la otra. Para uniformar en una base existente, el comando de reseteo está en la nota de Obsidian `Usuarios de prueba.md` (ubicación en [specs.md](specs.md)); en tests de Karate/JUnit las credenciales viven en `karate-config.js` y en cada test.
+Si una no funciona, probar la otra. Para uniformar en una base existente, el comando de reseteo está en la nota de Obsidian `Usuarios de prueba.md` (ubicación en [specs.md](specs.md)); en tests JUnit las credenciales viven en `karate-config.js` y en cada test.
 
 Arranque local: `JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run` (ver [debugging.md](debugging.md)) y `npm --prefix frontend run dev`.
 
