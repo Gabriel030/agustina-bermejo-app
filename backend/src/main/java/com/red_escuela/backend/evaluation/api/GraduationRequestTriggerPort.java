@@ -5,5 +5,5 @@ public interface GraduationRequestTriggerPort {
 
     void flagGraduationRequestOutdated(Long programEnrollmentId);
 
-    void reopenGraduationRequestForReview(Long programEnrollmentId);
+    boolean isGraduationFinalized(Long programEnrollmentId);
 }

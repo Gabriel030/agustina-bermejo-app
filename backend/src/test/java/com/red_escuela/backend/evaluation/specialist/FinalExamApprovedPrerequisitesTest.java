@@ -26,9 +26,9 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardFinalGradeRowReject
 import com.red_escuela.backend.evaluation.exception.FinalExamPrerequisitesNotApprovedException;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
+import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
 import com.red_escuela.backend.evaluation.repository.GradeItemAuditRepository;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
@@ -334,34 +334,44 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
     }
 
     @Test
-    void recalculationRevertsAndReopensAnApprovedGraduationRequestForDirectorReview() {
+    void recalculationDoesNotRevertWhenTheGraduationRequestIsApprovedAndAlertsTheDirector() {
         Setup setup = approvedByFinalThenLosingPrerequisite("75000121");
         GraduationRequest request = graduationRequest(setup, GraduationRequestStatus.APPROVED);
 
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
 
-        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
-        assertThat(entityManager.find(GraduationRequest.class, request.getId()).getStatus())
-                .isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(entityManager.find(GraduationRequest.class, request.getId()).getStatus()).isEqualTo(GraduationRequestStatus.APPROVED);
         assertThat(outdatedEvents()).isEqualTo(1);
-        assertThat(auditRepository.findAll()).anyMatch(audit -> audit.getKind() == GradeItemAuditKind.SYSTEM_REVERT);
+        assertThat(applicationEvents.stream(SubjectApprovalRevertedEvent.class).count()).isZero();
+        assertThat(auditRepository.findAll()).noneMatch(audit -> audit.getKind() == GradeItemAuditKind.SYSTEM_REVERT);
     }
 
     @Test
-    void recalculationRevertsTheSubjectButLeavesAGraduatedProgramEnrollmentCompleted() {
+    void recalculationDoesNotRevertWhenTheProgramEnrollmentIsAlreadyCompleted() {
         Setup setup = approvedByFinalThenLosingPrerequisite("75000131");
-        GraduationRequest request = graduationRequest(setup, GraduationRequestStatus.APPROVED);
+        graduationRequest(setup, GraduationRequestStatus.REQUESTED);
         setup.enrollment().getProgramEnrollment().setStatus(ProgramEnrollmentStatus.COMPLETED);
         entityManager.flush();
 
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
 
-        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
-        assertThat(entityManager.find(ProgramEnrollment.class, setup.enrollment().getProgramEnrollment().getId()).getStatus())
-                .isEqualTo(ProgramEnrollmentStatus.COMPLETED);
-        assertThat(entityManager.find(GraduationRequest.class, request.getId()).getStatus())
-                .isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(outdatedEvents()).isEqualTo(1);
+        assertThat(applicationEvents.stream(SubjectApprovalRevertedEvent.class).count()).isZero();
+    }
+
+    @Test
+    void revertNotifiesTheStudentNamingTheMissingPrerequisite() {
+        Setup setup = approvedByFinalThenLosingPrerequisite("75000161");
+
+        gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
+
+        assertThat(applicationEvents.stream(SubjectApprovalRevertedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.missingPrerequisiteNames()).containsExactly(PREREQUISITE_NAME);
+                    assertThat(event.studentPersonId()).isEqualTo(setup.enrollment().getStudent().getPerson().getId());
+                });
     }
 
     @Test
