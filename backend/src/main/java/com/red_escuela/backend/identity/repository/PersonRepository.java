@@ -26,6 +26,13 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
     int claimResetLockoutNotice(@Param("personId") Long personId, @Param("now") LocalDateTime now,
                                 @Param("notifiedBefore") LocalDateTime notifiedBefore);
 
+    @Modifying(flushAutomatically = true)
+    @Query("update Person p set p.tokenVersion = p.tokenVersion + 1 where p.id = :personId")
+    int incrementTokenVersion(@Param("personId") Long personId);
+
+    @Query("select p.tokenVersion from Person p where p.id = :personId")
+    Integer findTokenVersionById(@Param("personId") Long personId);
+
     Optional<Person> findByUsername(String username);
 
     @Query("select new com.red_escuela.backend.identity.repository.AccountAccessState(p.status, p.tokenVersion) from Person p where p.id = :personId")

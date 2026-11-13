@@ -92,7 +92,7 @@ public class Person {
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
 
-    @Column(name = "token_version", nullable = false)
+    @Column(name = "token_version", nullable = false, updatable = false)
     private Integer tokenVersion = 0;
 
 

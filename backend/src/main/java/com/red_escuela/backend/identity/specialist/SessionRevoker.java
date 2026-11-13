@@ -32,8 +32,8 @@ public class SessionRevoker {
             token.setGraceUsed(true);
         });
         refreshTokenRepository.saveAll(tokens);
-        person.setTokenVersion(person.getTokenVersion() + 1);
-        personRepository.save(person);
+        personRepository.incrementTokenVersion(person.getId());
+        person.setTokenVersion(personRepository.findTokenVersionById(person.getId()));
         accountAccessStateCache.evictNowAndAfterCommit(person.getId());
     }
 

@@ -11,9 +11,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 
 @Service
 public class PasswordResetCodeChecker {
@@ -88,6 +91,21 @@ public class PasswordResetCodeChecker {
     }
 
     private static String sourceOf(String ipAddress) {
-        return TokenHashUtil.sha256Hex(ipAddress == null || ipAddress.isBlank() ? UNKNOWN_SOURCE : ipAddress);
+        return TokenHashUtil.sha256Hex(ipAddress == null || ipAddress.isBlank() ? UNKNOWN_SOURCE : networkOf(ipAddress.trim()));
+    }
+
+    private static String networkOf(String ipAddress) {
+        if (!ipAddress.contains(":") || !ipAddress.matches("[0-9a-fA-F:.%a-zA-Z0-9]+")) {
+            return ipAddress;
+        }
+        try {
+            byte[] bytes = InetAddress.getByName(ipAddress).getAddress();
+            if (bytes.length != 16) {
+                return ipAddress;
+            }
+            return "v6/" + HexFormat.of().formatHex(bytes, 0, 8);
+        } catch (UnknownHostException e) {
+            return ipAddress;
+        }
     }
 }

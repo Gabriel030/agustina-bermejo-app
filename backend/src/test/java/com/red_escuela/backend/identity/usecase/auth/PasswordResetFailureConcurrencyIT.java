@@ -111,4 +111,31 @@ class PasswordResetFailureConcurrencyIT extends AbstractIntegrationTest {
 
         assertThat(accountAccessStateCache.find(person.getId())).get().extracting("tokenVersion").isEqualTo(1);
     }
+
+    @Test
+    void concurrentFullPersonSavesNeverOverwriteTheAtomicallyIncrementedTokenVersion() throws Exception {
+        Person person = persistPerson("tv-race-" + System.nanoTime());
+        int revokers = 4;
+        List<Callable<Boolean>> calls = new ArrayList<>();
+        for (int i = 0; i < revokers; i++) {
+            calls.add(() -> {
+                transactionTemplate.executeWithoutResult(status ->
+                        sessionRevoker.revokeAllSessions(personRepository.findById(person.getId()).orElseThrow()));
+                return true;
+            });
+            calls.add(() -> {
+                transactionTemplate.executeWithoutResult(status -> {
+                    Person stale = personRepository.findById(person.getId()).orElseThrow();
+                    stale.setLastname("Apellido");
+                    personRepository.save(stale);
+                });
+                return true;
+            });
+        }
+
+        List<Outcome<Boolean>> outcomes = ConcurrentRace.run(calls);
+
+        assertThat(outcomes).allMatch(Outcome::succeeded);
+        assertThat(personRepository.findTokenVersionById(person.getId())).isEqualTo(revokers);
+    }
 }
