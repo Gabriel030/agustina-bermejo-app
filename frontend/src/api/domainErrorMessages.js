@@ -7,7 +7,6 @@ export const DOMAIN_ERROR_MESSAGES = {
   APPLICATION_DOCUMENT_TOO_LARGE: 'Uno de los documentos supera el tamaño permitido.',
   ATTENDANCE_STATUS_NOT_RECORDABLE: 'Ese estado de asistencia no se puede registrar.',
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
-  CERTIFICATE_NOT_ELIGIBLE: 'No cumplís las condiciones para obtener este certificado.',
   CIRCULAR_PREREQUISITE: 'Esa correlatividad genera un círculo entre materias.',
   CLOSURE_ALREADY_CLOSED: 'El cierre ya está cerrado y no se puede modificar.',
   CLOSURE_ALREADY_CONFIRMED: 'El cierre ya fue confirmado.',
