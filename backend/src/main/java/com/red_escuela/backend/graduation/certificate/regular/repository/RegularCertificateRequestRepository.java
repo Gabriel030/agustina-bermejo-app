@@ -5,6 +5,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequ
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface RegularCertificateRequestRepository extends JpaRepository<RegularCertificateRequest, Long> {
 
@@ -19,4 +20,10 @@ public interface RegularCertificateRequestRepository extends JpaRepository<Regul
     List<RegularCertificateRequest> findTop200ByStudentIdOrderByRequestedAtDesc(Long studentId);
 
     List<RegularCertificateRequest> findTop200ByStudentIdAndOutcomeOrderByRequestedAtDesc(Long studentId, RegularRequestOutcome outcome);
+
+    Optional<RegularCertificateRequest> findFirstByProgramEnrollmentIdAndOutcomeOrderByRequestedAtDesc(Long programEnrollmentId, RegularRequestOutcome outcome);
+
+    Optional<RegularCertificateRequest> findFirstByCourseEnrollmentIdAndOutcomeOrderByRequestedAtDesc(Long courseEnrollmentId, RegularRequestOutcome outcome);
+
+    Optional<RegularCertificateRequest> findByIdAndStudentId(Long id, Long studentId);
 }

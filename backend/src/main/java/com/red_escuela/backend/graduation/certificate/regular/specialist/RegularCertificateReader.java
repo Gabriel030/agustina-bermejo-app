@@ -50,7 +50,16 @@ public class RegularCertificateReader {
 
     @Transactional(readOnly = true)
     public List<RegularCertificateRequestResponse> listRequests(Long studentId, RegularRequestOutcome outcome) {
-        return requestsOf(studentId, outcome).stream().map(this::toRequestResponse).toList();
+        return requestsOf(studentId, outcome).stream().map(RegularRequestResponses::of).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RegularCertificateResponse> historyOf(RegularityKind kind, Long enrollmentId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        List<RegularStudentCertificate> certificates = kind == RegularityKind.PROGRAM
+                ? certificateRepository.findTop50ByProgramEnrollmentIdOrderByIssuedAtDesc(enrollmentId)
+                : certificateRepository.findTop50ByCourseEnrollmentIdOrderByIssuedAtDesc(enrollmentId);
+        return certificates.stream().map(certificate -> toResponse(certificate, now)).toList();
     }
 
     private List<RegularStudentCertificate> certificatesOf(Long studentId, RegularCertificateStatus status) {
@@ -82,14 +91,5 @@ public class RegularCertificateReader {
                 certificate.enrollmentId(), status, certificate.getIssuedAt(), certificate.getExpiresAt(),
                 certificate.getStandingBasis(), certificate.getBillingModeAtIssue(),
                 verificationUrl.of(certificate.certificateCode()));
-    }
-
-    private RegularCertificateRequestResponse toRequestResponse(RegularCertificateRequest request) {
-        Long enrollmentId = request.getKind() == RegularityKind.PROGRAM
-                ? request.getProgramEnrollmentId()
-                : request.getCourseEnrollmentId();
-        return new RegularCertificateRequestResponse(request.getId(), request.getStudentId(), request.getKind(), enrollmentId,
-                request.getChannel(), request.getOutcome(), request.getReasons(), request.getRequestedAt(),
-                request.getCertificateId());
     }
 }

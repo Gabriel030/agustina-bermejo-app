@@ -32,6 +32,10 @@ public class RegularStandingGate {
         this.clock = clock;
     }
 
+    public boolean requiresStaffConfirmation() {
+        return billingModeGate.currentMode() != BillingMode.FULL;
+    }
+
     public StandingResolution resolve(Long studentId, RegularityKind kind, Long enrollmentId, StandingConfirmation confirmation) {
         BillingMode mode = billingModeGate.currentMode();
         if (mode == BillingMode.FULL) {

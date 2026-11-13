@@ -21,6 +21,12 @@ public interface RegularStudentCertificateRepository extends JpaRepository<Regul
 
     Optional<RegularStudentCertificate> findByCourseEnrollmentIdAndStatus(Long courseEnrollmentId, RegularCertificateStatus status);
 
+    Optional<RegularStudentCertificate> findByIdAndStudentId(Long id, Long studentId);
+
+    List<RegularStudentCertificate> findTop50ByProgramEnrollmentIdOrderByIssuedAtDesc(Long programEnrollmentId);
+
+    List<RegularStudentCertificate> findTop50ByCourseEnrollmentIdOrderByIssuedAtDesc(Long courseEnrollmentId);
+
     List<RegularStudentCertificate> findByStudentIdOrderByIssuedAtDesc(Long studentId);
 
     List<RegularStudentCertificate> findTop200ByOrderByIssuedAtDesc();
