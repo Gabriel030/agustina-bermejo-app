@@ -25,7 +25,8 @@ class CheckRegularityServiceTest {
     private final RegularityEvaluator evaluator = mock(RegularityEvaluator.class);
     private final BillingModeGate gate = mock(BillingModeGate.class);
     private final PaymentStandingResolver paymentResolver = mock(PaymentStandingResolver.class);
-    private final CheckRegularityService service = new CheckRegularityService(evaluator, gate, paymentResolver);
+    private final CheckRegularityService service = new CheckRegularityService(
+            new com.red_escuela.backend.graduation.certificate.regular.specialist.RegularityChecker(evaluator, gate, paymentResolver));
 
     @Test
     void regularWithPaymentsToConfirmStaysInstitutionallyRegularAndFlagsThePayments() {
