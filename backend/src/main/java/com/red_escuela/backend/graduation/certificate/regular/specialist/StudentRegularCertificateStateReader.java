@@ -57,7 +57,7 @@ public class StudentRegularCertificateStateReader {
                     RegularRequestResponses.of(pending.get()), null, List.of(), history);
         }
         RegularityVerdict verdict = regularityEvaluator.evaluate(kind, enrollmentId);
-        if (!verdict.regular()) {
+        if (!verdict.institutionallyRegular()) {
             return response(kind, enrollmentId, StudentRegularCertificateState.UNAVAILABLE, staffConfirmationRequired, null, null,
                     unavailabilityOf(verdict), verdict.reasons().stream().map(RegularityReason::name).toList(), history);
         }
