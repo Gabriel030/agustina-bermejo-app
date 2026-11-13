@@ -298,7 +298,7 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
     @Test
     void blockedAttemptsStayRecordedAsRequests() {
         assertThatThrownBy(() -> issue(false, null)).isInstanceOf(StandingNotConfirmedException.class);
-        assertThatThrownBy(() -> issue(true, "corta")).isInstanceOf(StandingEvidenceInvalidException.class);
+        assertThatThrownBy(() -> issue(true, "x".repeat(501))).isInstanceOf(StandingEvidenceInvalidException.class);
         issueConfirmed();
         assertThatThrownBy(this::issueConfirmed).isInstanceOf(RegularCertificateAlreadyIssuedException.class);
 

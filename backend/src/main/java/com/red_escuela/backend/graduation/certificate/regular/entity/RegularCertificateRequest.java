@@ -28,6 +28,7 @@ import java.util.List;
 public class RegularCertificateRequest {
 
     public static final String CANCELLED_BY_STUDENT = "CANCELLED_BY_STUDENT";
+    public static final String REJECTED_BY_STAFF = "REJECTED_BY_STAFF";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -70,6 +71,15 @@ public class RegularCertificateRequest {
     @Column(name = "certificate_id")
     private Long certificateId;
 
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    @Column(name = "resolved_by_id")
+    private Long resolvedById;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
     public static RegularCertificateRequest record(RegularityKind kind, Long enrollmentId, Long studentId, Long requestedById,
                                                    LocalDateTime requestedAt, RegularCertificateChannel channel,
                                                    RegularRequestOutcome outcome, List<String> reasons) {
@@ -102,6 +112,18 @@ public class RegularCertificateRequest {
     public void cancelByStudent() {
         this.outcome = RegularRequestOutcome.REJECTED;
         this.reasons = List.of(CANCELLED_BY_STUDENT);
+    }
+
+    public void rejectByStaff(String reason, Long staffId, LocalDateTime now) {
+        this.outcome = RegularRequestOutcome.REJECTED;
+        this.reasons = List.of(REJECTED_BY_STAFF);
+        this.rejectionReason = reason;
+        this.resolvedById = staffId;
+        this.resolvedAt = now;
+    }
+
+    public boolean wasRejectedByStaff() {
+        return outcome == RegularRequestOutcome.REJECTED && rejectionReason != null;
     }
 
     public boolean wasCancelledByStudent() {

@@ -10,5 +10,6 @@ import java.util.List;
 
 public record RegularCertificateRequestResponse(Long id, Long studentId, RegularityKind kind, Long enrollmentId,
                                                 RegularCertificateChannel channel, RegularRequestOutcome outcome,
-                                                List<String> reasons, LocalDateTime requestedAt, @Schema(nullable = true) Long certificateId) {
+                                                List<String> reasons, LocalDateTime requestedAt, @Schema(nullable = true) Long certificateId,
+                                                @Schema(nullable = true) String rejectionReason) {
 }

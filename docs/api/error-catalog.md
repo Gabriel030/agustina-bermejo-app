@@ -181,6 +181,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REFUND_DESTINATION_INVALID` | no | `RefundDestinationInvalidException` | billing |
 | `REFUND_DESTINATION_REQUIRED` | no | `RefundDestinationRequiredException` | billing |
 | `REFUND_FAILURE_REASON_INVALID` | no | `RefundFailureReasonInvalidException` | billing |
+| `REJECTION_REASON_INVALID` | no | `RejectionReasonInvalidException` | graduation |
 | `REJECTION_REASON_REQUIRED` | no | `RejectionReasonRequiredException` | billing |
 | `REQUEST_FIELD_OUT_OF_RANGE` | no | `RequestFieldOutOfRangeException` | shared |
 | `REQUEST_FIELD_REQUIRED` | no | `RequestFieldRequiredException` | shared |
@@ -188,6 +189,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REQUEST_LIST_TOO_LARGE` | no | `RequestListTooLargeException` | shared |
 | `REQUIRED_APPLICATION_DOCUMENTS_MISSING` | no | `RequiredApplicationDocumentsMissingException` | enrollment |
 | `RETROACTIVE_EFFECTIVE_DATE` | no | `RetroactiveEffectiveDateException` | billing |
+| `REVOCATION_REASON_INVALID` | no | `RevocationReasonInvalidException` | graduation |
 | `REVOCATION_REASON_REQUIRED` | no | `RevocationReasonRequiredException` | billing |
 | `SCHEDULED_DATE_IN_THE_PAST` | no | `ScheduledDateInThePastException` | announcement |
 | `SCHOLARSHIP_ONLY_FOR_MONTHLY_INSTALLMENTS` | no | `ScholarshipOnlyForMonthlyInstallmentsException` | billing |
@@ -514,6 +516,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REFUND_METHOD_MISMATCH` | no | `RefundMethodMismatchException` | billing |
 | `REFUND_REQUEST_NOT_PENDING` | no | `RefundRequestNotPendingException` | billing |
 | `REGULAR_CERTIFICATE_ALREADY_ISSUED` | no | `RegularCertificateAlreadyIssuedException` | graduation |
+| `REGULAR_CERTIFICATE_NOT_REVOCABLE` | no | `RegularCertificateNotRevocableException` | graduation |
 | `REGULAR_CERTIFICATE_REQUEST_NOT_PENDING` | no | `RegularCertificateRequestNotPendingException` | graduation |
 | `RUN_ITEM_NOT_RETRYABLE` | no | `RunItemNotRetryableException` | billing |
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
@@ -779,7 +782,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |
 | POST | `/refunds/{refundId}/completion` | `RefundController#completeRefund` |
 | POST | `/refunds/{refundId}/failure` | `RefundController#failRefund` |
+| POST | `/regular-certificate-requests/{id}/reject` | `RegularCertificateRequestController#reject` |
 | POST | `/regular-certificates` | `RegularCertificateController#issue` |
+| POST | `/regular-certificates/{id}/revoke` | `RegularCertificateController#revoke` |
 | POST | `/section-enrollments/{id}/change-section` | `SubjectSectionEnrollmentController#changeSection` |
 | POST | `/section-enrollments/{id}/grade-items` | `GradeItemController#loadProgramEnrollmentGrade` |
 | POST | `/section-enrollments/{id}/withdraw` | `SubjectSectionEnrollmentController#withdraw` |

@@ -37,6 +37,7 @@ function stateBody(overrides = {}) {
     certificate: null,
     pendingRequest: null,
     unavailableType: null,
+    rejectionReason: null,
     reasons: [],
     history: [],
     ...overrides,
@@ -53,6 +54,7 @@ const pendingRequestBody = {
   reasons: [],
   requestedAt: '2026-11-13T09:00:00',
   certificateId: null,
+  rejectionReason: null,
 };
 
 function mockState(body) {
@@ -188,6 +190,16 @@ describe('RegularCertificateCard', () => {
     expect(await screen.findByText(/Tenés pagos pendientes/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ver mis pagos' })).toHaveAttribute('href', '/alumno/pagos');
     expect(screen.queryByText(/\$/)).not.toBeInTheDocument();
+  });
+
+  it('shows the rejection reason written by administration', async () => {
+    mockState(
+      stateBody({ state: 'UNAVAILABLE', unavailableType: 'REJECTED', rejectionReason: 'Falta regularizar la cuota de octubre' }),
+    );
+    renderCard();
+
+    expect(await screen.findByText(/Falta regularizar la cuota de octubre/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pedir constancia' })).not.toBeInTheDocument();
   });
 
   it('shows the not-regular message when the request is refused with NOT_REGULAR', async () => {

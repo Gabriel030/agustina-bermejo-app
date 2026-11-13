@@ -10571,6 +10571,9 @@
             },
             "type" : "array"
           },
+          "rejectionReason" : {
+            "type" : [ "string", "null" ]
+          },
           "requestedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -10580,7 +10583,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "certificateId", "channel", "enrollmentId", "id", "kind", "outcome", "reasons", "requestedAt", "studentId" ],
+        "required" : [ "certificateId", "channel", "enrollmentId", "id", "kind", "outcome", "reasons", "rejectionReason", "requestedAt", "studentId" ],
         "type" : "object"
       },
       "RegularCertificateResponse" : {
@@ -10741,6 +10744,17 @@
         "properties" : {
           "reason" : {
             "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "RejectRegularCertificateRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -11072,6 +11086,17 @@
             "type" : [ "string", "null" ]
           }
         },
+        "type" : "object"
+      },
+      "RevokeRegularCertificateRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "RevokeStudentDiscountRequest" : {
@@ -12388,6 +12413,9 @@
             },
             "type" : "array"
           },
+          "rejectionReason" : {
+            "type" : [ "string", "null" ]
+          },
           "staffConfirmationRequired" : {
             "type" : "boolean"
           },
@@ -12396,11 +12424,11 @@
             "type" : "string"
           },
           "unavailableType" : {
-            "enum" : [ "ATTENDANCE", "PAYMENTS", "ENROLLMENT", null ],
+            "enum" : [ "ATTENDANCE", "PAYMENTS", "ENROLLMENT", "REJECTED", null ],
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "certificate", "enrollmentId", "history", "kind", "pendingRequest", "reasons", "staffConfirmationRequired", "state", "unavailableType" ],
+        "required" : [ "certificate", "enrollmentId", "history", "kind", "pendingRequest", "reasons", "rejectionReason", "staffConfirmationRequired", "state", "unavailableType" ],
         "type" : "object"
       },
       "StudentResponse" : {
@@ -63300,6 +63328,133 @@
         "tags" : [ "regular-certificate-request-controller" ]
       }
     },
+    "/regular-certificate-requests/{id}/reject" : {
+      "post" : {
+        "operationId" : "RegularCertificateRequest_reject",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RejectRegularCertificateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegularCertificateRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "regular-certificate-request-controller" ]
+      }
+    },
     "/regular-certificates" : {
       "get" : {
         "operationId" : "RegularCertificate_list",
@@ -63805,6 +63960,133 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "regular-certificate-controller" ]
+      }
+    },
+    "/regular-certificates/{id}/revoke" : {
+      "post" : {
+        "operationId" : "RegularCertificate_revoke",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RevokeRegularCertificateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegularCertificateResponse"
                 }
               }
             },

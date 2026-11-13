@@ -64,6 +64,7 @@ function mockEgreso({ own = ownRequest(), post } = {}) {
         certificate: null,
         pendingRequest: null,
         unavailableType: null,
+    rejectionReason: null,
         reasons: [],
         history: [],
       }),

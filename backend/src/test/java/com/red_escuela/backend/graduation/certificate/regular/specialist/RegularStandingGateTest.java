@@ -125,21 +125,22 @@ class RegularStandingGateTest {
     }
 
     @Test
-    void evidenceShorterThanTenCharactersIsRejected() {
-        givenMode(BillingMode.OFF);
-
-        assertThatThrownBy(() -> resolve(new StandingConfirmation(true, "corta"))).isInstanceOf(StandingEvidenceInvalidException.class);
-        assertThatThrownBy(() -> resolve(new StandingConfirmation(true, "         x         "))).isInstanceOf(StandingEvidenceInvalidException.class);
-        assertThatThrownBy(() -> resolve(new StandingConfirmation(true, null))).isInstanceOf(StandingEvidenceInvalidException.class);
-    }
-
-    @Test
-    void evidenceBetweenTenAndFiveHundredCharactersIsAccepted() {
+    void evidenceIsOptionalAndShortOrBlankNotesAreStoredTrimmedOrAsNull() {
         givenMode(BillingMode.OFF);
         when(currentActorFinder.currentPersonId()).thenReturn(9L);
 
-        assertThat(resolve(new StandingConfirmation(true, "x".repeat(10))).basis()).isEqualTo(StandingBasis.MANUALLY_CONFIRMED);
-        assertThat(resolve(new StandingConfirmation(true, "x".repeat(500))).basis()).isEqualTo(StandingBasis.MANUALLY_CONFIRMED);
+        assertThat(resolve(new StandingConfirmation(true, null)).evidence()).isNull();
+        assertThat(resolve(new StandingConfirmation(true, "     ")).evidence()).isNull();
+        assertThat(resolve(new StandingConfirmation(true, "  corta  ")).evidence()).isEqualTo("corta");
+        assertThat(resolve(new StandingConfirmation(true, null)).basis()).isEqualTo(StandingBasis.MANUALLY_CONFIRMED);
+    }
+
+    @Test
+    void evidenceUpToFiveHundredCharactersIsAccepted() {
+        givenMode(BillingMode.OFF);
+        when(currentActorFinder.currentPersonId()).thenReturn(9L);
+
+        assertThat(resolve(new StandingConfirmation(true, "x".repeat(500))).evidence()).hasSize(500);
     }
 
     @Test

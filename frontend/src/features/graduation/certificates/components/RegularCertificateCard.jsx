@@ -40,7 +40,7 @@ function summaryFor(view, state) {
     case REGULAR_VIEW.UNAVAILABLE_PAYMENTS:
       return 'Tenés pagos pendientes. Cuando estés al día podés volver a pedirla.';
     case REGULAR_VIEW.UNAVAILABLE_REJECTED:
-      return `Administración no pudo confirmar tu pedido: «${state.reasons?.[0] ?? 'sin motivo informado'}». Cuando lo resuelvas podés pedirla de nuevo.`;
+      return `Administración no pudo confirmar tu pedido: «${state.rejectionReason ?? 'sin motivo informado'}». Cuando lo resuelvas podés pedirla de nuevo.`;
     case REGULAR_VIEW.UNAVAILABLE_ENROLLMENT:
       return 'No tenés una inscripción activa en esta carrera.';
     default:

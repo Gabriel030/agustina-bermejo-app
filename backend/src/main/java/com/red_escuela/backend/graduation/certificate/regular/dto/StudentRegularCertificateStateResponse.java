@@ -8,6 +8,7 @@ import java.util.List;
 public record StudentRegularCertificateStateResponse(RegularityKind kind, Long enrollmentId, StudentRegularCertificateState state,
                                                      boolean staffConfirmationRequired, @Schema(nullable = true) RegularCertificateResponse certificate,
                                                      @Schema(nullable = true) RegularCertificateRequestResponse pendingRequest,
-                                                     @Schema(nullable = true) RegularUnavailabilityType unavailableType, List<String> reasons,
+                                                     @Schema(nullable = true) RegularUnavailabilityType unavailableType,
+                                                     @Schema(nullable = true) String rejectionReason, List<String> reasons,
                                                      List<RegularCertificateResponse> history) {
 }

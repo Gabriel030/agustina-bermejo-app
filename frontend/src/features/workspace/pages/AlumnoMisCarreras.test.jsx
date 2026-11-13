@@ -124,6 +124,7 @@ describe('AlumnoMisCarreras', () => {
           certificate: null,
           pendingRequest: null,
           unavailableType: null,
+    rejectionReason: null,
           reasons: [],
           history: [],
         }),

@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 @Service
 public class RegularStandingGate {
 
-    private static final int EVIDENCE_MIN_LENGTH = 10;
     private static final int EVIDENCE_MAX_LENGTH = 500;
 
     private final BillingModeGate billingModeGate;
@@ -55,10 +54,11 @@ public class RegularStandingGate {
         if (!confirmation.confirmed()) {
             throw new StandingNotConfirmedException();
         }
-        String evidence = confirmation.evidence() == null ? "" : confirmation.evidence().trim();
-        if (evidence.length() < EVIDENCE_MIN_LENGTH || evidence.length() > EVIDENCE_MAX_LENGTH) {
+        String trimmed = confirmation.evidence() == null ? "" : confirmation.evidence().trim();
+        if (trimmed.length() > EVIDENCE_MAX_LENGTH) {
             throw new StandingEvidenceInvalidException();
         }
+        String evidence = trimmed.isEmpty() ? null : trimmed;
         return new StandingResolution(StandingBasis.MANUALLY_CONFIRMED, mode, currentActorFinder.currentPersonId(),
                 LocalDateTime.now(clock), evidence);
     }

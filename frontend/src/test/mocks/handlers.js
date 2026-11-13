@@ -155,6 +155,7 @@ export const handlers = [
       certificate: null,
       pendingRequest: null,
       unavailableType: null,
+      rejectionReason: null,
       reasons: [],
       history: [],
     });
