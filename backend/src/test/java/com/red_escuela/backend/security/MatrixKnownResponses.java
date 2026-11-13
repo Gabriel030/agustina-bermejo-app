@@ -26,6 +26,8 @@ final class MatrixKnownResponses {
             Map.entry("GET /me/enrollment-payment-status", NO_PROFILE),
             Map.entry("GET /me/exam-board-registrations", NO_PROFILE),
             Map.entry("GET /me/payments", NO_PROFILE),
+            Map.entry("GET /me/regular-certificates", NO_PROFILE),
+            Map.entry("POST /me/regular-certificates", NO_PROFILE),
             Map.entry("GET /me/program-enrollment-applications", NO_PROFILE),
             Map.entry("GET /me/program-enrollments", NO_PROFILE),
             Map.entry("GET /me/refund-eligibility", NO_PROFILE),

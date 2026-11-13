@@ -27,6 +27,8 @@ import java.util.List;
 @AllArgsConstructor
 public class RegularCertificateRequest {
 
+    public static final String CANCELLED_BY_STUDENT = "CANCELLED_BY_STUDENT";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -86,5 +88,27 @@ public class RegularCertificateRequest {
 
     public void linkCertificate(Long newCertificateId) {
         this.certificateId = newCertificateId;
+    }
+
+    public boolean isPending() {
+        return outcome == RegularRequestOutcome.PENDING_STAFF;
+    }
+
+    public void resolveAsIssued(Long newCertificateId) {
+        this.outcome = RegularRequestOutcome.ISSUED;
+        this.certificateId = newCertificateId;
+    }
+
+    public void cancelByStudent() {
+        this.outcome = RegularRequestOutcome.REJECTED;
+        this.reasons = List.of(CANCELLED_BY_STUDENT);
+    }
+
+    public boolean wasCancelledByStudent() {
+        return outcome == RegularRequestOutcome.REJECTED && reasons.contains(CANCELLED_BY_STUDENT);
+    }
+
+    public Long enrollmentId() {
+        return kind == RegularityKind.PROGRAM ? programEnrollmentId : courseEnrollmentId;
     }
 }
