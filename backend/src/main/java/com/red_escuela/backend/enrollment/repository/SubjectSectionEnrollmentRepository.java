@@ -94,6 +94,10 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     Optional<SubjectSectionEnrollment> findByStudentIdAndSubjectSectionId(Long studentId, Long subjectSectionId);
 
+    boolean existsBySubjectSectionIdAndStatusIn(Long sectionId, List<EnrollmentStatus> statuses);
+
+    boolean existsBySubjectSectionTermIdAndStatusIn(Long termId, List<EnrollmentStatus> statuses);
+
     boolean existsByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, List<EnrollmentStatus> statuses);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
