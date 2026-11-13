@@ -43,7 +43,7 @@ function buildColumns() {
 }
 
 export function VersionHistory({ versions, isLoading, isError, onRetry }) {
-  const columns = useMemo(buildColumns, []);
+  const columns = useMemo(() => buildColumns(), []);
   return (
     <DataTable
       columns={columns}

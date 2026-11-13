@@ -125,7 +125,7 @@ export function StaffSectionRoster() {
   const { data: entries, isLoading, isError, refetch } = useReporteAusencias(cycle ? sectionType : undefined, cycle ? sectionId : undefined);
 
   const section = sections?.find((candidate) => String(candidate.id) === String(sectionId));
-  const columns = useMemo(buildColumns, []);
+  const columns = useMemo(() => buildColumns(), []);
   const rosterRows = useMemo(() => (entries ?? []).map(toRosterRow), [entries]);
   const visibleEntries = useMemo(() => rosterRows.filter((entry) => matchesSearch(entry, search)), [rosterRows, search]);
 
