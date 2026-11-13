@@ -25,5 +25,9 @@ public interface RegularCertificateRequestRepository extends JpaRepository<Regul
 
     Optional<RegularCertificateRequest> findFirstByCourseEnrollmentIdAndOutcomeOrderByRequestedAtDesc(Long courseEnrollmentId, RegularRequestOutcome outcome);
 
+    Optional<RegularCertificateRequest> findFirstByProgramEnrollmentIdOrderByRequestedAtDescIdDesc(Long programEnrollmentId);
+
+    Optional<RegularCertificateRequest> findFirstByCourseEnrollmentIdOrderByRequestedAtDescIdDesc(Long courseEnrollmentId);
+
     Optional<RegularCertificateRequest> findByIdAndStudentId(Long id, Long studentId);
 }

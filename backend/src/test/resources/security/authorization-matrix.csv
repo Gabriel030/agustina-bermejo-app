@@ -476,6 +476,8 @@ GET,/regular-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/regular-certificates/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/regular-certificates/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/regular-certificate-requests,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/regular-certificate-requests/{id}/reject,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/regular-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/graduation-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1}"
 GET,/graduation-certificates/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/institute-settings,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
