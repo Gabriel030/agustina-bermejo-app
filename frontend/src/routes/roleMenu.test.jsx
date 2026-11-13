@@ -4,7 +4,7 @@ import { ROLE_MENU, groupMenuItems, menuGroupSlugs, menuItemsFor, pagesFor } fro
 import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
-const PENDING_SCREENS = { alumno: ['opciones'], administrativo: ['constancias'], director: ['constancias'] };
+const PENDING_SCREENS = { alumno: ['opciones'], administrativo: [], director: [] };
 
 describe('role menu manifest', () => {
   it('defines a manifest entry for every configured role', () => {

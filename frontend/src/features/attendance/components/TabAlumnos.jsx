@@ -51,9 +51,9 @@ const COLUMNS = [
     cell: ({ row }) => <span className="text-ink-faint">{row.original.dni}</span>,
   },
   {
-    id: 'absenceCount',
+    id: 'countableAbsences',
     header: 'Inasistencias',
-    accessorKey: 'absenceCount',
+    accessorFn: (row) => row.absenceStanding.countableAbsences,
     cell: ({ row }) => <span className="tabular-nums">{row.original.risk.text}</span>,
   },
   {
@@ -88,9 +88,10 @@ const COLUMNS = [
 ];
 
 function maxRuleNote(rows) {
-  const reference = rows.find((row) => row.maxAbsenceRate != null && row.classesHeld > 0);
+  const reference = rows.find((row) => row.absenceStanding.maxAbsencePercent != null && row.absenceStanding.classesHeld > 0);
   if (!reference || reference.risk.permitted == null) return null;
-  return `Máximo de la comisión: ${percentFormatter.format(reference.maxAbsenceRate)}% de las clases (${reference.risk.permitted} de ${reference.classesHeld} dictadas)`;
+  const { maxAbsencePercent, classesHeld } = reference.absenceStanding;
+  return `Máximo de la comisión: ${percentFormatter.format(maxAbsencePercent)}% de las clases (${reference.risk.permitted} de ${classesHeld} dictadas)`;
 }
 
 export function TabAlumnos({ type, sectionId }) {
@@ -149,7 +150,7 @@ export function TabAlumnos({ type, sectionId }) {
   }
 
   const atRiskCount = rows.filter((row) => row.risk.level !== 'ok').length;
-  const totalAbsences = rows.reduce((sum, row) => sum + row.absenceCount, 0);
+  const totalAbsences = rows.reduce((sum, row) => sum + row.absenceStanding.countableAbsences, 0);
   const note = maxRuleNote(rows);
 
   return (

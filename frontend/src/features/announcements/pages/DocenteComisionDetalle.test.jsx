@@ -7,6 +7,7 @@ import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { DocenteComisionDetalle } from './DocenteComisionDetalle';
+import { rosterEntryFixture } from '@/test/fixtures/rosterEntries';
 
 const API = 'http://localhost:8080';
 const SECTION_ID = 7;
@@ -113,7 +114,7 @@ describe('DocenteComisionDetalle', () => {
     server.use(
       http.get(`${API}/program-sections/${SECTION_ID}/roster`, () =>
         HttpResponse.json([
-          { enrollmentId: 1, studentId: 11, studentName: 'Acosta, Joaquín', dni: '40111222', absenceCount: 3, attendancePercent: 75, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 0 },
+          rosterEntryFixture({ attendancePercent: 75 }, { countableAbsences: 3, remainingAbsences: 0 }),
         ]),
       ),
     );

@@ -40,6 +40,50 @@ describe('LlamadosDisponibles', () => {
 
     expect(await screen.findByText('No pudimos inscribirte, probá de nuevo.')).toBeInTheDocument();
   });
+
+  it('disables the sign-up button with the reason when the student is free by absences', async () => {
+    server.use(http.get(`${API}/me/exam-boards`, () => HttpResponse.json([examBoardFixture()])));
+    renderWithProviders(
+      <LlamadosDisponibles
+        subjectId={3}
+        programSectionEnrollmentId={9}
+        misInscripciones={[]}
+        eligibility={{ eligible: false, reason: 'FREE_BY_ABSENCES' }}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Inscribirme a este llamado' })).toBeDisabled();
+    expect(screen.getByText('Libre por inasistencias: justificalas para poder inscribirte al final.')).toBeInTheDocument();
+  });
+
+  it('disables the sign-up button with the reason when the coursework is not regular', async () => {
+    server.use(http.get(`${API}/me/exam-boards`, () => HttpResponse.json([examBoardFixture()])));
+    renderWithProviders(
+      <LlamadosDisponibles
+        subjectId={3}
+        programSectionEnrollmentId={9}
+        misInscripciones={[]}
+        eligibility={{ eligible: false, reason: 'COURSEWORK_NOT_REGULAR' }}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Inscribirme a este llamado' })).toBeDisabled();
+    expect(screen.getByText('Necesitás la cursada regular de la materia para rendir el final.')).toBeInTheDocument();
+  });
+
+  it('keeps the sign-up button enabled when the student is eligible', async () => {
+    server.use(http.get(`${API}/me/exam-boards`, () => HttpResponse.json([examBoardFixture()])));
+    renderWithProviders(
+      <LlamadosDisponibles
+        subjectId={3}
+        programSectionEnrollmentId={9}
+        misInscripciones={[]}
+        eligibility={{ eligible: true, reason: null }}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Inscribirme a este llamado' })).toBeEnabled();
+  });
 });
 
 describe('TabMesasDeExamen', () => {
