@@ -114,7 +114,7 @@ cases de `billing` para el flujo de baja.
 
 **Migrado al patrón Use Case (2026-09-08)**: `billing/usecase/<subdominio>/`
 (`invoice`, `payment`, `paymentreceipt`, `creditnote`,
-`promotion`, `paymentplan`, `billingperiod`, `latepaymentsettings`, `cohort`)
+`promotion`, `paymentplan`, `latepaymentsettings`, `cohort`)
 tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
 controller invoca directo. Lo que queda en `billing/service/` son
 colaboradores de una sola responsabilidad, no use cases — tres categorías:
@@ -170,7 +170,7 @@ de Spring Modulith entrega al menos una vez. Un handler de pre que pide
 autorización abre un `AuthorizationRequest` (`billing.authorization`) y la
 operación no se procesa hasta que se aprueba.
 
-Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT):
+Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT, que corre solo en local):
 `BillingDecisionCoverageTest` exige un `@Tag("D-xxx")` por cada decisión
 `implementada`/`parcial` de `docs/billing/decision-registry.md` (fuente de
 verdad, columna Implementación); `PolicyCatalogTest` compara

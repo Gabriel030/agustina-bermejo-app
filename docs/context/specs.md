@@ -34,7 +34,7 @@ Todo lo que es **producto** (qué pantallas hay, qué flujo sigue una feature, q
 
 **Backend vs. frontend, no confundir**: `Roadmap backend/` documenta lo que
 ya está implementado (referencia, no lista de tareas) — cada spec ahí tiene
-además una sección "Estado de QA (backfill)" con la cobertura de Karate/
+además una sección "Estado de QA (backfill)" con la cobertura histórica de Karate/
 Bruno y links a la deuda técnica relacionada. `Roadmap frontend/` es diseño
 de producto y plan de épicas (incluye las de arquitectura backend, Épica 18 en
 adelante); el estado de cada una está en su índice, no en este doc.

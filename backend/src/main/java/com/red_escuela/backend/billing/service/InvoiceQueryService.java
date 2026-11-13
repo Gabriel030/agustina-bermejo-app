@@ -36,12 +36,8 @@ import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,11 +54,10 @@ public class InvoiceQueryService {
     private final AllocationSourceQueryService allocationSources;
     private final CreditNoteRepository creditNoteRepository;
     private final PaymentRepository paymentRepository;
-    private final Clock clock;
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
                                PriceReader priceReader, AllocationSourceQueryService allocationSources, CreditNoteRepository creditNoteRepository,
-                               PaymentRepository paymentRepository, Clock clock,
+                               PaymentRepository paymentRepository,
                                EnrollmentPaymentStandingQuery standingQuery) {
         this.standingQuery = standingQuery;
         this.invoiceRepository = invoiceRepository;
@@ -71,7 +66,6 @@ public class InvoiceQueryService {
         this.allocationSources = allocationSources;
         this.creditNoteRepository = creditNoteRepository;
         this.paymentRepository = paymentRepository;
-        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -185,30 +179,6 @@ public class InvoiceQueryService {
         return invoices.stream().filter(i -> i.getPaymentStatus() == InvoicePaymentStatus.PENDING || i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE).toList();
     }
 
-    public boolean hasOverdueDebt(Long studentId) {
-        LocalDate today = LocalDate.now(clock);
-        for (CourseEnrollment enrollment : invoiceViewLoader.findCourseEnrollmentsOfStudent(studentId)) {
-            if (invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).stream().anyMatch(i -> isOverdue(i, today))) {
-                return true;
-            }
-        }
-        for (ProgramEnrollment enrollment : invoiceViewLoader.findProgramEnrollmentsOfStudent(studentId)) {
-            if (invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream().anyMatch(i -> isOverdue(i, today))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public Set<Long> findStudentIdsWithOverdueDebt(Collection<Long> studentIds, LocalDate today) {
-        if (studentIds.isEmpty()) {
-            return Set.of();
-        }
-        Set<Long> withDebt = new HashSet<>(invoiceRepository.findStudentIdsWithOverdueProgramInvoices(studentIds, today));
-        withDebt.addAll(invoiceRepository.findStudentIdsWithOverdueCourseInvoices(studentIds, today));
-        return withDebt;
-    }
-
     private String resolvePriceVersionDescription(Invoice invoice) {
         Long priceVersionId = invoice.getPrimaryLine().getPriceVersionId();
         return priceVersionId == null ? null : priceReader.findPriceDescriptionOfVersion(priceVersionId);
@@ -261,10 +231,5 @@ public class InvoiceQueryService {
 
     private boolean hasAnyUnpaidInstallment(List<Invoice> invoices) {
         return invoices.stream().anyMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PENDING || i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE);
-    }
-
-    private boolean isOverdue(Invoice invoice, LocalDate today) {
-        return invoice.getPaymentStatus() == InvoicePaymentStatus.OVERDUE
-                || (invoice.getPaymentStatus() == InvoicePaymentStatus.PENDING && invoice.getDueDate().isBefore(today));
     }
 }

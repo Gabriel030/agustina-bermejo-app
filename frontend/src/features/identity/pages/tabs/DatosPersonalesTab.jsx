@@ -81,7 +81,7 @@ function DocumentosSection({ studentId }) {
   );
 }
 
-export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onReset, onBaja }) {
+export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, puedeReactivar, onReset, onBaja, onReactivar }) {
   if (!legajo) return <Skeleton className="h-64 w-full" />;
 
   const domicilio = legajo.domicilio;
@@ -144,7 +144,7 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
 
       <DocumentosSection studentId={legajo.id} />
 
-      {(puedeAccionar || puedeDarDeBaja) && (
+      {(puedeAccionar || puedeDarDeBaja || puedeReactivar) && (
         <div className="flex flex-col gap-4">
           <h3 className="text-size-11 font-semibold uppercase tracking-wider text-ink-faint">Acciones</h3>
           <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
@@ -159,11 +159,22 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
                 </Button>
               </div>
             )}
+            {puedeReactivar && (
+              <div className="flex items-center justify-between gap-4 px-4 py-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-size-14 font-medium text-ink">Reactivar alumno</span>
+                  <span className="text-size-12 text-ink-faint">Vuelve a habilitar la cuenta y conserva su historia académica.</span>
+                </div>
+                <Button variant="gradient" size="sm" onClick={onReactivar}>
+                  Reactivar alumno
+                </Button>
+              </div>
+            )}
             {puedeDarDeBaja && (
               <div className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-size-14 font-medium text-ink">Dar de baja</span>
-                  <span className="text-size-12 text-ink-faint">Marca al alumno como dado de baja del sistema. Esta acción no se puede deshacer.</span>
+                  <span className="text-size-12 text-ink-faint">Marca al alumno como dado de baja del sistema. Podés reactivarlo después desde su legajo.</span>
                 </div>
                 <Button variant="destructive" size="sm" onClick={onBaja}>
                   Dar de baja
