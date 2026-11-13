@@ -6092,7 +6092,7 @@
           },
           "kind" : {
             "type" : "string",
-            "x-extensible-enum" : [ "CORRECTION", "FINAL_REVERT", "RECOVERY" ]
+            "x-extensible-enum" : [ "CORRECTION", "FINAL_REVERT", "RECOVERY", "SYSTEM_REVERT" ]
           },
           "newScore" : {
             "type" : "number"
