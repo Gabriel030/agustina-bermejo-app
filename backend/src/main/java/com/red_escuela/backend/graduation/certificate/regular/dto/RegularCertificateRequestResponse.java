@@ -8,7 +8,9 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityK
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record RegularCertificateRequestResponse(Long id, Long studentId, RegularityKind kind, Long enrollmentId,
+public record RegularCertificateRequestResponse(Long id, Long studentId, String studentName,
+                                                @Schema(description = "Nombre de la carrera (PROGRAM) o del curso (COURSE)") String programName,
+                                                RegularityKind kind, Long enrollmentId,
                                                 RegularCertificateChannel channel, RegularRequestOutcome outcome,
                                                 List<String> reasons, LocalDateTime requestedAt, @Schema(nullable = true) Long certificateId,
                                                 @Schema(nullable = true) String rejectionReason) {

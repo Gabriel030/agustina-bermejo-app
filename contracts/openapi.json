@@ -6881,7 +6881,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "enrollmentId", "kind", "standingConfirmed", "standingEvidence" ],
+        "required" : [ "enrollmentId", "kind", "standingConfirmed" ],
         "type" : "object"
       },
       "ItemResponse" : {
@@ -10570,6 +10570,10 @@
             "enum" : [ "PENDING_STAFF", "ISSUED", "NOT_REGULAR", "ALREADY_ISSUED", "REJECTED" ],
             "type" : "string"
           },
+          "programName" : {
+            "description" : "Nombre de la carrera (PROGRAM) o del curso (COURSE)",
+            "type" : "string"
+          },
           "reasons" : {
             "items" : {
               "type" : "string"
@@ -10586,9 +10590,12 @@
           "studentId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "studentName" : {
+            "type" : "string"
           }
         },
-        "required" : [ "certificateId", "channel", "enrollmentId", "id", "kind", "outcome", "reasons", "rejectionReason", "requestedAt", "studentId" ],
+        "required" : [ "certificateId", "channel", "enrollmentId", "id", "kind", "outcome", "programName", "reasons", "rejectionReason", "requestedAt", "studentId", "studentName" ],
         "type" : "object"
       },
       "RegularCertificateResponse" : {
@@ -10619,6 +10626,10 @@
             "enum" : [ "PROGRAM", "COURSE" ],
             "type" : "string"
           },
+          "programName" : {
+            "description" : "Nombre de la carrera (PROGRAM) o del curso (COURSE) al emitir",
+            "type" : "string"
+          },
           "standingBasis" : {
             "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED" ],
             "type" : "string"
@@ -10627,11 +10638,18 @@
             "enum" : [ "VALID", "EXPIRED", "REVOKED" ],
             "type" : "string"
           },
+          "studentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "studentName" : {
+            "type" : "string"
+          },
           "verificationUrl" : {
             "type" : "string"
           }
         },
-        "required" : [ "billingModeAtIssue", "code", "enrollmentId", "expiresAt", "id", "issuedAt", "kind", "standingBasis", "status", "verificationUrl" ],
+        "required" : [ "billingModeAtIssue", "code", "enrollmentId", "expiresAt", "id", "issuedAt", "kind", "programName", "standingBasis", "status", "studentId", "studentName", "verificationUrl" ],
         "type" : "object"
       },
       "RegularCertificateSubmissionResponse" : {

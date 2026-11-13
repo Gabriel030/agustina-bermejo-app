@@ -42,7 +42,7 @@ public class StudentRegularCertificateStateReader {
 
     @Transactional(readOnly = true)
     public StudentRegularCertificateStateResponse stateOf(RegularityKind kind, Long enrollmentId, Long studentId) {
-        factsFinder.findOwnedBy(kind, enrollmentId, studentId);
+        RegularEnrollmentFacts facts = factsFinder.findOwnedBy(kind, enrollmentId, studentId);
         List<RegularCertificateResponse> history = certificateReader.historyOf(kind, enrollmentId);
         boolean staffConfirmationRequired = standingGate.requiresStaffConfirmation();
         Optional<RegularCertificateResponse> valid = history.stream()
@@ -54,7 +54,7 @@ public class StudentRegularCertificateStateReader {
         Optional<RegularCertificateRequest> pending = pendingOf(kind, enrollmentId);
         if (pending.isPresent()) {
             return response(kind, enrollmentId, StudentRegularCertificateState.PENDING, staffConfirmationRequired, null,
-                    RegularRequestResponses.of(pending.get()), null, null, List.of(), history);
+                    RegularRequestResponses.of(pending.get(), facts), null, null, List.of(), history);
         }
         String lastRejection = latestOf(kind, enrollmentId).filter(RegularCertificateRequest::wasRejectedByStaff)
                 .map(RegularCertificateRequest::getRejectionReason).orElse(null);

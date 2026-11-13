@@ -46,6 +46,10 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateRequestResponse;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.ListRegularCertificateRequestsUseCase;
+import com.red_escuela.backend.shared.persistence.QueryCountAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,6 +111,10 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
     private GetRegularCertificatePdfUseCase pdfUseCase;
     @Autowired
     private ListRegularCertificatesUseCase listUseCase;
+    @Autowired
+    private ListRegularCertificateRequestsUseCase listRequestsUseCase;
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
     @Autowired
     private RegularCertificateExpirer expirer;
     @Autowired
@@ -418,5 +426,52 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("STANDING_NOT_CONFIRMED"));
         assertThat(requests()).extracting(RegularCertificateRequest::getOutcome).containsExactly(RegularRequestOutcome.REJECTED);
+    }
+
+    @Test
+    void certificateAndRequestResponsesCarryStudentAndProgramNames() throws Exception {
+        String expectedStudentName = transactions.execute(status -> {
+            Person person = entityManager.find(Student.class, studentId).getPerson();
+            return person.getName() + " " + person.getLastname();
+        });
+        String expectedProgramName = transactions.execute(status -> entityManager.find(ProgramEnrollment.class, enrollmentId).getProgram().getName());
+
+        mockMvc.perform(post("/regular-certificates").header("Authorization", "Bearer " + staffToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(issueBody(true)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.studentId").value(studentId))
+                .andExpect(jsonPath("$.studentName").value(expectedStudentName))
+                .andExpect(jsonPath("$.programName").value(expectedProgramName));
+        mockMvc.perform(get("/regular-certificates").param("studentId", studentId.toString())
+                        .header("Authorization", "Bearer " + staffToken))
+                .andExpect(jsonPath("$[0].studentId").value(studentId))
+                .andExpect(jsonPath("$[0].studentName").value(expectedStudentName))
+                .andExpect(jsonPath("$[0].programName").value(expectedProgramName));
+        mockMvc.perform(get("/regular-certificate-requests").param("studentId", studentId.toString())
+                        .header("Authorization", "Bearer " + staffToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].studentId").value(studentId))
+                .andExpect(jsonPath("$[0].studentName").value(expectedStudentName))
+                .andExpect(jsonPath("$[0].programName").value(expectedProgramName))
+                .andExpect(jsonPath("$[0].rejectionReason").doesNotExist());
+        mockMvc.perform(get("/regular-certificate-requests").header("Authorization", "Bearer " + studentToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listingRequestsResolvesNamesInBatchWithoutOneQueryPerRequest() {
+        assertThatThrownBy(() -> issue(false, null)).isInstanceOf(StandingNotConfirmedException.class);
+        assertThatThrownBy(() -> issue(false, null)).isInstanceOf(StandingNotConfirmedException.class);
+        assertThatThrownBy(() -> issue(false, null)).isInstanceOf(StandingNotConfirmedException.class);
+        issueConfirmed();
+
+        List<RegularCertificateRequestResponse> responses = QueryCountAssertions.assertAtMostQueries(entityManagerFactory, 5,
+                () -> listRequestsUseCase.list(studentId, null));
+
+        assertThat(responses).hasSize(4);
+        assertThat(responses).allSatisfy(response -> {
+            assertThat(response.studentName()).isNotBlank();
+            assertThat(response.programName()).isNotBlank();
+        });
     }
 }

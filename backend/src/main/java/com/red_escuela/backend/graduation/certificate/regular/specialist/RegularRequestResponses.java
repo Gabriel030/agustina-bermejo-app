@@ -8,9 +8,13 @@ final class RegularRequestResponses {
     private RegularRequestResponses() {
     }
 
-    static RegularCertificateRequestResponse of(RegularCertificateRequest request) {
-        return new RegularCertificateRequestResponse(request.getId(), request.getStudentId(), request.getKind(),
-                request.enrollmentId(), request.getChannel(), request.getOutcome(), request.getReasons(),
+    static RegularCertificateRequestResponse of(RegularCertificateRequest request, RegularEnrollmentFacts facts) {
+        return of(request, facts.studentName(), facts.titleName());
+    }
+
+    static RegularCertificateRequestResponse of(RegularCertificateRequest request, String studentName, String programName) {
+        return new RegularCertificateRequestResponse(request.getId(), request.getStudentId(), studentName, programName,
+                request.getKind(), request.enrollmentId(), request.getChannel(), request.getOutcome(), request.getReasons(),
                 request.getRequestedAt(), request.getCertificateId(), request.getRejectionReason());
     }
 }

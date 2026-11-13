@@ -25,6 +25,7 @@ import com.red_escuela.backend.graduation.certificate.specialist.CertificateDige
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.graduation.events.RegularCertificateIssuedEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.module.BillingMode;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -92,6 +93,10 @@ class RegularCertificateIssuerTest {
     void givenRegularStudentReadyToIssue() {
         Student student = mock(Student.class);
         when(student.getId()).thenReturn(STUDENT_ID);
+        Person person = mock(Person.class);
+        when(person.getName()).thenReturn("Ana");
+        when(person.getLastname()).thenReturn("Perez");
+        when(student.getPerson()).thenReturn(person);
         when(factsFinder.find(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(new RegularEnrollmentFacts(student, "la carrera", "Tecnicatura"));
         when(currentActorFinder.currentPersonId()).thenReturn(ACTOR_ID);
         when(regularityEvaluator.evaluate(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(verdict(true, List.of()));
@@ -220,7 +225,8 @@ class RegularCertificateIssuerTest {
             return RegularStudentCertificate.builder().id(77L).code(certificate.getCode()).kind(certificate.getKind())
                     .programEnrollmentId(certificate.getProgramEnrollmentId()).status(certificate.getStatus())
                     .issuedAt(certificate.getIssuedAt()).expiresAt(certificate.getExpiresAt()).standingBasis(certificate.getStandingBasis())
-                    .billingModeAtIssue(certificate.getBillingModeAtIssue()).build();
+                    .billingModeAtIssue(certificate.getBillingModeAtIssue()).studentId(certificate.getStudentId())
+                    .snapshot(certificate.getSnapshot()).build();
         });
 
         issuer(30).issue(command);
