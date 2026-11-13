@@ -58,13 +58,13 @@ class AttendanceExporterTest {
     }
 
     private static List<RosterEntryResponse> rawRoster() {
-        return List.of(new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false, 0, null, null));
+        return List.of(new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false, 0, null, null, null, 0));
     }
 
     private static List<RosterEntryResponse> report() {
         return List.of(
-                new RosterEntryResponse(1L, 1L, "Ana Perez", "30111222", 4, Percentage.ratio(2, 3).orElseThrow(), true, 6, null, null),
-                new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false, 0, null, null));
+                new RosterEntryResponse(1L, 1L, "Ana Perez", "30111222", 4, Percentage.ratio(2, 3).orElseThrow(), true, 6, Percentage.ofPoints(new java.math.BigDecimal("25")), 1, Percentage.ratio(4, 6).orElseThrow(), 1),
+                new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false, 0, null, null, null, 0));
     }
 
     private static List<List<String>> sheetRows(ExportedAttendanceFile file) throws IOException {
@@ -97,7 +97,7 @@ class AttendanceExporterTest {
         assertThat(sheetName(file)).isEqualTo("Historial de asistencia");
         assertThat(sheetRows(file)).containsExactly(
                 List.of("Alumno", "2026-05-04", "2026-05-11", "% Asistencia"),
-                List.of("Ana Perez", "PRESENT", "-", "33%"),
+                List.of("Ana Perez", "PRESENT", "-", "33.3%"),
                 List.of("Beto Gomez", "-", "-", "-"));
         verifyNoInteractions(rosterBuilder);
     }
@@ -166,9 +166,9 @@ class AttendanceExporterTest {
 
         assertThat(file.filename()).isEqualTo("absence-report.xlsx");
         assertThat(sheetRows(file)).containsExactly(
-                List.of("Alumno", "DNI", "Ausencias", "% Asistencia"),
-                List.of("Ana Perez", "30111222", "4", "67%"),
-                List.of("Beto Gomez", "-", "0", "-"));
+                List.of("Alumno", "DNI", "Inasistencias", "Por justificar", "% Inasistencia", "% Asistencia"),
+                List.of("Ana Perez", "30111222", "4", "1", "66.7%", "66.7%"),
+                List.of("Beto Gomez", "-", "0", "0", "-", "-"));
         verifyNoInteractions(historyBuilder);
     }
 

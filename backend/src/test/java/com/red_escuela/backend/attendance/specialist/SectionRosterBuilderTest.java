@@ -1,6 +1,6 @@
 package com.red_escuela.backend.attendance.specialist;
 
-import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
+import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.repository.EnrollmentAttendanceCounts;
@@ -28,7 +28,7 @@ class SectionRosterBuilderTest {
     private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
     private final SectionEnrollmentFinder finder = mock(SectionEnrollmentFinder.class);
     private final SectionRosterBuilder builder = new SectionRosterBuilder(
-            attendanceRepository, finder, new AttendanceRiskCalculator(new AttendanceRiskReader(null, null)));
+            new AttendanceStandingReader(attendanceRepository, null), finder);
 
     @Test
     void remainingAbsencesIsFloorOfAllowedMinusAbsences() {
@@ -116,7 +116,7 @@ class SectionRosterBuilderTest {
         when(section.getMaxAbsenceRate()).thenReturn(maxAbsenceRate);
         enrollments.forEach(enrollment -> when(enrollment.getCourseSubjectSection()).thenReturn(section));
         when(finder.findActiveWithStudentInCourseSection(SECTION_ID)).thenReturn(enrollments);
-        when(attendanceRepository.countsByCourseSection(eq(SECTION_ID), any(), any())).thenReturn(counts);
+        when(attendanceRepository.countsByCourseSection(eq(SECTION_ID), any(), any(), any())).thenReturn(counts);
     }
 
     private CourseSubjectSectionEnrollment enrollment(Long id) {

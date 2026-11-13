@@ -10993,6 +10993,16 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "absencePercent" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "atRisk" : {
             "type" : "boolean"
           },
@@ -11022,6 +11032,10 @@
             }, {
               "type" : "null"
             } ]
+          },
+          "pendingJustificationAbsences" : {
+            "format" : "int64",
+            "type" : "integer"
           },
           "remainingAbsences" : {
             "format" : "int32",

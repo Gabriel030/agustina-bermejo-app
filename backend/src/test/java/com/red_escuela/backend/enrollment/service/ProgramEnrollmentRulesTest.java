@@ -4,8 +4,8 @@ import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
-import com.red_escuela.backend.attendance.api.AttendanceRiskView;
-import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
+import com.red_escuela.backend.attendance.api.AttendanceStanding;
+import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -90,7 +90,7 @@ class ProgramEnrollmentRulesTest {
     @Mock
     private ProgramYearBillingTemplateRepository templateRepository;
     @Mock
-    private AttendanceRiskReader attendanceRiskUseCase;
+    private AttendanceStandingReader attendanceRiskUseCase;
     @Mock
     private EnrollmentDebtGuard enrollmentDebtGuard;
 
@@ -371,13 +371,14 @@ class ProgramEnrollmentRulesTest {
     }
 
     @Test
-    void attendanceSummaryReportsPresenceAsTheComplementOfAbsenceAndNullWhenNotCalculable() {
+    void attendanceSummaryReportsThePresencePercentOfTheStandingAndNullWhenNotCalculable() {
         SubjectSectionEnrollment withAbsences = sectionEnrollment(100L, "Matematica");
         SubjectSectionEnrollment withoutData = sectionEnrollment(101L, "Historia");
         when(subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(1L)).thenReturn(List.of(withAbsences, withoutData));
-        when(attendanceRiskUseCase.readProgramEnrollmentRisks(List.of(100L, 101L))).thenReturn(java.util.Map.of(
-                100L, new AttendanceRiskView(true, false, Percentage.ofFraction(new BigDecimal("0.25")), null),
-                101L, new AttendanceRiskView(false, false, null, null)));
+        when(attendanceRiskUseCase.readProgramEnrollmentStandings(List.of(100L, 101L))).thenReturn(java.util.Map.of(
+                100L, new AttendanceStanding(8, 6, 2, 0, Percentage.ofFraction(new BigDecimal("0.25")),
+                        Percentage.ofFraction(new BigDecimal("0.75")), Percentage.ofFraction(new BigDecimal("0.30")), false, 2, 0),
+                101L, new AttendanceStanding(0, 0, 0, 0, null, null, null, false, null, null)));
 
         List<SubjectAttendanceSummaryResponse> summary = service.attendanceSummaryBySubject(1L);
 
