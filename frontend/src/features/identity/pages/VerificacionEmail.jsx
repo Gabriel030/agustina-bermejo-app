@@ -10,19 +10,17 @@ import { apiFetch } from '@/api/client';
 export function VerificacionEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const [estado, setEstado] = useState('verificando');
+  const [resultado, setResultado] = useState('verificando');
+  const estado = token ? resultado : 'error';
   const requestedTokenRef = useRef(null);
 
   useEffect(() => {
-    if (!token) {
-      setEstado('error');
-      return;
-    }
+    if (!token) return;
     if (requestedTokenRef.current === token) return;
     requestedTokenRef.current = token;
     apiFetch(`/verify-email?token=${encodeURIComponent(token)}`)
-      .then(() => setEstado('ok'))
-      .catch(() => setEstado('error'));
+      .then(() => setResultado('ok'))
+      .catch(() => setResultado('error'));
   }, [token]);
 
   return (

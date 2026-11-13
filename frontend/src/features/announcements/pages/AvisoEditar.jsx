@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
@@ -43,9 +43,7 @@ export function AvisoEditar() {
   const [confirmarRenotificar, setConfirmarRenotificar] = useState(false);
   const [notificarManual, setNotificarManual] = useState(null);
 
-  useEffect(() => {
-    if (aviso && valores === null) setValores(desdeAviso(aviso));
-  }, [aviso, valores]);
+  if (aviso && valores === null) setValores(desdeAviso(aviso));
 
   const { data: segmentos, isLoading: cargandoSegmentos } = useSegmentosDeAudiencia(
     programado ? sectionId : undefined,

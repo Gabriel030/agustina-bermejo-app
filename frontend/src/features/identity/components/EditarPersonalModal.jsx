@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable';
@@ -9,7 +9,9 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
   const [confirming, setConfirming] = useState(false);
   const [form, setForm] = useState({ email: '', telefono: '', street: '', number: '', floor: '', city: '', state: '', postalCode: '', country: '' });
 
-  useEffect(() => {
+  const [synced, setSynced] = useState(null);
+  if (synced === null || synced.legajo !== legajo || synced.open !== open) {
+    setSynced({ legajo, open });
     if (legajo) {
       setForm({
         email: legajo.email ?? '',
@@ -24,7 +26,7 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
       });
     }
     setConfirming(false);
-  }, [legajo, open]);
+  }
 
   function set(field) {
     return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));

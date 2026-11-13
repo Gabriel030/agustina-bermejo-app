@@ -96,12 +96,11 @@ export function NewPriceVersionPage() {
   const [serverViolations, setServerViolations] = useState([]);
 
   const price = (prices.data ?? []).find((item) => String(item.priceId) === priceId);
-  const currency = price?.currency ?? 'ARS';
+  const currency = String(price?.currency ?? 'ARS');
   const appliesToLectiveYear = lectiveYear === NO_YEAR ? null : lectiveYear;
   const start = startMode === 'today' ? today : effectiveFrom;
-  const form = { amount, discountKind, discountValue, effectiveFrom: start, reason };
-  const complete = isFormComplete(form);
-  const computed = amount === '' ? null : computeFinalAmount(form);
+  const complete = isFormComplete({ amount, discountKind, discountValue, effectiveFrom: start, reason });
+  const computed = amount === '' ? null : computeFinalAmount({ amount, discountKind, discountValue, effectiveFrom: start, reason });
   const termYears = useMemo(() => (terms.data ?? []).map((term) => Number(term.year)), [terms.data]);
   const yearOptions = lectiveYearOptions(today, termYears);
 

@@ -48,20 +48,20 @@ function fueEditado(aviso) {
 
 function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
   const [expandido, setExpandido] = useState(false);
-  const bodyRef = useRef(null);
   const [desborda, setDesborda] = useState(false);
+  const [previousExpandidoPorUrl, setPreviousExpandidoPorUrl] = useState(false);
+
+  function measureBody(el) {
+    if (el) setDesborda(el.scrollHeight > el.clientHeight + 2);
+  }
+
+  if (expandidoPorUrl !== previousExpandidoPorUrl) {
+    setPreviousExpandidoPorUrl(expandidoPorUrl);
+    if (expandidoPorUrl) setExpandido(true);
+  }
 
   useEffect(() => {
-    const el = bodyRef.current;
-    if (!el) return;
-    setDesborda(el.scrollHeight > el.clientHeight + 2);
-  }, [aviso.body]);
-
-  useEffect(() => {
-    if (expandidoPorUrl) {
-      setExpandido(true);
-      onAbrir(aviso);
-    }
+    if (expandidoPorUrl) onAbrir(aviso);
   }, [expandidoPorUrl, aviso, onAbrir]);
 
   function alternar() {
@@ -106,7 +106,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
         </button>
       </div>
       <div
-        ref={bodyRef}
+        ref={measureBody}
         className={`mt-1 text-size-13 text-ink-soft leading-relaxed overflow-hidden ${!expandido ? 'line-clamp-6' : ''}`}
       >
         {aviso.body}

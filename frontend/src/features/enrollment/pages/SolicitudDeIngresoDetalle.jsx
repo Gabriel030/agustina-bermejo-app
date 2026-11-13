@@ -254,17 +254,14 @@ export function SolicitudDeIngresoDetalle() {
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [openNext, setOpenNext] = useState(true);
-  const [conflict, setConflict] = useState(false);
+  const [conflictId, setConflictId] = useState(null);
+  const conflict = conflictId === id;
 
   const advanced = location.state?.advanced === true;
   const loadedId = application?.id;
   useEffect(() => {
     if (advanced && loadedId) headingRef.current?.focus();
   }, [advanced, loadedId]);
-
-  useEffect(() => {
-    setConflict(false);
-  }, [id]);
 
   if (applicationQuery.isError) {
     return (
@@ -296,7 +293,7 @@ export function SolicitudDeIngresoDetalle() {
   const age = ageLabel(application.requestedAt);
 
   function handleConflict() {
-    setConflict(true);
+    setConflictId(id);
     setApproveOpen(false);
     setRejectOpen(false);
     applicationQuery.refetch();
