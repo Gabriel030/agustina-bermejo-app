@@ -4,4 +4,6 @@ public interface GraduationRequestTriggerPort {
     void requestGraduationIfEligible(Long programEnrollmentId);
 
     void flagGraduationRequestOutdated(Long programEnrollmentId);
+
+    void reopenGraduationRequestForReview(Long programEnrollmentId);
 }

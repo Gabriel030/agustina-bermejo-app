@@ -1,6 +1,7 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
+import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
 import com.red_escuela.backend.evaluation.policy.CourseworkOutcomeCalculator;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
@@ -35,6 +36,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.red_escuela.backend.shared.domain.Grade;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -223,9 +226,14 @@ public class GradeItemRecorder {
         var current = rebuild ? EnrollmentStatus.ENROLLED : enrollment.statusAssumingRegularWhen(finalCorrection);
         BooleanSupplier prerequisitesMet = () -> programPrerequisiteEvaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(
                 enrollment.getProgramEnrollment().getId(), enrollment.subjectId());
-        if (rebuildFromItems && isApprovedByFinalExam(enrollment) && !prerequisitesMet.getAsBoolean()) {
-            sectionEnrollmentOutcomeRecorder.recordProgramOutcome(enrollmentId, EnrollmentStatus.REGULAR, null, null, true);
-            graduationRequestTrigger.flagGraduationRequestOutdated(enrollment.getProgramEnrollment().getId());
+        Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
+        boolean wasApproved = enrollment.getStatus() == EnrollmentStatus.APPROVED;
+        if (rebuildFromItems && isApprovedByFinalExam(enrollment)) {
+            PrerequisiteGatedOutcome gated = outcomeCalculator.promotionPolicy().restrictApprovalWhenPrerequisitesUnmet(
+                    outcomeCalculator.calculate(scheme, items, EnrollmentStatus.REGULAR, maxFinalExamAttempts), prerequisitesMet);
+            if (gated.forcedFinalCondition().isPresent()) {
+                revertApprovalLosingPrerequisites(enrollment);
+            }
             return;
         }
         Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().restrictApprovalWhenPrerequisitesUnmet(
@@ -238,12 +246,32 @@ public class GradeItemRecorder {
             result = new CourseworkOutcome(current, null, null);
         }
         if (result != null) {
+            boolean losesApproval = wasApproved && result.status() != EnrollmentStatus.APPROVED;
             sectionEnrollmentOutcomeRecorder.recordProgramOutcome(
                     enrollmentId, result.status(), result.finalScore(), result.finalGradeType(), finalCorrection || rebuild);
             if (result.status() == EnrollmentStatus.APPROVED) {
-                graduationRequestTrigger.requestGraduationIfEligible(enrollment.getProgramEnrollment().getId());
+                graduationRequestTrigger.requestGraduationIfEligible(programEnrollmentId);
+            } else if (losesApproval) {
+                graduationRequestTrigger.reopenGraduationRequestForReview(programEnrollmentId);
             }
         }
+    }
+
+    private void revertApprovalLosingPrerequisites(SubjectSectionEnrollment enrollment) {
+        Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
+        String unmet = programPrerequisiteEvaluator
+                .findUnmetForApprovalOrEmptyOutsidePlan(programEnrollmentId, enrollment.subjectId()).stream()
+                .map(assessment -> assessment.subjectName())
+                .collect(Collectors.joining(", "));
+        Optional<GradeItem> lastFinal = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()).stream()
+                .filter(item -> item.getType() == GradeItemType.FINAL)
+                .max(Comparator.comparing(item -> item.getSequenceNumber() == null ? 0 : item.getSequenceNumber()));
+        finalGradeRevertAuditor.recordSystemRevert(
+                lastFinal.map(GradeItem::getId).orElse(null), lastFinal.map(GradeItem::getSequenceNumber).orElse(null),
+                enrollment.getFinalScore(), "Sistema: correlativa sin aprobar (" + unmet + ")", SectionKind.PROGRAM,
+                enrollment.getSubjectSection().getId(), enrollment.getId());
+        sectionEnrollmentOutcomeRecorder.recordProgramOutcome(enrollment.getId(), EnrollmentStatus.REGULAR, null, null, true);
+        graduationRequestTrigger.reopenGraduationRequestForReview(programEnrollmentId);
     }
 
     @Transactional

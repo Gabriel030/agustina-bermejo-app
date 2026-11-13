@@ -27,4 +27,10 @@ public class ProgramGraduationRequestTriggerPortAdapter implements GraduationReq
     public void flagGraduationRequestOutdated(Long programEnrollmentId) {
         graduationRequestOutdatedFlagger.flagOutdatedRequests(programEnrollmentId);
     }
+
+    @Override
+    @Transactional
+    public void reopenGraduationRequestForReview(Long programEnrollmentId) {
+        graduationRequestOutdatedFlagger.reopenAndFlagRequests(programEnrollmentId);
+    }
 }

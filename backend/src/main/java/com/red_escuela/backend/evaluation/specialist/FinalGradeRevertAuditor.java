@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
 import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
+import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.exception.InvalidGradeCorrectionReasonException;
 import com.red_escuela.backend.evaluation.repository.GradeItemAuditRepository;
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
 
 @Component
 public class FinalGradeRevertAuditor {
+
+    private static final int MAX_SYSTEM_REASON_LENGTH = 500;
 
     private final GradeItemAuditRepository auditRepository;
     private final Clock clock;
@@ -40,6 +43,22 @@ public class FinalGradeRevertAuditor {
                 .changedById(actorPersonId)
                 .changedAt(LocalDateTime.now(clock))
                 .kind(GradeItemAuditKind.FINAL_REVERT)
+                .build());
+    }
+
+    public void recordSystemRevert(Long gradeItemId, Integer sequenceNumber, Grade previousScore, String reason, SectionKind kind,
+                                   Long sectionId, Long enrollmentId) {
+        auditRepository.save(GradeItemAudit.builder()
+                .gradeItemId(gradeItemId)
+                .sectionKind(kind)
+                .sectionId(sectionId)
+                .enrollmentId(enrollmentId)
+                .gradeItemType(GradeItemType.FINAL)
+                .sequenceNumber(SectionGradeItemPublication.sequenceKey(sequenceNumber))
+                .previousScore(previousScore)
+                .reason(reason.length() > MAX_SYSTEM_REASON_LENGTH ? reason.substring(0, MAX_SYSTEM_REASON_LENGTH) : reason)
+                .changedAt(LocalDateTime.now(clock))
+                .kind(GradeItemAuditKind.SYSTEM_REVERT)
                 .build());
     }
 

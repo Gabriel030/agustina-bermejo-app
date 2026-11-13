@@ -26,7 +26,16 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardFinalGradeRowReject
 import com.red_escuela.backend.evaluation.exception.FinalExamPrerequisitesNotApprovedException;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
+import com.red_escuela.backend.evaluation.repository.GradeItemAuditRepository;
+import com.red_escuela.backend.graduation.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
+import com.red_escuela.backend.graduation.events.GraduationRequestOutdatedEvent;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -43,6 +52,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@RecordApplicationEvents
 class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
 
     private static final String PREREQUISITE_NAME = "Algebra previa";
@@ -55,6 +65,12 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
 
     @Autowired
     private GradeItemRecorder gradeItemRecorder;
+
+    @Autowired
+    private GradeItemAuditRepository auditRepository;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     private record Setup(ExamBoard board, Instructor tribunal, SubjectSectionEnrollment enrollment, Subject subject,
                          SubjectSectionEnrollment prerequisiteTaken) {
@@ -277,5 +293,98 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
 
         assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
+    }
+
+    private GraduationRequest graduationRequest(Setup setup, GraduationRequestStatus status) {
+        GraduationRequest request = new GraduationRequest();
+        request.setProgramEnrollment(setup.enrollment().getProgramEnrollment());
+        request.setStatus(status);
+        request.setRequestedAt(LocalDateTime.now());
+        entityManager.persist(request);
+        entityManager.flush();
+        return request;
+    }
+
+    private long outdatedEvents() {
+        return applicationEvents.stream(GraduationRequestOutdatedEvent.class).count();
+    }
+
+    private Setup approvedByFinalThenLosingPrerequisite(String dni) {
+        Setup setup = setup(dni, EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(1));
+        loadFinal(setup, registration(setup.board(), setup.enrollment()), "8");
+        losePrerequisite(setup);
+        return setup;
+    }
+
+    @Test
+    void recalculationRevertsWithASystemAuditRowAndFlagsAPendingGraduationRequest() {
+        Setup setup = approvedByFinalThenLosingPrerequisite("75000111");
+        graduationRequest(setup, GraduationRequestStatus.REQUESTED);
+
+        gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
+
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(outdatedEvents()).isEqualTo(1);
+        assertThat(auditRepository.findAll()).filteredOn(audit -> audit.getKind() == GradeItemAuditKind.SYSTEM_REVERT)
+                .singleElement().satisfies(audit -> {
+                    assertThat(audit.getChangedById()).isNull();
+                    assertThat(audit.getEnrollmentId()).isEqualTo(setup.enrollment().getId());
+                    assertThat(audit.getReason()).contains(PREREQUISITE_NAME);
+                });
+    }
+
+    @Test
+    void recalculationRevertsAndReopensAnApprovedGraduationRequestForDirectorReview() {
+        Setup setup = approvedByFinalThenLosingPrerequisite("75000121");
+        GraduationRequest request = graduationRequest(setup, GraduationRequestStatus.APPROVED);
+
+        gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
+
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(entityManager.find(GraduationRequest.class, request.getId()).getStatus())
+                .isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
+        assertThat(outdatedEvents()).isEqualTo(1);
+        assertThat(auditRepository.findAll()).anyMatch(audit -> audit.getKind() == GradeItemAuditKind.SYSTEM_REVERT);
+    }
+
+    @Test
+    void recalculationRevertsTheSubjectButLeavesAGraduatedProgramEnrollmentCompleted() {
+        Setup setup = approvedByFinalThenLosingPrerequisite("75000131");
+        GraduationRequest request = graduationRequest(setup, GraduationRequestStatus.APPROVED);
+        setup.enrollment().getProgramEnrollment().setStatus(ProgramEnrollmentStatus.COMPLETED);
+        entityManager.flush();
+
+        gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
+
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(entityManager.find(ProgramEnrollment.class, setup.enrollment().getProgramEnrollment().getId()).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.COMPLETED);
+        assertThat(entityManager.find(GraduationRequest.class, request.getId()).getStatus())
+                .isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
+        assertThat(outdatedEvents()).isEqualTo(1);
+    }
+
+    @Test
+    void correctingAnApprovingFinalIntoAFailingOneFlagsTheGraduationRequest() {
+        Setup setup = setup("75000141", EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(1));
+        loadFinal(setup, registration(setup.board(), setup.enrollment()), "8");
+        graduationRequest(setup, GraduationRequestStatus.REQUESTED);
+
+        correctFinal(setup, 3.0);
+
+        assertThat(statusOf(setup)).isNotEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(outdatedEvents()).isEqualTo(1);
+    }
+
+    @Test
+    void recalculationLeavesAnApprovalAloneWhenNoPrerequisiteWasLost() {
+        Setup setup = setup("75000151", EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(1));
+        loadFinal(setup, registration(setup.board(), setup.enrollment()), "8");
+        graduationRequest(setup, GraduationRequestStatus.REQUESTED);
+
+        gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
+
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(outdatedEvents()).isZero();
     }
 }

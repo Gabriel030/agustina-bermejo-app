@@ -57,6 +57,14 @@ public class GraduationRequest {
         }
     }
 
+    public void reopenForDirectorReview() {
+        if (status == GraduationRequestStatus.APPROVED) {
+            status = GraduationRequestStatus.ADMIN_VERIFIED;
+            decidedBy = null;
+            decidedAt = null;
+        }
+    }
+
     public void approve(Person director, LocalDateTime approvedAt) {
         requireAwaitingDirectorDecision();
         status = GraduationRequestStatus.APPROVED;

@@ -20,6 +20,15 @@ public class GraduationRequestOutdatedFlagger {
     }
 
     @Transactional
+    public void reopenAndFlagRequests(Long programEnrollmentId) {
+        graduationRequestRepository.findByProgramEnrollmentIdAndStatusNot(programEnrollmentId, GraduationRequestStatus.REJECTED)
+                .forEach(request -> {
+                    request.reopenForDirectorReview();
+                    eventPublisher.publishEvent(GraduationRequestOutdatedEvent.outdatedFor(request));
+                });
+    }
+
+    @Transactional
     public void flagOutdatedRequests(Long programEnrollmentId) {
         graduationRequestRepository.findByProgramEnrollmentIdAndStatusNot(programEnrollmentId, GraduationRequestStatus.REJECTED)
                 .forEach(request -> eventPublisher.publishEvent(GraduationRequestOutdatedEvent.outdatedFor(request)));
