@@ -34,16 +34,16 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
         reason: reason.trim(),
         exceptionReason: expired ? exceptionReason.trim() : undefined,
       });
-      toast.success(`Falta del ${formatIsoDate(absence.classDate)} justificada`);
+      toast.success(`Inasistencia del ${formatIsoDate(absence.classDate)} justificada`);
       onClose();
     } catch (error) {
       if (error?.status === 409) {
         justify.refresh();
-        toast.warning('Esta falta ya cambió de estado. Actualizamos la lista.');
+        toast.warning('Esta inasistencia ya cambió de estado. Actualizamos la lista.');
         onClose();
         return;
       }
-      setSubmitError(describeError(error, { fallback: 'No pudimos justificar la falta. Revisá tu conexión y probá de nuevo.' }).message);
+      setSubmitError(describeError(error, { fallback: 'No pudimos justificar la inasistencia. Revisá tu conexión y probá de nuevo.' }).message);
     }
   }
 
@@ -51,7 +51,7 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Justificar falta</DialogTitle>
+          <DialogTitle>Justificar inasistencia</DialogTitle>
           <DialogDescription>
             {studentName} · {subjectLabel} · clase del {formatIsoDate(absence.classDate)}
           </DialogDescription>
@@ -101,7 +101,7 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
             Cancelar
           </Button>
           <Button variant="gradient" onClick={submit} disabled={!canSubmit}>
-            {justify.isPending ? 'Justificando…' : 'Justificar falta'}
+            {justify.isPending ? 'Justificando…' : 'Justificar inasistencia'}
           </Button>
         </DialogFooter>
       </DialogContent>

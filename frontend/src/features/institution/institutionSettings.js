@@ -9,7 +9,7 @@ export const SETTING_FIELDS = [
     max: 60,
     icon: CalendarCheck,
     group: 'academic',
-    tip: 'Días hábiles que tiene el alumno para justificar una falta. Pasado el plazo, solo el preceptor puede justificarla como excepción, con motivo.',
+    tip: 'Días hábiles que tiene el alumno para justificar una inasistencia. Pasado el plazo, solo el preceptor puede justificarla como excepción, con motivo.',
   },
   {
     key: 'evaluationConfigDueDays',

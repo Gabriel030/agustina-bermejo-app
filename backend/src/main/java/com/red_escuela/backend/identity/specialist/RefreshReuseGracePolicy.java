@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.specialist;
 
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.identity.dto.ClientContext;
 import com.red_escuela.backend.identity.repository.RefreshTokenState;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -55,7 +56,7 @@ public class RefreshReuseGracePolicy {
             return Verdict.OUTSIDE_WINDOW;
         }
         if (token.getRotatedUserAgentHash() == null || clientContext.userAgentHash() == null
-                || !token.getRotatedUserAgentHash().equals(clientContext.userAgentHash())) {
+                || !TokenHashUtil.constantTimeEquals(token.getRotatedUserAgentHash(), clientContext.userAgentHash())) {
             return Verdict.USER_AGENT_MISMATCH;
         }
         if (Boolean.TRUE.equals(token.getGraceUsed())) {

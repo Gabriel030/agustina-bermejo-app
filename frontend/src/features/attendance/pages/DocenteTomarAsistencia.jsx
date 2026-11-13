@@ -83,8 +83,6 @@ function agruparFechasPorMes(fechas) {
   }));
 }
 
-const ESTADOS_QUE_CUENTAN_COMO_AUSENCIA = ['ABSENT', 'JUSTIFICATION_PENDING'];
-
 function estadoDeJustificacion(celdaGuardada, estadoActual) {
   if (!celdaGuardada || celdaGuardada.status !== 'ABSENT' || estadoActual !== 'ABSENT') return null;
   return celdaGuardada.justifiable ? 'abierta' : 'vencida';
@@ -92,9 +90,7 @@ function estadoDeJustificacion(celdaGuardada, estadoActual) {
 
 function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirModificacion, justificacion, onAdjuntarComprobante }) {
   const config = estado ? ESTADO_POR_VALOR[estado] : null;
-  const sumaAusenciaHoy = ESTADOS_QUE_CUENTAN_COMO_AUSENCIA.includes(estado);
-  const inasistenciasAMostrar = alumno.absenceCount + (sumaAusenciaHoy ? 1 : 0);
-  const riesgo = attendanceRisk(alumno, inasistenciasAMostrar);
+  const riesgo = attendanceRisk(alumno);
   return (
     <div className={`flex flex-col gap-2 rounded-2xl p-3 sm:flex-row sm:items-center sm:justify-between ${config?.filaClass ?? 'bg-neutral-bg/40'} ${deshabilitada ? 'opacity-50' : ''}`}>
       <div className="min-w-0 flex-1">
@@ -705,7 +701,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
             <p className="text-size-13 font-bold text-danger">{rejectionText(celdaSeleccionada.rejection)}</p>
           )}
           {celdaSeleccionada?.status === 'ABSENT' && !celdaSeleccionada.justifiable && (
-            <p className="text-size-13 text-ink-faint">Venció el plazo para justificar esta falta: lo resuelve el preceptor.</p>
+            <p className="text-size-13 text-ink-faint">Venció el plazo para justificar esta inasistencia: lo resuelve el preceptor.</p>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setCeldaSeleccionada(null)}>Cerrar</Button>
@@ -753,11 +749,10 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
 }
 
 function GraficoDeTorta({ segmentos, total, centroValor, centroLabel }) {
-  let acumulado = 0;
-  const stops = segmentos.map((s) => {
-    const desde = acumulado;
-    acumulado += (s.valor / total) * 100;
-    return `var(${s.colorVar}) ${desde}% ${acumulado}%`;
+  const stops = segmentos.map((s, index) => {
+    const desde = segmentos.slice(0, index).reduce((sum, previous) => sum + (previous.valor / total) * 100, 0);
+    const hasta = desde + (s.valor / total) * 100;
+    return `var(${s.colorVar}) ${desde}% ${hasta}%`;
   }).join(', ');
 
   return (
@@ -861,9 +856,7 @@ function DistribucionDeAsistencia({ type, sectionId }) {
 function BarraAsistenciaPorAlumno({ entrada, totalClases }) {
   const [hover, setHover] = useState(false);
   const porcentaje = attendancePercentToPoints(entrada.attendancePercent) == null ? null : Math.round(attendancePercentToPoints(entrada.attendancePercent));
-  const inasistencias = entrada.absenceCount;
-  // "Presencias" = clases registradas menos las que ya cuentan como inasistencia (Ausente,
-  // justificación pendiente o justificada) — mismo criterio que absenceCount en el backend.
+  const inasistencias = entrada.absenceStanding.countableAbsences;
   const presencias = totalClases != null ? Math.max(0, totalClases - inasistencias) : null;
   const pctPresencias = totalClases ? (presencias / totalClases) * 100 : 0;
   const pctInasistencias = totalClases ? (inasistencias / totalClases) * 100 : 0;
@@ -893,12 +886,12 @@ function BarraAsistenciaPorAlumno({ entrada, totalClases }) {
             </>
           ) : (
             porcentaje != null && (
-              <div className={`h-full rounded-full ${entrada.atRisk ? 'bg-danger' : 'bg-success'}`} style={{ width: `${porcentaje}%` }} />
+              <div className={`h-full rounded-full ${entrada.absenceStanding.exceedsAbsenceLimit ? 'bg-danger' : 'bg-success'}`} style={{ width: `${porcentaje}%` }} />
             )
           )}
         </div>
       </div>
-      <div className={`w-12 shrink-0 text-right text-size-12 font-semibold ${entrada.atRisk ? 'text-danger' : 'text-ink-faint'}`}>
+      <div className={`w-12 shrink-0 text-right text-size-12 font-semibold ${entrada.absenceStanding.exceedsAbsenceLimit ? 'text-danger' : 'text-ink-faint'}`}>
         {porcentaje == null ? '-' : `${porcentaje}%`}
       </div>
     </div>

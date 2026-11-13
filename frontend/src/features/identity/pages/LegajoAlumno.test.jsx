@@ -100,6 +100,26 @@ describe('LegajoAlumno — load failure', () => {
   });
 });
 
+describe('LegajoAlumno — deep links to a tab', () => {
+  it.each([
+    ['academico', 'Académico'],
+    ['financiero', 'Financiero'],
+  ])('opens the %s tab when the view query asks for it', async (view, label) => {
+    server.use(
+      http.get(`${API}/students/9`, () => HttpResponse.json(STUDENT)),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/:rol/alumnos/:id" element={<LegajoAlumno />} />
+      </Routes>,
+      { route: `/administrativo/alumnos/9?view=${view}` },
+    );
+
+    expect(await screen.findByRole('tab', { name: label })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
 describe('LegajoAlumno — failed actions', () => {
   afterEach(() => {
     auth.roles = ['PRECEPTOR'];

@@ -181,6 +181,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REFUND_DESTINATION_INVALID` | no | `RefundDestinationInvalidException` | billing |
 | `REFUND_DESTINATION_REQUIRED` | no | `RefundDestinationRequiredException` | billing |
 | `REFUND_FAILURE_REASON_INVALID` | no | `RefundFailureReasonInvalidException` | billing |
+| `REJECTION_REASON_INVALID` | no | `RejectionReasonInvalidException` | graduation |
 | `REJECTION_REASON_REQUIRED` | no | `RejectionReasonRequiredException` | billing |
 | `REQUEST_FIELD_OUT_OF_RANGE` | no | `RequestFieldOutOfRangeException` | shared |
 | `REQUEST_FIELD_REQUIRED` | no | `RequestFieldRequiredException` | shared |
@@ -188,6 +189,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REQUEST_LIST_TOO_LARGE` | no | `RequestListTooLargeException` | shared |
 | `REQUIRED_APPLICATION_DOCUMENTS_MISSING` | no | `RequiredApplicationDocumentsMissingException` | enrollment |
 | `RETROACTIVE_EFFECTIVE_DATE` | no | `RetroactiveEffectiveDateException` | billing |
+| `REVOCATION_REASON_INVALID` | no | `RevocationReasonInvalidException` | graduation |
 | `REVOCATION_REASON_REQUIRED` | no | `RevocationReasonRequiredException` | billing |
 | `SCHEDULED_DATE_IN_THE_PAST` | no | `ScheduledDateInThePastException` | announcement |
 | `SCHOLARSHIP_ONLY_FOR_MONTHLY_INSTALLMENTS` | no | `ScholarshipOnlyForMonthlyInstallmentsException` | billing |
@@ -306,6 +308,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `RECEIPT_INVOICE_OF_ANOTHER_ACCOUNT` | no | `ReceiptInvoiceOfAnotherAccountException` | billing |
 | `REFUND_NOT_FOUND` | no | `RefundNotFoundException` | billing |
 | `REGULAR_CERTIFICATE_NOT_FOUND` | no | `RegularCertificateNotFoundException` | graduation |
+| `REGULAR_CERTIFICATE_REQUEST_NOT_FOUND` | no | `RegularCertificateRequestNotFoundException` | graduation |
+| `REGULAR_ENROLLMENT_NOT_FOUND` | no | `RegularEnrollmentNotFoundException` | graduation |
 | `REMINDER_SCHEDULE_TARGET_NOT_FOUND` | no | `ReminderScheduleTargetNotFoundException` | billing |
 | `ROLE_NOT_FOUND` | no | `RoleNotFoundException` | identity |
 | `SECTION_ENROLLMENT_NOT_FOUND` | no | `SectionEnrollmentNotFoundException` | enrollment |
@@ -349,6 +353,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CANNOT_JUSTIFY` | no | `CannotJustifyException` | attendance |
 | `CANNOT_WITHDRAW` | no | `CannotWithdrawException` | enrollment |
 | `CASH_PAYMENT_PREVIEW_OUTDATED` | no | `CashPaymentPreviewOutdatedException` | billing |
+| `CERTIFICATE_EXPIRED` | no | `CertificateExpiredException` | graduation |
+| `CERTIFICATE_REVOKED` | no | `CertificateRevokedException` | graduation |
 | `CHARGEBACK_ALREADY_REVERSED` | no | `ChargebackAlreadyReversedException` | billing |
 | `CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT` | no | `ChargebackMustBeForTheFullAmountException` | billing |
 | `CHARGE_REJECTED` | no | `ChargeRejectedException` | billing |
@@ -406,6 +412,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_WITHDRAWN` | no | `ExamBoardRegistrationWithdrawnException` | evaluation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
+| `FINAL_EXAM_BLOCKED_BY_ABSENCES` | no | `FinalExamBlockedByAbsencesException` | evaluation |
 | `FINAL_EXAM_PREREQUISITES_NOT_APPROVED` | no | `FinalExamPrerequisitesNotApprovedException` | evaluation |
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
 | `GRADE_CORRECTION_NO_CHANGE` | no | `GradeCorrectionNoChangeException` | evaluation |
@@ -510,6 +517,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REFUND_METHOD_MISMATCH` | no | `RefundMethodMismatchException` | billing |
 | `REFUND_REQUEST_NOT_PENDING` | no | `RefundRequestNotPendingException` | billing |
 | `REGULAR_CERTIFICATE_ALREADY_ISSUED` | no | `RegularCertificateAlreadyIssuedException` | graduation |
+| `REGULAR_CERTIFICATE_NOT_REVOCABLE` | no | `RegularCertificateNotRevocableException` | graduation |
+| `REGULAR_CERTIFICATE_REQUEST_NOT_PENDING` | no | `RegularCertificateRequestNotPendingException` | graduation |
 | `RUN_ITEM_NOT_RETRYABLE` | no | `RunItemNotRetryableException` | billing |
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
@@ -718,6 +727,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/program-enrollments/{id}/advance-enrollment-fee` | `AdvanceEnrollmentFeeController#requestForMe` |
 | POST | `/me/program-enrollments/{id}/graduation-request` | `MeGraduationRequestController#request` |
 | POST | `/me/refund-requests/preview` | `RefundPreviewController#previewOwnRefund` |
+| POST | `/me/regular-certificates` | `MeRegularCertificateController#submit` |
 | POST | `/me/section-enrollments` | `MeEnrollmentController#enroll` |
 | POST | `/me/section-enrollments/{id}/change-section` | `MeEnrollmentController#changeMySection` |
 | POST | `/me/section-enrollments/{id}/withdraw` | `MeEnrollmentController#withdraw` |
@@ -773,7 +783,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |
 | POST | `/refunds/{refundId}/completion` | `RefundController#completeRefund` |
 | POST | `/refunds/{refundId}/failure` | `RefundController#failRefund` |
+| POST | `/regular-certificate-requests/{id}/reject` | `RegularCertificateRequestController#reject` |
 | POST | `/regular-certificates` | `RegularCertificateController#issue` |
+| POST | `/regular-certificates/{id}/revoke` | `RegularCertificateController#revoke` |
 | POST | `/section-enrollments/{id}/change-section` | `SubjectSectionEnrollmentController#changeSection` |
 | POST | `/section-enrollments/{id}/grade-items` | `GradeItemController#loadProgramEnrollmentGrade` |
 | POST | `/section-enrollments/{id}/withdraw` | `SubjectSectionEnrollmentController#withdraw` |

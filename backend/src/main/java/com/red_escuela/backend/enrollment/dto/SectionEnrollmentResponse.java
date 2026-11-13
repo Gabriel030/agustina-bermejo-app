@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResponse;
 import com.red_escuela.backend.shared.domain.Grade;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
@@ -13,7 +15,8 @@ import java.util.List;
 public record SectionEnrollmentResponse(
         Long id, Long programEnrollmentId, Long sectionId, String sectionName, Long subjectId, String subjectCode, String subjectName,
         Integer curricularYear, String curricularTerm, String status, Integer attemptNumber, BigDecimal finalScore, String finalGradeType,
-        LocalDateTime enrolledAt, LocalDateTime droppedAt, String schedule, String instructorTitular, String instructorAdjunto) {
+        LocalDateTime enrolledAt, LocalDateTime droppedAt, String schedule, String instructorTitular, String instructorAdjunto,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) FinalExamEligibilityResponse finalExamEligibility) {
     public static SectionEnrollmentResponse from(SubjectSectionEnrollment enrollment) {
         return from(enrollment, null, null);
     }
@@ -44,7 +47,15 @@ public record SectionEnrollmentResponse(
                 enrollment.getDroppedAt(),
                 enrollment.getSubjectSection().getSchedule(),
                 titular,
-                adjunto);
+                adjunto,
+                null);
+    }
+
+    public SectionEnrollmentResponse withFinalExamEligibility(FinalExamEligibilityResponse eligibility) {
+        return new SectionEnrollmentResponse(
+                id, programEnrollmentId, sectionId, sectionName, subjectId, subjectCode, subjectName, curricularYear, curricularTerm,
+                status, attemptNumber, finalScore, finalGradeType, enrolledAt, droppedAt, schedule, instructorTitular,
+                instructorAdjunto, eligibility);
     }
 
     private static String nombrePorRol(SubjectSectionEnrollment enrollment, InstructorRole role) {

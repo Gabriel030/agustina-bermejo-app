@@ -2,7 +2,6 @@ package com.red_escuela.backend.enrollment.service;
 import java.time.Clock;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.Percentage;
-import java.math.BigDecimal;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
 import com.red_escuela.backend.identity.api.StudentFinder;
@@ -44,7 +43,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
-import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
+import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 
 @Service
 public class ProgramEnrollmentService {
@@ -56,7 +55,7 @@ public class ProgramEnrollmentService {
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
-    private final AttendanceRiskReader attendanceRiskReader;
+    private final AttendanceStandingReader attendanceStandingReader;
     private final EnrollmentDebtGuard enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
@@ -72,7 +71,7 @@ public class ProgramEnrollmentService {
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
-            AttendanceRiskReader attendanceRiskReader,
+            AttendanceStandingReader attendanceStandingReader,
             EnrollmentDebtGuard enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
@@ -87,7 +86,7 @@ public class ProgramEnrollmentService {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programCohortRepository = programCohortRepository;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
-        this.attendanceRiskReader = attendanceRiskReader;
+        this.attendanceStandingReader = attendanceStandingReader;
         this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
@@ -191,7 +190,8 @@ public class ProgramEnrollmentService {
         return new ProgramProgressResponse(
                 progress.programEnrollmentId(), progress.accumulatedCredits(), progress.requiredCredits(),
                 progress.pendingMandatorySubjects(), electiveGroups, progress.eligibleToComplete(),
-                progress.regular(), Optional.ofNullable(progress.overallAverage()).map(Grade::value).orElse(null));
+                progress.hasActiveCoursework(), Optional.ofNullable(progress.overallAverage()).map(Grade::value).orElse(null),
+                progress.hasActiveCoursework());
     }
 
     public boolean hasOnlyFinalExamsLeft(Long id) {
@@ -200,21 +200,21 @@ public class ProgramEnrollmentService {
 
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
         var enrollments = subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(programEnrollmentId);
-        var risks = attendanceRiskReader.readProgramEnrollmentRisks(
+        var standings = attendanceStandingReader.readProgramEnrollmentStandings(
                 enrollments.stream().map(SubjectSectionEnrollment::getId).toList());
         return enrollments.stream()
                 .map(enrollment -> {
-                    var riesgo = risks.get(enrollment.getId());
-                    Percentage asistencia = riesgo.absencePercent() == null ? null
-                            : Percentage.ofFraction(BigDecimal.ONE.subtract(riesgo.absencePercent().fraction()));
+                    var standing = standings.get(enrollment.getId());
+                    Percentage asistencia = !standing.calculable() || standing.presencePercent() == null ? null
+                            : standing.presencePercent();
                     return new SubjectAttendanceSummaryResponse(
                             enrollment.getSubjectSection().getSubject().getName(), asistencia);
                 })
                 .toList();
     }
 
-    public boolean hasActiveEnrollment(Long programEnrollmentId) {
-        return programProgressReader.hasActiveEnrollment(programEnrollmentId);
+    public boolean hasActiveCoursework(Long programEnrollmentId) {
+        return programProgressReader.hasActiveCoursework(programEnrollmentId);
     }
 
     public List<ProgramSubjectView> listApprovedSubjects(Long programEnrollmentId) {

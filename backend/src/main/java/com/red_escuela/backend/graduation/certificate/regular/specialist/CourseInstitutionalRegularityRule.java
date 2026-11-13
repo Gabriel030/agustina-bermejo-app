@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public class CourseRegularityRule implements RegularityRule {
+public class CourseInstitutionalRegularityRule implements InstitutionalRegularityRule {
 
     private static final Set<EnrollmentStatus> ACTIVE_STATUSES =
             Set.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
@@ -28,7 +28,7 @@ public class CourseRegularityRule implements RegularityRule {
     private final AttendanceStandingFinder attendanceStandingFinder;
     private final Clock clock;
 
-    public CourseRegularityRule(CourseEnrollmentFinder courseEnrollmentFinder,
+    public CourseInstitutionalRegularityRule(CourseEnrollmentFinder courseEnrollmentFinder,
                                 ActiveSectionEnrollmentFinder activeSectionEnrollmentFinder,
                                 AttendanceStandingFinder attendanceStandingFinder,
                                 Clock clock) {

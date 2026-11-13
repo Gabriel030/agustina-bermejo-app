@@ -37,6 +37,7 @@ function registration(id, extra = {}) {
     enrollmentId: 100 + id,
     enrollmentKind: 'PROGRAM',
     priorCondition: 'REGULAR',
+    finalExamEligibility: { eligible: true, reason: null },
     minApprovalGrade: 6,
     gradeItemId: null,
     result: null,
@@ -157,7 +158,7 @@ describe('ExamBoardGradesSection', () => {
     await user.click(await screen.findByRole('button', { name: 'Guardar las notas' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('No se guardó ninguna nota: El alumno no está en condición de regular.');
+    expect(alert).toHaveTextContent('No se guardó ninguna nota: El alumno no tiene la cursada regular.');
     expect(gradeInput(2)).toHaveAttribute('aria-invalid', 'true');
     expect(gradeInput(1)).toHaveValue('7');
 
@@ -215,11 +216,19 @@ describe('ExamBoardGradesSection', () => {
     expect(screen.getByRole('button', { name: 'Dar de baja a Alumno 1' })).toBeInTheDocument();
   });
 
-  it('shows a student who is not regular as blocked, with a single No regular pill', () => {
-    renderSection({ rows: [registration(1, { priorCondition: 'FREE' })] });
+  it('shows a student who is not regular as blocked, with a single Sin cursada regular pill', () => {
+    renderSection({ rows: [registration(1, { finalExamEligibility: { eligible: false, reason: 'COURSEWORK_NOT_REGULAR' } })] });
 
-    expect(screen.getByText('No regular')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Requiere condición regular/ })).toBeInTheDocument();
+    expect(screen.getByText('Sin cursada regular')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Requiere cursada regular/ })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nota del final de Alumno 1')).not.toBeInTheDocument();
+  });
+
+  it('shows a student who is free by absences as blocked, with Libre por inasistencias and its reason', () => {
+    renderSection({ rows: [registration(1, { finalExamEligibility: { eligible: false, reason: 'FREE_BY_ABSENCES' } })] });
+
+    expect(screen.getByText('Libre por inasistencias')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /superó el máximo/ })).toBeInTheDocument();
     expect(screen.queryByLabelText('Nota del final de Alumno 1')).not.toBeInTheDocument();
   });
 

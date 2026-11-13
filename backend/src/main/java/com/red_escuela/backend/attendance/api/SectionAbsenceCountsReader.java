@@ -1,7 +1,5 @@
 package com.red_escuela.backend.attendance.api;
 
-import com.red_escuela.backend.attendance.entity.AttendanceStatus;
-import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,34 +11,24 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class SectionAbsenceCountsReader {
 
-    private final AttendanceRepository attendanceRepository;
+    private final AttendanceStandingReader attendanceStandingReader;
 
-    public SectionAbsenceCountsReader(AttendanceRepository attendanceRepository) {
-        this.attendanceRepository = attendanceRepository;
+    public SectionAbsenceCountsReader(AttendanceStandingReader attendanceStandingReader) {
+        this.attendanceStandingReader = attendanceStandingReader;
     }
 
     public Map<Long, EnrollmentAbsenceCountsView> countByProgramEnrollments(List<Long> enrollmentIds) {
-        if (enrollmentIds.isEmpty()) {
-            return Map.of();
-        }
-        return toCounts(attendanceRepository.countsByProgramEnrollment(enrollmentIds, AttendanceStatus.ABSENT));
+        return toCounts(attendanceStandingReader.readProgramEnrollmentCounts(enrollmentIds));
     }
 
     public Map<Long, EnrollmentAbsenceCountsView> countByCourseEnrollments(List<Long> enrollmentIds) {
-        if (enrollmentIds.isEmpty()) {
-            return Map.of();
-        }
-        return toCounts(attendanceRepository.countsByCourseEnrollment(enrollmentIds, AttendanceStatus.ABSENT));
+        return toCounts(attendanceStandingReader.readCourseEnrollmentCounts(enrollmentIds));
     }
 
-    private Map<Long, EnrollmentAbsenceCountsView> toCounts(List<Object[]> rows) {
+    private Map<Long, EnrollmentAbsenceCountsView> toCounts(Map<Long, AttendanceStanding> standings) {
         Map<Long, EnrollmentAbsenceCountsView> byEnrollment = new HashMap<>();
-        for (Object[] row : rows) {
-            Long enrollmentId = ((Number) row[0]).longValue();
-            long total = ((Number) row[1]).longValue();
-            long absent = row[2] == null ? 0L : ((Number) row[2]).longValue();
-            byEnrollment.put(enrollmentId, new EnrollmentAbsenceCountsView(total, absent));
-        }
+        standings.forEach((enrollmentId, standing) -> byEnrollment.put(enrollmentId, new EnrollmentAbsenceCountsView(
+                standing.classesHeld(), standing.countableAbsences(), standing.pendingJustificationAbsences())));
         return byEnrollment;
     }
 }

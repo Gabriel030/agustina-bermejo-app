@@ -30,7 +30,7 @@ function RiskPill() {
       <Tooltip>
         <TooltipTrigger asChild>
           <span tabIndex={0} className="inline-flex w-fit rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <StatusPill tone="danger">En riesgo</StatusPill>
+            <StatusPill tone="danger">Libre por inasistencias</StatusPill>
           </span>
         </TooltipTrigger>
         <TooltipContent>Supera el máximo de inasistencias</TooltipContent>
@@ -40,7 +40,12 @@ function RiskPill() {
 }
 
 function toRosterRow(entry) {
-  return { ...entry, attendancePoints: attendancePercentToPoints(entry.attendancePercent) };
+  return {
+    ...entry,
+    exceedsAbsenceLimit: entry.absenceStanding.exceedsAbsenceLimit,
+    countableAbsences: entry.absenceStanding.countableAbsences,
+    attendancePoints: attendancePercentToPoints(entry.attendancePercent),
+  };
 }
 
 function buildColumns() {
@@ -50,24 +55,24 @@ function buildColumns() {
       header: 'Alumno',
       accessorKey: 'studentName',
       sortingFn: (a, b) => a.original.studentName.localeCompare(b.original.studentName, 'es'),
-      meta: { stickyStart: true, filterColumnId: 'atRisk', headerClassName: 'min-w-[148px] max-w-[148px]' },
+      meta: { stickyStart: true, filterColumnId: 'exceedsAbsenceLimit', headerClassName: 'min-w-[148px] max-w-[148px]' },
       cell: ({ row }) => (
         <div className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
           <span className="text-size-13 font-semibold leading-tight text-ink">{row.original.studentName}</span>
-          {row.original.atRisk && <RiskPill />}
+          {row.original.exceedsAbsenceLimit && <RiskPill />}
         </div>
       ),
     },
     {
-      id: 'atRisk',
-      header: 'En riesgo',
-      accessorKey: 'atRisk',
+      id: 'exceedsAbsenceLimit',
+      header: 'Libre por inasistencias',
+      accessorKey: 'exceedsAbsenceLimit',
       enableSorting: false,
       enableColumnFilter: true,
       meta: {
         filterable: true,
         filterTitle: 'riesgo',
-        filterLabel: (value) => (value ? 'En riesgo' : 'Sin riesgo'),
+        filterLabel: (value) => (value ? 'Libre por inasistencias' : 'No libre'),
       },
       cell: () => null,
     },
@@ -79,11 +84,11 @@ function buildColumns() {
       cell: ({ row }) => <span className="text-ink-faint">{row.original.dni}</span>,
     },
     {
-      id: 'absenceCount',
-      header: 'Ausencias',
-      accessorKey: 'absenceCount',
+      id: 'countableAbsences',
+      header: 'Inasistencias',
+      accessorKey: 'countableAbsences',
       meta: { align: 'right' },
-      cell: ({ row }) => <span className="tabular-nums">{row.original.absenceCount}</span>,
+      cell: ({ row }) => <span className="tabular-nums">{row.original.countableAbsences}</span>,
     },
     {
       id: 'attendancePercent',
@@ -94,7 +99,7 @@ function buildColumns() {
           <ProgressBar
             className="w-[70px] shrink-0"
             value={row.original.attendancePoints}
-            tone={row.original.atRisk ? 'danger' : 'accent'}
+            tone={row.original.exceedsAbsenceLimit ? 'danger' : 'accent'}
             showValue={false}
           />
           <span className="min-w-[46px] tabular-nums">{formatPercent(row.original.attendancePoints)}</span>
@@ -125,12 +130,12 @@ export function StaffSectionRoster() {
   const { data: entries, isLoading, isError, refetch } = useReporteAusencias(cycle ? sectionType : undefined, cycle ? sectionId : undefined);
 
   const section = sections?.find((candidate) => String(candidate.id) === String(sectionId));
-  const columns = useMemo(buildColumns, []);
+  const columns = useMemo(() => buildColumns(), []);
   const rosterRows = useMemo(() => (entries ?? []).map(toRosterRow), [entries]);
   const visibleEntries = useMemo(() => rosterRows.filter((entry) => matchesSearch(entry, search)), [rosterRows, search]);
 
   const total = entries?.length ?? 0;
-  const atRiskCount = (entries ?? []).filter((entry) => entry.atRisk).length;
+  const atRiskCount = rosterRows.filter((entry) => entry.exceedsAbsenceLimit).length;
   const withPercent = rosterRows.filter((entry) => entry.attendancePoints != null);
   const averagePercent = withPercent.length
     ? withPercent.reduce((sum, entry) => sum + entry.attendancePoints, 0) / withPercent.length
@@ -206,7 +211,7 @@ export function StaffSectionRoster() {
               <StatCard label="Inscriptos" className="p-3 md:p-5">
                 <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{total}</span>
               </StatCard>
-              <StatCard label="En riesgo" className="p-3 md:p-5">
+              <StatCard label="Libres por inasistencias" className="p-3 md:p-5">
                 <span className="font-heading text-size-22 font-bold text-danger md:text-size-26">{atRiskCount}</span>
               </StatCard>
               <StatCard label="Asist. media" className="p-3 md:p-5">
@@ -224,7 +229,7 @@ export function StaffSectionRoster() {
               getRowId={(entry) => String(entry.enrollmentId)}
               initialSorting={[{ id: 'studentName', desc: false }]}
               minWidth={520}
-              initialColumnVisibility={{ atRisk: false }}
+              initialColumnVisibility={{ exceedsAbsenceLimit: false }}
               onRowClick={(entry) => navigate(`${basePath}/alumnos/${entry.studentId}`)}
               emptyState={<EmptyState icon="🔎" title="Sin resultados" description="Probá con otro filtro o búsqueda." />}
             />

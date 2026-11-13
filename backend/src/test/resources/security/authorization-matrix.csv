@@ -216,6 +216,11 @@ POST,/me/program-enrollment-applications,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY
 POST,/me/program-enrollment-applications/with-documents,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/me/program-enrollment-applications/{id}/documents,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/program-enrollments,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/me/regular-certificates,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1}"
+GET,/me/regular-certificates,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/me/regular-certificates/eligibility,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/me/regular-certificates/{id}/pdf,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+DELETE,/me/regular-certificate-requests/{id},DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/program-enrollments/{id}/certificates/approved-subjects,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,program-enrollment,
 GET,/me/program-enrollments/{id}/certificates/regular,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,program-enrollment,
 GET,/me/program-enrollments/{id}/enrollment-fee-status,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,program-enrollment,
@@ -472,6 +477,8 @@ GET,/regular-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/regular-certificates/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/regular-certificates/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/regular-certificate-requests,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/regular-certificate-requests/{id}/reject,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/regular-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/graduation-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1}"
 GET,/graduation-certificates/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/institute-settings,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,

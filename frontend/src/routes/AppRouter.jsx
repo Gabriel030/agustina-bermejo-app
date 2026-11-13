@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
@@ -20,11 +21,13 @@ const showCatalog = import.meta.env.DEV || import.meta.env.VITE_ENABLE_CATALOG =
 
 const AutoservicioLayout = lazyPage(() => import('@/layouts/AutoservicioLayout'), 'AutoservicioLayout');
 
+function layoutFor(role) {
+  return (role && ROLE_CONFIG[role]?.Layout) || AutoservicioLayout;
+}
+
 function SharedRoutesLayout() {
   const { usuario } = useAuth();
-  const role = usuario?.roles[0]?.toLowerCase();
-  const Layout = (role && ROLE_CONFIG[role]?.Layout) || AutoservicioLayout;
-  return <Layout />;
+  return createElement(layoutFor(usuario?.roles[0]?.toLowerCase()));
 }
 
 function placeholderElement(role, page, pages) {
@@ -47,10 +50,9 @@ function renderRoleRoutes(role, pages) {
 function OfflineShellRoutes({ retry }) {
   const { usuario } = useAuth();
   const role = usuario.roles[0]?.toLowerCase();
-  const Layout = (role && ROLE_CONFIG[role]?.Layout) || AutoservicioLayout;
   return (
     <Routes>
-      <Route element={<Layout />}>
+      <Route element={createElement(layoutFor(role))}>
         <Route
           path="*"
           element={

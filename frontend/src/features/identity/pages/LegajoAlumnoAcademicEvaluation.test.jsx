@@ -8,8 +8,10 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { LegajoAlumno } from './LegajoAlumno';
 import { studentFixture } from '@/test/fixtures/students';
 
+const auth = vi.hoisted(() => ({ roles: ['PRECEPTOR'] }));
+
 vi.mock('@/context/AuthContext', () => ({
-  useAuth: () => ({ usuario: { roles: ['PRECEPTOR'] } }),
+  useAuth: () => ({ usuario: { roles: auth.roles } }),
 }));
 
 const API = 'http://localhost:8080';
@@ -59,6 +61,7 @@ function mockStudent({ programs = [PROGRAM_ENROLLMENT], courses = [] } = {}) {
         creditosRequeridos: 120,
         promedioGeneral: 7.84,
         esRegular: true,
+        hasActiveCoursework: true,
         elegibleParaCompletar: false,
         obligatoriasPendientes: ['Antropología Cultural', 'Legislación Cultural'],
         gruposElectivos: [{ electiveGroupId: 1, electiveGroupName: 'Electivas de gestión', minRequired: 2, maxAllowed: 3, cantidadAprobada: 2, cumplido: true }],
@@ -90,7 +93,72 @@ function renderLegajo() {
   );
 }
 
+function mockRegularity(overrides) {
+  const requests = [];
+  server.use(
+    http.get(`${API}/regular-certificates/eligibility`, ({ request }) => {
+      requests.push(new URL(request.url).search);
+      return HttpResponse.json({
+        enrollmentId: 4,
+        kind: 'PROGRAM',
+        billingMode: 'OFF',
+        attendanceControlled: true,
+        regular: true,
+        institutionallyRegular: true,
+        paymentStanding: 'VERIFIED',
+        reasons: [],
+        ...overrides,
+      });
+    }),
+  );
+  return requests;
+}
+
 describe('LegajoAlumno academic and evaluation tabs', () => {
+  it('shows Alumno regular once, apart from the career state, with a confirmar when payments cannot be verified', async () => {
+    auth.roles = ['ADMINISTRATIVO'];
+    mockStudent();
+    const requests = mockRegularity({ paymentStanding: 'TO_CONFIRM' });
+    const user = userEvent.setup();
+    renderLegajo();
+
+    await user.click(await screen.findByRole('tab', { name: 'Académico' }));
+
+    expect(await screen.findByText('Alumno regular · a confirmar')).toBeInTheDocument();
+    expect(screen.getByText('Pagos a confirmar')).toBeInTheDocument();
+    expect(screen.getByText('Con cursada activa')).toBeInTheDocument();
+    expect(screen.getAllByText(/Alumno regular/)).toHaveLength(1);
+    expect(requests).toEqual(['?kind=PROGRAM&enrollmentId=4']);
+    auth.roles = ['PRECEPTOR'];
+  });
+
+  it('explains why a student is not regular', async () => {
+    auth.roles = ['DIRECTOR'];
+    mockStudent();
+    mockRegularity({ institutionallyRegular: false, regular: false, reasons: ['FREE_IN_ACTIVE_SECTION'] });
+    const user = userEvent.setup();
+    renderLegajo();
+
+    await user.click(await screen.findByRole('tab', { name: 'Académico' }));
+
+    expect(await screen.findByText('No es alumno regular')).toBeInTheDocument();
+    expect(screen.getByText('Libre por inasistencias en una cursada activa')).toBeInTheDocument();
+    auth.roles = ['PRECEPTOR'];
+  });
+
+  it('does not ask for regularity when the role cannot see it', async () => {
+    mockStudent();
+    const requests = mockRegularity();
+    const user = userEvent.setup();
+    renderLegajo();
+
+    await user.click(await screen.findByRole('tab', { name: 'Académico' }));
+
+    expect(await screen.findByText('Con cursada activa')).toBeInTheDocument();
+    expect(requests).toEqual([]);
+    expect(screen.queryByText(/Alumno regular/)).not.toBeInTheDocument();
+  });
+
   it('shows progress numbers and the enrolled subjects with their attendance', async () => {
     mockStudent();
     const user = userEvent.setup();
@@ -100,7 +168,7 @@ describe('LegajoAlumno academic and evaluation tabs', () => {
 
     expect(await screen.findByText('62')).toBeInTheDocument();
     expect(screen.getByText('7,84')).toBeInTheDocument();
-    expect(screen.getByText('Alumno regular')).toBeInTheDocument();
+    expect(screen.getByText('Con cursada activa')).toBeInTheDocument();
     expect(screen.getByText('Todavía no')).toBeInTheDocument();
     const subjectRow = (await screen.findByText('Historia del Arte I')).closest('tr');
     expect(within(subjectRow).getByText('Aprobada')).toBeInTheDocument();

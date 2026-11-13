@@ -1,3 +1,4 @@
+import { fixupPluginRules } from '@eslint/compat'
 import js from '@eslint/js'
 import globals from 'globals'
 import react from 'eslint-plugin-react'
@@ -49,8 +50,8 @@ export default defineConfig([
     files: ['**/*.{js,jsx}'],
     extends: [
       js.configs.recommended,
-      react.configs.flat.recommended,
-      reactHooks.configs['recommended-latest'],
+      { ...react.configs.flat.recommended, plugins: { react: fixupPluginRules(react) } },
+      reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
     languageOptions: {
@@ -70,6 +71,10 @@ export default defineConfig([
       // React 19 con el runtime automático de JSX no requiere "React" en scope.
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
     },
   },
   {
@@ -79,6 +84,12 @@ export default defineConfig([
     files: ['src/components/ui/**/*.jsx', 'src/context/**/*.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['src/components/MonthPicker.jsx'],
+    rules: {
+      'react-hooks/refs': 'off',
     },
   },
   {

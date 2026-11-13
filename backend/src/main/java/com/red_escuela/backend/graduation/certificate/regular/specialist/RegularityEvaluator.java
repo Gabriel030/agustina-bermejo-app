@@ -11,9 +11,9 @@ import java.util.Map;
 @Service
 public class RegularityEvaluator {
 
-    private final Map<RegularityKind, RegularityRule> rulesByKind = new EnumMap<>(RegularityKind.class);
+    private final Map<RegularityKind, InstitutionalRegularityRule> rulesByKind = new EnumMap<>(RegularityKind.class);
 
-    public RegularityEvaluator(List<RegularityRule> rules) {
+    public RegularityEvaluator(List<InstitutionalRegularityRule> rules) {
         rules.forEach(rule -> rulesByKind.put(rule.kind(), rule));
     }
 

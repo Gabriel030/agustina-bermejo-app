@@ -29,77 +29,66 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Page<Attendance> findByStatusAndJustificationRejectionReasonIsNotNull(AttendanceStatus status, Pageable pageable);
 
     @Query("""
-            select a.programSubjectSectionEnrollment.id, count(a),
-                   sum(case when a.status = :absent then 1 else 0 end)
+            select a.programSubjectSectionEnrollment.id as enrollmentId, count(a) as total,
+                   sum(case when a.status in :presenceStatuses then 1 else 0 end) as present,
+                   sum(case when a.status in :absenceStatuses then 1 else 0 end) as absences,
+                   sum(case when a.status = :pendingStatus then 1 else 0 end) as pending
             from Attendance a
             where a.programSubjectSectionEnrollment.id in :enrollmentIds
             group by a.programSubjectSectionEnrollment.id
             """)
-    List<Object[]> countsByProgramEnrollment(@Param("enrollmentIds") List<Long> enrollmentIds,
-                                             @Param("absent") AttendanceStatus absent);
+    List<EnrollmentAttendanceCounts> countsByProgramEnrollmentIds(@Param("enrollmentIds") java.util.Collection<Long> enrollmentIds,
+                                           @Param("presenceStatuses") List<AttendanceStatus> presenceStatuses,
+                                           @Param("absenceStatuses") List<AttendanceStatus> absenceStatuses,
+                                           @Param("pendingStatus") AttendanceStatus pendingStatus);
 
     @Query("""
-            select a.courseSubjectSectionEnrollment.id, count(a),
-                   sum(case when a.status = :absent then 1 else 0 end)
+            select a.courseSubjectSectionEnrollment.id as enrollmentId, count(a) as total,
+                   sum(case when a.status in :presenceStatuses then 1 else 0 end) as present,
+                   sum(case when a.status in :absenceStatuses then 1 else 0 end) as absences,
+                   sum(case when a.status = :pendingStatus then 1 else 0 end) as pending
             from Attendance a
             where a.courseSubjectSectionEnrollment.id in :enrollmentIds
             group by a.courseSubjectSectionEnrollment.id
             """)
-    List<Object[]> countsByCourseEnrollment(@Param("enrollmentIds") List<Long> enrollmentIds,
-                                            @Param("absent") AttendanceStatus absent);
+    List<EnrollmentAttendanceCounts> countsByCourseEnrollmentIds(@Param("enrollmentIds") java.util.Collection<Long> enrollmentIds,
+                                           @Param("presenceStatuses") List<AttendanceStatus> presenceStatuses,
+                                           @Param("absenceStatuses") List<AttendanceStatus> absenceStatuses,
+                                           @Param("pendingStatus") AttendanceStatus pendingStatus);
 
     @Query("""
             select a.programSubjectSectionEnrollment.id as enrollmentId, count(a) as total,
-                   sum(case when a.status in :presentLike then 1 else 0 end) as present,
-                   sum(case when a.status in :absences then 1 else 0 end) as absences
+                   sum(case when a.status in :presenceStatuses then 1 else 0 end) as present,
+                   sum(case when a.status in :absenceStatuses then 1 else 0 end) as absences,
+                   sum(case when a.status = :pendingStatus then 1 else 0 end) as pending
             from Attendance a
             where a.programSubjectSectionEnrollment.subjectSection.id = :sectionId
             group by a.programSubjectSectionEnrollment.id
             """)
     List<EnrollmentAttendanceCounts> countsByProgramSection(@Param("sectionId") Long sectionId,
-                                                           @Param("presentLike") List<AttendanceStatus> presentLike,
-                                                           @Param("absences") List<AttendanceStatus> absences);
+                                           @Param("presenceStatuses") List<AttendanceStatus> presenceStatuses,
+                                           @Param("absenceStatuses") List<AttendanceStatus> absenceStatuses,
+                                           @Param("pendingStatus") AttendanceStatus pendingStatus);
 
     @Query("""
             select a.courseSubjectSectionEnrollment.id as enrollmentId, count(a) as total,
-                   sum(case when a.status in :presentLike then 1 else 0 end) as present,
-                   sum(case when a.status in :absences then 1 else 0 end) as absences
+                   sum(case when a.status in :presenceStatuses then 1 else 0 end) as present,
+                   sum(case when a.status in :absenceStatuses then 1 else 0 end) as absences,
+                   sum(case when a.status = :pendingStatus then 1 else 0 end) as pending
             from Attendance a
             where a.courseSubjectSectionEnrollment.courseSubjectSection.id = :sectionId
             group by a.courseSubjectSectionEnrollment.id
             """)
     List<EnrollmentAttendanceCounts> countsByCourseSection(@Param("sectionId") Long sectionId,
-                                                          @Param("presentLike") List<AttendanceStatus> presentLike,
-                                                          @Param("absences") List<AttendanceStatus> absences);
+                                           @Param("presenceStatuses") List<AttendanceStatus> presenceStatuses,
+                                           @Param("absenceStatuses") List<AttendanceStatus> absenceStatuses,
+                                           @Param("pendingStatus") AttendanceStatus pendingStatus);
 
     List<Attendance> findByCourseSubjectSectionEnrollmentId(Long enrollmentId);
 
     Optional<Attendance> findByProgramSubjectSectionEnrollmentIdAndClassDate(Long enrollmentId, LocalDate classDate);
 
     Optional<Attendance> findByCourseSubjectSectionEnrollmentIdAndClassDate(Long enrollmentId, LocalDate classDate);
-
-    @Query("""
-            select a.programSubjectSectionEnrollment.id, count(a),
-                   coalesce(sum(case when a.status in :absenceStatuses then 1 else 0 end), 0)
-            from Attendance a
-            where a.programSubjectSectionEnrollment.id in :enrollmentIds
-            group by a.programSubjectSectionEnrollment.id
-            """)
-    List<Object[]> countTotalAndAbsencesByProgramEnrollmentIds(
-            @Param("enrollmentIds") java.util.Collection<Long> enrollmentIds,
-            @Param("absenceStatuses") List<AttendanceStatus> absenceStatuses);
-
-    long countByProgramSubjectSectionEnrollmentId(Long enrollmentId);
-
-    long countByCourseSubjectSectionEnrollmentId(Long enrollmentId);
-
-    long countByProgramSubjectSectionEnrollmentIdAndStatus(Long enrollmentId, AttendanceStatus status);
-
-    long countByCourseSubjectSectionEnrollmentIdAndStatus(Long enrollmentId, AttendanceStatus status);
-
-    long countByProgramSubjectSectionEnrollmentIdAndStatusIn(Long enrollmentId, List<AttendanceStatus> statuses);
-
-    long countByCourseSubjectSectionEnrollmentIdAndStatusIn(Long enrollmentId, List<AttendanceStatus> statuses);
 
     List<Attendance> findByProgramSubjectSectionEnrollment_SubjectSection_Id(Long subjectSectionId);
 

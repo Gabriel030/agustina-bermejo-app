@@ -1,6 +1,6 @@
 package com.red_escuela.backend.attendance.specialist;
 
-import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
+import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.repository.EnrollmentAttendanceCounts;
@@ -28,7 +28,7 @@ class SectionRosterBuilderTest {
     private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
     private final SectionEnrollmentFinder finder = mock(SectionEnrollmentFinder.class);
     private final SectionRosterBuilder builder = new SectionRosterBuilder(
-            attendanceRepository, finder, new AttendanceRiskCalculator(new AttendanceRiskReader(null, null)));
+            new AttendanceStandingReader(attendanceRepository, null), finder);
 
     @Test
     void remainingAbsencesIsFloorOfAllowedMinusAbsences() {
@@ -56,6 +56,29 @@ class SectionRosterBuilderTest {
 
         assertThat(entry.remainingAbsences()).isZero();
         assertThat(entry.atRisk()).isTrue();
+    }
+
+    @Test
+    void b3AbsenceStandingMirrorsTheFlatFieldsAndTheLimitDecision() {
+        givenCourseSection(points(25), enrollment(1L), counts(1L, 8, 4, 4));
+
+        RosterEntryResponse entry = onlyEntry();
+
+        assertThat(entry.absenceStanding().exceedsAbsenceLimit()).isTrue().isEqualTo(entry.atRisk());
+        assertThat(entry.absenceStanding().countableAbsences()).isEqualTo(entry.absenceCount()).isEqualTo(4);
+        assertThat(entry.absenceStanding().classesHeld()).isEqualTo(8);
+        assertThat(entry.absenceStanding().allowedAbsences()).isEqualTo(2);
+        assertThat(entry.absenceStanding().remainingAbsences()).isZero();
+        assertThat(entry.absenceStanding().maxAbsencePercent().points()).isEqualByComparingTo("25");
+        assertThat(entry.absenceStanding().absencePercent()).isEqualTo(entry.absencePercent());
+        assertThat(entry.absenceStanding().pendingJustificationAbsences()).isEqualTo(entry.pendingJustificationAbsences());
+    }
+
+    @Test
+    void b3AbsenceStandingAtTheLimitIsNotOverIt() {
+        givenCourseSection(points(25), enrollment(1L), counts(1L, 8, 6, 2));
+
+        assertThat(onlyEntry().absenceStanding().exceedsAbsenceLimit()).isFalse();
     }
 
     @Test
@@ -116,7 +139,7 @@ class SectionRosterBuilderTest {
         when(section.getMaxAbsenceRate()).thenReturn(maxAbsenceRate);
         enrollments.forEach(enrollment -> when(enrollment.getCourseSubjectSection()).thenReturn(section));
         when(finder.findActiveWithStudentInCourseSection(SECTION_ID)).thenReturn(enrollments);
-        when(attendanceRepository.countsByCourseSection(eq(SECTION_ID), any(), any())).thenReturn(counts);
+        when(attendanceRepository.countsByCourseSection(eq(SECTION_ID), any(), any(), any())).thenReturn(counts);
     }
 
     private CourseSubjectSectionEnrollment enrollment(Long id) {

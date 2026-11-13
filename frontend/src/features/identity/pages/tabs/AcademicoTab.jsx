@@ -7,8 +7,11 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/table/DataTable';
+import { useAuth } from '@/context/AuthContext';
 import { FaltasDeMateria } from '@/features/attendance';
 import { EnrollmentPicker } from '@/features/identity/components/EnrollmentPicker';
+import { useStudentRegularity } from '@/features/identity/hooks/useStudentRegularity';
+import { describeRegularity } from '@/features/identity/lib/regularity';
 import {
   useCourseProgress,
   useEnrollmentOptions,
@@ -150,11 +153,27 @@ function PendingList({ title, items }) {
   );
 }
 
+const REGULARITY_VIEWER_ROLES = ['ADMINISTRATIVO', 'DIRECTOR'];
+
+function RegularityLine({ programEnrollmentId }) {
+  const { usuario } = useAuth();
+  const canView = (usuario?.roles ?? []).some((role) => REGULARITY_VIEWER_ROLES.includes(role));
+  const { data } = useStudentRegularity('PROGRAM', programEnrollmentId, canView);
+  if (!canView || !data) return null;
+  const { label, tone, details } = describeRegularity(data);
+  return (
+    <div className="mt-2 flex flex-col items-start gap-1">
+      <StatusPill tone={tone}>{label}</StatusPill>
+      {details.length > 0 && <span className="text-size-12 text-ink-faint">{details.join(' · ')}</span>}
+    </div>
+  );
+}
+
 function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
   const progress = useProgramProgress(programEnrollmentId);
   const sections = useProgramSectionEnrollments(programEnrollmentId);
   const attendance = useProgramAttendanceSummary(programEnrollmentId);
-  const columns = useMemo(buildSubjectColumns, []);
+  const columns = useMemo(() => buildSubjectColumns(), []);
   const rows = useMemo(() => buildSubjectRows(sections.data, attendance.data), [sections.data, attendance.data]);
 
   if (progress.isError || sections.isError) {
@@ -187,7 +206,10 @@ function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
               <span className={BIG_NUMBER}>{formatDecimal(data.promedioGeneral)}</span>
             </StatCard>
             <StatCard label="Condición">
-              <StatusPill tone={data.esRegular ? 'success' : 'neutral'}>{data.esRegular ? 'Alumno regular' : 'No regular'}</StatusPill>
+              <StatusPill tone={data.hasActiveCoursework ? 'success' : 'neutral'}>
+                {data.hasActiveCoursework ? 'Con cursada activa' : 'Sin cursada activa'}
+              </StatusPill>
+              <RegularityLine programEnrollmentId={programEnrollmentId} />
             </StatCard>
             <StatCard label="Elegible para egresar">
               <StatusPill tone={data.elegibleParaCompletar ? 'success' : 'neutral'}>

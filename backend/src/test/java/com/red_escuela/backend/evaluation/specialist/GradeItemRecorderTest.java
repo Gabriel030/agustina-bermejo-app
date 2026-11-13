@@ -18,6 +18,7 @@ import com.red_escuela.backend.evaluation.api.GradeItemFinder;
 import com.red_escuela.backend.evaluation.dto.PublishGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.PublishedGradesSummary;
+import com.red_escuela.backend.evaluation.exception.FinalExamBlockedByAbsencesException;
 import com.red_escuela.backend.evaluation.exception.GradeItemPublishedLockedException;
 import com.red_escuela.backend.evaluation.exception.GradeItemTypeNotPublishableException;
 import com.red_escuela.backend.evaluation.exception.NoPendingGradesToPublishException;
@@ -1010,11 +1011,11 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void regularStudentKeepsApprovingTheFinalRegardlessOfLaterAttendance() {
+    void regularStudentWithinTheAbsenceLimitHasTheFinalLoadedAndApproved() {
         Instructor instructor = persistInstructor("71000110");
         SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000109", persistScheme(0, 0, true), instructor, 0.5);
         enrollment.setStatus(EnrollmentStatus.REGULAR);
-        persistAbsences(enrollment, instructor, 4);
+        persistPresences(enrollment, instructor, 4);
         entityManager.flush();
 
         loadFinalThroughBoard(enrollment, instructor, 1, 8.0);
@@ -1022,6 +1023,36 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+    }
+
+    @Test
+    void regularStudentOverTheAbsenceLimitCannotHaveTheFinalLoaded() {
+        Instructor instructor = persistInstructor("71000114");
+        SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000113", persistScheme(0, 0, true), instructor, 0.5);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        persistAbsences(enrollment, instructor, 4);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> loadFinalThroughBoard(enrollment, instructor, 1, 8.0))
+                .isInstanceOf(FinalExamBlockedByAbsencesException.class);
+        assertThat(gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId())).isEmpty();
+    }
+
+    @Test
+    void regularStudentWhoseAbsencesAreOnlyPendingJustificationStillCannotHaveTheFinalLoaded() {
+        Instructor instructor = persistInstructor("71000116");
+        SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000115", persistScheme(0, 0, true), instructor, 0.5);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        Attendance pending = new Attendance();
+        pending.setProgramSubjectSectionEnrollment(enrollment);
+        pending.setClassDate(LocalDate.of(2020, 4, 1));
+        pending.setStatus(AttendanceStatus.JUSTIFICATION_PENDING);
+        pending.setRecordedBy(instructor);
+        entityManager.persist(pending);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> loadFinalThroughBoard(enrollment, instructor, 1, 8.0))
+                .isInstanceOf(FinalExamBlockedByAbsencesException.class);
     }
 
     private void publishLoadedItems(SubjectSectionEnrollment enrollment, Instructor instructor) {

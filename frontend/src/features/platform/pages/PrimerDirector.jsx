@@ -102,7 +102,7 @@ export function PrimerDirector() {
   const [alreadyExists, setAlreadyExists] = useState(false);
   const [serverErrors, setServerErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
-  const submittedForm = useRef(null);
+  const [submittedForm, setSubmittedForm] = useState(null);
   const successRef = useRef(null);
 
   const lockedInstitution = status.data && !status.data.directorExists ? status.data.institutionName : null;
@@ -141,7 +141,7 @@ export function PrimerDirector() {
 
   function submit() {
     setConfirming(false);
-    submittedForm.current = effectiveForm;
+    setSubmittedForm(effectiveForm);
     setSubmitError(null);
     provision.mutate(toRequest(effectiveForm), {
       onSuccess: (response) => setCreated(response),
@@ -166,7 +166,7 @@ export function PrimerDirector() {
   };
 
   if (created) {
-    const submitted = submittedForm.current;
+    const submitted = submittedForm;
     const storedInstitution = created.institutionCreated ? submitted.institutionName.trim() : (status.data?.institutionName ?? submitted.institutionName.trim());
     return (
       <PageContainer {...header}>

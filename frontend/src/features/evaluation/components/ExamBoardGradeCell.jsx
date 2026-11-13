@@ -4,9 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatScore, scoreTextState } from '../lib/gradeGrid';
-import { isBlockedRow, isGradableRow } from '../lib/examBoardGrades';
+import { BLOCK_REASON_TEXT, isBlockedRow, isGradableRow } from '../lib/examBoardGrades';
 
-export const NOT_REGULAR_REASON = 'Requiere condición regular: perdió la regularidad';
 export const CLOSED_CORRECTION_REASON = 'El acta está cerrada: la nota ya no se puede corregir';
 export const SAVED_ABSENT_HINT = 'Ausente guardado: solo puede pasar a una nota';
 
@@ -41,11 +40,11 @@ export function ExamBoardStudentCell({ row }) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span tabIndex={0} role="img" aria-label={NOT_REGULAR_REASON} className="inline-flex text-warning">
+                <span tabIndex={0} role="img" aria-label={BLOCK_REASON_TEXT[row.finalExamEligibility.reason]} className="inline-flex text-warning">
                   <Lock aria-hidden="true" className="size-3.5" />
                 </span>
               </TooltipTrigger>
-              <TooltipContent>{NOT_REGULAR_REASON}</TooltipContent>
+              <TooltipContent>{BLOCK_REASON_TEXT[row.finalExamEligibility.reason]}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}

@@ -5,6 +5,7 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStor
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
+import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateSubmissionResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityReason;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityVerdict;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateRequest;
@@ -26,6 +27,7 @@ import com.red_escuela.backend.graduation.certificate.regular.specialist.Regular
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.graduation.events.RegularCertificateIssuedEvent;
+import com.red_escuela.backend.graduation.events.RegularCertificateRequestFulfilledEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -98,14 +100,47 @@ public class RegularCertificateIssuer {
         Long studentId = facts.student().getId();
         Long actorId = currentActorFinder.currentPersonId();
         rejectIfStillValid(command, studentId, actorId, now);
+        requireRegular(command, studentId, actorId, now);
+        StandingResolution standing = resolveStanding(command, studentId, actorId, now);
+        return create(command, facts, standing, actorId, now);
+    }
+
+    @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
+            StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class})
+    public RegularCertificateSubmissionResponse submitFromPortal(IssueRegularCertificateCommand command) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
+        Long studentId = facts.student().getId();
+        Long actorId = currentActorFinder.currentPersonId();
+        rejectIfStillValid(command, studentId, actorId, now);
+        requireRegular(command, studentId, actorId, now);
+        if (standingGate.requiresStaffConfirmation()) {
+            return RegularCertificateSubmissionResponse.pending(RegularRequestResponses.of(
+                    pendingRequestOf(command, studentId, actorId, now), facts));
+        }
+        StandingResolution standing = resolveStanding(command, studentId, actorId, now);
+        return RegularCertificateSubmissionResponse.issued(create(command, facts, standing, actorId, now));
+    }
+
+    private void requireRegular(IssueRegularCertificateCommand command, Long studentId, Long actorId, LocalDateTime now) {
         RegularityVerdict verdict = regularityEvaluator.evaluate(command.kind(), command.enrollmentId());
-        if (!verdict.regular()) {
+        if (!verdict.institutionallyRegular()) {
             recordRequest(command, studentId, actorId, now, RegularRequestOutcome.NOT_REGULAR,
                     verdict.reasons().stream().map(RegularityReason::name).toList());
             throw new NotRegularException();
         }
-        StandingResolution standing = resolveStanding(command, studentId, actorId, now);
-        return create(command, facts, standing, actorId, now);
+    }
+
+    private RegularCertificateRequest pendingRequestOf(IssueRegularCertificateCommand command, Long studentId, Long actorId,
+                                                       LocalDateTime now) {
+        return findPendingRequest(command).orElseGet(() -> recordRequest(command, studentId, actorId, now,
+                RegularRequestOutcome.PENDING_STAFF, List.of()));
+    }
+
+    private Optional<RegularCertificateRequest> findPendingRequest(IssueRegularCertificateCommand command) {
+        return command.kind() == RegularityKind.PROGRAM
+                ? requestRepository.findFirstByProgramEnrollmentIdAndOutcomeOrderByRequestedAtDesc(command.enrollmentId(), RegularRequestOutcome.PENDING_STAFF)
+                : requestRepository.findFirstByCourseEnrollmentIdAndOutcomeOrderByRequestedAtDesc(command.enrollmentId(), RegularRequestOutcome.PENDING_STAFF);
     }
 
     private void rejectIfStillValid(IssueRegularCertificateCommand command, Long studentId, Long actorId, LocalDateTime now) {
@@ -158,7 +193,9 @@ public class RegularCertificateIssuer {
         byte[] pdf = renderer.render(template.definitionFor(snapshot, expiresAt.toLocalDate()), snapshot, code, url);
         String path = fileStore.save(code.value(), pdf);
         try {
-            RegularCertificateRequest request = recordRequest(command, studentId, actorId, now, RegularRequestOutcome.ISSUED, List.of());
+            Optional<RegularCertificateRequest> pending = findPendingRequest(command);
+            RegularCertificateRequest request = pending.orElseGet(() -> recordRequest(command, studentId, actorId, now,
+                    RegularRequestOutcome.ISSUED, List.of()));
             RegularStudentCertificate saved = certificateRepository.saveAndFlush(RegularStudentCertificate.builder()
                     .code(code.value())
                     .kind(command.kind())
@@ -183,12 +220,15 @@ public class RegularCertificateIssuer {
                     .pdfPath(path)
                     .build());
             request.linkCertificate(saved.getId());
+            pending.ifPresent(open -> open.resolveAsIssued(saved.getId()));
             requestRepository.save(request);
+            pending.ifPresent(open -> eventPublisher.publishEvent(RegularCertificateRequestFulfilledEvent.of(saved.getId(), studentId,
+                    facts.student().getPerson().getId())));
             eventPublisher.publishEvent(RegularCertificateIssuedEvent.issued(saved.getId(), studentId));
             meterRegistry.counter("regular_certificate_issued_total", "basis", standing.basis().name()).increment();
             log.info("Constancia de regular emitida: certificateId={}, kind={}, standingBasis={}, billingMode={}, channel={}",
                     saved.getId(), command.kind(), standing.basis(), standing.mode(), command.channel());
-            return toResponse(saved, url);
+            return toResponse(saved, facts.studentName(), url);
         } catch (DataIntegrityViolationException e) {
             fileStore.deleteIfRolledBack(path);
             throw new ConcurrentRegularCertificateIssueException();
@@ -205,8 +245,9 @@ public class RegularCertificateIssuer {
         throw new IllegalStateException("No se pudo generar un código de certificado único");
     }
 
-    private RegularCertificateResponse toResponse(RegularStudentCertificate certificate, String url) {
-        return new RegularCertificateResponse(certificate.getId(), certificate.getCode(), certificate.getKind(),
+    private RegularCertificateResponse toResponse(RegularStudentCertificate certificate, String studentName, String url) {
+        return new RegularCertificateResponse(certificate.getId(), certificate.getCode(), certificate.getStudentId(),
+                studentName, certificate.getSnapshot().titleName(), certificate.getKind(),
                 certificate.enrollmentId(), certificate.getStatus(), certificate.getIssuedAt(), certificate.getExpiresAt(),
                 certificate.getStandingBasis(), certificate.getBillingModeAtIssue(), url);
     }

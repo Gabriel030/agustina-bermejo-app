@@ -1176,6 +1176,55 @@
         "required" : [ "absencePercent", "calculable", "libre", "maxAbsencePercent" ],
         "type" : "object"
       },
+      "AttendanceStandingResponse" : {
+        "properties" : {
+          "absencePercent" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "allowedAbsences" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "classesHeld" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "countableAbsences" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "exceedsAbsenceLimit" : {
+            "type" : "boolean"
+          },
+          "maxAbsencePercent" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "pendingJustificationAbsences" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "remainingAbsences" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "absencePercent", "allowedAbsences", "classesHeld", "countableAbsences", "exceedsAbsenceLimit", "maxAbsencePercent", "pendingJustificationAbsences", "remainingAbsences" ],
+        "type" : "object"
+      },
       "AudiencePreviewResponse" : {
         "properties" : {
           "count" : {
@@ -5540,6 +5589,9 @@
             "enum" : [ "PROGRAM", "COURSE" ],
             "type" : "string"
           },
+          "finalExamEligibility" : {
+            "$ref" : "#/components/schemas/FinalExamEligibilityResponse"
+          },
           "finalScore" : {
             "type" : [ "number", "null" ]
           },
@@ -5555,6 +5607,8 @@
             "type" : "number"
           },
           "priorCondition" : {
+            "deprecated" : true,
+            "description" : "Usar finalExamEligibility",
             "enum" : [ "REGULAR", "FREE" ],
             "type" : "string"
           },
@@ -5569,7 +5623,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attemptNumber", "carrera", "dni", "enrollmentId", "enrollmentKind", "finalScore", "gradeItemId", "id", "minApprovalGrade", "priorCondition", "result", "status", "studentName" ],
+        "required" : [ "attemptNumber", "carrera", "dni", "enrollmentId", "enrollmentKind", "finalExamEligibility", "finalScore", "gradeItemId", "id", "minApprovalGrade", "priorCondition", "result", "status", "studentName" ],
         "type" : "object"
       },
       "ExamBoardResponse" : {
@@ -5812,6 +5866,19 @@
           }
         },
         "required" : [ "code", "confirmationExpiresAt", "confirmationToken", "currentMode", "currentVersion", "impact", "targetMode" ],
+        "type" : "object"
+      },
+      "FinalExamEligibilityResponse" : {
+        "properties" : {
+          "eligible" : {
+            "type" : "boolean"
+          },
+          "reason" : {
+            "enum" : [ "COURSEWORK_NOT_REGULAR", "FREE_BY_ABSENCES", null ],
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "eligible", "reason" ],
         "type" : "object"
       },
       "FinancialDashboardResponse" : {
@@ -6814,7 +6881,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "enrollmentId", "kind", "standingConfirmed", "standingEvidence" ],
+        "required" : [ "enrollmentId", "kind", "standingConfirmed" ],
         "type" : "object"
       },
       "ItemResponse" : {
@@ -9500,6 +9567,8 @@
             "type" : "boolean"
           },
           "esRegular" : {
+            "deprecated" : true,
+            "description" : "Usar hasActiveCoursework",
             "type" : "boolean"
           },
           "gruposElectivos" : {
@@ -9507,6 +9576,9 @@
               "$ref" : "#/components/schemas/ElectiveGroupProgressResponse"
             },
             "type" : "array"
+          },
+          "hasActiveCoursework" : {
+            "type" : "boolean"
           },
           "obligatoriasPendientes" : {
             "items" : {
@@ -10476,7 +10548,7 @@
         "properties" : {
           "certificateId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "channel" : {
             "enum" : [ "STAFF", "STUDENT_PORTAL" ],
@@ -10498,11 +10570,18 @@
             "enum" : [ "PENDING_STAFF", "ISSUED", "NOT_REGULAR", "ALREADY_ISSUED", "REJECTED" ],
             "type" : "string"
           },
+          "programName" : {
+            "description" : "Nombre de la carrera (PROGRAM) o del curso (COURSE)",
+            "type" : "string"
+          },
           "reasons" : {
             "items" : {
               "type" : "string"
             },
             "type" : "array"
+          },
+          "rejectionReason" : {
+            "type" : [ "string", "null" ]
           },
           "requestedAt" : {
             "format" : "date-time",
@@ -10511,9 +10590,12 @@
           "studentId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "studentName" : {
+            "type" : "string"
           }
         },
-        "required" : [ "certificateId", "channel", "enrollmentId", "id", "kind", "outcome", "reasons", "requestedAt", "studentId" ],
+        "required" : [ "certificateId", "channel", "enrollmentId", "id", "kind", "outcome", "programName", "reasons", "rejectionReason", "requestedAt", "studentId", "studentName" ],
         "type" : "object"
       },
       "RegularCertificateResponse" : {
@@ -10544,6 +10626,10 @@
             "enum" : [ "PROGRAM", "COURSE" ],
             "type" : "string"
           },
+          "programName" : {
+            "description" : "Nombre de la carrera (PROGRAM) o del curso (COURSE) al emitir",
+            "type" : "string"
+          },
           "standingBasis" : {
             "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED" ],
             "type" : "string"
@@ -10552,11 +10638,38 @@
             "enum" : [ "VALID", "EXPIRED", "REVOKED" ],
             "type" : "string"
           },
+          "studentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "studentName" : {
+            "type" : "string"
+          },
           "verificationUrl" : {
             "type" : "string"
           }
         },
-        "required" : [ "billingModeAtIssue", "code", "enrollmentId", "expiresAt", "id", "issuedAt", "kind", "standingBasis", "status", "verificationUrl" ],
+        "required" : [ "billingModeAtIssue", "code", "enrollmentId", "expiresAt", "id", "issuedAt", "kind", "programName", "standingBasis", "status", "studentId", "studentName", "verificationUrl" ],
+        "type" : "object"
+      },
+      "RegularCertificateSubmissionResponse" : {
+        "properties" : {
+          "certificate" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RegularCertificateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "request" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RegularCertificateRequestResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "certificate", "request" ],
         "type" : "object"
       },
       "RegularityResponse" : {
@@ -10571,8 +10684,15 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "institutionallyRegular" : {
+            "type" : "boolean"
+          },
           "kind" : {
             "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "paymentStanding" : {
+            "enum" : [ "VERIFIED", "OVERDUE", "TO_CONFIRM" ],
             "type" : "string"
           },
           "reasons" : {
@@ -10583,6 +10703,8 @@
             "type" : "array"
           },
           "regular" : {
+            "deprecated" : true,
+            "description" : "Usar institutionallyRegular",
             "type" : "boolean"
           }
         },
@@ -10645,6 +10767,17 @@
         "properties" : {
           "reason" : {
             "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "RejectRegularCertificateRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -10978,6 +11111,17 @@
         },
         "type" : "object"
       },
+      "RevokeRegularCertificateRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "RevokeStudentDiscountRequest" : {
         "properties" : {
           "reason" : {
@@ -10990,10 +11134,27 @@
       "RosterEntryResponse" : {
         "properties" : {
           "absenceCount" : {
+            "deprecated" : true,
+            "description" : "Usar absenceStanding.countableAbsences",
             "format" : "int64",
             "type" : "integer"
           },
+          "absencePercent" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "absenceStanding" : {
+            "$ref" : "#/components/schemas/AttendanceStandingResponse"
+          },
           "atRisk" : {
+            "deprecated" : true,
+            "description" : "Usar absenceStanding.exceedsAbsenceLimit",
             "type" : "boolean"
           },
           "attendancePercent" : {
@@ -11022,6 +11183,10 @@
             }, {
               "type" : "null"
             } ]
+          },
+          "pendingJustificationAbsences" : {
+            "format" : "int64",
+            "type" : "integer"
           },
           "remainingAbsences" : {
             "format" : "int32",
@@ -11137,6 +11302,13 @@
           "enrolledAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "finalExamEligibility" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FinalExamEligibilityResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "finalGradeType" : {
             "type" : "string"
@@ -12228,6 +12400,60 @@
         "required" : [ "apellido", "detalleBaja", "dni", "documentType", "domicilio", "email", "id", "legajo", "motivoBaja", "nacionalidad", "nombre", "onboardingStatus", "personId", "sexo", "status", "telefono", "username" ],
         "type" : "object"
       },
+      "StudentRegularCertificateStateResponse" : {
+        "properties" : {
+          "certificate" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RegularCertificateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "history" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RegularCertificateResponse"
+            },
+            "type" : "array"
+          },
+          "kind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "pendingRequest" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RegularCertificateRequestResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "reasons" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "rejectionReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "staffConfirmationRequired" : {
+            "type" : "boolean"
+          },
+          "state" : {
+            "enum" : [ "AVAILABLE", "PENDING", "VALID", "UNAVAILABLE" ],
+            "type" : "string"
+          },
+          "unavailableType" : {
+            "enum" : [ "ATTENDANCE", "PAYMENTS", "ENROLLMENT", "REJECTED", null ],
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "certificate", "enrollmentId", "history", "kind", "pendingRequest", "reasons", "rejectionReason", "staffConfirmationRequired", "state", "unavailableType" ],
+        "type" : "object"
+      },
       "StudentResponse" : {
         "properties" : {
           "apellido" : {
@@ -12384,6 +12610,20 @@
           }
         },
         "required" : [ "capacity", "code", "description", "id", "maxAbsencePercent", "name", "schedule", "shift", "status", "subjectId", "subjectName", "termId" ],
+        "type" : "object"
+      },
+      "SubmitRegularCertificateRequest" : {
+        "properties" : {
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "enrollmentId", "kind" ],
         "type" : "object"
       },
       "TeacherGradeGridResponse" : {
@@ -45182,6 +45422,610 @@
         "tags" : [ "refund-controller" ]
       }
     },
+    "/me/regular-certificate-requests/{id}" : {
+      "delete" : {
+        "operationId" : "MeRegularCertificate_cancel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-regular-certificate-controller" ]
+      }
+    },
+    "/me/regular-certificates" : {
+      "get" : {
+        "operationId" : "MeRegularCertificate_state",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "kind",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "enrollmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StudentRegularCertificateStateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-regular-certificate-controller" ]
+      },
+      "post" : {
+        "operationId" : "MeRegularCertificate_submit",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SubmitRegularCertificateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegularCertificateSubmissionResponse"
+                }
+              }
+            },
+            "description" : "Constancia emitida en el acto"
+          },
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegularCertificateSubmissionResponse"
+                }
+              }
+            },
+            "description" : "Pedido pendiente de confirmación de administración"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-regular-certificate-controller" ]
+      }
+    },
+    "/me/regular-certificates/eligibility" : {
+      "get" : {
+        "operationId" : "MeRegularCertificate_regularity",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "kind",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "enrollmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegularityResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-regular-certificate-controller" ]
+      }
+    },
+    "/me/regular-certificates/{id}/pdf" : {
+      "get" : {
+        "operationId" : "MeRegularCertificate_pdf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-regular-certificate-controller" ]
+      }
+    },
     "/me/schedule" : {
       "get" : {
         "operationId" : "MeAcademicRecord_mySchedule",
@@ -62632,6 +63476,133 @@
         "tags" : [ "regular-certificate-request-controller" ]
       }
     },
+    "/regular-certificate-requests/{id}/reject" : {
+      "post" : {
+        "operationId" : "RegularCertificateRequest_reject",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RejectRegularCertificateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegularCertificateRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "regular-certificate-request-controller" ]
+      }
+    },
     "/regular-certificates" : {
       "get" : {
         "operationId" : "RegularCertificate_list",
@@ -63137,6 +64108,133 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "regular-certificate-controller" ]
+      }
+    },
+    "/regular-certificates/{id}/revoke" : {
+      "post" : {
+        "operationId" : "RegularCertificate_revoke",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RevokeRegularCertificateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegularCertificateResponse"
                 }
               }
             },

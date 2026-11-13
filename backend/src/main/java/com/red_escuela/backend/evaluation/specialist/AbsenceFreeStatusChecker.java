@@ -1,22 +1,22 @@
 package com.red_escuela.backend.evaluation.specialist;
 
-import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
+import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AbsenceFreeStatusChecker {
 
-    private final AttendanceRiskReader attendanceRiskReader;
+    private final AttendanceStandingReader attendanceStandingReader;
 
-    public AbsenceFreeStatusChecker(AttendanceRiskReader attendanceRiskReader) {
-        this.attendanceRiskReader = attendanceRiskReader;
+    public AbsenceFreeStatusChecker(AttendanceStandingReader attendanceStandingReader) {
+        this.attendanceStandingReader = attendanceStandingReader;
     }
 
     public boolean isProgramEnrollmentFreeByAbsences(Long enrollmentId) {
-        return attendanceRiskReader.readProgramEnrollmentRisk(enrollmentId).libre();
+        return attendanceStandingReader.readProgramEnrollmentStanding(enrollmentId).exceedsAbsenceLimit();
     }
 
     public boolean isCourseEnrollmentFreeByAbsences(Long enrollmentId) {
-        return attendanceRiskReader.readCourseEnrollmentRisk(enrollmentId).libre();
+        return attendanceStandingReader.readCourseEnrollmentStanding(enrollmentId).exceedsAbsenceLimit();
     }
 }

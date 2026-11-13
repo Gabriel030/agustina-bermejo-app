@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResolver;
+import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResponse;
 import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationSummaryResponse;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.ExamBoardEnrollmentKind;
@@ -23,9 +25,12 @@ public class ExamBoardRegistrationSummaryBuilder {
     private static final String LOOSE_COURSE_LABEL = "Curso suelto";
 
     private final GradeItemRepository gradeItemRepository;
+    private final FinalExamEligibilityResolver finalExamEligibilityResolver;
 
-    public ExamBoardRegistrationSummaryBuilder(GradeItemRepository gradeItemRepository) {
+    public ExamBoardRegistrationSummaryBuilder(
+            GradeItemRepository gradeItemRepository, FinalExamEligibilityResolver finalExamEligibilityResolver) {
         this.gradeItemRepository = gradeItemRepository;
+        this.finalExamEligibilityResolver = finalExamEligibilityResolver;
     }
 
     public List<ExamBoardRegistrationSummaryResponse> build(Long examBoardId, List<ExamBoardRegistration> registrations) {
@@ -46,10 +51,12 @@ public class ExamBoardRegistrationSummaryBuilder {
         String carrera;
         Integer attemptNumber;
         Person person;
+        FinalExamEligibilityResponse eligibility;
         if (program) {
             var enrollment = registration.getProgramSubjectSectionEnrollment();
             scheme = enrollment.getSubjectSection().getEvaluationScheme();
-            regular = enrollment.isRegular();
+            regular = enrollment.hasRegularCoursework();
+            eligibility = finalExamEligibilityResolver.resolve(enrollment);
             enrollmentId = enrollment.getId();
             carrera = enrollment.getProgramEnrollment().getProgram().getName();
             attemptNumber = enrollment.getAttemptNumber();
@@ -57,7 +64,8 @@ public class ExamBoardRegistrationSummaryBuilder {
         } else {
             var enrollment = registration.getCourseSubjectSectionEnrollment();
             scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
-            regular = enrollment.isRegular();
+            regular = enrollment.hasRegularCoursework();
+            eligibility = finalExamEligibilityResolver.resolve(enrollment);
             enrollmentId = enrollment.getId();
             carrera = LOOSE_COURSE_LABEL;
             attemptNumber = enrollment.getAttemptNumber();
@@ -77,7 +85,8 @@ public class ExamBoardRegistrationSummaryBuilder {
                 regular || graded.isPresent() ? ExamBoardPriorCondition.REGULAR : ExamBoardPriorCondition.FREE,
                 minApprovalGrade,
                 graded.map(GradeItem::getId).orElse(null),
-                resultOf(registration.getStatus(), finalScore, minApprovalGrade));
+                resultOf(registration.getStatus(), finalScore, minApprovalGrade),
+                eligibility);
     }
 
     private ExamBoardFinalResult resultOf(ExamBoardRegistrationStatus status, Grade finalScore, Grade minApprovalGrade) {

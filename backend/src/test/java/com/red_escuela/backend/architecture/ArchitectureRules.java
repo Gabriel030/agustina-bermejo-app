@@ -202,6 +202,17 @@ public final class ArchitectureRules {
                 .because("the debt that blocks a new enrollment is decided only by EnrollmentDebtGuard and its policy (D-142, D-314)");
     }
 
+    public static ArchRule attendanceCountsAreReadOnlyByTheAttendanceStandingReader() {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(ROOT + ".attendance.api.AttendanceStandingReader")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".attendance.entity.AttendanceStatus")
+                .should().callMethodWhere(target(owner(assignableTo(ROOT + ".attendance.entity.AttendanceStatus")))
+                        .and(target(name("absenceStatuses")).or(target(name("countsAsAbsence")))))
+                .orShould().callMethodWhere(target(owner(assignableTo(ROOT + ".attendance.repository.AttendanceRepository")))
+                        .and(target(nameStartingWith("count"))))
+                .because("the absences that count, the pending ones, the allowed ones and the percentage are decided only by AttendanceStandingReader, so the free decision, the roster, the notices and the export never diverge");
+    }
+
     public static ArchRule policiesArePure() {
         return noClasses().that().resideInAnyPackage("..policy..", "..billing.planning..", "..statemachine..")
                 .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..", "..repository..")
@@ -275,6 +286,23 @@ public final class ArchitectureRules {
                 }
             }
         };
+    }
+
+    public static ArchRule regularCourseworkMethodsAreNotCalledIsRegular() {
+        return noMethods()
+                .should().haveName("isRegular")
+                .orShould().haveName("hasActiveEnrollment")
+                .allowEmptyShould(true)
+                .because("a course enrollment answers hasRegularCoursework() and the program progress answers hasActiveCoursework(); a bare isRegular() hides which of the four meanings of regular it is");
+    }
+
+    public static ArchRule institutionalRegularityRulesKeepTheirInstitutionalName() {
+        return noClasses()
+                .should().haveSimpleName("RegularityRule")
+                .orShould().haveSimpleName("ProgramRegularityRule")
+                .orShould().haveSimpleName("CourseRegularityRule")
+                .allowEmptyShould(true)
+                .because("the rules that decide the institutional regular student are InstitutionalRegularityRule and its derivatives");
     }
 
     public static ArchRule billingV2EntitiesHaveNoPublicSetters(Class<? extends java.lang.annotation.Annotation> entityAnnotation, String... v2Packages) {
