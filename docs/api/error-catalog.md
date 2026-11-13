@@ -515,8 +515,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
 | `SECTION_CODE_ALREADY_EXISTS` | no | `SectionCodeAlreadyExistsException` | academicstructure |
 | `SECTION_FULL` | no | `SectionFullException` | enrollment |
+| `SECTION_HAS_ACTIVE_ENROLLMENTS` | no | `SectionHasActiveEnrollmentsException` | academicstructure |
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
+| `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
@@ -533,6 +535,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
 | `TERM_ENROLLMENT_OVERRIDE_CLOSED` | no | `TermEnrollmentOverrideClosedException` | enrollment |
+| `TERM_HAS_ACTIVE_ENROLLMENTS` | no | `TermHasActiveEnrollmentsException` | academicstructure |
 | `UNKNOWN_GUARDED_MODULE` | no | `UnknownGuardedModuleException` | platform |
 | `UPFRONT_WINDOW_CLOSED` | no | `UpfrontWindowClosedException` | billing |
 | `USERNAME_ALREADY_EXISTS` | no | `UsernameAlreadyExistsException` | identity |
