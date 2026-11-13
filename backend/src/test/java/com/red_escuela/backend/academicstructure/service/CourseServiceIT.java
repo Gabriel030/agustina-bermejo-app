@@ -45,6 +45,8 @@ class CourseServiceIT extends AbstractIntegrationTest {
     @Autowired
     private CourseService courseService;
     @Autowired
+    private OfferingListPriceReader listPriceReader;
+    @Autowired
     private EntityManager entityManager;
 
     private Term term;
@@ -85,7 +87,7 @@ class CourseServiceIT extends AbstractIntegrationTest {
 
         assertThat(course.getCurrency()).isEqualTo(Currency.ARS);
         assertThat(course.getIsActive()).isEqualTo(StatusType.ACTIVE);
-        assertThat(course.priceAsMoney()).isNull();
+        assertThat(listPriceReader.findCourseTuition(course.getId())).contains(Money.zero(Currency.ARS));
     }
 
     @Test
@@ -100,7 +102,7 @@ class CourseServiceIT extends AbstractIntegrationTest {
         Course course = courseService.create(request("En dolares", usd("20"), null, null, null));
 
         assertThat(course.getCurrency()).isEqualTo(Currency.USD);
-        assertThat(course.priceAsMoney()).isEqualTo(usd("20"));
+        assertThat(listPriceReader.findCourseTuition(course.getId()).orElse(null)).isEqualTo(usd("20"));
     }
 
     @Test
@@ -139,7 +141,7 @@ class CourseServiceIT extends AbstractIntegrationTest {
         assertThat(updated.getName()).isEqualTo("Nombre nuevo");
         assertThat(updated.getSchedule()).isEqualTo("Lunes 18hs");
         assertThat(updated.getCapacity()).isEqualTo(30);
-        assertThat(updated.priceAsMoney()).isEqualTo(ars("1000"));
+        assertThat(listPriceReader.findCourseTuition(updated.getId()).orElse(null)).isEqualTo(ars("1000"));
         assertThat(updated.getDurationMonths()).isEqualTo(6);
         assertThat(updated.getTeachingMode()).isEqualTo(TeachingMode.ONLINE);
         assertThat(updated.getRegistrationStart()).isEqualTo(OPENING);
@@ -157,7 +159,7 @@ class CourseServiceIT extends AbstractIntegrationTest {
 
         assertThat(updated.getSchedule()).isEqualTo("Martes 20hs");
         assertThat(updated.getCapacity()).isEqualTo(45);
-        assertThat(updated.priceAsMoney()).isEqualTo(ars("1500"));
+        assertThat(listPriceReader.findCourseTuition(updated.getId()).orElse(null)).isEqualTo(ars("1500"));
         assertThat(updated.getDurationMonths()).isEqualTo(9);
         assertThat(updated.getTeachingMode()).isEqualTo(TeachingMode.HYBRID);
         assertThat(updated.getRegistrationStart()).isEqualTo(newStart);
@@ -171,7 +173,7 @@ class CourseServiceIT extends AbstractIntegrationTest {
         Course updated = courseService.update(course.getId(),
                 new UpdateCourseRequest(null, null, null, ars("1000"), null, null, null, null));
 
-        assertThat(updated.priceAsMoney()).isEqualTo(ars("1000"));
+        assertThat(listPriceReader.findCourseTuition(updated.getId()).orElse(null)).isEqualTo(ars("1000"));
     }
 
     @Test
@@ -181,7 +183,7 @@ class CourseServiceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> courseService.update(course.getId(), request)).isInstanceOf(CurrencyMismatchException.class);
 
-        assertThat(course.priceAsMoney()).isEqualTo(ars("1000"));
+        assertThat(listPriceReader.findCourseTuition(course.getId()).orElse(null)).isEqualTo(ars("1000"));
     }
 
     @Test

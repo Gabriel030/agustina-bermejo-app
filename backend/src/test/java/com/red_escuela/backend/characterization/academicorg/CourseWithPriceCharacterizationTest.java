@@ -73,15 +73,16 @@ class CourseWithPriceCharacterizationTest extends AcademicOrgCharacterizationSup
     }
 
     @Test
-    void courseWithoutPriceIsCreatedWithNullPrice() throws Exception {
+    void courseWithoutPriceIsCreatedWithTheZeroPriceRegisteredInThePriceVersion() throws Exception {
         Person admin = persistPerson("course.admin4", "74000004", "ADMINISTRATIVO");
         Term term = persistTerm();
 
         long courseId = idOf(postJson(admin, "/courses", courseRequest("Curso gratuito", term.getId(), null))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.price").doesNotExist()));
+                .andExpect(jsonPath("$.price.amount").value("0.00")));
 
-        getAs(admin, "/courses/" + courseId + "/pricing").andExpect(status().isOk());
+        getAs(admin, "/courses/" + courseId + "/pricing").andExpect(status().isOk())
+                .andExpect(jsonPath("$.cuotaMensual.amount").value("0.00"));
     }
 
     @Test

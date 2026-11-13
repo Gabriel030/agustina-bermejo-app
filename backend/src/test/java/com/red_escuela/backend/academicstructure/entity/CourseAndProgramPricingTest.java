@@ -3,6 +3,7 @@ package com.red_escuela.backend.academicstructure.entity;
 import com.red_escuela.backend.academicstructure.exception.CurricularYearOutOfRangeException;
 import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.Test;
 
@@ -20,19 +21,15 @@ class CourseAndProgramPricingTest {
     }
 
     @Test
-    void courseWithoutPriceAcceptsAFirstPrice() {
-        Course course = Course.builder().name("Curso").build();
+    void programAndCourseRejectAPriceInAnotherCurrency() {
+        Program program = Program.builder().name("Carrera").currency(Currency.ARS).build();
+        Course course = Course.builder().name("Curso").currency(Currency.ARS).build();
+        Money usd = Money.of(BigDecimal.TEN, Currency.USD);
 
-        assertThat(course.changePrice(ars(18000))).isTrue();
-        assertThat(course.getPrice()).isEqualByComparingTo("18000");
-    }
-
-    @Test
-    void courseSamePriceIsNotAChange() {
-        Course course = Course.builder().name("Curso").price(new BigDecimal("18000.00")).build();
-
-        assertThat(course.changePrice(ars(18000))).isFalse();
-        assertThat(course.changePrice(null)).isFalse();
+        assertThatThrownBy(() -> program.requireProgramCurrency(usd)).isInstanceOf(CurrencyMismatchException.class);
+        assertThatThrownBy(() -> course.requireCourseCurrency(usd)).isInstanceOf(CurrencyMismatchException.class);
+        assertThatCode(() -> program.requireProgramCurrency(ars(1))).doesNotThrowAnyException();
+        assertThatCode(() -> course.requireCourseCurrency(ars(1))).doesNotThrowAnyException();
     }
 
     @Test
@@ -55,15 +52,6 @@ class CourseAndProgramPricingTest {
 
         assertThatCode(openEnded::requireValidRegistrationWindow).doesNotThrowAnyException();
         assertThatCode(ordered::requireValidRegistrationWindow).doesNotThrowAnyException();
-    }
-
-    @Test
-    void programWithoutFeesAcceptsFirstRecurringAndEnrollmentFee() {
-        Program program = Program.builder().name("Carrera").totalYears(3).build();
-
-        assertThat(program.changeRecurringFee(ars(45000))).isTrue();
-        assertThat(program.changeEnrollmentFee(ars(30000))).isTrue();
-        assertThat(program.changeRecurringFee(ars(45000))).isFalse();
     }
 
     @Test

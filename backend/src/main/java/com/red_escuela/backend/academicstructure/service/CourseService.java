@@ -30,13 +30,15 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final TermRepository termRepository;
     private final OfferingPriceCatalog offeringPriceCatalog;
+    private final OfferingListPriceReader listPriceReader;
     private final CurrentPersonService currentPersonService;
 
     public CourseService(CourseRepository courseRepository, TermRepository termRepository,
-                          OfferingPriceCatalog offeringPriceCatalog, CurrentPersonService currentPersonService) {
+                          OfferingPriceCatalog offeringPriceCatalog, OfferingListPriceReader listPriceReader, CurrentPersonService currentPersonService) {
         this.courseRepository = courseRepository;
         this.termRepository = termRepository;
         this.offeringPriceCatalog = offeringPriceCatalog;
+        this.listPriceReader = listPriceReader;
         this.currentPersonService = currentPersonService;
     }
 
@@ -51,7 +53,6 @@ public class CourseService {
                 .term(term)
                 .schedule(request.schedule())
                 .capacity(request.capacity())
-                .price(request.price() == null ? null : request.price().amount())
                 .durationMonths(request.durationMonths())
                 .teachingMode(request.teachingMode())
                 .registrationStart(request.registrationStart())
@@ -63,7 +64,7 @@ public class CourseService {
         Course saved = courseRepository.save(course);
 
         Person actor = currentPersonService.resolveCurrentPerson();
-        Money price = Optional.ofNullable(saved.priceAsMoney()).orElseGet(() -> Money.zero(saved.getCurrency()));
+        Money price = Optional.ofNullable(request.price()).orElseGet(() -> Money.zero(saved.getCurrency()));
         offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofCourse(saved.getId()), OfferingFee.MONTHLY_INSTALLMENT, price, actor.getId());
         return saved;
     }
@@ -74,16 +75,25 @@ public class CourseService {
         Optional.ofNullable(request.name()).ifPresent(course::setName);
         Optional.ofNullable(request.schedule()).ifPresent(course::setSchedule);
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
-        if (course.changePrice(request.price())) {
-            Person actor = currentPersonService.resolveCurrentPerson();
-            offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofCourse(course.getId()), OfferingFee.MONTHLY_INSTALLMENT, request.price(), actor.getId());
-        }
+        adjustPriceIfChanged(course, request.price());
         Optional.ofNullable(request.durationMonths()).ifPresent(course::setDurationMonths);
         Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);
         Optional.ofNullable(request.registrationStart()).ifPresent(course::setRegistrationStart);
         Optional.ofNullable(request.registrationEnd()).ifPresent(course::setRegistrationEnd);
         course.requireValidRegistrationWindow();
         return courseRepository.save(course);
+    }
+
+    private void adjustPriceIfChanged(Course course, Money requested) {
+        if (requested == null) {
+            return;
+        }
+        course.requireCourseCurrency(requested);
+        if (listPriceReader.findCourseTuition(course.getId()).filter(price -> price.amount().compareTo(requested.amount()) == 0).isPresent()) {
+            return;
+        }
+        Person actor = currentPersonService.resolveCurrentPerson();
+        offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofCourse(course.getId()), OfferingFee.MONTHLY_INSTALLMENT, requested, actor.getId());
     }
 
     public List<Course> list(StatusType status, Boolean visibleInCatalog) {

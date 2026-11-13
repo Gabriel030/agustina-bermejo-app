@@ -1,8 +1,5 @@
 Field <com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest.minGrade> has name matching '.*' in (AddPrerequisiteRequest.java:0)
 Field <com.red_escuela.backend.academicstructure.dto.PrerequisiteResponse.minGrade> has name matching '.*' in (PrerequisiteResponse.java:0)
-Field <com.red_escuela.backend.academicstructure.entity.Course.price> has name matching '.*' in (Course.java:0)
-Field <com.red_escuela.backend.academicstructure.entity.Program.enrollmentFeeAmount> has name matching '.*' in (Program.java:0)
-Field <com.red_escuela.backend.academicstructure.entity.Program.price> has name matching '.*' in (Program.java:0)
 Field <com.red_escuela.backend.enrollment.dto.ProgramProgressResponse.promedioGeneral> has name matching '.*' in (ProgramProgressResponse.java:0)
 Field <com.red_escuela.backend.enrollment.dto.SectionEnrollmentResponse.finalScore> has name matching '.*' in (SectionEnrollmentResponse.java:0)
 Field <com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest.minApprovalGrade> has name matching '.*' in (CreateEvaluationSchemeRequest.java:0)

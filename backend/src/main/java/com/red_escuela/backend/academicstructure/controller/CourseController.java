@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.academicstructure.usecase.GetCourseListPriceUseCase;
 import com.red_escuela.backend.billing.dto.CoursePricingResponse;
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
@@ -9,6 +10,8 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseService;
 import com.red_escuela.backend.academicstructure.usecase.SetCourseCatalogVisibilityUseCase;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.shared.domain.Money;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,26 +34,29 @@ public class CourseController {
     private final CourseService courseService;
     private final SetCourseCatalogVisibilityUseCase setCatalogVisibility;
     private final CourseEnrollmentService courseEnrollmentService;
+    private final GetCourseListPriceUseCase courseListPrice;
 
     public CourseController(CourseService courseService,
             SetCourseCatalogVisibilityUseCase setCatalogVisibility,
-            CourseEnrollmentService courseEnrollmentService) {
+            CourseEnrollmentService courseEnrollmentService,
+            GetCourseListPriceUseCase courseListPrice) {
         this.courseService = courseService;
         this.setCatalogVisibility = setCatalogVisibility;
         this.courseEnrollmentService = courseEnrollmentService;
+        this.courseListPrice = courseListPrice;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public CourseResponse create(@Valid @RequestBody CreateCourseRequest request) {
-        return CourseResponse.from(courseService.create(request));
+        return withPrice(courseService.create(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public CourseResponse update(@PathVariable Long id, @Valid @RequestBody UpdateCourseRequest request) {
-        return CourseResponse.from(courseService.update(id, request));
+        return withPrice(courseService.update(id, request));
     }
 
     @PostMapping("/{id}/deactivate")
@@ -70,7 +76,7 @@ public class CourseController {
     @GetMapping
     public List<CourseResponse> list(@RequestParam(required = false) StatusType status,
             @RequestParam(required = false) Boolean visibleInCatalog) {
-        return courseService.list(status, visibleInCatalog).stream().map(CourseResponse::from).toList();
+        return courseService.list(status, visibleInCatalog).stream().map(this::withPrice).toList();
     }
 
     @PutMapping("/{id}/catalog-visibility")
@@ -82,12 +88,20 @@ public class CourseController {
 
     @GetMapping("/{id}")
     public CourseResponse get(@PathVariable Long id) {
-        return CourseResponse.from(courseService.get(id), courseEnrollmentService.countOccupiedSeats(id));
+        return CourseResponse.from(courseService.get(id), currentPriceOf(id), courseEnrollmentService.countOccupiedSeats(id));
     }
 
     @GetMapping("/{id}/pricing")
     public CoursePricingResponse getPricing(@PathVariable Long id) {
-        var course = courseService.get(id);
-        return new CoursePricingResponse(id, course.priceAsMoney());
+        courseService.get(id);
+        return new CoursePricingResponse(id, currentPriceOf(id));
+    }
+
+    private CourseResponse withPrice(Course course) {
+        return CourseResponse.from(course, currentPriceOf(course.getId()));
+    }
+
+    private Money currentPriceOf(Long courseId) {
+        return courseListPrice.execute(courseId).orElse(null);
     }
 }

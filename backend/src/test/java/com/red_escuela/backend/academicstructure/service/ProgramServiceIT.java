@@ -41,6 +41,8 @@ class ProgramServiceIT extends AbstractIntegrationTest {
     @Autowired
     private ProgramService programService;
     @Autowired
+    private OfferingListPriceReader listPriceReader;
+    @Autowired
     private EntityManager entityManager;
 
     @BeforeEach
@@ -77,7 +79,8 @@ class ProgramServiceIT extends AbstractIntegrationTest {
 
         assertThat(program.getCurrency()).isEqualTo(Currency.ARS);
         assertThat(program.getStatus()).isEqualTo(StatusType.ACTIVE);
-        assertThat(program.priceAsMoney()).isNull();
+        assertThat(listPriceReader.findProgramTuition(program.getId())).contains(Money.zero(Currency.ARS));
+        assertThat(listPriceReader.findProgramEnrollmentFee(program.getId())).contains(Money.zero(Currency.ARS));
     }
 
     @Test
@@ -123,8 +126,8 @@ class ProgramServiceIT extends AbstractIntegrationTest {
 
         assertThat(updated.getName()).isEqualTo("Nombre nuevo");
         assertThat(updated.getTotalYears()).isEqualTo(3);
-        assertThat(updated.priceAsMoney()).isEqualTo(ars("1000"));
-        assertThat(updated.enrollmentFeeAsMoney()).isEqualTo(ars("500"));
+        assertThat(listPriceReader.findProgramTuition(updated.getId()).orElse(null)).isEqualTo(ars("1000"));
+        assertThat(listPriceReader.findProgramEnrollmentFee(updated.getId()).orElse(null)).isEqualTo(ars("500"));
     }
 
     @Test
@@ -136,8 +139,8 @@ class ProgramServiceIT extends AbstractIntegrationTest {
 
         Program updated = programService.update(program.getId(), request);
 
-        assertThat(updated.priceAsMoney()).isEqualTo(ars("1500"));
-        assertThat(updated.enrollmentFeeAsMoney()).isEqualTo(ars("700"));
+        assertThat(listPriceReader.findProgramTuition(updated.getId()).orElse(null)).isEqualTo(ars("1500"));
+        assertThat(listPriceReader.findProgramEnrollmentFee(updated.getId()).orElse(null)).isEqualTo(ars("700"));
     }
 
     @Test

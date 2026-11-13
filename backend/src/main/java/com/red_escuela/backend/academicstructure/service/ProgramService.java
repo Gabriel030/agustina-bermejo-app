@@ -27,11 +27,14 @@ public class ProgramService {
 
     private final ProgramRepository programRepository;
     private final OfferingPriceCatalog offeringPriceCatalog;
+    private final OfferingListPriceReader listPriceReader;
     private final CurrentPersonService currentPersonService;
 
-    public ProgramService(ProgramRepository programRepository, OfferingPriceCatalog offeringPriceCatalog, CurrentPersonService currentPersonService) {
+    public ProgramService(ProgramRepository programRepository, OfferingPriceCatalog offeringPriceCatalog, OfferingListPriceReader listPriceReader,
+                          CurrentPersonService currentPersonService) {
         this.programRepository = programRepository;
         this.offeringPriceCatalog = offeringPriceCatalog;
+        this.listPriceReader = listPriceReader;
         this.currentPersonService = currentPersonService;
     }
 
@@ -41,8 +44,6 @@ public class ProgramService {
         Program program = Program.builder()
                 .name(request.name())
                 .totalYears(request.totalYears())
-                .price(request.price() == null ? null : request.price().amount())
-                .enrollmentFeeAmount(request.enrollmentFeeAmount() == null ? null : request.enrollmentFeeAmount().amount())
                 .totalCreditsRequired(request.totalCreditsRequired())
                 .totalHoursRequired(request.totalHoursRequired())
                 .teachingMode(request.teachingMode())
@@ -53,7 +54,7 @@ public class ProgramService {
                 .currency(currency)
                 .build();
         program = programRepository.save(program);
-        registerInitialOfferingPrices(program);
+        registerInitialOfferingPrices(program, request.price(), request.enrollmentFeeAmount());
         return program;
     }
 
@@ -63,12 +64,8 @@ public class ProgramService {
         Person actor = currentPersonService.resolveCurrentPerson();
         Optional.ofNullable(request.getName()).ifPresent(program::setName);
         Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
-        if (program.changeRecurringFee(request.getPrice())) {
-            offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.MONTHLY_INSTALLMENT, request.getPrice(), actor.getId());
-        }
-        if (program.changeEnrollmentFee(request.getEnrollmentFeeAmount())) {
-            offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), actor.getId());
-        }
+        adjustIfChanged(program, OfferingFee.MONTHLY_INSTALLMENT, request.getPrice(), actor, listPriceReader.findProgramTuition(program.getId()));
+        adjustIfChanged(program, OfferingFee.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), actor, listPriceReader.findProgramEnrollmentFee(program.getId()));
         Optional.ofNullable(request.getTotalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
         applyClearable(request.getTotalHoursRequired(), program::setTotalHoursRequired);
         applyClearable(request.getTeachingMode(), program::setTeachingMode);
@@ -113,11 +110,22 @@ public class ProgramService {
         programRepository.save(program);
     }
 
-    private void registerInitialOfferingPrices(Program program) {
+    private void adjustIfChanged(Program program, OfferingFee fee, Money requested, Person actor, Optional<Money> current) {
+        if (requested == null) {
+            return;
+        }
+        program.requireProgramCurrency(requested);
+        if (current.filter(price -> price.amount().compareTo(requested.amount()) == 0).isPresent()) {
+            return;
+        }
+        offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofProgram(program.getId()), fee, requested, actor.getId());
+    }
+
+    private void registerInitialOfferingPrices(Program program, Money tuitionRequested, Money enrollmentFeeRequested) {
         Person actor = currentPersonService.resolveCurrentPerson();
-        Money tuition = Optional.ofNullable(program.priceAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
+        Money tuition = Optional.ofNullable(tuitionRequested).orElseGet(() -> Money.zero(program.getCurrency()));
         offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.MONTHLY_INSTALLMENT, tuition, actor.getId());
-        Money enrollmentFee = Optional.ofNullable(program.enrollmentFeeAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
+        Money enrollmentFee = Optional.ofNullable(enrollmentFeeRequested).orElseGet(() -> Money.zero(program.getCurrency()));
         offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.ENROLLMENT_FEE, enrollmentFee, actor.getId());
     }
 
