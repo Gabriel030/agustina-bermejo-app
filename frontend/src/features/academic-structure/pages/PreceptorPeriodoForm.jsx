@@ -128,7 +128,7 @@ function TermForm({ initial, term }) {
   if (reviewing) {
     return (
       <GlassCard className="flex flex-col gap-4 p-6">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">Confirmá los cambios</h2>
+        <h2 className="font-heading text-size-15 font-semibold text-ink">Confirmá los cambios</h2>
         {diffRows.length ? (
           <TermDiffTable rows={diffRows} />
         ) : (

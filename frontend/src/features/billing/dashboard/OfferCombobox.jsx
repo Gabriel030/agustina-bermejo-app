@@ -65,7 +65,7 @@ export function OfferCombobox({ value, onChange, programs, courses, selectedName
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <div className="flex items-center gap-1.5">
-        <Label htmlFor="offer" className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">
+        <Label htmlFor="offer" className="text-size-11 font-bold uppercase tracking-wide text-ink-faint">
           Oferta
         </Label>
         <TooltipProvider>

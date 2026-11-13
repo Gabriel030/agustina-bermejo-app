@@ -126,7 +126,7 @@ export function AnnualUpfrontStaffSection({ enrollmentId, studentId }) {
     const known = INELIGIBLE_REASONS[eligibility.reasonCode];
     const lastDiscarded = [...requests].sort((a, b) => b.id - a.id)[0];
     return (
-      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-neutral-bg px-4 py-3 text-[13px] text-ink-soft">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-neutral-bg px-4 py-3 text-size-13 text-ink-soft">
         <span className="font-semibold text-ink">Pago anual</span>
         <StatusPill tone={eligibility.eligible ? 'accent' : (known?.tone ?? 'neutral')}>
           {eligibility.eligible ? 'Puede pedirlo' : (known?.label ?? 'No disponible')}
@@ -146,7 +146,7 @@ export function AnnualUpfrontStaffSection({ enrollmentId, studentId }) {
         </div>
         <span className="text-lg font-semibold tabular-nums text-ink">{formatMoney(live.total)}</span>
       </div>
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-[13px] sm:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-size-13 sm:grid-cols-2">
         <div className="flex gap-2">
           <dt className="text-ink-faint">Pedido por el alumno</dt>
           <dd className="text-ink">{formatDateTime(live.acceptedAt)}</dd>
@@ -163,7 +163,7 @@ export function AnnualUpfrontStaffSection({ enrollmentId, studentId }) {
         </div>
       </dl>
       {live.status === 'PAYMENT_UNDER_REVIEW' && (
-        <p className="text-[13px] text-ink-soft">El alumno subió un comprobante. Se cobra desde la bandeja de comprobantes.</p>
+        <p className="text-size-13 text-ink-soft">El alumno subió un comprobante. Se cobra desde la bandeja de comprobantes.</p>
       )}
       {live.status === 'AWAITING_PAYMENT' && (
         <Button variant="outline" className="w-full sm:w-fit" onClick={() => setCollecting(true)}>

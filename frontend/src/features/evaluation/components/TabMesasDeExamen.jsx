@@ -93,7 +93,7 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
             }`}
           >
             <div>
-              <div className="text-[13.5px] font-semibold text-ink">{formatearFecha(mesa.examDate)}</div>
+              <div className="text-size-13-5 font-semibold text-ink">{formatearFecha(mesa.examDate)}</div>
               {mesa.classroom && (
                 <div className="flex items-center gap-1 text-xs text-ink-faint">
                   <MapPin className="h-3 w-3" /> {mesa.classroom}
@@ -118,7 +118,7 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
                   {bloqueadaPorOtra ? 'Ya estás inscripto a otro llamado' : inscribirme.isPending ? 'Inscribiendo…' : 'Inscribirme a este llamado'}
                 </Button>
                 {registrationError?.examBoardId === mesa.id && (
-                  <span className="text-[11px] font-medium text-danger">{registrationError.message}</span>
+                  <span className="text-size-11 font-medium text-danger">{registrationError.message}</span>
                 )}
               </div>
             )}
@@ -211,8 +211,8 @@ export function TabMesasDeExamen({ carreraId }) {
                     className="gap-3 justify-start"
                     >
                     {abierto ? <ChevronDown className="h-4 w-4 shrink-0 text-ink-faint" /> : <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />}
-                    <span className="text-[13px] font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
-                    <span className="flex-1 text-[13.5px] font-semibold text-ink">{inscripcion.subjectName}</span>
+                    <span className="text-size-13 font-semibold text-ink-faint">{inscripcion.subjectCode ?? '—'}</span>
+                    <span className="flex-1 text-size-13-5 font-semibold text-ink">{inscripcion.subjectName}</span>
                     {inscripcion.curricularYear != null && (
                       <span className="hidden text-xs text-ink-faint sm:inline">
                         {inscripcion.curricularYear}° año{inscripcion.curricularTerm && ` · ${TIPOLOGIA_LABEL[inscripcion.curricularTerm]}`}
@@ -247,7 +247,7 @@ export function TabMesasDeExamen({ carreraId }) {
           {misMesas.map((mia) => (
             <div key={mia.id} className="flex flex-col gap-2 rounded-xl border border-border bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-[13.5px] font-semibold text-ink">{mia.examBoard.subjectName}</div>
+                <div className="text-size-13-5 font-semibold text-ink">{mia.examBoard.subjectName}</div>
                 <div className="text-xs text-ink-faint">
                   {formatearFecha(mia.examBoard.examDate)}
                   {mia.examBoard.classroom && ` · ${mia.examBoard.classroom}`}

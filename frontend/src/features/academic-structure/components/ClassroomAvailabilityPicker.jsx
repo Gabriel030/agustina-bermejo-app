@@ -33,7 +33,7 @@ function ClassroomOption({ classroom, seats, chosen, onChoose, onViewWeek }) {
   return (
     <li className="flex flex-col gap-2 rounded-xl border border-surface-border p-3 data-[chosen=true]:border-accent" data-chosen={chosen}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-[13.5px] font-medium text-ink">
+        <label className="flex items-center gap-2 text-size-13-5 font-medium text-ink">
           <input
             type="radio"
             name="classroom"
@@ -42,16 +42,16 @@ function ClassroomOption({ classroom, seats, chosen, onChoose, onViewWeek }) {
             aria-label={`${classroom.name}, ${classroom.capacity} lugares, ${state.label}`}
           />
           {classroom.name}
-          <span className="text-[12px] font-normal text-ink-faint">{classroom.capacity} lugares</span>
+          <span className="text-size-12 font-normal text-ink-faint">{classroom.capacity} lugares</span>
         </label>
         <StatusPill tone={state.tone}>{state.label}</StatusPill>
       </div>
       <CapacityBar capacity={classroom.capacity} seats={seats} />
       {stateKey === 'SHORT_CAPACITY' && (
-        <p className="text-[12px] text-danger">Faltan {classroom.capacityShortfall} lugares para el cupo.</p>
+        <p className="text-size-12 text-danger">Faltan {classroom.capacityShortfall} lugares para el cupo.</p>
       )}
       {occupied && classroom.occupant && (
-        <p className="text-[12px] text-ink-soft">
+        <p className="text-size-12 text-ink-soft">
           {describeOccupant(classroom.occupant)} · {describeTerm(classroom.occupant)}
         </p>
       )}

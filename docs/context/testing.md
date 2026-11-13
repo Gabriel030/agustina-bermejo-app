@@ -18,7 +18,7 @@ prueba encuentra bugs que los demás no ven.
 |---|---|---|---|
 | JUnit 5 | Unitario | ¿Esta regla puntual (Policy, Value Object, cálculo) funciona con sus bordes? | En uso |
 | JUnit 5 + Testcontainers (Postgres real) | Integración | ¿Funciona contra la base real, con transacciones, CHECKs, triggers e índices únicos? | En uso |
-| PIT (Pitest, perfil `-P mutation`) | Mutation testing | ¿Mis tests detectarían un bug si alguien lo introduce? (umbral 90% en el dominio puro de billing) | En uso, **en GitHub** (job `mutation`, PR; push a `develop` y diario en `mutation-full.yml`) |
+| PIT (Pitest, perfil `-P mutation`) | Mutation testing | ¿Mis tests detectarían un bug si alguien lo introduce? (umbral 90% en el dominio puro de billing) | En uso, **solo en local** (ya no corre en el CI desde el 14-nov-2026) |
 | jqwik | Tests de propiedades | ¿Se cumplen los invariantes con cualquier combinación de datos, no solo con los casos que se me ocurrieron? | En uso |
 | `MutableClock` + `BillingInvariantChecker` | Escenarios temporales | ¿Funciona con el paso del tiempo (días, meses, años lectivos) y los invariantes se sostienen en cada paso? | En uso |
 | Hilos reales contra Postgres | Concurrencia | ¿Dos operaciones simultáneas (pagos, emisiones, imputaciones) no duplican ni corrompen nada? | En uso |
@@ -26,7 +26,6 @@ prueba encuentra bugs que los demás no ven.
 | Spring Modulith (`ModularityTest`) | Límites de módulos | ¿Ningún módulo accede a internos de otro ni aparecen dependencias o ciclos nuevos? | En uso |
 | `BillingDecisionCoverageTest` | Cobertura de decisiones | ¿Cada decisión de negocio vigente (D-xxx del registro) tiene al menos un test con su `@Tag`? | En uso |
 | JUnit sobre HTTP (`characterization/`) | Caracterización | ¿Quedó fijado el comportamiento actual antes de refactorizar, para detectar cambios no buscados? | En uso |
-| Karate | API (regresión HTTP) | ¿La API responde lo esperado (status, body, códigos de error) en los flujos de punta a punta? | En uso |
 | Awaitility | Procesos asíncronos | ¿El efecto en segundo plano ocurrió? (esperar siempre por el propio eventId, nunca por conteos globales) | En uso |
 | Vitest + RTL + MSW | Front unitario/componente | ¿El componente muestra y reacciona bien ante cada respuesta del backend? | En uso |
 | Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | En uso (solo local: `scripts/system-tests.sh`) |
@@ -44,7 +43,7 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 |---|---|---|
 | Una regla de negocio pura (Policy, Value Object, cálculo, máquina de estados) | JUnit puro con bordes (cero, negativo, límite, redondeo) y **cada transición válida e inválida** | Es barato y ahí viven la mayoría de los bugs de lógica |
 | Algo que guarda o lee de la base (servicio, repository) | Integración con Testcontainers (Postgres real) | Constraints, triggers, índices únicos y cascadas solo aparecen contra la base real |
-| Un endpoint (controller, DTO, código de error) | MockMvc con status, JSON y `code` de error; un escenario de Karate si es un flujo de punta a punta | El front depende del contrato exacto |
+| Un endpoint (controller, DTO, código de error) | MockMvc con status, JSON y `code` de error (los IT con MockMvc son la cobertura HTTP del repo) | El front depende del contrato exacto |
 | Una pantalla o un componente | Vitest + RTL + MSW con cada respuesta posible del backend: ok, error, vacío y cargando | Testea lo que ve el usuario, no la implementación |
 | Una migración que transforma datos existentes | Integración que carga datos con la forma vieja, migra y verifica el resultado | Un esquema vacío no prueba una migración de datos |
 | Un refactor grande de algo que ya funciona | Caracterización **antes** de tocar, y que siga verde después | Cualquier diferencia de comportamiento sale a la luz |
@@ -58,7 +57,7 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 | Combina varios valores en un invariante (saldos, imputaciones, descuentos) | jqwik | ¿Se cumple con combinaciones que no se me ocurrieron? |
 | Puede ejecutarse dos veces o en paralelo (pagos, webhooks, jobs, eventos reintentados) | Hilos reales contra Postgres y un test de **idempotencia**: la misma entrada dos veces produce un solo efecto | ¿Un reintento duplica o pierde algo? |
 | Es asíncrono (evento, listener, notificación) | Awaitility esperando por el **propio** id de evento | ¿El efecto ocurrió, sin depender de otros tests? |
-| Es lógica de dominio de facturación | PIT (umbral 90%): lo corre el job `mutation` del CI; en local solo compilar y correr los tests focalizados del área | Si alguien rompe esto, ¿algún test se entera? |
+| Es lógica de dominio de facturación | PIT (umbral 90%): ya NO corre en el CI; correrlo en local antes de mergear cambios de plata (`cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`), con el semáforo de CI | Si alguien rompe esto, ¿algún test se entera? |
 | Agrega clases, paquetes o dependencias entre módulos | ArchUnit y Modulith (corren en CI) | ¿La estructura se degrada? |
 | Cambia permisos o roles | Matriz rol × endpoint: 403 para cada rol que no corresponde | ¿Un rol puede hacer algo que no debería? |
 | Es un flujo crítico del usuario (inscribirse, pagar, aprobar) | Playwright (`e2e/`, solo local) | ¿Un usuario real lo completa en el navegador? |
@@ -67,38 +66,25 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 
 ### Dónde corre cada cosa y cómo queda constancia
 
-El repo es público (los runners estándar no cobran minutos; lo que cuesta es el tiempo de espera y el tope de 20 jobs concurrentes), así que en el CI corre: `./mvnw clean verify` (JUnit, Testcontainers, Karate, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT corre en GitHub** como job `mutation`, en paralelo a los shards de `backend-tests`, y es parte del agregador `backend` (requisito de merge). **Playwright, k6 y OWASP Dependency-Check siguen corriendo solo en local**, mientras se programa, con el semáforo de CI.
+El repo es público (los runners estándar no cobran minutos; lo que cuesta es el tiempo de espera y el tope de 20 jobs concurrentes), así que en el CI corre: `./mvnw clean verify` (JUnit, Testcontainers, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT ya NO corre en el CI** (desde el 14-nov-2026). **PIT, Playwright, k6 y OWASP Dependency-Check corren solo en local**, mientras se programa, con el semáforo de CI.
 
-### PIT en GitHub
+### PIT en local
 
-El job `mutation` corre solo si el PR toca `backend/pom.xml` o algo bajo `shared/domain` o `billing` (main o test). Si no corrió por el filtro de paths cuenta como OK en el agregador `backend`. Ejecuta `./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage` con el umbral 90% y los `targetClasses` del perfil `mutation`, usa el historial incremental de PIT en `backend/target/pit-history` (NO usar `withHistory` en el perfil: pisa las rutas explícitas con un archivo en `/tmp` que la cache nunca guarda) y sube el reporte como artifact `pit-report`. Cómo corre según el evento:
+PIT ya no corre en el CI ni en workflows aparte (se quitaron el job `mutation` de `ci.yml`, `mutation-full.yml` y `mutation-develop-cold.yml`). El perfil `mutation` del `backend/pom.xml`, su umbral de 90 % sobre los `targetClasses` de dominio puro y `docs/billing/mutation-exclusions.md` siguen vigentes (los vigila `MutationTestingConfigurationTest`). Comando:
 
-| Evento | PIT | Historial | Bloquea |
-|---|---|---|---|
-| Pull request | Incremental, solo si toca el alcance de PIT (job `mutation` de `ci.yml`) | Restaura `pit-history-pr-<N>-` y, si no hay, `pit-history-<rama base>-`; guarda el del PR | Sí (agregador `backend`) |
-| Push a `develop` | **`ci.yml` no corre PIT.** Lo hace aparte `mutation-develop-cold.yml` (disparado por `push`, filtrado por paths del alcance de PIT) | En frío (sin restaurar nada); guarda `pit-history-develop-cold-<run>` en el scope de `develop`, que es donde lo restauran los PRs | No bloquea ni demora el CI principal; su propio run queda rojo si baja del 90 % |
-| Push a `master` (release) | En frío, dentro de `ci.yml` | Guarda `pit-history-master-<run>` | Sí: es el gate de la release |
-| `mutation-full.yml` | En frío sobre `develop`, umbral 90 % | `pit-history-develop-full-<run>` | Su propio run |
+`cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`
 
-`mutation-develop-cold.yml` usa `concurrency` propia por ref con `cancel-in-progress: true` (un push nuevo cancela el PIT en frío en curso; el último push que toca el alcance es el que termina) y se salta si el árbol de `HEAD` ya fue validado en frío por un run anterior (artifact `cold-verified-tree`, se busca entre los últimos 10 runs verdes). **Esta es la compensación real del riesgo del historial incremental.**
-
-`mutation-full.yml` tiene `schedule` diario (06:00 UTC, solo si `develop` cambió desde el último run verde; busca el artifact `mutation-full-verified` en los últimos 10 runs) y `workflow_dispatch`, pero **hoy no se puede disparar**: GitHub solo dispara `schedule` y permite `workflow_dispatch` para workflows que están en la rama por defecto (`master`). Empezará a servir cuando llegue a `master` en el próximo release; hasta entonces la compensación es `mutation-develop-cold.yml`. Hace checkout de `develop`.
-
-El job `mutation` baja los plugins de PIT en cada corrida (la cache `maven-` unificada la guarda el shard 0 de un push a `develop` y no incluye pitest): son unos segundos.
-
-Si se agregan paquetes a `targetClasses` fuera de `shared/domain` y `billing`, ampliar el filtro de mutación de `.github/scripts/detect-changes.sh` y los `paths` de `mutation-develop-cold.yml`. La CI es la fuente de verdad de PIT: ya no se anota su corrida en el log local.
-
-**Riesgo aceptado del historial incremental** (verificado en `IncrementalAnalyser`, pitest 1.20.4): (a) un KILLED se reusa aunque cambie una clase de producción colaboradora no mutada; (b) un TIMED_OUT se reusa siempre que la clase mutada no haya cambiado, aunque cambien los tests; (c) los helpers de test fuera de la jerarquía del test (builders, object mothers, fixtures) no entran en el hash: si se debilitan, un KILLED anterior se sigue reusando. Compensación: el PIT en frío de `mutation-develop-cold.yml` en cada push a `develop` que toca el alcance (y el push a `master`) vuelve a verificar el 90 % contra todo. Costo: un falso verde puede entrar a `develop` y descubrirse recién en ese run (rojo, aparte del CI), y los PRs siguientes que toquen el alcance de PIT heredan los sobrevivientes y fallan hasta que se arregle. Qué hacer: arreglar `develop` primero.
+Se recomienda correrlo antes de mergear cambios de plata (dominio puro de `shared/domain` y `billing`), con el semáforo de CI, y matar los sobrevivientes con tests; las exclusiones solo van en `mutation-exclusions.md`. El reporte queda en `backend/target/pit-reports`.
 
 ### Qué corre en un push a `develop`
 
-- **Detección de cambios.** `.github/scripts/detect-changes.sh` (con tests en `test_detect_changes.py`) diferencia contra el `headSha` del último push exitoso de `develop` (`gh run list`); si no hay (o `gh` falla, o el commit ya no existe por un force-push) no hay base y corre todo. Backend, PIT, frontend y `audit:prod` (solo si cambió `frontend/package-lock.json`) se saltan si el diff no los toca. Un push a `master` siempre corre todo.
+- **Detección de cambios.** `.github/scripts/detect-changes.sh` (con tests en `test_detect_changes.py`) diferencia contra el `headSha` del último push exitoso de `develop` (`gh run list`); si no hay (o `gh` falla, o el commit ya no existe por un force-push) no hay base y corre todo. Backend, frontend y `audit:prod` (solo si cambió `frontend/package-lock.json`) se saltan si el diff no los toca. Un push a `master` siempre corre todo.
 - **Dedupe por árbol.** Si el árbol de `HEAD` coincide con el árbol que verificó el run verde del PR del segundo padre (`HEAD^2`, artifact `tested-tree` que sube cada run de PR), se saltan los tests de esa área que el PR sí corrió, el agregador `backend` queda verde con «reusado del PR #N» y el baseline de tiempos se hereda de los `shard-reports-*` del run del PR. Si el árbol difiere (por ejemplo porque `develop` avanzó después del run del PR), si el merge fue squash o si el push es directo, corre todo. Auditoría: el resumen del run muestra «Reused from PR #N», el árbol y los minutos de cómputo ahorrados. Consecuencia: el grupo `docs` (`ModuleDocumentationTest`), que solo corre en push, no se ejecuta en los merges deduplicados.
 - **Concurrencia.** `cancel-in-progress: true` en PRs y en `develop`: cada push cancela al anterior y el run que sobrevive diferencia contra el último verde, así que cubre también los cambios de los runs cancelados. El baseline de tiempos lo publica el run que sobrevive. `master` no cancela.
 - **Caches.** `~/.m2/repository` y `~/.m2/wrapper` bajo una sola clave `maven-<os>-<hash del pom>`: todos los jobs la restauran (`actions/cache/restore`), solo el shard 0 de un push a `develop` la guarda. `TESTCONTAINERS_RYUK_DISABLED=true` en todo el workflow y `postgres:16-alpine` se baja en segundo plano al empezar cada shard (Ryuk no se baja: está desactivado).
-- **Frontend.** `npm ci --no-audit --no-fund --prefer-offline`; Vitest en 2 shards (`frontend-tests (1)` y `(2)`, `--shard=N/2`) en paralelo con `frontend-checks` (audita si cambió el lockfile, lint y build); el job `frontend` solo agrega ambos resultados.
+- **Frontend.** `npm ci --no-audit --no-fund --prefer-offline`; Vitest en 3 shards (`frontend-tests (1)`, `(2)` y `(3)`, `--shard=N/3`) en paralelo con `frontend-checks` (audita si cambió el lockfile, lint y build); el job `frontend` solo agrega los resultados de todos los shards.
 
-En local, para el dominio de billing, alcanza con compilar y correr los tests focalizados; PIT local (`./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`, con el semáforo de CI) queda opcional para investigar sobrevivientes.
+En local, para el dominio de billing, alcanza con compilar y correr los tests focalizados; PIT se corre solo en local (`cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`, con el semáforo de CI); se recomienda antes de mergear cambios de plata.
 
 Las herramientas que siguen siendo locales (Playwright, k6, Dependency-Check) se anotan en [`docs/testing/local-test-log.md`](../testing/local-test-log.md): fecha, PR, commit, área, herramienta, comando y resultado. Antes de modificar un área, buscá ahí qué herramientas pesadas la cubren y volvé a correrlas.
 
@@ -148,35 +134,19 @@ Correr todo: `./mvnw clean verify` desde `backend/`. Necesita Docker corriendo (
 levanta Postgres) — ver [docs/context/debugging.md](debugging.md) si Docker no
 está arriba.
 
-## Presupuesto de tiempo y pirámide de tests
+## Reporte de tiempos y pirámide de tests
 
-El CI del backend corre en 6 shards balanceados por tiempo (`.github/scripts/test-shards.py`). Para que ese tiempo no vuelva a crecer, cada corrida pasa por presupuestos que miden la corrida real.
+El CI del backend corre en 8 shards balanceados por tiempo (`.github/scripts/test-shards.py`). No hay presupuesto de tiempo: ningún límite por clase, por `@SlowTest` ni por shard hace fallar el CI (se eliminaron el 13-nov-2026, a pedido de Gabriel, después de cuatro rojos por tiempos al borde sin bug real). Los tiempos se miden y se reportan, nada más.
 
-**Dónde bloquean (decisión de Gabriel, 22-oct-2026):**
-- **En un PR** (`--enforcement warn`), los presupuestos (por clase, por shard y por cantidad de contextos de Spring) son **advertencias**. Aparecen en el comentario del reporte y como `::warning::`, pero no ponen el PR en rojo.
-- **En un push a `develop`** (`--enforcement block`), bloquean como antes.
+**Lo único que bloquea es el tope de contextos de Spring distintos en toda la corrida (24)**, que no es una regla de tiempo: lo hace cumplir `test-report.py aggregate` (parámetro `--max-contexts`), en el job `test-report`, solo en pushes (en un PR es una advertencia). Subirlo es una decisión de producto que va en un PR aparte, con motivo.
 
-Motivo: ~80 % de los rojos de los PRs de billing eran presupuestos (clases de 31-34 s, 25 contextos), no bugs, y cada uno costaba una vuelta más. Si un push a `develop` queda rojo por presupuesto, se corrige en un PR aparte, el mismo día.
-
-### Presupuestos
-
-| Qué | Límite | Quién lo hace cumplir |
-|---|---|---|
-| Una clase de test | 30 s | `test-budget.py check-shard`, en cada shard |
-| Una clase marcada `@SlowTest` | 90 s (o su `maxSeconds`, si lo declara; hoy solo `ModuleDocumentationTest`, 300 s, medida en 142-237 s en pushes a master) | ídem |
-| Un shard (tiempo de **reloj**: `SHARD_END - SHARD_START`, desde el primer paso del job hasta el fin de los tests) | 300 s | ídem; en un PR bloquea, en un push es solo `::warning::` |
-| Contextos de Spring distintos en toda la corrida | 24 | `test-budget.py aggregate`, job `test-report` |
-| Reglas ArchUnit sobre los tests | sin violaciones nuevas | `TestSuiteRulesTest` |
-
-Los límites son constantes de `.github/scripts/test-budget.py` (parámetros `--max-class`, `--max-slow-class`, `--max-shard`, `--max-contexts`). Subirlos es una decisión de producto que va en un PR aparte, con motivo.
-
-**El tope de shard se mide con reloj, no con la suma de las JVM** (decisión de Gabriel del 22-oct-2026; reemplaza la subida de 240 a 300 s hecha en #268). Cada shard corre 2 JVM en paralelo, así que sumar sus tiempos casi duplica el reloj y daba falsos rojos (4 de 10 pushes a `develop`, ninguno por un test). En un push (`--shard-limit warn`) pasarse del tope de shard es una advertencia, no un fallo: así un falso rojo no impide publicar el baseline (círculo vicioso). El tope por clase (30 s, `@SlowTest` 90 s) sigue bloqueando tanto en PRs como en `develop`. Sin `SHARD_START`/`SHARD_END` (corrida local) el tope de shard no se verifica.
+Las reglas ArchUnit sobre los tests (`TestSuiteRulesTest`) no cambian: sin violaciones nuevas.
 
 ### La pirámide de tests
 
 1. **Base, la gran mayoría: tests de dominio puros.** Policies, value objects, cálculos y reglas se testean sin Spring, sin base y sin mocks de infraestructura (JUnit + AssertJ, jqwik donde haya propiedades). Corren en milisegundos. ArchUnit impide que las clases de test de paquetes `..domain..` y `..policy..` usen `@SpringBootTest` o extiendan `AbstractIntegrationTest`.
 2. **Medio: tests de integración solo para persistencia e integración real.** Queries, constraints, transacciones, eventos entre módulos, endpoints. Extienden `AbstractIntegrationTest` (Postgres real, aislamiento por clase con `TestDatabaseIsolation`). No repitas ahí lo que ya cubre un test de dominio.
-3. **Punta: escenarios largos con `@SlowTest`.** Los que recorren meses simulados, concurrencia o varias etapas del pipeline pueden superar 30 s. Se marcan con `@SlowTest(reason = "...")` (`com.red_escuela.backend.testsupport.SlowTest`, que lleva `@Tag("slow")`). El motivo es obligatorio y tiene que explicar por qué no se puede partir en tests más chicos. Aparecen listados en el reporte de cada PR.
+3. **Punta: escenarios largos con `@SlowTest`.** Los que recorren meses simulados, concurrencia o varias etapas del pipeline son lentos. Se marcan con `@SlowTest(reason = "...")` (`com.red_escuela.backend.testsupport.SlowTest`, que lleva `@Tag("slow")`). El motivo es obligatorio y tiene que explicar por qué no se puede partir en tests más chicos. Aparecen listados en el reporte de cada PR; es solo una etiqueta informativa, no tiene un límite de tiempo.
 
 ### Tiers de tests: PR y nightly
 
@@ -197,13 +167,10 @@ El tier se elige con la propiedad `test.exploration` (`pr` por defecto, `nightly
 | Grupo | Tests | PR contra `develop` | Push a `develop` | PR/push a `master` | Nightly |
 |---|---|---|---|---|---|
 | `migration` | los 19 tests `*Migration*` | solo si el diff toca `db/migration/**`, un test `*Migrat*`, `backend/pom.xml`, `scripts/` o `.github/` | siempre | siempre | siempre |
-| `karate` | `KarateSuiteTest` | siempre, salvo que el diff sea solo lógica de billing (ver abajo) | siempre | siempre | siempre |
 | `docs` | `ModuleDocumentationTest` | nunca | nunca | siempre | siempre |
 
-  Karate cubre endpoints de billing (`procesos-administrativos`: pagos, notas de crédito, cobranza, descuentos, comprobantes), por eso solo se saltea cuando todos los archivos del diff son `.md` o código de billing que **no** está en `controller`, `dto`, `api`, `usecase`, `service`, `events`, `gateway`, `infrastructure`, `entity` ni `repository` (main) ni en `billing/support` (tests). Cualquier otro archivo de backend, `contracts/`, `scripts/` o `.github/` lo activa.
-
-  Cuando el push a `develop` reutiliza los tests de un PR verde (mismo árbol) y ese PR se saltó `migration` o `karate`, el job `backend-extra-tests` corre solo esos grupos. El registro `tested-tree.json` del PR guarda qué grupos corrió; un registro sin esos campos cuenta como «no corrió».
-- **Nightly (`nightly-tests.yml`):** corre la suite completa en 6 shards con `-Dtest.exploration=nightly -Dtest.excludedGroups=none` (migration, Karate, docs y tests `@NightlyTest` incluidos). Se saltea si `develop` no cambió desde la última corrida verde. `schedule` solo corre desde la rama por defecto: hasta el próximo release se dispara a mano con `workflow_dispatch`.
+  Cuando el push a `develop` reutiliza los tests de un PR verde (mismo árbol) y ese PR se saltó `migration`, el job `backend-extra-tests` corre solo ese grupo. El registro `tested-tree.json` del PR guarda qué grupos corrió; un registro sin esos campos cuenta como «no corrió».
+- **Nightly (`nightly-tests.yml`):** corre la suite completa en 8 shards con `-Dtest.exploration=nightly -Dtest.excludedGroups=none` (migration, docs y tests `@NightlyTest` incluidos). Se saltea si `develop` no cambió desde la última corrida verde. `schedule` solo corre desde la rama por defecto: hasta el próximo release se dispara a mano con `workflow_dispatch`.
 - **Regla R5 (`BillingDecisionCoverageTest`):** cada decisión D-xxx vigente implementada o parcial necesita **al menos un test del tier PR**, es decir, con su `@Tag("D-xxx")`, sin `@NightlyTest`, sin `@Tag("nightly")`, sin `@Tag("migration")` y sin `@Disabled`. Si movés el único test de una decisión a nightly, el build falla con `R5 D-xxx ... sin test del tier PR`. Agregá un test liviano de PR en vez de saltear la regla.
 
 ### Reglas para no pagar contextos y esperas de más
@@ -249,25 +216,22 @@ En eventos `pull_request` los shards corren con `-Dsurefire.rerunFailingTestsCou
 Cada fallo de CI dice en qué shard ocurrió (`backend-tests (N)`). Para correr exactamente las mismas clases, con el mismo algoritmo y los mismos tiempos que la CI:
 
 ```bash
-python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 6)
+python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 8)
 python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con ./mvnw test
 ```
 
 `run` toma el semáforo de CI (`~/.claude/epica18/ci-slot.sh acquire shard-2`) y lo libera al terminar, también si falla; si ese script no existe en la máquina, corre sin él. El reparto usa el `timings.txt` versionado: la CI usa el medido en la última corrida de `develop`, así que si difiere mucho puede variar la composición. Para reproducir con el reparto exacto, bajá el artifact `test-baseline` de esa corrida y corré `python3 .github/scripts/test-shards.py use <carpeta>` (reescribe `timings.txt`; no lo commitees).
 
-### Qué hacer si falla un presupuesto
+### Qué hacer si falla el tope de contextos o ArchUnit
 
 | Falla | Qué hacer |
 |---|---|
-| Una clase supera 30 s | Primero buscá por qué: contexto nuevo evitable, `Thread.sleep`, un proceso global sin acotar, datos de prueba de más. Si es un escenario largo legítimo, partilo; si no se puede, `@SlowTest(reason = "...")`. |
-| Una `@SlowTest` supera 90 s | Partila. El límite alto no es para que crezca. |
-| Un shard supera 300 s de reloj | Casi siempre es una clase lenta nueva (mirá el top del reporte) o un balanceo desactualizado: con cada push a `develop` el promedio móvil se actualiza solo. Un reparto con tiempos estimados parejos puede dar tiempos reales dispares por el costo de los contextos; mirá si fue una sola corrida antes de tocar nada. |
 | Más de 24 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
 | ArchUnit en tests | Leé el mensaje: sleep → Awaitility; `@DirtiesContext` → limpiar estado; `@SpringBootTest` en `domain`/`policy` → test puro; job global → caso de uso con ids. |
 
-**Arranque en frío fuera de la medición.** Cada shard corre 2 JVM (`forkCount=2`) y la primera clase de integración de cada una pagaba, dentro de su tiempo, el arranque de Postgres (Testcontainers), las migraciones de Flyway y el snapshot de `TestDatabaseIsolation` (el bloque `static` de `AbstractIntegrationTest`, unos 12-15 s en CI), además del primer contexto de Spring (8-14 s). Eso llevaba a clases triviales a 26-31 s. `testsupport/SharedInfrastructureWarmUp` (un `LauncherSessionListener` registrado en `META-INF/services`) inicializa esa infraestructura al abrir la sesión de JUnit, antes de que arranque cualquier clase, así que el límite de 30 s mide la clase y no el arranque del fork. Solo actúa con la variable `CI` definida (GitHub Actions la define); en local no cambia nada. El primer contexto de Spring de cada fork se sigue midiendo en la clase que lo crea.
+**Arranque en frío.** `testsupport/SharedInfrastructureWarmUp` (un `LauncherSessionListener` registrado en `META-INF/services`) inicializa Postgres (Testcontainers), las migraciones de Flyway y el snapshot de `TestDatabaseIsolation` al abrir la sesión de JUnit, antes de que arranque cualquier clase. Solo actúa con la variable `CI` definida (GitHub Actions la define); en local no cambia nada.
 
-Para reproducir en local: `python3 .github/scripts/test-budget.py check-shard --shard 0 --reports backend/target/surefire-reports` contra los reportes de una corrida (`--max-class 5` fuerza el fallo para ver el mensaje; para probar el tope de shard exportá `SHARD_START` y `SHARD_END` en segundos epoch). Los contextos de una corrida quedan en `backend/target/spring-contexts/contexts.txt` (los escribe `SpringContextCensusListener`, una línea por configuración distinta).
+Para armar el reporte en local: `python3 .github/scripts/test-report.py aggregate --shards DIR --out DIR` sobre carpetas con `reports/`, `contexts.txt` y `meta.json` por shard. Los contextos de una corrida quedan en `backend/target/spring-contexts/contexts.txt` (los escribe `SpringContextCensusListener`, una línea por configuración distinta).
 
 ### Cobertura con JaCoCo
 
@@ -335,100 +299,24 @@ positivo en una aserción de rol otorgado, porque toda la prueba corría en una
 
 ### Qué capa cubre qué — regla para no testear lo mismo dos veces
 
-Tres capas pueden pegarle al mismo endpoint: el `*ServiceTest` de integración, un
-test de controller con MockMvc, y un `Scenario` de Karate. **Cada caso va en una
-sola.** La pregunta que decide no es "¿qué herramienta uso?", es "¿qué estoy
-verificando?":
+Dos capas pueden pegarle al mismo endpoint: el `*ServiceTest` de integración y un
+test de controller con MockMvc. **Cada caso va en una sola.**
 
 | Lo que quiero verificar | Dónde va |
 |---|---|
 | Que la **regla de negocio** sea correcta (invariantes, cálculos, transiciones de estado, qué pasa con un dato borde) | `*ServiceTest` — integración con Postgres real |
-| Que el **contrato HTTP** sea correcto: status code exacto, forma del JSON, público vs. protegido, autorización por rol, y flujos de varios pasos encadenando respuestas reales | **Karate** |
-| Lo que Karate **no puede expresar bien**: concurrencia, rate limiting, control fino del reloj, multipart, o cualquier cosa que necesite manipular el entorno desde Java | **MockMvc** |
+| Que el **contrato HTTP** sea correcto: status code exacto, forma del JSON, público vs. protegido, autorización por rol | Test de controller con MockMvc |
 
-**El default del contrato HTTP es Karate, no un test de controller.** MockMvc es la
-excepción, y el test tiene que dejar claro por qué no podía ser un `Scenario`.
+Desde el 14-nov-2026 las pruebas de extremo a extremo HTTP con Karate ya no forman
+parte del repo (se eliminó la suite completa): los IT con MockMvc cubren los endpoints.
+Los flujos de varios pasos encadenando respuestas reales se verifican a mano con Bruno
+y, en el navegador, con Playwright (solo local).
 
-Los dos MockMvc que hoy **no** están duplicados en Karate son exactamente
-`RateLimitingTest` y `EnrollmentConcurrencyTest` — esa es la línea natural: ahí hacía
-falta control del reloj y de los hilos que Gherkin no da.
-
-**Por qué existe esta regla.** Se escribió después de medirlo: `AuthControllerTest`
-tiene 8 tests con MockMvc y `karate/auth/` tiene 21 escenarios, y el solapamiento es
-casi total — login happy path, credenciales inválidas 401, body inválido 400, refresh,
-logout, forgot-password, verify-reset-code y reset-password están **en las dos**, sobre
-la misma app levantada con el mismo Testcontainers. Se paga dos veces por la misma
-cobertura. No pasó por descuido: hasta ahora este documento distinguía Karate de Bruno
-pero nunca dijo nada sobre MockMvc, así que no había con qué decidir.
-
-Al mismo tiempo, Karate **no** es redundante en general: es la única cobertura de
-contrato HTTP de `inscripciones-academicas` (23 escenarios), `evaluacion-y-asistencia`
-(13), `procesos-administrativos` (12), `autoservicio` (7) y `catalogo` (4). Solo 16 de
-63 archivos de test Java usan MockMvc, y se concentran en `identity`, `enrollment` y
-`academicstructure`.
-
-**No se limpia retroactivamente**: los duplicados que ya existen se dejan salvo pedido
-explícito, mismo criterio que el resto de las convenciones de este proyecto. La regla
-aplica a lo que se escriba de acá en adelante.
-
-Se usan **dos herramientas, cada una para lo que sirve mejor** — no son
-redundantes, hay que mantener las dos actualizadas cuando se agrega o cambia
-un endpoint:
-
-- **[Karate](https://karatelabs.github.io/karate/)** (`backend/src/test/resources/karate/`)
-  es el gate de regresión **automático**: corre en CI dentro del job `backend`
-  existente (`KarateSuiteTest`, `@SpringBootTest` con `RANDOM_PORT`, Postgres
-  de Testcontainers propio — ver más abajo por qué propio y no el compartido).
-  Es donde vive la cobertura que tiene que sostenerse sola en cada PR, sin que
-  nadie la dispare a mano.
-- **[Bruno](https://www.usebruno.com/)** (`qa/bruno/`) es para **explorar a
-  mano** — CLI (`bru`, `npm install -g @usebruno/cli`) o GUI
-  (`brew install --cask bruno`) contra un backend real corriendo. Sirve para
-  investigar un bug interactivamente, probar algo puntual sin escribir código,
-  o que alguien no-técnico corra un caso reproducible. **No corre en CI** —
-  correrla ahí además de Karate pagaría el mismo costo dos veces por la misma
-  cobertura (ver "Antes de dar una tarea por terminada" más abajo: agregar a
-  ambas, no una u otra).
-
-### Karate — regresión automática en CI
-
-Feature files en `backend/src/test/resources/karate/<dominio>/*.feature`,
-corridos por `KarateSuiteTest` (`backend/src/test/java/.../karate/`). Cada
-`Scenario` es un caso de uso con su criterio de aceptación en el nombre — la
-sintaxis Gherkin (`Given`/`When`/`Then`) es la documentación, no hace falta un
-comentario aparte explicando "qué" prueba. `Scenario Outline` + `Examples` para
-variantes con la misma aserción (ej. varios formatos de contraseña inválida,
-todos esperando 400) — no un Scenario por variante cuando el criterio es
-idéntico.
-
-**Por qué `KarateSuiteTest` NO extiende `AbstractIntegrationTest`** (el
-Postgres singleton compartido por el resto de la suite): la clase a propósito
-no es `@Transactional` — si lo fuera, todos los `.feature` correrían en una
-única transacción de test y enmascararían bugs reales de boundary
-transaccional, el mismo problema de arriba. Sin rollback, cada fila que un
-`.feature` crea queda en la base — y varios tests de otras clases asumen
-"cuento todas las filas de la tabla y espero exactamente N", asunción que
-dejaría de ser cierta si Karate ensuciara el Postgres compartido (confirmado:
-pasó de verdad al probarlo, 4 tests de otras clases empezaron a fallar). Fix:
-`KarateSuiteTest` levanta su propio contenedor de Testcontainers, nunca
-comparte el de `AbstractIntegrationTest` — nadie necesita limpiar nada
-manualmente, el contenedor entero se descarta al terminar la corrida.
-
-**Setup que no tiene sentido hacer por HTTP** (crear un token de staff sin un
-flujo de alta completo, sembrar una institución) vive en
-`KarateFixtures`/`KarateSpringContext` (puente Java, `Java.type(...)` desde el
-`.feature`) — usa los repositories (`.save()`, transaccionales por sí solos),
-nunca `EntityManager.persist()` crudo, por el mismo motivo de arriba (sin
-`@Transactional` en la clase, no hay transacción externa donde flushear).
-
-**Correr:**
-```bash
-./mvnw test -Dtest=KarateSuiteTest              # toda la suite de Karate
-./mvnw test -Dtest=KarateSuiteTest#testAuth      # una sola carpeta/@Karate.Test
-./mvnw clean verify                              # la suite completa, incluye Karate
-```
-Genera un reporte HTML en `target/karate-reports/karate-summary.html` en cada
-corrida.
+**[Bruno](https://www.usebruno.com/)** (`qa/bruno/`) es para **explorar a
+mano** — CLI (`bru`, `npm install -g @usebruno/cli`) o GUI
+(`brew install --cask bruno`) contra un backend real corriendo. Sirve para
+investigar un bug interactivamente, probar algo puntual sin escribir código,
+o que alguien no-técnico corra un caso reproducible. **No corre en CI.**
 
 ### Bruno — exploración manual
 
@@ -458,7 +346,7 @@ reales del dominio (no solo "campo faltante" genérico — pensar como QA senior
 ¿qué pasa si mando un id que pertenece a otra entidad? ¿un duplicado por una
 vía que el código no valida explícito pero que un constraint de DB sí
 rechaza? ¿el status code de "sin sesión" es el mismo en todos los endpoints
-protegidos?) — **en las dos herramientas**, Karate y Bruno, no solo una. Ver
+protegidos?) — en MockMvc (o el `*ServiceTest`) y en Bruno. Ver
 `qa/bruno/BACKFILL.md` para el estado de cobertura sobre los endpoints
 existentes.
 

@@ -18,18 +18,18 @@ function Fila({ c, esHistorial }) {
       className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60"
     >
       <div>
-        <div className="font-heading text-[14px] font-semibold text-ink">{c.subjectName} · {c.sectionName}</div>
+        <div className="font-heading text-size-14 font-semibold text-ink">{c.subjectName} · {c.sectionName}</div>
         {esHistorial ? (
           <>
-            <div className="mt-0.5 text-[12px] text-ink-faint">
+            <div className="mt-0.5 text-size-12 text-ink-faint">
               {c.reviewedByName ? `Decidido por ${c.reviewedByName}` : 'Sin registro de quién decidió'} · {formatearFecha(c.reviewedAt) ?? '—'}
             </div>
             {c.status === 'REJECTED' && c.rejectionReason && (
-              <div className="mt-0.5 text-[12px] font-semibold text-danger">Motivo: &ldquo;{c.rejectionReason}&rdquo;</div>
+              <div className="mt-0.5 text-size-12 font-semibold text-danger">Motivo: &ldquo;{c.rejectionReason}&rdquo;</div>
             )}
           </>
         ) : (
-          <div className="mt-0.5 text-[12px] text-ink-faint">
+          <div className="mt-0.5 text-size-12 text-ink-faint">
             {c.instructors?.find((i) => i.role === 'LEAD')?.name ?? 'Sin titular'} (Titular) · enviada {formatearFecha(c.submittedAt) ?? '—'} · {ageLabel(c.submittedAt)}
           </div>
         )}

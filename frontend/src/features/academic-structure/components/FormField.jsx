@@ -3,7 +3,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 export function FormField({ id, label, required, error, hint, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+      <label htmlFor={id} className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
         {label}
         {required && (
           <span aria-hidden="true" className="ml-1 text-danger">
@@ -12,9 +12,9 @@ export function FormField({ id, label, required, error, hint, children }) {
         )}
       </label>
       {children}
-      {hint && !error && <p className="text-[11px] text-ink-faint">{hint}</p>}
+      {hint && !error && <p className="text-size-11 text-ink-faint">{hint}</p>}
       {error && (
-        <p id={`${id}-error`} role="alert" className="text-[12.5px] text-danger">
+        <p id={`${id}-error`} role="alert" className="text-size-12-5 text-danger">
           {error}
         </p>
       )}

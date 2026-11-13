@@ -77,14 +77,14 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
     >
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[12px] font-semibold text-ink-soft">{aviso.subjectName}</span>
+          <span className="text-size-12 font-semibold text-ink-soft">{aviso.subjectName}</span>
           {aviso.category && (
-            <span className="text-[11px] text-ink-faint">· {CATEGORIA_AVISO_LABEL[aviso.category] ?? aviso.category}</span>
+            <span className="text-size-11 text-ink-faint">· {CATEGORIA_AVISO_LABEL[aviso.category] ?? aviso.category}</span>
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {aviso.urgent && <StatusPill tone="danger">Urgente</StatusPill>}
-          <span className="text-[10.5px] text-ink-faint">
+          <span className="text-size-10-5 text-ink-faint">
             {fueEditado(aviso) ? `editado ${tiempoRelativo(aviso.updatedAt)}` : tiempoRelativo(aviso.createdAt)}
           </span>
         </div>
@@ -100,14 +100,14 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
           type="button"
           aria-expanded={expandido}
           onClick={alternar}
-          className="w-full text-left text-[13.5px] font-semibold text-ink"
+          className="w-full text-left text-size-13-5 font-semibold text-ink"
         >
           {aviso.title}
         </button>
       </div>
       <div
         ref={bodyRef}
-        className={`mt-1 text-[13px] text-ink-soft leading-relaxed overflow-hidden ${!expandido ? 'line-clamp-6' : ''}`}
+        className={`mt-1 text-size-13 text-ink-soft leading-relaxed overflow-hidden ${!expandido ? 'line-clamp-6' : ''}`}
       >
         {aviso.body}
       </div>
@@ -117,7 +117,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
           size="inline"
           type="button"
           onClick={alternar}
-          className="mt-1 text-[12px] font-semibold"
+          className="mt-1 text-size-12 font-semibold"
           >
           {expandido ? 'Ver menos' : 'Ver más'}
         </Button>
@@ -185,7 +185,7 @@ export function AlumnoInicio() {
           <Skeleton className="h-7 w-32" />
         ) : (
           pago && (
-            <StatusPill tone={pago.tone} dot className="px-3.5 py-1.5 text-[12px]">
+            <StatusPill tone={pago.tone} dot className="px-3.5 py-1.5 text-size-12">
               {pago.label}
             </StatusPill>
           )
@@ -196,7 +196,7 @@ export function AlumnoInicio() {
 
       {cursosActivos.length + cursosEnEspera.length > 0 && (
         <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <span className="text-[13px] font-semibold text-ink-soft">{resumenDeCursos(cursosActivos.length, cursosEnEspera.length)}</span>
+          <span className="text-size-13 font-semibold text-ink-soft">{resumenDeCursos(cursosActivos.length, cursosEnEspera.length)}</span>
           <Link to="/alumno/mis-cursos" className="text-xs font-bold text-primary hover:underline">
             Ver mis cursos →
           </Link>
@@ -207,7 +207,7 @@ export function AlumnoInicio() {
         <GlassCard className="flex flex-col p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="font-heading text-[15px] font-semibold text-ink">Novedades</div>
+              <div className="font-heading text-size-15 font-semibold text-ink">Novedades</div>
               <StaleStamp dataUpdatedAt={novedadesActualizadas} isFetching={actualizandoNovedades} isError={errorNovedades} hasData={novedadesRaw !== undefined} />
             </div>
             {sinLeer > 0 && <StatusPill tone="accent">{sinLeer} sin leer</StatusPill>}
@@ -245,7 +245,7 @@ export function AlumnoInicio() {
                   size="inline"
                   type="button"
                   onClick={() => setVerTodos((v) => !v)}
-                  className="mt-1 self-start text-[12.5px] font-semibold"
+                  className="mt-1 self-start text-size-12-5 font-semibold"
                   >
                   {verTodos ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
                 </Button>
@@ -255,20 +255,20 @@ export function AlumnoInicio() {
         </GlassCard>
 
         <GlassCard className="flex flex-col gap-3 p-5">
-          <div className="font-heading text-[15px] font-semibold text-ink">Estado de cuenta</div>
+          <div className="font-heading text-size-15 font-semibold text-ink">Estado de cuenta</div>
           {cargandoPago ? (
             <Skeleton className="h-14 w-full" />
           ) : standing?.standing === 'MOROSO' ? (
             <div className="rounded-xl bg-warning-bg px-4 py-3">
               <div className="text-xs font-semibold text-warning">Saldo pendiente</div>
-              <div className="text-[13px] text-ink-soft mt-1">Revisá tus cuotas en la sección de pagos.</div>
+              <div className="text-size-13 text-ink-soft mt-1">Revisá tus cuotas en la sección de pagos.</div>
             </div>
           ) : matriculasPendientes.length > 0 ? (
             <div className="rounded-xl bg-warning-bg px-4 py-3">
               <div className="text-xs font-semibold text-warning">Matrícula de ingreso pendiente</div>
             </div>
           ) : (
-            <div className="rounded-xl bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
+            <div className="rounded-xl bg-success-bg px-4 py-3 text-size-13 font-semibold text-success">
               No tenés saldo pendiente.
             </div>
           )}
@@ -277,7 +277,7 @@ export function AlumnoInicio() {
 
       <GlassCard className="p-5">
         <div className="flex items-center justify-between">
-          <div className="font-heading text-[15px] font-semibold text-ink">De tu interés</div>
+          <div className="font-heading text-size-15 font-semibold text-ink">De tu interés</div>
           <Link to="/catalogo?tab=cursos" className="text-xs font-bold text-primary hover:underline">
             Ver todos los cursos →
           </Link>

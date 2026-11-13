@@ -37,8 +37,8 @@ function PreviewRow({ to, title, dateLabel, date }) {
       to={to}
       className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5 transition-colors hover:bg-neutral-bg/60"
     >
-      <div className="text-[13.5px] font-semibold text-ink">{title}</div>
-      <div className="text-[12px] text-ink-faint">{dateLabel} {formatearFecha(date) ?? '—'} · {ageLabel(date)}</div>
+      <div className="text-size-13-5 font-semibold text-ink">{title}</div>
+      <div className="text-size-12 text-ink-faint">{dateLabel} {formatearFecha(date) ?? '—'} · {ageLabel(date)}</div>
     </Link>
   );
 }
@@ -52,8 +52,8 @@ function SeccionPreview({ titulo, ruta, cargando, fallo, items, tituloVacio, ren
         to={ruta}
         className="flex items-center justify-between rounded-xl px-2 pb-2 transition-colors hover:bg-neutral-bg/40"
       >
-        <div className="font-heading text-[14.5px] font-semibold text-ink">{titulo}</div>
-        <div className="flex items-center gap-1 text-[12.5px] font-semibold text-primary">
+        <div className="font-heading text-size-14-5 font-semibold text-ink">{titulo}</div>
+        <div className="flex items-center gap-1 text-size-12-5 font-semibold text-primary">
           {pendingLinkLabel(total, fallo)}
           <ChevronRight className="h-4 w-4" />
         </div>
@@ -133,10 +133,10 @@ export function DirectorAprobaciones() {
             to="/director/aprobaciones/facturacion"
             className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5 transition-colors hover:bg-neutral-bg/60"
           >
-            <div className="text-[13.5px] font-semibold text-ink">
+            <div className="text-size-13-5 font-semibold text-ink">
               {r.operationLabel} · {r.studentName ?? r.summary}
             </div>
-            <div className="text-[12px] text-ink-faint">pedido por {r.requestedBy?.name ?? '—'}</div>
+            <div className="text-size-12 text-ink-faint">pedido por {r.requestedBy?.name ?? '—'}</div>
           </Link>
         )}
       />

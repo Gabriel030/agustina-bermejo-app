@@ -149,7 +149,7 @@ export function TabNotas({ carreraId }) {
                     <TableRow className={fila.estado === 'bloqueada' ? 'opacity-60' : ''}>
                       <TableCell className="font-semibold text-ink-faint">{fila.subjectCode ?? '—'}</TableCell>
                       <TableCell>
-                        <span className="text-[13.5px] font-semibold text-ink">{fila.subjectName}</span>
+                        <span className="text-size-13-5 font-semibold text-ink">{fila.subjectName}</span>
                       </TableCell>
                       <TableCell className="text-ink-faint">{fila.curricularYear ? `${fila.curricularYear}°` : '—'}</TableCell>
                       {fila.estado === 'bloqueada' ? (
@@ -178,7 +178,7 @@ export function TabNotas({ carreraId }) {
                             {pill.label}
                           </StatusPill>
                           {fila.estado === 'aprobada' && fila.inscripcion?.finalGradeType && (
-                            <span className="text-[11px] text-ink-faint">{FINAL_GRADE_TYPE_LABEL[fila.inscripcion.finalGradeType]}</span>
+                            <span className="text-size-11 text-ink-faint">{FINAL_GRADE_TYPE_LABEL[fila.inscripcion.finalGradeType]}</span>
                           )}
                         </div>
                       </TableCell>

@@ -16,6 +16,21 @@ export function useWithdrawStudent(studentId) {
   });
 }
 
+export function useReactivateStudent(studentId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reason) =>
+      apiFetch(`/students/${studentId}/reactivate`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alumno', studentId], exact: true });
+      queryClient.invalidateQueries({ queryKey: ['alumnos'], refetchType: 'none' });
+    },
+  });
+}
+
 export function useResetStudentPassword(studentId) {
   return useMutation({
     mutationFn: () =>

@@ -1,6 +1,5 @@
 package com.red_escuela.backend.config;
 
-import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
 import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
 import com.red_escuela.backend.shared.time.ClockConfig;
@@ -32,7 +31,6 @@ import static org.mockito.Mockito.never;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@SharedSpyBeans
 class TimeZoneContextTest extends AbstractIntegrationTest {
 
     @Autowired

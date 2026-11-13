@@ -152,7 +152,7 @@ export function VerifyCertificate() {
           </GlassCard>
         )}
 
-        <p className="text-center text-[12.5px] text-ink-faint">
+        <p className="text-center text-size-12-5 text-ink-faint">
           Verificación pública. No se muestran datos de contacto ni de quien emitió el documento.
         </p>
       </div>

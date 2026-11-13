@@ -57,7 +57,7 @@ export function Stepper({
               <div
                 aria-hidden="true"
                 className={cn(
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-size-13 font-bold transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
                   state === 'valid' && 'bg-success text-on-accent',
                   state === 'active' && 'bg-gradient-to-br from-brand to-accent-2 text-on-accent animate-[pulse-ring_1.8s_ease-in-out_infinite]',
                   state === 'invalid' && 'bg-danger text-on-accent',
@@ -74,7 +74,7 @@ export function Stepper({
               </div>
               <span
                 className={cn(
-                  'text-center text-[11px] font-semibold sm:whitespace-nowrap',
+                  'text-center text-size-11 font-semibold sm:whitespace-nowrap',
                   state === 'future' || state === 'locked' ? 'text-ink-faint' : 'text-ink',
                 )}
               >

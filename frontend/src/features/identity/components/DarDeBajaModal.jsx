@@ -31,13 +31,13 @@ export function DarDeBajaModal({ open, onClose, onConfirmar, isPending, error })
         <DialogHeader>
           <DialogTitle>Dar de baja al alumno</DialogTitle>
           <DialogDescription>
-            Esta acción no se puede deshacer. El alumno será dado de baja del sistema.
+            El alumno será dado de baja del sistema. Podés reactivarlo después desde su legajo.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-ink">Motivo *</label>
+            <label className="text-size-13 font-medium text-ink">Motivo *</label>
             <Select value={reason} onValueChange={setReason}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccioná un motivo" />
@@ -51,7 +51,7 @@ export function DarDeBajaModal({ open, onClose, onConfirmar, isPending, error })
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-ink">Detalle (opcional)</label>
+            <label className="text-size-13 font-medium text-ink">Detalle (opcional)</label>
             <Textarea
               value={detail}
               onChange={(e) => setDetail(e.target.value)}
@@ -62,7 +62,7 @@ export function DarDeBajaModal({ open, onClose, onConfirmar, isPending, error })
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">
+          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">
             {error}
           </div>
         )}

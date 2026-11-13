@@ -1,5 +1,3 @@
-import { hasWebCrypto } from './offlineKeyVault';
-
 const FORMAT_VERSION = 1;
 const IV_BYTES = 12;
 const encoder = new TextEncoder();
@@ -45,56 +43,29 @@ export async function decryptText(key, envelopeText, aad) {
   return decoder.decode(plain);
 }
 
-export function createEncryptedStorage({ vault, rawStorage, resolveUserId, scope }) {
-  const discard = async (reason, storageKey, userId) => {
-    console.warn(`offline cache discarded: ${reason}`);
-    if (userId !== undefined && userId !== null) await Promise.allSettled([vault.delete(userId)]);
-    await Promise.allSettled([rawStorage.removeItem(storageKey)]);
-  };
+export async function encryptToBinary(key, plainText, aad) {
+  const iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  const cipher = await globalThis.crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: encoder.encode(aad) },
+    key,
+    encoder.encode(plainText),
+  );
+  return { v: FORMAT_VERSION, iv, ct: cipher };
+}
 
-  return {
-    getItem: async (storageKey) => {
-      try {
-        const stored = await rawStorage.getItem(storageKey);
-        if (stored === null || stored === undefined) return null;
-        if (!hasWebCrypto()) {
-          await discard('webcrypto unavailable', storageKey);
-          return null;
-        }
-        const userId = await resolveUserId();
-        if (userId === undefined || userId === null) {
-          await discard('no owner', storageKey);
-          return null;
-        }
-        const key = await vault.find(userId);
-        if (!key) {
-          await discard('missing key', storageKey, userId);
-          return null;
-        }
-        return await decryptText(key, stored, buildAad(userId, scope));
-      } catch {
-        await discard('decryption failed', storageKey, await resolveUserId().catch(() => undefined));
-        return null;
-      }
-    },
-    setItem: async (storageKey, value) => {
-      try {
-        if (!hasWebCrypto()) return;
-        const userId = await resolveUserId();
-        if (userId === undefined || userId === null) return;
-        const key = await vault.getOrCreate(userId);
-        if (!key) return;
-        const envelope = await encryptText(key, value, buildAad(userId, scope));
-        if ((await resolveUserId()) !== userId) return;
-        await rawStorage.setItem(storageKey, envelope);
-      } catch {
-        return;
-      }
-    },
-    removeItem: async (storageKey) => {
-      const userId = await resolveUserId().catch(() => undefined);
-      if (userId !== undefined && userId !== null) await Promise.allSettled([vault.delete(userId)]);
-      await rawStorage.removeItem(storageKey);
-    },
-  };
+export async function decryptFromBinary(key, sealed, aad) {
+  if (sealed?.v !== FORMAT_VERSION || !ArrayBuffer.isView(sealed.iv) || Object.prototype.toString.call(sealed.ct) !== '[object ArrayBuffer]') {
+    throw new Error('unrecognized sealed entry');
+  }
+  const plain = await globalThis.crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: sealed.iv, additionalData: encoder.encode(aad) },
+    key,
+    sealed.ct,
+  );
+  return decoder.decode(plain);
+}
+
+export async function digestHex(text) {
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', encoder.encode(text));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }

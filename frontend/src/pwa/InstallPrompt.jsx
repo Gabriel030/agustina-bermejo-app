@@ -19,7 +19,7 @@ export function InstallPrompt() {
     <GlassCard className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
       <img src="/icons/icon-192.png" alt="" width="44" height="44" className="size-11 rounded-xl" />
       <div className="flex-1">
-        <div className="font-heading text-[15px] font-semibold text-ink">Instalá la app</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">Instalá la app</div>
         <p className="text-sm text-ink-soft">
           {canPrompt
             ? 'Entrá más rápido desde tu pantalla de inicio.'

@@ -90,7 +90,7 @@ export function MonthKpis({ filters, month }) {
 
   return (
     <section aria-label={formatLongMonth(month)} className="flex min-w-0 flex-col gap-2">
-      <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">{formatLongMonth(month)}</h2>
+      <h2 className="text-size-11 font-bold uppercase tracking-wide text-ink-soft">{formatLongMonth(month)}</h2>
       <div className={GRID}>
         <Stagger className="min-w-0">
           <StatCard label="Pago a término">
@@ -143,7 +143,7 @@ export function TodayKpis({ currency }) {
 
   return (
     <section aria-label="Hoy" className="flex min-w-0 flex-col gap-2">
-      <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">Hoy · todas las ofertas</h2>
+      <h2 className="text-size-11 font-bold uppercase tracking-wide text-ink-soft">Hoy · todas las ofertas</h2>
       <div className={GRID}>
         <Stagger className="min-w-0">
           <StatCard label="Deuda total">

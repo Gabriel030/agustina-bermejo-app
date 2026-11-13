@@ -46,13 +46,13 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
 
   return (
     <div className="flex flex-col gap-4">
-      <Button variant="link" size="inline" type="button" onClick={onBack} disabled={correct.isPending} className="w-fit text-left text-[13px] font-semibold disabled:opacity-50">
+      <Button variant="link" size="inline" type="button" onClick={onBack} disabled={correct.isPending} className="w-fit text-left text-size-13 font-semibold disabled:opacity-50">
         {`← ${studentName}`}
       </Button>
       <Stepper pasos={STEPS} pasoActual={step} pasosVisitados={step === 'confirm' ? ['data', 'confirm'] : ['data']} />
       <div>
         <h3 className="font-heading text-lg font-semibold text-ink">{step === 'data' ? 'Corregir nota' : 'Confirmar corrección'}</h3>
-        <p className="text-[12.5px] text-ink-faint">{`${studentName} · ${label}`}</p>
+        <p className="text-size-12-5 text-ink-faint">{`${studentName} · ${label}`}</p>
       </div>
       {step === 'data' ? (
         <>
@@ -89,7 +89,7 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
             />
             <span className={`text-right text-xs ${counterBad ? 'text-danger' : 'text-ink-faint'}`}>{`${reasonText.length}/${CORRECTION_REASON_MAX} · mínimo ${CORRECTION_REASON_MIN}`}</span>
           </div>
-          <div className="flex flex-col gap-1.5 text-[12.5px] text-ink-soft">
+          <div className="flex flex-col gap-1.5 text-size-12-5 text-ink-soft">
             <span className="flex items-center gap-2">
               <Bell aria-hidden="true" className="size-3.5" />
               El alumno recibe un aviso con la nota y el motivo.
@@ -113,9 +113,9 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
           <ChangesTable rows={rows} />
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-ink-soft">Motivo</span>
-            <p className="whitespace-pre-wrap border-l-[3px] border-primary pl-3 text-[13px] text-ink-soft">{form.reason}</p>
+            <p className="whitespace-pre-wrap border-l-[3px] border-primary pl-3 text-size-13 text-ink-soft">{form.reason}</p>
           </div>
-          <p className="border-l-[3px] border-border pl-3 text-[12.5px] leading-relaxed text-ink-soft">
+          <p className="border-l-[3px] border-border pl-3 text-size-12-5 leading-relaxed text-ink-soft">
             Se aplica al confirmar y queda en el historial. Para revertirlo hay que hacer otra corrección.
           </p>
           <div className="flex justify-end gap-2">

@@ -73,7 +73,7 @@ export function DirectorGradeGrid({ sectionId, kind }) {
   return (
     <GlassCard className="flex min-w-0 flex-col gap-3 p-3 md:p-4">
       {periodEnded && (
-        <div role="alert" className="flex items-start gap-2.5 rounded-xl bg-danger-bg p-3 text-[13px] text-danger">
+        <div role="alert" className="flex items-start gap-2.5 rounded-xl bg-danger-bg p-3 text-size-13 text-danger">
           <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
           <div>
             <b>{deadline ? `El plazo de corrección terminó el ${formatDeadline(deadline)}.` : 'El plazo de corrección terminó.'}</b>
@@ -82,7 +82,7 @@ export function DirectorGradeGrid({ sectionId, kind }) {
           </div>
         </div>
       )}
-      <p className="text-[12.5px] text-ink-faint">Tocá una nota para ver el detalle y corregirla.</p>
+      <p className="text-size-12-5 text-ink-faint">Tocá una nota para ver el detalle y corregirla.</p>
       <GradeGridTable
         students={students}
         columns={columns}

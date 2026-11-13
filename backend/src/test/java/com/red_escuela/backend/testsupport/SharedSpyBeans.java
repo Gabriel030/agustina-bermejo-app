@@ -1,5 +1,6 @@
 package com.red_escuela.backend.testsupport;
 
+import com.red_escuela.backend.shared.module.OnlinePaymentDependencyPort;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
@@ -24,7 +25,8 @@ import java.lang.annotation.Target;
         CurrentAccountAllocationService.class,
         PendingInvoiceQueryService.class,
         LateFeeChargeRepository.class,
-        EnrollmentWithdrawalBillingPort.class
+        EnrollmentWithdrawalBillingPort.class,
+        OnlinePaymentDependencyPort.class
 }, reset = MockReset.AFTER)
 public @interface SharedSpyBeans {
 }

@@ -20,7 +20,7 @@ function buildColumns() {
         <div className="flex flex-col">
           <Link
             to={`${OFFER_APPROVALS_PATH}/${row.original.id}`}
-            className="inline-flex items-center gap-1 font-heading text-[14px] font-semibold text-ink hover:text-primary"
+            className="inline-flex items-center gap-1 font-heading text-size-14 font-semibold text-ink hover:text-primary"
           >
             {cycleTargetName(row.original)}
             <ChevronRight aria-hidden="true" className="size-4 text-ink-faint" />
@@ -74,7 +74,7 @@ export function DirectorOfertaPorAprobar() {
     <PageContainer>
       <Link
         to="/director/aprobaciones"
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
+        className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink"
       >
         ← Volver a Aprobaciones
       </Link>

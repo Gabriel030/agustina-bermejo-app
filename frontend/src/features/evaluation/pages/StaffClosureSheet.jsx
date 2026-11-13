@@ -143,7 +143,7 @@ export function StaffClosureSheet({ role }) {
       </div>
 
       <GlassCard className="flex flex-col gap-3 p-4">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">
+        <h2 className="font-heading text-size-15 font-semibold text-ink">
           Alumnos <span className="font-normal text-ink-faint">{activeStudents(sheet).length}</span>
         </h2>
         <ClosureSheetTable
