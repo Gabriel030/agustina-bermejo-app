@@ -18,10 +18,29 @@ async function completeCourseFirstStep(user) {
   await screen.findByRole('option', { name: '2027 — Anual' });
   await user.selectOptions(screen.getAllByRole('combobox')[0], '4');
   await user.type(screen.getByPlaceholderText('Ej. 30'), '20');
+  await user.type(screen.getByPlaceholderText('Ej. 15000'), '15000');
   await user.click(screen.getByRole('button', { name: 'Continuar' }));
 }
 
 describe('CursoWizard', () => {
+  it('does not move to the second step without a positive monthly fee', async () => {
+    const user = userEvent.setup();
+    mockTerms();
+    renderWithProviders(<CursoWizard />);
+    await user.type(screen.getByPlaceholderText('Ej. Curso de Excel Avanzado'), 'Excel avanzado');
+    await screen.findByRole('option', { name: '2027 — Anual' });
+    await user.selectOptions(screen.getAllByRole('combobox')[0], '4');
+    await user.type(screen.getByPlaceholderText('Ej. 30'), '20');
+
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(screen.getByText(/La cuota es obligatoria y debe ser mayor que cero/)).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText('Ej. 15000'), '0');
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(screen.getByText(/La cuota debe ser mayor que cero/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Crear curso' })).not.toBeInTheDocument();
+  });
+
   it('marks the current step and lets the user go back to a visited step', async () => {
     const user = userEvent.setup();
     mockTerms();

@@ -102,7 +102,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     }
 
     private long createProgram(DemoApiClient api, String name, int totalCredits) {
-        return api.post(ADMIN, "/programs", Map.of("name", name, "totalYears", 3, "totalCreditsRequired", totalCredits)).get("id").asLong();
+        return api.post(ADMIN, "/programs", Map.of("name", name, "totalYears", 3, "totalCreditsRequired", totalCredits,
+                "price", Map.of("amount", "48000", "currency", "ARS"), "enrollmentFeeAmount", Map.of("amount", "95000", "currency", "ARS"))).get("id").asLong();
     }
 
     private List<Long> createActiveSubjects(DemoApiClient api, long programId) {

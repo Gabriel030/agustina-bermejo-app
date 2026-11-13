@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import org.springframework.data.domain.Sort;
@@ -16,6 +17,7 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import com.red_escuela.backend.shared.pricing.OfferingFee;
@@ -27,22 +29,25 @@ public class ProgramService {
 
     private final ProgramRepository programRepository;
     private final OfferingPriceCatalog offeringPriceCatalog;
+    private final OfferingListPriceReader listPriceReader;
     private final CurrentPersonService currentPersonService;
 
-    public ProgramService(ProgramRepository programRepository, OfferingPriceCatalog offeringPriceCatalog, CurrentPersonService currentPersonService) {
+    public ProgramService(ProgramRepository programRepository, OfferingPriceCatalog offeringPriceCatalog, OfferingListPriceReader listPriceReader,
+                          CurrentPersonService currentPersonService) {
         this.programRepository = programRepository;
         this.offeringPriceCatalog = offeringPriceCatalog;
+        this.listPriceReader = listPriceReader;
         this.currentPersonService = currentPersonService;
     }
 
     @Transactional
     public Program create(CreateProgramRequest request) {
+        requirePositive(request.price(), "la cuota");
+        requirePositive(request.enrollmentFeeAmount(), "la matrícula");
         Currency currency = resolveCurrency(request.price(), request.enrollmentFeeAmount(), request.currency());
         Program program = Program.builder()
                 .name(request.name())
                 .totalYears(request.totalYears())
-                .price(request.price() == null ? null : request.price().amount())
-                .enrollmentFeeAmount(request.enrollmentFeeAmount() == null ? null : request.enrollmentFeeAmount().amount())
                 .totalCreditsRequired(request.totalCreditsRequired())
                 .totalHoursRequired(request.totalHoursRequired())
                 .teachingMode(request.teachingMode())
@@ -53,29 +58,27 @@ public class ProgramService {
                 .currency(currency)
                 .build();
         program = programRepository.save(program);
-        registerInitialOfferingPrices(program);
-        return program;
+        registerInitialOfferingPrices(program, request.price(), request.enrollmentFeeAmount());
+        return withListPrices(program);
     }
 
     @Transactional
     public Program update(Long id, UpdateProgramRequest request) {
         Program program = findOrThrow(id);
+        requirePositiveWhenPresent(request.getPrice(), "la cuota");
+        requirePositiveWhenPresent(request.getEnrollmentFeeAmount(), "la matrícula");
         Person actor = currentPersonService.resolveCurrentPerson();
         Optional.ofNullable(request.getName()).ifPresent(program::setName);
         Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
-        if (program.changeRecurringFee(request.getPrice())) {
-            offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.MONTHLY_INSTALLMENT, request.getPrice(), actor.getId());
-        }
-        if (program.changeEnrollmentFee(request.getEnrollmentFeeAmount())) {
-            offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), actor.getId());
-        }
+        adjustIfChanged(program, OfferingFee.MONTHLY_INSTALLMENT, request.getPrice(), actor, listPriceReader.findProgramTuition(program.getId()));
+        adjustIfChanged(program, OfferingFee.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), actor, listPriceReader.findProgramEnrollmentFee(program.getId()));
         Optional.ofNullable(request.getTotalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
         applyClearable(request.getTotalHoursRequired(), program::setTotalHoursRequired);
         applyClearable(request.getTeachingMode(), program::setTeachingMode);
         applyClearable(request.getLevel(), program::setLevel);
         applyClearable(blankAsEmpty(request.getGraduationProfile()), program::setGraduationProfile);
         applyClearable(blankAsEmpty(request.getAdmissionRequirements()), program::setAdmissionRequirements);
-        return programRepository.save(program);
+        return withListPrices(programRepository.save(program));
     }
 
     private static <T> void applyClearable(Optional<T> requested, Consumer<T> setter) {
@@ -89,14 +92,37 @@ public class ProgramService {
     }
 
     public List<Program> list(StatusType status, Boolean visibleInCatalog) {
-        return programRepository.findAll(Sort.by("name", "id")).stream()
+        List<Program> programs = programRepository.findAll(Sort.by("name", "id")).stream()
                 .filter(program -> status == null || program.getStatus() == status)
                 .filter(program -> visibleInCatalog == null || program.isVisibleInCatalog() == visibleInCatalog)
                 .toList();
+        List<Long> ids = programs.stream().map(Program::getId).toList();
+        Map<Long, Money> tuitions = listPriceReader.findProgramTuitions(ids);
+        Map<Long, Money> enrollmentFees = listPriceReader.findProgramEnrollmentFees(ids);
+        programs.forEach(program -> program.showListPrices(tuitions.get(program.getId()), enrollmentFees.get(program.getId())));
+        return programs;
     }
 
     public Program get(Long id) {
-        return findOrThrow(id);
+        return withListPrices(findOrThrow(id));
+    }
+
+    private Program withListPrices(Program program) {
+        program.showListPrices(listPriceReader.findProgramTuition(program.getId()).orElse(null),
+                listPriceReader.findProgramEnrollmentFee(program.getId()).orElse(null));
+        return program;
+    }
+
+    private static void requirePositive(Money price, String concept) {
+        if (price == null || price.amount().signum() <= 0) {
+            throw new OfferingListPriceNotPositiveException(concept);
+        }
+    }
+
+    private static void requirePositiveWhenPresent(Money price, String concept) {
+        if (price != null) {
+            requirePositive(price, concept);
+        }
     }
 
     @Transactional
@@ -113,12 +139,21 @@ public class ProgramService {
         programRepository.save(program);
     }
 
-    private void registerInitialOfferingPrices(Program program) {
+    private void adjustIfChanged(Program program, OfferingFee fee, Money requested, Person actor, Optional<Money> current) {
+        if (requested == null) {
+            return;
+        }
+        program.requireProgramCurrency(requested);
+        if (current.filter(price -> price.amount().compareTo(requested.amount()) == 0).isPresent()) {
+            return;
+        }
+        offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofProgram(program.getId()), fee, requested, actor.getId());
+    }
+
+    private void registerInitialOfferingPrices(Program program, Money tuitionRequested, Money enrollmentFeeRequested) {
         Person actor = currentPersonService.resolveCurrentPerson();
-        Money tuition = Optional.ofNullable(program.priceAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
-        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.MONTHLY_INSTALLMENT, tuition, actor.getId());
-        Money enrollmentFee = Optional.ofNullable(program.enrollmentFeeAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
-        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.ENROLLMENT_FEE, enrollmentFee, actor.getId());
+        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.MONTHLY_INSTALLMENT, tuitionRequested, actor.getId());
+        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.ENROLLMENT_FEE, enrollmentFeeRequested, actor.getId());
     }
 
     private static Currency resolveCurrency(Money price, Money enrollmentFee, Currency requested) {

@@ -24,12 +24,16 @@ public class ProgramResponse {
     private final String admissionRequirements;
 
     public static ProgramResponse from(Program program) {
+        return from(program, program.priceAsMoney(), program.enrollmentFeeAsMoney());
+    }
+
+    public static ProgramResponse from(Program program, Money price, Money enrollmentFeeAmount) {
         return ProgramResponse.builder()
                 .id(program.getId())
                 .name(program.getName())
                 .totalYears(program.getTotalYears())
-                .price(program.priceAsMoney())
-                .enrollmentFeeAmount(program.enrollmentFeeAsMoney())
+                .price(price)
+                .enrollmentFeeAmount(enrollmentFeeAmount)
                 .status(program.getStatus() == null ? null : program.getStatus().name())
                 .totalCreditsRequired(program.getTotalCreditsRequired())
                 .totalHoursRequired(program.getTotalHoursRequired())

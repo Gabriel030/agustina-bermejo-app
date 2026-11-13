@@ -11,7 +11,14 @@ function isWholeNumber(value) {
   return /^-?\d+$/.test(String(value).trim());
 }
 
-export function validateProgramFields(values, { requireCredits }) {
+function validateRequiredPositiveAmount(value, label) {
+  const text = String(value ?? '').trim();
+  if (text === '') return `${label} es obligatoria y debe ser mayor que cero. Para ofrecerla gratis, usá un descuento.`;
+  if (Number.isNaN(Number(text)) || Number(text) <= 0) return `${label} debe ser mayor que cero. Para ofrecerla gratis, usá un descuento.`;
+  return null;
+}
+
+export function validateProgramFields(values, { requireCredits, requirePrices = false }) {
   const errors = {};
   if (!values.name.trim()) errors.name = 'El nombre es obligatorio.';
   if (!isWholeNumber(values.totalYears) || Number(values.totalYears) < 1 || Number(values.totalYears) > 10) {
@@ -25,6 +32,12 @@ export function validateProgramFields(values, { requireCredits }) {
   if (values.totalHoursRequired !== '' && (!isWholeNumber(values.totalHoursRequired) || Number(values.totalHoursRequired) < 0)) {
     errors.totalHoursRequired = 'Las horas deben ser un número entero mayor o igual a 0.';
   }
+  if (requirePrices) {
+    const priceError = validateRequiredPositiveAmount(values.price, 'La cuota');
+    if (priceError) errors.price = priceError;
+    const enrollmentFeeError = validateRequiredPositiveAmount(values.enrollmentFee, 'La matrícula');
+    if (enrollmentFeeError) errors.enrollmentFee = enrollmentFeeError;
+  }
   return errors;
 }
 
@@ -35,9 +48,8 @@ export function validateCourseBasics(values) {
   if (!isWholeNumber(values.capacity) || Number(values.capacity) < 1) {
     errors.capacity = 'El cupo debe ser un número entero de al menos 1.';
   }
-  if (values.price !== '' && (Number.isNaN(Number(values.price)) || Number(values.price) < 0)) {
-    errors.price = 'El precio no puede ser negativo.';
-  }
+  const priceError = validateRequiredPositiveAmount(values.price, 'La cuota');
+  if (priceError) errors.price = priceError;
   return errors;
 }
 
@@ -64,6 +76,7 @@ export function invalidFieldsSummary(errors) {
 const SAVE_ERRORS = {
   INVALID_REGISTRATION_WINDOW: { field: 'registrationEnd', message: 'El cierre de inscripción no puede ser anterior a la apertura.' },
   TERM_NOT_FOUND: { field: 'termId', message: 'El período académico elegido ya no existe: elegí otro.' },
+  OFFERING_LIST_PRICE_NOT_POSITIVE: { message: 'El precio de la cuota y de la matrícula es obligatorio y debe ser mayor que cero. Para ofrecerlo gratis, usá un descuento.' },
   VALIDATION_FAILED: { message: 'El servidor rechazó los datos: revisá que los números sean enteros y no negativos.' },
 };
 

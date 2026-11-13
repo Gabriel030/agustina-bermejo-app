@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -73,15 +74,17 @@ class CourseWithPriceCharacterizationTest extends AcademicOrgCharacterizationSup
     }
 
     @Test
-    void courseWithoutPriceIsCreatedWithNullPrice() throws Exception {
+    @Tag("D-536")
+    void courseWithoutPriceOrWithZeroPriceIsRejectedWithAValidationError() throws Exception {
         Person admin = persistPerson("course.admin4", "74000004", "ADMINISTRATIVO");
         Term term = persistTerm();
 
-        long courseId = idOf(postJson(admin, "/courses", courseRequest("Curso gratuito", term.getId(), null))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.price").doesNotExist()));
-
-        getAs(admin, "/courses/" + courseId + "/pricing").andExpect(status().isOk());
+        postJson(admin, "/courses", courseRequest("Curso sin precio", term.getId(), null))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("OFFERING_LIST_PRICE_NOT_POSITIVE"));
+        postJson(admin, "/courses", courseRequest("Curso gratuito", term.getId(), Money.of(BigDecimal.ZERO, Currency.ARS)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("OFFERING_LIST_PRICE_NOT_POSITIVE"));
     }
 
     @Test

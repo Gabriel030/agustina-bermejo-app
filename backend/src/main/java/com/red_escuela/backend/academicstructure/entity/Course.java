@@ -11,7 +11,6 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
@@ -61,8 +60,8 @@ public class Course {
     @Column(name = "registration_end")
     private LocalDateTime registrationEnd;
 
-    @Column(name = "price")
-    private BigDecimal price;
+    @Transient
+    private Money listPrice;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -83,22 +82,14 @@ public class Course {
     private TeachingMode teachingMode;
 
     public Money priceAsMoney() {
-        return price == null ? null : Money.of(price, currency);
+        return listPrice;
     }
 
-    public boolean changePrice(Money newPrice) {
-        if (newPrice == null) {
-            return false;
-        }
-        requireCourseCurrency(newPrice);
-        if (price != null && price.compareTo(newPrice.amount()) == 0) {
-            return false;
-        }
-        price = newPrice.amount();
-        return true;
+    public void showListPrice(Money tuition) {
+        listPrice = tuition;
     }
 
-    private void requireCourseCurrency(Money money) {
+    public void requireCourseCurrency(Money money) {
         if (money.currency() != currency) {
             throw new CurrencyMismatchException(currency, money.currency());
         }

@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
@@ -36,11 +35,11 @@ public class Program {
     @Column(name = "status")
     private StatusType status;
 
-    @Column(name = "price")
-    private BigDecimal price;
+    @Transient
+    private Money listPrice;
 
-    @Column(name = "enrollment_fee_amount")
-    private BigDecimal enrollmentFeeAmount;
+    @Transient
+    private Money listEnrollmentFee;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -87,44 +86,21 @@ public class Program {
     }
 
     public Money priceAsMoney() {
-        return price == null ? null : Money.of(price, currency);
+        return listPrice;
     }
 
     public Money enrollmentFeeAsMoney() {
-        return enrollmentFeeAmount == null ? null : Money.of(enrollmentFeeAmount, currency);
+        return listEnrollmentFee;
     }
 
-    public boolean changeRecurringFee(Money newPrice) {
-        if (newPrice == null) {
-            return false;
-        }
-        requireProgramCurrency(newPrice);
-        if (sameAmount(price, newPrice.amount())) {
-            return false;
-        }
-        price = newPrice.amount();
-        return true;
+    public void showListPrices(Money tuition, Money enrollmentFee) {
+        listPrice = tuition;
+        listEnrollmentFee = enrollmentFee;
     }
 
-    public boolean changeEnrollmentFee(Money newEnrollmentFee) {
-        if (newEnrollmentFee == null) {
-            return false;
-        }
-        requireProgramCurrency(newEnrollmentFee);
-        if (sameAmount(enrollmentFeeAmount, newEnrollmentFee.amount())) {
-            return false;
-        }
-        enrollmentFeeAmount = newEnrollmentFee.amount();
-        return true;
-    }
-
-    private void requireProgramCurrency(Money money) {
+    public void requireProgramCurrency(Money money) {
         if (money.currency() != currency) {
             throw new CurrencyMismatchException(currency, money.currency());
         }
-    }
-
-    private static boolean sameAmount(BigDecimal current, BigDecimal requested) {
-        return current != null && current.compareTo(requested) == 0;
     }
 }

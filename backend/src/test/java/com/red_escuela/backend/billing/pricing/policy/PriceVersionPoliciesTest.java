@@ -63,9 +63,8 @@ class PriceVersionPoliciesTest {
 
     @Test
     void theLimitsAreAccepted() {
-        assertThat(violationCodesOf(PriceVersionDraft.withPercentageDiscount(Currency.ARS, BASE, Percentage.ofPoints(new BigDecimal("100"))))).isEmpty();
         assertThat(violationCodesOf(PriceVersionDraft.withPercentageDiscount(Currency.ARS, BASE, Percentage.ofPoints(BigDecimal.ZERO)))).isEmpty();
-        assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, BASE, BASE))).isEmpty();
+        assertThat(violationCodesOf(PriceVersionDraft.withPercentageDiscount(Currency.ARS, BASE, Percentage.ofPoints(new BigDecimal("99"))))).isEmpty();
         assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, BASE, ars("0.00")))).isEmpty();
     }
 
@@ -86,7 +85,7 @@ class PriceVersionPoliciesTest {
     @Test
     void aFixedDiscountAboveTheMaximumAmountIsRejectedEvenWhenTheBaseFits() {
         Money maximum = ars("9999999999.99");
-        assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, maximum, maximum))).isEmpty();
+        assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, maximum, ars("9999999999.98")))).isEmpty();
         assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, maximum, ars("10000000000.00")))).contains("PRICE_AMOUNT_TOO_LARGE");
     }
 
@@ -94,5 +93,27 @@ class PriceVersionPoliciesTest {
     void theMaximumAmountAppliesToEveryCurrency() {
         Money tooMuch = Money.of(new BigDecimal("10000000000.00"), Currency.USD);
         assertThat(violationCodesOf(PriceVersionDraft.withoutDiscount(Currency.USD, tooMuch))).containsExactly("PRICE_AMOUNT_TOO_LARGE");
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-536")
+    void aZeroListPriceIsRejectedForTheTuitionAndTheEnrollmentFeeOnly() {
+        Money zero = ars("0.00");
+
+        assertThat(violationCodesOf(PriceVersionDraft.withoutDiscount(Currency.ARS, zero).forFeeType(com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT)))
+                .containsExactly("OFFERING_LIST_PRICE_NOT_POSITIVE");
+        assertThat(violationCodesOf(PriceVersionDraft.withoutDiscount(Currency.ARS, zero).forFeeType(com.red_escuela.backend.billing.invoice.domain.FeeType.ENROLLMENT_FEE)))
+                .containsExactly("OFFERING_LIST_PRICE_NOT_POSITIVE");
+        assertThat(violationCodesOf(PriceVersionDraft.withoutDiscount(Currency.ARS, zero).forFeeType(com.red_escuela.backend.billing.invoice.domain.FeeType.EXAM_FEE))).isEmpty();
+        assertThat(violationCodesOf(PriceVersionDraft.withoutDiscount(Currency.ARS, ars("1.00")).forFeeType(com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT))).isEmpty();
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-536")
+    void aMarketingDiscountThatLeavesNoPriceIsRejected() {
+        assertThat(violationCodesOf(PriceVersionDraft.withPercentageDiscount(Currency.ARS, BASE, Percentage.ofPoints(new BigDecimal("100")))))
+                .containsExactly("MARKETING_DISCOUNT_LEAVES_NO_PRICE");
+        assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, BASE, BASE))).containsExactly("MARKETING_DISCOUNT_LEAVES_NO_PRICE");
+        assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, BASE, ars("99999.99")))).isEmpty();
     }
 }

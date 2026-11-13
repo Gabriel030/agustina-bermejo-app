@@ -107,6 +107,8 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         program.put("name", spec.name());
         program.put("totalYears", spec.totalYears());
         program.put("totalCreditsRequired", subjectCount * CREDITS_PER_SUBJECT);
+        program.put("price", Map.of("amount", spec.monthlyPrice().toPlainString(), "currency", "ARS"));
+        program.put("enrollmentFeeAmount", Map.of("amount", spec.enrollmentFee().toPlainString(), "currency", "ARS"));
         long programId = session.api().post(DemoPersona.ADMIN, "/programs", program).get("id").asLong();
         session.programIdsByName().put(spec.name(), programId);
         long termId = findOrCreateAnnualTerm(2026);
