@@ -170,7 +170,7 @@ de Spring Modulith entrega al menos una vez. Un handler de pre que pide
 autorización abre un `AuthorizationRequest` (`billing.authorization`) y la
 operación no se procesa hasta que se aprueba.
 
-Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT):
+Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT, que corre solo en local):
 `BillingDecisionCoverageTest` exige un `@Tag("D-xxx")` por cada decisión
 `implementada`/`parcial` de `docs/billing/decision-registry.md` (fuente de
 verdad, columna Implementación); `PolicyCatalogTest` compara

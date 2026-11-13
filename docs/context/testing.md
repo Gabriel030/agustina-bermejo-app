@@ -18,7 +18,7 @@ prueba encuentra bugs que los demás no ven.
 |---|---|---|---|
 | JUnit 5 | Unitario | ¿Esta regla puntual (Policy, Value Object, cálculo) funciona con sus bordes? | En uso |
 | JUnit 5 + Testcontainers (Postgres real) | Integración | ¿Funciona contra la base real, con transacciones, CHECKs, triggers e índices únicos? | En uso |
-| PIT (Pitest, perfil `-P mutation`) | Mutation testing | ¿Mis tests detectarían un bug si alguien lo introduce? (umbral 90% en el dominio puro de billing) | En uso, **en GitHub** (job `mutation`, PR; push a `develop` y diario en `mutation-full.yml`) |
+| PIT (Pitest, perfil `-P mutation`) | Mutation testing | ¿Mis tests detectarían un bug si alguien lo introduce? (umbral 90% en el dominio puro de billing) | En uso, **solo en local** (ya no corre en el CI desde el 14-nov-2026) |
 | jqwik | Tests de propiedades | ¿Se cumplen los invariantes con cualquier combinación de datos, no solo con los casos que se me ocurrieron? | En uso |
 | `MutableClock` + `BillingInvariantChecker` | Escenarios temporales | ¿Funciona con el paso del tiempo (días, meses, años lectivos) y los invariantes se sostienen en cada paso? | En uso |
 | Hilos reales contra Postgres | Concurrencia | ¿Dos operaciones simultáneas (pagos, emisiones, imputaciones) no duplican ni corrompen nada? | En uso |
@@ -57,7 +57,7 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 | Combina varios valores en un invariante (saldos, imputaciones, descuentos) | jqwik | ¿Se cumple con combinaciones que no se me ocurrieron? |
 | Puede ejecutarse dos veces o en paralelo (pagos, webhooks, jobs, eventos reintentados) | Hilos reales contra Postgres y un test de **idempotencia**: la misma entrada dos veces produce un solo efecto | ¿Un reintento duplica o pierde algo? |
 | Es asíncrono (evento, listener, notificación) | Awaitility esperando por el **propio** id de evento | ¿El efecto ocurrió, sin depender de otros tests? |
-| Es lógica de dominio de facturación | PIT (umbral 90%): lo corre el job `mutation` del CI; en local solo compilar y correr los tests focalizados del área | Si alguien rompe esto, ¿algún test se entera? |
+| Es lógica de dominio de facturación | PIT (umbral 90%): ya NO corre en el CI; correrlo en local antes de mergear cambios de plata (`cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`), con el semáforo de CI | Si alguien rompe esto, ¿algún test se entera? |
 | Agrega clases, paquetes o dependencias entre módulos | ArchUnit y Modulith (corren en CI) | ¿La estructura se degrada? |
 | Cambia permisos o roles | Matriz rol × endpoint: 403 para cada rol que no corresponde | ¿Un rol puede hacer algo que no debería? |
 | Es un flujo crítico del usuario (inscribirse, pagar, aprobar) | Playwright (`e2e/`, solo local) | ¿Un usuario real lo completa en el navegador? |
@@ -66,38 +66,25 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 
 ### Dónde corre cada cosa y cómo queda constancia
 
-El repo es público (los runners estándar no cobran minutos; lo que cuesta es el tiempo de espera y el tope de 20 jobs concurrentes), así que en el CI corre: `./mvnw clean verify` (JUnit, Testcontainers, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT corre en GitHub** como job `mutation`, en paralelo a los shards de `backend-tests`, y es parte del agregador `backend` (requisito de merge). **Playwright, k6 y OWASP Dependency-Check siguen corriendo solo en local**, mientras se programa, con el semáforo de CI.
+El repo es público (los runners estándar no cobran minutos; lo que cuesta es el tiempo de espera y el tope de 20 jobs concurrentes), así que en el CI corre: `./mvnw clean verify` (JUnit, Testcontainers, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT ya NO corre en el CI** (desde el 14-nov-2026). **PIT, Playwright, k6 y OWASP Dependency-Check corren solo en local**, mientras se programa, con el semáforo de CI.
 
-### PIT en GitHub
+### PIT en local
 
-El job `mutation` corre solo si el PR toca `backend/pom.xml` o algo bajo `shared/domain` o `billing` (main o test). Si no corrió por el filtro de paths cuenta como OK en el agregador `backend`. Ejecuta `./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage` con el umbral 90% y los `targetClasses` del perfil `mutation`, usa el historial incremental de PIT en `backend/target/pit-history` (NO usar `withHistory` en el perfil: pisa las rutas explícitas con un archivo en `/tmp` que la cache nunca guarda) y sube el reporte como artifact `pit-report`. Cómo corre según el evento:
+PIT ya no corre en el CI ni en workflows aparte (se quitaron el job `mutation` de `ci.yml`, `mutation-full.yml` y `mutation-develop-cold.yml`). El perfil `mutation` del `backend/pom.xml`, su umbral de 90 % sobre los `targetClasses` de dominio puro y `docs/billing/mutation-exclusions.md` siguen vigentes (los vigila `MutationTestingConfigurationTest`). Comando:
 
-| Evento | PIT | Historial | Bloquea |
-|---|---|---|---|
-| Pull request | Incremental, solo si toca el alcance de PIT (job `mutation` de `ci.yml`) | Restaura `pit-history-pr-<N>-` y, si no hay, `pit-history-<rama base>-`; guarda el del PR | Sí (agregador `backend`) |
-| Push a `develop` | **`ci.yml` no corre PIT.** Lo hace aparte `mutation-develop-cold.yml` (disparado por `push`, filtrado por paths del alcance de PIT) | En frío (sin restaurar nada); guarda `pit-history-develop-cold-<run>` en el scope de `develop`, que es donde lo restauran los PRs | No bloquea ni demora el CI principal; su propio run queda rojo si baja del 90 % |
-| Push a `master` (release) | En frío, dentro de `ci.yml` | Guarda `pit-history-master-<run>` | Sí: es el gate de la release |
-| `mutation-full.yml` | En frío sobre `develop`, umbral 90 % | `pit-history-develop-full-<run>` | Su propio run |
+`cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`
 
-`mutation-develop-cold.yml` usa `concurrency` propia por ref con `cancel-in-progress: true` (un push nuevo cancela el PIT en frío en curso; el último push que toca el alcance es el que termina) y se salta si el árbol de `HEAD` ya fue validado en frío por un run anterior (artifact `cold-verified-tree`, se busca entre los últimos 10 runs verdes). **Esta es la compensación real del riesgo del historial incremental.**
-
-`mutation-full.yml` tiene `schedule` diario (06:00 UTC, solo si `develop` cambió desde el último run verde; busca el artifact `mutation-full-verified` en los últimos 10 runs) y `workflow_dispatch`, pero **hoy no se puede disparar**: GitHub solo dispara `schedule` y permite `workflow_dispatch` para workflows que están en la rama por defecto (`master`). Empezará a servir cuando llegue a `master` en el próximo release; hasta entonces la compensación es `mutation-develop-cold.yml`. Hace checkout de `develop`.
-
-El job `mutation` baja los plugins de PIT en cada corrida (la cache `maven-` unificada la guarda el shard 0 de un push a `develop` y no incluye pitest): son unos segundos.
-
-Si se agregan paquetes a `targetClasses` fuera de `shared/domain` y `billing`, ampliar el filtro de mutación de `.github/scripts/detect-changes.sh` y los `paths` de `mutation-develop-cold.yml`. La CI es la fuente de verdad de PIT: ya no se anota su corrida en el log local.
-
-**Riesgo aceptado del historial incremental** (verificado en `IncrementalAnalyser`, pitest 1.20.4): (a) un KILLED se reusa aunque cambie una clase de producción colaboradora no mutada; (b) un TIMED_OUT se reusa siempre que la clase mutada no haya cambiado, aunque cambien los tests; (c) los helpers de test fuera de la jerarquía del test (builders, object mothers, fixtures) no entran en el hash: si se debilitan, un KILLED anterior se sigue reusando. Compensación: el PIT en frío de `mutation-develop-cold.yml` en cada push a `develop` que toca el alcance (y el push a `master`) vuelve a verificar el 90 % contra todo. Costo: un falso verde puede entrar a `develop` y descubrirse recién en ese run (rojo, aparte del CI), y los PRs siguientes que toquen el alcance de PIT heredan los sobrevivientes y fallan hasta que se arregle. Qué hacer: arreglar `develop` primero.
+Se recomienda correrlo antes de mergear cambios de plata (dominio puro de `shared/domain` y `billing`), con el semáforo de CI, y matar los sobrevivientes con tests; las exclusiones solo van en `mutation-exclusions.md`. El reporte queda en `backend/target/pit-reports`.
 
 ### Qué corre en un push a `develop`
 
-- **Detección de cambios.** `.github/scripts/detect-changes.sh` (con tests en `test_detect_changes.py`) diferencia contra el `headSha` del último push exitoso de `develop` (`gh run list`); si no hay (o `gh` falla, o el commit ya no existe por un force-push) no hay base y corre todo. Backend, PIT, frontend y `audit:prod` (solo si cambió `frontend/package-lock.json`) se saltan si el diff no los toca. Un push a `master` siempre corre todo.
+- **Detección de cambios.** `.github/scripts/detect-changes.sh` (con tests en `test_detect_changes.py`) diferencia contra el `headSha` del último push exitoso de `develop` (`gh run list`); si no hay (o `gh` falla, o el commit ya no existe por un force-push) no hay base y corre todo. Backend, frontend y `audit:prod` (solo si cambió `frontend/package-lock.json`) se saltan si el diff no los toca. Un push a `master` siempre corre todo.
 - **Dedupe por árbol.** Si el árbol de `HEAD` coincide con el árbol que verificó el run verde del PR del segundo padre (`HEAD^2`, artifact `tested-tree` que sube cada run de PR), se saltan los tests de esa área que el PR sí corrió, el agregador `backend` queda verde con «reusado del PR #N» y el baseline de tiempos se hereda de los `shard-reports-*` del run del PR. Si el árbol difiere (por ejemplo porque `develop` avanzó después del run del PR), si el merge fue squash o si el push es directo, corre todo. Auditoría: el resumen del run muestra «Reused from PR #N», el árbol y los minutos de cómputo ahorrados. Consecuencia: el grupo `docs` (`ModuleDocumentationTest`), que solo corre en push, no se ejecuta en los merges deduplicados.
 - **Concurrencia.** `cancel-in-progress: true` en PRs y en `develop`: cada push cancela al anterior y el run que sobrevive diferencia contra el último verde, así que cubre también los cambios de los runs cancelados. El baseline de tiempos lo publica el run que sobrevive. `master` no cancela.
 - **Caches.** `~/.m2/repository` y `~/.m2/wrapper` bajo una sola clave `maven-<os>-<hash del pom>`: todos los jobs la restauran (`actions/cache/restore`), solo el shard 0 de un push a `develop` la guarda. `TESTCONTAINERS_RYUK_DISABLED=true` en todo el workflow y `postgres:16-alpine` se baja en segundo plano al empezar cada shard (Ryuk no se baja: está desactivado).
 - **Frontend.** `npm ci --no-audit --no-fund --prefer-offline`; Vitest en 3 shards (`frontend-tests (1)`, `(2)` y `(3)`, `--shard=N/3`) en paralelo con `frontend-checks` (audita si cambió el lockfile, lint y build); el job `frontend` solo agrega los resultados de todos los shards.
 
-En local, para el dominio de billing, alcanza con compilar y correr los tests focalizados; PIT local (`./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`, con el semáforo de CI) queda opcional para investigar sobrevivientes.
+En local, para el dominio de billing, alcanza con compilar y correr los tests focalizados; PIT se corre solo en local (`cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`, con el semáforo de CI); se recomienda antes de mergear cambios de plata.
 
 Las herramientas que siguen siendo locales (Playwright, k6, Dependency-Check) se anotan en [`docs/testing/local-test-log.md`](../testing/local-test-log.md): fecha, PR, commit, área, herramienta, comando y resultado. Antes de modificar un área, buscá ahí qué herramientas pesadas la cubren y volvé a correrlas.
 

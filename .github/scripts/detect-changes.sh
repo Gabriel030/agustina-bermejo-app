@@ -2,8 +2,8 @@
 # Decide que partes del CI corren y si el arbol de un push a develop ya fue verificado por un PR verde.
 # Entradas (env): GITHUB_EVENT_NAME, GITHUB_REF, GITHUB_OUTPUT, GITHUB_REPOSITORY, GH_TOKEN,
 #   PR_BASE_SHA (pull_request), PR_BASE_REF (pull_request), PR_NUMBER (pull_request), TESTED_TREE_DIR (salida para PR)
-# Salidas: relevant, mutation, frontend, lockfile, run_migration, run_docs, extra_groups,
-#   reuse_backend, reuse_mutation, reuse_frontend, reuse_run, reuse_pr
+# Salidas: relevant, frontend, lockfile, run_migration, run_docs, extra_groups,
+#   reuse_backend, reuse_frontend, reuse_run, reuse_pr
 set -uo pipefail
 
 event="${GITHUB_EVENT_NAME}"
@@ -11,14 +11,12 @@ ref="${GITHUB_REF}"
 repo="${GITHUB_REPOSITORY}"
 
 relevant=true
-mutation=true
 frontend=true
 lockfile=true
 run_migration=true
 run_docs=false
 extra_groups='[]'
 reuse_backend=false
-reuse_mutation=false
 reuse_frontend=false
 reuse_run=""
 reuse_pr=""
@@ -58,12 +56,6 @@ if [ -n "$base" ]; then
     if ! grep -qE '^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)' <<< "$changed"; then
       relevant=false
     fi
-    if [ "$relevant" = true ] && ! grep -qE '^backend/(pom\.xml|src/(main|test)/java/com/red_escuela/backend/(shared/domain|billing)/)' <<< "$changed"; then
-      mutation=false
-    fi
-    if [ "$relevant" = false ]; then
-      mutation=false
-    fi
     if ! grep -qE '^(frontend/|contracts/openapi\.json$|\.github/workflows/)' <<< "$changed"; then
       frontend=false
     fi
@@ -80,8 +72,8 @@ fi
 
 if [ "$event" = pull_request ] && [ -n "${TESTED_TREE_DIR:-}" ]; then
   mkdir -p "$TESTED_TREE_DIR"
-  printf '{"tree":"%s","pr":"%s","backend":"%s","mutation":"%s","frontend":"%s","migration":"%s"}\n' \
-    "$(git rev-parse 'HEAD^{tree}')" "${PR_NUMBER:-}" "$relevant" "$mutation" "$frontend" "$run_migration" > "$TESTED_TREE_DIR/tested-tree.json"
+  printf '{"tree":"%s","pr":"%s","backend":"%s","frontend":"%s","migration":"%s"}\n' \
+    "$(git rev-parse 'HEAD^{tree}')" "${PR_NUMBER:-}" "$relevant" "$frontend" "$run_migration" > "$TESTED_TREE_DIR/tested-tree.json"
 fi
 
 if [ "$develop_push" = true ] && git rev-parse -q --verify 'HEAD^2' > /dev/null 2>&1; then
@@ -98,7 +90,6 @@ if [ "$develop_push" = true ] && git rev-parse -q --verify 'HEAD^2' > /dev/null 
         reuse_run="$run"
         reuse_pr="$pr_number"
         [ "$(jq -r '.backend' "$download/tested-tree.json")" = true ] && reuse_backend=true
-        [ "$(jq -r '.mutation' "$download/tested-tree.json")" = true ] && reuse_mutation=true
         [ "$(jq -r '.frontend' "$download/tested-tree.json")" = true ] && reuse_frontend=true
         extra=()
         if [ "$reuse_backend" = true ]; then
@@ -107,12 +98,12 @@ if [ "$develop_push" = true ] && git rev-parse -q --verify 'HEAD^2' > /dev/null 
         if [ "${#extra[@]}" -gt 0 ]; then
           extra_groups="[$(IFS=,; echo "${extra[*]}")]"
         fi
-        echo "tree $tree already verified by PR #$reuse_pr (run $run): backend=$reuse_backend mutation=$reuse_mutation frontend=$reuse_frontend"
+        echo "tree $tree already verified by PR #$reuse_pr (run $run): backend=$reuse_backend frontend=$reuse_frontend"
         if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
           {
             echo "### Reused from PR #$reuse_pr"
             echo "- Tree: \`$tree\` (identical to the tree verified by run $run)"
-            echo "- Skipped here: backend=$reuse_backend, PIT=$reuse_mutation, frontend=$reuse_frontend"
+            echo "- Skipped here: backend=$reuse_backend, frontend=$reuse_frontend"
           } >> "$GITHUB_STEP_SUMMARY"
         fi
       else
@@ -128,14 +119,12 @@ fi
 
 {
   echo "relevant=$relevant"
-  echo "mutation=$mutation"
   echo "frontend=$frontend"
   echo "lockfile=$lockfile"
   echo "run_migration=$run_migration"
   echo "run_docs=$run_docs"
   echo "extra_groups=$extra_groups"
   echo "reuse_backend=$reuse_backend"
-  echo "reuse_mutation=$reuse_mutation"
   echo "reuse_frontend=$reuse_frontend"
   echo "reuse_run=$reuse_run"
   echo "reuse_pr=$reuse_pr"

@@ -17,7 +17,7 @@ case "$*" in
   *"run download"*)
     target="${@: -1}"
     mkdir -p "$target"
-    echo "{\"tree\":\"${GH_RECORDED_TREE}\",\"pr\":\"${GH_RECORDED_PR:-7}\",\"backend\":\"${GH_BACKEND:-true}\",\"mutation\":\"${GH_MUTATION:-false}\",\"frontend\":\"${GH_FRONTEND:-true}\"${GH_EXTRA_FIELDS:-}}" > "$target/tested-tree.json";;
+    echo "{\"tree\":\"${GH_RECORDED_TREE}\",\"pr\":\"${GH_RECORDED_PR:-7}\",\"backend\":\"${GH_BACKEND:-true}\",\"frontend\":\"${GH_FRONTEND:-true}\"${GH_EXTRA_FIELDS:-}}" > "$target/tested-tree.json";;
 esac
 '''
 
@@ -135,7 +135,6 @@ class DetectChangesTest(unittest.TestCase):
         self.merge_frontend_pull_request()
         result = self.run_script(GITHUB_EVENT_NAME='push', GITHUB_REF='refs/heads/master', GH_LAST_PUSH_SHA=self.base)
         self.assertEqual('true', result['relevant'])
-        self.assertEqual('true', result['mutation'])
         self.assertEqual('false', result['reuse_backend'])
 
     def test_pull_request_records_the_tested_tree_and_the_areas_it_runs(self):
