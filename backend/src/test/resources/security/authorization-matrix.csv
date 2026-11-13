@@ -51,8 +51,6 @@ POST,/billing-configuration/collection-reminder-schedules/{group}/exceptions/{ta
 GET,/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/billing-configuration/collection-reminder-schedules/{group}/validation,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/billing-configuration/collection-reminder-schedules/{group}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
-POST,/billing-periods,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
-GET,/billing-periods/current,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/billing/configuration-alerts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/billing/metrics/first-month,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/billing/metrics/{panel},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
