@@ -5,13 +5,19 @@ import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
 import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort;
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
-import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -29,9 +35,35 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class MercadoPagoWebhookRegistrationIT extends AbstractIntegrationTest {
+@SpringJUnitConfig(MercadoPagoWebhookRegistrationIT.TransactionalRegistrationConfiguration.class)
+class MercadoPagoWebhookRegistrationIT {
+
+    @Configuration
+    @EnableTransactionManagement
+    @Import(MercadoPagoWebhookRegistration.class)
+    static class TransactionalRegistrationConfiguration {
+        @Bean
+        PlatformTransactionManager transactionManager() {
+            return new AbstractPlatformTransactionManager() {
+                @Override
+                protected Object doGetTransaction() {
+                    return new Object();
+                }
+
+                @Override
+                protected void doBegin(Object transaction, TransactionDefinition definition) {
+                }
+
+                @Override
+                protected void doCommit(DefaultTransactionStatus status) {
+                }
+
+                @Override
+                protected void doRollback(DefaultTransactionStatus status) {
+                }
+            };
+        }
+    }
 
     @Autowired
     private MercadoPagoWebhookRegistration webhookRegistration;

@@ -4,7 +4,6 @@ import com.red_escuela.backend.enrollment.support.StudentDocumentFixtures;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
-import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -67,7 +66,6 @@ import static org.mockito.Mockito.reset;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@SharedSpyBeans
 class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private RequestProgramEnrollmentApplicationUseCase requestUseCase;
     @Autowired private ApproveProgramEnrollmentApplicationUseCase approveUseCase;

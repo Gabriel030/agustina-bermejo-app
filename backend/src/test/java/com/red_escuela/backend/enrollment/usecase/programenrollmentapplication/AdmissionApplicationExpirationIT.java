@@ -37,7 +37,6 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
-import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.testsupport.SlowTest;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -68,7 +67,6 @@ import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@SharedSpyBeans
 @Tag("D-229")
 @Tag("D-252")
 @SlowTest(reason = "Concurrent runs with real threads and multi-stage admission scenarios (approve, receipt, expiry, payment) on the shared Spring context")

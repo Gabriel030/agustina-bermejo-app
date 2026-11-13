@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.note.service;
 
-import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
@@ -18,7 +17,6 @@ import static org.mockito.ArgumentMatchers.any;
 
 @Tag("D-313")
 @Tag("D-253")
-@SharedSpyBeans
 class ResumeRejectedAllocationIT extends AbstractInvoiceCancellationIT {
 
     @Autowired
