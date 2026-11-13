@@ -5589,6 +5589,9 @@
             "enum" : [ "PROGRAM", "COURSE" ],
             "type" : "string"
           },
+          "finalExamEligibility" : {
+            "$ref" : "#/components/schemas/FinalExamEligibilityResponse"
+          },
           "finalScore" : {
             "type" : [ "number", "null" ]
           },
@@ -5604,6 +5607,8 @@
             "type" : "number"
           },
           "priorCondition" : {
+            "deprecated" : true,
+            "description" : "Usar finalExamEligibility",
             "enum" : [ "REGULAR", "FREE" ],
             "type" : "string"
           },
@@ -5618,7 +5623,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attemptNumber", "carrera", "dni", "enrollmentId", "enrollmentKind", "finalScore", "gradeItemId", "id", "minApprovalGrade", "priorCondition", "result", "status", "studentName" ],
+        "required" : [ "attemptNumber", "carrera", "dni", "enrollmentId", "enrollmentKind", "finalExamEligibility", "finalScore", "gradeItemId", "id", "minApprovalGrade", "priorCondition", "result", "status", "studentName" ],
         "type" : "object"
       },
       "ExamBoardResponse" : {

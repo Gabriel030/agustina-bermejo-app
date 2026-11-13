@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResponse;
 import com.red_escuela.backend.shared.domain.Grade;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;

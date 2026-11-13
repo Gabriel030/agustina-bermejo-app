@@ -1,4 +1,4 @@
-package com.red_escuela.backend.enrollment.dto;
+package com.red_escuela.backend.enrollment.api;
 
 public enum FinalExamIneligibilityReason {
     COURSEWORK_NOT_REGULAR,

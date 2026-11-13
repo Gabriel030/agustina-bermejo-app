@@ -144,7 +144,7 @@ public class GradeItemRecorder {
                         enrollmentId, request.type(), request.sequenceNumber())
                 .orElseGet(GradeItem::new);
         boolean correction = isFinalCorrection(gradeItem, request);
-        requireEligibleForFinalExam(request, enrollmentId, enrollment.hasRegularCoursework(), correction);
+        requireEligibleForFinalExam(request, correction, () -> finalExamEligibilityEvaluator.requireEligibleToLoad(enrollment));
         requirePrerequisitesApprovedForFinalExam(request, enrollment, correction);
         auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.PROGRAM,
                 enrollment.getSubjectSection().getId(), enrollmentId);
@@ -324,7 +324,7 @@ public class GradeItemRecorder {
                         enrollmentId, request.type(), request.sequenceNumber())
                 .orElseGet(GradeItem::new);
         boolean correction = isFinalCorrection(gradeItem, request);
-        requireEligibleForFinalExam(request, enrollmentId, enrollment.hasRegularCoursework(), correction);
+        requireEligibleForFinalExam(request, correction, () -> finalExamEligibilityEvaluator.requireEligibleToLoad(enrollment));
         auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.COURSE,
                 enrollment.getCourseSubjectSection().getId(), enrollmentId);
         gradeItem.setCourseSubjectSectionEnrollment(enrollment);
@@ -461,9 +461,9 @@ public class GradeItemRecorder {
         }
     }
 
-    private void requireEligibleForFinalExam(CreateGradeItemRequest request, Long enrollmentId, boolean regular, boolean correction) {
+    private void requireEligibleForFinalExam(CreateGradeItemRequest request, boolean correction, Runnable eligibilityCheck) {
         if (request.type() == GradeItemType.FINAL && !correction) {
-            finalExamEligibilityEvaluator.requireEligible(enrollmentId, regular);
+            eligibilityCheck.run();
         }
     }
 

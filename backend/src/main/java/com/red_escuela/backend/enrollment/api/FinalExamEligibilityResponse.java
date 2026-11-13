@@ -1,4 +1,4 @@
-package com.red_escuela.backend.enrollment.dto;
+package com.red_escuela.backend.enrollment.api;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

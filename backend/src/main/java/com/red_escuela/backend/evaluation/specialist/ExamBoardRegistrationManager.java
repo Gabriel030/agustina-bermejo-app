@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.api.LateExamApprovalChecker;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
@@ -22,8 +21,6 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotWith
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
-import com.red_escuela.backend.evaluation.exception.StudentNotRegularException;
-import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -43,7 +40,7 @@ public class ExamBoardRegistrationManager {
     private final ExamBoardRepository examBoardRepository;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final LateExamApprovalChecker lateExamApprovalChecker;
-    private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
+    private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
     private final FinalExamPrerequisiteChecker finalExamPrerequisiteChecker;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final Clock clock;
@@ -52,7 +49,7 @@ public class ExamBoardRegistrationManager {
             ExamBoardRepository examBoardRepository,
             SectionEnrollmentFinder sectionEnrollmentFinder,
             LateExamApprovalChecker lateExamApprovalChecker,
-            AbsenceFreeStatusChecker absenceFreeStatusChecker,
+            FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
             FinalExamPrerequisiteChecker finalExamPrerequisiteChecker,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             Clock clock) {
@@ -61,7 +58,7 @@ public class ExamBoardRegistrationManager {
         this.examBoardRepository = examBoardRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.lateExamApprovalChecker = lateExamApprovalChecker;
-        this.absenceFreeStatusChecker = absenceFreeStatusChecker;
+        this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
         this.finalExamPrerequisiteChecker = finalExamPrerequisiteChecker;
         this.clock = clock;
     }
@@ -92,12 +89,7 @@ public class ExamBoardRegistrationManager {
                 enrollment.getProgramEnrollment().getId(), enrollment.getSubjectSection().getSubject().getId())) {
             requireOpenRegistrationWindow(examBoard);
         }
-        if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
-            throw new StudentNotRegularException(enrollmentId);
-        }
-        if (absenceFreeStatusChecker.isProgramEnrollmentFreeByAbsences(enrollmentId)) {
-            throw new StudentFreeByAbsencesException(enrollmentId);
-        }
+        finalExamEligibilityEvaluator.requireEligibleToRegister(enrollment);
         Long subjectId = enrollment.getSubjectSection().getSubject().getId();
         if (examBoard.getSubject() == null || !examBoard.getSubject().getId().equals(subjectId)) {
             throw new ExamBoardSubjectMismatchException(examBoardId, enrollmentId);
@@ -155,12 +147,7 @@ public class ExamBoardRegistrationManager {
         requireOpenExamBoard(examBoard);
 
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
-        if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
-            throw new StudentNotRegularException(enrollmentId);
-        }
-        if (absenceFreeStatusChecker.isCourseEnrollmentFreeByAbsences(enrollmentId)) {
-            throw new StudentFreeByAbsencesException(enrollmentId);
-        }
+        finalExamEligibilityEvaluator.requireEligibleToRegister(enrollment);
         Long courseSubjectId = enrollment.getCourseSubjectSection().getCourseSubject().getId();
         if (examBoard.getCourseSubject() == null || !examBoard.getCourseSubject().getId().equals(courseSubjectId)) {
             throw new ExamBoardSubjectMismatchException(examBoardId, enrollmentId);

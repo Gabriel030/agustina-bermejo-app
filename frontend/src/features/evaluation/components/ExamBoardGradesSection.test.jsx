@@ -37,6 +37,7 @@ function registration(id, extra = {}) {
     enrollmentId: 100 + id,
     enrollmentKind: 'PROGRAM',
     priorCondition: 'REGULAR',
+    finalExamEligibility: { eligible: true, reason: null },
     minApprovalGrade: 6,
     gradeItemId: null,
     result: null,
