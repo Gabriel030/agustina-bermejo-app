@@ -1,12 +1,8 @@
 import { useState } from 'react';
+import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { apiFetchBlob } from '@/api/client';
-
-const CERTIFICATES = [
-  { kind: 'regular', path: 'regular', label: 'Constancia de alumno regular' },
-  { kind: 'approved', path: 'approved-subjects', label: 'Constancia de materias aprobadas' },
-];
 
 function saveBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -20,34 +16,24 @@ function saveBlob(blob, filename) {
 }
 
 export function CertificateActions({ carreraId }) {
-  const [pending, setPending] = useState(null);
+  const [pending, setPending] = useState(false);
 
-  async function download(certificate) {
-    setPending(certificate.kind);
+  async function download() {
+    setPending(true);
     try {
-      const { blob, filename } = await apiFetchBlob(`/me/program-enrollments/${carreraId}/certificates/${certificate.path}`);
+      const { blob, filename } = await apiFetchBlob(`/me/program-enrollments/${carreraId}/certificates/approved-subjects`);
       saveBlob(blob, filename);
     } catch (error) {
       toast.error(error.message ?? 'No pudimos generar la constancia. Probá de nuevo.');
     } finally {
-      setPending(null);
+      setPending(false);
     }
   }
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row">
-      {CERTIFICATES.map((certificate) => (
-        <Button
-          key={certificate.kind}
-          variant="outline"
-          className="w-full sm:w-auto"
-          loading={pending === certificate.kind}
-          disabled={pending !== null}
-          onClick={() => download(certificate)}
-        >
-          {certificate.label}
-        </Button>
-      ))}
-    </div>
+    <Button variant="outline" className="w-full sm:w-auto" loading={pending} onClick={download}>
+      <Download aria-hidden="true" />
+      Descargar
+    </Button>
   );
 }

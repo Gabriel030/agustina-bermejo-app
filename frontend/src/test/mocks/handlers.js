@@ -145,6 +145,21 @@ export const handlers = [
   http.post(`${API}/me/course-enrollments`, () =>
     HttpResponse.json({ id: 1, paymentStatus: 'PENDING_REVIEW' }, { status: 201 }),
   ),
+  http.get(`${API}/me/regular-certificates`, ({ request }) => {
+    const url = new URL(request.url);
+    return HttpResponse.json({
+      kind: url.searchParams.get('kind') ?? 'PROGRAM',
+      enrollmentId: Number(url.searchParams.get('enrollmentId') ?? 1),
+      state: 'AVAILABLE',
+      staffConfirmationRequired: true,
+      certificate: null,
+      pendingRequest: null,
+      unavailableType: null,
+      rejectionReason: null,
+      reasons: [],
+      history: [],
+    });
+  }),
   http.get(`${API}/me/notifications`, () => HttpResponse.json([])),
   http.get(`${API}/me/schedule`, () => HttpResponse.json({ generatedAt: '2026-11-05T12:00:00', items: [] })),
   http.get(`${API}/me/documents`, () => HttpResponse.json([])),

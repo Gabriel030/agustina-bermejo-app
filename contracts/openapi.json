@@ -10548,7 +10548,7 @@
         "properties" : {
           "certificateId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "channel" : {
             "enum" : [ "STAFF", "STUDENT_PORTAL" ],
@@ -10577,7 +10577,7 @@
             "type" : "array"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "requestedAt" : {
             "format" : "date-time",
@@ -10637,10 +10637,18 @@
       "RegularCertificateSubmissionResponse" : {
         "properties" : {
           "certificate" : {
-            "$ref" : "#/components/schemas/RegularCertificateResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RegularCertificateResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "request" : {
-            "$ref" : "#/components/schemas/RegularCertificateRequestResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RegularCertificateRequestResponse"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "certificate", "request" ],
@@ -12377,7 +12385,11 @@
       "StudentRegularCertificateStateResponse" : {
         "properties" : {
           "certificate" : {
-            "$ref" : "#/components/schemas/RegularCertificateResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RegularCertificateResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "enrollmentId" : {
             "format" : "int64",
@@ -12394,7 +12406,11 @@
             "type" : "string"
           },
           "pendingRequest" : {
-            "$ref" : "#/components/schemas/RegularCertificateRequestResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RegularCertificateRequestResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "reasons" : {
             "items" : {
@@ -12403,7 +12419,7 @@
             "type" : "array"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "staffConfirmationRequired" : {
             "type" : "boolean"
@@ -12413,8 +12429,8 @@
             "type" : "string"
           },
           "unavailableType" : {
-            "enum" : [ "ATTENDANCE", "PAYMENTS", "ENROLLMENT", "REJECTED" ],
-            "type" : "string"
+            "enum" : [ "ATTENDANCE", "PAYMENTS", "ENROLLMENT", "REJECTED", null ],
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "certificate", "enrollmentId", "history", "kind", "pendingRequest", "reasons", "rejectionReason", "staffConfirmationRequired", "state", "unavailableType" ],
@@ -45635,7 +45651,7 @@
           "required" : true
         },
         "responses" : {
-          "200" : {
+          "201" : {
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -45643,7 +45659,17 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "Constancia emitida en el acto"
+          },
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegularCertificateSubmissionResponse"
+                }
+              }
+            },
+            "description" : "Pedido pendiente de confirmación de administración"
           },
           "400" : {
             "content" : {

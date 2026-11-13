@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -98,10 +98,37 @@ describe('AlumnoMisCarreras', () => {
     expect(screen.queryByText('Hs. semanales')).not.toBeInTheDocument();
   });
 
-  it('downloads the regular and approved-subjects certificates for the selected program', async () => {
+  it('offers only the approved-subjects download and no legacy regular certificate button', async () => {
     mockEnrollment(false);
     const requested = [];
     server.use(
+      http.get(`${API}/me/program-enrollments/5/graduation-request`, () =>
+        HttpResponse.json({
+          programEnrollmentId: 5,
+          programName: 'Profesorado de Educación Inicial',
+          graduated: false,
+          eligible: false,
+          accumulatedCredits: 10,
+          requiredCredits: 144,
+          pendingMandatorySubjects: [],
+          unfulfilledElectiveGroups: [],
+          request: null,
+        }),
+      ),
+      http.get(`${API}/me/regular-certificates`, () =>
+        HttpResponse.json({
+          kind: 'PROGRAM',
+          enrollmentId: 5,
+          state: 'AVAILABLE',
+          staffConfirmationRequired: true,
+          certificate: null,
+          pendingRequest: null,
+          unavailableType: null,
+    rejectionReason: null,
+          reasons: [],
+          history: [],
+        }),
+      ),
       http.get(`${API}/me/program-enrollments/5/certificates/:kind`, ({ params }) => {
         requested.push(params.kind);
         return new HttpResponse(new Uint8Array([37, 80, 68, 70]), {
@@ -112,12 +139,22 @@ describe('AlumnoMisCarreras', () => {
     URL.createObjectURL = vi.fn(() => 'blob:certificate');
     URL.revokeObjectURL = vi.fn();
     const user = userEvent.setup();
+    renderWithProviders(<AlumnoMisCarreras />, { route: '/alumno/mis-carreras?tab=tramites' });
+
+    await user.click(await screen.findByRole('button', { name: 'Descargar' }));
+
+    await waitFor(() => expect(requested).toEqual(['approved-subjects']));
+    expect(screen.queryByRole('button', { name: 'Constancia de alumno regular' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Constancia de materias aprobadas' })).not.toBeInTheDocument();
+  });
+
+  it('shows six tabs with Trámites in place of Egreso', async () => {
+    mockEnrollment(false);
     renderWithProviders(<AlumnoMisCarreras />);
 
-    await user.click(await screen.findByRole('button', { name: 'Constancia de alumno regular' }));
-    await waitFor(() => expect(requested).toEqual(['regular']));
-    await user.click(screen.getByRole('button', { name: 'Constancia de materias aprobadas' }));
-    await waitFor(() => expect(requested).toEqual(['regular', 'approved-subjects']));
+    expect(await screen.findByRole('tab', { name: 'Trámites' })).toBeInTheDocument();
+    expect(within(screen.getAllByRole('tablist')[0]).getAllByRole('tab')).toHaveLength(6);
+    expect(screen.queryByRole('tab', { name: 'Egreso' })).not.toBeInTheDocument();
   });
 });
 
