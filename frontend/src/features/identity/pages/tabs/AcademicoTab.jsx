@@ -187,7 +187,7 @@ function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
               <span className={BIG_NUMBER}>{formatDecimal(data.promedioGeneral)}</span>
             </StatCard>
             <StatCard label="Condición">
-              <StatusPill tone={data.esRegular ? 'success' : 'neutral'}>{data.esRegular ? 'Alumno regular' : 'No regular'}</StatusPill>
+              <StatusPill tone={data.esRegular ? 'success' : 'neutral'}>{data.esRegular ? 'Con cursada activa' : 'Sin cursada activa'}</StatusPill>
             </StatCard>
             <StatCard label="Elegible para egresar">
               <StatusPill tone={data.elegibleParaCompletar ? 'success' : 'neutral'}>

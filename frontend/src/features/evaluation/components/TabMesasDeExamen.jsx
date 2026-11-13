@@ -193,7 +193,7 @@ export function TabMesasDeExamen({ carreraId }) {
           <div className="rounded-xl border border-border bg-surface p-8">
             <EmptyState
               title="No tenés materias pendientes de final"
-              description="Cuando termines de cursar una materia y quedes Regular, la vas a ver acá para inscribirte a un llamado."
+              description="Cuando termines de cursar una materia y quedes con la cursada regular, la vas a ver acá para inscribirte a un llamado."
             />
           </div>
         ) : (

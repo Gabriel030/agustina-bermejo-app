@@ -36,13 +36,13 @@ describe('TabAlumnos', () => {
     const stat = (label) => screen.getByText(label).closest('div').parentElement;
     expect(within(stat('Inscriptos')).getByText('3')).toBeInTheDocument();
     expect(within(stat('En riesgo')).getByText('2')).toBeInTheDocument();
-    expect(within(stat('Faltas acumuladas')).getByText('6')).toBeInTheDocument();
+    expect(within(stat('Inasistencias acumuladas')).getByText('6')).toBeInTheDocument();
 
-    expect(within(rowOf('Acosta, Joaquín')).getByText('4 de 3 faltas permitidas')).toBeInTheDocument();
+    expect(within(rowOf('Acosta, Joaquín')).getByText('4 de 3 inasistencias permitidas')).toBeInTheDocument();
     expect(within(rowOf('Acosta, Joaquín')).getByText('Superó el máximo')).toBeInTheDocument();
-    expect(within(rowOf('Benítez, Lucía')).getByText('2 de 3 faltas permitidas')).toBeInTheDocument();
-    expect(within(rowOf('Benítez, Lucía')).getByText('Queda 1 falta')).toBeInTheDocument();
-    expect(within(rowOf('Cabrera, Julieta')).getByText('0 de 3 faltas permitidas')).toBeInTheDocument();
+    expect(within(rowOf('Benítez, Lucía')).getByText('2 de 3 inasistencias permitidas')).toBeInTheDocument();
+    expect(within(rowOf('Benítez, Lucía')).getByText('Queda 1 inasistencia')).toBeInTheDocument();
+    expect(within(rowOf('Cabrera, Julieta')).getByText('0 de 3 inasistencias permitidas')).toBeInTheDocument();
     expect(within(rowOf('Cabrera, Julieta')).getByText('—')).toBeInTheDocument();
     expect(screen.getByText('Máximo de la comisión: 25% de las clases (3 de 12 dictadas)')).toBeInTheDocument();
   });
@@ -52,7 +52,7 @@ describe('TabAlumnos', () => {
     renderWithProviders(<TabAlumnos type="PROGRAM" sectionId={5} />);
 
     await screen.findByText('Acosta, Joaquín');
-    expect(within(rowOf('Acosta, Joaquín')).getByText('1 falta')).toBeInTheDocument();
+    expect(within(rowOf('Acosta, Joaquín')).getByText('1 inasistencia')).toBeInTheDocument();
     expect(screen.queryByText(/Máximo de la comisión/)).not.toBeInTheDocument();
   });
 

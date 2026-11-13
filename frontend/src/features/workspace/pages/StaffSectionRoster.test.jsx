@@ -96,7 +96,7 @@ describe('StaffSectionRoster', () => {
 
     await screen.findByText('Acosta, Joaquín');
     expect(screen.getByText('Inscriptos').nextElementSibling).toHaveTextContent('3');
-    expect(screen.getByText('En riesgo', { selector: 'div' }).nextElementSibling).toHaveTextContent('1');
+    expect(screen.getByText('Libres por inasistencias', { selector: 'div' }).nextElementSibling).toHaveTextContent('1');
     expect(screen.getByText('Asist. media').nextElementSibling).toHaveTextContent('88,9%');
   });
 
@@ -105,8 +105,8 @@ describe('StaffSectionRoster', () => {
     renderRoster();
 
     const row = (await screen.findByText('Acosta, Joaquín')).closest('tr');
-    expect(within(row).getByText('En riesgo')).toBeInTheDocument();
-    expect(within(screen.getByText('Benítez, Lucía').closest('tr')).queryByText('En riesgo')).not.toBeInTheDocument();
+    expect(within(row).getByText('Libre por inasistencias')).toBeInTheDocument();
+    expect(within(screen.getByText('Benítez, Lucía').closest('tr')).queryByText('Libre por inasistencias')).not.toBeInTheDocument();
   });
 
   it('filters by risk from the student column header', async () => {
@@ -116,7 +116,7 @@ describe('StaffSectionRoster', () => {
 
     await screen.findByText('Acosta, Joaquín');
     await user.click(screen.getByRole('button', { name: 'Filtrar por riesgo' }));
-    await user.click(await screen.findByRole('checkbox', { name: /Sin riesgo/ }));
+    await user.click(await screen.findByRole('checkbox', { name: /No libre/ }));
 
     expect(screen.getByText('Acosta, Joaquín')).toBeInTheDocument();
     expect(screen.queryByText('Benítez, Lucía')).not.toBeInTheDocument();

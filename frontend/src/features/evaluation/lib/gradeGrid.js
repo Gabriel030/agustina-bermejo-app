@@ -2,8 +2,8 @@ import { formatDecimal } from '@/lib/formatNumber';
 
 export const GRID_CONDITION = {
   IN_PROGRESS: { tone: 'accent', label: 'Cursando' },
-  REGULAR: { tone: 'success', label: 'Regular' },
-  FREE: { tone: 'danger', label: 'Libre' },
+  REGULAR: { tone: 'success', label: 'Cursada regular' },
+  FREE: { tone: 'danger', label: 'Libre por inasistencias' },
   APPROVED: { tone: 'success', label: 'Aprobado' },
   FAILED: { tone: 'danger', label: 'Desaprobado' },
 };
@@ -129,7 +129,7 @@ export function summarizeSave(saved, failed) {
 
 export function schemeSummary(grid) {
   const parts = [];
-  if (grid.minRegularGrade != null) parts.push(`Regular desde ${formatScore(grid.minRegularGrade)}`);
+  if (grid.minRegularGrade != null) parts.push(`Cursada regular desde ${formatScore(grid.minRegularGrade)}`);
   if (grid.minApprovalGrade != null) parts.push(`aprueba con ${formatScore(grid.minApprovalGrade)}`);
   if (grid.promotionMinGrade != null) parts.push(`promoción desde ${formatScore(grid.promotionMinGrade)}`);
   return parts.join(', ');

@@ -26,7 +26,7 @@ export function buildEnrollmentOptions(programEnrollments = [], courseEnrollment
 
 export const SECTION_STATUS = {
   APPROVED: { tone: 'success', label: 'Aprobada' },
-  REGULAR: { tone: 'accent', label: 'Regular' },
+  REGULAR: { tone: 'accent', label: 'Cursada regular' },
   IN_PROGRESS: { tone: 'accent', label: 'Cursando' },
   FAILED: { tone: 'danger', label: 'Desaprobada' },
   WITHDRAWN: { tone: 'neutral', label: 'Dada de baja' },

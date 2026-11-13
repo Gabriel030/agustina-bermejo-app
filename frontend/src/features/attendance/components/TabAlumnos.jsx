@@ -52,7 +52,7 @@ const COLUMNS = [
   },
   {
     id: 'absenceCount',
-    header: 'Faltas',
+    header: 'Inasistencias',
     accessorKey: 'absenceCount',
     cell: ({ row }) => <span className="tabular-nums">{row.original.risk.text}</span>,
   },
@@ -142,7 +142,7 @@ export function TabAlumnos({ type, sectionId }) {
         <EmptyState
           icon="👥"
           title="Todavía no hay alumnos inscriptos"
-          description="Cuando se inscriba el primero vas a verlo acá con sus faltas y su riesgo."
+          description="Cuando se inscriba el primero vas a verlo acá con sus inasistencias y su riesgo."
         />
       </GlassCard>
     );
@@ -162,7 +162,7 @@ export function TabAlumnos({ type, sectionId }) {
           <StatCard label="En riesgo" className="p-3 md:p-5">
             <span className="font-heading text-size-22 font-bold text-danger md:text-size-26">{atRiskCount}</span>
           </StatCard>
-          <StatCard label="Faltas acumuladas" className="p-3 md:p-5">
+          <StatCard label="Inasistencias acumuladas" className="p-3 md:p-5">
             <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{totalAbsences}</span>
           </StatCard>
         </Stagger>
