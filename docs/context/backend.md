@@ -513,6 +513,14 @@ la migración, nunca se deja que Hibernate lo genere. Constraints de integridad
 (NOT NULL, unique, índices parciales de Postgres para reglas tipo "solo un X activo
 por Y") van en la migración SQL, no solo a nivel de validación Java.
 
+**Enums persistidos como STRING**: cada columna `@Enumerated(EnumType.STRING)` lleva un CHECK
+`<tabla>_<columna>_enum` con exactamente las constantes del enum de Java
+(`EnumCheckConstraintsTest` lo exige contra el esquema que migra Flyway). Agregar, quitar o renombrar
+una constante exige una migración que reemplace el CHECK (`drop constraint` + `add constraint ... not valid` +
+`validate constraint`) y sumar la entrada al bloque de `docs/release/pre-migration-checks.sql`. Las excepciones
+deliberadas (CHECK distinto del enum) se declaran con su razón en `INTENTIONAL_DIFFERENCES` del test. Los enums
+extensibles de `OpenApiConfig` crecen igual: la migración del CHECK va en el mismo PR que el valor nuevo.
+
 ## Seguridad
 
 `SecurityConfig.java`: todo exige JWT salvo `/auth/**` y `POST /prospects`
