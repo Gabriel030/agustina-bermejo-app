@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiFetchWithTotal } from '@/api/client';
+import { pollWhenOnline } from '@/api/cachePolicy';
 
 const RETRYABLE_RESULTS = ['FAILED', 'RETRIES_EXHAUSTED'];
 const RECOVERED_RESULTS = ['ISSUED', 'ALREADY_ISSUED'];
@@ -11,7 +12,9 @@ export function useMonthlyRuns({ period, size = 50 } = {}) {
   return useQuery({
     queryKey: ['monthly-runs', 'list', period ?? null, size],
     queryFn: () => apiFetchWithTotal(`/monthly-invoice-runs?${query}`),
-    refetchInterval: (current) => (current.state.data?.items?.some((candidate) => candidate.status === 'RUNNING') ? RUNNING_REFETCH_MS : false),
+    refetchInterval: (current) =>
+      current.state.data?.items?.some((candidate) => candidate.status === 'RUNNING') ? pollWhenOnline(RUNNING_REFETCH_MS)() : false,
+    refetchIntervalInBackground: false,
   });
 }
 
