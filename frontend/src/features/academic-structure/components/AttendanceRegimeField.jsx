@@ -20,9 +20,9 @@ export function AttendanceRegimeField({ value, onChange, lockUnlimited = false }
 
   return (
     <fieldset className="mt-3 flex min-w-0 flex-col gap-3 rounded-2xl border border-surface-border px-4 py-3.5">
-      <legend className="px-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">Régimen de asistencia</legend>
+      <legend className="px-2 text-size-11 font-semibold uppercase tracking-wide text-ink-faint">Régimen de asistencia</legend>
       <div className="flex items-center gap-2">
-        <b className="text-[13.5px]">Máximo de ausentismo</b>
+        <b className="text-size-13-5">Máximo de ausentismo</b>
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -33,7 +33,7 @@ export function AttendanceRegimeField({ value, onChange, lockUnlimited = false }
               <Info className="h-3.5 w-3.5" />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-72 text-[12.5px]">
+          <PopoverContent align="start" className="w-72 text-size-12-5">
             Se calcula sobre las clases ya dictadas. Las ausencias justificadas no cuentan. Al superar el máximo, el alumno figura como libre en esta comisión.
           </PopoverContent>
         </Popover>
@@ -51,13 +51,13 @@ export function AttendanceRegimeField({ value, onChange, lockUnlimited = false }
         >
           <RadioGroupItem id={`${fieldId}-none`} value="none" disabled={lockUnlimited} className="mt-0.5" />
           <span className="flex flex-col">
-            <b className="text-[13.5px]">Sin límite</b>
-            <span className="text-[12.5px] font-normal text-ink-soft">Nadie queda libre por inasistencias.</span>
+            <b className="text-size-13-5">Sin límite</b>
+            <span className="text-size-12-5 font-normal text-ink-soft">Nadie queda libre por inasistencias.</span>
           </span>
         </Label>
         <Label htmlFor={`${fieldId}-limit`} className="w-auto cursor-pointer items-start gap-2.5">
           <RadioGroupItem id={`${fieldId}-limit`} value="limit" className="mt-0.5" />
-          <b className="text-[13.5px]">Con límite de ausentismo</b>
+          <b className="text-size-13-5">Con límite de ausentismo</b>
         </Label>
       </RadioGroup>
 
@@ -80,10 +80,10 @@ export function AttendanceRegimeField({ value, onChange, lockUnlimited = false }
             />
             <span aria-hidden="true" className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint">%</span>
           </div>
-          <p id={`${fieldId}-help`} aria-live="polite" className={`rounded-xl px-3 py-2 text-[12.5px] ${TONE_CLASSES[helper.tone]}`}>
+          <p id={`${fieldId}-help`} aria-live="polite" className={`rounded-xl px-3 py-2 text-size-12-5 ${TONE_CLASSES[helper.tone]}`}>
             {helper.text}
           </p>
-          <p className="rounded-xl bg-warning-bg px-3 py-2 text-[12.5px] text-warning">
+          <p className="rounded-xl bg-warning-bg px-3 py-2 text-size-12-5 text-warning">
             Una vez guardado, el límite se puede cambiar pero no quitar. Para volver a &ldquo;Sin límite&rdquo; hay que crear una comisión nueva.
           </p>
         </div>

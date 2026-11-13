@@ -170,7 +170,7 @@ class GradeProgressionAndGraduationCharacterizationTest extends CourseworkCharac
         Person preceptor = persistPerson("grade8.preceptor", "77000087", "PRECEPTOR");
 
         loadAs(other.teacher(), classroom, GradeItemType.EXAM, 1, "7")
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
         loadAs(preceptor, classroom, GradeItemType.EXAM, 1, "7").andExpect(status().isForbidden());
         loadAs(classroom.teacher(), classroom, GradeItemType.EXAM, 1, "11").andExpect(status().is4xxClientError());
         loadAs(noScheme.teacher(), noScheme, GradeItemType.EXAM, 1, "7")

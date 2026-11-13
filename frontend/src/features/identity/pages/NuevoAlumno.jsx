@@ -265,7 +265,7 @@ function RegistrationWizard({ onRegisterAnother }) {
         </form>
 
         {submitError && (
-          <p role="alert" className="rounded-lg border border-danger/40 bg-danger-bg p-3 text-[13px] text-danger">
+          <p role="alert" className="rounded-lg border border-danger/40 bg-danger-bg p-3 text-size-13 text-danger">
             {submitError}
           </p>
         )}

@@ -57,17 +57,17 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
           </DialogDescription>
         </DialogHeader>
         {expired ? (
-          <div className="rounded-xl bg-warning-bg px-4 py-2 text-[13px] text-warning-ink">
+          <div className="rounded-xl bg-warning-bg px-4 py-2 text-size-13 text-warning-ink">
             <b>Plazo vencido el {formatIsoDate(absence.justificationDeadline)}.</b> Podés justificarla como excepción: explicá por qué.
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-[13px] text-ink-soft">
+          <div className="flex items-center gap-2 text-size-13 text-ink-soft">
             <StatusPill tone="success">Dentro de plazo</StatusPill>
             <span>hasta el {formatIsoDate(absence.justificationDeadline)}</span>
           </div>
         )}
         {absence.justificationRejectionReason && (
-          <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] text-danger">
+          <div className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 text-danger">
             Justificación rechazada antes: {absence.justificationRejectionReason}
           </div>
         )}
@@ -89,10 +89,10 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
         </div>
         <p className="text-xs text-ink-faint">Esta justificación queda sin adjunto: el comprobante lo carga el alumno o el docente.</p>
         <ChangesTable rows={buildJustificationImpact(computedAbsences)} />
-        <div className="rounded-xl bg-warning-bg px-4 py-2 text-[13px] text-warning-ink">No se puede deshacer desde esta pantalla.</div>
+        <div className="rounded-xl bg-warning-bg px-4 py-2 text-size-13 text-warning-ink">No se puede deshacer desde esta pantalla.</div>
         {authorName && <p className="text-xs text-ink-faint">Queda registrado a nombre de {authorName}.</p>}
         {submitError && (
-          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">
+          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">
             {submitError}
           </div>
         )}

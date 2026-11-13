@@ -18,6 +18,22 @@
   --font-sans: 'Manrope Variable', system-ui, sans-serif;
   --font-heading: 'Sora Variable', system-ui, sans-serif;
 
+  --text-size-10: 10px;
+  --text-size-10-5: 10.5px;
+  --text-size-11: 11px;
+  --text-size-11-5: 11.5px;
+  --text-size-12: 12px;
+  --text-size-12-5: 12.5px;
+  --text-size-13: 13px;
+  --text-size-13-5: 13.5px;
+  --text-size-14: 14px;
+  --text-size-14-5: 14.5px;
+  --text-size-15: 15px;
+  --text-size-16: 16px;
+  --text-size-17: 17px;
+  --text-size-22: 22px;
+  --text-size-26: 26px;
+
   --color-background: var(--bg1);
   --color-foreground: var(--ink);
   --color-card: var(--surface);

@@ -20,7 +20,7 @@ import { useCancelPriceVersion, usePriceHistory, usePrices } from './usePrices';
 function Breakdown({ version }) {
   const hasDiscount = amountOf(version.marketingDiscountAmount) > 0;
   return (
-    <p className="text-[13px] text-ink-soft">
+    <p className="text-size-13 text-ink-soft">
       Precio de lista {formatMoney(version.baseAmount)}
       {hasDiscount && ` − Descuento de marketing ${formatMoney(version.marketingDiscountAmount)}`}
       {hasDiscount && ` = Precio final ${formatMoney(version.finalAmount)}`}
@@ -162,7 +162,7 @@ export function PriceDetailPage() {
       <GlassCard className="flex flex-col gap-2 p-5">
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill tone={status.tone}>{status.label}</StatusPill>
-          {current && <span className="text-[12px] text-ink-faint">Vigente desde el {formatDate(current.effectiveFrom)}</span>}
+          {current && <span className="text-size-12 text-ink-faint">Vigente desde el {formatDate(current.effectiveFrom)}</span>}
         </div>
         {current ? (
           <>

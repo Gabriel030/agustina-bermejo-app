@@ -6,7 +6,7 @@ export function DatosBasicosStep({ register, errors, isLoading, locked }) {
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-semibold text-ink">Datos básicos</h2>
       {locked && (
-        <p className="text-[12px] text-ink-faint">
+        <p className="text-size-12 text-ink-faint">
           Estos datos ya quedaron registrados. Seguí con los documentos para completar el alta.
         </p>
       )}

@@ -68,7 +68,7 @@ const datosSchema = z
 function ErrorDeCampo({ error }) {
   if (!error) return null;
   return (
-    <p role="alert" className="mt-1 text-[11.5px] font-medium text-danger">
+    <p role="alert" className="mt-1 text-size-11-5 font-medium text-danger">
       {error.message}
     </p>
   );
@@ -336,7 +336,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
           <CircleCheck size={36} />
         </div>
         <div className="font-heading text-xl font-bold text-ink">Solicitud enviada</div>
-        <div className="max-w-[420px] text-[13.5px] text-ink-soft">
+        <div className="max-w-[420px] text-size-13-5 text-ink-soft">
           {tipo === 'carrera'
             ? `Tu solicitud para ${target.name} quedó en revisión y no se te cobró nada. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso${formatMoney(montoAPagar) ? ` (${formatMoney(montoAPagar)})` : ''} y vas a tener un plazo para pagarla: recién con ese pago queda confirmada tu inscripción. Te avisamos cuando haya novedades.`
             : state.estadoInscripcion === 'WAITLISTED'
@@ -359,7 +359,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
         size="inline"
         type="button"
         onClick={() => navigate(volverA)}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft"
+        className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft"
         >
         ← {target.name}
       </Button>
@@ -378,7 +378,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
 
       {state.paso === 'cohorte' && (
         <GlassCard className="flex flex-col gap-3 p-5">
-          <div className="text-[13px] text-ink-soft">Elegí la cohorte a la que te querés inscribir.</div>
+          <div className="text-size-13 text-ink-soft">Elegí la cohorte a la que te querés inscribir.</div>
           {tipo === 'carrera' && (
             <div className="text-xs text-ink-faint">
               No se te cobra nada al enviar la solicitud. Si la aprueban, vas a recibir la factura de la matrícula y vas a tener un plazo para pagarla.
@@ -399,7 +399,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
                 cohort.id === state.cohortId ? 'border-brand bg-accent-soft' : 'border-border bg-surface',
               )}
             >
-              <span className="text-[13.5px] font-bold text-ink">{cohort.label ?? `Cohorte ${cohort.ordenEnAnio}`}</span>
+              <span className="text-size-13-5 font-bold text-ink">{cohort.label ?? `Cohorte ${cohort.ordenEnAnio}`}</span>
               <span className="text-xs text-ink-faint">Inicio de cursada: {cohort.cursadaStart}</span>
               <span className="mt-1 text-xs font-semibold text-ink">
                 Matrícula: {formatMoney(cohort.ordenEnAnio === 2 ? pricing?.matriculaCohorte2 : pricing?.matriculaCohorte1) || 'A definir'}
@@ -412,7 +412,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
       {state.paso === 'documentacion' && (
         <GlassCard className="flex flex-col gap-5 p-5">
           <div>
-            <div className="font-heading text-[15px] font-semibold text-ink">Datos personales</div>
+            <div className="font-heading text-size-15 font-semibold text-ink">Datos personales</div>
             <div className="mt-1 text-xs text-ink-faint">Confirmá o completá los datos que no pediste en el registro.</div>
           </div>
 
@@ -494,7 +494,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
           {tipo === 'carrera' && (
             <div className="flex flex-col gap-3">
               <div>
-                <div className="font-heading text-[15px] font-semibold text-ink">Documentación</div>
+                <div className="font-heading text-size-15 font-semibold text-ink">Documentación</div>
                 <div className="mt-1 text-xs text-ink-faint">Subí una foto o escaneo de cada documento.</div>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -508,13 +508,13 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
                         archivo ? 'border-success bg-success-bg' : 'border-border',
                       )}
                     >
-                      <span className="text-[12.5px] font-semibold text-ink">{doc.label}</span>
+                      <span className="text-size-12-5 font-semibold text-ink">{doc.label}</span>
                       {archivo ? (
-                        <span className="flex items-center gap-1 text-[11px] font-semibold text-success">
+                        <span className="flex items-center gap-1 text-size-11 font-semibold text-success">
                           <CircleCheck className="h-3.5 w-3.5" /> Cargado correctamente
                         </span>
                       ) : (
-                        <span className="text-[11px] text-ink-faint">Tocá para subir o sacar una foto</span>
+                        <span className="text-size-11 text-ink-faint">Tocá para subir o sacar una foto</span>
                       )}
                       <input
                         type="file"
@@ -592,7 +592,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
                 ✓
               </div>
               <div>
-                <div className="text-[13.5px] font-bold text-ink">Transferencia bancaria</div>
+                <div className="text-size-13-5 font-bold text-ink">Transferencia bancaria</div>
                 <div className="text-xs text-ink-faint">Transferí y subí el comprobante de pago.</div>
               </div>
             </div>
@@ -638,7 +638,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
           <DialogHeader>
             <div className="font-heading text-base font-bold text-ink">Confirmar solicitud</div>
           </DialogHeader>
-          <div className="text-[13px] text-ink-soft">
+          <div className="text-size-13 text-ink-soft">
             Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong>. No pagás nada ahora: si la aprueban,
             recibís la factura de la matrícula ({formatMoney(montoAPagar) || 'monto a definir'}) para pagarla.
           </div>

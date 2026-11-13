@@ -4,6 +4,7 @@ const DirectorAprobacionesConfigEvaluacion = lazyPage(() => import('@/features/e
 const DirectorEsquemasEvaluacion = lazyPage(() => import('@/features/evaluation/pages/DirectorEsquemasEvaluacion'), 'DirectorEsquemasEvaluacion');
 const DirectorRevisarConfiguracion = lazyPage(() => import('@/features/evaluation/pages/DirectorRevisarConfiguracion'), 'DirectorRevisarConfiguracion');
 const DocenteClosureSheet = lazyPage(() => import('@/features/evaluation/pages/DocenteClosureSheet'), 'DocenteClosureSheet');
+const ClosureListPage = lazyPage(() => import('@/features/evaluation/pages/ClosureListPage'), 'ClosureListPage');
 const StaffClosureSheet = lazyPage(() => import('@/features/evaluation/pages/StaffClosureSheet'), 'StaffClosureSheet');
 const DirectorSectionGrades = lazyPage(() => import('@/features/evaluation/pages/DirectorSectionGrades'), 'DirectorSectionGrades');
 
@@ -19,6 +20,8 @@ export const routes = {
     { roles: ['preceptor'], path: 'cierre-de-comision/:sectionId', element: <StaffClosureSheet role="preceptor" /> },
     { roles: ['administrativo'], path: 'cierre-de-comision/:sectionId', element: <StaffClosureSheet role="administrativo" /> },
     { roles: ['director'], path: 'cierre-de-comision/:sectionId', element: <StaffClosureSheet role="director" /> },
+    { roles: ['administrativo'], path: 'cierres-de-comision', element: <ClosureListPage role="administrativo" /> },
+    { roles: ['director'], path: 'cierres-de-comision', element: <ClosureListPage role="director" /> },
     { roles: ['director'], path: 'esquemas-evaluacion', element: <DirectorEsquemasEvaluacion /> },
     { roles: ['director'], path: 'revisar-configuracion/:sectionId', element: <DirectorRevisarConfiguracion /> },
     { roles: ['director'], path: 'aprobaciones/configuracion-evaluacion', element: <DirectorAprobacionesConfigEvaluacion /> },

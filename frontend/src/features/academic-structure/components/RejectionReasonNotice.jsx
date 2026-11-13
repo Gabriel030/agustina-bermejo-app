@@ -4,9 +4,9 @@ export function RejectionReasonNotice({ cycle, reason, title = 'Motivo del recha
 
   return (
     <div className="rounded-2xl bg-danger-bg px-4 py-3">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-danger">{title}</p>
-      <p className="mt-0.5 text-[13px] text-ink">{text}</p>
-      {hint && <p className="mt-1 text-[12px] text-ink-faint">{hint}</p>}
+      <p className="text-size-11 font-medium uppercase tracking-wide text-danger">{title}</p>
+      <p className="mt-0.5 text-size-13 text-ink">{text}</p>
+      {hint && <p className="mt-1 text-size-12 text-ink-faint">{hint}</p>}
     </div>
   );
 }

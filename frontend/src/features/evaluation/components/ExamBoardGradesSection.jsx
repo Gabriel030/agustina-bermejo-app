@@ -55,7 +55,7 @@ function ReviewSheet({ open, changes, failure, saving, onClose, onConfirm, onDro
           <SheetDescription>Se guardan todas las notas juntas. Si alguna falla, no se guarda ninguna.</SheetDescription>
         </SheetHeader>
         {failure && (
-          <div role="alert" className="flex flex-col items-start gap-2 rounded-xl bg-danger-bg px-3 py-2.5 text-[13px] text-pill-danger">
+          <div role="alert" className="flex flex-col items-start gap-2 rounded-xl bg-danger-bg px-3 py-2.5 text-size-13 text-pill-danger">
             <span className="font-semibold">{failure.message}</span>
             <span>Tus cambios siguen acá.</span>
             {failure.registrationId != null && failure.student && (
@@ -154,12 +154,12 @@ export function ExamBoardGradesSection({ mesa, rows, role, canWithdraw, onWithdr
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-soft">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-size-12-5 text-ink-soft">
         {rule && <b className="rounded-full border border-border px-2.5 py-0.5 text-ink">{rule}</b>}
         <span>Nota de 1 a 10, admite coma (7,5)</span>
         {mode === 'edit' && <span className="hidden md:inline">Enter baja a la fila · A marca Ausente</span>}
       </div>
-      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-soft" aria-live="polite">
+      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-size-12-5 text-ink-soft" aria-live="polite">
         <span><b className="text-ink">{summary.total}</b> anotados</span>
         <span><b className="text-ink">{summary.graded}</b> con nota</span>
         <span><b className="text-ink">{summary.absent}</b> ausentes</span>

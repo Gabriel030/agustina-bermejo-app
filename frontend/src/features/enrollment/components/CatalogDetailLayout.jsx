@@ -16,7 +16,7 @@ export function CatalogEnrollAction({ onEnroll, disabled, reason, reasonTone = '
         disabled={disabled}
         aria-describedby={reason ? reasonId : undefined}
         variant="gradient"
-        className="w-full px-6 py-5 text-[13.5px] md:w-auto"
+        className="w-full px-6 py-5 text-size-13-5 md:w-auto"
       >
         Inscribirme
       </Button>
@@ -57,7 +57,7 @@ export function CatalogViewerAction({ viewer, previewText, notices, enrollAction
 export function CatalogDetailLayout({ backTo, title, summary, action, hiddenNotice, children }) {
   return (
     <PageContainer>
-      <Link to={backTo} className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+      <Link to={backTo} className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink">
         <ArrowLeft className="size-3.5" aria-hidden="true" />
         Catálogo
       </Link>

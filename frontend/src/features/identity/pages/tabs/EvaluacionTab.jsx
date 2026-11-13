@@ -66,7 +66,7 @@ function GradesPanel({ kind, section }) {
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill tone={status.tone}>{status.label}</StatusPill>
         {section.finalScore != null && (
-          <span className="text-[13px] text-ink-faint">
+          <span className="text-size-13 text-ink-faint">
             Nota final <b className="text-ink">{formatDecimal(section.finalScore)}</b>
           </span>
         )}

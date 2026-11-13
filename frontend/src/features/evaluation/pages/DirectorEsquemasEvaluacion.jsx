@@ -134,7 +134,7 @@ export function DirectorEsquemasEvaluacion() {
 
       <div className="flex flex-col gap-5 lg:flex-row">
         <GlassCard className="flex-[1.4] p-2">
-          <div className="grid grid-cols-2 gap-3 border-b border-border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-wide text-ink-faint md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 border-b border-border px-4 py-2.5 text-size-10-5 font-bold uppercase tracking-wide text-ink-faint md:grid-cols-5">
             <div>Nombre</div>
             <div>Regular</div>
             <div>Aprobar</div>
@@ -153,10 +153,10 @@ export function DirectorEsquemasEvaluacion() {
           ) : (
             esquemas?.map((e) => (
               <div key={e.id} className="grid grid-cols-2 items-center gap-3 border-b border-border px-4 py-3 last:border-b-0 md:grid-cols-5">
-                <div className="text-[13.5px] font-semibold text-ink">{e.name}</div>
-                <div className="text-[13px] font-semibold text-ink">{e.minRegularGrade}</div>
-                <div className="text-[13px] font-semibold text-ink">{e.minApprovalGrade}</div>
-                <div className="text-[13px] font-semibold text-ink">{e.promotionMinGrade ? `Desde ${e.promotionMinGrade}` : 'No ofrece'}</div>
+                <div className="text-size-13-5 font-semibold text-ink">{e.name}</div>
+                <div className="text-size-13 font-semibold text-ink">{e.minRegularGrade}</div>
+                <div className="text-size-13 font-semibold text-ink">{e.minApprovalGrade}</div>
+                <div className="text-size-13 font-semibold text-ink">{e.promotionMinGrade ? `Desde ${e.promotionMinGrade}` : 'No ofrece'}</div>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusPill tone={e.inUse ? 'warning' : 'success'}>{e.inUse ? 'En uso' : 'Editable'}</StatusPill>
                   {!e.inUse && (
@@ -168,13 +168,13 @@ export function DirectorEsquemasEvaluacion() {
               </div>
             ))
           )}
-          <div className="px-4 py-3 text-[11.5px] text-ink-faint">
+          <div className="px-4 py-3 text-size-11-5 text-ink-faint">
             Un esquema &ldquo;En uso&rdquo; ya está asignado a alguna comisión y no se puede editar más — creá uno nuevo si cambia la normativa.
           </div>
         </GlassCard>
 
         <GlassCard className="flex flex-1 flex-col gap-4 p-5">
-          <div className="font-heading text-[15px] font-semibold text-ink">{editando ? 'Editar esquema' : 'Nuevo esquema'}</div>
+          <div className="font-heading text-size-15 font-semibold text-ink">{editando ? 'Editar esquema' : 'Nuevo esquema'}</div>
 
           <Campo label="Nombre">
             <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ej: Reglamento 2027..." />

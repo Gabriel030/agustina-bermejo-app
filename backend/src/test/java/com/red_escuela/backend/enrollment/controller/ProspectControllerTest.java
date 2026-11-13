@@ -36,6 +36,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -162,6 +163,69 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         assertThat(student.getOnboardingStatus()).isEqualTo(StudentOnboardingStatus.PROSPECTO);
         assertThat(student.getPerson().getUsername()).isNull();
         assertThat(student.getPerson().getDni()).isNull();
+    }
+
+    @Test
+    void creatingProspectWithAnExistingEmailRespondsExactlyLikeWithANewOne() throws Exception {
+        Long institutionId = persistInstitution();
+        persistProspect(institutionId);
+
+        MvcResult existing = mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateProspectRequest(
+                                "Ana", "Gómez", "ana.gomez.prospecto@example.com", null, institutionId))))
+                .andReturn();
+        MvcResult fresh = mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateProspectRequest(
+                                "Luis", "Paz", "luis.paz.nuevo@example.com", null, institutionId))))
+                .andReturn();
+
+        assertThat(existing.getResponse().getStatus()).isEqualTo(201);
+        assertThat(existing.getResponse().getStatus()).isEqualTo(fresh.getResponse().getStatus());
+        assertThat(existing.getResponse().getContentAsString()).isEqualTo(fresh.getResponse().getContentAsString());
+        assertThat(fresh.getResponse().getContentAsString()).doesNotContain("luis.paz.nuevo");
+        assertThat(fresh.getResponse().getContentAsString()).contains("\"id\":null", "\"personId\":null");
+        assertThat(studentRepository.findAll().stream()
+                .filter(s -> "luis.paz.nuevo@example.com".equals(s.getPerson().emailValue()))).hasSize(1);
+        assertThat(studentRepository.findAll().stream()
+                .filter(s -> "ana.gomez.prospecto@example.com".equals(s.getPerson().emailValue()))).hasSize(1);
+    }
+
+    @Test
+    void creatingProspectWithAMissingInstitutionRespondsTheSameForExistingAndNewEmails() throws Exception {
+        Long institutionId = persistInstitution();
+        persistProspect(institutionId);
+        Long missingInstitutionId = institutionId + 100000;
+
+        MvcResult existing = mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateProspectRequest(
+                                "Ana", "Gómez", "ana.gomez.prospecto@example.com", null, missingInstitutionId))))
+                .andReturn();
+        MvcResult fresh = mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateProspectRequest(
+                                "Luis", "Paz", "luis.paz.nuevo@example.com", null, missingInstitutionId))))
+                .andReturn();
+
+        assertThat(existing.getResponse().getStatus()).isEqualTo(fresh.getResponse().getStatus());
+        assertThat(existing.getResponse().getContentAsString()).isEqualTo(fresh.getResponse().getContentAsString());
+    }
+
+    @Test
+    void creatingProspectWithOversizedFieldsReturns400() throws Exception {
+        String tooLong = "x".repeat(101);
+
+        mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"" + tooLong + "\",\"apellido\":\"Pérez\",\"email\":\"ok@example.com\",\"institutionId\":1}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Juan\",\"apellido\":\"Pérez\",\"email\":\"ok@example.com\",\"telefono\":\""
+                                + "1".repeat(31) + "\",\"institutionId\":1}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

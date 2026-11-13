@@ -82,7 +82,7 @@ export function TablaAvisos({ avisos, isLoading, isError, onReintentar, soloLect
   return (
     <>
       <GlassCard className="card-avisos overflow-hidden p-0">
-        <div className="px-4 pt-3 text-[11px] text-ink-faint">Todos los horarios en UTC−3</div>
+        <div className="px-4 pt-3 text-size-11 text-ink-faint">Todos los horarios en UTC−3</div>
         <div ref={scrollerRef} className="overflow-x-auto">
           <Table containerClassName="overflow-visible" className="tabla-avisos w-full min-w-[980px] border-collapse">
             <TableHeader>
@@ -90,7 +90,7 @@ export function TablaAvisos({ avisos, isLoading, isError, onReintentar, soloLect
                 {COLUMNAS.map((columna) => (
                   <TableHead
                     key={columna}
-                    className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.04em] text-ink-faint"
+                    className="whitespace-nowrap border-b border-border px-3 py-2.5 text-left text-size-10-5 font-bold uppercase tracking-[0.04em] text-ink-faint"
                   >
                     {columna}
                   </TableHead>

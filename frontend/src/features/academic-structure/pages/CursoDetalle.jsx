@@ -38,14 +38,14 @@ function ModuleRow({ mod }) {
     <div className="flex w-full items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60">
       <GripVertical className="h-4 w-4 shrink-0 text-ink-faint/40" />
       {mod.sortOrder != null && (
-        <span className="w-5 shrink-0 text-center text-[12px] font-bold text-ink-faint">
+        <span className="w-5 shrink-0 text-center text-size-12 font-bold text-ink-faint">
           {mod.sortOrder}
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-medium text-ink">{mod.name}</span>
+        <span className="block truncate text-size-14 font-medium text-ink">{mod.name}</span>
         {mod.weeklyWorkload != null && (
-          <span className="text-[12px] text-ink-faint">{mod.weeklyWorkload} hs/semana</span>
+          <span className="text-size-12 text-ink-faint">{mod.weeklyWorkload} hs/semana</span>
         )}
       </div>
       {mod.status === 'INACTIVE' && <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>}
@@ -155,7 +155,7 @@ export function CursoDetalle() {
         <div>
           <Link
             to="/administrativo/gestion-academica?section=cursos"
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Cursos
@@ -167,7 +167,7 @@ export function CursoDetalle() {
                 <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
               </div>
               {metaItems.length > 0 && (
-                <p className="mt-0.5 text-[13px] text-ink-faint">{metaItems.join(' · ')}</p>
+                <p className="mt-0.5 text-size-13 text-ink-faint">{metaItems.join(' · ')}</p>
               )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -205,7 +205,7 @@ export function CursoDetalle() {
         <GlassCard className="p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-[12px] font-medium uppercase tracking-widest text-ink-faint">Catálogo</span>
+              <span className="text-size-12 font-medium uppercase tracking-widest text-ink-faint">Catálogo</span>
               <StatusPill tone={course.visibleInCatalog ? 'success' : 'neutral'}>
                 {course.visibleInCatalog ? 'En catálogo' : 'No publicado'}
               </StatusPill>
@@ -234,13 +234,13 @@ export function CursoDetalle() {
 
         {course.schedule && (
           <GlassCard className="p-4">
-            <h2 className="mb-1 text-[11px] font-bold uppercase tracking-widest text-ink-faint">Horario</h2>
-            <p className="text-[13.5px] text-ink">{course.schedule}</p>
+            <h2 className="mb-1 text-size-11 font-bold uppercase tracking-widest text-ink-faint">Horario</h2>
+            <p className="text-size-13-5 text-ink">{course.schedule}</p>
           </GlassCard>
         )}
 
         <div className="flex items-center justify-between">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Temario</h2>
+          <h2 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Temario</h2>
           {!modulesUnavailable && (
             <Button variant="gradient" size="sm" onClick={() => setPanelOpen(true)}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />

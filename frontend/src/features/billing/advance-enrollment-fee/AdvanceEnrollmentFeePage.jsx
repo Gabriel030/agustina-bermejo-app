@@ -30,7 +30,7 @@ const NEXT_STEPS = [
 
 function SummaryRows({ rows }) {
   return (
-    <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-[13px]">
+    <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-size-13">
       {rows.map(([label, value]) => (
         <div key={label} className="contents">
           <dt className="text-ink-faint">{label}</dt>
@@ -127,7 +127,7 @@ export function AdvanceEnrollmentFeePage() {
                 </span>
                 <span className="font-semibold tabular-nums text-ink">{formatMoney(advance.amount)}</span>
               </div>
-              <div className="flex justify-between border-t border-border pt-3 text-[15px] font-bold text-ink">
+              <div className="flex justify-between border-t border-border pt-3 text-size-15 font-bold text-ink">
                 <span>Total</span>
                 <span className="tabular-nums">{formatMoney(advance.amount)}</span>
               </div>
@@ -180,7 +180,7 @@ export function AdvanceEnrollmentFeePage() {
               <Check size={20} />
             </div>
             <div>
-              <b className="block text-[15px] text-ink">Factura generada</b>
+              <b className="block text-size-15 text-ink">Factura generada</b>
               <small className="text-xs text-ink-faint">Falta el pago para completar la {concept.toLowerCase()}.</small>
             </div>
           </div>

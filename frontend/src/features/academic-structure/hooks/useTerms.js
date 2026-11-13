@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
+import { offlineQuery } from '@/api/offlineQuery';
 
 const TERMS_KEY = ['terms'];
 
 export function useAllTerms() {
-  return useQuery({ queryKey: [...TERMS_KEY, 'all'], queryFn: () => apiFetch('/terms') });
+  return useQuery(offlineQuery('N0c', { queryKey: [...TERMS_KEY, 'all'], queryFn: () => apiFetch('/terms') }));
 }
 
 function useInvalidateTerms() {

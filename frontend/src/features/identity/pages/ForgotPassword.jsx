@@ -123,7 +123,7 @@ export function ForgotPassword() {
                 type="submit"
                 disabled={enviando}
                 variant="gradient"
-                className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
+                className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
               >
                 {enviando ? 'Enviando…' : 'Enviar código de recuperación'}
               </Button>
@@ -162,7 +162,7 @@ export function ForgotPassword() {
                 type="submit"
                 disabled={enviando}
                 variant="gradient"
-                className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
+                className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
               >
                 {enviando ? 'Verificando…' : 'Continuar'}
               </Button>
@@ -260,7 +260,7 @@ function NuevaPasswordForm({ resetToken }) {
           disabled={enviando}
         />
       </div>
-      <div className="-mt-1.5 text-[11.5px] text-ink-faint">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con una mayúscula y un número.</div>
+      <div className="-mt-1.5 text-size-11-5 text-ink-faint">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con una mayúscula y un número.</div>
 
       {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
@@ -268,7 +268,7 @@ function NuevaPasswordForm({ resetToken }) {
         <Button
           type="submit"
           disabled={enviando}
-          className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-[14.5px] font-bold text-on-accent"
+          className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-size-14-5 font-bold text-on-accent"
         >
           {enviando ? 'Guardando…' : 'Cambiar contraseña'}
         </Button>

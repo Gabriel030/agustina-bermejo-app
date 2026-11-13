@@ -44,7 +44,7 @@ function LoadError({ onRetry }) {
 
 function SubjectDetail({ row, onViewGrades, absences }) {
   return (
-    <div className="sticky left-0 flex w-fit max-w-[calc(100vw-4rem)] flex-col gap-1 p-3 text-[13px] text-ink-soft">
+    <div className="sticky left-0 flex w-fit max-w-[calc(100vw-4rem)] flex-col gap-1 p-3 text-size-13 text-ink-soft">
       {row.schedule && <span>{row.schedule}</span>}
       <span>
         {row.instructorTitular ? `Titular ${row.instructorTitular}` : 'Sin docente titular'}
@@ -75,8 +75,8 @@ function buildSubjectColumns() {
       meta: { sticky: true },
       cell: ({ row }) => (
         <div className="flex min-w-[8.5rem] max-w-[10rem] flex-col whitespace-normal">
-          <span className="text-[13px] font-semibold leading-tight text-ink">{row.original.subjectName}</span>
-          <span className="text-[12px] text-ink-faint">Com. {row.original.sectionName}</span>
+          <span className="text-size-13 font-semibold leading-tight text-ink">{row.original.subjectName}</span>
+          <span className="text-size-12 text-ink-faint">Com. {row.original.sectionName}</span>
         </div>
       ),
     },
@@ -130,7 +130,7 @@ function PendingList({ title, items }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">
+        <h2 className="font-heading text-size-15 font-semibold text-ink">
           {title} · {items.length}
         </h2>
         {items.length > 0 && (
@@ -180,7 +180,7 @@ function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
           <>
             <StatCard label="Créditos">
               <span className={BIG_NUMBER}>{data.creditosAcumulados}</span>
-              <span className="text-[13px] text-ink-faint"> / {data.creditosRequeridos}</span>
+              <span className="text-size-13 text-ink-faint"> / {data.creditosRequeridos}</span>
               <ProgressBar value={creditsPercent} showValue={false} className="mt-2" label="Avance de créditos" />
             </StatCard>
             <StatCard label="Promedio general">
@@ -199,7 +199,7 @@ function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
       </div>
 
       <GlassCard className="flex min-w-0 flex-col gap-2 p-3 sm:p-5">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">Cursadas</h2>
+        <h2 className="font-heading text-size-15 font-semibold text-ink">Cursadas</h2>
         <DataTable
           columns={columns}
           data={rows}
@@ -218,9 +218,9 @@ function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
           <PendingList title="Obligatorias pendientes" items={data.obligatoriasPendientes ?? []} />
           {(data.gruposElectivos ?? []).length > 0 && (
             <div className="flex flex-col gap-2">
-              <h2 className="font-heading text-[15px] font-semibold text-ink">Grupos de electivas</h2>
+              <h2 className="font-heading text-size-15 font-semibold text-ink">Grupos de electivas</h2>
               {data.gruposElectivos.map((group) => (
-                <div key={group.electiveGroupId} className="flex items-center gap-2 text-[13px]">
+                <div key={group.electiveGroupId} className="flex items-center gap-2 text-size-13">
                   <span className="min-w-0 flex-1 text-ink">{group.electiveGroupName}</span>
                   <span className="text-ink-faint">
                     {group.cantidadAprobada} de {group.minRequired}

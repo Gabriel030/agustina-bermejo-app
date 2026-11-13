@@ -61,7 +61,7 @@ export function ModalMotivo({
             {motivo.length}/{maxLength}
           </div>
         )}
-        {error && <div role="alert" className="text-[12px] font-semibold text-danger">{error}</div>}
+        {error && <div role="alert" className="text-size-12 font-semibold text-danger">{error}</div>}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button variant={confirmarVariant} loading={confirmando} onClick={confirmar}>{confirmarLabel}</Button>

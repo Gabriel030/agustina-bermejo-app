@@ -42,7 +42,7 @@ const SORT_OPTIONS = [
 function FilterSelect({ id, label, value, onChange, options }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <Label htmlFor={id} className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">
+      <Label htmlFor={id} className="text-size-11 font-bold uppercase tracking-wide text-ink-faint">
         {label}
       </Label>
       <Select value={value} onValueChange={onChange}>
@@ -166,7 +166,7 @@ function DebtorsSection() {
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <AlertCircle className="size-4 text-danger" />
-          <span className="font-heading text-[14.5px] font-semibold text-ink">Alumnos con deuda vencida</span>
+          <span className="font-heading text-size-14-5 font-semibold text-ink">Alumnos con deuda vencida</span>
           <span className="text-xs text-ink-soft">· todas las monedas</span>
         </div>
         <NativeSelect
@@ -262,7 +262,7 @@ export function FinancialDashboardPage() {
             <SlidersHorizontal />
             <span className="hidden sm:inline">Filtros</span>
             {activeFilters > 0 && (
-              <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold leading-[18px] text-on-accent">{activeFilters}</span>
+              <span className="rounded-full bg-primary px-1.5 text-size-11 font-bold leading-[18px] text-on-accent">{activeFilters}</span>
             )}
           </Button>
         </PopoverTrigger>

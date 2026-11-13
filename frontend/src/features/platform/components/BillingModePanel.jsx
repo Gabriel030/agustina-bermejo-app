@@ -7,7 +7,7 @@ export function BillingModePanel({ billing, onSelectMode }) {
   return (
     <GlassCard className="flex flex-col gap-4 p-5">
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 font-heading text-[15px] font-semibold text-ink">Modo de Facturación</legend>
+        <legend className="mb-2 font-heading text-size-15 font-semibold text-ink">Modo de Facturación</legend>
         <div className="grid gap-2 md:grid-cols-3">
           {BILLING_MODES.map((mode) => {
             const info = BILLING_MODE_INFO[mode];

@@ -19,6 +19,8 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
@@ -36,6 +38,16 @@ public class StudentOnboarding {
         this.institutionRepository = institutionRepository;
         this.basePersonCreator = basePersonCreator;
         this.studentRoleGranter = studentRoleGranter;
+    }
+
+    @Transactional
+    public Optional<StudentOnboardingSummary> registerProspectIfEmailIsFree(NewProspect prospect) {
+        institutionRepository.findById(prospect.institutionId())
+                .orElseThrow(() -> new InstitutionNotFoundException(prospect.institutionId()));
+        if (basePersonCreator.isEmailRegistered(prospect.email())) {
+            return Optional.empty();
+        }
+        return Optional.of(registerProspect(prospect));
     }
 
     @Transactional

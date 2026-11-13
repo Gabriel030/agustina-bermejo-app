@@ -87,7 +87,7 @@ export function DirectorExcepcionDetalle() {
     <PageContainer>
       <Link
         to={EXCEPTIONS_TRAY}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
+        className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink"
       >
         ← Excepciones
       </Link>
@@ -105,14 +105,14 @@ export function DirectorExcepcionDetalle() {
       <GlassCard className="flex flex-col gap-3 p-4">
         <div>
           <div className="text-xs font-semibold text-ink-soft">Justificación</div>
-          <div className="mt-1 text-[13.5px] text-ink">&ldquo;{excepcion.justification}&rdquo;</div>
+          <div className="mt-1 text-size-13-5 text-ink">&ldquo;{excepcion.justification}&rdquo;</div>
         </div>
-        <div className="text-[12px] text-ink-faint">Solicitado {formatearFecha(excepcion.requestedAt) ?? '—'}</div>
+        <div className="text-size-12 text-ink-faint">Solicitado {formatearFecha(excepcion.requestedAt) ?? '—'}</div>
         {soloLectura && (
-          <div className="text-[12px] text-ink-faint">Decidido {formatearFecha(excepcion.decidedAt) ?? '—'}</div>
+          <div className="text-size-12 text-ink-faint">Decidido {formatearFecha(excepcion.decidedAt) ?? '—'}</div>
         )}
         {soloLectura && excepcion.decisionNotes && (
-          <div className={`text-[12px] font-semibold ${excepcion.status === 'REJECTED' ? 'text-danger' : 'text-ink-soft'}`}>
+          <div className={`text-size-12 font-semibold ${excepcion.status === 'REJECTED' ? 'text-danger' : 'text-ink-soft'}`}>
             Notas: &ldquo;{excepcion.decisionNotes}&rdquo;
           </div>
         )}
@@ -120,7 +120,7 @@ export function DirectorExcepcionDetalle() {
 
       {!soloLectura && (
         <div className="flex flex-col items-end gap-2">
-          {decisionError && <div role="alert" className="text-[13px] font-semibold text-danger">{decisionError}</div>}
+          {decisionError && <div role="alert" className="text-size-13 font-semibold text-danger">{decisionError}</div>}
           <div className="flex justify-end gap-2">
             <Button variant="outline" disabled={deciding} onClick={() => setModalRechazo(true)}>Rechazar</Button>
             <Button variant="gradient" disabled={deciding} onClick={() => setModalAprobacion(true)}>

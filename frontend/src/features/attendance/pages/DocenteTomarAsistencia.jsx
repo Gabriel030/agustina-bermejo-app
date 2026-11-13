@@ -98,9 +98,9 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirMod
   return (
     <div className={`flex flex-col gap-2 rounded-2xl p-3 sm:flex-row sm:items-center sm:justify-between ${config?.filaClass ?? 'bg-neutral-bg/40'} ${deshabilitada ? 'opacity-50' : ''}`}>
       <div className="min-w-0 flex-1">
-        <div className="font-heading text-[14px] font-semibold text-ink">{alumno.studentName}</div>
+        <div className="font-heading text-size-14 font-semibold text-ink">{alumno.studentName}</div>
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-          <span className={`text-[12px] font-semibold tabular-nums ${riesgo.level === 'danger' ? 'text-danger' : riesgo.level === 'warning' ? 'text-warning-ink' : 'text-ink-faint'}`}>
+          <span className={`text-size-12 font-semibold tabular-nums ${riesgo.level === 'danger' ? 'text-danger' : riesgo.level === 'warning' ? 'text-warning-ink' : 'text-ink-faint'}`}>
             {riesgo.text}
           </span>
           {riesgo.pill && (
@@ -112,7 +112,7 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirMod
           )}
         </div>
         {justificacion === 'vencida' && (
-          <div className="mt-1 text-[12px] text-ink-faint">Venció el plazo para justificar: lo resuelve el preceptor.</div>
+          <div className="mt-1 text-size-12 text-ink-faint">Venció el plazo para justificar: lo resuelve el preceptor.</div>
         )}
       </div>
       <div className="flex shrink-0 flex-wrap gap-1.5">
@@ -122,7 +122,7 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirMod
             type="button"
             disabled={deshabilitada}
             onClick={() => onCambiarEstado(alumno.enrollmentId, e.value)}
-            className={`rounded-full px-3 py-1 text-[11.5px] font-bold transition-colors disabled:cursor-not-allowed ${estado === e.value ? e.chipActivo : CHIP_INACTIVO}`}
+            className={`rounded-full px-3 py-1 text-size-11-5 font-bold transition-colors disabled:cursor-not-allowed ${estado === e.value ? e.chipActivo : CHIP_INACTIVO}`}
           >
             {e.label}
           </button>
@@ -322,7 +322,7 @@ export function TabAsistencia({ type, sectionId }) {
     <div className="flex flex-col gap-4 pt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Input type="date" value={classDate} onChange={(e) => setClassDate(e.target.value)} className="w-fit" />
-        <div className="text-[12.5px] font-semibold">
+        <div className="text-size-12-5 font-semibold">
           {huboCambios ? (
             <span className="text-warning">● Cambios sin guardar</span>
           ) : hayAsistenciaGuardada ? (
@@ -346,13 +346,13 @@ export function TabAsistencia({ type, sectionId }) {
       </div>
 
       {claseCancelada && (
-        <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">
+        <div className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">
           Esta clase está cancelada — no cuenta como inasistencia para nadie. Podés seguir editando el temario/observaciones, pero la grilla de asistencia queda deshabilitada.
         </div>
       )}
 
       {hayAsistenciaGuardada && !claseCancelada && (
-        <div className="rounded-xl bg-neutral-bg px-4 py-2 text-[13px] font-medium text-ink-soft">
+        <div className="rounded-xl bg-neutral-bg px-4 py-2 text-size-13 font-medium text-ink-soft">
           {esClaseDeHoy
             ? 'Podés corregir la asistencia de hoy.'
             : 'La asistencia ya guardada no se edita desde acá: para corregirla, pedí la modificación desde Historial.'}
@@ -360,10 +360,10 @@ export function TabAsistencia({ type, sectionId }) {
       )}
 
       {recuperado && !error && (
-        <div className="rounded-xl bg-neutral-bg px-4 py-2 text-[13px] font-medium text-ink-soft">Recuperamos tu asistencia sin enviar.</div>
+        <div className="rounded-xl bg-neutral-bg px-4 py-2 text-size-13 font-medium text-ink-soft">Recuperamos tu asistencia sin enviar.</div>
       )}
 
-      {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">{error}</div>}
+      {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">{error}</div>}
 
       <GlassCard className="flex flex-col gap-3 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -372,7 +372,7 @@ export function TabAsistencia({ type, sectionId }) {
             <Input placeholder="Buscar alumno..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="w-[220px]" />
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[12px] text-ink-faint">{procesados} / {lista.length} procesados</span>
+            <span className="text-size-12 text-ink-faint">{procesados} / {lista.length} procesados</span>
             <Button variant="outline" size="sm" onClick={() => setConfirmarMarcarTodos(true)} disabled={lista.length === 0 || claseCancelada}>
               Marcar todos presentes
             </Button>
@@ -383,7 +383,7 @@ export function TabAsistencia({ type, sectionId }) {
           <EmptyState title="No hay alumnos para mostrar" description="Esta comisión no tiene alumnos matriculados activos, o ninguno coincide con la búsqueda." />
         ) : (
           <div className="flex flex-col gap-2">
-            <div className="hidden px-3 text-[11px] font-bold uppercase tracking-wide text-ink-faint sm:flex sm:items-center sm:justify-between">
+            <div className="hidden px-3 text-size-11 font-bold uppercase tracking-wide text-ink-faint sm:flex sm:items-center sm:justify-between">
               <span>Alumno</span>
               <span className="w-24 shrink-0 text-center">Inasistencias</span>
               <span className="shrink-0">Estado</span>
@@ -412,14 +412,14 @@ export function TabAsistencia({ type, sectionId }) {
 
       <GlassCard className="flex flex-col gap-3 p-4">
         <div>
-          <div className="font-heading text-[14px] font-semibold text-ink">Temario</div>
+          <div className="font-heading text-size-14 font-semibold text-ink">Temario</div>
           <Textarea value={topic} onChange={(e) => setTopic(e.target.value.slice(0, 1000))} placeholder="Escriba los temas desarrollados durante la clase..." />
-          <div className="mt-1 text-right text-[11px] text-ink-faint">{topic.length} / 1000 caracteres</div>
+          <div className="mt-1 text-right text-size-11 text-ink-faint">{topic.length} / 1000 caracteres</div>
         </div>
         <div>
-          <div className="font-heading text-[14px] font-semibold text-ink">Observaciones (opcional)</div>
+          <div className="font-heading text-size-14 font-semibold text-ink">Observaciones (opcional)</div>
           <Textarea value={observations} onChange={(e) => setObservations(e.target.value.slice(0, 500))} placeholder="Observaciones de la clase..." />
-          <div className="mt-1 text-right text-[11px] text-ink-faint">{observations.length} / 500 caracteres</div>
+          <div className="mt-1 text-right text-size-11 text-ink-faint">{observations.length} / 500 caracteres</div>
         </div>
       </GlassCard>
 
@@ -511,7 +511,7 @@ function ModalSolicitarModificacion({ attendanceId, estadoActual, onClose }) {
             </SelectContent>
           </Select>
           <Textarea placeholder="Motivo de la modificación..." value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-          {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">{error}</div>}
+          {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">{error}</div>}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
@@ -591,7 +591,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
   return (
     <div className="flex flex-col gap-4 pt-4">
       {returnRequest && (
-        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-accent-soft px-4 py-3 text-[13px] text-ink">
+        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-accent-soft px-4 py-3 text-size-13 text-ink">
           <span>
             Pedido #{returnRequest.id} rechazado: clase del {formatDate(returnRequest.classDate)}, {returnRequest.studentName}.
             {returnRequest.rejectionReason ? ` Motivo: ${returnRequest.rejectionReason}` : ''} Podés volver a pedir el cambio.
@@ -600,9 +600,9 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
         </div>
       )}
       <GlassCard className="flex flex-col gap-3 p-4">
-        <div className="font-heading text-[14px] font-semibold text-ink">Historial de asistencia</div>
+        <div className="font-heading text-size-14 font-semibold text-ink">Historial de asistencia</div>
         <div className="overflow-x-auto">
-      <table className="border-separate border-spacing-0 text-[11.5px]">
+      <table className="border-separate border-spacing-0 text-size-11-5">
         <thead>
           <tr>
             <th rowSpan={3} className={`${celdaSticky} bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] whitespace-nowrap border-b border-border px-3 py-1 text-left align-bottom font-semibold text-ink-faint`}>
@@ -702,10 +702,10 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
             </DialogDescription>
           </DialogHeader>
           {celdaSeleccionada?.rejection && (
-            <p className="text-[13px] font-bold text-danger">{rejectionText(celdaSeleccionada.rejection)}</p>
+            <p className="text-size-13 font-bold text-danger">{rejectionText(celdaSeleccionada.rejection)}</p>
           )}
           {celdaSeleccionada?.status === 'ABSENT' && !celdaSeleccionada.justifiable && (
-            <p className="text-[13px] text-ink-faint">Venció el plazo para justificar esta falta: lo resuelve el preceptor.</p>
+            <p className="text-size-13 text-ink-faint">Venció el plazo para justificar esta falta: lo resuelve el preceptor.</p>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setCeldaSeleccionada(null)}>Cerrar</Button>
@@ -715,7 +715,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
             {pendingRequest ? (
               <>
                 <StatusPill tone="warning">Pedido pendiente</StatusPill>
-                <Link to={requestHref(pendingRequest.id)} className="text-[13px] font-bold text-brand hover:underline">
+                <Link to={requestHref(pendingRequest.id)} className="text-size-13 font-bold text-brand hover:underline">
                   Ver pedido #{pendingRequest.id}
                 </Link>
               </>
@@ -765,10 +765,10 @@ function GraficoDeTorta({ segmentos, total, centroValor, centroLabel }) {
       <div className="relative h-36 w-36 shrink-0 rounded-full" style={{ background: `conic-gradient(${stops})` }}>
         <div className="absolute inset-[16px] flex flex-col items-center justify-center rounded-full bg-surface">
           <div className="font-heading text-xl font-bold text-ink">{centroValor}</div>
-          <div className="text-[10px] text-ink-faint">{centroLabel}</div>
+          <div className="text-size-10 text-ink-faint">{centroLabel}</div>
         </div>
       </div>
-      <div className="flex flex-col gap-1.5 text-[12.5px] text-ink-soft">
+      <div className="flex flex-col gap-1.5 text-size-12-5 text-ink-soft">
         {segmentos.map((s) => (
           <div key={s.key} className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: `var(${s.colorVar})` }} />
@@ -824,7 +824,7 @@ function DistribucionDeAsistencia({ type, sectionId }) {
   return (
     <GlassCard className="flex flex-col gap-3 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="font-heading text-[14px] font-semibold text-ink">Distribución de asistencia</div>
+        <div className="font-heading text-size-14 font-semibold text-ink">Distribución de asistencia</div>
         <div className="flex flex-wrap gap-2">
           <Select value={anioFiltro} onValueChange={cambiarAnio}>
             <SelectTrigger className="w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
@@ -873,14 +873,14 @@ function BarraAsistenciaPorAlumno({ entrada, totalClases }) {
 
   return (
     <div className="flex items-center gap-3 px-3 py-1.5">
-      <div className="w-32 shrink-0 truncate text-[12.5px] font-medium text-ink">{entrada.studentName}</div>
+      <div className="w-32 shrink-0 truncate text-size-12-5 font-medium text-ink">{entrada.studentName}</div>
       <div
         className="relative flex h-2 flex-1 cursor-default overflow-visible"
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >
         {tooltip && hover && (
-          <div className="absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-semibold text-on-accent shadow-popover">
+          <div className="absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-size-11 font-semibold text-on-accent shadow-popover">
             {tooltip}
             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ink" />
           </div>
@@ -898,7 +898,7 @@ function BarraAsistenciaPorAlumno({ entrada, totalClases }) {
           )}
         </div>
       </div>
-      <div className={`w-12 shrink-0 text-right text-[12px] font-semibold ${entrada.atRisk ? 'text-danger' : 'text-ink-faint'}`}>
+      <div className={`w-12 shrink-0 text-right text-size-12 font-semibold ${entrada.atRisk ? 'text-danger' : 'text-ink-faint'}`}>
         {porcentaje == null ? '-' : `${porcentaje}%`}
       </div>
     </div>
@@ -922,8 +922,8 @@ function TabReporteDeAsistencia({ type, sectionId }) {
 
       {(reporte ?? []).length > 0 && (
         <GlassCard className="flex flex-col gap-1 p-3">
-          <div className="px-2 pb-1 font-heading text-[14px] font-semibold text-ink">% de asistencia por alumno</div>
-          <div className="px-2 pb-1 text-[11px] text-ink-faint">Pasá el mouse por la barra para ver presencias e inasistencias</div>
+          <div className="px-2 pb-1 font-heading text-size-14 font-semibold text-ink">% de asistencia por alumno</div>
+          <div className="px-2 pb-1 text-size-11 text-ink-faint">Pasá el mouse por la barra para ver presencias e inasistencias</div>
           {[...reporte].sort((a, b) => (attendancePercentToPoints(b.attendancePercent) ?? 0) - (attendancePercentToPoints(a.attendancePercent) ?? 0)).map((entrada) => (
             <BarraAsistenciaPorAlumno key={entrada.enrollmentId} entrada={entrada} totalClases={totalClasesPorAlumno.get(entrada.studentId)} />
           ))}
@@ -975,7 +975,7 @@ function TabExportar({ type, sectionId }) {
   return (
     <div className="flex flex-col gap-4 pt-4">
       <GlassCard className="flex flex-col gap-3 p-4">
-        <div className="font-heading text-[14px] font-semibold text-ink">¿Qué desea exportar?</div>
+        <div className="font-heading text-size-14 font-semibold text-ink">¿Qué desea exportar?</div>
         <Select value={scope} onValueChange={setScope}>
           <SelectTrigger className="w-full sm:w-[280px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -986,7 +986,7 @@ function TabExportar({ type, sectionId }) {
         </Select>
         {scope === 'class' && (
           anios.length === 0 ? (
-            <p className="text-[12.5px] text-ink-faint">Todavía no diste ninguna clase en esta comisión.</p>
+            <p className="text-size-12-5 text-ink-faint">Todavía no diste ninguna clase en esta comisión.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               <Select value={anioFiltro} onValueChange={setAnioFiltro}>
@@ -1012,7 +1012,7 @@ function TabExportar({ type, sectionId }) {
       </GlassCard>
 
       <GlassCard className="flex flex-col gap-3 p-4">
-        <div className="font-heading text-[14px] font-semibold text-ink">Formato</div>
+        <div className="font-heading text-size-14 font-semibold text-ink">Formato</div>
         <div className="flex gap-2">
           <Button variant={format === 'pdf' ? 'gradient' : 'outline'} onClick={() => setFormat('pdf')}>PDF</Button>
           <Button variant={format === 'xlsx' ? 'gradient' : 'outline'} onClick={() => setFormat('xlsx')}>XLS</Button>

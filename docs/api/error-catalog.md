@@ -229,9 +229,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `AUTHORIZATION_INBOX_ACCESS_DENIED` | no | `AuthorizationInboxAccessDeniedException` | billing |
 | `AUTHORIZATION_REQUEST_ACCESS_DENIED` | no | `AuthorizationRequestAccessDeniedException` | billing |
 | `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
-| `NOT_OWN_ENROLLMENT` | no | `NotOwnEnrollmentException` | billing |
-| `NOT_OWN_SECTION` | no | `NotOwnSectionException` | academicstructure |
-| `NOT_SECTION_INSTRUCTOR` | no | `NotSectionInstructorException` | announcement |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
 | `ROLE_NOT_ASSIGNABLE_BY_ACTOR` | no | `RoleNotAssignableByActorException` | identity |
@@ -286,6 +283,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NIGHTLY_BILLING_RUN_NOT_FOUND` | no | `NightlyBillingRunNotFoundException` | billing |
 | `NOTIFICATION_DELIVERY_NOT_FOUND` | no | `NotificationDeliveryNotFoundException` | notification |
 | `NOTIFICATION_NOT_FOUND` | no | `NotificationNotFoundException` | notification |
+| `NOT_OWN_ENROLLMENT` | no | `NotOwnEnrollmentException` | billing |
+| `NOT_OWN_SECTION` | no | `NotOwnSectionException` | academicstructure |
+| `NOT_SECTION_INSTRUCTOR` | no | `NotSectionInstructorException` | announcement |
 | `NO_ACTIVE_LATE_PAYMENT_SETTINGS` | no | `NoActiveLatePaymentSettingsException` | billing |
 | `PAYMENT_GATEWAY_NOT_FOUND` | no | `PaymentGatewayNotFoundException` | billing |
 | `PAYMENT_NOT_FOUND` | no | `PaymentNotFoundException` | billing |

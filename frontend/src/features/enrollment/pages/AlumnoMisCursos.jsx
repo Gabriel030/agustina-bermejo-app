@@ -36,7 +36,7 @@ function CourseCard({ enrollment }) {
         <StatusPill tone={tone}>{label}</StatusPill>
       </div>
       <div>
-        <div className="font-heading text-[15px] font-semibold text-ink">{enrollment.courseName}</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">{enrollment.courseName}</div>
         {enrolledOn && <div className="mt-0.5 text-xs text-ink-faint">Inscripto el {enrolledOn}</div>}
       </div>
       {enrollment.progressPercent != null && <ProgressBar label="Progreso" value={enrollment.progressPercent} />}
@@ -53,7 +53,7 @@ function CatalogCard() {
       <div className="flex size-10 items-center justify-center rounded-xl bg-neutral-bg">
         <Plus className="size-5" aria-hidden="true" />
       </div>
-      <span className="text-[13px] font-semibold">Ver oferta de cursos</span>
+      <span className="text-size-13 font-semibold">Ver oferta de cursos</span>
     </Link>
   );
 }
