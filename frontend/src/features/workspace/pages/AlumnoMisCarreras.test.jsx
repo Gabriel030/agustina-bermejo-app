@@ -7,6 +7,16 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
 
 const API = 'http://localhost:8080';
+const REGULAR_STUDENT = {
+  kind: 'PROGRAM',
+  enrollmentId: 5,
+  regular: true,
+  reasons: [],
+  attendanceControlled: true,
+  billingMode: 'FULL',
+  institutionallyRegular: true,
+  paymentStanding: 'VERIFIED',
+};
 
 describe('AlumnoMisCarreras', () => {
   it('keeps showing a graduated program with its finished state instead of the "not enrolled" empty state', async () => {
@@ -36,6 +46,7 @@ describe('AlumnoMisCarreras', () => {
           promedioGeneral: 8.1,
         }),
       ),
+      http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
 
@@ -74,6 +85,7 @@ describe('AlumnoMisCarreras', () => {
           promedioGeneral: 8.1,
         }),
       ),
+      http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
   }
@@ -167,6 +179,7 @@ describe('AlumnoMisCarreras — load failure', () => {
         calls += 1;
         return new HttpResponse(null, { status: 500 });
       }),
+      http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     const user = userEvent.setup();
@@ -176,5 +189,87 @@ describe('AlumnoMisCarreras — load failure', () => {
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     await waitFor(() => expect(calls).toBe(2));
+  });
+});
+
+describe('AlumnoMisCarreras — regularity', () => {
+  function mockRegularity(regularity) {
+    const requested = [];
+    server.use(
+      http.get(`${API}/me/regular-certificates/eligibility`, ({ request }) => {
+        requested.push(new URL(request.url).searchParams.get('enrollmentId'));
+        return HttpResponse.json({
+          kind: 'PROGRAM',
+          enrollmentId: 5,
+          regular: true,
+          reasons: [],
+          attendanceControlled: true,
+          billingMode: 'FULL',
+          institutionallyRegular: true,
+          paymentStanding: 'VERIFIED',
+          ...regularity,
+        });
+      }),
+      http.get(`${API}/me/program-enrollments`, () =>
+        HttpResponse.json([
+          {
+            id: 5,
+            studentId: 1,
+            programId: 2,
+            programName: 'Profesorado de Educación Inicial',
+            status: 'ACTIVE',
+            enrollmentDate: '2022-03-01T10:00:00',
+            completionDate: null,
+          },
+        ]),
+      ),
+      http.get(`${API}/me/program-enrollments/5/progress`, () =>
+        HttpResponse.json({
+          programEnrollmentId: 5,
+          creditosAcumulados: 40,
+          creditosRequeridos: 144,
+          obligatoriasPendientes: [],
+          gruposElectivos: [],
+          elegibleParaCompletar: false,
+          esRegular: true,
+          hasActiveCoursework: true,
+          promedioGeneral: 8.1,
+        }),
+      ),
+      http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+    );
+    return requested;
+  }
+
+  it('shows the student as regular once, with the payment reason', async () => {
+    const requested = mockRegularity({});
+    renderWithProviders(<AlumnoMisCarreras />);
+
+    expect(await screen.findByText('Alumno regular')).toBeInTheDocument();
+    expect(screen.getAllByText('Alumno regular')).toHaveLength(1);
+    expect(screen.getByText('Pagos al día')).toBeInTheDocument();
+    expect(requested).toEqual(['5']);
+  });
+
+  it('marks the regularity as to be confirmed when payments are pending review', async () => {
+    mockRegularity({ paymentStanding: 'TO_CONFIRM' });
+    renderWithProviders(<AlumnoMisCarreras />);
+
+    expect(await screen.findByText('Alumno regular · a confirmar')).toBeInTheDocument();
+    expect(screen.getByText('Pagos a confirmar')).toBeInTheDocument();
+  });
+
+  it('explains why the student is not regular', async () => {
+    mockRegularity({
+      institutionallyRegular: false,
+      regular: false,
+      reasons: ['FREE_IN_ACTIVE_SECTION'],
+      paymentStanding: 'OVERDUE',
+    });
+    renderWithProviders(<AlumnoMisCarreras />);
+
+    expect(await screen.findByText('No es alumno regular')).toBeInTheDocument();
+    expect(screen.getByText('Libre por inasistencias en una cursada activa · Pagos vencidos')).toBeInTheDocument();
   });
 });

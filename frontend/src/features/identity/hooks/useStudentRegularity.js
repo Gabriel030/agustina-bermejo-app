@@ -8,3 +8,11 @@ export function useStudentRegularity(kind, enrollmentId, enabled = true) {
     enabled: enabled && !!enrollmentId,
   });
 }
+
+export function useMyRegularity(kind, enrollmentId) {
+  return useQuery({
+    queryKey: ['me', 'regular-certificates', 'eligibility', kind, enrollmentId],
+    queryFn: () => apiFetch(`/me/regular-certificates/eligibility?kind=${kind}&enrollmentId=${enrollmentId}`),
+    enabled: !!enrollmentId,
+  });
+}
