@@ -27,7 +27,8 @@ const UNREAD = [
 describe("NotificationBell accessibility", () => {
   it("notificationBellHasNoAxeViolations", async () => {
     server.use(
-      http.get(`${API}/me/notifications`, () => HttpResponse.json(UNREAD)),
+      http.get(`${API}/me/notifications`, () => HttpResponse.json({ items: UNREAD, page: 0, size: 10, totalElements: 2 })),
+      http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json({ count: 2 })),
     );
     const { container } = renderWithProviders(<NotificationBell />);
     await screen.findByRole("button", { name: /sin leer/ }, { timeout: 5000 });
@@ -37,7 +38,8 @@ describe("NotificationBell accessibility", () => {
 
   it("notificationBellAnnouncesUnreadCountInLabel", async () => {
     server.use(
-      http.get(`${API}/me/notifications`, () => HttpResponse.json(UNREAD)),
+      http.get(`${API}/me/notifications`, () => HttpResponse.json({ items: UNREAD, page: 0, size: 10, totalElements: 2 })),
+      http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json({ count: 2 })),
     );
     renderWithProviders(<NotificationBell />);
 
@@ -50,11 +52,17 @@ describe("NotificationBell accessibility", () => {
     const user = userEvent.setup();
     server.use(
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
-          ...UNREAD,
-          { id: 3, type: "PAYMENT_CHARGED_BACK", read: true, message: "Revertido", createdAt: "2026-10-01T12:00:00" },
-        ]),
+        HttpResponse.json({
+          items: [
+            ...UNREAD,
+            { id: 3, type: "PAYMENT_CHARGED_BACK", read: true, message: "Revertido", createdAt: "2026-10-01T12:00:00" },
+          ],
+          page: 0,
+          size: 10,
+          totalElements: 3,
+        }),
       ),
+      http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json({ count: 2 })),
     );
     renderWithProviders(<NotificationBell />);
     await user.click(await screen.findByRole("button", { name: "Notificaciones, 2 sin leer" }));

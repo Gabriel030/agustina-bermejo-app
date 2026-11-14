@@ -64,8 +64,8 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PENDING_APPROVAL"));
 
-        getAs(director, "/me/notifications")
-                .andExpect(jsonPath("$[?(@.type=='SECTION_EVAL_CONFIG_PROPOSED')]").isNotEmpty());
+        getAs(director, "/me/notifications?size=100")
+                .andExpect(jsonPath("$.items[?(@.type=='SECTION_EVAL_CONFIG_PROPOSED')]").isNotEmpty());
         assertThat(countRows("ExamBoard", "e.subject.id = " + classroom.subject().getId())).isZero();
 
         postEmpty(director, "/section-evaluation-configs/" + sectionId + "/approve")
@@ -73,8 +73,8 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
                 .andExpect(jsonPath("$.status").value("APPROVED"))
                 .andExpect(jsonPath("$.reviewedByName").value("Nombre Apellido 78000017"));
 
-        getAs(classroom.teacher(), "/me/notifications")
-                .andExpect(jsonPath("$[?(@.type=='SECTION_EVAL_CONFIG_APPROVED')]").isNotEmpty());
+        getAs(classroom.teacher(), "/me/notifications?size=100")
+                .andExpect(jsonPath("$.items[?(@.type=='SECTION_EVAL_CONFIG_APPROVED')]").isNotEmpty());
         assertThat(countRows("ExamBoard", "e.subject.id = " + classroom.subject().getId())).isEqualTo(2);
         getAs(classroom.teacher(), configPath(classroom))
                 .andExpect(jsonPath("$.status").value("APPROVED"))
@@ -93,8 +93,8 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"))
                 .andExpect(jsonPath("$.rejectionReason").value("Fechas muy juntas"));
-        getAs(classroom.teacher(), "/me/notifications")
-                .andExpect(jsonPath("$[?(@.type=='SECTION_EVAL_CONFIG_REJECTED')]").isNotEmpty());
+        getAs(classroom.teacher(), "/me/notifications?size=100")
+                .andExpect(jsonPath("$.items[?(@.type=='SECTION_EVAL_CONFIG_REJECTED')]").isNotEmpty());
 
         putJson(classroom.teacher(), configPath(classroom), proposal()).andExpect(status().isOk());
         postEmpty(classroom.teacher(), configPath(classroom) + "/submit")

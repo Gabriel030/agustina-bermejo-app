@@ -1,6 +1,8 @@
 package com.red_escuela.backend.notification.repository;
 
 import com.red_escuela.backend.notification.entity.Notification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +18,10 @@ import java.util.Optional;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     List<Notification> findByRecipientIdOrderByCreatedAtDesc(Long recipientId);
+
+    Page<Notification> findByRecipientId(Long recipientId, Pageable pageable);
+
+    long countByRecipientIdAndReadFalse(Long recipientId);
 
     Optional<Notification> findFirstByTypeAndRelatedEntityTypeAndRelatedEntityIdOrderByCreatedAtDesc(NotificationType type, String relatedEntityType, Long relatedEntityId);
 

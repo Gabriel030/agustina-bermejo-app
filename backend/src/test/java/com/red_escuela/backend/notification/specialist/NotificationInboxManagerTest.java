@@ -2,6 +2,8 @@ package com.red_escuela.backend.notification.specialist;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.notification.dto.NotificationResponse;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
@@ -15,7 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -56,18 +57,69 @@ class NotificationInboxManagerTest extends AbstractIntegrationTest {
         return notification;
     }
 
+    private Notification persistNotificationAt(Person recipient, LocalDateTime createdAt, boolean read) {
+        Notification notification = persistNotification(recipient);
+        notification.setCreatedAt(createdAt);
+        notification.setRead(read);
+        return notification;
+    }
+
     @Test
-    void listForPersonReturnsOnlyThatPersonsNotifications() {
+    void pageForPersonReturnsOnlyThatPersonsNotifications() {
         Person destinatario = persistPerson("91000001");
         Person otraPersona = persistPerson("91000002");
-        persistNotification(destinatario);
+        Long notificationOfDestinatarioId = persistNotification(destinatario).getId();
         persistNotification(otraPersona);
         entityManager.flush();
 
-        List<Notification> notifications = notificationService.listForPerson(destinatario.getId());
+        PageResponse<NotificationResponse> page = notificationService.pageForPerson(destinatario.getId(), 0, 20);
 
-        assertThat(notifications).hasSize(1);
-        assertThat(notifications.get(0).getRecipient().getId()).isEqualTo(destinatario.getId());
+        assertThat(page.totalElements()).isEqualTo(1);
+        assertThat(page.items().get(0).id()).isEqualTo(notificationOfDestinatarioId);
+    }
+
+    @Test
+    void pageForPersonOrdersNewestFirstAndSlicesInSql() {
+        Person destinatario = persistPerson("91000004");
+        LocalDateTime base = LocalDateTime.of(2026, 11, 1, 10, 0);
+        Notification oldest = persistNotificationAt(destinatario, base, false);
+        Notification middle = persistNotificationAt(destinatario, base.plusHours(1), false);
+        Notification newest = persistNotificationAt(destinatario, base.plusHours(2), false);
+        entityManager.flush();
+
+        PageResponse<NotificationResponse> first = notificationService.pageForPerson(destinatario.getId(), 0, 2);
+        PageResponse<NotificationResponse> second = notificationService.pageForPerson(destinatario.getId(), 1, 2);
+
+        assertThat(first.items()).extracting(NotificationResponse::id).containsExactly(newest.getId(), middle.getId());
+        assertThat(second.items()).extracting(NotificationResponse::id).containsExactly(oldest.getId());
+        assertThat(first.totalElements()).isEqualTo(3);
+        assertThat(second.totalElements()).isEqualTo(3);
+    }
+
+    @Test
+    void pageForPersonBoundsSizeToMaximum() {
+        Person destinatario = persistPerson("91000005");
+        persistNotification(destinatario);
+        entityManager.flush();
+
+        PageResponse<NotificationResponse> page = notificationService.pageForPerson(destinatario.getId(), -3, 100000);
+
+        assertThat(page.page()).isZero();
+        assertThat(page.size()).isEqualTo(PageResponse.MAX_SIZE);
+    }
+
+    @Test
+    void countUnreadForPersonCountsOnlyUnreadOfThatPerson() {
+        Person destinatario = persistPerson("91000006");
+        Person otraPersona = persistPerson("91000007");
+        LocalDateTime now = LocalDateTime.now();
+        persistNotificationAt(destinatario, now, false);
+        persistNotificationAt(destinatario, now, false);
+        persistNotificationAt(destinatario, now, true);
+        persistNotificationAt(otraPersona, now, false);
+        entityManager.flush();
+
+        assertThat(notificationService.countUnreadForPerson(destinatario.getId())).isEqualTo(2);
     }
 
     @Test
@@ -76,9 +128,9 @@ class NotificationInboxManagerTest extends AbstractIntegrationTest {
         Notification notification = persistNotification(destinatario);
         entityManager.flush();
 
-        Notification actualizada = notificationService.markAsRead(notification.getId(), destinatario.getId());
+        NotificationResponse actualizada = notificationService.markAsRead(notification.getId(), destinatario.getId());
 
-        assertThat(actualizada.isRead()).isTrue();
+        assertThat(actualizada.read()).isTrue();
     }
 
     @Test

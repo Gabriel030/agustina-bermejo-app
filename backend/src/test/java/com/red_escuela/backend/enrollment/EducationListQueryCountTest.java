@@ -56,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class EducationListQueryCountTest extends AbstractIntegrationTest {
     private static final int MANY = 12;
-    private static final int STUDENT_LIST_QUERIES = 1;
+    private static final int STUDENT_LIST_QUERIES = 2;
     private static final int STAFF_LIST_QUERIES = 4;
     private static final int OWN_SECTION_ENROLLMENTS_QUERIES = 4;
     private static final int ATTENDANCE_SUMMARY_QUERIES = 3;
@@ -102,8 +102,7 @@ class EducationListQueryCountTest extends AbstractIntegrationTest {
         entityManager.clear();
 
         List<StudentResponse> responses = QueryCountAssertions.assertAtMostQueries(entityManagerFactory, STUDENT_LIST_QUERIES,
-                () -> listStudentsUseCase.list(new ListStudentsCommand(null, StudentOnboardingStatus.CONFIRMADO, null))
-                        .stream().map(student -> StudentResponse.from(student, false)).toList());
+                () -> listStudentsUseCase.list(new ListStudentsCommand(null, "CONFIRMADO", null, 0, 100, false)).items());
 
         assertThat(responses).hasSize(MANY);
         assertThat(responses).allSatisfy(response -> assertThat(response.dni()).isNotNull());
