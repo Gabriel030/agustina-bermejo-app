@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { formatearFecha } from '@/lib/comisiones';
 import { useClosureSheet, useConfirmClosure } from '../hooks/useClosureSheet';
 import { CLOSURE_STATUS, activeStudents, blockedMessage, columnLabel, toggleResultKpi, unpublishedColumns, withdrawnCount } from '../lib/closureSheet';
+import { ClosureNoAbsenceLimitNotice } from '../components/ClosureNoAbsenceLimitNotice';
 import { ClosurePrerequisitesSheet } from '../components/ClosurePrerequisitesSheet';
 import { ClosureSheetTable } from '../components/ClosureSheetTable';
 import { ClosureSummaryCards } from '../components/ClosureSummaryCards';
@@ -118,6 +119,8 @@ export function DocenteClosureSheet() {
           Hasta publicarlo, {pendingCount} {pendingCount === 1 ? 'alumno queda Pendiente' : 'alumnos quedan Pendientes'} y no se puede confirmar el cierre.
         </Notice>
       )}
+
+      {sheet.status !== 'CLOSED' && <ClosureNoAbsenceLimitNotice sheet={sheet} />}
 
       <div className="flex flex-col gap-2">
         <p className="text-xs text-ink-faint">
