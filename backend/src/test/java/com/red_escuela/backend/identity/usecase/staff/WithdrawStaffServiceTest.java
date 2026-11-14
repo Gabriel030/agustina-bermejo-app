@@ -4,6 +4,10 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.SessionRevoker;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -27,9 +31,10 @@ class WithdrawStaffServiceTest {
 
     private final PersonRepository personRepository = mock(PersonRepository.class);
     private final SessionRevoker sessionRevoker = mock(SessionRevoker.class);
+    private final AuditTrail auditTrail = mock(AuditTrail.class);
 
     private WithdrawStaffService serviceActingAs(String actorRole) {
-        return new WithdrawStaffService(personRepository, policyActingAs(actorRole), sessionRevoker);
+        return new WithdrawStaffService(personRepository, policyActingAs(actorRole), sessionRevoker, auditTrail);
     }
 
     private Person target(StatusType status, String... roles) {
@@ -70,6 +75,19 @@ class WithdrawStaffServiceTest {
     }
 
     @Test
+    void withdrawalRecordsAnAuditEntryForTheWithdrawnPersonAfterRevokingSessions() {
+        Person teacher = target(StatusType.ACTIVE, "DOCENTE");
+
+        serviceActingAs("ADMINISTRATIVO").withdraw(TARGET_ID);
+
+        InOrder order = inOrder(sessionRevoker, auditTrail);
+        order.verify(sessionRevoker).revokeAllSessions(teacher);
+        order.verify(auditTrail).record(new AuditRecord(AuditAction.STAFF_WITHDRAWN, AuditEntityType.PERSON,
+                TARGET_ID, null, "INACTIVE", null));
+    }
+
+
+    @Test
     void withdrawingAnUnknownPersonFailsWithNotFound() {
         when(personRepository.findById(TARGET_ID)).thenReturn(Optional.empty());
 
@@ -77,6 +95,7 @@ class WithdrawStaffServiceTest {
                 .isInstanceOf(PersonNotFoundException.class);
         verify(personRepository, never()).save(any());
         verify(sessionRevoker, never()).revokeAllSessions(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
@@ -87,6 +106,7 @@ class WithdrawStaffServiceTest {
                 .isInstanceOf(PersonNotFoundException.class);
         assertThat(student.getStatus()).isEqualTo(StatusType.ACTIVE);
         verify(sessionRevoker, never()).revokeAllSessions(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
@@ -98,6 +118,7 @@ class WithdrawStaffServiceTest {
         assertThat(administrative.getStatus()).isEqualTo(StatusType.ACTIVE);
         verify(personRepository, never()).save(any());
         verify(sessionRevoker, never()).revokeAllSessions(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
@@ -107,6 +128,7 @@ class WithdrawStaffServiceTest {
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").withdraw(TARGET_ID))
                 .isInstanceOf(PersonNotFoundException.class);
         verify(sessionRevoker, never()).revokeAllSessions(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
