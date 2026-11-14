@@ -142,6 +142,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   NOT_OWN_SECTION: 'Esa comisión no es tuya.',
   NOT_SECTION_INSTRUCTOR: 'No sos docente de esta comisión.',
   NOT_SECTION_LEAD_INSTRUCTOR: 'Solo el docente a cargo de la comisión puede hacer esto.',
+  REFRESH_CSRF_REJECTED: 'No pudimos validar tu sesión. Recargá la página e ingresá de nuevo.',
   ROLE_NOT_ASSIGNABLE_BY_ACTOR: 'No tenés permiso para asignar ese rol.',
   ANNOUNCEMENT_NOT_FOUND: 'No encontramos el aviso.',
   ATTENDANCE_CHANGE_REQUEST_NOT_FOUND: 'No encontramos la solicitud de cambio de asistencia.',

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { QueryClientContext } from '@tanstack/react-query';
 import { apiFetch, setAccessToken, setOfflineSessionMode, setSessionExpiredHandler } from '@/api/client';
+import { clearSessionHint, hasSessionHint, markSessionActive, readLegacyRefreshToken, sessionRefreshRequest } from '@/api/sessionHint';
 import { claimOfflineCache, purgeOfflineData, readOfflineProfile, storeOfflineProfile } from '@/api/offlinePersistence';
 
 const AuthContext = createContext(null);
@@ -23,14 +24,10 @@ export function restoreStoredSession() {
 }
 
 async function loadStoredSession() {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return null;
-  const tokens = await apiFetch('/auth/refresh', {
-    method: 'POST',
-    body: JSON.stringify({ refreshToken }),
-  });
+  if (!hasSessionHint()) return null;
+  const tokens = await apiFetch('/auth/refresh', sessionRefreshRequest());
   setAccessToken(tokens.accessToken);
-  localStorage.setItem('refreshToken', tokens.refreshToken);
+  markSessionActive();
   return apiFetch('/me');
 }
 
@@ -46,7 +43,7 @@ export function AuthProvider({ children }) {
 
   const limpiarSesion = useCallback(() => {
     setAccessToken(null);
-    localStorage.removeItem('refreshToken');
+    clearSessionHint();
     setUsuario(null);
     setOfflineProfile(null);
     setOfflineSessionMode(false);
@@ -58,7 +55,7 @@ export function AuthProvider({ children }) {
       await purgeOfflineData(queryClient);
       setOfflineSessionMode(false);
       setAccessToken(tokens.accessToken);
-      localStorage.setItem('refreshToken', tokens.refreshToken);
+      markSessionActive();
       const perfil = await apiFetch('/me');
       await claimOfflineCache(perfil.id, queryClient);
       await storeOfflineProfile(perfil);
@@ -108,7 +105,7 @@ export function AuthProvider({ children }) {
   }, [queryClient, expireSession]);
 
   useEffect(() => {
-    if (!localStorage.getItem('refreshToken')) {
+    if (!hasSessionHint()) {
       setCargando(false);
       return;
     }
@@ -185,12 +182,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const legacyToken = readLegacyRefreshToken();
+    const hadSession = hasSessionHint();
     setLoggedOut(true);
     limpiarSesion();
-    if (refreshToken) {
+    if (hadSession) {
       try {
-        await apiFetch('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken }) });
+        await apiFetch('/auth/logout', legacyToken
+          ? { method: 'POST', body: JSON.stringify({ refreshToken: legacyToken }) }
+          : { method: 'POST' });
       } catch {
         // El logout local ya se aplicó; si la llamada al backend falla (red, token ya
         // vencido) no hay nada más que el usuario pueda hacer desde acá.

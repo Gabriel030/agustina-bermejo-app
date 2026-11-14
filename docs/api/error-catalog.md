@@ -242,6 +242,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
+| `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
 | `ROLE_NOT_ASSIGNABLE_BY_ACTOR` | no | `RoleNotAssignableByActorException` | identity |
 
 ### HTTP 404
