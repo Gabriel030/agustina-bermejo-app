@@ -31,7 +31,12 @@ def frontend_variables(root):
 
 
 def compose_variables(root):
-    return set(re.findall(r'\$\{(' + VAR + r')[:}?-]', read(os.path.join(root, 'docker-compose.prod.yml'))))
+    paths = [os.path.join(root, 'docker-compose.prod.yml')]
+    paths += glob.glob(os.path.join(root, 'deploy/*/docker-compose.*.yml'))
+    found = set()
+    for path in paths:
+        found.update(re.findall(r'\$\{(' + VAR + r')[:}?-]', read(path)))
+    return found
 
 
 def documented_variables(root):

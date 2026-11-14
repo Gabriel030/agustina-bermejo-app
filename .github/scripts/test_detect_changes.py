@@ -117,6 +117,22 @@ class DetectChangesTest(unittest.TestCase):
         result = self.pull_request_changing({'frontend/a.js': 'b'})
         self.assertEqual('false', result['deploy'])
 
+    def test_pull_request_touching_the_backup_folder_runs_the_ops_checks(self):
+        result = self.pull_request_changing({'deploy/backup/verify-restore.sh': 'x'})
+        self.assertEqual('true', result['deploy_ops'])
+
+    def test_pull_request_touching_only_application_code_skips_the_ops_checks(self):
+        result = self.pull_request_changing({'frontend/a.js': 'b'})
+        self.assertEqual('false', result['deploy_ops'])
+
+    def test_pull_request_touching_the_backup_folder_runs_the_ops_checks(self):
+        result = self.pull_request_changing({'deploy/backup/verify-restore.sh': 'x'})
+        self.assertEqual('true', result['deploy_ops'])
+
+    def test_pull_request_touching_only_application_code_skips_the_ops_checks(self):
+        result = self.pull_request_changing({'frontend/a.js': 'b'})
+        self.assertEqual('false', result['deploy_ops'])
+
     def test_push_never_runs_the_demo_seed_job(self):
         result = self.push()
         self.assertEqual('false', result['run_demo_seed'])
