@@ -30,6 +30,7 @@ jobs:
       run_migration: ${{ steps.changes.outputs.run_migration }}
       run_demo_seed: ${{ steps.changes.outputs.run_demo_seed }}
       run_docs: ${{ steps.changes.outputs.run_docs }}
+      deploy: ${{ steps.changes.outputs.deploy }}
       extra_groups: ${{ steps.changes.outputs.extra_groups }}
       reuse_backend: ${{ steps.changes.outputs.reuse_backend }}
       reuse_frontend: ${{ steps.changes.outputs.reuse_frontend }}
@@ -605,6 +606,28 @@ jobs:
             exit 0
           fi
           [ "$CHECKS" = "success" ] && [ "$TESTS" = "success" ]
+
+  deploy-images:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check that deploy/.env.example matches the variables the code reads
+        run: python3 .github/scripts/check-env-example.py .
+
+      - name: Validate the production compose file
+        run: |
+          cp deploy/.env.example deploy/.env
+          docker compose --env-file deploy/.env -f docker-compose.prod.yml config --quiet
+
+      - name: Build the backend image without publishing it
+        run: docker build backend
+
+      - name: Build the frontend and proxy image without publishing it
+        run: docker build frontend
 
   # Nota: qa/bruno/ es la colección de exploración MANUAL (GUI/CLI local, contra
   # docker-compose.qa.yml — Postgres descartable, ver ese archivo). No corre en CI a
