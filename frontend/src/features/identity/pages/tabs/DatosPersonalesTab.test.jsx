@@ -73,7 +73,7 @@ describe('DatosPersonalesTab', () => {
       />,
     );
 
-    expect(await screen.findByRole('button', { name: 'Dar de baja' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Dar de baja al alumno del instituto' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Resetear contraseña' })).not.toBeInTheDocument();
   });
 
@@ -88,6 +88,6 @@ describe('DatosPersonalesTab', () => {
     );
 
     expect(await screen.findByRole('button', { name: 'Resetear contraseña' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Dar de baja' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dar de baja al alumno del instituto' })).not.toBeInTheDocument();
   });
 });

@@ -14,12 +14,18 @@ export function buildEnrollmentOptions(programEnrollments = [], courseEnrollment
       kind: 'program',
       id: enrollment.id,
       label: `${enrollment.programName} · Carrera`,
+      name: enrollment.programName,
+      status: enrollment.status,
+      enrollmentDate: enrollment.enrollmentDate,
     })),
     ...courseEnrollments.map((enrollment) => ({
       key: enrollmentKey('course', enrollment.id),
       kind: 'course',
       id: enrollment.id,
       label: `${enrollment.courseName} · Curso`,
+      name: enrollment.courseName,
+      status: enrollment.status,
+      enrollmentDate: enrollment.enrollmentDate,
     })),
   ];
 }

@@ -8,8 +8,14 @@ import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/table/DataTable';
 import { useAuth } from '@/context/AuthContext';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { FaltasDeMateria } from '@/features/attendance';
 import { EnrollmentPicker } from '@/features/identity/components/EnrollmentPicker';
+import { EnrollmentActionsMenu } from '@/features/identity/components/EnrollmentActionsMenu';
+import { WithdrawEnrollmentDialog } from '@/features/identity/components/WithdrawEnrollmentDialog';
+import { ChangeSectionSheet } from '@/features/identity/components/ChangeSectionSheet';
+import { useEnrollmentChangeFlow } from '@/features/identity/hooks/useEnrollmentChangeFlow';
+import { hasAnyAction, isEnrollmentActionable, isSectionActionable, permissionsFor, sectionActionsOf } from '@/features/identity/lib/enrollmentChanges';
 import { useStudentRegularity } from '@/features/identity/hooks/useStudentRegularity';
 import { describeRegularity } from '@/features/identity/lib/regularity';
 import {
@@ -68,8 +74,8 @@ function SubjectDetail({ row, onViewGrades, absences }) {
   );
 }
 
-function buildSubjectColumns() {
-  return [
+function buildSubjectColumns(permissions, onAction) {
+  const columns = [
     {
       id: 'subject',
       header: 'Materia',
@@ -126,6 +132,23 @@ function buildSubjectColumns() {
       cell: ({ row }) => formatAttendancePercent(row.original.attendancePercent),
     },
   ];
+  if (!permissions) return columns;
+  return [
+    ...columns,
+    {
+      id: 'actions',
+      header: () => <span className="sr-only">Acciones</span>,
+      enableSorting: false,
+      meta: { align: 'right' },
+      cell: ({ row }) => (
+        <EnrollmentActionsMenu
+          actions={sectionActionsOf(row.original, permissions)}
+          label={`Acciones de ${row.original.subjectName}, comisión ${row.original.sectionName}`}
+          onSelect={(kind) => onAction(kind, row.original)}
+        />
+      ),
+    },
+  ];
 }
 
 function PendingList({ title, items }) {
@@ -169,12 +192,30 @@ function RegularityLine({ programEnrollmentId }) {
   );
 }
 
-function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
+function ProgramRecord({ option, programEnrollmentId, onViewGrades, absences, permissions, flow }) {
   const progress = useProgramProgress(programEnrollmentId);
   const sections = useProgramSectionEnrollments(programEnrollmentId);
   const attendance = useProgramAttendanceSummary(programEnrollmentId);
-  const columns = useMemo(() => buildSubjectColumns(), []);
   const rows = useMemo(() => buildSubjectRows(sections.data, attendance.data), [sections.data, attendance.data]);
+  const showActions = hasAnyAction(rows, permissions);
+  const { startChange, startWithdraw } = flow;
+  const columns = useMemo(
+    () =>
+      buildSubjectColumns(
+        showActions ? permissions : null,
+        (kind, row) => {
+          if (kind === 'change-section') startChange(row);
+          else
+            startWithdraw({
+              kind: 'withdraw-subject',
+              id: row.id,
+              name: `${row.subjectName} · Com. ${row.sectionName}`,
+              waitlisted: row.status === 'WAITLISTED',
+            });
+        },
+      ),
+    [showActions, permissions, startChange, startWithdraw],
+  );
 
   if (progress.isError || sections.isError) {
     return (
@@ -190,8 +231,21 @@ function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
   const data = progress.data;
   const creditsPercent = data && data.creditosRequeridos > 0 ? (data.creditosAcumulados / data.creditosRequeridos) * 100 : 0;
 
+  const canWithdrawProgram = permissions.canWithdrawProgram && isEnrollmentActionable(option.status);
+
   return (
     <div className="flex flex-col gap-4">
+      {canWithdrawProgram && (
+        <div className="flex items-center justify-end">
+          <EnrollmentActionsMenu
+            actions={[{ kind: 'withdraw-program', label: 'Dar de baja de la carrera', destructive: true, disabledReason: null }]}
+            label={`Acciones de la carrera ${option.name}`}
+            onSelect={() =>
+              flow.startWithdraw({ kind: 'withdraw-program', id: programEnrollmentId, name: option.name, enrollmentDate: option.enrollmentDate })
+            }
+          />
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {progress.isLoading ? (
           [1, 2, 3, 4].map((item) => <Skeleton key={item} className="h-24 w-full rounded-xl" />)
@@ -258,7 +312,7 @@ function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
   );
 }
 
-function CourseRecord({ courseEnrollmentId }) {
+function CourseRecord({ option, courseEnrollmentId, permissions, flow }) {
   const progress = useCourseProgress(courseEnrollmentId);
 
   if (progress.isError) return <LoadError onRetry={() => progress.refetch()} />;
@@ -271,8 +325,21 @@ function CourseRecord({ courseEnrollmentId }) {
     );
   }
   const data = progress.data;
+  const modules = data.moduleEnrollments ?? [];
+  const canWithdrawCourse = permissions.canWithdrawCourse && isEnrollmentActionable(option.status);
   return (
     <div className="flex flex-col gap-4">
+      {canWithdrawCourse && (
+        <div className="flex items-center justify-end">
+          <EnrollmentActionsMenu
+            actions={[{ kind: 'withdraw-course', label: 'Dar de baja del curso', destructive: true, disabledReason: null }]}
+            label={`Acciones del curso ${option.name}`}
+            onSelect={() =>
+              flow.startWithdraw({ kind: 'withdraw-course', id: courseEnrollmentId, name: option.name, enrollmentDate: option.enrollmentDate })
+            }
+          />
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="Módulos pendientes">
           <span className={BIG_NUMBER}>{data.modulosPendientes.length}</span>
@@ -286,12 +353,48 @@ function CourseRecord({ courseEnrollmentId }) {
       <GlassCard className="flex flex-col gap-4 p-5">
         <PendingList title="Módulos pendientes" items={data.modulosPendientes} />
       </GlassCard>
+      {modules.length > 0 && (
+        <GlassCard className="flex flex-col gap-2 p-5">
+          <h2 className="font-heading text-size-15 font-semibold text-ink">Módulos</h2>
+          {modules.map((module) => {
+            const status = describeSectionStatus(module.status);
+            const actions =
+              permissions.canWithdrawModule && isSectionActionable(module.status)
+                ? [{ kind: 'withdraw-module', label: 'Dar de baja del módulo', destructive: true, disabledReason: null }]
+                : [];
+            return (
+              <div key={module.sectionEnrollmentId} className="flex items-center gap-2 text-size-13">
+                <span className="min-w-0 flex-1 text-ink">
+                  {module.moduleName}
+                  <span className="ml-2 text-size-12 text-ink-faint">Com. {module.sectionName}</span>
+                </span>
+                <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                <EnrollmentActionsMenu
+                  actions={actions}
+                  label={`Acciones del módulo ${module.moduleName}`}
+                  onSelect={() =>
+                    flow.startWithdraw({
+                      kind: 'withdraw-module',
+                      id: module.sectionEnrollmentId,
+                      name: `${module.moduleName} · Com. ${module.sectionName}`,
+                      waitlisted: module.status === 'WAITLISTED',
+                    })
+                  }
+                />
+              </div>
+            );
+          })}
+        </GlassCard>
+      )}
     </div>
   );
 }
 
 export function AcademicoTab({ studentId, enrollmentKey, onEnrollmentChange, onViewGrades, absences }) {
   const { options, isLoading, isError, refetch } = useEnrollmentOptions(studentId);
+  const { roleBase } = useActiveRole();
+  const permissions = useMemo(() => permissionsFor(roleBase), [roleBase]);
+  const flow = useEnrollmentChangeFlow(studentId);
 
   if (isLoading) {
     return (
@@ -317,13 +420,36 @@ export function AcademicoTab({ studentId, enrollmentKey, onEnrollmentChange, onV
       {kind === 'program' ? (
         <ProgramRecord
           key={selected.key}
+          option={selected}
+          permissions={permissions}
+          flow={flow}
           programEnrollmentId={id}
           absences={absences}
           onViewGrades={(sectionEnrollmentId) => onViewGrades(selected.key, sectionEnrollmentId)}
         />
       ) : (
-        <CourseRecord key={selected.key} courseEnrollmentId={id} />
+        <CourseRecord key={selected.key} option={selected} permissions={permissions} flow={flow} courseEnrollmentId={id} />
       )}
+      <span className="sr-only" role="status" aria-live="polite">
+        {flow.announcement}
+      </span>
+      <WithdrawEnrollmentDialog
+        key={flow.withdrawTarget ? `${flow.withdrawTarget.kind}-${flow.withdrawTarget.id}` : 'withdraw-none'}
+        target={flow.withdrawTarget}
+        onClose={flow.closeWithdraw}
+        onConfirm={flow.confirmWithdraw}
+        pending={flow.withdrawPending}
+        serverError={flow.serverError}
+      />
+      <ChangeSectionSheet
+        key={flow.changeRow ? flow.changeRow.id : 'change-none'}
+        row={flow.changeRow}
+        onClose={flow.closeChange}
+        onSubmit={flow.confirmChange}
+        pending={flow.changePending}
+        serverError={flow.serverError}
+        onChooseAnother={flow.clearServerError}
+      />
     </div>
   );
 }
