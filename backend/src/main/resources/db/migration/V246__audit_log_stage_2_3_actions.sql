@@ -1,3 +1,6 @@
+alter table audit_log drop constraint audit_log_actor_person_id_fkey;
+alter table audit_log add constraint audit_log_actor_person_id_fkey foreign key (actor_person_id) references person (id) on delete set null;
+
 alter table audit_log drop constraint ck_audit_log_action;
 alter table audit_log drop constraint ck_audit_log_entity_type;
 

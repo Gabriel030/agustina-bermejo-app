@@ -96,6 +96,24 @@ class AuditedPasswordActionsIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void deletingTheActorKeepsTheAuditEntryWithoutActor() throws Exception {
+        mockMvc.perform(put("/me/password").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"currentPassword\":\"" + CURRENT_PASSWORD + "\",\"newPassword\":\"" + NEW_PASSWORD + "\"}"))
+                .andExpect(status().isNoContent());
+        Long personId = person.getId();
+
+        jdbc.update("delete from refresh_token where person_id = ?", personId);
+        jdbc.update("delete from person_role where person_id = ?", personId);
+        jdbc.update("delete from person where id = ?", personId);
+
+        List<Map<String, Object>> rows = jdbc.queryForList(
+                "select actor_person_id from audit_log where action = 'PASSWORD_CHANGED' and entity_id = ?", personId);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).get("actor_person_id")).isNull();
+    }
+
+    @Test
     void aRejectedPasswordChangeLeavesNoAuditEntry() throws Exception {
         mockMvc.perform(put("/me/password").header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
