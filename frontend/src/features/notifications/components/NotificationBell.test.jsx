@@ -6,21 +6,28 @@ import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
+import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { TIPO_NOTIFICACION_LABEL } from '@/lib/notificaciones';
 
+const pageOf = (items) => ({ items, page: 0, size: 10, totalElements: items.length })
+
 const API = 'http://localhost:8080';
+
+const unreadCount = (count) => http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json({ count }));
+const unreadCountFailing = () => http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }));
 
 describe('NotificationBell', () => {
   it('has an accessible name that includes the unread count', async () => {
     server.use(
+      unreadCount(2),
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
+        HttpResponse.json(pageOf([
           { id: 1, type: 'PAYMENT_RECEIPT_APPROVED', read: false, createdAt: '2026-10-01T10:00:00' },
           { id: 2, type: 'PAYMENT_RECEIPT_APPROVED', read: false, createdAt: '2026-10-01T11:00:00' },
           { id: 3, type: 'PAYMENT_RECEIPT_APPROVED', read: true, createdAt: '2026-10-01T12:00:00' },
-        ]),
+        ])),
       ),
     );
     renderWithProviders(<NotificationBell />);
@@ -29,7 +36,7 @@ describe('NotificationBell', () => {
   });
 
   it('is named just Notificaciones when everything is read', async () => {
-    server.use(http.get(`${API}/me/notifications`, () => HttpResponse.json([])));
+    server.use(http.get(`${API}/me/notifications`, () => HttpResponse.json(pageOf([]))));
     renderWithProviders(<NotificationBell />);
 
     expect(await screen.findByRole('button', { name: 'Notificaciones' })).toBeInTheDocument();
@@ -41,8 +48,9 @@ describe('NotificationBell', () => {
       return <div>{useLocation().pathname}</div>;
     }
     server.use(
+      unreadCount(1),
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
+        HttpResponse.json(pageOf([
           {
             id: 9,
             type: 'PROGRAM_APPLICATION_APPROVED',
@@ -52,7 +60,7 @@ describe('NotificationBell', () => {
             relatedEntityId: 42,
             createdAt: '2026-10-01T10:00:00',
           },
-        ]),
+        ])),
       ),
       http.post(`${API}/me/notifications/9/read`, () =>
         HttpResponse.json({ id: 9, type: 'GENERAL', message: 'Aviso', read: true, createdAt: '2026-01-01T00:00:00', relatedEntityId: 1, relatedEntityType: 'INVOICE' }),
@@ -79,8 +87,9 @@ describe('NotificationBell', () => {
       return <div>{useLocation().pathname}</div>;
     }
     server.use(
+      unreadCount(1),
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
+        HttpResponse.json(pageOf([
           {
             id: 12,
             type: 'PROGRAM_APPLICATION_RECEIVED',
@@ -90,7 +99,7 @@ describe('NotificationBell', () => {
             relatedEntityId: 55,
             createdAt: '2026-10-01T10:00:00',
           },
-        ]),
+        ])),
       ),
       http.post(`${API}/me/notifications/12/read`, () =>
         HttpResponse.json({ id: 12, type: 'PROGRAM_APPLICATION_RECEIVED', message: 'Aviso', read: true, createdAt: '2026-10-01T10:00:00', relatedEntityId: 55, relatedEntityType: 'ProgramEnrollmentApplication' }),
@@ -116,10 +125,11 @@ describe('NotificationBell', () => {
     const user = userEvent.setup();
     let calls = 0;
     server.use(
+      unreadCountFailing(),
       http.get(`${API}/me/notifications`, () => {
         calls += 1;
         if (calls === 1) return HttpResponse.json({ message: 'boom' }, { status: 500 });
-        return HttpResponse.json([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', message: 'Listo', read: false, createdAt: '2026-10-01T10:00:00' }]);
+        return HttpResponse.json(pageOf([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', message: 'Listo', read: false, createdAt: '2026-10-01T10:00:00' }]));
       }),
     );
     renderWithProviders(<NotificationBell />);
@@ -141,9 +151,9 @@ describe('NotificationBell', () => {
     }
     server.use(
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
+        HttpResponse.json(pageOf([
           { id: 41, type: 'DRAFT_INVOICES_AWAITING_REVIEW', message: 'Quedan 3 borradores.', read: true, relatedEntityType: 'MonthlyInvoiceRun', relatedEntityId: 7, createdAt: '2026-11-01T10:00:00' },
-        ]),
+        ])),
       ),
     );
     renderWithProviders(
@@ -171,9 +181,9 @@ describe('NotificationBell', () => {
     }
     server.use(
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
+        HttpResponse.json(pageOf([
           { id: 31, type, message: 'Hay novedades en tus notas.', read: true, relatedEntityType: entityType, relatedEntityId: 5, createdAt: '2026-11-01T10:00:00' },
-        ]),
+        ])),
       ),
     );
     renderWithProviders(
@@ -199,9 +209,9 @@ describe('NotificationBell', () => {
       }
       server.use(
         http.get(`${API}/me/notifications`, () =>
-          HttpResponse.json([
+          HttpResponse.json(pageOf([
             { id: 32, type, message: 'Respondieron tu pedido.', read: true, relatedEntityType: 'AttendanceChangeRequest', relatedEntityId: 40, createdAt: '2026-11-01T10:00:00' },
-          ]),
+          ])),
         ),
       );
       renderWithProviders(
@@ -232,7 +242,7 @@ describe('NotificationBell', () => {
     }
     server.use(
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
+        HttpResponse.json(pageOf([
           {
             id: 21,
             type,
@@ -242,7 +252,7 @@ describe('NotificationBell', () => {
             relatedEntityId: 7,
             createdAt: '2026-10-01T10:00:00',
           },
-        ]),
+        ])),
       ),
     );
     renderWithProviders(
@@ -269,9 +279,9 @@ describe('NotificationBell', () => {
     }
     server.use(
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
+        HttpResponse.json(pageOf([
           { id: 31, type, message: 'Oferta', read: true, relatedEntityType: entityType, relatedEntityId: 9, createdAt: '2026-11-01T10:00:00' },
-        ]),
+        ])),
       ),
     );
     renderWithProviders(
@@ -294,7 +304,7 @@ describe('NotificationBell', () => {
     }
     server.use(
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([
+        HttpResponse.json(pageOf([
           {
             id: 22,
             type: 'ANNOUNCEMENT_PUBLISHED',
@@ -304,7 +314,7 @@ describe('NotificationBell', () => {
             relatedEntityId: 5,
             createdAt: '2026-10-01T10:00:00',
           },
-        ]),
+        ])),
       ),
     );
     renderWithProviders(
@@ -323,8 +333,9 @@ describe('NotificationBell', () => {
   it('shows a Spanish generic label and screen reader text for unknown unread types', async () => {
     const user = userEvent.setup();
     server.use(
+      unreadCount(1),
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([{ id: 1, type: 'SOME_FUTURE_TYPE', message: 'Algo pasó', read: false, createdAt: '2026-10-01T10:00:00' }]),
+        HttpResponse.json(pageOf([{ id: 1, type: 'SOME_FUTURE_TYPE', message: 'Algo pasó', read: false, createdAt: '2026-10-01T10:00:00' }])),
       ),
     );
     renderWithProviders(<NotificationBell />);
@@ -339,9 +350,10 @@ describe('NotificationBell', () => {
     const user = userEvent.setup();
     let calls = 0;
     server.use(
+      unreadCount(1),
       http.get(`${API}/me/notifications`, () => {
         calls += 1;
-        if (calls === 1) return HttpResponse.json([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', message: 'Listo', read: false, createdAt: '2026-10-01T10:00:00' }]);
+        if (calls === 1) return HttpResponse.json(pageOf([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', message: 'Listo', read: false, createdAt: '2026-10-01T10:00:00' }]));
         return HttpResponse.json({ message: 'boom' }, { status: 500 });
       }),
     );
@@ -366,8 +378,9 @@ describe('NotificationBell', () => {
 describe('NotificationBell offline stamp', () => {
   it('showsLastUpdateStampWhileOffline', async () => {
     server.use(
+      unreadCount(1),
       http.get(`${API}/me/notifications`, () =>
-        HttpResponse.json([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', read: false, createdAt: '2026-10-01T10:00:00' }]),
+        HttpResponse.json(pageOf([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', read: false, createdAt: '2026-10-01T10:00:00' }])),
       ),
     )
     const onLine = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(true)

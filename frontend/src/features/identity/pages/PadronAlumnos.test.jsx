@@ -36,7 +36,7 @@ async function openProspectsTab(user) {
 describe('PadronAlumnos prospects tab', () => {
   it('lists the missing documents of each prospect', async () => {
     server.use(
-      http.get(`${API}/students`, () => HttpResponse.json([])),
+      http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
       http.get(`${API}/prospects`, () =>
         HttpResponse.json([prospect(), prospect({ id: 6, nombre: 'Beto', apellido: 'Gil', email: 'beto@demo.test', missingDocuments: [] })]),
       ),
@@ -52,7 +52,7 @@ describe('PadronAlumnos prospects tab', () => {
 
   it('filters the prospects by the search text', async () => {
     server.use(
-      http.get(`${API}/students`, () => HttpResponse.json([])),
+      http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
       http.get(`${API}/prospects`, () => HttpResponse.json([prospect(), prospect({ id: 6, nombre: 'Beto', apellido: 'Gil', email: 'beto@demo.test' })])),
     );
     const user = userEvent.setup();
@@ -68,7 +68,7 @@ describe('PadronAlumnos prospects tab', () => {
 
   it('shows the empty state when there are no prospects', async () => {
     server.use(
-      http.get(`${API}/students`, () => HttpResponse.json([])),
+      http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
       http.get(`${API}/prospects`, () => HttpResponse.json([])),
     );
     const user = userEvent.setup();
@@ -81,7 +81,7 @@ describe('PadronAlumnos prospects tab', () => {
   it('shows a retryable error when the prospects cannot be loaded', async () => {
     let attempts = 0;
     server.use(
-      http.get(`${API}/students`, () => HttpResponse.json([])),
+      http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
       http.get(`${API}/prospects`, () => {
         attempts += 1;
         return attempts === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json([prospect()]);
@@ -101,7 +101,7 @@ describe('PadronAlumnos prospects tab', () => {
 describe('PadronAlumnos new student button', () => {
   it.each([['DIRECTOR'], ['PRECEPTOR'], ['ADMINISTRATIVO']])('is visible for %s', async (role) => {
     authMock.roles = [role];
-    server.use(http.get(`${API}/students`, () => HttpResponse.json([])));
+    server.use(http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })));
     renderWithProviders(<PadronAlumnos />);
 
     expect(await screen.findByRole('button', { name: 'Nuevo alumno' })).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('PadronAlumnos new student button', () => {
 
   it('is hidden for a teacher', async () => {
     authMock.roles = ['DOCENTE'];
-    server.use(http.get(`${API}/students`, () => HttpResponse.json([])));
+    server.use(http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })));
     renderWithProviders(<PadronAlumnos />);
 
     await screen.findByText('Padrón de alumnos');

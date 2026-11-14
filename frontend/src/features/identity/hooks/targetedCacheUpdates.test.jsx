@@ -55,19 +55,21 @@ describe('targeted cache updates', () => {
 
   it('notificationReadUpdatesOnlyThatItemWithoutRefetch', async () => {
     apiFetch.mockResolvedValue(undefined);
-    const lista = [{ id: 1, read: false }, { id: 2, read: false }];
-    const { result, queryClient } = mount(() => useMarcarNotificacionLeida(), [[['me', 'notifications'], lista]]);
+    const key = ['me', 'notifications', { page: 0, size: 10 }];
+    const pageData = { items: [{ id: 1, read: false }, { id: 2, read: false }], page: 0, size: 10, totalElements: 2 };
+    const { result, queryClient } = mount(() => useMarcarNotificacionLeida(), [[key, pageData], [['me', 'notifications', 'unread-count'], { count: 2 }]]);
     await act(async () => { await result.current.mutateAsync(1); });
-    expect(queryClient.getQueryData(['me', 'notifications'])).toEqual([{ id: 1, read: true }, { id: 2, read: false }]);
+    expect(queryClient.getQueryData(key).items).toEqual([{ id: 1, read: true }, { id: 2, read: false }]);
+    expect(queryClient.getQueryData(['me', 'notifications', 'unread-count'])).toEqual({ count: 1 });
     expect(apiFetch).toHaveBeenCalledTimes(1);
   });
 
   it('notificationReadErrorInvalidatesList', async () => {
     apiFetch.mockImplementation(() => Promise.reject(new Error('boom')));
-    const { result, queryClient } = mount(() => useMarcarNotificacionLeida(), [[['me', 'notifications'], [{ id: 1, read: false }]]]);
+    const { result, queryClient } = mount(() => useMarcarNotificacionLeida(), [[['me', 'notifications'], { items: [{ id: 1, read: false }] }]]);
     act(() => result.current.mutate(1));
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(queryClient.getQueryData(['me', 'notifications'])).toEqual([{ id: 1, read: false }]);
+    expect(queryClient.getQueryData(['me', 'notifications'])).toEqual({ items: [{ id: 1, read: false }] });
     expect(queryClient.getQueryState(['me', 'notifications']).isInvalidated).toBe(true);
   });
 
