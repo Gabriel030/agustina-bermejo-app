@@ -4,6 +4,7 @@ import com.red_escuela.backend.dataimport.domain.ImportEntityType;
 import com.red_escuela.backend.shared.exception.ConflictException;
 import com.red_escuela.backend.shared.exception.ReportsErrorCode;
 import com.red_escuela.backend.shared.exception.ReportsErrorDetails;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,16 @@ public class ImportRollbackBlockedException extends ConflictException implements
 
     @Override
     public Map<String, Object> details() {
-        return Map.of("blockers", List.of(Map.of("entityType", entityType.name(), "naturalKey", naturalKey, "reason", reason)));
+        Map<String, Object> blocker = new LinkedHashMap<>();
+        if (entityType != null) {
+            blocker.put("entityType", entityType.name());
+        }
+        if (naturalKey != null) {
+            blocker.put("naturalKey", naturalKey);
+        }
+        if (reason != null) {
+            blocker.put("reason", reason);
+        }
+        return Map.of("blockers", List.of(blocker));
     }
 }
