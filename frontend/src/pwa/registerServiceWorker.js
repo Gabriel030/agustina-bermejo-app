@@ -3,6 +3,25 @@ import { SKIP_WAITING_MESSAGE } from './swMessages'
 const listeners = new Set()
 let state = { updateAvailable: false, offlineReady: false }
 let waitingWorker = null
+let stopUpdateChecks = null
+
+export const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000
+
+export function startUpdateChecks(registration, { intervalMs = UPDATE_CHECK_INTERVAL_MS, doc = globalThis.document, nav = globalThis.navigator } = {}) {
+  const check = () => {
+    if (nav?.onLine === false) return
+    registration.update().catch(() => {})
+  }
+  const onVisibility = () => {
+    if (doc?.visibilityState === 'visible') check()
+  }
+  const timer = setInterval(check, intervalMs)
+  doc?.addEventListener('visibilitychange', onVisibility)
+  return () => {
+    clearInterval(timer)
+    doc?.removeEventListener('visibilitychange', onVisibility)
+  }
+}
 
 function publish(patch) {
   state = { ...state, ...patch }
@@ -24,7 +43,12 @@ export function applyServiceWorkerUpdate() {
   return true
 }
 
-export function registerServiceWorker({ serviceWorker = globalThis.navigator?.serviceWorker, scriptUrl = '/sw.js', reload = () => globalThis.location.reload() } = {}) {
+export function registerServiceWorker({
+  serviceWorker = globalThis.navigator?.serviceWorker,
+  scriptUrl = '/sw.js',
+  reload = () => globalThis.location.reload(),
+  updateChecks = {},
+} = {}) {
   if (!serviceWorker) return Promise.resolve(null)
 
   const trackWaiting = (registration) => {
@@ -52,11 +76,15 @@ export function registerServiceWorker({ serviceWorker = globalThis.navigator?.se
         else publish({ offlineReady: true })
       })
     })
+    stopUpdateChecks?.()
+    stopUpdateChecks = startUpdateChecks(registration, updateChecks)
     return registration
   })
 }
 
 export function resetServiceWorkerState() {
+  stopUpdateChecks?.()
+  stopUpdateChecks = null
   state = { updateAvailable: false, offlineReady: false }
   waitingWorker = null
   listeners.clear()

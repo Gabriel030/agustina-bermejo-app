@@ -6,6 +6,7 @@ import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { manifest } from './pwa.manifest.js'
+import { selectCriticalEntries } from './pwa.precache.js'
 import { readFileSync } from 'node:fs'
 import { extractInlineScripts, resolveApiOrigin } from './csp.js'
 
@@ -58,6 +59,7 @@ export default defineConfig(({ mode }) => ({
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        manifestTransforms: [selectCriticalEntries],
       },
       devOptions: { enabled: false },
     }),

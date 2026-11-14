@@ -3,10 +3,12 @@ export const manifest = {
   short_name: 'Agustina B.',
   description: 'Gestión académica del instituto',
   lang: 'es-AR',
+  dir: 'ltr',
+  id: '/',
+  categories: ['education', 'productivity'],
   start_url: '/',
   scope: '/',
   display: 'standalone',
-  orientation: 'portrait',
   background_color: '#0f172a',
   theme_color: '#0f172a',
   icons: [

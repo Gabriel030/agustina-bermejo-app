@@ -21,11 +21,13 @@ describe('sw.js', () => {
     expect(source).toMatch(/if \(isSkipWaitingMessage\(event\.data\)\) self\.skipWaiting\(\)/)
   })
 
-  it('declaresNoRuntimeCachingForApiOrSessionData', () => {
+  it('declaresRuntimeCachingOnlyForHashedStaticAssets', () => {
     expect(source).not.toContain('StaleWhileRevalidate')
     expect(source).not.toContain('NetworkFirst')
-    expect(source).not.toContain('CacheFirst')
     expect(source).not.toContain('fetch')
+    expect(source.match(/new CacheFirst/g)).toHaveLength(1)
+    expect(source).toContain('isStaticAssetRequest(url, self.location.origin)')
+    expect(source).not.toContain('/api')
   })
 })
 
