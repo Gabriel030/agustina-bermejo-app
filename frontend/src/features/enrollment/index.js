@@ -2,6 +2,7 @@ export { InscripcionMaterias } from './components/InscripcionMaterias';
 export {
   useMisInscripciones,
   useMisCursos,
+  useMyCourseEnrollment,
   useMisMatriculaciones,
   useMiProgreso,
   useMiInscripcion,
