@@ -114,11 +114,12 @@ class DataImportHistoryIT extends AbstractIntegrationTest {
         upload(batchId, "CURRICULUM", "programName,subjectCode,curricularYear,curricularTerm,credits,category,recurrence,sortOrder\n"
                 + program + "," + subject + ",1,FIRST,6,MANDATORY,PROMOTIONAL,1\n");
         upload(batchId, "TERMS", "year,termType,description,startDate,endDate,programName\n"
-                + year + ",FIRST_SEMESTER,Primer cuatrimestre," + year + "-03-15,15/07/" + year + "," + program + "\n");
+                + year + ",FIRST_SEMESTER,Primer cuatrimestre," + year + "-03-15,15/07/" + year + "," + program + "\n"
+                + year + ",ANNUAL,Anual," + year + "-03-01,15/12/" + year + "," + program + "\n");
         upload(batchId, "SECTIONS", "sectionCode,subjectCode,year,termType,name,shift,instructorDni,closedOn,actaNumber,actaBook,actaFolio,programName\n"
                 + section + "," + subject + "," + year + ",FIRST_SEMESTER,Comisión A,MORNING," + teacherDni + "," + year + "-07-20,,Libro 7,Folio 45,\n");
-        upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear\n"
-                + "DNI," + studentDni + "," + program + "," + year + "-03-01,ENROLLED,,," + year + "\n");
+        upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear,intake\n"
+                + "DNI," + studentDni + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n");
         upload(batchId, "SECTION_ENROLLMENTS", "documentType,dni,programName,sectionCode,attemptNumber,status,finalScore,finalGradeType,finalDate\n"
                 + "DNI," + studentDni + "," + program + "," + section + ",1,APPROVED,\"8,50\",PROMOTION," + year + "-07-20\n");
 
@@ -133,7 +134,7 @@ class DataImportHistoryIT extends AbstractIntegrationTest {
 
         assertThat(jdbc.queryForObject("select count(*) from program_enrollment where entry_year = ?", Integer.class, year)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from academic_offering_cycle c join program p on p.id = c.program_id where p.name = ? and c.status = 'CLOSED'",
-                Integer.class, program)).isEqualTo(1);
+                Integer.class, program)).isEqualTo(2);
         assertThat(jdbc.queryForObject("select t.status from term t join subject_section s on s.term_id = t.id where s.code = ?",
                 String.class, section)).isEqualTo("INACTIVE");
         assertThat(jdbc.queryForObject("select count(*) from subject_section_instructor i join subject_section s on s.id = i.program_section_id where s.code = ?",
@@ -164,6 +165,79 @@ class DataImportHistoryIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForList("select jsonb_array_elements(errors)->>'code' from import_row where batch_id = ?",
                 String.class, batchId)).contains("SUBJECT_NOT_FOUND", "TERM_NOT_FOUND", "PROGRAM_ENROLLMENT_NOT_FOUND",
                 "FINAL_SCORE_REQUIRED", "FINAL_GRADE_TYPE_REQUIRED", "FINAL_DATE_REQUIRED");
+    }
+
+    @Test
+    void enrollmentsReceiveInactiveCohortsByProgramYearAndIntakeWithoutBillingSideEffectsAndRollbackRetainsThem() throws Exception {
+        String program = "Tecnicatura " + suffix;
+        String firstDni = uniqueDni();
+        String secondDni = uniqueDni();
+        String thirdDni = uniqueDni();
+        int year = 2015 + ThreadLocalRandom.current().nextInt(1, 5);
+        Map<String, Long> before = sideEffectCounts();
+        long batchId = createBatch();
+        upload(batchId, "PERSONS", PERSON_HEADER
+                + "DNI," + firstDni + ",Ana,Pérez,STUDENT,F,1990-01-01,a." + suffix + "@example.com,3512345678,Argentina,Av. Colón 1,Córdoba,Córdoba,5000,," + year + "-03-01,ACTIVE,,,,,,,,,,,,\n"
+                + "DNI," + secondDni + ",Luis,Gómez,STUDENT,M,1991-01-01,b." + suffix + "@example.com,3512345679,Argentina,Av. Colón 2,Córdoba,Córdoba,5000,," + year + "-03-01,ACTIVE,,,,,,,,,,,,\n"
+                + "DNI," + thirdDni + ",Eva,Sosa,STUDENT,F,1992-01-01,c." + suffix + "@example.com,3512345670,Argentina,Av. Colón 3,Córdoba,Córdoba,5000,," + year + "-08-01,ACTIVE,,,,,,,,,,,,\n");
+        upload(batchId, "PROGRAMS", "programName,level,totalYears,totalCreditsRequired,totalHours,teachingMode,status,listPrice,listEnrollmentFee,currency,graduationProfile\n"
+                + program + ",UNDERGRADUATE,3,120,1800,IN_PERSON,ACTIVE,85000,40000,ARS,\n");
+        upload(batchId, "TERMS", "year,termType,description,startDate,endDate,programName\n"
+                + year + ",ANNUAL,Anual," + year + "-03-01,15/12/" + year + "," + program + "\n");
+        upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear,intake\n"
+                + "DNI," + firstDni + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n"
+                + "DNI," + secondDni + "," + program + "," + year + "-03-05,ENROLLED,,," + year + ",first\n"
+                + "DNI," + thirdDni + "," + program + "," + year + "-08-01,ENROLLED,,," + year + ",SECOND\n");
+        mockMvc.perform(post("/data-imports/" + batchId + "/validate").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("VALIDATED"));
+        mockMvc.perform(post("/data-imports/" + batchId + "/commit").header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMMITTED"));
+
+        assertThat(jdbc.queryForObject("select count(*) from program_year_billing_template t join program p on p.id = t.program_id where p.name = ?", Integer.class, program)).isEqualTo(1);
+        assertThat(jdbc.queryForList("select c.intake from program_cohort c join program_year_billing_template t on t.id = c.template_id join program p on p.id = t.program_id where p.name = ? order by c.intake",
+                String.class, program)).containsExactly("FIRST", "SECOND");
+        assertThat(jdbc.queryForObject("select count(*) from program_enrollment pe join program p on p.id = pe.program_id where p.name = ? and pe.program_cohort_id is not null and pe.entry_year = ?",
+                Integer.class, program, year)).isEqualTo(3);
+        assertThat(jdbc.queryForObject("select count(distinct pe.program_cohort_id) from program_enrollment pe join program p on p.id = pe.program_id where p.name = ?", Integer.class, program)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select count(*) from configuration_version v where v.program_id = (select id from program where name = ?) or v.cohort_id in (select c.id from program_cohort c join program_year_billing_template t on t.id = c.template_id join program p on p.id = t.program_id where p.name = ?)", Integer.class, program, program)).isZero();
+        Long enrollmentId = jdbc.queryForObject("select pe.id from program_enrollment pe join program p on p.id = pe.program_id join person per on per.id = (select s.person_id from student s where s.id = pe.student_id) where p.name = ? and per.dni = ?",
+                Long.class, program, firstDni);
+        Long templateId = transactions.execute(status -> {
+            var enrollment = entityManager.find(com.red_escuela.backend.enrollment.entity.ProgramEnrollment.class, enrollmentId);
+            assertThat(enrollment.getCurrentBillingTemplate()).isNull();
+            assertThat(enrollment.effectiveBillingTemplate().termYear()).isEqualTo(year);
+            return enrollment.effectiveBillingTemplate().getId();
+        });
+        assertThat(templateId).isNotNull();
+        assertThat(sideEffectCounts()).isEqualTo(before);
+
+        mockMvc.perform(post("/data-imports/" + batchId + "/rollback").header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"confirmation\":\"DESHACER\"}")).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("select count(*) from program_enrollment pe join program p on p.id = pe.program_id where p.name = ?", Integer.class, program)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from program_cohort where template_id = ?", Integer.class, templateId)).isEqualTo(2);
+        assertThat(sideEffectCounts()).isEqualTo(before);
+    }
+
+    @Test
+    void cohortYearRequiresIntakeAndAnAnnualCycleOfTheProgram() throws Exception {
+        String program = "Carrera " + suffix;
+        String dni = uniqueDni();
+        int year = 2015 + ThreadLocalRandom.current().nextInt(1, 5);
+        long batchId = createBatch();
+        upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear,intake\n"
+                + "DNI," + dni + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",\n"
+                + "DNI," + uniqueDni() + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",MARCH\n"
+                + "DNI," + uniqueDni() + "," + program + "," + year + "-03-01,ENROLLED,,,,SECOND\n"
+                + "DNI," + uniqueDni() + "," + program + "," + year + "-03-01,ENROLLED,,," + (java.time.LocalDate.now().getYear() + 1) + ",FIRST\n"
+                + "DNI," + uniqueDni() + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n");
+
+        mockMvc.perform(post("/data-imports/" + batchId + "/validate").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("VALIDATION_FAILED"));
+
+        assertThat(jdbc.queryForList("select jsonb_array_elements(errors)->>'code' from import_row where batch_id = ?",
+                String.class, batchId)).contains("INTAKE_REQUIRED", "INTAKE_INVALID", "COHORT_YEAR_REQUIRED_WITH_INTAKE",
+                "COHORT_YEAR_IN_FUTURE", "COHORT_ANNUAL_CYCLE_NOT_FOUND");
     }
 
     private long createBatch() throws Exception {

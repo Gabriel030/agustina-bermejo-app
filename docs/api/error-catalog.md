@@ -443,6 +443,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GUARDIAN_CONFIRMATION_NOT_APPLICABLE` | no | `GuardianConfirmationNotApplicableException` | identity |
 | `HISTORICAL_ATTENDANCE_REFERENCE_MISSING` | no | `HistoricalAttendanceReferenceMissingException` | attendance |
 | `HISTORICAL_CLOSURE_MISSING` | no | `HistoricalClosureMissingException` | evaluation |
+| `HISTORICAL_COHORT_REFERENCE_MISSING` | no | `HistoricalCohortReferenceMissingException` | billing |
 | `HISTORICAL_DISCARD_BLOCKED` | no | `HistoricalDiscardBlockedException` | shared |
 | `HISTORICAL_ENROLLMENT_REFERENCE_MISSING` | no | `HistoricalEnrollmentReferenceMissingException` | enrollment |
 | `HISTORICAL_FINAL_DATE_BEFORE_ENROLLMENT` | no | `HistoricalFinalDateBeforeEnrollmentException` | enrollment |

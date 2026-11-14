@@ -19,6 +19,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   HISTORICAL_ATTENDANCE_REFERENCE_MISSING: 'Falta la cursada del alumno o el docente titular de la comisión para cargar la asistencia.',
   HISTORICAL_GRADE_REFERENCE_MISSING: 'El alumno no tiene la cursada importada en esa comisión.',
   HISTORICAL_CLOSURE_MISSING: 'La comisión de esta cursada no tiene acta de cierre histórica.',
+  HISTORICAL_COHORT_REFERENCE_MISSING: 'Falta el año lectivo anual o la carrera de la cohorte de ingreso: importá primero el ciclo ANNUAL de esa carrera.',
   HISTORICAL_DISCARD_BLOCKED: 'No se puede deshacer: hay datos posteriores sobre lo importado.',
   HISTORICAL_ENROLLMENT_REFERENCE_MISSING: 'Falta el alumno, la carrera o la inscripción de la que depende esta cursada.',
   HISTORICAL_FINAL_DATE_BEFORE_ENROLLMENT: 'La fecha de la nota es anterior a la inscripción a la carrera.',
