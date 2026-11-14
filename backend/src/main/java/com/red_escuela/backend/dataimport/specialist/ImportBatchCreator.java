@@ -1,5 +1,9 @@
 package com.red_escuela.backend.dataimport.specialist;
 
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.dataimport.entity.ImportBatch;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEvent;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEventType;
@@ -28,9 +32,12 @@ public class ImportBatchCreator {
     private final ImportBatchEventRepository eventRepository;
     private final InstitutionRepository institutionRepository;
     private final BillingModeGate billingModeGate;
+    private final AuditTrail auditTrail;
 
     public ImportBatchCreator(ImportBatchRepository batchRepository, ImportBatchEventRepository eventRepository,
-            InstitutionRepository institutionRepository, BillingModeGate billingModeGate) {
+            InstitutionRepository institutionRepository, BillingModeGate billingModeGate,
+            AuditTrail auditTrail) {
+        this.auditTrail = auditTrail;
         this.batchRepository = batchRepository;
         this.eventRepository = eventRepository;
         this.institutionRepository = institutionRepository;
@@ -51,6 +58,8 @@ public class ImportBatchCreator {
         ImportBatch batch = batchRepository.save(ImportBatch.draft(name.strip(), institution.getId(), actorPersonId, now));
         eventRepository.save(new ImportBatchEvent(batch.getId(), ImportBatchEventType.CREATED, actorPersonId, now,
                 Map.of("name", batch.getName())));
+        auditTrail.record(new AuditRecord(AuditAction.DATA_IMPORT_CREATED, AuditEntityType.DATA_IMPORT_BATCH, batch.getId(),
+                null, null, null));
         return batch.getId();
     }
 }

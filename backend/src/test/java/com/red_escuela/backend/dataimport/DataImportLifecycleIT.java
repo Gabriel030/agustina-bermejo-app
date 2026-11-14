@@ -129,6 +129,8 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'VALID'", Integer.class, batchId)).isEqualTo(2);
         assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'", Integer.class, batchId)).isEqualTo(1);
         assertThat(sideEffectCounts()).isEqualTo(sideEffectsBefore);
+        assertThat(auditActions(batchId)).containsExactly("DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_ROLLED_BACK");
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'DATA_IMPORT_BATCH' and entity_id = ? and actor_role = 'DIRECTOR' and actor_person_id is not null and reason is null", Integer.class, batchId)).isEqualTo(3);
     }
 
     @Test
@@ -177,6 +179,7 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select status from import_batch where id = ?", String.class, batchId)).isEqualTo("COMMITTED");
         assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ?", Integer.class, batchId)).isEqualTo(3);
         assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLBACK_BLOCKED'", Integer.class, batchId)).isEqualTo(1);
+        assertThat(auditActions(batchId)).contains("DATA_IMPORT_ROLLBACK_BLOCKED").doesNotContain("DATA_IMPORT_ROLLED_BACK");
         assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'", Integer.class, batchId)).isZero();
     }
 
@@ -267,6 +270,8 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith("text/csv"))
                 .andExpect(content().string(org.hamcrest.Matchers.startsWith("﻿entityType,rowNumber,naturalKey,status")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("CHUNK_FAILED")));
+        assertThat(auditActions(batchId)).contains("DATA_IMPORT_REPORT_DOWNLOADED");
+
 
         mockMvc.perform(post("/data-imports/" + batchId + "/retry").header("Authorization", bearer()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PARTIAL"));
@@ -317,6 +322,7 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"confirmation\":\"CERRAR\"}")).andExpect(status().isForbidden());
         mockMvc.perform(get("/data-imports/" + batchId + "/report.csv").header("Authorization", "Bearer " + studentToken))
                 .andExpect(status().isForbidden());
+        assertThat(auditActions(batchId)).containsExactly("DATA_IMPORT_CREATED");
         mockMvc.perform(get("/data-imports/templates/PERSONS").header("Authorization", "Bearer " + studentToken))
                 .andExpect(status().isForbidden());
     }
@@ -425,6 +431,10 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         Map<String, Long> counts = new TreeMap<>();
         tables.forEach(table -> counts.put(table, jdbc.queryForObject("select count(*) from " + table, Long.class)));
         return counts;
+    }
+
+    private List<String> auditActions(long batchId) {
+        return jdbc.queryForList("select action from audit_log where entity_type = 'DATA_IMPORT_BATCH' and entity_id = ? order by id", String.class, batchId);
     }
 
     private void cleanImportTables() {

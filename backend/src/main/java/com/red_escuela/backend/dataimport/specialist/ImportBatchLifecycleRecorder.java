@@ -1,5 +1,9 @@
 package com.red_escuela.backend.dataimport.specialist;
 
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.dataimport.entity.ImportBatch;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEvent;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEventType;
@@ -26,9 +30,12 @@ public class ImportBatchLifecycleRecorder {
     private final ImportBatchRepository batchRepository;
     private final ImportBatchEventRepository eventRepository;
     private final BillingModeGate billingModeGate;
+    private final AuditTrail auditTrail;
 
     public ImportBatchLifecycleRecorder(ImportBatchRepository batchRepository,
-            ImportBatchEventRepository eventRepository, BillingModeGate billingModeGate) {
+            ImportBatchEventRepository eventRepository, BillingModeGate billingModeGate,
+            AuditTrail auditTrail) {
+        this.auditTrail = auditTrail;
         this.batchRepository = batchRepository;
         this.eventRepository = eventRepository;
         this.billingModeGate = billingModeGate;
@@ -43,6 +50,8 @@ public class ImportBatchLifecycleRecorder {
         LocalDateTime now = ApplicationTime.now();
         batch.seal(actorPersonId, now);
         eventRepository.save(new ImportBatchEvent(batchId, ImportBatchEventType.SEALED, actorPersonId, now, Map.of()));
+        auditTrail.record(new AuditRecord(AuditAction.DATA_IMPORT_SEALED, AuditEntityType.DATA_IMPORT_BATCH, batchId,
+                null, null, null));
     }
 
     @Transactional
@@ -78,5 +87,7 @@ public class ImportBatchLifecycleRecorder {
         }
         eventRepository.save(new ImportBatchEvent(batchId, ImportBatchEventType.ROLLBACK_BLOCKED, actorPersonId,
                 ApplicationTime.now(), detail));
+        auditTrail.record(new AuditRecord(AuditAction.DATA_IMPORT_ROLLBACK_BLOCKED, AuditEntityType.DATA_IMPORT_BATCH, batchId,
+                null, null, null));
     }
 }

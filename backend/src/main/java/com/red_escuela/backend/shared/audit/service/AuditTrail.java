@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 public class AuditTrail {
 
     private static final String ROLE_PREFIX = "ROLE_";
+    private static final int MAX_REASON_LENGTH = 500;
 
     private final AuditLogRepository auditLogRepository;
     private final Clock clock;
@@ -44,8 +45,12 @@ public class AuditTrail {
                 .entityId(record.entityId())
                 .beforeValue(record.beforeValue())
                 .afterValue(record.afterValue())
-                .reason(record.reason())
+                .reason(truncatedReason(record.reason()))
                 .build());
+    }
+
+    private static String truncatedReason(String reason) {
+        return reason == null || reason.length() <= MAX_REASON_LENGTH ? reason : reason.substring(0, MAX_REASON_LENGTH);
     }
 
     private static Long actorId(Authentication authentication) {
