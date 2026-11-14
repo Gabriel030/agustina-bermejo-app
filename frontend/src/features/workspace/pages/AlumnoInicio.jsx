@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
+import { useMyModules } from '@/hooks/useMyModules';
 import { usePaymentStanding, AdmissionInvoicePendingCard, useAdmissionInvoicesPending } from '@/features/billing';
 import { useMisCursos } from '@/features/enrollment';
 import { useNovedades, useMarcarAvisoLeido } from '@/features/announcements';
@@ -134,7 +135,8 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
 // de texto suelto.
 export function AlumnoInicio() {
   const { usuario } = useAuth();
-  const { data: standing, isLoading: cargandoStanding } = usePaymentStanding();
+  const modules = useMyModules();
+  const { data: standing, isLoading: cargandoStanding, isError: errorStanding, refetch: refetchStanding } = usePaymentStanding({ enabled: modules.billingEnabled });
   const { data: cursos } = useMisCursos();
   const { pendientes: matriculasPendientes } = useAdmissionInvoicesPending();
   const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades, isFetching: actualizandoNovedades, refetch: refetchNovedades, dataUpdatedAt: novedadesActualizadas } = useNovedades();
@@ -143,7 +145,7 @@ export function AlumnoInicio() {
   const marcarLeido = useMarcarAvisoLeido();
   const avisoResaltadoRef = useRef(null);
 
-  const cargandoPago = cargandoStanding;
+  const cargandoPago = modules.isLoading || (modules.billingEnabled && cargandoStanding);
   const pago = standing ? estadoDePago(standing.standing) : null;
   const cursosActivos = (cursos ?? []).filter((c) => ESTADOS_CURSO_ACTIVO.has(c.status));
   const cursosEnEspera = (cursos ?? []).filter((c) => c.status === 'WAITLISTED');
@@ -254,25 +256,29 @@ export function AlumnoInicio() {
           )}
         </GlassCard>
 
-        <GlassCard className="flex flex-col gap-3 p-5">
-          <div className="font-heading text-size-15 font-semibold text-ink">Estado de cuenta</div>
-          {cargandoPago ? (
-            <Skeleton className="h-14 w-full" />
-          ) : standing?.standing === 'MOROSO' ? (
-            <div className="rounded-xl bg-warning-bg px-4 py-3">
-              <div className="text-xs font-semibold text-warning">Saldo pendiente</div>
-              <div className="text-size-13 text-ink-soft mt-1">Revisá tus cuotas en la sección de pagos.</div>
-            </div>
-          ) : matriculasPendientes.length > 0 ? (
-            <div className="rounded-xl bg-warning-bg px-4 py-3">
-              <div className="text-xs font-semibold text-warning">Matrícula de ingreso pendiente</div>
-            </div>
-          ) : (
-            <div className="rounded-xl bg-success-bg px-4 py-3 text-size-13 font-semibold text-success">
-              No tenés saldo pendiente.
-            </div>
-          )}
-        </GlassCard>
+        {(modules.isLoading || modules.isError || modules.billingEnabled) && (
+          <GlassCard className="flex flex-col gap-3 p-5">
+            <div className="font-heading text-size-15 font-semibold text-ink">Estado de cuenta</div>
+            {cargandoPago ? (
+              <Skeleton className="h-14 w-full" />
+            ) : errorStanding || modules.isError ? (
+              <LoadErrorState bare resource="tu estado de cuenta" onRetry={modules.isError ? modules.refetch : refetchStanding} />
+            ) : standing?.standing === 'MOROSO' ? (
+              <div className="rounded-xl bg-warning-bg px-4 py-3">
+                <div className="text-xs font-semibold text-warning">Saldo pendiente</div>
+                <div className="text-size-13 text-ink-soft mt-1">Revisá tus cuotas en la sección de pagos.</div>
+              </div>
+            ) : matriculasPendientes.length > 0 ? (
+              <div className="rounded-xl bg-warning-bg px-4 py-3">
+                <div className="text-xs font-semibold text-warning">Matrícula de ingreso pendiente</div>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-success-bg px-4 py-3 text-size-13 font-semibold text-success">
+                No tenés saldo pendiente.
+              </div>
+            )}
+          </GlassCard>
+        )}
       </div>
 
       <GlassCard className="p-5">

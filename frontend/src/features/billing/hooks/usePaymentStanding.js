@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-export function usePaymentStanding() {
+export function usePaymentStanding({ enabled = true } = {}) {
   return useQuery({
+    enabled,
     queryKey: ['me', 'enrollment-payment-status'],
     queryFn: () => apiFetch('/me/enrollment-payment-status'),
     select: (entries) => ({
