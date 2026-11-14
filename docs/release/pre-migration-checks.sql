@@ -177,7 +177,7 @@ begin
       ('holiday', 'type', array['BRIDGE', 'MUNICIPAL', 'NATIONAL', 'NON_WORKING_DAY', 'OTHER', 'PROVINCIAL']),
       ('identity_contact_change_log', 'change_type', array['DOCUMENT_CHANGED', 'EMAIL_CHANGE_CONFIRMED', 'EMAIL_CHANGE_REQUESTED']),
       ('import_batch', 'status', array['COMMITTED', 'COMMITTING', 'DRAFT', 'FAILED', 'FILES_UPLOADED', 'PARTIAL', 'ROLLED_BACK', 'ROLLING_BACK', 'SEALED', 'VALIDATED', 'VALIDATING', 'VALIDATION_FAILED']),
-      ('import_batch_event', 'type', array['COMMITTED', 'CREATED', 'FILE_UPLOADED', 'RETRIED', 'ROLLED_BACK', 'SEALED', 'VALIDATED']),
+      ('import_batch_event', 'type', array['COMMITTED', 'CREATED', 'FILE_UPLOADED', 'RETRIED', 'ROLLBACK_BLOCKED', 'ROLLED_BACK', 'SEALED', 'VALIDATED']),
       ('import_created_entity', 'entity_type', array['CURRICULUM', 'PERSONS', 'PREREQUISITES', 'PROGRAM_ENROLLMENTS', 'PROGRAMS', 'SECTION_ENROLLMENTS', 'SECTIONS', 'SUBJECTS', 'TERMS']),
       ('import_file', 'entity_type', array['CURRICULUM', 'PERSONS', 'PREREQUISITES', 'PROGRAM_ENROLLMENTS', 'PROGRAMS', 'SECTION_ENROLLMENTS', 'SECTIONS', 'SUBJECTS', 'TERMS']),
       ('import_row', 'entity_type', array['CURRICULUM', 'PERSONS', 'PREREQUISITES', 'PROGRAM_ENROLLMENTS', 'PROGRAMS', 'SECTION_ENROLLMENTS', 'SECTIONS', 'SUBJECTS', 'TERMS']),

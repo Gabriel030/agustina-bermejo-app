@@ -12,5 +12,7 @@ public interface CommissionClosureStudentRepository extends JpaRepository<Commis
 
     List<CommissionClosureStudent> findByClosureId(Long closureId);
 
+    List<CommissionClosureStudent> findByEnrollmentId(Long enrollmentId);
+
     Optional<CommissionClosureStudent> findByClosureIdAndEnrollmentId(Long closureId, Long enrollmentId);
 }

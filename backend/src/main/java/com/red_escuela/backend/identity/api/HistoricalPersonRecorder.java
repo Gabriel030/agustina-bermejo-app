@@ -17,6 +17,7 @@ import com.red_escuela.backend.shared.domain.DocumentNumber;
 import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
 import java.time.LocalTime;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
@@ -102,6 +103,24 @@ public class HistoricalPersonRecorder {
             instructorProfileCreationPort.createInstructorProfile(person);
         }
         return person.getId();
+    }
+
+    @Transactional
+    public void discardPerson(Long personId) {
+        Optional<Person> found = personRepository.findById(personId);
+        if (found.isEmpty()) {
+            return;
+        }
+        Person person = found.get();
+        if (Boolean.TRUE.equals(person.getGrantSystemAccess()) || person.getPassword() != null) {
+            throw new HistoricalDiscardBlockedException("La persona ya tiene acceso al sistema");
+        }
+        studentRepository.findByPerson_Id(personId).ifPresent(student -> {
+            studentRepository.delete(student);
+            studentRepository.flush();
+        });
+        instructorProfileCreationPort.removeInstructorProfile(personId);
+        basePersonCreator.deleteBasePerson(person);
     }
 
     private static Student newStudent(Person person, Institution institution, HistoricalPerson historical) {

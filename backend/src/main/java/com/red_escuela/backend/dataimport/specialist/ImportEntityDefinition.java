@@ -33,6 +33,10 @@ public interface ImportEntityDefinition {
 
     Long record(Map<String, String> payload, Long institutionId);
 
+    default void discard(Long entityId) {
+        throw new UnsupportedOperationException("Esta estructura se retiene y no se deshace");
+    }
+
     record BaseCheck(boolean keyExists, List<ImportRowError> errors) {
     }
 }

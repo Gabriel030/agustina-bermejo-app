@@ -108,6 +108,11 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public void discard(Long entityId) {
+        recorder.discardProgramEnrollment(entityId);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         ImportRowReader reader = new ImportRowReader(payload);
         DocumentType type = ImportDocumentKey.typeOf(payload).orElseThrow();

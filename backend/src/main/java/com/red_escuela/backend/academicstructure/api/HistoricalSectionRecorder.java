@@ -99,6 +99,14 @@ public class HistoricalSectionRecorder {
         return saved.getId();
     }
 
+    @Transactional
+    public void discardSection(Long sectionId) {
+        sectionInstructorRepository.deleteAll(sectionInstructorRepository.findBySectionId(sectionId));
+        sectionInstructorRepository.flush();
+        sectionRepository.deleteById(sectionId);
+        sectionRepository.flush();
+    }
+
     private AcademicOfferingCycle findCycle(Term term, String programName) {
         if (programName.isEmpty()) {
             return cycleRepository.findFirstByTermIdOrderByIdAsc(term.getId()).orElse(null);

@@ -16,6 +16,7 @@ public record ImportBatchResponse(
         LocalDateTime createdAt,
         LocalDateTime validatedAt,
         LocalDateTime committedAt,
+        LocalDateTime sealedAt,
         List<ImportFileResponse> files,
         List<ImportBlockCounters> counters) {
 
@@ -32,7 +33,7 @@ public record ImportBatchResponse(
 
     public static ImportBatchResponse from(ImportBatch batch, List<ImportFile> files, List<ImportBlockCounters> counters) {
         return new ImportBatchResponse(batch.getId(), batch.getName(), batch.getStatus(), batch.getCreatedAt(),
-                batch.getValidatedAt(), batch.getCommittedAt(), files.stream().map(ImportFileResponse::from).toList(),
+                batch.getValidatedAt(), batch.getCommittedAt(), batch.getSealedAt(), files.stream().map(ImportFileResponse::from).toList(),
                 counters);
     }
 }

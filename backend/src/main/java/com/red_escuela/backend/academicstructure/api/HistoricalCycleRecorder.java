@@ -68,6 +68,12 @@ public class HistoricalCycleRecorder {
         return cycleRepository.save(cycle).getId();
     }
 
+    @Transactional
+    public void discardCycle(Long cycleId) {
+        cycleRepository.deleteById(cycleId);
+        cycleRepository.flush();
+    }
+
     private static Term newTerm(HistoricalCycle historical) {
         Term term = new Term();
         term.setYear(historical.year());

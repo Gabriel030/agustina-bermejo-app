@@ -44,6 +44,12 @@ public class ImportBatch {
     @Column(name = "committed_at")
     private LocalDateTime committedAt;
 
+    @Column(name = "sealed_at")
+    private LocalDateTime sealedAt;
+
+    @Column(name = "sealed_by_person_id")
+    private Long sealedByPersonId;
+
     @Column(name = "billing_mode_at_commit", length = 20)
     private String billingModeAtCommit;
 
@@ -78,6 +84,38 @@ public class ImportBatch {
 
     public boolean canCommit() {
         return status == ImportBatchStatus.VALIDATED;
+    }
+
+    public boolean canSeal() {
+        return status == ImportBatchStatus.COMMITTED;
+    }
+
+    public boolean canRollback() {
+        return status == ImportBatchStatus.COMMITTED
+                || status == ImportBatchStatus.PARTIAL
+                || status == ImportBatchStatus.FAILED;
+    }
+
+    public boolean canRetry() {
+        return status == ImportBatchStatus.PARTIAL;
+    }
+
+    public void seal(Long actorPersonId, LocalDateTime at) {
+        status = ImportBatchStatus.SEALED;
+        sealedAt = at;
+        sealedByPersonId = actorPersonId;
+    }
+
+    public void startRollback() {
+        status = ImportBatchStatus.ROLLING_BACK;
+    }
+
+    public void finishRollback() {
+        status = ImportBatchStatus.ROLLED_BACK;
+    }
+
+    public void restoreStatus(ImportBatchStatus previous) {
+        status = previous;
     }
 
     public void markFilesUploaded() {

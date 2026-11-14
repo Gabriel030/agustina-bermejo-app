@@ -124,6 +124,11 @@ public class PersonImportDefinition implements ImportEntityDefinition {
     }
 
     @Override
+    public void discard(Long entityId) {
+        recorder.discardPerson(entityId);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         DocumentType type = documentTypeOf(payload).orElse(DocumentType.DNI);
         HistoricalPersonRole role = roleOf(payload).orElseThrow();

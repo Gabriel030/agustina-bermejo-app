@@ -1,0 +1,3 @@
+sectionCode,subjectCode,year,termType,name,shift,instructorDni,closedOn,actaNumber,actaBook,actaFolio,programName
+ADM1-2021-1C-A,ADM1,2021,FIRST_SEMESTER,Introducción a la Administración - Comisión A,MORNING,25890123,2021-07-09,0123,Libro 7,Folio 45,
+CON1-2021-2C-A,CON1,2021,SECOND_SEMESTER,Contabilidad I - Comisión A,EVENING,25890123,2021-12-03,0187,Libro 7,Folio 88,
