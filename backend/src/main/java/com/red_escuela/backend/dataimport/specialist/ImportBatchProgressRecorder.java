@@ -79,12 +79,41 @@ public class ImportBatchProgressRecorder {
     }
 
     @Transactional
+    public Long startRetry(Long batchId) {
+        ImportBatch batch = batchRepository.findById(batchId).orElseThrow(() -> new ImportBatchNotFoundException(batchId));
+        BillingMode mode = billingModeGate.currentMode();
+        if (mode != BillingMode.OFF) {
+            throw new BillingModeNotOffException();
+        }
+        if (!batch.canRetry()) {
+            throw new ImportBatchStateInvalidException("reintentar", batch.getStatus().name());
+        }
+        rowRepository.moveStatus(batchId, ImportRowStatus.FAILED, ImportRowStatus.VALID);
+        batch.startCommit(mode.name());
+        try {
+            batchRepository.saveAndFlush(batch);
+        } catch (DataIntegrityViolationException e) {
+            throw new ImportAlreadyRunningException();
+        }
+        return batch.getInstitutionId();
+    }
+
+    @Transactional
     public ImportBatch finishCommit(Long batchId, Long actorPersonId) {
+        return finish(batchId, actorPersonId, ImportBatchEventType.COMMITTED);
+    }
+
+    @Transactional
+    public ImportBatch finishRetry(Long batchId, Long actorPersonId) {
+        return finish(batchId, actorPersonId, ImportBatchEventType.RETRIED);
+    }
+
+    private ImportBatch finish(Long batchId, Long actorPersonId, ImportBatchEventType eventType) {
         ImportBatch batch = batchRepository.findById(batchId).orElseThrow(() -> new ImportBatchNotFoundException(batchId));
         long pending = rowRepository.countByBatchIdAndStatusIn(batchId, PENDING_COMMIT);
         LocalDateTime now = ApplicationTime.now();
         batch.finishCommit(pending == 0, now);
-        eventRepository.save(new ImportBatchEvent(batchId, ImportBatchEventType.COMMITTED, actorPersonId, now,
+        eventRepository.save(new ImportBatchEvent(batchId, eventType, actorPersonId, now,
                 Map.of("pendingRows", pending)));
         return batch;
     }

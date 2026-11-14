@@ -138,6 +138,12 @@ public class SectionEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public void discard(Long entityId) {
+        closureRecorder.discardStudentResult(entityId);
+        enrollmentRecorder.discardSectionEnrollment(entityId);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         ImportRowReader reader = new ImportRowReader(payload);
         DocumentType type = ImportDocumentKey.typeOf(payload).orElseThrow();

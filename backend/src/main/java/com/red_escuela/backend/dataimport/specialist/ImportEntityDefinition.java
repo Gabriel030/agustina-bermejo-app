@@ -33,6 +33,8 @@ public interface ImportEntityDefinition {
 
     Long record(Map<String, String> payload, Long institutionId);
 
+    void discard(Long entityId);
+
     record BaseCheck(boolean keyExists, List<ImportRowError> errors) {
     }
 }

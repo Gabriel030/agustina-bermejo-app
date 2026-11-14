@@ -2,6 +2,7 @@ package com.red_escuela.backend.evaluation.api;
 
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.evaluation.entity.ClosureFinalCondition;
 import com.red_escuela.backend.evaluation.entity.ClosureStatus;
@@ -67,6 +68,25 @@ public class HistoricalClosureRecorder {
         return Optional.of(closureStudentRepository.save(CommissionClosureStudent.builder().closureId(closure.getId())
                 .enrollmentId(enrollmentId).finalCondition(condition.get())
                 .promotionGrade(promotes ? Grade.ofNullable(score) : null).build()).getId());
+    }
+
+    @Transactional
+    public void discardStudentResult(Long enrollmentId) {
+        closureStudentRepository.deleteAll(closureStudentRepository.findByEnrollmentId(enrollmentId));
+        closureStudentRepository.flush();
+    }
+
+    @Transactional
+    public void discardClosure(Long sectionId) {
+        closureRepository.findBySectionKindAndSectionId(SectionKind.PROGRAM, sectionId).ifPresent(closure -> {
+            if (closure.getStatus() != ClosureStatus.CLOSED || closure.getReportVersion() != 1) {
+                throw new HistoricalDiscardBlockedException("El acta de cierre de la comisión ya fue modificada");
+            }
+            closureStudentRepository.deleteAll(closureStudentRepository.findByClosureId(closure.getId()));
+            closureStudentRepository.flush();
+            closureRepository.delete(closure);
+            closureRepository.flush();
+        });
     }
 
     private static Optional<ClosureFinalCondition> conditionOf(EnrollmentStatus status, FinalGradeType gradeType) {

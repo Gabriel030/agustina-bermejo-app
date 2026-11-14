@@ -110,6 +110,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADE_ITEM_TYPE_NOT_PUBLISHABLE` | no | `GradeItemTypeNotPublishableException` | evaluation |
 | `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
+| `IMPORT_CONFIRMATION_INVALID` | no | `ImportConfirmationInvalidException` | dataimport |
 | `IMPORT_FILE_INVALID_HEADER` | no | `ImportFileInvalidHeaderException` | dataimport |
 | `IMPORT_FILE_TOO_LARGE` | no | `ImportFileTooLargeException` | dataimport |
 | `IMPORT_FILE_UNREADABLE` | no | `ImportFileUnreadableException` | dataimport |
@@ -440,6 +441,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GUARDIAN_ACCEPTANCE_REQUIRED` | no | `GuardianAcceptanceRequiredException` | identity |
 | `GUARDIAN_CONFIRMATION_NOT_APPLICABLE` | no | `GuardianConfirmationNotApplicableException` | identity |
 | `HISTORICAL_CLOSURE_MISSING` | no | `HistoricalClosureMissingException` | evaluation |
+| `HISTORICAL_DISCARD_BLOCKED` | no | `HistoricalDiscardBlockedException` | shared |
 | `HISTORICAL_ENROLLMENT_REFERENCE_MISSING` | no | `HistoricalEnrollmentReferenceMissingException` | enrollment |
 | `HISTORICAL_FINAL_DATE_BEFORE_ENROLLMENT` | no | `HistoricalFinalDateBeforeEnrollmentException` | enrollment |
 | `HISTORICAL_PERSON_EMAIL_TAKEN` | no | `HistoricalPersonEmailTakenException` | identity |
@@ -464,6 +466,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `IMPORT_ALREADY_RUNNING` | no | `ImportAlreadyRunningException` | dataimport |
 | `IMPORT_BATCH_STATE_INVALID` | no | `ImportBatchStateInvalidException` | dataimport |
 | `IMPORT_NOT_VALIDATED` | no | `ImportNotValidatedException` | dataimport |
+| `IMPORT_ROLLBACK_BLOCKED` | no | `ImportRollbackBlockedException` | dataimport |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
 | `INSTITUTE_SETTING_ALREADY_IN_REQUESTED_STATE` | no | `InstituteSettingAlreadyInRequestedStateException` | platform |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
@@ -715,6 +718,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/data-imports` | `DataImportController#createBatch` |
 | POST | `/data-imports/{id}/commit` | `DataImportController#commitBatch` |
 | POST | `/data-imports/{id}/files/{entityType}` | `DataImportController#uploadFile` |
+| POST | `/data-imports/{id}/retry` | `DataImportController#retryBatch` |
+| POST | `/data-imports/{id}/rollback` | `DataImportController#rollbackBatch` |
+| POST | `/data-imports/{id}/seal` | `DataImportController#sealBatch` |
 | POST | `/data-imports/{id}/validate` | `DataImportController#validateBatch` |
 | POST | `/director-approval-requests` | `DirectorApprovalRequestController#request` |
 | POST | `/director-approval-requests/{id}/approve` | `DirectorApprovalRequestController#approve` |

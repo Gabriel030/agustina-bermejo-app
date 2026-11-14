@@ -77,6 +77,11 @@ public class ProgramImportDefinition implements ImportEntityDefinition {
     }
 
     @Override
+    public void discard(Long entityId) {
+        recorder.discardProgram(entityId);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         ImportRowReader reader = new ImportRowReader(payload);
         Currency currency = reader.enumValue("currency", Currency.class, false).orElse(Currency.ARS);

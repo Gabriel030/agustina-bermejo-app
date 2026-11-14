@@ -18,6 +18,15 @@ public class InstructorProfileCreator implements InstructorProfileCreationPort {
 
     @Override
     @Transactional
+    public void removeInstructorProfile(Long personId) {
+        instructorRepository.findByPerson_Id(personId).ifPresent(instructor -> {
+            instructorRepository.delete(instructor);
+            instructorRepository.flush();
+        });
+    }
+
+    @Override
+    @Transactional
     public void createInstructorProfile(Person person) {
         if (instructorRepository.findByPerson_Id(person.getId()).isPresent()) {
             return;

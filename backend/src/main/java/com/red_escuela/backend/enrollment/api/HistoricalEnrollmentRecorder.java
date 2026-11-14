@@ -110,6 +110,18 @@ public class HistoricalEnrollmentRecorder {
         return sectionEnrollmentRepository.save(enrollment).getId();
     }
 
+    @Transactional
+    public void discardProgramEnrollment(Long enrollmentId) {
+        programEnrollmentRepository.deleteById(enrollmentId);
+        programEnrollmentRepository.flush();
+    }
+
+    @Transactional
+    public void discardSectionEnrollment(Long enrollmentId) {
+        sectionEnrollmentRepository.deleteById(enrollmentId);
+        sectionEnrollmentRepository.flush();
+    }
+
     private Optional<ProgramEnrollment> findProgramEnrollment(DocumentType type, String number, String programName) {
         Optional<Long> studentId = findStudentId(type, number);
         Optional<Long> programId = programRecorder.findProgramIdByName(programName);

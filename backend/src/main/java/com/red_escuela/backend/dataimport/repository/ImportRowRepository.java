@@ -35,6 +35,12 @@ public interface ImportRowRepository extends JpaRepository<ImportRow, Long> {
     @Query("delete from ImportRow r where r.batchId = :batchId and r.entityType = :entityType")
     void deleteByBatchIdAndEntityType(@Param("batchId") Long batchId, @Param("entityType") ImportEntityType entityType);
 
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update ImportRow r set r.status = :to, r.errors = null, r.committedEntityId = null where r.batchId = :batchId and r.status = :from")
+    int moveStatus(@Param("batchId") Long batchId, @Param("from") ImportRowStatus from, @Param("to") ImportRowStatus to);
+
+    List<ImportRow> findByBatchIdOrderByEntityTypeAscRowNumberAsc(Long batchId, Pageable pageable);
+
     @Query("""
             select new com.red_escuela.backend.dataimport.repository.ImportRowStatusCount(r.entityType, r.status, count(r))
             from ImportRow r where r.batchId = :batchId group by r.entityType, r.status

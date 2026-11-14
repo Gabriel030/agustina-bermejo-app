@@ -125,6 +125,12 @@ public class SectionImportDefinition implements ImportEntityDefinition {
     }
 
     @Override
+    public void discard(Long entityId) {
+        closureRecorder.discardClosure(entityId);
+        sectionRecorder.discardSection(entityId);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         ImportRowReader reader = new ImportRowReader(payload);
         Long sectionId = sectionRecorder.recordSection(new HistoricalSection(reader.text("sectionCode"),

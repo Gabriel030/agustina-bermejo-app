@@ -102,6 +102,11 @@ public class TermImportDefinition implements ImportEntityDefinition {
     }
 
     @Override
+    public void discard(Long entityId) {
+        recorder.discardCycle(entityId);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         ImportRowReader reader = new ImportRowReader(payload);
         return recorder.recordCycle(new HistoricalCycle(reader.text("programName"), reader.integer("year", true, 1990, 2100),

@@ -4,4 +4,6 @@ import com.red_escuela.backend.identity.entity.Person;
 
 public interface InstructorProfileCreationPort {
     void createInstructorProfile(Person person);
+
+    void removeInstructorProfile(Long personId);
 }

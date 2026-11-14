@@ -14,4 +14,16 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ImportCreatedEntityRepository extends JpaRepository<ImportCreatedEntity, Long> {
     long countByBatchId(Long batchId);
+
+    List<ImportCreatedEntity> findByBatchIdOrderByIdDesc(Long batchId);
+
+    @Query("""
+            select new com.red_escuela.backend.dataimport.repository.ImportCreatedCount(c.entityType, count(c))
+            from ImportCreatedEntity c where c.batchId = :batchId group by c.entityType
+            """)
+    List<ImportCreatedCount> countByEntityType(@Param("batchId") Long batchId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from ImportCreatedEntity c where c.batchId = :batchId")
+    void deleteByBatchId(@Param("batchId") Long batchId);
 }

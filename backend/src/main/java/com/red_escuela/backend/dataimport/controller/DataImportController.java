@@ -1,6 +1,18 @@
 package com.red_escuela.backend.dataimport.controller;
 
 import com.red_escuela.backend.dataimport.dto.CommitImportBatchRequest;
+import com.red_escuela.backend.dataimport.dto.ConfirmImportActionRequest;
+import com.red_escuela.backend.dataimport.dto.ImportFileDownload;
+import com.red_escuela.backend.dataimport.dto.ImportRollbackPreviewResponse;
+import com.red_escuela.backend.dataimport.usecase.DownloadImportReportUseCase;
+import com.red_escuela.backend.dataimport.usecase.DownloadImportTemplateUseCase;
+import com.red_escuela.backend.dataimport.usecase.PreviewImportRollbackUseCase;
+import com.red_escuela.backend.dataimport.usecase.RetryImportBatchUseCase;
+import com.red_escuela.backend.dataimport.usecase.RollbackImportBatchUseCase;
+import com.red_escuela.backend.dataimport.usecase.SealImportBatchUseCase;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import com.red_escuela.backend.dataimport.dto.CreateImportBatchRequest;
 import com.red_escuela.backend.dataimport.dto.ImportBatchResponse;
 import com.red_escuela.backend.dataimport.dto.ImportRowErrorResponse;
@@ -41,11 +53,22 @@ public class DataImportController {
     private final GetImportBatchUseCase getImportBatchUseCase;
     private final ListImportBatchesUseCase listImportBatchesUseCase;
     private final ListImportRowErrorsUseCase listImportRowErrorsUseCase;
+    private final RetryImportBatchUseCase retryImportBatchUseCase;
+    private final SealImportBatchUseCase sealImportBatchUseCase;
+    private final RollbackImportBatchUseCase rollbackImportBatchUseCase;
+    private final PreviewImportRollbackUseCase previewImportRollbackUseCase;
+    private final DownloadImportReportUseCase downloadImportReportUseCase;
+    private final DownloadImportTemplateUseCase downloadImportTemplateUseCase;
 
     public DataImportController(CreateImportBatchUseCase createImportBatchUseCase,
             UploadImportFileUseCase uploadImportFileUseCase, ValidateImportBatchUseCase validateImportBatchUseCase,
             CommitImportBatchUseCase commitImportBatchUseCase, GetImportBatchUseCase getImportBatchUseCase,
-            ListImportBatchesUseCase listImportBatchesUseCase, ListImportRowErrorsUseCase listImportRowErrorsUseCase) {
+            ListImportBatchesUseCase listImportBatchesUseCase, ListImportRowErrorsUseCase listImportRowErrorsUseCase,
+            RetryImportBatchUseCase retryImportBatchUseCase, SealImportBatchUseCase sealImportBatchUseCase,
+            RollbackImportBatchUseCase rollbackImportBatchUseCase,
+            PreviewImportRollbackUseCase previewImportRollbackUseCase,
+            DownloadImportReportUseCase downloadImportReportUseCase,
+            DownloadImportTemplateUseCase downloadImportTemplateUseCase) {
         this.createImportBatchUseCase = createImportBatchUseCase;
         this.uploadImportFileUseCase = uploadImportFileUseCase;
         this.validateImportBatchUseCase = validateImportBatchUseCase;
@@ -53,6 +76,12 @@ public class DataImportController {
         this.getImportBatchUseCase = getImportBatchUseCase;
         this.listImportBatchesUseCase = listImportBatchesUseCase;
         this.listImportRowErrorsUseCase = listImportRowErrorsUseCase;
+        this.retryImportBatchUseCase = retryImportBatchUseCase;
+        this.sealImportBatchUseCase = sealImportBatchUseCase;
+        this.rollbackImportBatchUseCase = rollbackImportBatchUseCase;
+        this.previewImportRollbackUseCase = previewImportRollbackUseCase;
+        this.downloadImportReportUseCase = downloadImportReportUseCase;
+        this.downloadImportTemplateUseCase = downloadImportTemplateUseCase;
     }
 
     @PostMapping
@@ -104,5 +133,50 @@ public class DataImportController {
     public PageResponse<ImportRowErrorResponse> listErrors(@PathVariable Long id,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
         return listImportRowErrorsUseCase.list(id, page, size);
+    }
+
+    @PostMapping("/{id}/retry")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public ImportBatchResponse retryBatch(@PathVariable Long id) {
+        return retryImportBatchUseCase.retry(id);
+    }
+
+    @PostMapping("/{id}/seal")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public ImportBatchResponse sealBatch(@PathVariable Long id, @Valid @RequestBody ConfirmImportActionRequest request) {
+        return sealImportBatchUseCase.seal(id, request.confirmation());
+    }
+
+    @PostMapping("/{id}/rollback")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public ImportBatchResponse rollbackBatch(@PathVariable Long id,
+            @Valid @RequestBody ConfirmImportActionRequest request) {
+        return rollbackImportBatchUseCase.rollback(id, request.confirmation());
+    }
+
+    @GetMapping("/{id}/rollback-preview")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public ImportRollbackPreviewResponse previewRollback(@PathVariable Long id) {
+        return previewImportRollbackUseCase.preview(id);
+    }
+
+    @GetMapping("/{id}/report.csv")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public ResponseEntity<byte[]> downloadReport(@PathVariable Long id) {
+        return csv(downloadImportReportUseCase.download(id));
+    }
+
+    @GetMapping("/templates/{entityType}")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public ResponseEntity<byte[]> downloadTemplate(@PathVariable ImportEntityType entityType) {
+        return csv(downloadImportTemplateUseCase.download(entityType));
+    }
+
+    private static ResponseEntity<byte[]> csv(ImportFileDownload download) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(download.fileName()).build().toString())
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .body(download.content());
     }
 }
