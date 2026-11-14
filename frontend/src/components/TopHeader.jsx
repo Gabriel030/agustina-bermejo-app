@@ -4,6 +4,7 @@ import { MobileMenu } from '@/components/MobileMenu';
 import { NotificationBell } from '@/features/notifications';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { isDesignB } from '@/theme/design';
 import { usePerfilPropio, useAvatar } from '@/features/identity/hooks/useMiPerfil';
 
@@ -20,6 +21,7 @@ function pageTitleFor(items, pathname, fallback) {
 export function TopHeader({ titulo, items, groups }) {
   const { usuario } = useAuth();
   const { pathname } = useLocation();
+  const { canSwitch } = useActiveRole();
   const designB = isDesignB();
   const mobileTitle = designB ? pageTitleFor(items, pathname, titulo) : titulo;
   const { data: perfil } = usePerfilPropio();
@@ -50,7 +52,7 @@ export function TopHeader({ titulo, items, groups }) {
                   <div className="truncate text-size-13 font-bold leading-tight text-ink">
                     {usuario.nombre} {usuario.apellido}
                   </div>
-                  <div className="truncate text-size-11 leading-tight text-ink-faint">{titulo}</div>
+                  {!canSwitch && <div className="truncate text-size-11 leading-tight text-ink-faint">{titulo}</div>}
                 </div>
                 {designB && <span className="sr-only">Mi cuenta</span>}
               </Link>

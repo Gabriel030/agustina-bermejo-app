@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
 import { Buscador } from '@/components/Buscador';
 import { EmptyState } from '@/components/EmptyState';
 import { GlassCard } from '@/components/GlassCard';
@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/Skeleton';
 import { StatCard } from '@/components/StatCard';
 import { StatusPill } from '@/components/StatusPill';
 import { FEE_TYPE_LABELS, formatDate, formatMoney } from '@/lib/billing';
-import { roleBaseOf } from '../authorization/authorizationRequests';
 import { useOfferNames } from '../hooks/useOfferNames';
 import { PRICE_STATUS, advanceVersionOf, countByPresence, offerKind, offerName, priceStatusKey, priceStatusKeys } from './pricing';
 import { usePrices } from './usePrices';
@@ -71,8 +70,7 @@ function PriceRow({ price, to }) {
 }
 
 export function PricesPage() {
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const prices = usePrices();
   const names = useOfferNames();
   const [filter, setFilter] = useState(null);
