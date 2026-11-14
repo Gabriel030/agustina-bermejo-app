@@ -18,6 +18,7 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Concurre
 import com.red_escuela.backend.graduation.certificate.regular.exception.NotRegularException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateAlreadyIssuedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingNotConfirmedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.StudentDocumentMissingException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularStandingGate.StandingResolution;
@@ -96,6 +97,7 @@ class RegularCertificateIssuerTest {
         Person person = mock(Person.class);
         when(person.getName()).thenReturn("Ana");
         when(person.getLastname()).thenReturn("Perez");
+        when(person.getDni()).thenReturn("30111222");
         when(student.getPerson()).thenReturn(person);
         when(factsFinder.find(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(new RegularEnrollmentFacts(student, "la carrera", "Tecnicatura"));
         when(currentActorFinder.currentPersonId()).thenReturn(ACTOR_ID);
@@ -119,6 +121,22 @@ class RegularCertificateIssuerTest {
         ArgumentCaptor<RegularCertificateRequest> captor = ArgumentCaptor.forClass(RegularCertificateRequest.class);
         verify(requestRepository).saveAndFlush(captor.capture());
         return captor.getValue();
+    }
+
+    @Test
+    void studentWithoutDocumentIsRejectedBeforeRenderingAndNothingIsStored() {
+        Student student = mock(Student.class);
+        Person person = mock(Person.class);
+        when(person.getDni()).thenReturn(null);
+        when(student.getPerson()).thenReturn(person);
+        when(factsFinder.find(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(new RegularEnrollmentFacts(student, "la carrera", "Tecnicatura"));
+
+        assertThatThrownBy(() -> issuer(30).issue(command)).isInstanceOf(StudentDocumentMissingException.class);
+        assertThatThrownBy(() -> issuer(30).submitFromPortal(command)).isInstanceOf(StudentDocumentMissingException.class);
+
+        verify(renderer, never()).render(any(), any(), any(), anyString());
+        verify(fileStore, never()).save(anyString(), any());
+        verify(certificateRepository, never()).saveAndFlush(any(RegularStudentCertificate.class));
     }
 
     @Test
