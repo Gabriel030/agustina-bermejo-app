@@ -71,6 +71,22 @@ public final class ImportRowReader {
         }
     }
 
+    public java.time.LocalDate date(String column, boolean required) {
+        String value = text(column);
+        if (value.isEmpty()) {
+            if (required) {
+                errors.add(new ImportRowError(column, code(column, "REQUIRED"), "La columna " + column + " es obligatoria"));
+            }
+            return null;
+        }
+        try {
+            return ImportValueParser.parseDate(value).orElse(null);
+        } catch (IllegalArgumentException e) {
+            errors.add(new ImportRowError(column, code(column, "INVALID"), "La fecha debe ser yyyy-MM-dd o dd/MM/yyyy"));
+            return null;
+        }
+    }
+
     public <E extends Enum<E>> Optional<E> enumValue(String column, Class<E> type, boolean required) {
         String value = text(column);
         if (value.isEmpty()) {

@@ -37,4 +37,6 @@ public interface SubjectSectionRepository extends JpaRepository<SubjectSection, 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from SubjectSection s where s.id = :id")
     Optional<SubjectSection> findByIdForUpdate(@Param("id") Long id);
+
+    java.util.Optional<SubjectSection> findByCode(String code);
 }

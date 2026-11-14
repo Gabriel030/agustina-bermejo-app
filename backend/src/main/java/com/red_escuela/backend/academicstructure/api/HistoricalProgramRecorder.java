@@ -49,6 +49,11 @@ public class HistoricalProgramRecorder {
     }
 
     @Transactional(readOnly = true)
+    public Optional<Long> findProgramIdByName(String name) {
+        return programRepository.findFirstByName(name).map(Program::getId);
+    }
+
+    @Transactional(readOnly = true)
     public boolean subjectCodeExists(String code) {
         return subjectRepository.findByCode(code).isPresent();
     }

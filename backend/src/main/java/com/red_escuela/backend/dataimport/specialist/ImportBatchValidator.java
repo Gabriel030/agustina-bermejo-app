@@ -81,7 +81,11 @@ public class ImportBatchValidator {
                 }
             });
             definition.references(payload).forEach(reference -> {
-                if (!referenceExists(batchId, reference)) {
+                if (reference.prefix() && rowRepository.countByBatchIdAndEntityTypeAndNaturalKeyStartingWith(batchId,
+                        reference.type(), reference.naturalKey()) > 1) {
+                    errors.add(new ImportRowError(reference.column(), reference.code().replace("_NOT_FOUND", "") + "_AMBIGUOUS",
+                            "Hay más de una coincidencia en el lote: indicá la carrera"));
+                } else if (!referenceExists(batchId, reference)) {
                     errors.add(new ImportRowError(reference.column(), reference.code(), "La referencia no existe en el lote ni en el sistema"));
                 }
             });
@@ -95,7 +99,11 @@ public class ImportBatchValidator {
     }
 
     private boolean referenceExists(Long batchId, ImportReference reference) {
-        return rowRepository.existsByBatchIdAndEntityTypeAndNaturalKey(batchId, reference.type(), reference.naturalKey())
+        if (reference.prefix() && rowRepository.countByBatchIdAndEntityTypeAndNaturalKeyStartingWith(batchId,
+                reference.type(), reference.naturalKey()) > 0) {
+            return true;
+        }
+        return !reference.prefix() && rowRepository.existsByBatchIdAndEntityTypeAndNaturalKey(batchId, reference.type(), reference.naturalKey())
                 || registry.definitionFor(reference.type()).existsInBase(reference.naturalKey());
     }
 

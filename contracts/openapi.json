@@ -6652,7 +6652,7 @@
       "ImportBlockCounters" : {
         "properties" : {
           "entityType" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
             "type" : "string"
           },
           "rowsByStatus" : {
@@ -6669,7 +6669,7 @@
       "ImportFileResponse" : {
         "properties" : {
           "entityType" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
             "type" : "string"
           },
           "originalName" : {
@@ -6700,7 +6700,7 @@
             "type" : "string"
           },
           "entityType" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
             "type" : "string"
           },
           "message" : {
@@ -31833,7 +31833,7 @@
           "name" : "entityType",
           "required" : true,
           "schema" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
             "type" : "string"
           }
         } ],

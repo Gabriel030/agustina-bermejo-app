@@ -1,4 +1,4 @@
-package com.red_escuela.backend.evaluation.specialist;
+package com.red_escuela.backend.evaluation.api;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;

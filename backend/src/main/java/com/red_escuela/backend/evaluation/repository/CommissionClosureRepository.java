@@ -32,4 +32,6 @@ public interface CommissionClosureRepository extends JpaRepository<CommissionClo
             on conflict (section_kind, section_id) do nothing
             """, nativeQuery = true)
     int insertDraftIfAbsent(@Param("kind") SectionKind kind, @Param("sectionId") Long sectionId);
+
+    boolean existsByReportNumber(String reportNumber);
 }
