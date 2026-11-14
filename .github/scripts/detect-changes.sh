@@ -2,7 +2,7 @@
 # Decide que partes del CI corren y si el arbol de un push a develop ya fue verificado por un PR verde.
 # Entradas (env): GITHUB_EVENT_NAME, GITHUB_REF, GITHUB_OUTPUT, GITHUB_REPOSITORY, GH_TOKEN,
 #   PR_BASE_SHA (pull_request), PR_BASE_REF (pull_request), PR_NUMBER (pull_request), TESTED_TREE_DIR (salida para PR)
-# Salidas: relevant, frontend, lockfile, run_migration, run_demo_seed, run_docs, extra_groups,
+# Salidas: relevant, frontend, lockfile, run_migration, run_demo_seed, run_docs, deploy, extra_groups,
 #   reuse_backend, reuse_frontend, reuse_run, reuse_pr
 set -uo pipefail
 
@@ -16,6 +16,7 @@ lockfile=true
 run_migration=true
 run_demo_seed=false
 run_docs=false
+deploy=true
 extra_groups='[]'
 reuse_backend=false
 reuse_frontend=false
@@ -34,6 +35,8 @@ fi
 if [ "$ref" = refs/heads/master ] || { [ "$event" = pull_request ] && [ "${PR_BASE_REF:-}" = master ]; }; then
   run_docs=true
 fi
+
+deploy_scope='^(backend/Dockerfile|backend/\.dockerignore|frontend/Dockerfile|frontend/\.dockerignore|frontend/Caddyfile|docker-compose\.prod\.yml|deploy/|\.github/workflows/|\.github/scripts/)'
 
 backend_scope='^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)'
 migration_scope='^(backend/src/main/resources/db/migration/|backend/src/test/.*Migrat[^/]*\.java$|backend/pom\.xml$|scripts/|\.github/workflows/|\.github/scripts/)'
@@ -61,6 +64,9 @@ if [ -n "$base" ]; then
     fi
     if ! grep -qE '^(frontend/|contracts/openapi\.json$|\.github/workflows/)' <<< "$changed"; then
       frontend=false
+    fi
+    if ! grep -qE "$deploy_scope" <<< "$changed"; then
+      deploy=false
     fi
     if ! grep -qE '^frontend/package-lock\.json$' <<< "$changed"; then
       lockfile=false
@@ -130,6 +136,7 @@ fi
   echo "run_migration=$run_migration"
   echo "run_demo_seed=$run_demo_seed"
   echo "run_docs=$run_docs"
+  echo "deploy=$deploy"
   echo "extra_groups=$extra_groups"
   echo "reuse_backend=$reuse_backend"
   echo "reuse_frontend=$reuse_frontend"
