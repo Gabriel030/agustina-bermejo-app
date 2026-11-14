@@ -2130,6 +2130,10 @@
           "newSectionId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "reason" : {
+            "description" : "Motivo del cambio (10 a 500 caracteres); obligatorio cuando lo registra el personal",
+            "type" : "string"
           }
         },
         "required" : [ "newSectionId" ],
@@ -13436,8 +13440,23 @@
             "description" : "Fecha de la baja; si no viene, es hoy",
             "format" : "date",
             "type" : "string"
+          },
+          "reason" : {
+            "description" : "Motivo de la baja (10 a 500 caracteres)",
+            "type" : "string"
           }
         },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "WithdrawSectionEnrollmentRequest" : {
+        "properties" : {
+          "reason" : {
+            "description" : "Motivo de la baja (10 a 500 caracteres)",
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "WithdrawStudentRequest" : {
@@ -24711,7 +24730,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "course-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/course-section-enrollments/{id}/attendance" : {
@@ -25208,6 +25227,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WithdrawSectionEnrollmentRequest"
+              }
+            }
+          }
+        },
         "responses" : {
           "204" : {
             "description" : "No Content"
@@ -25303,7 +25331,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "course-section-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/course-sections/{id}" : {
@@ -56487,7 +56515,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "program-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/program-sections/{id}" : {
@@ -65822,7 +65850,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "subject-section-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/section-enrollments/{id}/grade-items" : {
@@ -66082,6 +66110,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WithdrawSectionEnrollmentRequest"
+              }
+            }
+          }
+        },
         "responses" : {
           "204" : {
             "description" : "No Content"
@@ -66177,7 +66214,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "subject-section-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/section-evaluation-configs" : {

@@ -92,6 +92,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ELECTIVE_GROUP_NOT_ASSIGNED` | no | `ElectiveGroupNotAssignedException` | academicstructure |
 | `EMAIL_ALREADY_EXISTS` | no | `EmailAlreadyExistsException` | identity |
 | `EMPTY_AUDIENCE` | no | `EmptyAudienceException` | announcement |
+| `ENROLLMENT_CHANGE_REASON_INVALID` | no | `EnrollmentChangeReasonInvalidException` | enrollment |
+| `ENROLLMENT_CHANGE_REASON_REQUIRED` | no | `EnrollmentChangeReasonRequiredException` | enrollment |
 | `ENROLLMENT_FEE_NOT_PAID` | no | `EnrollmentFeeNotPaidException` | enrollment |
 | `ENROLLMENT_FEE_NOT_PAID_FOR_TERM` | no | `EnrollmentFeeNotPaidForTermException` | enrollment |
 | `ENROLLMENT_WINDOW_CLOSED` | no | `EnrollmentWindowClosedException` | enrollment |
@@ -534,6 +536,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
 | `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
+| `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
@@ -671,9 +674,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-enrollments/{id}/payment-plan` | `PaymentPlanSelectionController#selectForCourse` |
 | POST | `/course-enrollments/{id}/student-discounts` | `StudentDiscountController#grantForCourseEnrollment` |
 | POST | `/course-enrollments/{id}/student-discounts/preview` | `StudentDiscountController#previewForCourseEnrollment` |
-| POST | `/course-enrollments/{id}/withdraw` | `CourseEnrollmentController#withdraw` |
+| POST | `/course-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourse` |
 | POST | `/course-section-enrollments/{id}/grade-items` | `GradeItemController#loadCourseEnrollmentGrade` |
-| POST | `/course-section-enrollments/{id}/withdraw` | `CourseSectionEnrollmentController#withdraw` |
+| POST | `/course-section-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourseModule` |
 | POST | `/course-sections/{id}/activate` | `CourseSectionController#reactivate` |
 | POST | `/course-sections/{id}/attendance` | `AttendanceController#loadCourseSectionAttendance` |
 | POST | `/course-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelCourseSectionClassSession` |
@@ -763,7 +766,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/program-enrollments/{id}/section-enrollments` | `SubjectSectionEnrollmentController#enroll` |
 | POST | `/program-enrollments/{id}/student-discounts` | `StudentDiscountController#grantForProgramEnrollment` |
 | POST | `/program-enrollments/{id}/student-discounts/preview` | `StudentDiscountController#previewForProgramEnrollment` |
-| POST | `/program-enrollments/{id}/withdraw` | `ProgramEnrollmentController#withdraw` |
+| POST | `/program-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawProgram` |
 | POST | `/program-sections/{id}/activate` | `SubjectSectionController#reactivate` |
 | POST | `/program-sections/{id}/attendance` | `AttendanceController#loadProgramSectionAttendance` |
 | POST | `/program-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelProgramSectionClassSession` |
@@ -796,9 +799,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/regular-certificate-requests/{id}/reject` | `RegularCertificateRequestController#reject` |
 | POST | `/regular-certificates` | `RegularCertificateController#issue` |
 | POST | `/regular-certificates/{id}/revoke` | `RegularCertificateController#revoke` |
-| POST | `/section-enrollments/{id}/change-section` | `SubjectSectionEnrollmentController#changeSection` |
+| POST | `/section-enrollments/{id}/change-section` | `StaffEnrollmentChangeController#changeSubjectSection` |
 | POST | `/section-enrollments/{id}/grade-items` | `GradeItemController#loadProgramEnrollmentGrade` |
-| POST | `/section-enrollments/{id}/withdraw` | `SubjectSectionEnrollmentController#withdraw` |
+| POST | `/section-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawSubject` |
 | POST | `/section-evaluation-configs/{sectionId}/approve` | `SectionEvaluationConfigController#approve` |
 | POST | `/section-evaluation-configs/{sectionId}/reject` | `SectionEvaluationConfigController#reject` |
 | POST | `/staff` | `StaffController#createStaff` |
