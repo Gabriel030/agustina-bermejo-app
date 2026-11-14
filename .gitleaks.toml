@@ -10,6 +10,7 @@ paths = [
   '''(^|/)backend/src/test/''',
   '''(^|/)frontend/src/.*\.test\.jsx?$''',
   '''(^|/)perf/README\.md$''',
+  '''(^|/)deploy/\.env\.example$''',
   '''(^|/)target/''',
   '''(^|/)node_modules/''',
 ]

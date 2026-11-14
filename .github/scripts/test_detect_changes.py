@@ -105,6 +105,18 @@ class DetectChangesTest(unittest.TestCase):
         result = self.pull_request_changing({'backend/src/main/java/com/red_escuela/backend/billing/Invoice.java': 'x'})
         self.assertEqual('false', result['run_demo_seed'])
 
+    def test_pull_request_touching_the_caddyfile_runs_the_deploy_job(self):
+        result = self.pull_request_changing({'frontend/Caddyfile': 'x'})
+        self.assertEqual('true', result['deploy'])
+
+    def test_pull_request_touching_the_deploy_folder_runs_the_deploy_job(self):
+        result = self.pull_request_changing({'deploy/.env.example': 'x'})
+        self.assertEqual('true', result['deploy'])
+
+    def test_pull_request_touching_only_application_code_skips_the_deploy_job(self):
+        result = self.pull_request_changing({'frontend/a.js': 'b'})
+        self.assertEqual('false', result['deploy'])
+
     def test_push_never_runs_the_demo_seed_job(self):
         result = self.push()
         self.assertEqual('false', result['run_demo_seed'])
