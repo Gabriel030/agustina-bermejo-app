@@ -1,5 +1,6 @@
 package com.red_escuela.backend.demo;
 
+import com.red_escuela.backend.identity.api.DemoStudentIdentityCompleter;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -25,11 +26,14 @@ public class DemoPeopleSeedStep implements DemoSeedStep {
             "Ricardo Cabrera", "Patricia Luna", "Alejandro Vega", "Mónica Ríos", "Héctor Paz");
     private static final int MAX_CONSECUTIVE_MISSING_STUDENT_IDS = 10;
     private static final long FIRST_TEACHER_DNI = 30100001L;
+    private static final long FIRST_STUDENT_DNI = 40100001L;
 
     private final DemoSeedSession session;
+    private final DemoStudentIdentityCompleter identityCompleter;
 
-    public DemoPeopleSeedStep(DemoSeedSession session) {
+    public DemoPeopleSeedStep(DemoSeedSession session, DemoStudentIdentityCompleter identityCompleter) {
         this.session = session;
+        this.identityCompleter = identityCompleter;
     }
 
     @Override
@@ -48,6 +52,7 @@ public class DemoPeopleSeedStep implements DemoSeedStep {
         session.studentIdsByUsername().clear();
         for (int index = 0; index < dataset.studentCount(); index++) {
             registerStudentIfMissing(institutionId, index);
+            identityCompleter.completeIfMissing(studentUsername(index), String.valueOf(FIRST_STUDENT_DNI + index));
         }
         session.studentIdsByUsername().clear();
         for (int index = 0; index < dataset.teacherCount(); index++) {
