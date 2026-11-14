@@ -113,40 +113,51 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/data-imports/" + batchId + "/rollback-preview").header("Authorization", bearer()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.canRollback").value(true))
-                .andExpect(jsonPath("$.created.length()").value(2)).andExpect(jsonPath("$.blockers.length()").value(0));
+                .andExpect(jsonPath("$.created.length()").value(1)).andExpect(jsonPath("$.retained.length()").value(1))
+                .andExpect(jsonPath("$.retained[0].entityType").value("SUBJECTS")).andExpect(jsonPath("$.blockers.length()").value(0));
         assertThat(businessCounts()).isEqualTo(afterCommit);
 
         postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ROLLED_BACK"));
 
-        assertThat(businessCounts()).isEqualTo(before);
-        assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ?", Integer.class, batchId)).isZero();
-        assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'COMMITTED'", Integer.class, batchId)).isZero();
-        assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'VALID'", Integer.class, batchId)).isEqualTo(3);
+        Map<String, Long> expected = new TreeMap<>(before);
+        expected.put("subject", before.get("subject") + 1);
+        assertThat(businessCounts()).isEqualTo(expected);
+        assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ? and entity_type = 'SUBJECTS'", Integer.class, batchId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ? and entity_type <> 'SUBJECTS'", Integer.class, batchId)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'COMMITTED'", Integer.class, batchId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'VALID'", Integer.class, batchId)).isEqualTo(2);
         assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'", Integer.class, batchId)).isEqualTo(1);
         assertThat(sideEffectCounts()).isEqualTo(sideEffectsBefore);
     }
 
     @Test
-    void rollbackOfABatchThatCreatedProgramsIsBlockedAfterTouchingEverythingAndUndoesNothing() throws Exception {
+    void rollbackKeepsTheRetainedStructureAndUndoesEverythingElse() throws Exception {
+        Map<String, Long> before = businessCounts();
         long batchId = importFullHistory(suffix, studentDni, teacherDni);
         Map<String, Long> afterCommit = businessCounts();
-        assertThat(afterCommit.get("program_subject_prerequisite")).isPositive();
-        assertThat(afterCommit.get("commission_closure_student")).isPositive();
 
         mockMvc.perform(get("/data-imports/" + batchId + "/rollback-preview").header("Authorization", bearer()))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.canRollback").value(false))
-                .andExpect(jsonPath("$.created.length()").value(9))
-                .andExpect(jsonPath("$.blockers[0].entityType").value("PROGRAMS"));
-        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("IMPORT_ROLLBACK_BLOCKED"))
-                .andExpect(jsonPath("$.details.blockers[0].entityType").value("PROGRAMS"));
-
+                .andExpect(status().isOk()).andExpect(jsonPath("$.canRollback").value(true))
+                .andExpect(jsonPath("$.created.length()").value(5)).andExpect(jsonPath("$.retained.length()").value(4))
+                .andExpect(jsonPath("$.blockers.length()").value(0));
         assertThat(businessCounts()).isEqualTo(afterCommit);
-        assertThat(jdbc.queryForObject("select status from import_batch where id = ?", String.class, batchId)).isEqualTo("COMMITTED");
-        assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ?", Integer.class, batchId)).isEqualTo(12);
-        assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLBACK_BLOCKED'", Integer.class, batchId)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'", Integer.class, batchId)).isZero();
+
+        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ROLLED_BACK"));
+
+        Map<String, Long> afterRollback = businessCounts();
+        for (String table : List.of("program", "price", "price_version", "subject", "program_subject", "program_subject_prerequisite")) {
+            assertThat(afterRollback.get(table)).as(table).isEqualTo(afterCommit.get(table));
+        }
+        for (String table : List.of("person", "address", "student", "instructor", "academic_offering_cycle", "subject_section",
+                "subject_section_instructor", "program_enrollment", "subject_section_enrollment", "commission_closure",
+                "commission_closure_student")) {
+            assertThat(afterRollback.get(table)).as(table).isEqualTo(before.get(table));
+        }
+        assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ?", Integer.class, batchId)).isEqualTo(6);
+        assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'COMMITTED'", Integer.class, batchId)).isEqualTo(6);
+        assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'VALID'", Integer.class, batchId)).isEqualTo(6);
     }
 
     @Test

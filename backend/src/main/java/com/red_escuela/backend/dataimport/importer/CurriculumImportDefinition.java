@@ -87,11 +87,6 @@ public class CurriculumImportDefinition implements ImportEntityDefinition {
     }
 
     @Override
-    public void discard(Long entityId) {
-        recorder.discardPlanEntry(entityId);
-    }
-
-    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         ImportRowReader reader = new ImportRowReader(payload);
         return recorder.recordPlanEntry(new HistoricalPlanEntry(reader.text("programName"), reader.text("subjectCode"),

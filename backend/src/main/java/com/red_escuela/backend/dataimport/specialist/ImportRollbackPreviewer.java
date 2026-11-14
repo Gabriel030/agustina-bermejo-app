@@ -32,14 +32,19 @@ public class ImportRollbackPreviewer {
         if (!batch.canRollback()) {
             throw new ImportBatchStateInvalidException("deshacer", batch.getStatus().name());
         }
-        List<CreatedCount> created = createdEntityRepository.countByEntityType(batchId).stream()
-                .sorted(Comparator.comparing(ImportCreatedCount::entityType))
+        List<ImportCreatedCount> counts = createdEntityRepository.countByEntityType(batchId).stream()
+                .sorted(Comparator.comparing(ImportCreatedCount::entityType)).toList();
+        List<CreatedCount> created = counts.stream()
+                .filter(count -> !ImportRollbackTransaction.RETAINED_TYPES.contains(count.entityType()))
+                .map(count -> new CreatedCount(count.entityType(), count.total())).toList();
+        List<CreatedCount> retained = counts.stream()
+                .filter(count -> ImportRollbackTransaction.RETAINED_TYPES.contains(count.entityType()))
                 .map(count -> new CreatedCount(count.entityType(), count.total())).toList();
         try {
             rollbackTransaction.dryRun(batchId);
-            return new ImportRollbackPreviewResponse(true, created, List.of());
+            return new ImportRollbackPreviewResponse(true, created, retained, List.of());
         } catch (ImportRollbackBlockedException e) {
-            return new ImportRollbackPreviewResponse(false, created,
+            return new ImportRollbackPreviewResponse(false, created, retained,
                     List.of(new Blocker(e.entityType(), e.naturalKey(), e.reason())));
         }
     }

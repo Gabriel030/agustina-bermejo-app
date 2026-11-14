@@ -39,6 +39,10 @@ public interface ImportRowRepository extends JpaRepository<ImportRow, Long> {
     @Query("update ImportRow r set r.status = :to, r.errors = null, r.committedEntityId = null where r.batchId = :batchId and r.status = :from")
     int moveStatus(@Param("batchId") Long batchId, @Param("from") ImportRowStatus from, @Param("to") ImportRowStatus to);
 
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update ImportRow r set r.status = :to, r.errors = null, r.committedEntityId = null where r.batchId = :batchId and r.status = :from and r.entityType not in :excluded")
+    int moveStatusExcludingTypes(@Param("batchId") Long batchId, @Param("from") ImportRowStatus from, @Param("to") ImportRowStatus to, @Param("excluded") Collection<ImportEntityType> excluded);
+
     List<ImportRow> findByBatchIdOrderByEntityTypeAscRowNumberAsc(Long batchId, Pageable pageable);
 
     @Query("""

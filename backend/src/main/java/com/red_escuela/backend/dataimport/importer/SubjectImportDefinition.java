@@ -77,11 +77,6 @@ public class SubjectImportDefinition implements ImportEntityDefinition {
     }
 
     @Override
-    public void discard(Long entityId) {
-        recorder.discardSubject(entityId);
-    }
-
-    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         ImportRowReader reader = new ImportRowReader(payload);
         return recorder.recordSubject(new HistoricalSubject(reader.text("subjectCode"), reader.text("name"),

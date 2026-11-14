@@ -15,7 +15,6 @@ import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
 import com.red_escuela.backend.shared.pricing.OfferingFee;
 import com.red_escuela.backend.shared.pricing.OfferingPriceCatalog;
 import com.red_escuela.backend.shared.pricing.OfferingReference;
@@ -134,30 +133,6 @@ public class HistoricalProgramRecorder {
         link.setRequirementType(historical.requirementType());
         link.setMinGrade(Grade.ofNullable(historical.minGrade()));
         return prerequisiteRepository.save(link).getId();
-    }
-
-    @Transactional
-    public void discardProgram(Long programId) {
-        throw new HistoricalDiscardBlockedException(
-                "Las carreras importadas tienen precios cargados y el historial de precios no se puede borrar");
-    }
-
-    @Transactional
-    public void discardSubject(Long subjectId) {
-        subjectRepository.deleteById(subjectId);
-        subjectRepository.flush();
-    }
-
-    @Transactional
-    public void discardPlanEntry(Long planEntryId) {
-        programSubjectRepository.deleteById(planEntryId);
-        programSubjectRepository.flush();
-    }
-
-    @Transactional
-    public void discardPrerequisite(Long prerequisiteId) {
-        prerequisiteRepository.deleteById(prerequisiteId);
-        prerequisiteRepository.flush();
     }
 
     private Optional<ProgramSubject> findPlanEntry(String programName, String subjectCode) {

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.dataimport.repository;
 
+import com.red_escuela.backend.dataimport.domain.ImportEntityType;
 import com.red_escuela.backend.dataimport.entity.*;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +25,6 @@ public interface ImportCreatedEntityRepository extends JpaRepository<ImportCreat
     List<ImportCreatedCount> countByEntityType(@Param("batchId") Long batchId);
 
     @Modifying(flushAutomatically = true)
-    @Query("delete from ImportCreatedEntity c where c.batchId = :batchId")
-    void deleteByBatchId(@Param("batchId") Long batchId);
+    @Query("delete from ImportCreatedEntity c where c.batchId = :batchId and c.entityType not in :retained")
+    void deleteByBatchIdAndEntityTypeNotIn(@Param("batchId") Long batchId, @Param("retained") Collection<ImportEntityType> retained);
 }
