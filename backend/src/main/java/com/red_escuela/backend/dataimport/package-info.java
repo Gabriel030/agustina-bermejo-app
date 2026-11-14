@@ -14,7 +14,7 @@
  * del bloque (por ejemplo {@code PersonImportDefinition}), que escribe con {@code HistoricalPersonRecorder} de {@code identity}.
  * Spec: Importación inicial de datos del instituto (Épica 29, bloque D).
  */
-@ApplicationModule(displayName = "Data import", allowedDependencies = {"shared", "identity :: *", "platform :: *", "academicstructure :: *", "enrollment :: *", "evaluation :: api"})
+@ApplicationModule(displayName = "Data import", allowedDependencies = {"shared", "identity :: *", "platform :: *", "academicstructure :: *", "enrollment :: *", "evaluation :: api", "attendance :: api"})
 package com.red_escuela.backend.dataimport;
 
 import org.springframework.modulith.ApplicationModule;

@@ -93,6 +93,8 @@ export const ENTITY_TYPE_LABELS = {
   SECTIONS: 'Comisiones',
   PROGRAM_ENROLLMENTS: 'Inscripciones a carrera',
   SECTION_ENROLLMENTS: 'Cursadas',
+  GRADE_ITEMS: 'Notas por examen y parcial',
+  ATTENDANCES: 'Asistencia por clase',
 };
 
 export function entityTypeLabel(entityType) {
