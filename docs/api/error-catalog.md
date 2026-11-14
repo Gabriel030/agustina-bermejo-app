@@ -534,6 +534,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
 | `STUDENT_DISCOUNT_OVERLAP` | no | `StudentDiscountOverlapException` | billing |
 | `STUDENT_DISCOUNT_PROPOSAL_EXPIRED` | no | `StudentDiscountProposalExpiredException` | billing |
+| `STUDENT_DOCUMENT_MISSING` | no | `StudentDocumentMissingException` | graduation |
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
 | `STUDENT_HAS_ACTIVE_ENROLLMENTS` | no | `StudentHasActiveEnrollmentsException` | identity |
 | `STUDENT_HAS_DEBT` | no | `StudentHasDebtException` | graduation |

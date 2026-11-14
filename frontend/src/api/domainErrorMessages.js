@@ -259,6 +259,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   STALE_FEATURE_VERSION: 'Otra persona cambió esta función. Recargá y volvé a intentar.',
   STALE_INSTITUTE_SETTING_VERSION: 'Otra persona cambió este ajuste. Recargá y volvé a intentar.',
   STUDENT_FREE_BY_ABSENCES: 'El alumno quedó libre por inasistencias.',
+  STUDENT_DOCUMENT_MISSING: 'El alumno no tiene documento cargado. Completá su DNI para emitir el certificado.',
   STUDENT_HAS_DEBT: 'El alumno tiene deuda pendiente.',
   SUBJECT_ALREADY_EXISTS: 'Ya existe una materia con ese nombre o código.',
   SUBJECT_INVALID_TRANSITION: 'La materia no puede pasar a ese estado.',

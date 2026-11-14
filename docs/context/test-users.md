@@ -49,7 +49,7 @@ Con `SPRING_PROFILES_ACTIVE=local,demo` el arranque deja datos educativos reales
 
 Los horarios de las comisiones son texto libre (`schedule`), no franjas con aula.
 
-Además, el módulo `demo` (V2-13a) siembra por HTTP alumnos con login `nombre.apellido` / `Test1234` (ej. `lucia.gomez`), inscriptos a comisiones de primer año con asistencia de las últimas clases y notas de parcial en cuatro perfiles (excelente, regular, desaprobado, parcial pendiente). `docente.demo` es titular de todas esas comisiones. Los otros docentes creados por `POST /staff` tienen usuario = DNI y no tienen clave conocida: para probar como docente usar solo `docente.demo`.
+Además, el módulo `demo` (V2-13a) siembra por HTTP alumnos con login `nombre.apellido` / `Test1234` (ej. `lucia.gomez`), con rol ALUMNO y un DNI único de 8 dígitos (desde 40100001, en el orden del seed), inscriptos a comisiones de primer año con asistencia de las últimas clases y notas de parcial en cuatro perfiles (excelente, regular, desaprobado, parcial pendiente). `docente.demo` es titular de todas esas comisiones. Los otros docentes creados por `POST /staff` tienen usuario = DNI y no tienen clave conocida: para probar como docente usar solo `docente.demo`.
 
 ## 2b. Seed de sistema (E2E)
 
