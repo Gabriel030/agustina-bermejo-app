@@ -51,7 +51,7 @@ public final class ArchitectureRules {
     static final String[] FEATURE_PACKAGES = {
             ROOT + ".academicrecord..", ROOT + ".academicstructure..", ROOT + ".announcement..",
             ROOT + ".attendance..", ROOT + ".billing..", ROOT + ".enrollment..", ROOT + ".evaluation..",
-            ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
+            ROOT + ".dataimport..", ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
 
     static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account..", "..billing.note..", "..billing.collections..", "..billing.payment..", "..billing.discount..", "..billing.annualupfront.."};

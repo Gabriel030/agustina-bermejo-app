@@ -23,7 +23,7 @@ class ModularityTest {
     private static final String UPDATE_PROPERTY = "modulith.baseline.update";
 
     private static final List<String> EXPECTED_MODULES = List.of(
-            "academicrecord", "academicstructure", "announcement", "attendance", "billing", "config",
+            "academicrecord", "academicstructure", "announcement", "attendance", "billing", "config", "dataimport",
             "demo", "enrollment", "evaluation", "graduation", "identity", "notification", "platform", "shared");
 
     private final ApplicationModules modules = ImportedApplicationClasses.modules();
