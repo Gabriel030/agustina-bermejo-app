@@ -2,6 +2,8 @@ import { Login } from '@/features/identity/pages/Login';
 import { Registrarse } from '@/features/identity/pages/Registrarse';
 import { ForgotPassword } from '@/features/identity/pages/ForgotPassword';
 import { VerificacionEmail } from '@/features/identity/pages/VerificacionEmail';
+import { ConfirmarResponsable } from '@/features/identity/pages/ConfirmarResponsable';
+import { PrivacyPage, TermsPage } from '@/features/identity/legal/LegalDocumentPage';
 import { NoAutorizado } from '@/pages/NoAutorizado';
 import { lazyPage } from '@/routes/lazyPage';
 const MiPerfil = lazyPage(() => import('@/features/identity/pages/MiPerfil'), 'MiPerfil');
@@ -17,6 +19,9 @@ export const routes = {
     { path: '/olvide-mi-contrasena', element: <ForgotPassword /> },
     { path: '/verificar-email', element: <VerificacionEmail /> },
     { path: '/no-autorizado', element: <NoAutorizado /> },
+    { path: '/legal/terminos', element: <TermsPage /> },
+    { path: '/legal/privacidad', element: <PrivacyPage /> },
+    { path: '/confirmar-responsable', element: <ConfirmarResponsable /> },
   ],
   shared: [{ path: '/perfil', element: <MiPerfil /> }],
   role: [

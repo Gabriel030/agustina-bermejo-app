@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorFallback } from '@/components/ErrorFallback';
 import { SkipToContent } from '@/components/SkipToContent';
 import { SystemBar } from '@/pwa/SystemBar';
+import { LegalNoticeBanner } from '@/features/identity/legal/LegalNoticeBanner';
 import { isDesignB } from '@/theme/design';
 
 const HEADING_WAIT_MS = 2000;
@@ -78,6 +79,7 @@ export function RoleShell({ titulo, items, groups }) {
       <div className="flex min-w-0 flex-1 flex-col gap-(--shell-gap) overflow-hidden">
         <TopHeader titulo={titulo} items={items} groups={groups} />
         <SystemBar />
+        <LegalNoticeBanner />
         {/* min-w-0: sin esto, un flex item no se achica más allá del ancho
             intrínseco de su contenido (default min-width:auto) — con una
             pantalla de contenido ancho (ej. Catálogo, Épica 7 Fase 3) esto
