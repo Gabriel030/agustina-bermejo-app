@@ -202,7 +202,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     }
 
     private long findStudentId(DemoApiClient api, String username) {
-        for (JsonNode student : api.get(ADMIN, "/students?search=" + username)) {
+        for (JsonNode student : api.get(ADMIN, "/students?size=100&search=" + username).path("items")) {
             if (student.toString().contains(username)) {
                 return student.get("id").asLong();
             }
