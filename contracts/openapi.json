@@ -2955,6 +2955,17 @@
         "required" : [ "violations" ],
         "type" : "object"
       },
+      "ConfirmGuardianAcceptanceRequest" : {
+        "properties" : {
+          "token" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "token" ],
+        "type" : "object"
+      },
       "ConfirmProspectRequest" : {
         "properties" : {
           "birthDate" : {
@@ -8010,6 +8021,19 @@
         "required" : [ "generatedAt", "items" ],
         "type" : "object"
       },
+      "NewsletterPreferenceResponse" : {
+        "properties" : {
+          "optedIn" : {
+            "type" : "boolean"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "optedIn", "updatedAt" ],
+        "type" : "object"
+      },
       "NightlyBillingExecutionResponse" : {
         "properties" : {
           "run" : {
@@ -8794,6 +8818,28 @@
           }
         },
         "required" : [ "id", "requestedAt", "requestedByName", "requestedByPersonId", "type" ],
+        "type" : "object"
+      },
+      "PendingLegalAcceptancesResponse" : {
+        "properties" : {
+          "documents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LegalDocumentResponse"
+            },
+            "type" : "array"
+          },
+          "gracePeriodExpired" : {
+            "type" : "boolean"
+          },
+          "guardianConfirmationRequired" : {
+            "type" : "boolean"
+          },
+          "suggestedDeadline" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "documents", "gracePeriodExpired", "guardianConfirmationRequired", "suggestedDeadline" ],
         "type" : "object"
       },
       "PendingModificationInfo" : {
@@ -10598,6 +10644,9 @@
       },
       "RegisterRequest" : {
         "properties" : {
+          "acceptedNewsletter" : {
+            "type" : "boolean"
+          },
           "acceptedPrivacy" : {
             "type" : "boolean"
           },
@@ -10608,9 +10657,29 @@
             "minLength" : 1,
             "type" : "string"
           },
+          "birthDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "email" : {
             "format" : "email",
             "minLength" : 1,
+            "type" : "string"
+          },
+          "guardianEmail" : {
+            "format" : "email",
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "guardianName" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "guardianRelationship" : {
+            "maxLength" : 60,
+            "minLength" : 0,
             "type" : "string"
           },
           "institutionId" : {
@@ -10630,7 +10699,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "acceptedPrivacy", "acceptedTerms", "apellido", "email", "institutionId", "nombre", "password", "username" ],
+        "required" : [ "acceptedNewsletter", "acceptedPrivacy", "acceptedTerms", "apellido", "birthDate", "email", "guardianEmail", "guardianName", "guardianRelationship", "institutionId", "nombre", "password", "username" ],
         "type" : "object"
       },
       "RegularCertificateRequestResponse" : {
@@ -12981,6 +13050,15 @@
           }
         },
         "required" : [ "date" ],
+        "type" : "object"
+      },
+      "UpdateNewsletterPreferenceRequest" : {
+        "properties" : {
+          "optedIn" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "optedIn" ],
         "type" : "object"
       },
       "UpdateNotificationPreferencesRequest" : {
@@ -17325,6 +17403,117 @@
           }
         },
         "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/legal/guardian-confirmation" : {
+      "post" : {
+        "operationId" : "LegalDocument_confirmGuardianAcceptance",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConfirmGuardianAcceptanceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
       }
     },
     "/auth/login" : {
@@ -42367,11 +42556,112 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/LegalDocumentsResponse"
+                  "$ref" : "#/components/schemas/PendingLegalAcceptancesResponse"
                 }
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
+      }
+    },
+    "/me/legal-acceptances/guardian-confirmation/resend" : {
+      "post" : {
+        "operationId" : "LegalDocument_resendGuardianConfirmation",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           },
           "400" : {
             "content" : {
@@ -42475,7 +42765,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/LegalDocumentsResponse"
+                  "$ref" : "#/components/schemas/PendingLegalAcceptancesResponse"
                 }
               }
             },
@@ -42681,6 +42971,230 @@
           }
         },
         "tags" : [ "modules-controller" ]
+      }
+    },
+    "/me/newsletter-preference" : {
+      "get" : {
+        "operationId" : "LegalDocument_getNewsletterPreference",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NewsletterPreferenceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
+      },
+      "put" : {
+        "operationId" : "LegalDocument_updateNewsletterPreference",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateNewsletterPreferenceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NewsletterPreferenceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
       }
     },
     "/me/notification-preferences" : {

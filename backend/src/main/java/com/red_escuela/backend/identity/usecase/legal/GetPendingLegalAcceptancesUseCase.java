@@ -1,7 +1,7 @@
 package com.red_escuela.backend.identity.usecase.legal;
 
-import com.red_escuela.backend.identity.dto.LegalDocumentsResponse;
+import com.red_escuela.backend.identity.dto.PendingLegalAcceptancesResponse;
 
 public interface GetPendingLegalAcceptancesUseCase {
-    LegalDocumentsResponse getPendingDocuments();
+    PendingLegalAcceptancesResponse getPendingDocuments();
 }

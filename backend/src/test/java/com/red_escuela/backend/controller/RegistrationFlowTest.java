@@ -205,7 +205,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     private RegisterRequest validRegistration(String sufijo, Long institutionId) {
         return new RegisterRequest(
                 "Sofía", "Ramírez", "sofia.ramirez." + sufijo + "@example.com",
-                "sofia.ramirez." + sufijo, "Test1234", institutionId, true, true);
+                "sofia.ramirez." + sufijo, "Test1234", institutionId, true, true, java.time.LocalDate.of(2000, 1, 15), null, null, null, null);
     }
 
     private void uploadRequiredDocuments(Long applicationId, String accessToken) throws Exception {
@@ -267,7 +267,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated());
 
         RegisterRequest segundoConMismoEmail = new RegisterRequest(
-                "Otra", "Persona", primero.email(), "username-distinto-email-dup-b", "Test1234", institutionId, true, true);
+                "Otra", "Persona", primero.email(), "username-distinto-email-dup-b", "Test1234", institutionId, true, true, java.time.LocalDate.of(2000, 1, 15), null, null, null, null);
 
         mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(segundoConMismoEmail)))
@@ -278,7 +278,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     void registeringWithWeakPasswordReturns400() throws Exception {
         Long institutionId = persistInstitution();
         RegisterRequest debil = new RegisterRequest(
-                "Sofía", "Ramírez", "sofia.debil@example.com", "sofia.debil", "abc", institutionId, true, true);
+                "Sofía", "Ramírez", "sofia.debil@example.com", "sofia.debil", "abc", institutionId, true, true, java.time.LocalDate.of(2000, 1, 15), null, null, null, null);
 
         mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(debil)))

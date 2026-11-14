@@ -137,6 +137,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
 | `INVALID_GRADE_CORRECTION_REASON` | no | `InvalidGradeCorrectionReasonException` | evaluation |
 | `INVALID_GRADE_ITEM_WEIGHT` | no | `InvalidGradeItemWeightException` | evaluation |
+| `INVALID_GUARDIAN_CONFIRMATION_TOKEN` | no | `InvalidGuardianConfirmationTokenException` | identity |
 | `INVALID_ISSUANCE_SETTINGS` | no | `InvalidIssuanceSettingsException` | billing |
 | `INVALID_JUSTIFICATION_INPUT` | no | `InvalidJustificationInputException` | attendance |
 | `INVALID_LATE_PAYMENT_SETTINGS` | no | `InvalidLatePaymentSettingsException` | billing |
@@ -164,6 +165,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `LEGACY_RECEIPT_HAS_NO_VERIFIABLE_PAYMENT` | no | `LegacyReceiptHasNoVerifiablePaymentException` | billing |
 | `LEGAL_ACCEPTANCE_REQUIRED` | no | `LegalAcceptanceRequiredException` | identity |
 | `MAX_EXAM_ATTEMPTS_EXCEEDED` | no | `MaxExamAttemptsExceededException` | evaluation |
+| `MINOR_GUARDIAN_REQUIRED` | no | `MinorGuardianRequiredException` | identity |
 | `NEGATIVE_ADJUSTMENT_AMOUNT` | no | `NegativeAdjustmentAmountException` | shared |
 | `NEGATIVE_MONEY_AMOUNT` | no | `NegativeMoneyAmountException` | shared |
 | `NOT_ELIGIBLE_FOR_GRADUATION` | no | `NotEligibleForGraduationException` | graduation |
@@ -426,6 +428,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
+| `GUARDIAN_ACCEPTANCE_REQUIRED` | no | `GuardianAcceptanceRequiredException` | identity |
+| `GUARDIAN_CONFIRMATION_NOT_APPLICABLE` | no | `GuardianConfirmationNotApplicableException` | identity |
 | `HOLIDAYS_NOT_LOADED_FOR_YEAR` | no | `HolidaysNotLoadedForYearException` | academicstructure |
 | `HOLIDAY_ALREADY_EXISTS` | no | `HolidayAlreadyExistsException` | academicstructure |
 | `IDEMPOTENCY_KEY_CONFLICT` | no | `IdempotencyKeyConflictException` | billing |
@@ -558,6 +562,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `GUARDIAN_CONFIRMATION_RESEND_LIMIT` | sí | `GuardianConfirmationResendLimitException` | identity |
 | `RATE_LIMIT_EXCEEDED` | sí | `RateLimitExceededException` | identity |
 | `REQUEST_RATE_LIMIT_EXCEEDED` | sí | `RequestRateLimitExceededException` | shared |
 
@@ -637,6 +642,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/auth/forgot-password` | `AuthController#forgotPassword` |
 | POST | `/auth/google` | `AuthController#loginWithGoogle` |
 | POST | `/auth/google/register` | `AuthController#registerWithGoogle` |
+| POST | `/auth/legal/guardian-confirmation` | `LegalDocumentController#confirmGuardianAcceptance` |
 | POST | `/auth/login` | `AuthController#login` |
 | POST | `/auth/logout` | `AuthController#logout` |
 | POST | `/auth/refresh` | `AuthController#refresh` |
@@ -723,6 +729,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/invoices/{id}/bank-transfer-receipts` | `MeInvoiceController#uploadReceipt` |
 | POST | `/me/invoices/{id}/mp-preference` | `MeInvoiceController#createMpPreference` |
 | POST | `/me/legal-acceptances` | `LegalDocumentController#acceptCurrentDocuments` |
+| POST | `/me/legal-acceptances/guardian-confirmation/resend` | `LegalDocumentController#resendGuardianConfirmation` |
 | POST | `/me/notifications/{id}/read` | `MeNotificationController#markAsRead` |
 | POST | `/me/program-enrollment-applications` | `ProgramEnrollmentApplicationController#request` |
 | POST | `/me/program-enrollment-applications/with-documents` | `ProgramEnrollmentApplicationWithDocumentsController#requestWithDocuments` |
