@@ -163,3 +163,10 @@ Rate limit y bloqueo de login: **ya existen y no se tocaron**. Rate limit por IP
 2. Aprobar el plan de CSP con nonce (sección 2) o aceptar `unsafe-inline` en estilos como riesgo residual bajo (React no lo necesita; solo Radix y sonner).
 3. Aprobar la tabla `audit_log` y las etapas (sección 3), y confirmar qué pasó con `import_batch_event`.
 4. Confirmar el dominio definitivo para decidir HSTS `includeSubDomains`/`preload`.
+
+## Decisiones del 14-nov
+
+- Cookie HttpOnly: aprobada para implementar, siguiendo el plan de cinco pasos compatibles hacia atrás.
+- CSP de estilos: se acepta `unsafe-inline` en `style-src` como riesgo residual bajo; se revisa después de salir a producción.
+- Auditoría: aprobada la tabla general `audit_log` con un puerto único, en tres etapas.
+- HSTS `includeSubDomains`/`preload`: pendiente de confirmar el dominio definitivo.
