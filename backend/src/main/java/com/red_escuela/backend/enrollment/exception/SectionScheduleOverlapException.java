@@ -26,6 +26,10 @@ public class SectionScheduleOverlapException extends ConflictException implement
         this.to = to;
     }
 
+    public String conflictingSubjectName() {
+        return conflictingSubjectName;
+    }
+
     @Override
     public Map<String, Object> details() {
         Map<String, Object> details = new LinkedHashMap<>();

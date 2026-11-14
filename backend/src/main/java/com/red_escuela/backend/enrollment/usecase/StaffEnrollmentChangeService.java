@@ -3,6 +3,8 @@ package com.red_escuela.backend.enrollment.usecase;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.SectionEnrollmentResponse;
 import com.red_escuela.backend.enrollment.dto.WithdrawEnrollmentRequest;
+import com.red_escuela.backend.enrollment.dto.ChangeSectionCandidateResponse;
+import com.red_escuela.backend.enrollment.service.ChangeSectionCandidatesFinder;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.enrollment.service.CourseSectionEnrollmentService;
 import com.red_escuela.backend.enrollment.service.EnrollmentChange;
@@ -13,6 +15,7 @@ import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentServic
 import com.red_escuela.backend.shared.UseCase;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @UseCase
@@ -23,15 +26,23 @@ public class StaffEnrollmentChangeService implements StaffEnrollmentChange {
     private final ProgramEnrollmentService programEnrollmentService;
     private final CourseEnrollmentService courseEnrollmentService;
     private final StaffPersonResolver staffPersonResolver;
+    private final ChangeSectionCandidatesFinder changeSectionCandidatesFinder;
 
     public StaffEnrollmentChangeService(SubjectSectionEnrollmentService subjectSectionEnrollmentService,
             CourseSectionEnrollmentService courseSectionEnrollmentService, ProgramEnrollmentService programEnrollmentService,
-            CourseEnrollmentService courseEnrollmentService, StaffPersonResolver staffPersonResolver) {
+            CourseEnrollmentService courseEnrollmentService, StaffPersonResolver staffPersonResolver,
+            ChangeSectionCandidatesFinder changeSectionCandidatesFinder) {
+        this.changeSectionCandidatesFinder = changeSectionCandidatesFinder;
         this.subjectSectionEnrollmentService = subjectSectionEnrollmentService;
         this.courseSectionEnrollmentService = courseSectionEnrollmentService;
         this.programEnrollmentService = programEnrollmentService;
         this.courseEnrollmentService = courseEnrollmentService;
         this.staffPersonResolver = staffPersonResolver;
+    }
+
+    @Override
+    public List<ChangeSectionCandidateResponse> listChangeSectionCandidates(Long sectionEnrollmentId) {
+        return changeSectionCandidatesFinder.findCandidates(sectionEnrollmentId);
     }
 
     @Override

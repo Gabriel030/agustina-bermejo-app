@@ -2125,6 +2125,50 @@
         "required" : [ "difference", "label", "proposed", "today" ],
         "type" : "object"
       },
+      "ChangeSectionCandidateResponse" : {
+        "properties" : {
+          "availableSeats" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "blockDetail" : {
+            "type" : "string"
+          },
+          "blockReason" : {
+            "enum" : [ "CURRENT_SECTION", "SECTION_NOT_OPEN", "OTHER_TERM", "SECTION_FULL", "SCHEDULE_OVERLAP" ],
+            "type" : "string"
+          },
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "conflictingSubject" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "occupiedSeats" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "selectable" : {
+            "type" : "boolean"
+          },
+          "slots" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SectionSlotView"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "availableSeats", "blockDetail", "blockReason", "capacity", "conflictingSubject", "name", "occupiedSeats", "sectionId", "selectable", "slots" ],
+        "type" : "object"
+      },
       "ChangeSectionRequest" : {
         "properties" : {
           "newSectionId" : {
@@ -3196,6 +3240,12 @@
           "elegibleParaCompletar" : {
             "type" : "boolean"
           },
+          "moduleEnrollments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ModuleEnrollmentView"
+            },
+            "type" : "array"
+          },
           "modulosPendientes" : {
             "items" : {
               "type" : "string"
@@ -3203,7 +3253,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "courseEnrollmentId", "elegibleParaCompletar", "modulosPendientes" ],
+        "required" : [ "courseEnrollmentId", "elegibleParaCompletar", "moduleEnrollments", "modulosPendientes" ],
         "type" : "object"
       },
       "CourseResponse" : {
@@ -7359,6 +7409,30 @@
           }
         },
         "required" : [ "slots" ],
+        "type" : "object"
+      },
+      "ModuleEnrollmentView" : {
+        "properties" : {
+          "moduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "moduleName" : {
+            "type" : "string"
+          },
+          "sectionEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "ENROLLED", "IN_PROGRESS", "REGULAR", "APPROVED", "FAILED", "WITHDRAWN", "WAITLISTED", "WAITLIST_EXPIRED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "moduleId", "moduleName", "sectionEnrollmentId", "sectionName", "status" ],
         "type" : "object"
       },
       "MonetaryAdjustment" : { },
@@ -11557,6 +11631,27 @@
           }
         },
         "required" : [ "enrolled", "kind", "name", "sectionId", "waitlisted" ],
+        "type" : "object"
+      },
+      "SectionSlotView" : {
+        "properties" : {
+          "classroomName" : {
+            "type" : "string"
+          },
+          "dayOfWeek" : {
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
+            "type" : "string"
+          },
+          "endTime" : {
+            "format" : "time-local",
+            "type" : "string"
+          },
+          "startTime" : {
+            "format" : "time-local",
+            "type" : "string"
+          }
+        },
+        "required" : [ "classroomName", "dayOfWeek", "endTime", "startTime" ],
         "type" : "object"
       },
       "SelectPaymentPlanRequest" : {
@@ -64677,6 +64772,126 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SectionEnrollmentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "staff-enrollment-change-controller" ]
+      }
+    },
+    "/section-enrollments/{id}/change-section-candidates" : {
+      "get" : {
+        "operationId" : "StaffEnrollmentChange_listChangeSectionCandidates",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ChangeSectionCandidateResponse"
+                  },
+                  "type" : "array"
                 }
               }
             },

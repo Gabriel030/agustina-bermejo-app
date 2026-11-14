@@ -2,6 +2,7 @@ package com.red_escuela.backend.notification.specialist;
 
 import com.red_escuela.backend.enrollment.events.SubjectEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.enrollment.events.SubjectSectionChangedEvent;
+import com.red_escuela.backend.enrollment.events.SubjectWaitlistPromotedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.ClosureNotification;
 import com.red_escuela.backend.notification.domain.NotificationRecipient;
@@ -19,6 +20,7 @@ import java.util.List;
 public class EnrollmentChangeNotificationListener {
     static final String NOTIFY_SUBJECT_WITHDRAWN_HANDLER = "EnrollmentChangeNotificationListener.notifySubjectWithdrawn";
     static final String NOTIFY_SECTION_CHANGED_HANDLER = "EnrollmentChangeNotificationListener.notifySectionChanged";
+    static final String NOTIFY_WAITLIST_PROMOTED_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistPromoted";
     static final String SECTION_ENROLLMENT_ENTITY_TYPE = "SubjectSectionEnrollment";
 
     private final ProcessedEffectGuard effectGuard;
@@ -64,6 +66,14 @@ public class EnrollmentChangeNotificationListener {
                     event.studentName() + " se sumó a la comisión " + event.toSectionName() + " de " + event.subjectName() + "." + reasonSuffix,
                     event.toInstructorPersonIds(), event.enrollmentId());
         });
+    }
+
+    @ApplicationModuleListener
+    public void notifyWaitlistPromoted(SubjectWaitlistPromotedEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_WAITLIST_PROMOTED_HANDLER, () ->
+                publish(NotificationType.WAITLIST_PROMOTED,
+                        "Se liberó un lugar y pasaste de la lista de espera a cursar " + event.subjectName() + " (" + event.sectionName() + ").",
+                        List.of(event.studentPersonId()), event.enrollmentId()));
     }
 
     private void publish(NotificationType type, String message, List<Long> personIds, Long enrollmentId) {

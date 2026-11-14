@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.controller;
 
+import com.red_escuela.backend.enrollment.dto.ChangeSectionCandidateResponse;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.SectionEnrollmentResponse;
 import com.red_escuela.backend.enrollment.dto.WithdrawEnrollmentRequest;
@@ -9,11 +10,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 public class StaffEnrollmentChangeController {
@@ -22,6 +26,12 @@ public class StaffEnrollmentChangeController {
 
     public StaffEnrollmentChangeController(StaffEnrollmentChange staffEnrollmentChange) {
         this.staffEnrollmentChange = staffEnrollmentChange;
+    }
+
+    @GetMapping("/section-enrollments/{id}/change-section-candidates")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public List<ChangeSectionCandidateResponse> listChangeSectionCandidates(@PathVariable Long id) {
+        return staffEnrollmentChange.listChangeSectionCandidates(id);
     }
 
     @Operation(operationId = "SubjectSectionEnrollment_withdraw")
