@@ -209,7 +209,8 @@ export const handlers = [
       history: [],
     });
   }),
-  http.get(`${API}/me/notifications`, () => HttpResponse.json([])),
+  http.get(`${API}/me/notifications`, () => HttpResponse.json({ items: [], page: 0, size: 10, totalElements: 0 })),
+  http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json({ count: 0 })),
   http.get(`${API}/me/schedule`, () => HttpResponse.json({ generatedAt: '2026-11-05T12:00:00', items: [] })),
   http.get(`${API}/me/documents`, () => HttpResponse.json([])),
   http.get(`${API}/me/bank-transfer-receipts`, () => HttpResponse.json([])),
@@ -233,7 +234,7 @@ export const handlers = [
   ),
   http.get(`${API}/me/teaching-sections`, () => HttpResponse.json([])),
   http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
-  http.get(`${API}/students`, () => HttpResponse.json([])),
+  http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
   http.get(`${API}/students/:id/documents`, () => HttpResponse.json([])),
   http.get(`${API}/terms`, () => HttpResponse.json([])),
   http.get(`${API}/subjects`, () => HttpResponse.json([])),

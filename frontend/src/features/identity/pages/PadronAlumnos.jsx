@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
+import { Paginador } from '@/components/Paginador';
 import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 import { useStaffProspects } from '@/features/identity/hooks/useProspectos';
 import { missingDocumentsSummary } from '@/features/identity/lib/studentRegistration';
@@ -174,11 +175,15 @@ export function PadronAlumnos() {
 
   function handleTabChange(tab) {
     setTabActivo(tab);
+    setPage(0);
     setSearchParams((prev) => { prev.set('tab', tab); return prev; }, { replace: true });
   }
 
   const tabParams = TABS.find((t) => t.id === tabActivo)?.params ?? {};
-  const { data: alumnos, isLoading } = useAlumnos({ ...tabParams, search: searchDebounced || undefined, enabled: tabActivo !== 'prospectos' });
+  const [page, setPage] = useState(0);
+  const { data: alumnosPage, isLoading } = useAlumnos({ ...tabParams, search: searchDebounced || undefined, page, enabled: tabActivo !== 'prospectos' });
+  const alumnos = alumnosPage?.items;
+  const totalPages = alumnosPage ? Math.max(1, Math.ceil(alumnosPage.totalElements / alumnosPage.size)) : 1;
 
   return (
     <PageContainer>
@@ -196,7 +201,10 @@ export function PadronAlumnos() {
             <Input
               placeholder="Buscar por nombre, apellido, DNI o legajo…"
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+                setPage(0);
+              }}
               className="pl-9"
             />
           </div>
@@ -220,13 +228,16 @@ export function PadronAlumnos() {
                     tabActivo={tabActivo}
                   />
                 ) : (
-                  <ListaAlumnos
-                    alumnos={alumnos}
-                    isLoading={isLoading}
-                    navigate={navigate}
-                    rolBase={rolBase}
-                    tabActivo={tabActivo}
-                  />
+                  <>
+                    <ListaAlumnos
+                      alumnos={alumnos}
+                      isLoading={isLoading}
+                      navigate={navigate}
+                      rolBase={rolBase}
+                      tabActivo={tabActivo}
+                    />
+                    <Paginador page={page + 1} totalPages={totalPages} onChange={(next) => setPage(next - 1)} />
+                  </>
                 )}
               </TabsContent>
             ))}

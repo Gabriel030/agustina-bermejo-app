@@ -85,9 +85,9 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
                 .andExpect(jsonPath("$.items[?(@.attendanceId==" + attendanceId + ")].reason", contains("Fiebre")));
         getAs(preceptor, "/attendance/justifications?size=100")
                 .andExpect(jsonPath(itemStatus(attendanceId), hasSize(0)));
-        getAs(classroom.student(), "/me/notifications")
-                .andExpect(jsonPath("$[?(@.type=='ATTENDANCE_JUSTIFICATION_REJECTED')]", hasSize(1)))
-                .andExpect(jsonPath("$[?(@.type=='ATTENDANCE_JUSTIFICATION_APPROVED')]", hasSize(0)));
+        getAs(classroom.student(), "/me/notifications?size=100")
+                .andExpect(jsonPath("$.items[?(@.type=='ATTENDANCE_JUSTIFICATION_REJECTED')]", hasSize(1)))
+                .andExpect(jsonPath("$.items[?(@.type=='ATTENDANCE_JUSTIFICATION_APPROVED')]", hasSize(0)));
     }
 
     @Test
@@ -104,9 +104,9 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
 
         getAs(administrative, "/attendance/justifications?size=100&status=APPROVED")
                 .andExpect(jsonPath(itemStatus(attendanceId), contains("APPROVED")));
-        getAs(classroom.student(), "/me/notifications")
-                .andExpect(jsonPath("$[?(@.type=='ATTENDANCE_JUSTIFICATION_APPROVED')]", hasSize(1)))
-                .andExpect(jsonPath("$[?(@.type=='ATTENDANCE_JUSTIFICATION_REJECTED')]", hasSize(0)));
+        getAs(classroom.student(), "/me/notifications?size=100")
+                .andExpect(jsonPath("$.items[?(@.type=='ATTENDANCE_JUSTIFICATION_APPROVED')]", hasSize(1)))
+                .andExpect(jsonPath("$.items[?(@.type=='ATTENDANCE_JUSTIFICATION_REJECTED')]", hasSize(0)));
     }
 
     @Test

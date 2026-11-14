@@ -100,10 +100,16 @@ public class DemoPeopleSeedStep implements DemoSeedStep {
 
     private static void scanStudentIds(DemoSeedSession session) {
         long highestListedId = 0;
-        for (JsonNode listed : session.api().get(DemoPersona.ADMIN, "/students")) {
-            long listedId = listed.get("id").asLong();
-            session.studentIdsByUsername().put(listed.path("username").asString(""), listedId);
-            highestListedId = Math.max(highestListedId, listedId);
+        for (int page = 0; ; page++) {
+            JsonNode items = session.api().get(DemoPersona.ADMIN, "/students?page=" + page + "&size=100").path("items");
+            for (JsonNode listed : items) {
+                long listedId = listed.get("id").asLong();
+                session.studentIdsByUsername().put(listed.path("username").asString(""), listedId);
+                highestListedId = Math.max(highestListedId, listedId);
+            }
+            if (items.size() < 100) {
+                break;
+            }
         }
         int consecutiveMisses = 0;
         for (long id = highestListedId + 1; consecutiveMisses < MAX_CONSECUTIVE_MISSING_STUDENT_IDS; id++) {

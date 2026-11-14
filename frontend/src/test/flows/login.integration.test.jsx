@@ -97,8 +97,8 @@ describe('flujo de login end-to-end', () => {
     expect(await screen.findByRole('heading', { name: 'Solicitudes de asistencia' })).toBeInTheDocument();
   });
 
-  it('recargar con un refreshToken guardado restaura la sesión sin pasar por /login', async () => {
-    localStorage.setItem('refreshToken', 'refresh-1');
+  it('recargar con la marca de sesión restaura la sesión sin pasar por /login', async () => {
+    localStorage.setItem('sessionHint', '1');
     renderApp('/preceptor/inicio');
 
     expect(await screen.findAllByText('Prueba Login')).toHaveLength(2);

@@ -5,6 +5,7 @@ import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.usecase.student.GetStudentRecordUseCase;
 import com.red_escuela.backend.identity.usecase.student.ListStudentsCommand;
@@ -27,8 +28,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/students")
 public class StudentController {
@@ -50,13 +49,13 @@ public class StudentController {
 
     @GetMapping
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<StudentResponse> list(
+    public PageResponse<StudentResponse> list(
             @RequestParam(required = false) StatusType status,
             @RequestParam(required = false) StudentOnboardingStatus onboardingStatus,
-            @RequestParam(required = false) String search) {
-        boolean seesWithdrawalReason = seesWithdrawalReason();
-        return listStudentsUseCase.list(new ListStudentsCommand(status, onboardingStatus, search))
-                .stream().map(student -> StudentResponse.from(student, seesWithdrawalReason)).toList();
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return listStudentsUseCase.list(new ListStudentsCommand(status, onboardingStatus == null ? null : onboardingStatus.name(), search, page, size, seesWithdrawalReason()));
     }
 
     @GetMapping("/{id}")

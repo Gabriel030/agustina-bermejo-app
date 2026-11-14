@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.evaluation.api.ClosureReportNumberAllocator;
 import com.jayway.jsonpath.JsonPath;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;

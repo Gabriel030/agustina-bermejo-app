@@ -5,6 +5,10 @@ import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache;
 import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +25,16 @@ public class StaffReactivator {
     private final PersonRepository personRepository;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
     private final AccountAccessStateCache accountAccessStateCache;
+    private final AuditTrail auditTrail;
 
     public StaffReactivator(PersonRepository personRepository,
                              StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
-                             AccountAccessStateCache accountAccessStateCache) {
+                             AccountAccessStateCache accountAccessStateCache,
+                             AuditTrail auditTrail) {
         this.personRepository = personRepository;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
         this.accountAccessStateCache = accountAccessStateCache;
+        this.auditTrail = auditTrail;
     }
 
     @Transactional
@@ -46,6 +53,8 @@ public class StaffReactivator {
         person.setStatus(StatusType.ACTIVE);
         personRepository.save(person);
         accountAccessStateCache.evictNowAndAfterCommit(personId);
+        auditTrail.record(new AuditRecord(AuditAction.STAFF_REACTIVATED, AuditEntityType.PERSON, personId,
+                StatusType.INACTIVE.name(), StatusType.ACTIVE.name(), null));
         log.info("Personal reactivado: personId={}", personId);
     }
 }

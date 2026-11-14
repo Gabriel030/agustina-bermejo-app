@@ -2,6 +2,7 @@ import { del, get, keys, set } from 'idb-keyval';
 import { buildAad, decryptText, encryptText } from './offlineCrypto';
 import { OFFLINE_ENTRY_PREFIX, createOfflineQueryPersister } from './offlineQueryStore';
 import { PROFILE_SLOT, createIdbKeyVault, hasWebCrypto } from './offlineKeyVault';
+import { hasSessionHint } from './sessionHint';
 
 export { OFFLINE_ENTRY_PREFIX };
 export const OFFLINE_CACHE_KEY = 'offline-query-cache';
@@ -46,7 +47,7 @@ export function createOfflinePersister(options = {}) {
   return {
     ...store,
     restoreClient: async () => {
-      if (!localStorage.getItem('refreshToken')) {
+      if (!hasSessionHint()) {
         await clearOfflineCache();
         return undefined;
       }

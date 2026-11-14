@@ -110,6 +110,11 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADE_ITEM_TYPE_NOT_PUBLISHABLE` | no | `GradeItemTypeNotPublishableException` | evaluation |
 | `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
+| `IMPORT_CONFIRMATION_INVALID` | no | `ImportConfirmationInvalidException` | dataimport |
+| `IMPORT_FILE_INVALID_HEADER` | no | `ImportFileInvalidHeaderException` | dataimport |
+| `IMPORT_FILE_TOO_LARGE` | no | `ImportFileTooLargeException` | dataimport |
+| `IMPORT_FILE_UNREADABLE` | no | `ImportFileUnreadableException` | dataimport |
+| `IMPORT_TOO_MANY_ROWS` | no | `ImportTooManyRowsException` | dataimport |
 | `INCOMPLETE_SUBJECT` | no | `IncompleteSubjectException` | academicstructure |
 | `INSTALLMENT_COUNT_ONLY_FOR_MONTHLY_INSTALLMENTS` | no | `InstallmentCountOnlyForMonthlyInstallmentsException` | billing |
 | `INVALID_ADVANCE_PRICE` | no | `InvalidAdvancePriceException` | billing |
@@ -238,6 +243,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
+| `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
 | `ROLE_NOT_ASSIGNABLE_BY_ACTOR` | no | `RoleNotAssignableByActorException` | identity |
 
 ### HTTP 404
@@ -282,6 +288,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADUATION_CERTIFICATE_NOT_FOUND` | no | `GraduationCertificateNotFoundException` | graduation |
 | `GRADUATION_REQUEST_NOT_FOUND` | no | `GraduationRequestNotFoundException` | graduation |
 | `HOLIDAY_NOT_FOUND` | no | `HolidayNotFoundException` | academicstructure |
+| `IMPORT_BATCH_NOT_FOUND` | no | `ImportBatchNotFoundException` | dataimport |
+| `IMPORT_INSTITUTION_NOT_FOUND` | no | `ImportInstitutionNotFoundException` | dataimport |
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
 | `INSTRUCTOR_NOT_FOUND` | no | `InstructorNotFoundException` | academicstructure |
 | `INVOICE_NOT_FOUND` | no | `InvoiceNotFoundException` | billing |
@@ -354,6 +362,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_ALREADY_RECORDED` | no | `AttendanceAlreadyRecordedException` | attendance |
 | `AUTHORIZATION_PENDING` | no | `AuthorizationPendingException` | billing |
 | `BILLING_CONFIGURATION_FROZEN` | no | `BillingConfigurationFrozenException` | billing |
+| `BILLING_MODE_NOT_OFF` | no | `BillingModeNotOffException` | dataimport |
 | `CANNOT_CHANGE_AUDIENCE_OF_SENT_ANNOUNCEMENT` | no | `CannotChangeAudienceOfSentAnnouncementException` | announcement |
 | `CANNOT_JUSTIFY` | no | `CannotJustifyException` | attendance |
 | `CANNOT_WITHDRAW` | no | `CannotWithdrawException` | enrollment |
@@ -432,6 +441,12 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
 | `GUARDIAN_ACCEPTANCE_REQUIRED` | no | `GuardianAcceptanceRequiredException` | identity |
 | `GUARDIAN_CONFIRMATION_NOT_APPLICABLE` | no | `GuardianConfirmationNotApplicableException` | identity |
+| `HISTORICAL_CLOSURE_MISSING` | no | `HistoricalClosureMissingException` | evaluation |
+| `HISTORICAL_DISCARD_BLOCKED` | no | `HistoricalDiscardBlockedException` | shared |
+| `HISTORICAL_ENROLLMENT_REFERENCE_MISSING` | no | `HistoricalEnrollmentReferenceMissingException` | enrollment |
+| `HISTORICAL_FINAL_DATE_BEFORE_ENROLLMENT` | no | `HistoricalFinalDateBeforeEnrollmentException` | enrollment |
+| `HISTORICAL_PERSON_EMAIL_TAKEN` | no | `HistoricalPersonEmailTakenException` | identity |
+| `HISTORICAL_REFERENCE_MISSING` | no | `HistoricalReferenceMissingException` | academicstructure |
 | `HOLIDAYS_NOT_LOADED_FOR_YEAR` | no | `HolidaysNotLoadedForYearException` | academicstructure |
 | `HOLIDAY_ALREADY_EXISTS` | no | `HolidayAlreadyExistsException` | academicstructure |
 | `IDEMPOTENCY_KEY_CONFLICT` | no | `IdempotencyKeyConflictException` | billing |
@@ -449,6 +464,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ILLEGAL_PRICE_VERSION_STATUS_TRANSITION` | no | `IllegalPriceVersionStatusTransitionException` | billing |
 | `ILLEGAL_REFUND_STATUS_TRANSITION` | no | `IllegalRefundStatusTransitionException` | billing |
 | `ILLEGAL_STUDENT_DISCOUNT_TRANSITION` | no | `IllegalStudentDiscountTransitionException` | billing |
+| `IMPORT_ALREADY_RUNNING` | no | `ImportAlreadyRunningException` | dataimport |
+| `IMPORT_BATCH_STATE_INVALID` | no | `ImportBatchStateInvalidException` | dataimport |
+| `IMPORT_NOT_VALIDATED` | no | `ImportNotValidatedException` | dataimport |
+| `IMPORT_ROLLBACK_BLOCKED` | no | `ImportRollbackBlockedException` | dataimport |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
 | `INSTITUTE_SETTING_ALREADY_IN_REQUESTED_STATE` | no | `InstituteSettingAlreadyInRequestedStateException` | platform |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
@@ -697,6 +716,13 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/courses/{id}/payment-plan-options` | `PaymentPlanOptionController#createForCourse` |
 | POST | `/courses/{id}/promotions` | `PromotionController#createForCourse` |
 | POST | `/courses/{id}/subjects` | `CourseSubjectController#addModule` |
+| POST | `/data-imports` | `DataImportController#createBatch` |
+| POST | `/data-imports/{id}/commit` | `DataImportController#commitBatch` |
+| POST | `/data-imports/{id}/files/{entityType}` | `DataImportController#uploadFile` |
+| POST | `/data-imports/{id}/retry` | `DataImportController#retryBatch` |
+| POST | `/data-imports/{id}/rollback` | `DataImportController#rollbackBatch` |
+| POST | `/data-imports/{id}/seal` | `DataImportController#sealBatch` |
+| POST | `/data-imports/{id}/validate` | `DataImportController#validateBatch` |
 | POST | `/director-approval-requests` | `DirectorApprovalRequestController#request` |
 | POST | `/director-approval-requests/{id}/approve` | `DirectorApprovalRequestController#approve` |
 | POST | `/director-approval-requests/{id}/reject` | `DirectorApprovalRequestController#reject` |
