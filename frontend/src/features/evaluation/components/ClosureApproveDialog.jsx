@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ClosureNoAbsenceLimitNotice } from './ClosureNoAbsenceLimitNotice';
 import { approvalTotals, closedWithoutTeacher } from '../lib/closureSheet';
 
 const MAX_FIELD_LENGTH = 50;
@@ -70,6 +71,7 @@ export function ClosureApproveDialog({ open, sheet, pending, onClose, onApprove 
                 <Input id="closure-folio" value={folio} maxLength={MAX_FIELD_LENGTH} placeholder="93" onChange={(event) => setFolio(event.target.value)} />
               </div>
             </div>
+            <ClosureNoAbsenceLimitNotice sheet={sheet} />
             {error && (
               <div role="alert" className="text-size-12 font-semibold text-danger">
                 {error}
