@@ -435,11 +435,20 @@ describe('offline profile', () => {
 })
 
 describe('offlinePersister', () => {
-  it('restoreWithoutRefreshTokenClearsKeyAndBlob', async () => {
+  it('restoreWithoutSessionMarkClearsKeyAndBlob', async () => {
     await persistAs(5)
     localStorage.removeItem('refreshToken')
+    localStorage.removeItem('sessionHint')
     expect(await offlinePersister.restoreClient()).toBeUndefined()
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false)
     expect(keyNames()).toHaveLength(0)
+  })
+
+  it('restoreWithOnlyTheSessionHintKeepsTheCache', async () => {
+    await persistAs(5)
+    localStorage.removeItem('refreshToken')
+    localStorage.setItem('sessionHint', '1')
+    await offlinePersister.restoreClient()
+    expect(store.has(OFFLINE_CACHE_KEY)).toBe(true)
   })
 })

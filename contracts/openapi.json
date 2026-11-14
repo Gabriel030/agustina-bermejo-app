@@ -7305,7 +7305,6 @@
       "LogoutRequest" : {
         "properties" : {
           "refreshToken" : {
-            "minLength" : 1,
             "type" : "string"
           }
         },
@@ -10600,7 +10599,6 @@
       "RefreshRequest" : {
         "properties" : {
           "refreshToken" : {
-            "minLength" : 1,
             "type" : "string"
           }
         },
@@ -17970,8 +17968,7 @@
                 "$ref" : "#/components/schemas/LogoutRequest"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "204" : {
@@ -18081,8 +18078,7 @@
                 "$ref" : "#/components/schemas/RefreshRequest"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "200" : {

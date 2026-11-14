@@ -48,7 +48,35 @@ describe('restoreStoredSession', () => {
     expect(apiFetch.mock.calls.filter(([path]) => path === '/auth/refresh')).toHaveLength(1);
     expect(first).toEqual({ id: 1 });
     expect(second).toEqual({ id: 1 });
-    expect(localStorage.getItem('refreshToken')).toBe('new');
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBe('1');
+  });
+
+  it('migrates a legacy stored token by sending it once in the body and then drops it', async () => {
+    localStorage.setItem('refreshToken', 'legacy');
+    apiFetch.mockImplementation(async (path) =>
+      path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'new' } : { id: 1 },
+    );
+
+    await restoreStoredSession();
+
+    const refreshCall = apiFetch.mock.calls.find(([path]) => path === '/auth/refresh');
+    expect(JSON.parse(refreshCall[1].body)).toEqual({ refreshToken: 'legacy' });
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBe('1');
+  });
+
+  it('refreshes without a body when only the session hint exists', async () => {
+    localStorage.setItem('sessionHint', '1');
+    apiFetch.mockImplementation(async (path) =>
+      path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'new' } : { id: 1 },
+    );
+
+    await restoreStoredSession();
+
+    const refreshCall = apiFetch.mock.calls.find(([path]) => path === '/auth/refresh');
+    expect(refreshCall[1].body).toBeUndefined();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
   });
 
   it('returns null without calling the api when there is no stored token', async () => {
@@ -59,6 +87,7 @@ describe('restoreStoredSession', () => {
 
 describe('offline cache lifecycle', () => {
   let auth;
+  let lastLogin;
   let queryClient;
 
   function Probe() {
@@ -84,8 +113,11 @@ describe('offline cache lifecycle', () => {
     vi.stubGlobal('indexedDB', {});
     apiFetch.mockReset();
     apiFetch.mockImplementation(async (path, options) => {
-      if (path === '/auth/login') return { accessToken: 'a', refreshToken: `r-${JSON.parse(options.body).username}` };
-      if (path === '/me') return { id: localStorage.getItem('refreshToken') === 'r-ana' ? 1 : 2, roles: [] };
+      if (path === '/auth/login') {
+        lastLogin = JSON.parse(options.body).username;
+        return { accessToken: 'a', refreshToken: `r-${lastLogin}` };
+      }
+      if (path === '/me') return { id: lastLogin === 'ana' ? 1 : 2, roles: [] };
       return {};
     });
   });
@@ -129,7 +161,7 @@ describe('offline cache lifecycle', () => {
   it('restoredSessionOfAnotherOwnerPurgesStaleCache', async () => {
     store.set(OFFLINE_OWNER_KEY, 1);
     store.set(OFFLINE_CACHE_KEY, 'cache-of-ana');
-    localStorage.setItem('refreshToken', 'r-beto');
+    localStorage.setItem('sessionHint', '1');
     apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [] }));
 
     renderProvider();
@@ -186,7 +218,7 @@ describe('session restore failures', () => {
     store.clear();
     vi.stubGlobal('indexedDB', {});
     apiFetch.mockReset();
-    localStorage.setItem('refreshToken', 'stored');
+    localStorage.setItem('sessionHint', '1');
   });
 
   it('networkErrorDuringRestoreKeepsTheSession', async () => {
@@ -197,7 +229,7 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('pending');
-    expect(localStorage.getItem('refreshToken')).toBe('stored');
+    expect(localStorage.getItem('sessionHint')).toBe('1');
     expect(store.get(OFFLINE_CACHE_KEY)).toBe('cache');
     expect(auth.usuario).toBeNull();
   });
@@ -209,7 +241,7 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('anonymous');
-    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBeNull();
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
   });
 
@@ -219,7 +251,7 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('anonymous');
-    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBeNull();
   });
 
   it('serverErrorDuringRestoreKeepsTheSession', async () => {
@@ -228,7 +260,7 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('pending');
-    expect(localStorage.getItem('refreshToken')).toBe('stored');
+    expect(localStorage.getItem('sessionHint')).toBe('1');
   });
 
   it('sessionRecoversWhenTheNetworkReturns', async () => {
@@ -242,7 +274,7 @@ describe('session restore failures', () => {
     });
 
     await screen.findByText('user-7');
-    expect(localStorage.getItem('refreshToken')).toBe('rotated');
+    expect(localStorage.getItem('sessionHint')).toBe('1');
     expect(store.get(OFFLINE_OWNER_KEY)).toBe(7);
   });
 
@@ -302,7 +334,7 @@ describe('session restore failures', () => {
     });
 
     await screen.findByText('anonymous');
-    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBeNull();
   });
 
   it('noAuthenticatedCallsAreMadeWhileThePendingSessionIsOffline', async () => {
