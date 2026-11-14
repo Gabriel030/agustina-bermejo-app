@@ -54,6 +54,7 @@ final class OwnershipFixtures {
     private String strangerInstructorToken;
     private Long programEnrollmentId;
     private Long sectionEnrollmentId;
+    private Long courseEnrollmentId;
     private Long courseSectionEnrollmentId;
     private Long sectionId;
     private Long attendanceId;
@@ -72,6 +73,7 @@ final class OwnershipFixtures {
         return switch (kind) {
             case PROGRAM_ENROLLMENT -> programEnrollmentId;
             case SECTION_ENROLLMENT -> sectionEnrollmentId;
+            case COURSE_ENROLLMENT -> courseEnrollmentId;
             case COURSE_SECTION_ENROLLMENT -> courseSectionEnrollmentId;
             case SECTION_INSTRUCTOR -> sectionId;
             case ATTENDANCE_SECTION_INSTRUCTOR -> attendanceId;
@@ -201,6 +203,7 @@ final class OwnershipFixtures {
         courseEnrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
         courseEnrollment.setEnrollmentDate(LocalDateTime.now());
         entityManager.persist(courseEnrollment);
+        courseEnrollmentId = courseEnrollment.getId();
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
         enrollment.setStudent(student);
         enrollment.setCourseEnrollment(courseEnrollment);

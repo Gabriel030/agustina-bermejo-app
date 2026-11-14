@@ -44,6 +44,42 @@ class CourseEnrollmentFinderTest {
     }
 
     @Test
+    void readDetailOfStudentExposesTheEnrollmentOfItsOwner() {
+        Student student = mock(Student.class);
+        when(student.getId()).thenReturn(7L);
+        Course course = mock(Course.class);
+        when(course.getId()).thenReturn(3L);
+        when(course.getName()).thenReturn("Curso A");
+        CourseEnrollment enrollment = enrollmentWithId(4L);
+        when(enrollment.getStudent()).thenReturn(student);
+        when(enrollment.getCourse()).thenReturn(course);
+        when(enrollment.getStatus()).thenReturn(EnrollmentStatus.IN_PROGRESS);
+        when(enrollment.getEnrollmentDate()).thenReturn(java.time.LocalDateTime.of(2026, 3, 1, 10, 0));
+        when(courseEnrollmentRepository.findById(4L)).thenReturn(Optional.of(enrollment));
+
+        assertThat(finder.readDetailOfStudent(4L, 7L)).isEqualTo(new CourseEnrollmentDetailView(
+                4L, 3L, "Curso A", "IN_PROGRESS", java.time.LocalDateTime.of(2026, 3, 1, 10, 0), null));
+    }
+
+    @Test
+    void readDetailOfStudentHidesAnEnrollmentOwnedByAnotherStudentAsNotFound() {
+        Student owner = mock(Student.class);
+        when(owner.getId()).thenReturn(8L);
+        CourseEnrollment enrollment = mock(CourseEnrollment.class);
+        when(enrollment.getStudent()).thenReturn(owner);
+        when(courseEnrollmentRepository.findById(4L)).thenReturn(Optional.of(enrollment));
+
+        assertThatThrownBy(() -> finder.readDetailOfStudent(4L, 7L)).isInstanceOf(CourseEnrollmentNotFoundException.class);
+    }
+
+    @Test
+    void readDetailOfStudentFailsWhenTheEnrollmentDoesNotExist() {
+        when(courseEnrollmentRepository.findById(4L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> finder.readDetailOfStudent(4L, 7L)).isInstanceOf(CourseEnrollmentNotFoundException.class);
+    }
+
+    @Test
     void requireByIdFailsWhenTheEnrollmentDoesNotExist() {
         when(courseEnrollmentRepository.findById(4L)).thenReturn(Optional.empty());
 
