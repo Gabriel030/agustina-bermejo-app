@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -6,12 +7,11 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useProgramCohorts } from '@/features/academic-structure';
 import { useCreateDiscountDefinition, useDiscountDefinitionValidation } from '../hooks/useDiscountDefinitions';
 import { useOfferNames } from '../hooks/useOfferNames';
-import { inboxPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { inboxPath } from '../authorization/authorizationRequests';
 import { ExamplePanel, ValidationPanel } from './DefinitionSidePanels';
 import { FormField } from './FormField';
 import { OptionSelect } from './OptionSelect';
@@ -63,8 +63,7 @@ function SectionTitle({ children }) {
 export function DiscountDefinitionFormPage({ mode }) {
   const promotionMode = mode === 'promotion';
   const navigate = useNavigate();
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const listPath = `/${roleBase}/descuentos${promotionMode ? '?tab=promotions' : ''}`;
 

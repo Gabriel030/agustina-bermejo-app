@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { CheckCircle2, ListChecks } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
@@ -21,7 +22,6 @@ import {
   INBOX_PAGE_SIZE,
   isExpiringSoon,
   PENDING_STATUSES,
-  roleBaseOf,
   sumRefundAmount,
 } from './authorizationRequests';
 
@@ -48,7 +48,7 @@ function emptyStateFor({ isDirector, history, searching }) {
 export function AuthorizationInboxPage() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
 
   const [tab, setTab] = useState('pending');

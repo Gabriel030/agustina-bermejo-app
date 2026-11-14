@@ -1,8 +1,8 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { ModalMotivo } from '@/components/ModalMotivo';
@@ -12,7 +12,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FEE_TYPE_LABELS, formatDate, formatMoney } from '@/lib/billing';
-import { inboxPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { inboxPath } from '../authorization/authorizationRequests';
 import { useOfferNames } from '../hooks/useOfferNames';
 import { PRICE_STATUS, REASON_MAX_LENGTH, VERSION_STATUS, amountOf, offerName, priceStatusKey } from './pricing';
 import { useCancelPriceVersion, usePriceHistory, usePrices } from './usePrices';
@@ -92,8 +92,7 @@ function HistoryTable({ priceId }) {
 
 export function PriceDetailPage() {
   const { priceId } = useParams();
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const prices = usePrices();
   const names = useOfferNames();

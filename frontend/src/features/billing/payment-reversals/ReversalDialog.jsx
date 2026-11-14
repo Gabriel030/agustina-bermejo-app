@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatDate, formatMoney, todayIsoDate } from '@/lib/billing';
 import {
@@ -85,8 +85,7 @@ function FieldError({ id, message }) {
 
 export function ReversalDialog({ kind, payment, studentId, invoiceLabel, onClose }) {
   const definition = REVERSAL_KINDS[kind];
-  const { usuario } = useAuth();
-  const roleBase = usuario?.roles?.[0]?.toLowerCase();
+  const { roleBase } = useActiveRole();
   const today = todayIsoDate();
   const [form, setForm] = useState({ date: today, reference: '', reason: '' });
   const [fieldErrors, setFieldErrors] = useState({});

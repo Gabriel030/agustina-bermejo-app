@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
 import { EmptyState } from '@/components/EmptyState';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -17,7 +17,7 @@ import {
   useReminderScheduleVersions,
   useReminderSettingsVersions,
 } from '@/features/billing/hooks/useCollectionReminders';
-import { inboxPath, roleBaseOf } from '@/features/billing/authorization/authorizationRequests';
+import { inboxPath } from '@/features/billing/authorization/authorizationRequests';
 import { ExceptionsTable } from './ExceptionsTable';
 import { ReminderConfirmStep } from './ReminderConfirmStep';
 import { ReminderTimeline } from './ReminderTimeline';
@@ -119,8 +119,7 @@ function SendingSettingsBlock({ overrides, general, readOnly, onChange }) {
 }
 
 export function ReminderSettingsPage() {
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');

@@ -1,6 +1,10 @@
 import { createElement } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useActiveRole } from '@/hooks/useActiveRole';
+import { homePathFor } from '@/lib/activeRole';
+import { RoleSync } from '@/components/RoleSync';
+import { RolePicker } from '@/pages/RolePicker';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { ROLE_CONFIG } from '@/routes/roleConfig';
@@ -26,8 +30,8 @@ function layoutFor(role) {
 }
 
 function SharedRoutesLayout() {
-  const { usuario } = useAuth();
-  return createElement(layoutFor(usuario?.roles[0]?.toLowerCase()));
+  const { roleBase } = useActiveRole();
+  return createElement(layoutFor(roleBase));
 }
 
 function placeholderElement(role, page, pages) {
@@ -48,8 +52,7 @@ function renderRoleRoutes(role, pages) {
 }
 
 function OfflineShellRoutes({ retry }) {
-  const { usuario } = useAuth();
-  const role = usuario.roles[0]?.toLowerCase();
+  const { roleBase: role } = useActiveRole();
   return (
     <Routes>
       <Route element={createElement(layoutFor(role))}>
@@ -88,6 +91,8 @@ export function AppRouter() {
   }
 
   return (
+    <>
+    <RoleSync />
     <Routes>
       <Route element={<PublicLayout />}>
         {PUBLIC_ROUTES.map(({ path, element }) => (
@@ -109,6 +114,15 @@ export function AppRouter() {
         <Route path="*" element={<NotFound />} />
       </Route>
 
+      <Route
+        path="/elegir-rol"
+        element={
+          <AnyAuthenticatedRoute>
+            <RolePicker />
+          </AnyAuthenticatedRoute>
+        }
+      />
+
       {Object.entries(ROLE_CONFIG).map(([role, { Layout, pages }]) => (
         <Route
           key={role}
@@ -127,19 +141,9 @@ export function AppRouter() {
 
       <Route
         path="/"
-        element={
-          <Navigate
-            to={
-              !usuario
-                ? '/login'
-                : usuario.roles.length
-                  ? `/${usuario.roles[0].toLowerCase()}/inicio`
-                  : '/catalogo'
-            }
-            replace
-          />
-        }
+        element={<Navigate to={usuario ? homePathFor(usuario) : '/login'} replace />}
       />
     </Routes>
+    </>
   );
 }
