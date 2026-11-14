@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
@@ -57,6 +57,8 @@ async function registrarse(user) {
   await user.type(screen.getByPlaceholderText('tu@email.com'), 'sofia@example.com');
   await user.type(screen.getByPlaceholderText('Contraseña'), 'Test1234');
   await user.type(screen.getByPlaceholderText('Repetir contraseña'), 'Test1234');
+  fireEvent.change(screen.getByLabelText('Fecha de nacimiento'), { target: { value: '1990-05-14' } });
+  await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
   await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 }
 
@@ -199,6 +201,6 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     expect(solicitudFormData.get('dniFront').name).toBe('dni-frente.jpg');
     expect(solicitudFormData.get('dniBack').name).toBe('dni-dorso.jpg');
     expect(solicitudFormData.get('academicTranscript').name).toBe('analitico.pdf');
-    expect(fetchSpy.mock.calls.filter(([url]) => String(url).includes('/documents'))).toHaveLength(0);
+    expect(fetchSpy.mock.calls.filter(([url]) => String(url).includes('/documents') && !String(url).includes('/legal/'))).toHaveLength(0);
   });
 });

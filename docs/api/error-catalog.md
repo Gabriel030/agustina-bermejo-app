@@ -92,6 +92,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ELECTIVE_GROUP_NOT_ASSIGNED` | no | `ElectiveGroupNotAssignedException` | academicstructure |
 | `EMAIL_ALREADY_EXISTS` | no | `EmailAlreadyExistsException` | identity |
 | `EMPTY_AUDIENCE` | no | `EmptyAudienceException` | announcement |
+| `ENROLLMENT_CHANGE_REASON_INVALID` | no | `EnrollmentChangeReasonInvalidException` | enrollment |
+| `ENROLLMENT_CHANGE_REASON_REQUIRED` | no | `EnrollmentChangeReasonRequiredException` | enrollment |
 | `ENROLLMENT_FEE_NOT_PAID` | no | `EnrollmentFeeNotPaidException` | enrollment |
 | `ENROLLMENT_FEE_NOT_PAID_FOR_TERM` | no | `EnrollmentFeeNotPaidForTermException` | enrollment |
 | `ENROLLMENT_WINDOW_CLOSED` | no | `EnrollmentWindowClosedException` | enrollment |
@@ -137,6 +139,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
 | `INVALID_GRADE_CORRECTION_REASON` | no | `InvalidGradeCorrectionReasonException` | evaluation |
 | `INVALID_GRADE_ITEM_WEIGHT` | no | `InvalidGradeItemWeightException` | evaluation |
+| `INVALID_GUARDIAN_CONFIRMATION_TOKEN` | no | `InvalidGuardianConfirmationTokenException` | identity |
 | `INVALID_ISSUANCE_SETTINGS` | no | `InvalidIssuanceSettingsException` | billing |
 | `INVALID_JUSTIFICATION_INPUT` | no | `InvalidJustificationInputException` | attendance |
 | `INVALID_LATE_PAYMENT_SETTINGS` | no | `InvalidLatePaymentSettingsException` | billing |
@@ -162,7 +165,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_WINDOW_CONFIGURATION` | no | `InvalidWindowConfigurationException` | enrollment |
 | `INVALID_YEAR_BILLING_CONFIGURATION` | no | `InvalidYearBillingConfigurationException` | billing |
 | `LEGACY_RECEIPT_HAS_NO_VERIFIABLE_PAYMENT` | no | `LegacyReceiptHasNoVerifiablePaymentException` | billing |
+| `LEGAL_ACCEPTANCE_REQUIRED` | no | `LegalAcceptanceRequiredException` | identity |
 | `MAX_EXAM_ATTEMPTS_EXCEEDED` | no | `MaxExamAttemptsExceededException` | evaluation |
+| `MINOR_GUARDIAN_REQUIRED` | no | `MinorGuardianRequiredException` | identity |
 | `NEGATIVE_ADJUSTMENT_AMOUNT` | no | `NegativeAdjustmentAmountException` | shared |
 | `NEGATIVE_MONEY_AMOUNT` | no | `NegativeMoneyAmountException` | shared |
 | `NOT_ELIGIBLE_FOR_GRADUATION` | no | `NotEligibleForGraduationException` | graduation |
@@ -425,6 +430,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
+| `GUARDIAN_ACCEPTANCE_REQUIRED` | no | `GuardianAcceptanceRequiredException` | identity |
+| `GUARDIAN_CONFIRMATION_NOT_APPLICABLE` | no | `GuardianConfirmationNotApplicableException` | identity |
 | `HOLIDAYS_NOT_LOADED_FOR_YEAR` | no | `HolidaysNotLoadedForYearException` | academicstructure |
 | `HOLIDAY_ALREADY_EXISTS` | no | `HolidayAlreadyExistsException` | academicstructure |
 | `IDEMPOTENCY_KEY_CONFLICT` | no | `IdempotencyKeyConflictException` | billing |
@@ -529,6 +536,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
 | `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
+| `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
@@ -557,6 +565,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `GUARDIAN_CONFIRMATION_RESEND_LIMIT` | sí | `GuardianConfirmationResendLimitException` | identity |
 | `RATE_LIMIT_EXCEEDED` | sí | `RateLimitExceededException` | identity |
 | `REQUEST_RATE_LIMIT_EXCEEDED` | sí | `RequestRateLimitExceededException` | shared |
 
@@ -636,6 +645,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/auth/forgot-password` | `AuthController#forgotPassword` |
 | POST | `/auth/google` | `AuthController#loginWithGoogle` |
 | POST | `/auth/google/register` | `AuthController#registerWithGoogle` |
+| POST | `/auth/legal/guardian-confirmation` | `LegalDocumentController#confirmGuardianAcceptance` |
 | POST | `/auth/login` | `AuthController#login` |
 | POST | `/auth/logout` | `AuthController#logout` |
 | POST | `/auth/refresh` | `AuthController#refresh` |
@@ -664,9 +674,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-enrollments/{id}/payment-plan` | `PaymentPlanSelectionController#selectForCourse` |
 | POST | `/course-enrollments/{id}/student-discounts` | `StudentDiscountController#grantForCourseEnrollment` |
 | POST | `/course-enrollments/{id}/student-discounts/preview` | `StudentDiscountController#previewForCourseEnrollment` |
-| POST | `/course-enrollments/{id}/withdraw` | `CourseEnrollmentController#withdraw` |
+| POST | `/course-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourse` |
 | POST | `/course-section-enrollments/{id}/grade-items` | `GradeItemController#loadCourseEnrollmentGrade` |
-| POST | `/course-section-enrollments/{id}/withdraw` | `CourseSectionEnrollmentController#withdraw` |
+| POST | `/course-section-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourseModule` |
 | POST | `/course-sections/{id}/activate` | `CourseSectionController#reactivate` |
 | POST | `/course-sections/{id}/attendance` | `AttendanceController#loadCourseSectionAttendance` |
 | POST | `/course-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelCourseSectionClassSession` |
@@ -721,6 +731,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/exam-board-registrations/{id}/withdraw` | `MeExamBoardRegistrationController#withdraw` |
 | POST | `/me/invoices/{id}/bank-transfer-receipts` | `MeInvoiceController#uploadReceipt` |
 | POST | `/me/invoices/{id}/mp-preference` | `MeInvoiceController#createMpPreference` |
+| POST | `/me/legal-acceptances` | `LegalDocumentController#acceptCurrentDocuments` |
+| POST | `/me/legal-acceptances/guardian-confirmation/resend` | `LegalDocumentController#resendGuardianConfirmation` |
 | POST | `/me/notifications/{id}/read` | `MeNotificationController#markAsRead` |
 | POST | `/me/program-enrollment-applications` | `ProgramEnrollmentApplicationController#request` |
 | POST | `/me/program-enrollment-applications/with-documents` | `ProgramEnrollmentApplicationWithDocumentsController#requestWithDocuments` |
@@ -754,7 +766,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/program-enrollments/{id}/section-enrollments` | `SubjectSectionEnrollmentController#enroll` |
 | POST | `/program-enrollments/{id}/student-discounts` | `StudentDiscountController#grantForProgramEnrollment` |
 | POST | `/program-enrollments/{id}/student-discounts/preview` | `StudentDiscountController#previewForProgramEnrollment` |
-| POST | `/program-enrollments/{id}/withdraw` | `ProgramEnrollmentController#withdraw` |
+| POST | `/program-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawProgram` |
 | POST | `/program-sections/{id}/activate` | `SubjectSectionController#reactivate` |
 | POST | `/program-sections/{id}/attendance` | `AttendanceController#loadProgramSectionAttendance` |
 | POST | `/program-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelProgramSectionClassSession` |
@@ -787,9 +799,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/regular-certificate-requests/{id}/reject` | `RegularCertificateRequestController#reject` |
 | POST | `/regular-certificates` | `RegularCertificateController#issue` |
 | POST | `/regular-certificates/{id}/revoke` | `RegularCertificateController#revoke` |
-| POST | `/section-enrollments/{id}/change-section` | `SubjectSectionEnrollmentController#changeSection` |
+| POST | `/section-enrollments/{id}/change-section` | `StaffEnrollmentChangeController#changeSubjectSection` |
 | POST | `/section-enrollments/{id}/grade-items` | `GradeItemController#loadProgramEnrollmentGrade` |
-| POST | `/section-enrollments/{id}/withdraw` | `SubjectSectionEnrollmentController#withdraw` |
+| POST | `/section-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawSubject` |
 | POST | `/section-evaluation-configs/{sectionId}/approve` | `SectionEvaluationConfigController#approve` |
 | POST | `/section-evaluation-configs/{sectionId}/reject` | `SectionEvaluationConfigController#reject` |
 | POST | `/staff` | `StaffController#createStaff` |

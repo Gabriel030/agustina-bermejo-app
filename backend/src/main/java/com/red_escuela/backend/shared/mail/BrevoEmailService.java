@@ -78,6 +78,18 @@ public class BrevoEmailService implements EmailService {
     }
 
     @Override
+    public void sendGuardianLegalConfirmation(String guardianName, String guardianEmail, String minorFirstName,
+                                              String institutionName, String confirmationLink) {
+        String body = "<p>Hola " + HtmlUtils.htmlEscape(guardianName) + ",</p>"
+                + "<p>" + HtmlUtils.htmlEscape(minorFirstName) + " se registró en " + HtmlUtils.htmlEscape(institutionName)
+                + " y, por ser menor de edad, necesitamos que vos, como responsable, confirmes que leíste y aceptás los términos y condiciones y la política de privacidad.</p>"
+                + "<p><a href=\"" + HtmlUtils.htmlEscape(confirmationLink) + "\">Leer y confirmar</a></p>"
+                + "<p>El enlace es de un solo uso y vence en pocos días. Solo sirve para esta confirmación: no da acceso a la cuenta ni a otros datos.</p>"
+                + "<p>Si no esperabas este mensaje, ignoralo: no se confirma nada.</p>";
+        sendChangeMessage(guardianEmail, "Confirmá la aceptación de los términos", body);
+    }
+
+    @Override
     public void sendPasswordResetLockoutNotice(String recipientName, String email) {
         String body = "<p>Hola " + HtmlUtils.htmlEscape(recipientName) + ",</p>"
                 + "<p>Hubo varios intentos fallidos de recuperar la contraseña de tu cuenta.</p>"

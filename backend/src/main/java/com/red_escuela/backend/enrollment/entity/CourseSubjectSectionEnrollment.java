@@ -60,6 +60,12 @@ public class CourseSubjectSectionEnrollment {
     @Column(name = "dropped_at")
     private LocalDateTime droppedAt;
 
+    @Column(name = "withdrawal_reason")
+    private String withdrawalReason;
+
+    @Column(name = "withdrawn_by_person_id")
+    private Long withdrawnByPersonId;
+
     @Column(name = "attempt_number")
     private Integer attemptNumber;
 

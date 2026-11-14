@@ -63,6 +63,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Tag("D-296")
 @Tag("D-236")
 class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
+    private static final String REASON_FIELD = "\"reason\":\"Baja pedida por el alumno en secretaría\"";
+
 
     private static final LocalDateTime ENROLLED_AT = LocalDateTime.of(2027, 3, 1, 10, 0);
 
@@ -177,9 +179,8 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
 
     private MvcResult perform(String path, Staff staff, String body, int expectedStatus) throws Exception {
         var request = post(path).header("Authorization", "Bearer " + staff.token());
-        if (body != null) {
-            request.contentType(APPLICATION_JSON).content(body);
-        }
+        String bodyWithReason = body == null ? "{" + REASON_FIELD + "}" : body.replaceFirst("\\{", "{" + REASON_FIELD + ",");
+        request.contentType(APPLICATION_JSON).content(bodyWithReason);
         return mockMvc.perform(request).andExpect(status().is(expectedStatus)).andReturn();
     }
 
@@ -357,7 +358,8 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
         for (int attempt = 0; attempt < 2; attempt++) {
             answers.add(pool.submit(() -> {
                 start.await();
-                return mockMvc.perform(post("/program-enrollments/" + enrollmentId + "/withdraw").header("Authorization", "Bearer " + administrative.token()))
+                return mockMvc.perform(post("/program-enrollments/" + enrollmentId + "/withdraw").header("Authorization", "Bearer " + administrative.token())
+                        .contentType(APPLICATION_JSON).content("{" + REASON_FIELD + "}"))
                         .andReturn().getResponse().getStatus();
             }));
         }

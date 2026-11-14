@@ -22,4 +22,11 @@ public class SectionScheduleFinder {
                         slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getClassroom().getName()))
                 .toList();
     }
+
+    public List<SectionSlotView> findCourseSectionSlots(Long courseSectionId) {
+        return slotRepository.findByCourseSectionId(courseSectionId).stream()
+                .map(slot -> new SectionSlotView(
+                        slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getClassroom().getName()))
+                .toList();
+    }
 }

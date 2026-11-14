@@ -24,6 +24,10 @@ public class NoOpEmailService implements EmailService {
     }
 
     @Override
+    public void sendGuardianLegalConfirmation(String guardianName, String guardianEmail, String minorFirstName, String institutionName, String confirmationLink) {
+    }
+
+    @Override
     public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail) {
     }
 }

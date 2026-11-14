@@ -6,7 +6,11 @@ import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Optional;
 
-public record EnrollmentWithdrawal(LocalDate informedDate, Long registeredByPersonId, WithdrawalCause cause) {
+public record EnrollmentWithdrawal(LocalDate informedDate, Long registeredByPersonId, WithdrawalCause cause, String reason) {
+
+    public EnrollmentWithdrawal(LocalDate informedDate, Long registeredByPersonId, WithdrawalCause cause) {
+        this(informedDate, registeredByPersonId, cause, null);
+    }
 
     public EnrollmentWithdrawal {
         Objects.requireNonNull(cause, "cause");
@@ -14,6 +18,11 @@ public record EnrollmentWithdrawal(LocalDate informedDate, Long registeredByPers
 
     public static EnrollmentWithdrawal voluntaryRegisteredBy(LocalDate informedDate, Long personId) {
         return new EnrollmentWithdrawal(informedDate, Objects.requireNonNull(personId, "personId"), WithdrawalCause.VOLUNTARY);
+    }
+
+    public static EnrollmentWithdrawal voluntaryRegisteredBy(LocalDate informedDate, Long personId, String reason) {
+        return new EnrollmentWithdrawal(informedDate, Objects.requireNonNull(personId, "personId"), WithdrawalCause.VOLUNTARY,
+                EnrollmentChange.normalizeRequired(reason));
     }
 
     public static EnrollmentWithdrawal forNonpayment() {
