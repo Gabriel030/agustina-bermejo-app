@@ -83,6 +83,33 @@ export function toCsv(rows) {
   return rows.map((row) => row.map(escape).join(',')).join('\r\n');
 }
 
+export const ENTITY_TYPE_LABELS = {
+  PERSONS: 'Personas',
+  PROGRAMS: 'Carreras',
+  SUBJECTS: 'Materias',
+  CURRICULUM: 'Plan de estudios',
+  PREREQUISITES: 'Correlativas',
+  TERMS: 'Períodos lectivos',
+  SECTIONS: 'Comisiones',
+  PROGRAM_ENROLLMENTS: 'Inscripciones a carrera',
+  SECTION_ENROLLMENTS: 'Cursadas',
+};
+
+export function entityTypeLabel(entityType) {
+  return ENTITY_TYPE_LABELS[entityType] ?? entityType;
+}
+
+export const ROLLBACK_STATUSES = ['COMMITTED', 'PARTIAL', 'FAILED'];
+
+export function saveBlobAs(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export function downloadTextFile(name, text) {
   const url = URL.createObjectURL(new Blob(['﻿', text], { type: 'text/csv;charset=utf-8' }));
   const link = document.createElement('a');
