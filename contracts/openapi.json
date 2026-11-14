@@ -6752,9 +6752,15 @@
               "$ref" : "#/components/schemas/CreatedCount"
             },
             "type" : "array"
+          },
+          "retained" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CreatedCount"
+            },
+            "type" : "array"
           }
         },
-        "required" : [ "blockers", "canRollback", "created" ],
+        "required" : [ "blockers", "canRollback", "created", "retained" ],
         "type" : "object"
       },
       "ImportRowErrorResponse" : {

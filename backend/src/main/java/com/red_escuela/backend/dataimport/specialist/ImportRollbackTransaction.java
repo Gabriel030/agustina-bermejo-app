@@ -48,10 +48,10 @@ public class ImportRollbackTransaction {
 
     @Transactional
     public Map<ImportEntityType, Long> execute(Long batchId, Long actorPersonId) {
-        ImportBatch batch = batchRepository.findById(batchId).orElseThrow(() -> new ImportBatchNotFoundException(batchId));
         Map<ImportEntityType, Long> discarded = discardAll(batchId);
         createdEntityRepository.deleteByBatchIdAndEntityTypeNotIn(batchId, RETAINED_TYPES);
         rowRepository.moveStatusExcludingTypes(batchId, ImportRowStatus.COMMITTED, ImportRowStatus.VALID, RETAINED_TYPES);
+        ImportBatch batch = batchRepository.findById(batchId).orElseThrow(() -> new ImportBatchNotFoundException(batchId));
         batch.finishRollback();
         Map<String, Object> detail = new LinkedHashMap<>();
         discarded.forEach((type, total) -> detail.put(type.name(), total));
