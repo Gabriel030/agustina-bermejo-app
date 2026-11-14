@@ -25,6 +25,16 @@ public class CourseEnrollmentFinder {
         return courseEnrollmentRepository.findById(id).orElseThrow(() -> new CourseEnrollmentNotFoundException(id));
     }
 
+    public CourseEnrollmentDetailView readDetailOfStudent(Long id, Long studentId) {
+        CourseEnrollment enrollment = courseEnrollmentRepository.findById(id)
+                .filter(found -> found.getStudent().getId().equals(studentId))
+                .orElseThrow(() -> new CourseEnrollmentNotFoundException(id));
+        return new CourseEnrollmentDetailView(
+                enrollment.getId(), enrollment.getCourse().getId(), enrollment.getCourse().getName(),
+                enrollment.getStatus() == null ? null : enrollment.getStatus().name(),
+                enrollment.getEnrollmentDate(), enrollment.getCompletionDate());
+    }
+
     public EnrollmentBillingView requireBillingViewById(Long id) {
         CourseEnrollment enrollment = requireById(id);
         return new EnrollmentBillingView(enrollment.getId(), enrollment.getStudent().getId(), null, enrollment.getCourse().getId(), null,
