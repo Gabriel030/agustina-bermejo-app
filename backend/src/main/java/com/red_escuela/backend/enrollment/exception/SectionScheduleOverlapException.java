@@ -33,10 +33,16 @@ public class SectionScheduleOverlapException extends ConflictException implement
     @Override
     public Map<String, Object> details() {
         Map<String, Object> details = new LinkedHashMap<>();
-        details.put(CONFLICTING_SUBJECT_KEY, conflictingSubjectName);
-        details.put(DAY_KEY, dayLabel);
-        details.put(FROM_KEY, from);
-        details.put(TO_KEY, to);
+        putIfPresent(details, CONFLICTING_SUBJECT_KEY, conflictingSubjectName);
+        putIfPresent(details, DAY_KEY, dayLabel);
+        putIfPresent(details, FROM_KEY, from);
+        putIfPresent(details, TO_KEY, to);
         return details;
+    }
+
+    private static void putIfPresent(Map<String, Object> details, String key, String value) {
+        if (value != null) {
+            details.put(key, value);
+        }
     }
 }
