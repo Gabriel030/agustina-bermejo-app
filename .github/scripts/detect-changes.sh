@@ -13,6 +13,7 @@ repo="${GITHUB_REPOSITORY}"
 relevant=true
 frontend=true
 lockfile=true
+deploy=true
 run_migration=true
 run_demo_seed=false
 run_docs=false
@@ -64,6 +65,9 @@ if [ -n "$base" ]; then
     fi
     if ! grep -qE '^frontend/package-lock\.json$' <<< "$changed"; then
       lockfile=false
+    fi
+    if ! grep -qE '^(deploy/backup/|deploy/monitoring/|\.github/workflows/ci\.yml$|\.github/scripts/detect-changes\.sh$)' <<< "$changed"; then
+      deploy=false
     fi
     if [ "$event" = pull_request ] && grep -qE "$demo_seed_scope" <<< "$changed"; then
       run_demo_seed=true
@@ -127,6 +131,7 @@ fi
   echo "relevant=$relevant"
   echo "frontend=$frontend"
   echo "lockfile=$lockfile"
+  echo "deploy=$deploy"
   echo "run_migration=$run_migration"
   echo "run_demo_seed=$run_demo_seed"
   echo "run_docs=$run_docs"
