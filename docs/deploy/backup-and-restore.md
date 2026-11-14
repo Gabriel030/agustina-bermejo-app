@@ -6,7 +6,7 @@ Todo vive en `deploy/backup/` y es solo Docker (sin depender del hosting). Se su
 docker compose -f docker-compose.prod.yml -f deploy/backup/docker-compose.backup.yml up -d backup
 ```
 
-El servicio `backup` se conecta al servicio `postgres` del otro compose (variable `BACKUP_PGHOST` si se llama distinto).
+El servicio `backup` se une a la red `internal` del compose de producción para llegar a `postgres` (variable `BACKUP_PGHOST` si se llama distinto) y a la red por defecto para poder salir a S3. Usa `POSTGRES_USER` (default `agustina`), `POSTGRES_PASSWORD` y `POSTGRES_DB` del mismo `.env`: cargarlo con `--env-file deploy/.env`.
 
 ## Qué hace
 
@@ -61,7 +61,7 @@ Hace, con un Postgres 16 descartable que se destruye al terminar: construye la i
 | RTO (tiempo hasta volver) | 30 a 60 min | Restaurar un dump de ~700 KB tomó 10 s; con datos reales escala con el tamaño. El resto es detectar la falla, bajar el dump y levantar los servicios. No incluye reprovisionar un servidor nuevo. |
 | Pérdida del servidor entero | RPO 6 h solo si hay copia en S3 | Sin `BACKUP_S3_BUCKET` los backups viven en el mismo disco que la base: **configurar S3 en producción**. |
 
-## Variables nuevas (para `deploy/.env.example`)
+## Variables nuevas (ya incorporadas a `deploy/.env.example`)
 
 | Variable | Default | Descripción |
 |---|---|---|

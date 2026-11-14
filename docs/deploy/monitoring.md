@@ -12,7 +12,7 @@ docker compose ... --profile monitoring up -d
 
 ## 1. uptime-check (alerta de caída)
 
-Consulta `UPTIME_URL` (default `http://backend:8080/actuator/health`; si el contexto público es `/api`, `UPTIME_URL` se puede apuntar a la URL pública para probar también el proxy) cada 30 s. Avisa **CAÍDA** cuando falla 3 veces seguidas y **RECUPERADO** cuando vuelve a responder. El health del backend no incluye el mail a propósito (ver `application.properties`), así que un problema de SMTP no genera falsas alarmas.
+Consulta `UPTIME_URL` (default `http://backend:8080/actuator/health`, ver más abajo) cada 30 s. Avisa **CAÍDA** cuando falla 3 veces seguidas y **RECUPERADO** cuando vuelve a responder. El health del backend no incluye el mail a propósito (ver `application.properties`), así que un problema de SMTP no genera falsas alarmas.
 
 **Limitación que hay que conocer**: corre en la misma máquina que el sistema. Si cae la máquina entera, nadie avisa. Para eso hay dos mecanismos externos, ambos gratuitos y recomendados:
 
@@ -36,28 +36,11 @@ Nota de disco: se mide el sistema de archivos raíz del host, que es donde Docke
 
 ## Healthchecks de los servicios
 
-Los de `backup`, `uptime-check`, `prometheus`, `alertmanager`, `node-exporter` y `grafana` ya vienen incluidos. Los de `postgres` y `backend` están en `docker-compose.prod.yml` (otro paquete) y deberían ser:
+Todos los servicios tienen healthcheck: `postgres` (`pg_isready`) y `backend` (`HEALTHCHECK` del Dockerfile contra `/actuator/health`) ya vienen en `docker-compose.prod.yml` y su Dockerfile, y los de `backup`, `uptime-check`, `prometheus`, `alertmanager`, `node-exporter` y `grafana` en los compose de este paquete. `docker compose ps` muestra `healthy` o `unhealthy`.
 
-```yaml
-postgres:
-  healthcheck:
-    test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-    interval: 10s
-    timeout: 5s
-    retries: 5
-backend:
-  healthcheck:
-    test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health/readiness || exit 1"]
-    interval: 15s
-    timeout: 5s
-    retries: 5
-    start_period: 60s
-  depends_on:
-    postgres:
-      condition: service_healthy
-```
+## Dónde corre el chequeo y qué URL usar
 
-(`/actuator/health/readiness` existe porque `management.endpoint.health.probes.enabled=true`. Si la imagen del backend no trae `wget`, usar `curl` o instalar uno.)
+`uptime-check` corre dentro de la red Docker, así que por defecto usa la URL interna `http://backend:8080/actuator/health` (comprueba el backend, no el proxy). Caddy publica `/api/actuator/health` (el resto de `/api/actuator/*` queda bloqueado), por lo que un monitor **externo** debe apuntar a `https://<dominio>/api/actuator/health`; ese sí cubre Caddy, DNS y certificado. Para que `uptime-check` pase por Caddy: `UPTIME_URL=http://caddy/api/actuator/health` (solo con `SITE_ADDRESS=:80`; con dominio Caddy redirige a HTTPS).
 
 ## Qué hacer ante una caída
 
@@ -68,7 +51,7 @@ backend:
 5. Si la base está corrupta o se perdieron datos: runbook de restauración en `backup-and-restore.md`.
 6. Confirmar el aviso **RECUPERADO** y anotar la causa.
 
-## Variables nuevas (para `deploy/.env.example`)
+## Variables nuevas (ya incorporadas a `deploy/.env.example`)
 
 | Variable | Default | Descripción |
 |---|---|---|

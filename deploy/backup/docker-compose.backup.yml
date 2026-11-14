@@ -8,7 +8,7 @@ services:
     environment:
       PGHOST: ${BACKUP_PGHOST:-postgres}
       PGPORT: ${BACKUP_PGPORT:-5432}
-      PGUSER: ${POSTGRES_USER:-postgres}
+      PGUSER: ${POSTGRES_USER:-agustina}
       PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio}
       PGDATABASE: ${POSTGRES_DB:-agustina_bermejo}
       TZ: ${BACKUP_TZ:-America/Argentina/Buenos_Aires}
@@ -33,6 +33,9 @@ services:
       ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
       ALERT_TELEGRAM_BOT_TOKEN: ${ALERT_TELEGRAM_BOT_TOKEN:-}
       ALERT_TELEGRAM_CHAT_ID: ${ALERT_TELEGRAM_CHAT_ID:-}
+    networks:
+      - internal
+      - default
     volumes:
       - ${BACKUP_DIR:-backup_data}:/backups
       - backup_metrics:/metrics
@@ -41,6 +44,10 @@ services:
       interval: 60s
       timeout: 10s
       retries: 3
+
+networks:
+  internal:
+    internal: true
 
 volumes:
   backup_data:
