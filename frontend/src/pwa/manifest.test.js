@@ -17,4 +17,11 @@ describe('pwa manifest', () => {
     expect(manifest.icons.some((icon) => icon.purpose === 'maskable')).toBe(true)
     manifest.icons.forEach((icon) => expect(existsSync(publicFile(icon.src))).toBe(true))
   })
+
+  it('manifestDeclaresStableIdentityAndLocale', () => {
+    expect(manifest.id).toBe('/')
+    expect(manifest.scope).toBe('/')
+    expect(manifest.lang).toBe('es-AR')
+    expect(manifest.categories).toContain('education')
+  })
 })
