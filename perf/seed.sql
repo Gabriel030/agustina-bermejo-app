@@ -8,7 +8,7 @@ FROM generate_series(1,3) g;
 INSERT INTO subject (id, name, status, max_final_exam_attempts, code, weekly_hours, grade_mode)
 SELECT 1000+g, 'Materia perf '||g, 'ACTIVE', 3, 'P'||lpad(g::text,3,'0'), 4, 'NUMERIC' FROM generate_series(1,40) g;
 INSERT INTO program_subject (id, program_id, subject_id, curricular_year, curricular_term, subject_recurrence, status, credits, sort_order)
-SELECT 1000+g, 1, 1000+g, 1+(g-1)/14, 'FIRST_SEMESTER', 'ANNUAL', 'ACTIVE', 6, g FROM generate_series(1,40) g;
+SELECT 1000+g, 1, 1000+g, 1+(g-1)/14, 'FIRST', 'ANNUAL', 'ACTIVE', 6, g FROM generate_series(1,40) g;
 
 INSERT INTO subject_section (id, term_id, subject_id, name, capacity, created_at, version, status, schedule, max_absence_percentage, pending_approval, evaluation_scheme_id)
 SELECT 10000 + k*1000 + s*10 + c, CASE WHEN k=4 THEN 1 ELSE 100+k END, 1000+s, 'Comisión '||chr(64+c), 45, now(), 0, 'ACTIVE', 'Lunes 18:00 a 20:00', 0.25, false, 1
