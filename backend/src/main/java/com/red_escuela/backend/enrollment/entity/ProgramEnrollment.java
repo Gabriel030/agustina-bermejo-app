@@ -61,9 +61,6 @@ public class ProgramEnrollment implements BillableEnrollment {
     @Column(name = "enrollment_date")
     private LocalDateTime enrollmentDate;
 
-    @Column(name = "entry_year")
-    private Integer entryYear;
-
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 
@@ -96,6 +93,9 @@ public class ProgramEnrollment implements BillableEnrollment {
 
     @Column(name = "withdrawal_registered_on")
     private LocalDate withdrawalRegisteredOn;
+
+    @Column(name = "entry_year")
+    private Integer entryYear;
 
     @Column(name = "withdrawn_by_person_id")
     private Long withdrawnByPersonId;
