@@ -18,6 +18,10 @@ describe('pwa manifest', () => {
     manifest.icons.forEach((icon) => expect(existsSync(publicFile(icon.src))).toBe(true))
   })
 
+  it('manifestDoesNotLockOrientation', () => {
+    expect(manifest).not.toHaveProperty('orientation')
+  })
+
   it('manifestDeclaresStableIdentityAndLocale', () => {
     expect(manifest.id).toBe('/')
     expect(manifest.scope).toBe('/')
