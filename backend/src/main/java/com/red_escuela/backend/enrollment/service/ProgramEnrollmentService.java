@@ -167,6 +167,7 @@ public class ProgramEnrollmentService {
         sectionWithdrawer.withdrawOpenEnrollmentsOf(id);
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
+        enrollment.setWithdrawalReason(withdrawal.reason());
         programEnrollmentRepository.save(enrollment);
         withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(
                 enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));

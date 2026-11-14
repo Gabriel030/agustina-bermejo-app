@@ -1,0 +1,1 @@
+alter table notification validate constraint notification_type_enum;

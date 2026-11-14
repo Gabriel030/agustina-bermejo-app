@@ -239,6 +239,7 @@ public class CourseEnrollmentService {
         LocalDate registeredOn = withdrawalDateResolver.registrationDate();
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
+        enrollment.setWithdrawalReason(withdrawal.reason());
         courseEnrollmentRepository.save(enrollment);
         cancelModuleEnrollments(enrollment, promotesWaitlist);
         if (liberaCupoDelCurso && promotesWaitlist) {

@@ -10,6 +10,15 @@ import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.academicstructure.entity.Classroom;
+import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
+import com.red_escuela.backend.enrollment.events.SubjectEnrollmentWithdrawnEvent;
+import com.red_escuela.backend.enrollment.events.SubjectSectionChangedEvent;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
@@ -61,7 +70,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@RecordApplicationEvents
 class EnrollmentControllerTest extends AbstractIntegrationTest {
+    private static final String STAFF_REASON = "Pedido del alumno en secretaría";
+    private static final String STAFF_REASON_BODY = "{\"reason\":\"" + STAFF_REASON + "\"}";
+
+    @Autowired
+    private ApplicationEvents events;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -440,7 +456,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/section-enrollments/{id}/change-section", idOrigen)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(seccionB.getId()))))
+                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(seccionB.getId(), STAFF_REASON))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.attemptNumber").value(1))
                 .andExpect(jsonPath("$.sectionId").value(seccionB.getId()));
@@ -484,6 +500,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Long idEnrolled = filasEnrollment1.get(0).getId();
 
         mockMvc.perform(post("/section-enrollments/{id}/withdraw", idEnrolled)
+                        .contentType(MediaType.APPLICATION_JSON).content(STAFF_REASON_BODY)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
@@ -513,7 +530,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/section-enrollments/{id}/change-section", enrolled.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(section.getId()))))
+                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(section.getId(), STAFF_REASON))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(enrolled.getId()))
                 .andExpect(jsonPath("$.status").value("ENROLLED"));
@@ -541,6 +558,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         String token = tokenWithRole("preceptor-insc9", "PRECEPTOR");
 
         mockMvc.perform(post("/section-enrollments/{id}/withdraw", sectionEnrollment.getId())
+                        .contentType(MediaType.APPLICATION_JSON).content(STAFF_REASON_BODY)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isConflict());
     }
@@ -567,6 +585,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Long idOriginal = objectMapper.readTree(creada).get("id").asLong();
 
         mockMvc.perform(post("/section-enrollments/{id}/withdraw", idOriginal)
+                        .contentType(MediaType.APPLICATION_JSON).content(STAFF_REASON_BODY)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
@@ -710,6 +729,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Long primerCourseEnrollmentId = objectMapper.readTree(primeraMatricula).get("id").asLong();
 
         mockMvc.perform(post("/course-enrollments/{id}/withdraw", primerCourseEnrollmentId)
+                        .contentType(MediaType.APPLICATION_JSON).content(STAFF_REASON_BODY)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
@@ -759,6 +779,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         assertThat(subDeEstudiante2.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
 
         mockMvc.perform(post("/course-enrollments/{id}/withdraw", courseEnrollment1Id)
+                        .contentType(MediaType.APPLICATION_JSON).content(STAFF_REASON_BODY)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
@@ -766,5 +787,236 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         entityManager.clear();
         CourseSubjectSectionEnrollment promovida = entityManager.find(CourseSubjectSectionEnrollment.class, subDeEstudiante2.getId());
         assertThat(promovida.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    private static final LocalDateTime FIRST_PERIOD_START = LocalDateTime.of(2026, 3, 1, 0, 0);
+    private static final LocalDateTime FIRST_PERIOD_END = LocalDateTime.of(2026, 7, 31, 23, 59);
+    private static final LocalDateTime SECOND_PERIOD_START = LocalDateTime.of(2026, 8, 1, 0, 0);
+    private static final LocalDateTime SECOND_PERIOD_END = LocalDateTime.of(2026, 12, 15, 23, 59);
+
+    private record ChangeScenario(SubjectSectionEnrollment origin, SubjectSection destination, SubjectSection otherSection, String token) {
+    }
+
+    private Term persistTermBetween(LocalDateTime start, LocalDateTime end) {
+        Term term = persistTerm(null, null);
+        term.setStartDate(start);
+        term.setEndDate(end);
+        return term;
+    }
+
+    private void persistSlot(SubjectSection section, DayOfWeek day, LocalTime start, LocalTime end) {
+        Classroom classroom = new Classroom();
+        classroom.setName("Aula " + section.getName() + day + start);
+        classroom.setCapacity(30);
+        entityManager.persist(classroom);
+        SectionScheduleSlot slot = new SectionScheduleSlot();
+        slot.setSubjectSection(section);
+        slot.setClassroom(classroom);
+        slot.setDayOfWeek(day);
+        slot.setStartTime(start);
+        slot.setEndTime(end);
+        entityManager.persist(slot);
+    }
+
+    private ChangeScenario changeScenario(String key, Term otherSectionTerm, LocalTime destinationStart, LocalTime destinationEnd, String role) {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(key, StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Subject changing = persistSubject("Cambiante" + key);
+        Subject other = persistSubject("Algebra" + key);
+        Program program = persistProgram("Carrera" + key, 100);
+        persistProgramSubject(program, changing, 10);
+        persistProgramSubject(program, other, 10);
+        Term term = persistTermBetween(FIRST_PERIOD_START, FIRST_PERIOD_END);
+        SubjectSection originSection = persistSubjectSection(changing, term, 10);
+        SubjectSection destination = persistSubjectSection(changing, term, 10);
+        destination.setName("Comision destino " + key);
+        SubjectSection otherSection = persistSubjectSection(other, otherSectionTerm == null ? term : otherSectionTerm, 10);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        SubjectSectionEnrollment origin = persistSectionEnrollment(student, programEnrollment, originSection, EnrollmentStatus.ENROLLED, 1);
+        persistSectionEnrollment(student, programEnrollment, otherSection, EnrollmentStatus.ENROLLED, 1);
+        persistSlot(otherSection, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(10, 0));
+        persistSlot(destination, DayOfWeek.MONDAY, destinationStart, destinationEnd);
+        entityManager.flush();
+        return new ChangeScenario(origin, destination, otherSection, tokenWithRole("staff-" + key, role));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions changeSection(ChangeScenario scenario, String reason) throws Exception {
+        return mockMvc.perform(post("/section-enrollments/{id}/change-section", scenario.origin().getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + scenario.token())
+                .content(objectMapper.writeValueAsString(new ChangeSectionRequest(scenario.destination().getId(), reason))));
+    }
+
+    @Test
+    void staffChangeSectionRejectsAScheduleThatOverlapsAnotherActiveCursadaNamingTheSubject() throws Exception {
+        ChangeScenario scenario = changeScenario("60000001", null, LocalTime.of(9, 0), LocalTime.of(11, 0), "PRECEPTOR");
+
+        changeSection(scenario, STAFF_REASON)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SECTION_SCHEDULE_OVERLAP"))
+                .andExpect(jsonPath("$.details.conflictingSubject").value("Algebra60000001"))
+                .andExpect(jsonPath("$.details.day").value("lunes"));
+
+        entityManager.clear();
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, scenario.origin().getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void staffChangeSectionAllowsASlotThatStartsExactlyWhenTheOtherEnds() throws Exception {
+        ChangeScenario scenario = changeScenario("60000002", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "PRECEPTOR");
+
+        changeSection(scenario, STAFF_REASON).andExpect(status().isOk());
+    }
+
+    @Test
+    void staffChangeSectionRejectsASlotThatEndsExactlyOneMinuteAfterTheOtherStarts() throws Exception {
+        ChangeScenario scenario = changeScenario("60000003", null, LocalTime.of(6, 0), LocalTime.of(8, 1), "PRECEPTOR");
+
+        changeSection(scenario, STAFF_REASON).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("SECTION_SCHEDULE_OVERLAP"));
+    }
+
+    @Test
+    void staffChangeSectionAllowsTheSameScheduleWhenTheOtherCursadaIsInAnotherPeriod() throws Exception {
+        Term laterTerm = persistTermBetween(SECOND_PERIOD_START, SECOND_PERIOD_END);
+        ChangeScenario scenario = changeScenario("60000004", laterTerm, LocalTime.of(8, 0), LocalTime.of(10, 0), "PRECEPTOR");
+
+        changeSection(scenario, STAFF_REASON).andExpect(status().isOk());
+    }
+
+    @Test
+    void staffChangeSectionAllowsOverlapWithAWithdrawnCursada() throws Exception {
+        ChangeScenario scenario = changeScenario("60000005", null, LocalTime.of(9, 0), LocalTime.of(11, 0), "PRECEPTOR");
+        entityManager.createQuery("update SubjectSectionEnrollment e set e.status = :status where e.subjectSection.id = :sectionId")
+                .setParameter("status", EnrollmentStatus.WITHDRAWN).setParameter("sectionId", scenario.otherSection().getId()).executeUpdate();
+        entityManager.clear();
+
+        changeSection(scenario, STAFF_REASON).andExpect(status().isOk());
+    }
+
+    @Test
+    void staffChangeSectionWithoutReasonReturns400AndDoesNotMoveTheStudent() throws Exception {
+        ChangeScenario scenario = changeScenario("60000006", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+
+        changeSection(scenario, null).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("ENROLLMENT_CHANGE_REASON_REQUIRED"));
+
+        entityManager.clear();
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, scenario.origin().getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void directorChangeSectionStoresReasonAndActorAndPublishesOneEventForStudentAndTeachers() throws Exception {
+        ChangeScenario scenario = changeScenario("60000007", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+
+        changeSection(scenario, "  Cambio   por horario laboral ").andExpect(status().isOk());
+
+        entityManager.flush();
+        entityManager.clear();
+        SubjectSectionEnrollment origin = entityManager.find(SubjectSectionEnrollment.class, scenario.origin().getId());
+        Long directorPersonId = entityManager.createQuery("select p.id from Person p where p.username = :u", Long.class)
+                .setParameter("u", "staff-60000007").getSingleResult();
+        assertThat(origin.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(origin.getWithdrawalReason()).isEqualTo("Cambio por horario laboral");
+        assertThat(origin.getWithdrawnByPersonId()).isEqualTo(directorPersonId);
+        assertThat(origin.getDroppedAt()).isNotNull();
+        List<SubjectSectionChangedEvent> changed = events.stream(SubjectSectionChangedEvent.class).toList();
+        assertThat(changed).hasSize(1);
+        assertThat(changed.get(0).notifyStudent()).isTrue();
+        assertThat(changed.get(0).reason()).isEqualTo("Cambio por horario laboral");
+        assertThat(changed.get(0).toSectionName()).isEqualTo("Comision destino 60000007");
+    }
+
+    private Long enrolledIdOf(Student student) {
+        return entityManager.createQuery("select e.id from SubjectSectionEnrollment e where e.student.id = :id", Long.class)
+                .setParameter("id", student.getId()).getResultList().get(0);
+    }
+
+    private org.springframework.test.web.servlet.ResultActions withdrawSubject(Long id, String token, String body) throws Exception {
+        var request = post("/section-enrollments/{id}/withdraw", id).header("Authorization", "Bearer " + token);
+        if (body != null) {
+            request.contentType(MediaType.APPLICATION_JSON).content(body);
+        }
+        return mockMvc.perform(request);
+    }
+
+    private Student studentWithOneEnrollment(String dni) {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(dni, StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("Materia" + dni);
+        Program program = persistProgram("Carrera" + dni, 100);
+        persistProgramSubject(program, subject, 10);
+        SubjectSection section = persistSubjectSection(subject, persistTerm(null, null), 10);
+        persistSectionEnrollment(student, persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED), section, EnrollmentStatus.ENROLLED, 1);
+        entityManager.flush();
+        return student;
+    }
+
+    @Test
+    void staffWithdrawalWithoutBodyOrReasonReturns400AndKeepsTheEnrollment() throws Exception {
+        Student student = studentWithOneEnrollment("60000011");
+        Long id = enrolledIdOf(student);
+        String token = tokenWithRole("preceptor-60000011", "PRECEPTOR");
+
+        withdrawSubject(id, token, null).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("ENROLLMENT_CHANGE_REASON_REQUIRED"));
+        withdrawSubject(id, token, "{\"reason\":\"   \"}").andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("ENROLLMENT_CHANGE_REASON_REQUIRED"));
+
+        entityManager.clear();
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, id).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(events.stream(SubjectEnrollmentWithdrawnEvent.class)).isEmpty();
+    }
+
+    @Test
+    void staffWithdrawalReasonBoundariesAre10And500Characters() throws Exception {
+        Student student = studentWithOneEnrollment("60000012");
+        Long id = enrolledIdOf(student);
+        String token = tokenWithRole("preceptor-60000012", "PRECEPTOR");
+
+        withdrawSubject(id, token, "{\"reason\":\"123456789\"}").andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("ENROLLMENT_CHANGE_REASON_INVALID"));
+        withdrawSubject(id, token, "{\"reason\":\"" + "a".repeat(501) + "\"}").andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("ENROLLMENT_CHANGE_REASON_INVALID"));
+        withdrawSubject(id, token, "{\"reason\":\"" + "a".repeat(500) + "\"}").andExpect(status().isNoContent());
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, id).getWithdrawalReason()).hasSize(500);
+    }
+
+    @Test
+    void directorWithdrawalStoresReasonAndActorAndPublishesOneEventNotifyingTheStudent() throws Exception {
+        Student student = studentWithOneEnrollment("60000013");
+        Long id = enrolledIdOf(student);
+        String token = tokenWithRole("director-60000013", "DIRECTOR");
+
+        withdrawSubject(id, token, "{\"reason\":\"Pidió la baja por motivos personales\"}").andExpect(status().isNoContent());
+
+        entityManager.flush();
+        entityManager.clear();
+        SubjectSectionEnrollment withdrawn = entityManager.find(SubjectSectionEnrollment.class, id);
+        Long directorPersonId = entityManager.createQuery("select p.id from Person p where p.username = :u", Long.class)
+                .setParameter("u", "director-60000013").getSingleResult();
+        assertThat(withdrawn.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(withdrawn.getWithdrawalReason()).isEqualTo("Pidió la baja por motivos personales");
+        assertThat(withdrawn.getWithdrawnByPersonId()).isEqualTo(directorPersonId);
+        assertThat(withdrawn.getDroppedAt()).isNotNull();
+        List<SubjectEnrollmentWithdrawnEvent> published = events.stream(SubjectEnrollmentWithdrawnEvent.class).toList();
+        assertThat(published).hasSize(1);
+        assertThat(published.get(0).notifyStudent()).isTrue();
+        assertThat(published.get(0).studentPersonId()).isEqualTo(student.getPerson().getId());
+    }
+
+    @Test
+    void studentOwnWithdrawalNeedsNoReasonKeepsActorAsTheStudentAndDoesNotNotifyTheStudent() throws Exception {
+        Student student = studentWithOneEnrollment("60000014");
+        Long id = enrolledIdOf(student);
+        String token = tokenForStudent(student);
+
+        mockMvc.perform(post("/me/section-enrollments/{id}/withdraw", id).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        entityManager.flush();
+        entityManager.clear();
+        SubjectSectionEnrollment withdrawn = entityManager.find(SubjectSectionEnrollment.class, id);
+        assertThat(withdrawn.getWithdrawalReason()).isNull();
+        assertThat(withdrawn.getWithdrawnByPersonId()).isEqualTo(student.getPerson().getId());
+        assertThat(events.stream(SubjectEnrollmentWithdrawnEvent.class).toList()).singleElement()
+                .satisfies(event -> assertThat(event.notifyStudent()).isFalse());
     }
 }
