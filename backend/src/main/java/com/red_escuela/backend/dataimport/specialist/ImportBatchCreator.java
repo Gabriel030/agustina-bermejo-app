@@ -38,7 +38,7 @@ public class ImportBatchCreator {
     }
 
     @Transactional
-    public ImportBatch create(String name, Long actorPersonId) {
+    public Long create(String name, Long actorPersonId) {
         if (billingModeGate.currentMode() != BillingMode.OFF) {
             throw new BillingModeNotOffException();
         }
@@ -51,6 +51,6 @@ public class ImportBatchCreator {
         ImportBatch batch = batchRepository.save(ImportBatch.draft(name.strip(), institution.getId(), actorPersonId, now));
         eventRepository.save(new ImportBatchEvent(batch.getId(), ImportBatchEventType.CREATED, actorPersonId, now,
                 Map.of("name", batch.getName())));
-        return batch;
+        return batch.getId();
     }
 }

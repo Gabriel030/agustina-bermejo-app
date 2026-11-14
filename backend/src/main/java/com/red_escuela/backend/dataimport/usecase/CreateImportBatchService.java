@@ -20,7 +20,7 @@ public class CreateImportBatchService implements CreateImportBatchUseCase {
 
     @Override
     public ImportBatchResponse create(String name) {
-        var batch = batchCreator.create(name, currentActorFinder.currentPersonId());
-        return batchReader.get(batch.getId());
+        Long batchId = batchCreator.create(name, currentActorFinder.currentPersonId());
+        return batchReader.get(batchId);
     }
 }
