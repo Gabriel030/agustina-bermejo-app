@@ -79,7 +79,8 @@ function mockStudent({ programs = [PROGRAM_ENROLLMENT], courses = [] } = {}) {
       );
     }),
     http.get(`${API}/course-enrollments/7/progress`, () =>
-      HttpResponse.json({ courseEnrollmentId: 7, elegibleParaCompletar: false, modulosPendientes: ['Edición y revelado'] })),
+      HttpResponse.json({ courseEnrollmentId: 7, elegibleParaCompletar: false, modulosPendientes: ['Edición y revelado'],
+        moduleEnrollments: [{ sectionEnrollmentId: 31, moduleId: 5, moduleName: 'Edición y revelado', sectionName: 'Comisión A', status: 'ENROLLED' }] })),
   );
   return gradeRequests;
 }
