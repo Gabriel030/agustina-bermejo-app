@@ -1,4 +1,4 @@
-import { BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText } from 'lucide-react';
+import { BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -83,6 +83,7 @@ export const ROLE_MENU = {
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     closures,
     { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
+    { slug: 'importacion-inicial', label: 'Importación inicial', icon: Upload },
     invoicing,
     discounts,
     prices,
@@ -131,7 +132,7 @@ const MENU_GROUPS = {
         'financiero',
       ],
     },
-    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto'] },
+    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto', 'importacion-inicial'] },
   ],
 };
 
