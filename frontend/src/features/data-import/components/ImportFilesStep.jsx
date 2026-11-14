@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IMPORT_BLOCKS } from '../importBlocks';
 import { useUploadImportFile, useValidateDataImport } from '../hooks/useDataImports';
 import { MAX_IMPORT_FILE_BYTES } from '../importLabels';
-import { ImportBlockRow, UpcomingBlockRow } from './ImportBlockRow';
+import { ImportBlockRow } from './ImportBlockRow';
 
 export function ImportFilesStep({ batch, onValidated }) {
   const upload = useUploadImportFile(batch.id);
@@ -48,20 +48,16 @@ export function ImportFilesStep({ batch, onValidated }) {
     <>
       <GlassCard className="p-0">
         <ul className="divide-y divide-border" aria-label="Bloques de la importación">
-          {IMPORT_BLOCKS.map((block) =>
-            block.upcoming ? (
-              <UpcomingBlockRow key={block.key} block={block} />
-            ) : (
-              <ImportBlockRow
-                key={block.entityType}
-                block={block}
-                file={filesByType.get(block.entityType)}
-                editable
-                uploading={uploadingType === block.entityType}
-                onSelectFile={handleSelectFile}
-              />
-            ),
-          )}
+          {IMPORT_BLOCKS.map((block) => (
+            <ImportBlockRow
+              key={block.entityType}
+              block={block}
+              file={filesByType.get(block.entityType)}
+              editable
+              uploading={uploadingType === block.entityType}
+              onSelectFile={handleSelectFile}
+            />
+          ))}
         </ul>
       </GlassCard>
       <StickyActionBar
