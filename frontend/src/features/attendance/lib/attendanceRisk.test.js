@@ -22,6 +22,11 @@ describe('attendanceRisk', () => {
     expect(attendanceRisk(entry({}))).toMatchObject({ level: 'ok', text: '0 de 3 inasistencias permitidas', pill: null });
   });
 
+  it('uses the singular when a single absence is permitted', () => {
+    const result = attendanceRisk(entry({ countableAbsences: 2, allowedAbsences: 1, remainingAbsences: 0, exceedsAbsenceLimit: true }));
+    expect(result.text).toBe('2 de 1 inasistencia permitida');
+  });
+
   it('warns when one absence is left', () => {
     expect(attendanceRisk(entry({ countableAbsences: 2, remainingAbsences: 1 }))).toMatchObject({
       level: 'warning',

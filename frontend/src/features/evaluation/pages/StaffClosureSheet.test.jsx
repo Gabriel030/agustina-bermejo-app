@@ -46,6 +46,28 @@ describe('StaffClosureSheet', () => {
     expect(screen.queryByRole('button', { name: /Confirmar cierre/ })).not.toBeInTheDocument();
   });
 
+  it('showsTheMinimumAttendanceDerivedFromTheAbsenceLimit', async () => {
+    renderSheet('preceptor', confirmedSheet());
+
+    expect(await screen.findByText('Asist. (mín. 75%)')).toBeInTheDocument();
+    expect(within(rowOf('Acosta, Lucía')).getByRole('img', { name: 'Asistencia: cumple' })).toBeInTheDocument();
+  });
+
+  it('showsNoMinimumAndAnUnverifiedMarkWhenTheSectionHasNoAbsenceLimit', async () => {
+    const base = confirmedSheet();
+    const students = base.students.map((row) =>
+      row.attendancePercent == null ? row : { ...row, attendancePercent: 40, requirements: { ...row.requirements, attendance: false } },
+    );
+    renderSheet('preceptor', { ...base, students, scheme: { ...base.scheme, maxAbsenceRate: null } });
+
+    const header = await screen.findByText('Asist.');
+    expect(header).toHaveAttribute('title', 'Sin límite de inasistencias configurado');
+    expect(screen.queryByText(/mín\./)).not.toBeInTheDocument();
+    const row = rowOf('Acosta, Lucía');
+    expect(within(row).getByRole('img', { name: 'Asistencia: no verificado' })).toBeInTheDocument();
+    expect(within(row).getByText('40%').className).not.toContain('text-danger');
+  });
+
   it('strikesWithdrawnStudentsAndKeepsOnePillPerRow', async () => {
     renderSheet('preceptor');
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -35,6 +35,10 @@ function renderList(route = '/administrativo/cierres-de-comision', role = 'admin
 }
 
 const threeItems = () => [closureListItem(), pendingClosureListItem(), closedClosureListItem()];
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('ClosureListPage', () => {
   it('showsBackendCountsInTheKpiCardsAndOnePillPerRow', async () => {
@@ -103,6 +107,25 @@ describe('ClosureListPage', () => {
 
     await waitFor(() => expect(requests.at(-1)).not.toHaveProperty('q'));
     expect(screen.getByRole('searchbox')).toHaveValue('');
+  });
+
+  it('rendersOneCardPerRowOnMobileWithStatusAndTheSheetLink', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    mockClosureList(server, () => closureListPage(threeItems()));
+    renderList();
+
+    await screen.findByRole('link', { name: 'Abrir planilla de Teorías Socioculturales, Comisión A · Mañana' });
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Estado').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getAllByRole('link', { name: /Abrir planilla|Ver acta/ })).toHaveLength(3);
+  });
+
+  it('doesNotForceAHorizontalMinimumWidthOnDesktop', async () => {
+    mockClosureList(server, () => closureListPage(threeItems()));
+    renderList();
+
+    await screen.findByRole('table');
+    expect(screen.getByRole('table').style.minWidth).not.toBe('1160px');
   });
 
   it('pagesThroughTheBackendTotal', async () => {
