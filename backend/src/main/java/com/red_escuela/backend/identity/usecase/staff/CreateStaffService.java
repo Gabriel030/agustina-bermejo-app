@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.identity.exception.InvalidStaffRoleException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
+import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
 import com.red_escuela.backend.identity.specialist.StaffInstructorProfileCreator;
 import com.red_escuela.backend.identity.specialist.StaffRoleAssignmentPolicy;
@@ -24,17 +25,20 @@ public class CreateStaffService implements CreateStaffUseCase {
     private final PersonFactory personFactory;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
     private final PasswordResetCodeRequester passwordResetCodeRequester;
+    private final IdentityAuditRecorder identityAuditRecorder;
 
     public CreateStaffService(PersonRepository personRepository, StaffInstructorProfileCreator staffInstructorProfileCreator,
                                RoleRepository roleRepository, PersonFactory personFactory,
                                StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
-                               PasswordResetCodeRequester passwordResetCodeRequester) {
+                               PasswordResetCodeRequester passwordResetCodeRequester,
+                               IdentityAuditRecorder identityAuditRecorder) {
         this.personRepository = personRepository;
         this.staffInstructorProfileCreator = staffInstructorProfileCreator;
         this.roleRepository = roleRepository;
         this.personFactory = personFactory;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
         this.passwordResetCodeRequester = passwordResetCodeRequester;
+        this.identityAuditRecorder = identityAuditRecorder;
     }
 
     @Override
@@ -69,11 +73,14 @@ public class CreateStaffService implements CreateStaffUseCase {
             throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
         }
 
+
         if ("DOCENTE".equals(requestedRole)) {
             staffInstructorProfileCreator.createInstructorProfileFor(person);
         }
 
         passwordResetCodeRequester.requestPasswordResetCode(person.emailValue());
+
+        identityAuditRecorder.recordStaffCreated(person, requestedRole);
 
         return new StaffUseCaseResult(person, requestedRole);
     }

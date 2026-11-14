@@ -55,6 +55,15 @@ class AuditTrailIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void staffCreatedActionIsAcceptedByTheDatabaseCheckConstraint() {
+        transactionTemplate.executeWithoutResult(status -> auditTrail.record(
+                new AuditRecord(AuditAction.STAFF_CREATED, AuditEntityType.PERSON, 78L, null, "DOCENTE", null)));
+
+        assertThat(auditLogRepository.findAll()).extracting(AuditLogEntry::getAction)
+                .containsExactly(AuditAction.STAFF_CREATED);
+    }
+
+    @Test
     void theEntryRollsBackTogetherWithTheActionThatFailsAfterRecordingIt() {
         assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
             auditTrail.record(RECORD);
