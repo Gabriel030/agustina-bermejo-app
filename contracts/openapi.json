@@ -10645,7 +10645,7 @@
       "RegisterRequest" : {
         "properties" : {
           "acceptedNewsletter" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "acceptedPrivacy" : {
             "type" : "boolean"
@@ -10670,17 +10670,17 @@
             "format" : "email",
             "maxLength" : 255,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "guardianName" : {
             "maxLength" : 255,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "guardianRelationship" : {
             "maxLength" : 60,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "institutionId" : {
             "format" : "int64",
@@ -10699,7 +10699,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "acceptedNewsletter", "acceptedPrivacy", "acceptedTerms", "apellido", "birthDate", "email", "guardianEmail", "guardianName", "guardianRelationship", "institutionId", "nombre", "password", "username" ],
+        "required" : [ "acceptedPrivacy", "acceptedTerms", "apellido", "birthDate", "email", "institutionId", "nombre", "password", "username" ],
         "type" : "object"
       },
       "RegularCertificateRequestResponse" : {

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,8 +19,8 @@ public record RegisterRequest(
         Boolean acceptedTerms,
         Boolean acceptedPrivacy,
         @Past LocalDate birthDate,
-        @Size(max = 255) String guardianName,
-        @Size(max = 255) @Email String guardianEmail,
-        @Size(max = 60) String guardianRelationship,
-        Boolean acceptedNewsletter) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) @Size(max = 255) String guardianName,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) @Size(max = 255) @Email String guardianEmail,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) @Size(max = 60) String guardianRelationship,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Boolean acceptedNewsletter) {
 }
