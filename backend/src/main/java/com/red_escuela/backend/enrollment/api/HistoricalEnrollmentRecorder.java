@@ -122,6 +122,13 @@ public class HistoricalEnrollmentRecorder {
         sectionEnrollmentRepository.flush();
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Long> findSectionEnrollmentId(DocumentType type, String number, Long sectionId) {
+        return findStudentId(type, number)
+                .flatMap(studentId -> sectionEnrollmentRepository.findByStudentIdAndSubjectSectionId(studentId, sectionId))
+                .map(SubjectSectionEnrollment::getId);
+    }
+
     private Optional<ProgramEnrollment> findProgramEnrollment(DocumentType type, String number, String programName) {
         Optional<Long> studentId = findStudentId(type, number);
         Optional<Long> programId = programRecorder.findProgramIdByName(programName);

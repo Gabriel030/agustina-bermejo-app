@@ -107,6 +107,18 @@ public class HistoricalSectionRecorder {
         sectionRepository.flush();
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Long> findLeadInstructorId(Long sectionId) {
+        return sectionInstructorRepository.findBySectionId(sectionId).stream()
+                .filter(assignment -> assignment.getRole() == InstructorRole.LEAD)
+                .map(assignment -> assignment.getInstructor().getId()).findFirst();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean sectionHasLeadInstructor(String code) {
+        return findSectionIdByCode(code).flatMap(this::findLeadInstructorId).isPresent();
+    }
+
     private AcademicOfferingCycle findCycle(Term term, String programName) {
         if (programName.isEmpty()) {
             return cycleRepository.findFirstByTermIdOrderByIdAsc(term.getId()).orElse(null);

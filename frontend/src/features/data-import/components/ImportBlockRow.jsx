@@ -1,7 +1,9 @@
 import { Download, FileCheck2, Upload } from 'lucide-react';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
-import { downloadTextFile, formatSize, toCsv } from '../importLabels';
+import { toast } from 'sonner';
+import { downloadImportTemplate } from '../hooks/useDataImports';
+import { formatSize, saveBlobAs } from '../importLabels';
 
 function BlockInfo({ block }) {
   return (
@@ -9,15 +11,6 @@ function BlockInfo({ block }) {
       <span className="font-semibold text-ink">{block.label}</span>
       <span className="text-sm text-ink-soft">{block.description}</span>
     </div>
-  );
-}
-
-export function UpcomingBlockRow({ block }) {
-  return (
-    <li className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:gap-4" data-testid={`block-${block.key}`}>
-      <BlockInfo block={block} />
-      <StatusPill tone="neutral">Próximamente</StatusPill>
-    </li>
   );
 }
 
@@ -30,8 +23,13 @@ export function ImportBlockRow({ block, file, editable, uploading, onSelectFile 
     if (selected) onSelectFile(block, selected);
   }
 
-  function handleTemplate() {
-    downloadTextFile(block.templateName, toCsv([block.templateColumns]));
+  async function handleTemplate() {
+    try {
+      const { blob } = await downloadImportTemplate(block.entityType);
+      saveBlobAs(blob, `plantilla-${block.label.toLowerCase()}.csv`);
+    } catch (error) {
+      toast.error(error.message || 'No pudimos descargar la plantilla. Probá de nuevo.');
+    }
   }
 
   return (

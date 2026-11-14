@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.student;
 
+import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
 import com.red_escuela.backend.identity.domain.StudentStatusChangeRecorder;
 import com.red_escuela.backend.identity.domain.StudentWithdrawalGuard;
 import com.red_escuela.backend.shared.UseCase;
@@ -14,9 +15,11 @@ public class WithdrawStudentWithEnrollmentGuardService implements WithdrawStuden
     private final WithdrawStudentService withdrawStudentService;
 
     private final StudentStatusChangeRecorder studentStatusChangeRecorder;
+    private final IdentityAuditRecorder identityAuditRecorder;
 
     public WithdrawStudentWithEnrollmentGuardService(StudentWithdrawalGuard studentWithdrawalGuard, WithdrawStudentService withdrawStudentService,
-            StudentStatusChangeRecorder studentStatusChangeRecorder) {
+            StudentStatusChangeRecorder studentStatusChangeRecorder, IdentityAuditRecorder identityAuditRecorder) {
+        this.identityAuditRecorder = identityAuditRecorder;
         this.studentStatusChangeRecorder = studentStatusChangeRecorder;
         this.studentWithdrawalGuard = studentWithdrawalGuard;
         this.withdrawStudentService = withdrawStudentService;
@@ -28,5 +31,6 @@ public class WithdrawStudentWithEnrollmentGuardService implements WithdrawStuden
         studentWithdrawalGuard.lockStudentAndRequireWithdrawable(command.studentId());
         withdrawStudentService.withdraw(command);
         studentStatusChangeRecorder.recordWithdrawal(command.studentId());
+        identityAuditRecorder.recordStudentWithdrawn(command.studentId(), command.request());
     }
 }

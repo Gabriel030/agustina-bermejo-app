@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.usecase;
 
+import com.red_escuela.backend.enrollment.service.StaffEnrollmentChangeAuditor;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.SectionEnrollmentResponse;
 import com.red_escuela.backend.enrollment.dto.WithdrawEnrollmentRequest;
@@ -27,11 +29,14 @@ public class StaffEnrollmentChangeService implements StaffEnrollmentChange {
     private final CourseEnrollmentService courseEnrollmentService;
     private final StaffPersonResolver staffPersonResolver;
     private final ChangeSectionCandidatesFinder changeSectionCandidatesFinder;
+    private final StaffEnrollmentChangeAuditor staffEnrollmentChangeAuditor;
 
     public StaffEnrollmentChangeService(SubjectSectionEnrollmentService subjectSectionEnrollmentService,
             CourseSectionEnrollmentService courseSectionEnrollmentService, ProgramEnrollmentService programEnrollmentService,
             CourseEnrollmentService courseEnrollmentService, StaffPersonResolver staffPersonResolver,
-            ChangeSectionCandidatesFinder changeSectionCandidatesFinder) {
+            ChangeSectionCandidatesFinder changeSectionCandidatesFinder,
+            StaffEnrollmentChangeAuditor staffEnrollmentChangeAuditor) {
+        this.staffEnrollmentChangeAuditor = staffEnrollmentChangeAuditor;
         this.changeSectionCandidatesFinder = changeSectionCandidatesFinder;
         this.subjectSectionEnrollmentService = subjectSectionEnrollmentService;
         this.courseSectionEnrollmentService = courseSectionEnrollmentService;
@@ -47,28 +52,40 @@ public class StaffEnrollmentChangeService implements StaffEnrollmentChange {
 
     @Override
     public void withdrawSubject(Long sectionEnrollmentId, String reason) {
-        subjectSectionEnrollmentService.withdraw(sectionEnrollmentId, staffChange(reason));
+        staffEnrollmentChangeAuditor.withdrawAndRecord(AuditEntityType.SECTION_ENROLLMENT, sectionEnrollmentId, reason,
+                () -> subjectSectionEnrollmentService.withdraw(sectionEnrollmentId, staffChange(reason)));
     }
 
     @Override
     public SectionEnrollmentResponse changeSubjectSection(Long sectionEnrollmentId, ChangeSectionRequest request) {
-        return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.changeSection(
-                sectionEnrollmentId, request, staffChange(request.reason())));
+        return staffEnrollmentChangeAuditor.changeSectionAndRecord(sectionEnrollmentId, request.reason(),
+                () -> SectionEnrollmentResponse.from(subjectSectionEnrollmentService.changeSection(
+                        sectionEnrollmentId, request, staffChange(request.reason()))));
     }
 
     @Override
     public void withdrawCourseModule(Long courseSectionEnrollmentId, String reason) {
-        courseSectionEnrollmentService.withdraw(courseSectionEnrollmentId, staffChange(reason));
+        staffEnrollmentChangeAuditor.withdrawAndRecord(AuditEntityType.COURSE_SECTION_ENROLLMENT,
+                courseSectionEnrollmentId, reason,
+                () -> courseSectionEnrollmentService.withdraw(courseSectionEnrollmentId, staffChange(reason)));
     }
 
     @Override
     public void withdrawProgram(Long programEnrollmentId, WithdrawEnrollmentRequest request) {
-        programEnrollmentService.withdraw(programEnrollmentId, voluntaryWithdrawal(request));
+        staffEnrollmentChangeAuditor.withdrawAndRecord(AuditEntityType.PROGRAM_ENROLLMENT, programEnrollmentId,
+                reasonOf(request),
+                () -> programEnrollmentService.withdraw(programEnrollmentId, voluntaryWithdrawal(request)));
     }
 
     @Override
     public void withdrawCourse(Long courseEnrollmentId, WithdrawEnrollmentRequest request) {
-        courseEnrollmentService.withdraw(courseEnrollmentId, voluntaryWithdrawal(request));
+        staffEnrollmentChangeAuditor.withdrawAndRecord(AuditEntityType.COURSE_ENROLLMENT, courseEnrollmentId,
+                reasonOf(request),
+                () -> courseEnrollmentService.withdraw(courseEnrollmentId, voluntaryWithdrawal(request)));
+    }
+
+    private String reasonOf(WithdrawEnrollmentRequest request) {
+        return Optional.ofNullable(request).map(WithdrawEnrollmentRequest::reason).orElse(null);
     }
 
     private EnrollmentChange staffChange(String rawReason) {

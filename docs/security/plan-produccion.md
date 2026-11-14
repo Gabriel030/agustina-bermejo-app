@@ -114,7 +114,17 @@ Nota: la épica nombra `import_batch_event`; **esa tabla no existe en este árbo
 | Exportaciones y descargas masivas | Nada | Sin registro de quién exportó qué y cuándo |
 | Cambio de clave propia / email | `identity_contact_change_log` solo contacto | Cambio de contraseña sin registro |
 
-### Plan G4 (no implementado)
+### Estado G4 (etapas 1 a 3 implementadas)
+
+- Etapa 1: tabla `audit_log` (V243), puerto `AuditTrail.record` (obligatoriamente dentro de la transacción de la acción), lectura `GET /audit-log` solo DIRECTOR, bajas y reactivaciones de personal.
+- Etapa 2 (V246): pedido y cambio efectivo de contraseña (`PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET_COMPLETED`), cambio de contraseña propio (`PASSWORD_CHANGED`), baja y reactivación de alumno (`STUDENT_WITHDRAWN`, `STUDENT_REACTIVATED`; se guarda el código del motivo, nunca el detalle libre de la baja) y bajas/cambios de comisión hechos por el personal (`ENROLLMENT_WITHDRAWN_BY_STAFF`, `ENROLLMENT_SECTION_CHANGED_BY_STAFF`).
+- Etapa 3 (V246): importación inicial, por lote (`DATA_IMPORT_CREATED`, `_COMMITTED`, `_RETRIED`, `_SEALED`, `_ROLLED_BACK`, `_ROLLBACK_BLOCKED`) y descarga del reporte CSV (`DATA_IMPORT_REPORT_DOWNLOADED`). Es la única exportación masiva que existe hoy: los certificados y comprobantes son individuales.
+- Lectura para el dueño: `GET /platform/audit-log` (solo PLATFORM_ADMIN; el dueño sigue sin entrar a `/audit-log`).
+- Borrado de personas: la FK `audit_log.actor_person_id` es `ON DELETE SET NULL` (V246): un registro de auditoría no impide borrar una persona (solo ocurre en pruebas, en producción no se borran) y tampoco se pierde; solo queda sin actor.
+- Retención: `AuditLogRetentionJob`, apagado por defecto, plazo configurable con default de 24 meses; el plazo final lo decide Gabriel (ver `docs/context/data-retention.md`).
+- Sin cubrir: cambio de rol. Hoy no existe una operación que cambie el rol de una persona (`UpdateStaffService` no toca roles; el rol se asigna solo al dar de alta en `CreateStaffService`, que tampoco se audita todavía). Si se agrega esa operación, debe llamar a `AuditTrail.record` en la misma transacción.
+
+### Plan G4 (diseño original)
 
 Tabla `audit_log` general: `id`, `occurred_at`, `actor_person_id`, `actor_role`, `institution_id`, `action` (enum cerrado con CHECK), `entity_type`, `entity_id`, `before_json`, `after_json`, `reason`, `request_id`, `ip`. Alta solo por un puerto `AuditTrail.record(...)` del módulo `shared` (sin AOP al principio: llamadas explícitas desde los use cases, más fáciles de revisar y de probar). Etapas: (1) tabla + puerto + personal/roles/resets, (2) bajas de alumno/inscripciones/justificaciones, (3) exportaciones y descargas masivas. Lectura solo para DIRECTOR y PLATFORM_ADMIN con una fila nueva en `authorization-matrix.csv`. Migración nueva (siguiente número libre en `origin/develop` y `origin/master`). Retención alineada con `IdentityDataRetentionJob`. Riesgo bajo, tamaño 2 paquetes.
 

@@ -1,5 +1,9 @@
 package com.red_escuela.backend.dataimport.specialist;
 
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.dataimport.dto.ImportFileDownload;
 import com.red_escuela.backend.dataimport.entity.ImportRow;
 import com.red_escuela.backend.dataimport.entity.ImportRowError;
@@ -22,12 +26,16 @@ public class ImportReportWriter {
 
     private final ImportBatchRepository batchRepository;
     private final ImportRowRepository rowRepository;
+    private final AuditTrail auditTrail;
 
-    public ImportReportWriter(ImportBatchRepository batchRepository, ImportRowRepository rowRepository) {
+    public ImportReportWriter(ImportBatchRepository batchRepository, ImportRowRepository rowRepository,
+            AuditTrail auditTrail) {
+        this.auditTrail = auditTrail;
         this.batchRepository = batchRepository;
         this.rowRepository = rowRepository;
     }
 
+    @Transactional
     public ImportFileDownload write(Long batchId) {
         batchRepository.findById(batchId).orElseThrow(() -> new ImportBatchNotFoundException(batchId));
         StringBuilder csv = new StringBuilder(BOM).append(HEADER).append("\r\n");
@@ -37,6 +45,8 @@ public class ImportReportWriter {
             rows.forEach(row -> appendRow(csv, row));
             rows = rowRepository.findByBatchIdOrderByEntityTypeAscRowNumberAsc(batchId, PageRequest.of(++page, PAGE_SIZE));
         }
+        auditTrail.record(new AuditRecord(AuditAction.DATA_IMPORT_REPORT_DOWNLOADED, AuditEntityType.DATA_IMPORT_BATCH, batchId,
+                null, null, null));
         return new ImportFileDownload("reporte-importacion-" + batchId + ".csv", csv.toString().getBytes(StandardCharsets.UTF_8));
     }
 

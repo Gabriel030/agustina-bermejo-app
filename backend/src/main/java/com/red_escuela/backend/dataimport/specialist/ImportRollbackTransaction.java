@@ -1,5 +1,9 @@
 package com.red_escuela.backend.dataimport.specialist;
 
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.dataimport.domain.ImportEntityType;
 import com.red_escuela.backend.dataimport.entity.ImportBatch;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEvent;
@@ -35,10 +39,13 @@ public class ImportRollbackTransaction {
     private final ImportRowRepository rowRepository;
     private final ImportBatchEventRepository eventRepository;
     private final ImportDefinitionRegistry registry;
+    private final AuditTrail auditTrail;
 
     public ImportRollbackTransaction(ImportBatchRepository batchRepository,
             ImportCreatedEntityRepository createdEntityRepository, ImportRowRepository rowRepository,
-            ImportBatchEventRepository eventRepository, ImportDefinitionRegistry registry) {
+            ImportBatchEventRepository eventRepository, ImportDefinitionRegistry registry,
+            AuditTrail auditTrail) {
+        this.auditTrail = auditTrail;
         this.batchRepository = batchRepository;
         this.createdEntityRepository = createdEntityRepository;
         this.rowRepository = rowRepository;
@@ -57,6 +64,8 @@ public class ImportRollbackTransaction {
         discarded.forEach((type, total) -> detail.put(type.name(), total));
         eventRepository.save(new ImportBatchEvent(batchId, ImportBatchEventType.ROLLED_BACK, actorPersonId,
                 ApplicationTime.now(), detail));
+        auditTrail.record(new AuditRecord(AuditAction.DATA_IMPORT_ROLLED_BACK, AuditEntityType.DATA_IMPORT_BATCH, batchId,
+                null, null, null));
         return discarded;
     }
 

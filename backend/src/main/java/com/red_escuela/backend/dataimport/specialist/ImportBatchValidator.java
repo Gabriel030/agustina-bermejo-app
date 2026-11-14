@@ -67,6 +67,7 @@ public class ImportBatchValidator {
     private Map<ImportRowStatus, Integer> validateFile(Long batchId, ImportEntityType type) {
         ImportEntityDefinition definition = registry.definitionFor(type);
         Map<String, Set<String>> seen = new HashMap<>();
+        Map<ImportEntityType, Set<String>> aliasIndexes = new HashMap<>();
         Map<ImportRowStatus, Integer> counts = new HashMap<>();
         List<ImportRow> fileRows = rowRepository.findByBatchIdAndEntityTypeOrderByRowNumber(batchId, type);
         Map<Integer, List<ImportRowError>> acrossRows = definition.validateAcrossRows(fileRows.stream().map(ImportRow::getPayload).toList());
@@ -85,7 +86,7 @@ public class ImportBatchValidator {
                         reference.type(), reference.naturalKey()) > 1) {
                     errors.add(new ImportRowError(reference.column(), reference.code().replace("_NOT_FOUND", "") + "_AMBIGUOUS",
                             "Hay más de una coincidencia en el lote: indicá la carrera"));
-                } else if (!referenceExists(batchId, reference)) {
+                } else if (!referenceExists(batchId, reference, aliasIndexes)) {
                     errors.add(new ImportRowError(reference.column(), reference.code(), "La referencia no existe en el lote ni en el sistema"));
                 }
             });
@@ -98,13 +99,24 @@ public class ImportBatchValidator {
         return counts;
     }
 
-    private boolean referenceExists(Long batchId, ImportReference reference) {
+    private boolean referenceExists(Long batchId, ImportReference reference, Map<ImportEntityType, Set<String>> aliasIndexes) {
+        if (reference.alias()) {
+            return aliasExists(batchId, reference, aliasIndexes);
+        }
         if (reference.prefix() && rowRepository.countByBatchIdAndEntityTypeAndNaturalKeyStartingWith(batchId,
                 reference.type(), reference.naturalKey()) > 0) {
             return true;
         }
         return !reference.prefix() && rowRepository.existsByBatchIdAndEntityTypeAndNaturalKey(batchId, reference.type(), reference.naturalKey())
                 || registry.definitionFor(reference.type()).existsInBase(reference.naturalKey());
+    }
+
+    private boolean aliasExists(Long batchId, ImportReference reference, Map<ImportEntityType, Set<String>> aliasIndexes) {
+        ImportEntityDefinition target = registry.definitionFor(reference.type());
+        Set<String> index = aliasIndexes.computeIfAbsent(reference.type(), type -> rowRepository
+                .findByBatchIdAndEntityTypeOrderByRowNumber(batchId, type).stream()
+                .flatMap(row -> target.aliasKeys(row.getPayload()).stream()).collect(java.util.stream.Collectors.toSet()));
+        return index.contains(reference.naturalKey()) || target.aliasExistsInBase(reference.naturalKey());
     }
 
     private ImportRowStatus classify(ImportRow row, ImportEntityDefinition definition, List<ImportRowError> errors) {

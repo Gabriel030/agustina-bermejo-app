@@ -4,6 +4,7 @@ import com.red_escuela.backend.dataimport.domain.ImportEntityType;
 import com.red_escuela.backend.dataimport.entity.ImportRowError;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface ImportEntityDefinition {
 
@@ -29,6 +30,14 @@ public interface ImportEntityDefinition {
 
     default Map<Integer, List<ImportRowError>> validateAcrossRows(List<Map<String, String>> payloads) {
         return Map.of();
+    }
+
+    default Set<String> aliasKeys(Map<String, String> payload) {
+        return Set.of();
+    }
+
+    default boolean aliasExistsInBase(String aliasKey) {
+        return false;
     }
 
     Long record(Map<String, String> payload, Long institutionId);

@@ -42,6 +42,11 @@ public class HistoricalCycleRecorder {
     }
 
     @Transactional(readOnly = true)
+    public java.util.Optional<Long> findTermId(int year, TermType termType) {
+        return termRepository.findFirstByYearAndTypeOrderByIdAsc(year, termType).map(Term::getId);
+    }
+
+    @Transactional(readOnly = true)
     public boolean cycleExists(int year, TermType termType, String programName) {
         return termRepository.findFirstByYearAndTypeOrderByIdAsc(year, termType)
                 .flatMap(term -> programRepository.findFirstByName(programName)

@@ -4,6 +4,7 @@ const TONES = {
   neutral: 'bg-neutral-bg text-ink-soft',
   warning: 'bg-warning-bg text-ink',
   success: 'bg-success-bg text-ink',
+  danger: 'bg-danger-bg text-ink',
 };
 
 export function Notice({ tone = 'neutral', title, children, className }) {

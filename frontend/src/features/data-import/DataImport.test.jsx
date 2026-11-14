@@ -78,12 +78,36 @@ describe('DataImportListPage', () => {
 });
 
 describe('DataImportDetailPage', () => {
-  it('shows persons as available and the other blocks as coming soon, with review disabled until a file is loaded', async () => {
+  it('offers every backend block in dependency order, with review disabled until a file is loaded', async () => {
     serveBatch(batch());
     renderDetail();
     expect(await screen.findByTestId('block-PERSONS')).toBeInTheDocument();
-    expect(screen.getAllByText('Próximamente')).toHaveLength(4);
+    expect(screen.queryByText('Próximamente')).not.toBeInTheDocument();
+    const order = ['PERSONS', 'PROGRAMS', 'SUBJECTS', 'CURRICULUM', 'PREREQUISITES', 'TERMS', 'SECTIONS', 'PROGRAM_ENROLLMENTS', 'SECTION_ENROLLMENTS', 'GRADE_ITEMS', 'ATTENDANCES'];
+    const rendered = screen.getAllByTestId(/^block-/).map((item) => item.getAttribute('data-testid').replace('block-', ''));
+    expect(rendered).toEqual(order);
+    expect(screen.getByText('Períodos lectivos')).toBeInTheDocument();
+    expect(screen.getByText('Notas por examen y parcial')).toBeInTheDocument();
+    expect(screen.getByText('Asistencia por clase')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Revisar archivos' })).toBeDisabled();
+  });
+
+  it('uploads a csv file to a non-persons block with the same flow', async () => {
+    let uploaded = null;
+    serveBatch(batch());
+    server.use(
+      http.post(`${API}/data-imports/5/files/TERMS`, async () => {
+        uploaded = 'TERMS';
+        const after = batch({ status: 'FILES_UPLOADED', files: [{ ...PERSONS_FILE, entityType: 'TERMS', originalName: 'periodos.csv' }] });
+        serveBatch(after);
+        return HttpResponse.json(after);
+      }),
+    );
+    renderDetail();
+    const input = await screen.findByLabelText('Archivo de Períodos lectivos');
+    await userEvent.upload(input, new File(['year\n2026'], 'periodos.csv', { type: 'text/csv' }));
+    await waitFor(() => expect(uploaded).toBe('TERMS'));
+    expect(await screen.findByText('periodos.csv')).toBeInTheDocument();
   });
 
   it('uploads a csv file to the persons block', async () => {

@@ -1,5 +1,9 @@
 package com.red_escuela.backend.identity.api;
 
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
@@ -26,15 +30,18 @@ public class PasswordResetCodeIssuer {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final long passwordResetCodeExpirationMinutes;
+    private final AuditTrail auditTrail;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public PasswordResetCodeIssuer(PersonRepository personRepository, PasswordResetTokenRepository passwordResetTokenRepository,
                                    ApplicationEventPublisher eventPublisher,
+                                   AuditTrail auditTrail,
                                    @Value("${auth.password-reset-code-expiration-minutes}") long passwordResetCodeExpirationMinutes) {
         this.personRepository = personRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.eventPublisher = eventPublisher;
         this.passwordResetCodeExpirationMinutes = passwordResetCodeExpirationMinutes;
+        this.auditTrail = auditTrail;
     }
 
     @Transactional
@@ -57,6 +64,8 @@ public class PasswordResetCodeIssuer {
         passwordResetTokenRepository.save(resetToken);
 
         eventPublisher.publishEvent(PasswordResetCodeIssuedEvent.issuedFor(person.getId(), code));
+        auditTrail.record(new AuditRecord(AuditAction.PASSWORD_RESET_REQUESTED, AuditEntityType.PERSON, person.getId(),
+                null, null, null));
         log.info("Código de recuperación de password generado para person {}", person.getId());
     }
 

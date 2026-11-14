@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
+import { runRateLimited } from '../lib/runRateLimited';
 
 const SECTION_PATH = { PROGRAM: 'program-sections', COURSE: 'course-sections' };
 const ENROLLMENT_PATH = { PROGRAM: 'section-enrollments', COURSE: 'course-section-enrollments' };
@@ -33,23 +34,20 @@ export function useSaveGradeCells(sectionId, kind) {
   const queryClient = useQueryClient();
 
   async function saveGradeCells(jobs, onCellResult) {
-    const results = await Promise.allSettled(
-      jobs.map((job) =>
-        apiFetch(`/${ENROLLMENT_PATH[kind]}/${job.enrollmentId}/grade-items`, {
-          method: 'POST',
-          body: JSON.stringify(job.payload),
-        }).then(
-          (item) => {
-            queryClient.setQueryData(gridKey(sectionId, kind), (grid) => applySavedCell(grid, job.enrollmentId, item, job.payload.comments));
-            onCellResult(job.key, 'saved');
-          },
-          (error) => {
-            onCellResult(job.key, 'error');
-            throw error;
-          },
-        ),
+    const results = await runRateLimited(jobs, (job) =>
+      apiFetch(`/${ENROLLMENT_PATH[kind]}/${job.enrollmentId}/grade-items`, {
+        method: 'POST',
+        body: JSON.stringify(job.payload),
+      }).then(
+        (item) => {
+          queryClient.setQueryData(gridKey(sectionId, kind), (grid) => applySavedCell(grid, job.enrollmentId, item, job.payload.comments));
+          onCellResult(job.key, 'saved');
+        },
       ),
     );
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') onCellResult(jobs[index].key, 'error');
+    });
     const failed = results.filter((result) => result.status === 'rejected').length;
     if (failed) await queryClient.invalidateQueries({ queryKey: gridKey(sectionId, kind) });
     else queryClient.invalidateQueries({ queryKey: gridKey(sectionId, kind), refetchType: 'none' });
