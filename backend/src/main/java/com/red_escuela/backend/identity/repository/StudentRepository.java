@@ -2,6 +2,8 @@ package com.red_escuela.backend.identity.repository;
 
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.domain.StatusType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -24,6 +26,10 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
     @Override
     @EntityGraph(attributePaths = "person")
     List<Student> findAll(Specification<Student> spec, Sort sort);
+
+    @Override
+    @EntityGraph(attributePaths = "person")
+    Page<Student> findAll(Specification<Student> spec, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Student s where s.id = :id")

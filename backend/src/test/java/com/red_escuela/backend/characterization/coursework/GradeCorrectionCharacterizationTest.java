@@ -56,9 +56,9 @@ class GradeCorrectionCharacterizationTest extends CourseworkCharacterizationSupp
         getAs(director, "/grade-items/" + gradeItemId + "/audit")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)));
-        getAs(classroom.student(), "/me/notifications")
-                .andExpect(jsonPath("$[?(@.type=='GRADES_PUBLISHED')]", hasSize(1)))
-                .andExpect(jsonPath("$[?(@.type=='GRADE_CORRECTED')]", hasSize(1)));
+        getAs(classroom.student(), "/me/notifications?size=100")
+                .andExpect(jsonPath("$.items[?(@.type=='GRADES_PUBLISHED')]", hasSize(1)))
+                .andExpect(jsonPath("$.items[?(@.type=='GRADE_CORRECTED')]", hasSize(1)));
     }
 
     @Test

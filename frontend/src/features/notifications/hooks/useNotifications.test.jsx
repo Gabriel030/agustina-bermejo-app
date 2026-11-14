@@ -5,6 +5,8 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/mocks/server'
 import { useMisNotificaciones } from './useNotifications'
 
+const pageOf = (items) => ({ items, page: 0, size: 10, totalElements: items.length })
+
 const API = 'http://localhost:8080'
 
 afterEach(() => vi.restoreAllMocks())
@@ -17,12 +19,12 @@ function wrapper(client) {
 
 describe('useMisNotificaciones', () => {
   it('notificationsQueryIsMarkedForOfflineAndStopsPollingWhenOffline', async () => {
-    server.use(http.get(`${API}/me/notifications`, () => HttpResponse.json([])))
+    server.use(http.get(`${API}/me/notifications`, () => HttpResponse.json(pageOf([]))))
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { result } = renderHook(() => useMisNotificaciones(), { wrapper: wrapper(client) })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-    const query = client.getQueryCache().find({ queryKey: ['me', 'notifications'] })
+    const query = client.getQueryCache().find({ queryKey: ['me', 'notifications', { page: 0, size: 10 }] })
     expect(query.meta.offline).toBe(true)
     const interval = query.observers[0].options.refetchInterval
     vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false)

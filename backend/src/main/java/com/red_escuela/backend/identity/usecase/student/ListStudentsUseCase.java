@@ -1,9 +1,8 @@
 package com.red_escuela.backend.identity.usecase.student;
 
-import com.red_escuela.backend.identity.entity.Student;
-
-import java.util.List;
+import com.red_escuela.backend.identity.dto.StudentResponse;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 
 public interface ListStudentsUseCase {
-    List<Student> list(ListStudentsCommand command);
+    PageResponse<StudentResponse> list(ListStudentsCommand command);
 }
