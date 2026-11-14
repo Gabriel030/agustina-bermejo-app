@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
@@ -21,15 +22,17 @@ public class ResetPasswordService implements ResetPasswordUseCase {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final SessionRevoker sessionRevoker;
+    private final IdentityAuditRecorder identityAuditRecorder;
 
     public ResetPasswordService(PasswordResetTokenRepository passwordResetTokenRepository, PersonRepository personRepository,
                                  PasswordEncoder passwordEncoder, PasswordPolicyValidator passwordPolicyValidator,
-                                 SessionRevoker sessionRevoker) {
+                                 SessionRevoker sessionRevoker, IdentityAuditRecorder identityAuditRecorder) {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.personRepository = personRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
         this.sessionRevoker = sessionRevoker;
+        this.identityAuditRecorder = identityAuditRecorder;
     }
 
     @Override
@@ -49,5 +52,6 @@ public class ResetPasswordService implements ResetPasswordUseCase {
 
         resetToken.setExchangeTokenHash(null);
         passwordResetTokenRepository.save(resetToken);
+        identityAuditRecorder.recordPasswordResetCompleted(person);
     }
 }

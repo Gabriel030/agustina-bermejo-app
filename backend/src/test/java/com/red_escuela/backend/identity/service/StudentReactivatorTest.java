@@ -1,5 +1,9 @@
 package com.red_escuela.backend.identity.service;
 
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.identity.domain.StudentStatusChangeRecorder;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -28,7 +32,8 @@ class StudentReactivatorTest {
     private final StudentStatusChangeRecorder recorder = mock(StudentStatusChangeRecorder.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache accountAccessStateCache = org.mockito.Mockito.mock(com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache.class);
-    private final StudentReactivator service = new StudentReactivator(studentRepository, recorder, eventPublisher, accountAccessStateCache);
+    private final AuditTrail auditTrail = mock(AuditTrail.class);
+    private final StudentReactivator service = new StudentReactivator(studentRepository, recorder, eventPublisher, accountAccessStateCache, auditTrail);
 
     private Student student(StatusType status) {
         Person person = new Person();
@@ -49,6 +54,8 @@ class StudentReactivatorTest {
 
         assertThat(student.getPerson().getStatus()).isEqualTo(StatusType.ACTIVE);
         verify(recorder).recordReactivation(student, "fue una baja por error");
+        verify(auditTrail).record(new AuditRecord(AuditAction.STUDENT_REACTIVATED, AuditEntityType.STUDENT, 3L,
+                "DELETED", "ACTIVE", "fue una baja por error"));
         ArgumentCaptor<StudentReactivatedEvent> event = ArgumentCaptor.forClass(StudentReactivatedEvent.class);
         verify(eventPublisher).publishEvent(event.capture());
         assertThat(event.getValue().studentId()).isEqualTo(3L);
@@ -63,6 +70,7 @@ class StudentReactivatorTest {
         assertThatThrownBy(() -> service.reactivate(3L, "fue una baja por error")).isInstanceOf(StudentNotWithdrawnException.class);
 
         verify(recorder, never()).recordReactivation(any(), any());
+        verify(auditTrail, never()).record(any());
         verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.student;
 
+import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
 import com.red_escuela.backend.identity.domain.StudentStatusChangeRecorder;
 import com.red_escuela.backend.identity.domain.StudentWithdrawalGuard;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
@@ -15,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @Tag("D-142")
@@ -24,7 +26,8 @@ class WithdrawStudentWithEnrollmentGuardServiceTest {
     private final StudentWithdrawalGuard guard = mock(StudentWithdrawalGuard.class);
     private final StudentStatusChangeRecorder recorder = mock(StudentStatusChangeRecorder.class);
     private final WithdrawStudentService delegate = mock(WithdrawStudentService.class);
-    private final WithdrawStudentWithEnrollmentGuardService service = new WithdrawStudentWithEnrollmentGuardService(guard, delegate, recorder);
+    private final IdentityAuditRecorder auditRecorder = mock(IdentityAuditRecorder.class);
+    private final WithdrawStudentWithEnrollmentGuardService service = new WithdrawStudentWithEnrollmentGuardService(guard, delegate, recorder, auditRecorder);
     private final WithdrawStudentCommand command = new WithdrawStudentCommand(7L, new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "x"));
 
     @Test
@@ -38,11 +41,18 @@ class WithdrawStudentWithEnrollmentGuardServiceTest {
     }
 
     @Test
+    void aWithdrawalIsAuditedWithTheStudentAndTheRequest() {
+        service.withdraw(command);
+
+        verify(auditRecorder).recordStudentWithdrawn(7L, command.request());
+    }
+
+    @Test
     void aStudentWithActiveEnrollmentsIsNeverWithdrawn() {
         doThrow(new StudentHasActiveEnrollmentsException(List.of())).when(guard).lockStudentAndRequireWithdrawable(7L);
 
         assertThatThrownBy(() -> service.withdraw(command)).isInstanceOf(StudentHasActiveEnrollmentsException.class);
 
-        verifyNoInteractions(delegate, recorder);
+        verifyNoInteractions(delegate, recorder, auditRecorder);
     }
 }

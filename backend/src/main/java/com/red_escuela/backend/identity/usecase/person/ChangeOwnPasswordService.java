@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.person;
 
+import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
 import com.red_escuela.backend.identity.dto.ChangePasswordRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCurrentPasswordException;
@@ -19,17 +20,20 @@ public class ChangeOwnPasswordService implements ChangeOwnPasswordUseCase {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final SessionRevoker sessionRevoker;
+    private final IdentityAuditRecorder identityAuditRecorder;
 
     public ChangeOwnPasswordService(PersonRepository personRepository,
                                     CurrentPersonService currentPersonService,
                                     PasswordEncoder passwordEncoder,
                                     PasswordPolicyValidator passwordPolicyValidator,
-                                    SessionRevoker sessionRevoker) {
+                                    SessionRevoker sessionRevoker,
+                                    IdentityAuditRecorder identityAuditRecorder) {
         this.personRepository = personRepository;
         this.currentPersonService = currentPersonService;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
         this.sessionRevoker = sessionRevoker;
+        this.identityAuditRecorder = identityAuditRecorder;
     }
 
     @Override
@@ -47,5 +51,6 @@ public class ChangeOwnPasswordService implements ChangeOwnPasswordUseCase {
         personRepository.save(person);
 
         sessionRevoker.revokeAllSessions(person);
+        identityAuditRecorder.recordPasswordChanged(person);
     }
 }

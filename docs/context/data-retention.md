@@ -9,7 +9,7 @@ Jobs nocturnos con ShedLock que borran datos operativos viejos en lotes. Nunca t
 
 ## Qué se conserva
 
-- `audit_log` (registro de auditoría general, Etapa 1): no tiene job de retención. Se conserva sin purga hasta definir el plazo con el dueño; hoy solo lleva bajas y reactivaciones de personal.
+- `audit_log` (registro de auditoría general): lo purga `AuditLogRetentionJob` (03:50) solo si `app.audit.retention.enabled=true` (variable `AUDIT_RETENTION_ENABLED`, apagado por defecto), borrando las filas con más de `app.audit.retention.months` meses (variable `AUDIT_RETENTION_MONTHS`, default 24, mínimo 1). El plazo definitivo y el encendido lo decide Gabriel (pendiente): hasta entonces no se purga nada.
 - Entregas `QUEUED` y `DEFERRED`: siguen en curso, no se borran nunca por antigüedad.
 - Notificaciones sin leer que tienen `related_entity_id` (hay un trámite pendiente: al resolverlo el sistema las borra solo): no se borran. Sí se borran las leídas y las sin leer sin trámite asociado.
 - Entregas de la categoría `COLLECTION_REMINDER`: 36 meses (no 12), porque el tablero de recordatorios de cobranza permite ventanas de hasta 36 meses (`MonthWindow.MAXIMUM_MONTHS`) y leería datos truncados.

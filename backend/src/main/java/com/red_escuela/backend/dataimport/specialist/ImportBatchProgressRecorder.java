@@ -1,5 +1,9 @@
 package com.red_escuela.backend.dataimport.specialist;
 
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.dataimport.entity.ImportBatch;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEvent;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEventType;
@@ -35,9 +39,12 @@ public class ImportBatchProgressRecorder {
     private final ImportRowRepository rowRepository;
     private final ImportBatchEventRepository eventRepository;
     private final BillingModeGate billingModeGate;
+    private final AuditTrail auditTrail;
 
     public ImportBatchProgressRecorder(ImportBatchRepository batchRepository, ImportRowRepository rowRepository,
-            ImportBatchEventRepository eventRepository, BillingModeGate billingModeGate) {
+            ImportBatchEventRepository eventRepository, BillingModeGate billingModeGate,
+            AuditTrail auditTrail) {
+        this.auditTrail = auditTrail;
         this.batchRepository = batchRepository;
         this.rowRepository = rowRepository;
         this.eventRepository = eventRepository;
@@ -115,6 +122,9 @@ public class ImportBatchProgressRecorder {
         batch.finishCommit(pending == 0, now);
         eventRepository.save(new ImportBatchEvent(batchId, eventType, actorPersonId, now,
                 Map.of("pendingRows", pending)));
+        auditTrail.record(new AuditRecord(eventType == ImportBatchEventType.RETRIED ? AuditAction.DATA_IMPORT_RETRIED
+                : AuditAction.DATA_IMPORT_COMMITTED, AuditEntityType.DATA_IMPORT_BATCH, batchId,
+                null, batch.getStatus().name(), null));
         return batch;
     }
 }
