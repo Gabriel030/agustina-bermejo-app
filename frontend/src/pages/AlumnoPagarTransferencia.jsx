@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { API_BASE_URL } from '@/api/client';
 import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 import { ChevronLeft, Copy, Check, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -22,7 +23,6 @@ import {
   receiptTrackingRows,
 } from '@/lib/bankTransferReceipt';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
 const PASOS = [
   { key: 'datos', label: 'Datos bancarios' },
@@ -77,7 +77,7 @@ function PasoDatos({ config, amount, onNext }) {
         <GlassCard className="flex flex-col items-center gap-3 p-5">
           <p className="text-sm font-semibold text-ink-faint">Código QR de pago</p>
           <img
-            src={`${API_BASE}${config.qrImageUrl}`}
+            src={`${API_BASE_URL}${config.qrImageUrl}`}
             alt="QR de pago"
             className="h-48 w-48 rounded-xl object-contain"
           />
