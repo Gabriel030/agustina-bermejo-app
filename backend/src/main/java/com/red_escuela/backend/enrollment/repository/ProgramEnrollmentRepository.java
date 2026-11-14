@@ -77,4 +77,6 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
     @Query("select e.id as enrollmentId, e.program.name as name from ProgramEnrollment e where e.id in :ids")
     List<EnrollmentNameRow> findNameRows(@Param("ids") Collection<Long> ids);
+
+    java.util.Optional<ProgramEnrollment> findFirstByStudentIdAndProgramIdOrderByIdAsc(Long studentId, Long programId);
 }

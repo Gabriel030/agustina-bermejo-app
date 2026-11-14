@@ -11,6 +11,7 @@ import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 
@@ -75,6 +76,9 @@ public class SubjectSectionEnrollment {
     @Enumerated(EnumType.STRING)
     @Column(name = "final_grade_type")
     private FinalGradeType finalGradeType;
+
+    @Column(name = "final_score_date")
+    private LocalDate finalScoreDate;
 
     public boolean hasRegularCoursework() {
         return status == EnrollmentStatus.REGULAR;

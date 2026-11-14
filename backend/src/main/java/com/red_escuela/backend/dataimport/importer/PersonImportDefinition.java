@@ -13,6 +13,7 @@ import com.red_escuela.backend.identity.api.MinorAgeChecker;
 import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.time.ApplicationTime;
+import com.red_escuela.backend.dataimport.specialist.ImportDocumentKey;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -115,6 +116,11 @@ public class PersonImportDefinition implements ImportEntityDefinition {
                     "El correo ya está registrado")));
         }
         return new BaseCheck(false, List.of());
+    }
+
+    @Override
+    public boolean existsInBase(String naturalKey) {
+        return recorder.documentExists(ImportDocumentKey.typeOfKey(naturalKey), ImportDocumentKey.numberOfKey(naturalKey));
     }
 
     @Override
