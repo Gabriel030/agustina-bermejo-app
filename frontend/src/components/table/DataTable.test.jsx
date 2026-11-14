@@ -132,7 +132,7 @@ describe('DataTable', () => {
 
     expect(screen.getByText('Gamma')).toBeInTheDocument();
     expect(screen.queryByText('Nombre')).not.toBeInTheDocument();
-    expect(screen.getAllByText('Estado')).toHaveLength(3);
+    expect(screen.getAllByText('Estado')).toHaveLength(4);
   });
 
   it('keeps sorting and filtering reachable on mobile cards', async () => {
@@ -153,7 +153,24 @@ describe('DataTable', () => {
     const withAction = [...columns, { id: 'action', header: '', enableSorting: false, cell: () => <a href="/x">Abrir</a> }];
     renderTable({ columns: withAction });
 
-    expect(screen.getAllByRole('link', { name: 'Abrir' })[0].parentElement).toHaveClass('border-t');
+    expect(screen.getAllByRole('link', { name: 'Abrir' })[0].closest('.border-t')).not.toBeNull();
+  });
+
+  it('puts the expand chevron in the same row as the card actions on mobile', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    const withAction = [...columns, { id: 'action', header: '', enableSorting: false, cell: () => <a href="/x">Abrir</a> }];
+    renderTable({ columns: withAction, renderExpanded: () => <p>Detalle</p>, expandLabel: 'Ver partes' });
+
+    const footer = screen.getAllByRole('link', { name: 'Abrir' })[0].closest('.border-t');
+    expect(within(footer).getByRole('button', { name: 'Ver partes' })).toBeInTheDocument();
+  });
+
+  it('capitalizes the filter label in the mobile toolbar', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    renderTable();
+
+    expect(screen.getAllByText('Estado').length).toBeGreaterThan(0);
+    expect(screen.queryByText('estado')).not.toBeInTheDocument();
   });
 
   it('lays out a card block column with its label above the value', () => {

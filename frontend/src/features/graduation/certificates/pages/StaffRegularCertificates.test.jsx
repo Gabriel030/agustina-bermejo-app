@@ -163,9 +163,8 @@ describe('StaffRegularCertificates', () => {
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Rechazar' }));
     const dialog = await screen.findByRole('dialog');
     await userEvent.type(within(dialog).getByRole('textbox'), 'corto');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Rechazar pedido' }));
-
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('al menos 10 caracteres');
+    expect(within(dialog).getByText(/mínimo 10/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Rechazar pedido' })).toBeDisabled();
     expect(body).toBeUndefined();
 
     await userEvent.type(within(dialog).getByRole('textbox'), ' ya no alcanza el pago de octubre');

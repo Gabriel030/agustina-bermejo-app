@@ -138,6 +138,11 @@ function facetOptions(column) {
     .sort((a, b) => a.label.localeCompare(b.label, 'es'));
 }
 
+function capitalize(text) {
+  const value = String(text);
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 function CardToolbar({ table }) {
   'use no memo';
   const columns = table.getAllLeafColumns();
@@ -175,7 +180,7 @@ function CardToolbar({ table }) {
         const meta = column.columnDef.meta;
         return (
           <span key={column.id} className="inline-flex items-center gap-1 text-xs font-semibold text-ink-soft">
-            {meta.filterTitle ?? column.columnDef.header}
+            {capitalize(meta.filterTitle ?? column.columnDef.header)}
             <ColumnFilter
               label={meta.filterTitle ?? String(column.columnDef.header)}
               options={facetOptions(column)}
@@ -235,14 +240,14 @@ function RowCard({ row, renderExpanded, expandLabel, onRowClick }) {
           </div>
         );
       })}
-      {actionCells.map((cell) => (
-        <div key={cell.id} className="border-t border-border pt-2 text-sm">
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </div>
-      ))}
-      {renderExpanded && (
-        <div className="flex justify-end">
-          <ExpandToggle row={row} label={expandLabel} />
+      {(actionCells.length > 0 || renderExpanded) && (
+        <div className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            {actionCells.map((cell) => (
+              <div key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+            ))}
+          </div>
+          {renderExpanded && <ExpandToggle row={row} label={expandLabel} />}
         </div>
       )}
       {renderExpanded && row.getIsExpanded() && <div className="border-t border-border pt-2">{renderExpanded(row)}</div>}

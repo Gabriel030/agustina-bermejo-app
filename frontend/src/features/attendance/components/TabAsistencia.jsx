@@ -16,7 +16,7 @@ const SUB_TABS = [
 ];
 
 const ESTADO_PILL = {
-  REGULAR: { label: 'Regular · falta final', tone: 'warning' },
+  REGULAR: { label: 'Cursada regular · falta final', tone: 'warning' },
   IN_PROGRESS: { label: 'En curso', tone: 'accent' },
   WAITLISTED: { label: 'En lista de espera', tone: 'warning' },
   WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral' },

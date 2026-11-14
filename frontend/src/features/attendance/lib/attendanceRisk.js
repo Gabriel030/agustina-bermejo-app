@@ -8,7 +8,7 @@ export function attendanceRisk(entry) {
   if (permitted == null) {
     return { permitted: null, level: 'ok', text: absencesLabel(standing.countableAbsences), pill: null, hint: null };
   }
-  const text = `${standing.countableAbsences} de ${permitted} inasistencias permitidas`;
+  const text = `${standing.countableAbsences} de ${permitted} ${permitted === 1 ? 'inasistencia permitida' : 'inasistencias permitidas'}`;
   if (standing.exceedsAbsenceLimit) {
     return {
       permitted,
