@@ -16,6 +16,7 @@ import { lazyPage } from '@/routes/lazyPage';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { useStartupPrefetch } from '@/routes/useStartupPrefetch';
 import { DesignCatalog } from '@/pages/DesignCatalog';
+import { GuardianGate } from '@/features/identity/legal/GuardianGate';
 
 const showCatalog = import.meta.env.DEV || import.meta.env.VITE_ENABLE_CATALOG === 'true';
 
@@ -88,6 +89,7 @@ export function AppRouter() {
   }
 
   return (
+    <GuardianGate>
     <Routes>
       <Route element={<PublicLayout />}>
         {PUBLIC_ROUTES.map(({ path, element }) => (
@@ -141,5 +143,6 @@ export function AppRouter() {
         }
       />
     </Routes>
+    </GuardianGate>
   );
 }

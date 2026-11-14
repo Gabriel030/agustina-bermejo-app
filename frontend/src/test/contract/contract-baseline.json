@@ -1,4 +1,8 @@
 {
+  "POST /auth/register": {
+    "source": "app-request",
+    "reason": "the app omits guardianName, guardianEmail and guardianRelationship for adults (the backend only requires them for minors); the contract declares them required, with email format on guardianEmail (OpenAPI nullable gap, same as PUT /me)"
+  },
   "PUT /me": {
     "source": "app-request",
     "reason": "the app sends null for country, floor, postalCode and state and omits sexo and telefono; the contract declares them required non-nullable strings (OpenAPI nullable gap in Q13a); baselining silences the response check of this operation too"
