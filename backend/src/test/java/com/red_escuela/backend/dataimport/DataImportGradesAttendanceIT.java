@@ -220,11 +220,12 @@ class DataImportGradesAttendanceIT extends AbstractIntegrationTest {
         upload(batchId, "CURRICULUM", "programName,subjectCode,curricularYear,curricularTerm,credits,category,recurrence,sortOrder\n"
                 + program + "," + subject + ",1,FIRST,6,MANDATORY,PROMOTIONAL,1\n");
         upload(batchId, "TERMS", "year,termType,description,startDate,endDate,programName\n"
-                + year + ",FIRST_SEMESTER,Primer cuatrimestre," + year + "-03-15,15/07/" + year + "," + program + "\n");
+                + year + ",FIRST_SEMESTER,Primer cuatrimestre," + year + "-03-15,15/07/" + year + "," + program + "\n"
+                + year + ",ANNUAL,Anual," + year + "-03-01,15/12/" + year + "," + program + "\n");
         upload(batchId, "SECTIONS", "sectionCode,subjectCode,year,termType,name,shift,instructorDni,closedOn,actaNumber,actaBook,actaFolio,programName\n"
                 + section + "," + subject + "," + year + ",FIRST_SEMESTER,Comisión A,MORNING," + instructorDni + "," + year + "-07-20,,Libro 7,Folio 45,\n");
-        upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear\n"
-                + "DNI," + studentDni + "," + program + "," + year + "-03-01,ENROLLED,,," + year + "\n");
+        upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear,intake\n"
+                + "DNI," + studentDni + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n");
         upload(batchId, "SECTION_ENROLLMENTS", "documentType,dni,programName,sectionCode,attemptNumber,status,finalScore,finalGradeType,finalDate\n"
                 + "DNI," + studentDni + "," + program + "," + section + ",1,APPROVED,\"8,50\",PROMOTION," + year + "-07-20\n");
     }

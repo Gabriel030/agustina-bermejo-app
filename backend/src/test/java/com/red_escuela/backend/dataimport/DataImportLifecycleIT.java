@@ -157,7 +157,7 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         }
         assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ?", Integer.class, batchId)).isEqualTo(6);
         assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'COMMITTED'", Integer.class, batchId)).isEqualTo(6);
-        assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'VALID'", Integer.class, batchId)).isEqualTo(6);
+        assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'VALID'", Integer.class, batchId)).isEqualTo(7);
     }
 
     @Test
@@ -305,7 +305,7 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk()).andReturn();
         String[] lines = new String(result.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8).split("\\R");
 
-        assertThat(lines).hasSize(13);
+        assertThat(lines).hasSize(14);
         assertThat(Arrays.stream(lines).skip(1).allMatch(line -> line.contains(",COMMITTED,") && !line.endsWith(","))).isTrue();
     }
 
@@ -352,11 +352,12 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         upload(batchId, "PREREQUISITES", "programName,subjectCode,prerequisiteCode,requirementType,minGrade\n"
                 + program + "," + second + "," + subject + ",APPROVED,4\n");
         upload(batchId, "TERMS", "year,termType,description,startDate,endDate,programName\n"
-                + year + ",FIRST_SEMESTER,Primer cuatrimestre," + year + "-03-15,15/07/" + year + "," + program + "\n");
+                + year + ",FIRST_SEMESTER,Primer cuatrimestre," + year + "-03-15,15/07/" + year + "," + program + "\n"
+                + year + ",ANNUAL,Anual," + year + "-03-01,15/12/" + year + "," + program + "\n");
         upload(batchId, "SECTIONS", "sectionCode,subjectCode,year,termType,name,shift,instructorDni,closedOn,actaNumber,actaBook,actaFolio,programName\n"
                 + section + "," + subject + "," + year + ",FIRST_SEMESTER,Comisión A,MORNING," + teacherDocument + "," + year + "-07-20,,Libro 7,Folio 45,\n");
-        upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear\n"
-                + "DNI," + studentDocument + "," + program + "," + year + "-03-01,ENROLLED,,," + year + "\n");
+        upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear,intake\n"
+                + "DNI," + studentDocument + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n");
         upload(batchId, "SECTION_ENROLLMENTS", "documentType,dni,programName,sectionCode,attemptNumber,status,finalScore,finalGradeType,finalDate\n"
                 + "DNI," + studentDocument + "," + program + "," + section + ",1,APPROVED,\"8,50\",PROMOTION," + year + "-07-20\n");
         validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED"));
