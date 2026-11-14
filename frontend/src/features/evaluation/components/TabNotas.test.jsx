@@ -78,3 +78,32 @@ describe('TabNotas — corrected grades', () => {
     expect(screen.getByText('8')).toBeInTheDocument();
   });
 });
+
+describe('TabNotas — requests per opening', () => {
+  it('asks for the grade items once per enrolled subject of the page and nothing for the rest', async () => {
+    const rows = Array.from({ length: 10 }, (_, index) => ({
+      key: `m${index}`,
+      subjectCode: `M${index}`,
+      subjectName: `Materia ${index}`,
+      curricularYear: 1,
+      estado: index < 7 ? 'en-curso' : 'disponible',
+      inscripcion: index < 7 ? { id: 100 + index } : null,
+    }));
+    vi.mocked(useGrillaDeMaterias).mockReturnValue(grid({ pagina: rows, anios: [1] }));
+    const requested = [];
+    server.use(
+      http.get('http://localhost:8080/me/section-enrollments/:id/grade-items', ({ params }) => {
+        requested.push(params.id);
+        return HttpResponse.json([]);
+      }),
+    );
+    renderWithProviders(<TabNotas carreraId={5} />);
+
+    await screen.findByText('Materia 0');
+    await vi.waitFor(() => expect(requested).toHaveLength(7));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(new Set(requested).size).toBe(7);
+    expect(requested).toHaveLength(7);
+  });
+});
