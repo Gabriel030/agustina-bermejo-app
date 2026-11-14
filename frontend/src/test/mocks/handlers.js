@@ -87,7 +87,8 @@ export const handlers = [
     HttpResponse.json({ optedIn: false, updatedAt: '2026-11-01T12:00:00Z' }),
   ),
   http.put(`${API}/me/newsletter-preference`, async ({ request }) => {
-    const { optedIn } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const optedIn = body.optedIn ?? false;
     return HttpResponse.json({ optedIn, updatedAt: '2026-11-13T12:00:00Z' });
   }),
   http.get(`${API}/institutions`, () => HttpResponse.json([{ id: 1, name: 'Instituto de prueba' }])),
