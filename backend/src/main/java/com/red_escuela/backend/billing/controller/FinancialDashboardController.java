@@ -48,6 +48,6 @@ public class FinancialDashboardController {
             @RequestParam(defaultValue = "DEBT_AGE") String sortBy,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size) {
-        return PageResponse.of(listDebtors.list(sortBy), page, size);
+        return listDebtors.page(sortBy, page, size);
     }
 }
