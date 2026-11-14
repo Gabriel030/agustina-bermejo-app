@@ -147,7 +147,7 @@ describe('LegajoAlumno — failed actions', () => {
     );
     const user = userEvent.setup();
     renderAs('director');
-    await user.click(await screen.findByRole('button', { name: 'Dar de baja' }));
+    await user.click(await screen.findByRole('button', { name: 'Dar de baja al alumno del instituto' }));
     await user.click(screen.getByRole('combobox'));
     await user.click(await screen.findByRole('option', { name: 'Abandono' }));
     await user.type(screen.getByPlaceholderText(/Información adicional/), 'Dejó de asistir');
@@ -193,7 +193,7 @@ describe('LegajoAlumno — failed actions', () => {
       { route: '/director/alumnos/9' },
     );
     expect(await screen.findByText('Dado de baja')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Dar de baja' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dar de baja al alumno del instituto' })).not.toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: 'Reactivar alumno' }));
     await user.type(screen.getByPlaceholderText('Motivo de la reactivación'), 'fue una baja por error');
     await user.click(screen.getByRole('button', { name: 'Reactivar' }));

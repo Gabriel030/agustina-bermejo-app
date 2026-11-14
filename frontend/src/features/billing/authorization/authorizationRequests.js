@@ -46,10 +46,6 @@ export function requesterRoleLabel(roles) {
   return (roles ?? []).map((role) => REQUESTER_ROLE_LABELS[role] ?? role).join(' · ');
 }
 
-export function roleBaseOf(user) {
-  return user?.roles?.[0]?.toLowerCase();
-}
-
 export function inboxPath(roleBase) {
   return roleBase === 'director' ? '/director/aprobaciones/facturacion' : `/${roleBase}/aprobaciones`;
 }
@@ -90,7 +86,7 @@ export function isRequester(request, user) {
 }
 
 export function canDecideRequest(request, user) {
-  return request.status === 'PENDING' && roleBaseOf(user) === 'director' && !isRequester(request, user);
+  return request.status === 'PENDING' && user?.roles?.includes('DIRECTOR') && !isRequester(request, user);
 }
 
 export function canWithdrawRequest(request, user) {

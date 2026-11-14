@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { AlertTriangle } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -33,7 +34,6 @@ import {
   RESUME_REJECTED,
   requesterRoleLabel,
   requestActionErrorMessage,
-  roleBaseOf,
 } from './authorizationRequests';
 
 const EFFECT_DOT = {
@@ -162,7 +162,7 @@ function ActionBar({ children, title, subtitle }) {
 export function AuthorizationRequestDetailPage() {
   const { id } = useParams();
   const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const inboxHref = inboxPath(roleBase);
 
   const detailQuery = useAuthorizationRequest(id);

@@ -2,7 +2,7 @@
 # Decide que partes del CI corren y si el arbol de un push a develop ya fue verificado por un PR verde.
 # Entradas (env): GITHUB_EVENT_NAME, GITHUB_REF, GITHUB_OUTPUT, GITHUB_REPOSITORY, GH_TOKEN,
 #   PR_BASE_SHA (pull_request), PR_BASE_REF (pull_request), PR_NUMBER (pull_request), TESTED_TREE_DIR (salida para PR)
-# Salidas: relevant, frontend, lockfile, run_migration, run_demo_seed, run_docs, deploy, extra_groups,
+# Salidas: relevant, frontend, lockfile, run_migration, run_demo_seed, run_docs, deploy, deploy_ops, extra_groups,
 #   reuse_backend, reuse_frontend, reuse_run, reuse_pr
 set -uo pipefail
 
@@ -17,6 +17,7 @@ run_migration=true
 run_demo_seed=false
 run_docs=false
 deploy=true
+deploy_ops=true
 extra_groups='[]'
 reuse_backend=false
 reuse_frontend=false
@@ -70,6 +71,9 @@ if [ -n "$base" ]; then
     fi
     if ! grep -qE '^frontend/package-lock\.json$' <<< "$changed"; then
       lockfile=false
+    fi
+    if ! grep -qE '^(deploy/backup/|deploy/monitoring/|\.github/workflows/ci\.yml$|\.github/scripts/detect-changes\.sh$)' <<< "$changed"; then
+      deploy_ops=false
     fi
     if [ "$event" = pull_request ] && grep -qE "$demo_seed_scope" <<< "$changed"; then
       run_demo_seed=true
@@ -137,6 +141,7 @@ fi
   echo "run_demo_seed=$run_demo_seed"
   echo "run_docs=$run_docs"
   echo "deploy=$deploy"
+  echo "deploy_ops=$deploy_ops"
   echo "extra_groups=$extra_groups"
   echo "reuse_backend=$reuse_backend"
   echo "reuse_frontend=$reuse_frontend"

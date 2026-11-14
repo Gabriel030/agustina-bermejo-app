@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,7 +10,6 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Stepper } from '@/components/Stepper';
-import { useAuth } from '@/context/AuthContext';
 import { DatosBasicosStep } from '@/features/identity/steps/DatosBasicosStep';
 import { DocumentosStep } from '@/features/identity/steps/DocumentosStep';
 import { DatosConfirmacionStep } from '@/features/identity/steps/DatosConfirmacionStep';
@@ -100,8 +100,7 @@ const REVIEW_STEP = LAST_STEP - 1;
 function RegistrationWizard({ onRegisterAnother }) {
   'use no memo';
   const navigate = useNavigate();
-  const { usuario } = useAuth();
-  const rolBase = usuario?.roles[0]?.toLowerCase();
+  const { roleBase: rolBase } = useActiveRole();
   const [currentStep, setCurrentStep] = useState(0);
   const [pasosVisitados, setPasosVisitados] = useState(['0']);
   const [studentId, setStudentId] = useState(null);

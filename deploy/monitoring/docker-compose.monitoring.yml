@@ -1,0 +1,118 @@
+services:
+  uptime-check:
+    build:
+      context: ./uptime-check
+    image: agustina-bermejo/uptime-check:local
+    restart: unless-stopped
+    environment:
+      UPTIME_URL: ${UPTIME_URL:-http://backend:8080/actuator/health}
+      UPTIME_INTERVAL_SECONDS: ${UPTIME_INTERVAL_SECONDS:-30}
+      UPTIME_FAILURES_BEFORE_ALERT: ${UPTIME_FAILURES_BEFORE_ALERT:-3}
+      UPTIME_TIMEOUT_SECONDS: ${UPTIME_TIMEOUT_SECONDS:-5}
+      UPTIME_HEARTBEAT_URL: ${UPTIME_HEARTBEAT_URL:-}
+      ALERT_LABEL: ${ALERT_LABEL:-agustina-bermejo}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      ALERT_TELEGRAM_BOT_TOKEN: ${ALERT_TELEGRAM_BOT_TOKEN:-}
+      ALERT_TELEGRAM_CHAT_ID: ${ALERT_TELEGRAM_CHAT_ID:-}
+    networks:
+      - internal
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f uptime-check > /dev/null"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+  prometheus:
+    profiles: ["monitoring"]
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        [ -n "$$ACTUATOR_USER" ] && [ -n "$$ACTUATOR_PASSWORD" ] || { echo "ACTUATOR_USER y ACTUATOR_PASSWORD son obligatorios" >&2; exit 1; }
+        printf '%s' "$$ACTUATOR_USER" > /tmp/actuator_user
+        printf '%s' "$$ACTUATOR_PASSWORD" > /tmp/actuator_password
+        sed "s|BACKEND_METRICS_TARGET_PLACEHOLDER|$$BACKEND_METRICS_TARGET|" /etc/prometheus/prometheus.tpl.yml > /tmp/prometheus.yml
+        exec /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=$${PROMETHEUS_RETENTION:-30d} --web.enable-lifecycle
+    environment:
+      ACTUATOR_USER: ${ACTUATOR_USER:-}
+      ACTUATOR_PASSWORD: ${ACTUATOR_PASSWORD:-}
+      BACKEND_METRICS_TARGET: ${BACKEND_METRICS_TARGET:-backend:8080}
+      PROMETHEUS_RETENTION: ${PROMETHEUS_RETENTION:-30d}
+    networks:
+      - internal
+      - default
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.tpl.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  alertmanager:
+    profiles: ["monitoring"]
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    environment:
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      ALERT_TELEGRAM_BOT_TOKEN: ${ALERT_TELEGRAM_BOT_TOKEN:-}
+      ALERT_TELEGRAM_CHAT_ID: ${ALERT_TELEGRAM_CHAT_ID:-}
+    volumes:
+      - ./alertmanager/entrypoint.sh:/entrypoint.sh:ro
+      - alertmanager_data:/alertmanager
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  node-exporter:
+    profiles: ["monitoring"]
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/rootfs
+      - --collector.textfile.directory=/metrics
+    volumes:
+      - /:/rootfs:ro
+      - backup_metrics:/metrics:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  grafana:
+    profiles: ["monitoring"]
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "${GRAFANA_BIND:-127.0.0.1:3001}:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  internal:
+    internal: true
+
+volumes:
+  backup_metrics:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:

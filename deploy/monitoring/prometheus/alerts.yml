@@ -1,0 +1,71 @@
+groups:
+  - name: agustina-bermejo
+    rules:
+      - alert: BackendDown
+        expr: up{job="backend"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: "El backend no responde (Prometheus no puede scrapearlo)"
+
+      - alert: HighLatency
+        expr: |
+          sum(rate(http_server_requests_seconds_sum{job="backend"}[5m]))
+            / clamp_min(sum(rate(http_server_requests_seconds_count{job="backend"}[5m])), 0.001) > 1
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "Latencia promedio de la API mayor a 1 s durante 10 minutos (en produccion no hay histograma, por eso se usa el promedio y no el p95)"
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job="backend"}[5m]))) > 2
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "Latencia p95 mayor a 2 s (solo evalua si el backend publica histograma de http.server.requests)"
+
+      - alert: High5xxRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="backend",status=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_server_requests_seconds_count{job="backend"}[5m])), 0.001) > 0.05
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: "Mas del 5% de las respuestas son errores 5xx"
+
+      - alert: DbPoolExhausted
+        expr: hikaricp_connections_active{job="backend"} / hikaricp_connections_max{job="backend"} > 0.9
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "El pool de conexiones a la base esta al 90% o mas"
+
+      - alert: DiskAlmostFull
+        expr: |
+          node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}
+            / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} < 0.15
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: "Queda menos del 15% de disco libre en el host (donde viven los volumenes de Postgres y de backups)"
+
+      - alert: BackupMissing
+        expr: time() - backup_last_success_timestamp_seconds > 13 * 3600
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: "El ultimo backup exitoso tiene mas de 13 horas"
+
+      - alert: BackupFailed
+        expr: backup_last_run_success == 0
+        labels: {severity: critical}
+        annotations:
+          summary: "La ultima corrida de backup fallo"
+
+      - alert: BackupMetricsAbsent
+        expr: absent(backup_last_success_timestamp_seconds)
+        for: 30m
+        labels: {severity: warning}
+        annotations:
+          summary: "No hay metricas de backup (el contenedor backup no esta corriendo o nunca hizo un backup)"
