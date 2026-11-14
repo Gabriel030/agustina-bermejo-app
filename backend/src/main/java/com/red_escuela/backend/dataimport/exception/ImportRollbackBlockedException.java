@@ -44,6 +44,6 @@ public class ImportRollbackBlockedException extends ConflictException implements
         if (reason != null) {
             blocker.put("reason", reason);
         }
-        return Map.of("blockers", List.of(blocker));
+        return blocker.isEmpty() ? Map.of() : Map.of("blockers", List.of(blocker));
     }
 }
