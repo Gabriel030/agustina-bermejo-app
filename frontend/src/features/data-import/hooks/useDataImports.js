@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '@/api/client';
+import { apiFetch, apiFetchBlob } from '@/api/client';
 import { pollWhenOnline } from '@/api/cachePolicy';
 
 const RUNNING_STATUSES = ['VALIDATING', 'COMMITTING', 'ROLLING_BACK'];
@@ -72,4 +72,37 @@ export function useCommitDataImport(id) {
   return useBatchMutation(id, ({ onlyValidRows }) =>
     apiFetch(`/data-imports/${id}/commit`, { method: 'POST', body: JSON.stringify({ onlyValidRows }) }),
   );
+}
+
+export function useSealDataImport(id) {
+  return useBatchMutation(id, (confirmation) =>
+    apiFetch(`/data-imports/${id}/seal`, { method: 'POST', body: JSON.stringify({ confirmation }) }),
+  );
+}
+
+export function useRetryDataImport(id) {
+  return useBatchMutation(id, () => apiFetch(`/data-imports/${id}/retry`, { method: 'POST' }));
+}
+
+export function useRollbackDataImport(id) {
+  return useBatchMutation(id, (confirmation) =>
+    apiFetch(`/data-imports/${id}/rollback`, { method: 'POST', body: JSON.stringify({ confirmation }) }),
+  );
+}
+
+export function useRollbackPreview(id, { enabled }) {
+  return useQuery({
+    queryKey: ['data-imports', 'rollback-preview', String(id)],
+    queryFn: () => apiFetch(`/data-imports/${id}/rollback-preview`),
+    enabled: !!id && enabled,
+    gcTime: 0,
+  });
+}
+
+export function downloadImportReport(id) {
+  return apiFetchBlob(`/data-imports/${id}/report.csv`);
+}
+
+export function downloadImportTemplate(entityType) {
+  return apiFetchBlob(`/data-imports/templates/${entityType}`);
 }

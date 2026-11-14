@@ -1,7 +1,9 @@
 import { Download, FileCheck2, Upload } from 'lucide-react';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
-import { downloadTextFile, formatSize, toCsv } from '../importLabels';
+import { toast } from 'sonner';
+import { downloadImportTemplate } from '../hooks/useDataImports';
+import { formatSize, saveBlobAs } from '../importLabels';
 
 function BlockInfo({ block }) {
   return (
@@ -30,8 +32,13 @@ export function ImportBlockRow({ block, file, editable, uploading, onSelectFile 
     if (selected) onSelectFile(block, selected);
   }
 
-  function handleTemplate() {
-    downloadTextFile(block.templateName, toCsv([block.templateColumns]));
+  async function handleTemplate() {
+    try {
+      const { blob } = await downloadImportTemplate(block.entityType);
+      saveBlobAs(blob, `plantilla-${block.label.toLowerCase()}.csv`);
+    } catch (error) {
+      toast.error(error.message || 'No pudimos descargar la plantilla. Probá de nuevo.');
+    }
   }
 
   return (
