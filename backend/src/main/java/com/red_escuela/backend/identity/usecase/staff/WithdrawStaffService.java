@@ -8,6 +8,10 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.specialist.SessionRevoker;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,13 +24,16 @@ public class WithdrawStaffService implements WithdrawStaffUseCase {
     private final PersonRepository personRepository;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
     private final SessionRevoker sessionRevoker;
+    private final AuditTrail auditTrail;
 
     public WithdrawStaffService(PersonRepository personRepository,
                                 StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
-                                SessionRevoker sessionRevoker) {
+                                SessionRevoker sessionRevoker,
+                                AuditTrail auditTrail) {
         this.personRepository = personRepository;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
         this.sessionRevoker = sessionRevoker;
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -39,6 +46,8 @@ public class WithdrawStaffService implements WithdrawStaffUseCase {
         person.setStatus(StatusType.INACTIVE);
         personRepository.save(person);
         sessionRevoker.revokeAllSessions(person);
+        auditTrail.record(new AuditRecord(AuditAction.STAFF_WITHDRAWN, AuditEntityType.PERSON, personId,
+                null, StatusType.INACTIVE.name(), null));
         log.info("Personal dado de baja: personId={}, role={}", personId, staffRole);
     }
 
