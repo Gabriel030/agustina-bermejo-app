@@ -24,6 +24,8 @@ public interface ImportRowRepository extends JpaRepository<ImportRow, Long> {
 
     long countByBatchIdAndStatusIn(Long batchId, Collection<ImportRowStatus> statuses);
 
+    boolean existsByBatchIdAndEntityTypeAndNaturalKey(Long batchId, ImportEntityType entityType, String naturalKey);
+
     boolean existsByEntityTypeAndNaturalKeyAndContentHashAndStatus(ImportEntityType entityType, String naturalKey,
             String contentHash, ImportRowStatus status);
 

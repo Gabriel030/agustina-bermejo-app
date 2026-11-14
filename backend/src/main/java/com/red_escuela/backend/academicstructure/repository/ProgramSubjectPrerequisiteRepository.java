@@ -13,6 +13,8 @@ public interface ProgramSubjectPrerequisiteRepository extends JpaRepository<Prog
 
     List<ProgramSubjectPrerequisite> findByPrerequisiteProgramSubjectId(Long prerequisiteProgramSubjectId);
 
+    boolean existsByProgramSubjectIdAndPrerequisiteProgramSubjectId(Long programSubjectId, Long prerequisiteProgramSubjectId);
+
     boolean existsByProgramSubjectIdAndPrerequisiteProgramSubjectIdAndRequirementType(
             Long programSubjectId, Long prerequisiteProgramSubjectId, RequirementType requirementType);
 }

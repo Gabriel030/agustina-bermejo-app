@@ -440,6 +440,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GUARDIAN_ACCEPTANCE_REQUIRED` | no | `GuardianAcceptanceRequiredException` | identity |
 | `GUARDIAN_CONFIRMATION_NOT_APPLICABLE` | no | `GuardianConfirmationNotApplicableException` | identity |
 | `HISTORICAL_PERSON_EMAIL_TAKEN` | no | `HistoricalPersonEmailTakenException` | identity |
+| `HISTORICAL_REFERENCE_MISSING` | no | `HistoricalReferenceMissingException` | academicstructure |
 | `HOLIDAYS_NOT_LOADED_FOR_YEAR` | no | `HolidaysNotLoadedForYearException` | academicstructure |
 | `HOLIDAY_ALREADY_EXISTS` | no | `HolidayAlreadyExistsException` | academicstructure |
 | `IDEMPOTENCY_KEY_CONFLICT` | no | `IdempotencyKeyConflictException` | billing |
