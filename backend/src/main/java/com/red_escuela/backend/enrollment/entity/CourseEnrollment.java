@@ -57,6 +57,9 @@ public class CourseEnrollment implements BillableEnrollment {
     @Column(name = "withdrawn_by_person_id")
     private Long withdrawnByPersonId;
 
+    @Column(name = "withdrawal_reason")
+    private String withdrawalReason;
+
     @OneToMany(mappedBy = "courseEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<CourseSubjectSectionEnrollment> sectionEnrollments;
 

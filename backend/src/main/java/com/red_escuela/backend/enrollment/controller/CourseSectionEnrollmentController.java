@@ -20,13 +20,6 @@ public class CourseSectionEnrollmentController {
         this.courseSectionEnrollmentService = courseSectionEnrollmentService;
     }
 
-    @PostMapping("/course-section-enrollments/{id}/withdraw")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void withdraw(@PathVariable Long id) {
-        courseSectionEnrollmentService.withdraw(id);
-    }
-
     @GetMapping("/course-enrollments/{id}/section-enrollments")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<CourseSectionEnrollmentResponse> listByEnrollment(@PathVariable Long id) {

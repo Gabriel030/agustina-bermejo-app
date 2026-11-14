@@ -3,6 +3,10 @@ import { useOnlineStatus } from '@/pwa/useOnlineStatus'
 
 const REFRESHING_AFTER_MS = 60_000
 
+function isOlderThan(timestamp, thresholdMs) {
+  return Date.now() - timestamp > thresholdMs
+}
+
 export function StaleStamp({ dataUpdatedAt, isFetching = false, isError = false, hasData = true }) {
   const online = useOnlineStatus()
   if (!hasData || !(dataUpdatedAt > 0)) return null
@@ -13,7 +17,7 @@ export function StaleStamp({ dataUpdatedAt, isFetching = false, isError = false,
       </span>
     )
   }
-  if (isFetching && Date.now() - dataUpdatedAt > REFRESHING_AFTER_MS) {
+  if (isFetching && isOlderThan(dataUpdatedAt, REFRESHING_AFTER_MS)) {
     return (
       <span role="status" className="rounded-full bg-neutral-bg px-2 py-px text-size-11 font-semibold text-ink-faint">
         Actualizando…

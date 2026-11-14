@@ -146,10 +146,10 @@ export function AuthProvider({ children }) {
   // Mismo patrón que login(): guarda tokens y le pide el perfil a /me. A
   // diferencia de login, la persona queda sin roles hasta su primera
   // aprobación (ver ProgramEnrollmentApplicationService / CourseEnrollmentService).
-  const register = useCallback(async ({ nombre, apellido, email, username, password, institutionId }) => {
+  const register = useCallback(async (data) => {
     const tokens = await apiFetch('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ nombre, apellido, email, username, password, institutionId }),
+      body: JSON.stringify(data),
     });
     return beginSession(tokens);
   }, [beginSession]);

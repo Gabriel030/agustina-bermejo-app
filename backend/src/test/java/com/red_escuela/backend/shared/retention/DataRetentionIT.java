@@ -67,7 +67,7 @@ class DataRetentionIT extends AbstractIntegrationTest {
         meters = new SimpleMeterRegistry();
         RetentionSettings settings = new RetentionSettings(true, 12, 12, 12, 36, 2, 100);
         RetentionBatchPurger purger = new RetentionBatchPurger(namedJdbc, transactionManager, meters, settings);
-        identityJob = new IdentityDataRetentionJob(purger, settings, MutableClock.INSTANCE);
+        identityJob = new IdentityDataRetentionJob(purger, settings, MutableClock.INSTANCE, 30, 24);
         notificationJob = new NotificationDataRetentionJob(purger, settings, MutableClock.INSTANCE);
         personId = persistPerson();
     }
@@ -134,6 +134,48 @@ class DataRetentionIT extends AbstractIntegrationTest {
         }
         assertThat(exists("login_attempt", recent)).isTrue();
         assertThat(meters.counter(RetentionBatchPurger.METER_NAME, "table", "login_attempt").count()).isGreaterThanOrEqualTo(5.0);
+    }
+
+    private void insertResetFailure(Long person, String sourceHash, LocalDateTime windowStart) {
+        jdbc.update("insert into password_reset_failure (person_id, source_hash, failures, window_start) values (?, ?, 3, ?)",
+                person, sourceHash, windowStart);
+    }
+
+    private int resetFailureCount() {
+        return jdbc.queryForObject("select count(*) from password_reset_failure where person_id = ?", Integer.class, personId);
+    }
+
+    @Test
+    void resetFailuresOlderThanTheAccountWindowAreDeletedInBatchesAndCurrentOnesStay() {
+        for (int i = 0; i < 5; i++) {
+            insertResetFailure(personId, "old" + i, NOW.minusHours(24).minusMinutes(1 + i));
+        }
+        insertResetFailure(personId, "boundary", NOW.minusHours(24));
+        insertResetFailure(personId, "recent", NOW.minusHours(24).plusMinutes(1));
+        insertResetFailure(personId, "*", NOW.minusHours(1));
+
+        int deleted = identityJob.deleteExpiredIdentityData();
+
+        assertThat(deleted).isEqualTo(6);
+        assertThat(resetFailureCount()).isEqualTo(2);
+        assertThat(jdbc.queryForList("select source_hash from password_reset_failure where person_id = ?", String.class, personId))
+                .containsExactlyInAnyOrder("recent", "*");
+        assertThat(meters.counter(RetentionBatchPurger.METER_NAME, "table", "password_reset_failure").count()).isEqualTo(6.0);
+    }
+
+    @Test
+    void resetFailurePurgeIsIdempotentAndDoesNothingWhenRetentionIsDisabled() {
+        insertResetFailure(personId, "old", NOW.minusDays(3));
+
+        RetentionSettings disabled = new RetentionSettings(false, 12, 12, 12, 36, 2, 100);
+        RetentionBatchPurger purger = new RetentionBatchPurger(namedJdbc, transactionManager, meters, disabled);
+        assertThat(new IdentityDataRetentionJob(purger, disabled, MutableClock.INSTANCE, 30, 24).deleteExpiredIdentityData()).isZero();
+        assertThat(resetFailureCount()).isEqualTo(1);
+
+        identityJob.deleteExpiredIdentityData();
+        assertThat(resetFailureCount()).isZero();
+        identityJob.deleteExpiredIdentityData();
+        assertThat(resetFailureCount()).isZero();
     }
 
     @Test
@@ -208,7 +250,7 @@ class DataRetentionIT extends AbstractIntegrationTest {
         RetentionSettings disabled = new RetentionSettings(false, 12, 12, 12, 36, 2, 100);
         RetentionBatchPurger purger = new RetentionBatchPurger(namedJdbc, transactionManager, meters, disabled);
 
-        int deleted = new IdentityDataRetentionJob(purger, disabled, MutableClock.INSTANCE).deleteExpiredIdentityData()
+        int deleted = new IdentityDataRetentionJob(purger, disabled, MutableClock.INSTANCE, 30, 24).deleteExpiredIdentityData()
                 + new NotificationDataRetentionJob(purger, disabled, MutableClock.INSTANCE).deleteExpiredNotificationData();
 
         assertThat(deleted).isZero();

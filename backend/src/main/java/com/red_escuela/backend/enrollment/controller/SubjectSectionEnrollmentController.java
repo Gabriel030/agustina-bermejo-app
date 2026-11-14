@@ -1,6 +1,5 @@
 package com.red_escuela.backend.enrollment.controller;
 
-import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.SectionEnrollmentResponse;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
@@ -30,19 +29,6 @@ public class SubjectSectionEnrollmentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public SectionEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateSectionEnrollmentRequest request) {
         return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.enroll(id, request));
-    }
-
-    @PostMapping("/section-enrollments/{id}/withdraw")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void withdraw(@PathVariable Long id) {
-        subjectSectionEnrollmentService.withdraw(id);
-    }
-
-    @PostMapping("/section-enrollments/{id}/change-section")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public SectionEnrollmentResponse changeSection(@PathVariable Long id, @Valid @RequestBody ChangeSectionRequest request) {
-        return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.changeSection(id, request));
     }
 
     @GetMapping("/program-enrollments/{id}/section-enrollments")

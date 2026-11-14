@@ -16,7 +16,9 @@ import { StatusPill } from '@/components/StatusPill';
 import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable';
 import { confirmationDeadlineLabel, sameEmail } from '@/features/identity/emailChange';
 import { InstallPrompt } from '@/pwa/InstallPrompt';
+import { RoleEntryPreference } from '@/features/identity/components/RoleEntryPreference';
 import { NotificationMatrix } from '@/features/identity/components/NotificationMatrix';
+import { LegalAcceptancesTab } from '@/features/identity/legal/LegalAcceptancesTab';
 import {
   usePerfilPropio,
   useActualizarPerfil,
@@ -630,6 +632,7 @@ export function MiPerfil() {
             <TabsTrigger value="datos">Mis datos</TabsTrigger>
             <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
             <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
+            <TabsTrigger value="legales">Mis aceptaciones</TabsTrigger>
           </TabsList>
           <TabsContent value="datos">
             <TabDatosPropios />
@@ -640,8 +643,13 @@ export function MiPerfil() {
           <TabsContent value="notificaciones">
             <NotificationMatrix />
           </TabsContent>
+          <TabsContent value="legales">
+            <LegalAcceptancesTab />
+          </TabsContent>
         </Tabs>
       </GlassCard>
+
+      <RoleEntryPreference />
     </PageContainer>
   );
 }

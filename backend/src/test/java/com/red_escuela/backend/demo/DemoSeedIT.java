@@ -167,6 +167,19 @@ class DemoSeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void everySeededStudentHasStudentRoleAndUniqueEightDigitDocument() {
+        DemoDataset dataset = DemoDataset.of(DemoDataset.CI);
+        for (int index = 0; index < dataset.studentCount(); index++) {
+            String username = DemoPeopleSeedStep.studentUsername(index);
+            assertThat(api.get(username, "/me").path("roles").valueStream().map(role -> role.asString("")).toList())
+                    .contains("ALUMNO");
+            assertThat(jdbcTemplate.queryForObject("select dni from person where username = ?", String.class, username))
+                    .matches("\\d{8}");
+        }
+        assertThat(jdbcTemplate.queryForList("select dni from person where dni is not null group by dni having count(*) > 1")).isEmpty();
+    }
+
+    @Test
     void seededGradesAndAttendanceFollowTheAcademicProfileOfTheFirstStudent() {
         String username = DemoPeopleSeedStep.studentUsername(0);
         long programEnrollmentId = api.get(username, "/me/program-enrollments").get(0).get("id").asLong();

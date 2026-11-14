@@ -57,6 +57,40 @@ export const handlers = [
   http.post(`${API}/auth/register`, () =>
     HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }, { status: 201 }),
   ),
+  http.get(`${API}/legal/documents/current`, () =>
+    HttpResponse.json({
+      documents: [
+        { type: 'TERMS', version: '2026-11-01', path: '/legal/terminos' },
+        { type: 'PRIVACY', version: '2026-11-01', path: '/legal/privacidad' },
+      ],
+    }),
+  ),
+  http.get(`${API}/me/legal-acceptances/pending`, () =>
+    HttpResponse.json({
+      documents: [],
+      suggestedDeadline: '2026-11-30',
+      gracePeriodExpired: false,
+      guardianConfirmationRequired: false,
+    }),
+  ),
+  http.post(`${API}/me/legal-acceptances`, () =>
+    HttpResponse.json({
+      documents: [],
+      suggestedDeadline: '2026-11-30',
+      gracePeriodExpired: false,
+      guardianConfirmationRequired: false,
+    }),
+  ),
+  http.post(`${API}/me/legal-acceptances/guardian-confirmation/resend`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API}/auth/legal/guardian-confirmation`, () => new HttpResponse(null, { status: 204 })),
+  http.get(`${API}/me/newsletter-preference`, () =>
+    HttpResponse.json({ optedIn: false, updatedAt: '2026-11-01T12:00:00Z' }),
+  ),
+  http.put(`${API}/me/newsletter-preference`, async ({ request }) => {
+    const body = await request.json().catch(() => ({}));
+    const optedIn = body.optedIn ?? false;
+    return HttpResponse.json({ optedIn, updatedAt: '2026-11-13T12:00:00Z' });
+  }),
   http.get(`${API}/institutions`, () => HttpResponse.json([{ id: 1, name: 'Instituto de prueba' }])),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
   http.get(`${API}/programs/:id`, ({ params }) =>

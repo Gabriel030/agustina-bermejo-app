@@ -2125,11 +2125,59 @@
         "required" : [ "difference", "label", "proposed", "today" ],
         "type" : "object"
       },
+      "ChangeSectionCandidateResponse" : {
+        "properties" : {
+          "availableSeats" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "blockDetail" : {
+            "type" : "string"
+          },
+          "blockReason" : {
+            "enum" : [ "CURRENT_SECTION", "SECTION_NOT_OPEN", "OTHER_TERM", "SECTION_FULL", "SCHEDULE_OVERLAP" ],
+            "type" : "string"
+          },
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "conflictingSubject" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "occupiedSeats" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "selectable" : {
+            "type" : "boolean"
+          },
+          "slots" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SectionSlotView"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "availableSeats", "blockDetail", "blockReason", "capacity", "conflictingSubject", "name", "occupiedSeats", "sectionId", "selectable", "slots" ],
+        "type" : "object"
+      },
       "ChangeSectionRequest" : {
         "properties" : {
           "newSectionId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "reason" : {
+            "description" : "Motivo del cambio (10 a 500 caracteres); obligatorio cuando lo registra el personal",
+            "type" : "string"
           }
         },
         "required" : [ "newSectionId" ],
@@ -2955,6 +3003,17 @@
         "required" : [ "violations" ],
         "type" : "object"
       },
+      "ConfirmGuardianAcceptanceRequest" : {
+        "properties" : {
+          "token" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "token" ],
+        "type" : "object"
+      },
       "ConfirmProspectRequest" : {
         "properties" : {
           "birthDate" : {
@@ -3192,6 +3251,12 @@
           "elegibleParaCompletar" : {
             "type" : "boolean"
           },
+          "moduleEnrollments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ModuleEnrollmentView"
+            },
+            "type" : "array"
+          },
           "modulosPendientes" : {
             "items" : {
               "type" : "string"
@@ -3199,7 +3264,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "courseEnrollmentId", "elegibleParaCompletar", "modulosPendientes" ],
+        "required" : [ "courseEnrollmentId", "elegibleParaCompletar", "moduleEnrollments", "modulosPendientes" ],
         "type" : "object"
       },
       "CourseResponse" : {
@@ -7012,6 +7077,65 @@
         "required" : [ "dailyLateFeeRatePercent", "effectiveFrom", "gracePeriodDays", "id", "suspensionAfterDays", "suspensionAfterInvoiceCount" ],
         "type" : "object"
       },
+      "LegalAcceptanceResponse" : {
+        "properties" : {
+          "acceptedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "documentType" : {
+            "enum" : [ "TERMS", "PRIVACY" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "personLastname" : {
+            "type" : "string"
+          },
+          "personName" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "acceptedAt", "documentType", "id", "personId", "personLastname", "personName", "version" ],
+        "type" : "object"
+      },
+      "LegalDocumentResponse" : {
+        "properties" : {
+          "path" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "TERMS", "PRIVACY" ],
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "path", "type", "version" ],
+        "type" : "object"
+      },
+      "LegalDocumentsResponse" : {
+        "properties" : {
+          "documents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LegalDocumentResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "documents" ],
+        "type" : "object"
+      },
       "Line" : {
         "properties" : {
           "baseAmount" : {
@@ -7355,6 +7479,30 @@
           }
         },
         "required" : [ "slots" ],
+        "type" : "object"
+      },
+      "ModuleEnrollmentView" : {
+        "properties" : {
+          "moduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "moduleName" : {
+            "type" : "string"
+          },
+          "sectionEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "ENROLLED", "IN_PROGRESS", "REGULAR", "APPROVED", "FAILED", "WITHDRAWN", "WAITLISTED", "WAITLIST_EXPIRED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "moduleId", "moduleName", "sectionEnrollmentId", "sectionName", "status" ],
         "type" : "object"
       },
       "MonetaryAdjustment" : { },
@@ -7951,6 +8099,19 @@
         "required" : [ "generatedAt", "items" ],
         "type" : "object"
       },
+      "NewsletterPreferenceResponse" : {
+        "properties" : {
+          "optedIn" : {
+            "type" : "boolean"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "optedIn", "updatedAt" ],
+        "type" : "object"
+      },
       "NightlyBillingExecutionResponse" : {
         "properties" : {
           "run" : {
@@ -8381,6 +8542,30 @@
         "required" : [ "items", "page", "size", "totalElements" ],
         "type" : "object"
       },
+      "PageResponseLegalAcceptanceResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LegalAcceptanceResponse"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "page", "size", "totalElements" ],
+        "type" : "object"
+      },
       "Pageable" : {
         "properties" : {
           "page" : {
@@ -8711,6 +8896,28 @@
           }
         },
         "required" : [ "id", "requestedAt", "requestedByName", "requestedByPersonId", "type" ],
+        "type" : "object"
+      },
+      "PendingLegalAcceptancesResponse" : {
+        "properties" : {
+          "documents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LegalDocumentResponse"
+            },
+            "type" : "array"
+          },
+          "gracePeriodExpired" : {
+            "type" : "boolean"
+          },
+          "guardianConfirmationRequired" : {
+            "type" : "boolean"
+          },
+          "suggestedDeadline" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "documents", "gracePeriodExpired", "guardianConfirmationRequired", "suggestedDeadline" ],
         "type" : "object"
       },
       "PendingModificationInfo" : {
@@ -10515,14 +10722,43 @@
       },
       "RegisterRequest" : {
         "properties" : {
+          "acceptedNewsletter" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "acceptedPrivacy" : {
+            "type" : "boolean"
+          },
+          "acceptedTerms" : {
+            "type" : "boolean"
+          },
           "apellido" : {
             "minLength" : 1,
+            "type" : "string"
+          },
+          "birthDate" : {
+            "format" : "date",
             "type" : "string"
           },
           "email" : {
             "format" : "email",
             "minLength" : 1,
             "type" : "string"
+          },
+          "guardianEmail" : {
+            "format" : "email",
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "guardianName" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "guardianRelationship" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
           },
           "institutionId" : {
             "format" : "int64",
@@ -10541,7 +10777,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "email", "institutionId", "nombre", "password", "username" ],
+        "required" : [ "acceptedPrivacy", "acceptedTerms", "apellido", "birthDate", "email", "institutionId", "nombre", "password", "username" ],
         "type" : "object"
       },
       "RegularCertificateRequestResponse" : {
@@ -11553,6 +11789,27 @@
           }
         },
         "required" : [ "enrolled", "kind", "name", "sectionId", "waitlisted" ],
+        "type" : "object"
+      },
+      "SectionSlotView" : {
+        "properties" : {
+          "classroomName" : {
+            "type" : "string"
+          },
+          "dayOfWeek" : {
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
+            "type" : "string"
+          },
+          "endTime" : {
+            "format" : "time-local",
+            "type" : "string"
+          },
+          "startTime" : {
+            "format" : "time-local",
+            "type" : "string"
+          }
+        },
+        "required" : [ "classroomName", "dayOfWeek", "endTime", "startTime" ],
         "type" : "object"
       },
       "SelectPaymentPlanRequest" : {
@@ -12894,6 +13151,15 @@
         "required" : [ "date" ],
         "type" : "object"
       },
+      "UpdateNewsletterPreferenceRequest" : {
+        "properties" : {
+          "optedIn" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "optedIn" ],
+        "type" : "object"
+      },
       "UpdateNotificationPreferencesRequest" : {
         "properties" : {
           "preferences" : {
@@ -13269,8 +13535,23 @@
             "description" : "Fecha de la baja; si no viene, es hoy",
             "format" : "date",
             "type" : "string"
+          },
+          "reason" : {
+            "description" : "Motivo de la baja (10 a 500 caracteres)",
+            "type" : "string"
           }
         },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "WithdrawSectionEnrollmentRequest" : {
+        "properties" : {
+          "reason" : {
+            "description" : "Motivo de la baja (10 a 500 caracteres)",
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "WithdrawStudentRequest" : {
@@ -17236,6 +17517,117 @@
           }
         },
         "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/legal/guardian-confirmation" : {
+      "post" : {
+        "operationId" : "LegalDocument_confirmGuardianAcceptance",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConfirmGuardianAcceptanceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
       }
     },
     "/auth/login" : {
@@ -24433,7 +24825,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "course-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/course-section-enrollments/{id}/attendance" : {
@@ -24930,6 +25322,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WithdrawSectionEnrollmentRequest"
+              }
+            }
+          }
+        },
         "responses" : {
           "204" : {
             "description" : "No Content"
@@ -25025,7 +25426,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "course-section-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/course-sections/{id}" : {
@@ -37914,6 +38315,264 @@
         "tags" : [ "late-payment-settings-controller" ]
       }
     },
+    "/legal-acceptances" : {
+      "get" : {
+        "operationId" : "LegalDocument_listAcceptances",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "personId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "documentType",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "TERMS", "PRIVACY" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "version",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseLegalAcceptanceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
+      }
+    },
+    "/legal/documents/current" : {
+      "get" : {
+        "operationId" : "LegalDocument_getCurrentDocuments",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LegalDocumentsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
+      }
+    },
     "/me" : {
       "get" : {
         "operationId" : "Person_getOwnProfile",
@@ -42012,6 +42671,323 @@
         "tags" : [ "me-invoice-controller" ]
       }
     },
+    "/me/legal-acceptances" : {
+      "post" : {
+        "operationId" : "LegalDocument_acceptCurrentDocuments",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PendingLegalAcceptancesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
+      }
+    },
+    "/me/legal-acceptances/guardian-confirmation/resend" : {
+      "post" : {
+        "operationId" : "LegalDocument_resendGuardianConfirmation",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
+      }
+    },
+    "/me/legal-acceptances/pending" : {
+      "get" : {
+        "operationId" : "LegalDocument_getPendingAcceptances",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PendingLegalAcceptancesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
+      }
+    },
     "/me/modules" : {
       "get" : {
         "operationId" : "Modules_myModules",
@@ -42118,6 +43094,230 @@
           }
         },
         "tags" : [ "modules-controller" ]
+      }
+    },
+    "/me/newsletter-preference" : {
+      "get" : {
+        "operationId" : "LegalDocument_getNewsletterPreference",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NewsletterPreferenceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
+      },
+      "put" : {
+        "operationId" : "LegalDocument_updateNewsletterPreference",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateNewsletterPreferenceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NewsletterPreferenceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "legal-document-controller" ]
       }
     },
     "/me/notification-preferences" : {
@@ -44021,124 +45221,6 @@
     "/me/program-enrollments/{id}/certificates/approved-subjects" : {
       "get" : {
         "operationId" : "MeCertificate_approvedSubjectsCertificate",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "format" : "byte",
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "429" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Too Many Requests"
-          },
-          "500" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Internal Server Error"
-          },
-          "502" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Gateway"
-          },
-          "503" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Service Unavailable"
-          }
-        },
-        "tags" : [ "me-certificate-controller" ]
-      }
-    },
-    "/me/program-enrollments/{id}/certificates/regular" : {
-      "get" : {
-        "operationId" : "MeCertificate_regularCertificate",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -55528,7 +56610,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "program-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/program-sections/{id}" : {
@@ -64863,7 +65945,127 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "subject-section-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
+      }
+    },
+    "/section-enrollments/{id}/change-section-candidates" : {
+      "get" : {
+        "operationId" : "StaffEnrollmentChange_listChangeSectionCandidates",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ChangeSectionCandidateResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/section-enrollments/{id}/grade-items" : {
@@ -65123,6 +66325,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WithdrawSectionEnrollmentRequest"
+              }
+            }
+          }
+        },
         "responses" : {
           "204" : {
             "description" : "No Content"
@@ -65218,7 +66429,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "subject-section-enrollment-controller" ]
+        "tags" : [ "staff-enrollment-change-controller" ]
       }
     },
     "/section-evaluation-configs" : {

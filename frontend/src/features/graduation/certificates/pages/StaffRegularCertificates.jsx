@@ -368,6 +368,7 @@ export function StaffRegularCertificates() {
           requerido={dialog.kind !== 'emit'}
           minLength={dialog.kind === 'emit' ? 0 : REASON_MIN_LENGTH}
           showCounter
+          disableUntilMinLength
           titulo={copy.titulo}
           descripcion={dialogDescription(dialog.kind, holderName)}
           placeholder={copy.placeholder}

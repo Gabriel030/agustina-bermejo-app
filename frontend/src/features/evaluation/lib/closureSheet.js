@@ -172,6 +172,10 @@ export const EXPORT_FORMATS = {
   pdf: { label: 'PDF del acta', fallbackName: 'acta.pdf' },
 };
 
+export function hasAbsenceLimit(sheet) {
+  return sheet.scheme?.maxAbsenceRate != null;
+}
+
 export function closedWithoutTeacher(sheet) {
   return sheet.status !== 'TEACHER_CONFIRMED';
 }

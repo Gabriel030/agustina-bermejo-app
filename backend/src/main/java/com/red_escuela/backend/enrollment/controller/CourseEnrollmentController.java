@@ -7,8 +7,6 @@ import com.red_escuela.backend.enrollment.dto.CourseEnrollmentResponse;
 import com.red_escuela.backend.enrollment.dto.CourseProgressResponse;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
-import com.red_escuela.backend.enrollment.dto.WithdrawEnrollmentRequest;
-import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 public class CourseEnrollmentController {
@@ -42,14 +38,6 @@ public class CourseEnrollmentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public CourseEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateCourseEnrollmentRequest request) {
         return CourseEnrollmentResponse.from(courseEnrollmentService.enroll(id, request));
-    }
-
-    @PostMapping("/course-enrollments/{id}/withdraw")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public void withdraw(@PathVariable Long id, @Valid @RequestBody(required = false) WithdrawEnrollmentRequest request) {
-        LocalDate informedDate = Optional.ofNullable(request).map(WithdrawEnrollmentRequest::effectiveDate).orElse(null);
-        courseEnrollmentService.withdraw(id, EnrollmentWithdrawal.voluntaryRegisteredBy(informedDate, currentPersonService.resolveCurrentPerson().getId()));
     }
 
     @GetMapping("/students/{id}/course-enrollments")

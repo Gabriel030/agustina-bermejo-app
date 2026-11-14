@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
@@ -14,10 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { InfoTip } from '@/components/charts/InfoTip';
-import { useAuth } from '@/context/AuthContext';
 import { formatMoney, invoiceTitle, invoiceStatusInfo } from '@/lib/billing';
 import { useAdminBillingOverview } from '@/hooks/useBilling';
-import { inboxPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { inboxPath } from '../authorization/authorizationRequests';
 import { isUnknownOutcome, useIdempotencyKey } from '../idempotency';
 import { useIssueCreditNote, useStudentCreditBalance, useStudentHeader } from '../hooks/useCreditNotes';
 import { fromCents, toCents } from '../refunds/refundForm';
@@ -100,8 +100,7 @@ export function CreateCreditNotePage() {
   const studentId = searchParams.get('alumno');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
 
   const overviewQuery = useAdminBillingOverview(studentId);

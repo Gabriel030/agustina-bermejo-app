@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -80,7 +80,9 @@ export function DocenteConfiguracionEvaluacion() {
   const [form, setForm] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const [syncedConfig, setSyncedConfig] = useState(undefined);
+  if (config !== syncedConfig) {
+    setSyncedConfig(config);
     if (config) {
       setForm({
         tpCount: config.tpCount,
@@ -95,7 +97,7 @@ export function DocenteConfiguracionEvaluacion() {
         finalCall2Date: config.finalCall2Date,
       });
     }
-  }, [config]);
+  }
 
   if (isError) {
     return <LoadErrorState error={loadError} onRetry={refetch} resource="la configuración de evaluación" />;

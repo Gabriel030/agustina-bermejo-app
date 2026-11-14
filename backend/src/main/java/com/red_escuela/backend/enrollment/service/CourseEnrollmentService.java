@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -239,6 +240,7 @@ public class CourseEnrollmentService {
         LocalDate registeredOn = withdrawalDateResolver.registrationDate();
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
+        enrollment.setWithdrawalReason(withdrawal.reason());
         courseEnrollmentRepository.save(enrollment);
         cancelModuleEnrollments(enrollment, promotesWaitlist);
         if (liberaCupoDelCurso && promotesWaitlist) {
@@ -325,7 +327,14 @@ public class CourseEnrollmentService {
                 .map(CourseModuleView::name)
                 .toList();
 
-        return new CourseProgressResponse(enrollment.getId(), modulosPendientes, modulosPendientes.isEmpty());
+        Map<Long, String> moduleNames = modulos.stream().collect(Collectors.toMap(CourseModuleView::id, CourseModuleView::name, (first, second) -> first));
+        List<CourseProgressResponse.ModuleEnrollmentView> moduleEnrollments = inscripciones.stream()
+                .map(inscripcion -> new CourseProgressResponse.ModuleEnrollmentView(inscripcion.getId(), inscripcion.courseSubjectId(),
+                        moduleNames.getOrDefault(inscripcion.courseSubjectId(), inscripcion.getCourseSubjectSection().getModuleName()),
+                        inscripcion.getCourseSubjectSection().getName(), inscripcion.getStatus()))
+                .toList();
+
+        return new CourseProgressResponse(enrollment.getId(), modulosPendientes, modulosPendientes.isEmpty(), moduleEnrollments);
     }
 
     public Optional<Percentage> calculateApprovedModulesPercentage(CourseEnrollment enrollment) {

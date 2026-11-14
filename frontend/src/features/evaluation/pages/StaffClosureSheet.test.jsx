@@ -46,6 +46,54 @@ describe('StaffClosureSheet', () => {
     expect(screen.queryByRole('button', { name: /Confirmar cierre/ })).not.toBeInTheDocument();
   });
 
+  it('showsTheMinimumAttendanceDerivedFromTheAbsenceLimit', async () => {
+    renderSheet('preceptor', confirmedSheet());
+
+    expect(await screen.findByText('Asist. (mín. 75%)')).toBeInTheDocument();
+    expect(within(rowOf('Acosta, Lucía')).getByRole('img', { name: 'Asistencia: cumple' })).toBeInTheDocument();
+  });
+
+  it('showsNoMinimumAndAnUnverifiedMarkWhenTheSectionHasNoAbsenceLimit', async () => {
+    const base = confirmedSheet();
+    const students = base.students.map((row) =>
+      row.attendancePercent == null ? row : { ...row, attendancePercent: 40, requirements: { ...row.requirements, attendance: false } },
+    );
+    renderSheet('preceptor', { ...base, students, scheme: { ...base.scheme, maxAbsenceRate: null } });
+
+    const header = await screen.findByText('Asist.');
+    expect(header).toHaveAttribute('title', 'Sin límite de inasistencias configurado');
+    expect(screen.queryByText(/mín\./)).not.toBeInTheDocument();
+    const row = rowOf('Acosta, Lucía');
+    expect(within(row).getByRole('img', { name: 'Asistencia: no verificado' })).toBeInTheDocument();
+    expect(within(row).getByText('40%').className).not.toContain('text-danger');
+  });
+
+  it('warnsOnTheSheetAndInTheApprovalDialogWhenThereIsNoAbsenceLimitAndStillAllowsClosing', async () => {
+    const user = userEvent.setup();
+    const base = confirmedSheet();
+    renderSheet('administrativo', { ...base, scheme: { ...base.scheme, maxAbsenceRate: null } });
+
+    const message = 'Esta comisión no tiene límite de inasistencias configurado: nadie queda libre por inasistencias.';
+    expect(await screen.findAllByText(message)).toHaveLength(1);
+    const approveButton = screen.getByRole('button', { name: 'Aprobar y cerrar' });
+    expect(approveButton).toBeEnabled();
+
+    await user.click(approveButton);
+
+    expect(screen.getByText('Paso 1 de 2', { exact: false })).toBeInTheDocument();
+    expect(screen.getAllByText(message)).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled();
+  });
+
+  it('showsNoAbsenceLimitWarningWhenTheLimitIsConfigured', async () => {
+    const user = userEvent.setup();
+    renderSheet('administrativo', confirmedSheet());
+
+    await user.click(await screen.findByRole('button', { name: 'Aprobar y cerrar' }));
+
+    expect(screen.queryByText(/no tiene límite de inasistencias/)).not.toBeInTheDocument();
+  });
+
   it('strikesWithdrawnStudentsAndKeepsOnePillPerRow', async () => {
     renderSheet('preceptor');
 

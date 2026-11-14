@@ -118,7 +118,7 @@ export function resetCircuits() {
 }
 
 function circuitForHost() {
-  const host = new URL(API_BASE_URL).host;
+  const host = new URL(API_BASE_URL, globalThis.location?.href ?? 'http://localhost').host;
   if (!circuits.has(host)) circuits.set(host, createCircuitBreaker(circuitOptions));
   return circuits.get(host);
 }

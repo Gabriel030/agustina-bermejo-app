@@ -20,6 +20,14 @@ public interface PriceVersionRepository extends JpaRepository<PriceVersion, Long
     Optional<PriceVersion> findFirstByPriceCourseIdAndPriceFeeTypeAndStatusInAndEffectiveFromLessThanEqualOrderByEffectiveFromDescDecidedAtDescIdDesc(
             Long courseId, FeeType feeType, Collection<PriceVersionStatus> statuses, LocalDate date);
 
+    @Query("select v from PriceVersion v join fetch v.price p where p.programId in :programIds and p.feeType = :feeType and v.status in :statuses and v.effectiveFrom <= :date")
+    List<PriceVersion> findResolvableByProgramIds(@Param("programIds") Collection<Long> programIds, @Param("feeType") FeeType feeType,
+                                                  @Param("statuses") Collection<PriceVersionStatus> statuses, @Param("date") LocalDate date);
+
+    @Query("select v from PriceVersion v join fetch v.price p where p.courseId in :courseIds and p.feeType = :feeType and v.status in :statuses and v.effectiveFrom <= :date")
+    List<PriceVersion> findResolvableByCourseIds(@Param("courseIds") Collection<Long> courseIds, @Param("feeType") FeeType feeType,
+                                                 @Param("statuses") Collection<PriceVersionStatus> statuses, @Param("date") LocalDate date);
+
     Optional<PriceVersion> findFirstByAuthorizationRequestId(Long authorizationRequestId);
 
     List<PriceVersion> findByPriceProgramIdAndPriceFeeTypeAndAppliesToLectiveYearAndStatusIn(

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
@@ -7,12 +8,11 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/context/AuthContext';
 import { useProgramCohorts } from '@/features/academic-structure';
 import { formatMoney } from '@/lib/billing';
 import { useDiscountDefinition } from '../hooks/useDiscountDefinitions';
 import { scopeLabel, useOfferNames } from '../hooks/useOfferNames';
-import { inboxPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { inboxPath } from '../authorization/authorizationRequests';
 import { CloseDefinitionDialog } from './CloseDefinitionDialog';
 import { DiscountStatusPill, PromotionStatusPill } from './StatusPills';
 import {
@@ -56,8 +56,7 @@ function DetailError({ listPath, notFound, onRetry }) {
 export function DiscountDefinitionDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const query = useDiscountDefinition(id);
   const names = useOfferNames();

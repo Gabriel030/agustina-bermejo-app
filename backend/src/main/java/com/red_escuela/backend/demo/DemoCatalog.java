@@ -83,8 +83,8 @@ public final class DemoCatalog {
                             "Metodología de la Investigación II", "Liderazgo y Equipos de Trabajo", "Tecnologías para la Gestión"),
                     List.of("Planeamiento Educativo", "Gestión Curricular", "Administración de Recursos Educativos",
                             "Comunicación Institucional", "Supervisión y Acompañamiento Docente", "Seminario de Integración"),
-                    List.of("Diseño de Políticas Educativas", "Gestión de la Innovación", "Ética y Gobernanza Educativa",
-                            "Taller de Tesis I", "Taller de Tesis II", "Práctica Profesional Supervisada"))));
+                    List.of("Diseño de Políticas Educativas", "Gestión de la Innovación", "Taller de Tesis I",
+                            "Ética y Gobernanza Educativa", "Taller de Tesis II", "Práctica Profesional Supervisada"))));
 
     public static final List<CourseSpec> COURSES = List.of(
             new CourseSpec("Introducción a la Programación", 2026, 3, new BigDecimal("45000"),

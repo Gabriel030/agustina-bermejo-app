@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -54,7 +55,7 @@ export function LegajoAlumno() {
   const reactivateMutation = useReactivateStudent(id);
   const resetMutation = useResetStudentPassword(id);
 
-  const rolBase = usuario?.roles[0]?.toLowerCase();
+  const { roleBase: rolBase } = useActiveRole();
   const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo';
   const puededarDeBaja = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status !== 'DELETED';
 

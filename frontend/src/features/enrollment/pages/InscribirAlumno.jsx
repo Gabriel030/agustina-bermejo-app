@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -210,7 +211,7 @@ function SuccessScreen({ student, offerLabel, waitlisted, rolBase, studentId, au
 export function InscribirAlumno() {
   const { id } = useParams();
   const { usuario } = useAuth();
-  const rolBase = usuario?.roles[0]?.toLowerCase();
+  const { roleBase: rolBase } = useActiveRole();
   const auditName = usuario ? [usuario.nombre, usuario.apellido].filter(Boolean).join(' ') : '';
   const legajo = useLegajoAlumno(id);
   const studentName = legajo.data ? `${legajo.data.nombre} ${legajo.data.apellido}` : '';

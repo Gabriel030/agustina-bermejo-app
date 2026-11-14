@@ -32,8 +32,12 @@ public class RetentionBatchPurger {
     }
 
     public int purge(String label, String table, String eligibleCondition, MapSqlParameterSource parameters) {
-        String sql = "delete from " + table + " where id in (select id from " + table + " where " + eligibleCondition
-                + " order by id limit :retentionBatchSize)";
+        return purge(label, table, "id", eligibleCondition, parameters);
+    }
+
+    public int purge(String label, String table, String keyColumns, String eligibleCondition, MapSqlParameterSource parameters) {
+        String sql = "delete from " + table + " where (" + keyColumns + ") in (select " + keyColumns + " from " + table
+                + " where " + eligibleCondition + " order by " + keyColumns + " limit :retentionBatchSize)";
         MapSqlParameterSource batchParameters = new MapSqlParameterSource(parameters.getValues())
                 .addValue("retentionBatchSize", settings.batchSize());
         int total = 0;

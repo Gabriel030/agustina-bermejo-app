@@ -85,9 +85,6 @@ function CursoEditarDatosForm({ id, course }) {
       ...validateCourseBasics({ name, capacity, price }),
       ...validateCourseDetail({ durationMonths, registrationStart, registrationEnd }),
     };
-    if (!found.price && course.price && price === '') {
-      found.price = 'No se puede dejar vacío: el sistema conserva el precio anterior. Ingresá 0 si el curso es gratuito.';
-    }
     if (course.teachingMode && !teachingMode) {
       found.teachingMode = 'No se puede quitar la modalidad una vez definida: elegí otra.';
     }
@@ -147,9 +144,9 @@ function CursoEditarDatosForm({ id, course }) {
                 onChange={(e) => setCapacity(e.target.value)}
               />
             </FormField>
-            <FormField id="course-price" label="Precio" error={errors.price}>
+            <FormField id="course-price" label="Cuota mensual" required error={errors.price}>
               <Input
-                {...fieldProps('course-price', errors.price)}
+                {...fieldProps('course-price', errors.price, true)}
                 type="number"
                 min={0}
                 step={0.01}

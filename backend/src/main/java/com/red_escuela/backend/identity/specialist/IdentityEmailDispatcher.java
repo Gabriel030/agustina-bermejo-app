@@ -2,6 +2,7 @@ package com.red_escuela.backend.identity.specialist;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
+import com.red_escuela.backend.identity.events.GuardianConfirmationRequestedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetLockoutNoticeEvent;
 import com.red_escuela.backend.identity.repository.PersonRepository;
@@ -56,6 +57,13 @@ public class IdentityEmailDispatcher {
                             emailService.sendPasswordResetLockoutNotice(displayNameOf(person, person.emailValue()), person.emailValue());
                         },
                         () -> log.warn("Password reset lockout notice skipped, person not found: personId={}", event.personId())));
+    }
+
+    @ApplicationModuleListener
+    public void onGuardianConfirmationRequested(GuardianConfirmationRequestedEvent event) {
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onGuardianConfirmationRequested", () ->
+                emailService.sendGuardianLegalConfirmation(event.guardianName(), event.guardianEmail(), event.minorFirstName(),
+                        institutionNameResolver.resolveInstitutionName(), event.confirmationLink()));
     }
 
     @ApplicationModuleListener

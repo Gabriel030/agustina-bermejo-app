@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
 import { usePersonal } from '@/features/identity/hooks/usePersonal';
 import { useCrearPersonal } from '@/features/identity/hooks/useAccionesPersonal';
 import { AltaPersonalModal } from '@/features/identity/components/AltaPersonalModal';
@@ -105,10 +105,9 @@ function ListaPersonal({ personal, isLoading, isError, error, onRetry, navigate,
 }
 
 export function GestionPersonal() {
-  const { usuario } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const rolBase = usuario?.roles[0]?.toLowerCase();
+  const { roleBase: rolBase } = useActiveRole();
 
   const tabDesdeUrl = searchParams.get('tab');
   const tabInicial = TABS.find((t) => t.id === tabDesdeUrl) ? tabDesdeUrl : 'activos';

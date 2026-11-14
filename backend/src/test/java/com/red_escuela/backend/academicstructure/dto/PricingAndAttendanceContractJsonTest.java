@@ -89,12 +89,11 @@ class PricingAndAttendanceContractJsonTest {
 
     @Test
     void courseAndProgramPricesAreMoneyObjects() throws Exception {
-        Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).price(new BigDecimal("18000")).currency(Currency.USD).build();
-        Program program = Program.builder().name("Carrera").price(new BigDecimal("45000"))
-                .enrollmentFeeAmount(new BigDecimal("30000")).currency(Currency.ARS).build();
+        Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).currency(Currency.USD).build();
+        Program program = Program.builder().name("Carrera").currency(Currency.ARS).build();
 
-        JsonNode courseJson = json(CourseResponse.from(course));
-        JsonNode programJson = json(ProgramResponse.from(program));
+        JsonNode courseJson = json(CourseResponse.from(course, Money.of(new BigDecimal("18000"), Currency.USD)));
+        JsonNode programJson = json(ProgramResponse.from(program, Money.of(new BigDecimal("45000"), Currency.ARS), Money.of(new BigDecimal("30000"), Currency.ARS)));
 
         assertThat(courseJson.get("price")).isEqualTo(json(Money.of(new BigDecimal("18000"), Currency.USD)));
         assertThat(programJson.get("price").get("amount").asString("")).isEqualTo("45000.00");
@@ -106,7 +105,7 @@ class PricingAndAttendanceContractJsonTest {
     void courseWithoutPriceSerializesNull() throws Exception {
         Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).build();
 
-        assertThat(json(CourseResponse.from(course)).get("price").isNull()).isTrue();
+        assertThat(json(CourseResponse.from(course, null)).get("price").isNull()).isTrue();
     }
 
     @Test

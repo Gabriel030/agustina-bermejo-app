@@ -19,10 +19,13 @@ export function ModalMotivo({
   maxLength = DEFAULT_MAX_REASON_LENGTH,
   minLength = 0,
   showCounter = false,
+  disableUntilMinLength = false,
   mensajeRequerido = 'El motivo del rechazo es obligatorio.',
 }) {
   const [motivo, setMotivo] = useState('');
   const [error, setError] = useState('');
+
+  const belowMinLength = disableUntilMinLength && minLength > 0 && motivo.trim().length < minLength;
 
   async function confirmar() {
     if (requerido && !motivo.trim()) {
@@ -58,13 +61,14 @@ export function ModalMotivo({
         />
         {showCounter && (
           <div className="text-right text-xs tabular-nums text-ink-faint" aria-live="polite">
-            {motivo.length}/{maxLength}
+            {minLength > 0 && <span className="mr-2">{`mínimo ${minLength}`}</span>}
+            <span>{motivo.length}/{maxLength}</span>
           </div>
         )}
         {error && <div role="alert" className="text-size-12 font-semibold text-danger">{error}</div>}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button variant={confirmarVariant} loading={confirmando} onClick={confirmar}>{confirmarLabel}</Button>
+          <Button variant={confirmarVariant} loading={confirmando} disabled={belowMinLength} onClick={confirmar}>{confirmarLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

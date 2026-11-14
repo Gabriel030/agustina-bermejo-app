@@ -533,8 +533,10 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | PriceCurrencyPolicy | CURRENCY_MISMATCH | D-097, D-240 |
 | 2 | PriceAmountWithinLimitPolicy | PRICE_AMOUNT_TOO_LARGE | D-214 |
-| 3 | MarketingDiscountNotNegativePolicy | NEGATIVE_MARKETING_DISCOUNT | D-240 |
-| 4 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
+| 3 | OfferingListPricePositivePolicy | OFFERING_LIST_PRICE_NOT_POSITIVE | D-536 |
+| 4 | MarketingDiscountNotNegativePolicy | NEGATIVE_MARKETING_DISCOUNT | D-240 |
+| 5 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
+| 6 | MarketingDiscountLeavesAPricePolicy | MARKETING_DISCOUNT_LEAVES_NO_PRICE | D-536 |
 
 ## Momento PRICE_VERSION_CANCELLATION
 

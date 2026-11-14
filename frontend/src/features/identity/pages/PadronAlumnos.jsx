@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
@@ -9,7 +10,6 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
 import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 import { useStaffProspects } from '@/features/identity/hooks/useProspectos';
 import { missingDocumentsSummary } from '@/features/identity/lib/studentRegistration';
@@ -162,10 +162,9 @@ function ListaAlumnos({ alumnos, isLoading, navigate, rolBase, tabActivo }) {
 }
 
 export function PadronAlumnos() {
-  const { usuario } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const rolBase = usuario?.roles[0]?.toLowerCase();
+  const { roleBase: rolBase } = useActiveRole();
 
   const tabDesdeUrl = searchParams.get('tab');
   const tabInicial = TABS.find((t) => t.id === tabDesdeUrl) ? tabDesdeUrl : 'activos';

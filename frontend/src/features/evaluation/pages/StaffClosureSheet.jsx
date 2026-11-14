@@ -21,6 +21,7 @@ import {
 } from '../hooks/useClosureSheet';
 import { CLOSURE_STATUS, STAFF_STATUS_DESCRIPTION, activeStudents, columnLabel, toggleResultKpi, unpublishedColumns, withdrawnCount } from '../lib/closureSheet';
 import { ClosureActionBar } from '../components/ClosureActionBar';
+import { ClosureNoAbsenceLimitNotice } from '../components/ClosureNoAbsenceLimitNotice';
 import { ClosureExportMenu } from '../components/ClosureExportMenu';
 import { ClosurePrerequisitesSheet } from '../components/ClosurePrerequisitesSheet';
 import { ClosureRowActions } from '../components/ClosureRowActions';
@@ -134,6 +135,8 @@ export function StaffClosureSheet({ role }) {
           Hasta publicarlo, {pendingCount} {pendingCount === 1 ? 'alumno queda Pendiente' : 'alumnos quedan Pendientes'} y no se puede cerrar el acta.
         </Notice>
       )}
+
+      {sheet.status !== 'CLOSED' && <ClosureNoAbsenceLimitNotice sheet={sheet} />}
 
       <div className="flex flex-col gap-2">
         <p className="text-xs text-ink-faint">

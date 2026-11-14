@@ -78,7 +78,7 @@ class CourseSectionEnrollmentServiceTest {
         when(repository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED))
                 .thenReturn(Optional.empty());
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
         assertThat(active.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
         assertThat(active.getDroppedAt()).isEqualTo(LocalDateTime.of(2026, 5, 4, 15, 30));
@@ -91,7 +91,7 @@ class CourseSectionEnrollmentServiceTest {
         CourseSubjectSectionEnrollment inactive = enrollment(1L, status);
         when(repository.findById(1L)).thenReturn(Optional.of(inactive));
 
-        assertThatThrownBy(() -> service.withdraw(1L)).isInstanceOf(CannotWithdrawException.class);
+        assertThatThrownBy(() -> service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L))).isInstanceOf(CannotWithdrawException.class);
         assertThat(inactive.getStatus()).isEqualTo(status);
         assertThat(inactive.getDroppedAt()).isNull();
         verify(repository, never()).save(inactive);
@@ -102,7 +102,7 @@ class CourseSectionEnrollmentServiceTest {
     void withdrawFailsWhenEnrollmentDoesNotExist() {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.withdraw(1L)).isInstanceOf(SectionEnrollmentNotFoundException.class);
+        assertThatThrownBy(() -> service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L))).isInstanceOf(SectionEnrollmentNotFoundException.class);
     }
 
     @Test
@@ -115,7 +115,7 @@ class CourseSectionEnrollmentServiceTest {
         when(repository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED))
                 .thenReturn(Optional.of(next));
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
         assertThat(next.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
         InOrder order = inOrder(repository, sectionFinder);
@@ -132,7 +132,7 @@ class CourseSectionEnrollmentServiceTest {
         when(repository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED))
                 .thenReturn(Optional.empty());
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
         verify(repository).save(leaving);
         verify(sectionFinder).lockCourseSection(40L);
@@ -143,7 +143,7 @@ class CourseSectionEnrollmentServiceTest {
         CourseSubjectSectionEnrollment waiting = enrollment(1L, EnrollmentStatus.WAITLISTED);
         when(repository.findById(1L)).thenReturn(Optional.of(waiting));
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
         assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
         assertThat(waiting.getDroppedAt()).isEqualTo(LocalDateTime.of(2026, 5, 4, 15, 30));
@@ -159,7 +159,7 @@ class CourseSectionEnrollmentServiceTest {
         when(sectionFinder.findCourseSection(40L)).thenReturn(new CourseSectionView(40L, 5L, 6L, 7L, 1, "A"));
         when(repository.countByCourseSubjectSectionIdAndStatusIn(40L, SEAT_HOLDING)).thenReturn(1L);
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
         verify(repository, never()).findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED);
     }
@@ -173,7 +173,7 @@ class CourseSectionEnrollmentServiceTest {
         when(repository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED))
                 .thenReturn(Optional.of(next));
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
         assertThat(next.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }

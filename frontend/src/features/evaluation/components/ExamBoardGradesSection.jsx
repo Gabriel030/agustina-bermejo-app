@@ -139,7 +139,7 @@ export function ExamBoardGradesSection({ mesa, rows, role, canWithdraw, onWithdr
   }
 
   function dropFailed() {
-    const failedId = failure.registrationId;
+    const failedId = failure?.registrationId;
     const remaining = removeBoardDraft(drafts, failedId);
     setDrafts(remaining);
     setFailure(null);

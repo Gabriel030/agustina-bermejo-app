@@ -5,6 +5,8 @@ import com.red_escuela.backend.academicstructure.api.ProgramSectionView;
 import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import com.red_escuela.backend.enrollment.events.SubjectWaitlistPromotedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +19,13 @@ public class SectionWaitlistPromoter {
     private final SectionFinder sectionFinder;
     private final SubjectRetakeGuard subjectRetakeGuard;
     private final ProgramPrerequisiteEvaluator prerequisiteEvaluator;
+    private final ApplicationEventPublisher eventPublisher;
 
     public SectionWaitlistPromoter(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
                                    SectionFinder sectionFinder, SubjectRetakeGuard subjectRetakeGuard,
-                                   ProgramPrerequisiteEvaluator prerequisiteEvaluator) {
+                                   ProgramPrerequisiteEvaluator prerequisiteEvaluator,
+                                   ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
         this.prerequisiteEvaluator = prerequisiteEvaluator;
         this.subjectRetakeGuard = subjectRetakeGuard;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
@@ -51,6 +56,8 @@ public class SectionWaitlistPromoter {
                 .ifPresent(next -> {
                     next.setStatus(EnrollmentStatus.ENROLLED);
                     subjectSectionEnrollmentRepository.save(next);
+                    eventPublisher.publishEvent(SubjectWaitlistPromotedEvent.of(next.getId(), next.getStudent().getPerson().getId(),
+                            next.getSubjectSection().getSubject().getName(), next.getSubjectSection().getName()));
                 });
     }
 }

@@ -12,7 +12,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.Set;
 
 @Service
@@ -35,6 +41,25 @@ public class PriceReader {
     @Transactional(readOnly = true)
     public Optional<PriceVersionResolution> findPriceVersionEffectiveOn(OfferingReference offering, FeeType feeType, LocalDate date) {
         return findVersionEffectiveOn(offering, feeType, date).map(PriceVersion::resolution);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, PriceVersionResolution> findPriceVersionsEffectiveOn(Collection<Long> offeringIds, boolean programs, FeeType feeType, LocalDate date) {
+        if (offeringIds.isEmpty()) {
+            return Map.of();
+        }
+        List<PriceVersion> candidates = programs
+                ? priceVersionRepository.findResolvableByProgramIds(offeringIds, feeType, RESOLVABLE, date)
+                : priceVersionRepository.findResolvableByCourseIds(offeringIds, feeType, RESOLVABLE, date);
+        Comparator<PriceVersion> newestFirst = Comparator.comparing(PriceVersion::getEffectiveFrom)
+                .thenComparing(PriceVersion::getDecidedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(PriceVersion::getId);
+        Map<Long, PriceVersionResolution> resolutions = new HashMap<>();
+        candidates.stream()
+                .collect(Collectors.groupingBy(version -> programs ? version.getPrice().getProgramId() : version.getPrice().getCourseId(),
+                        Collectors.maxBy(newestFirst)))
+                .forEach((offeringId, version) -> version.ifPresent(found -> resolutions.put(offeringId, found.resolution())));
+        return resolutions;
     }
 
     @Transactional(readOnly = true)

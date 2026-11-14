@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { postLoginPathFor } from '@/lib/activeRole';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GoogleLogin } from '@react-oauth/google';
@@ -58,7 +59,7 @@ export function Login() {
     const from = location.state?.from;
     const destino = from?.pathname
       ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`
-      : usuario.roles.length ? `/${usuario.roles[0].toLowerCase()}/inicio` : '/catalogo';
+      : postLoginPathFor(usuario);
     navigate(destino, { replace: true });
   }, [usuario, location.state, navigate]);
 

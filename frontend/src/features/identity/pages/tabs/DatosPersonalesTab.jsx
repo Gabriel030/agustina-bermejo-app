@@ -173,11 +173,11 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, pued
             {puedeDarDeBaja && (
               <div className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-size-14 font-medium text-ink">Dar de baja</span>
+                  <span className="text-size-14 font-medium text-ink">Dar de baja al alumno del instituto</span>
                   <span className="text-size-12 text-ink-faint">Marca al alumno como dado de baja del sistema. Podés reactivarlo después desde su legajo.</span>
                 </div>
                 <Button variant="destructive" size="sm" onClick={onBaja}>
-                  Dar de baja
+                  Dar de baja al alumno del instituto
                 </Button>
               </div>
             )}

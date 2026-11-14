@@ -74,7 +74,7 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
     public void requireValidContext(ChangePriceCommand command) {
         Currency currency = priceRepository.findCurrencyById(command.priceId()).orElseThrow(() -> new PriceNotFoundException(command.priceId()));
         policyEvaluator.requireValidPriceChange(new PriceChangeCheck(command.effectiveFrom(), LocalDate.now(clock), command.changeReason()));
-        policyEvaluator.requireValidPriceVersion(command.toDraft(currency));
+        policyEvaluator.requireValidPriceVersion(command.toDraft(currency).forFeeType(priceRepository.findFeeTypeById(command.priceId()).orElseThrow(() -> new PriceNotFoundException(command.priceId()))));
         requireValidAdvancePrice(command);
     }
 

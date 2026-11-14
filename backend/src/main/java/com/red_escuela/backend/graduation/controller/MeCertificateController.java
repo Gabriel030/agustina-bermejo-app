@@ -29,12 +29,6 @@ public class MeCertificateController {
         this.certificateService = certificateService;
     }
 
-    @GetMapping("/regular")
-    public ResponseEntity<byte[]> regularCertificate(@PathVariable Long id) {
-        requireOwner(id);
-        return pdfResponse(certificateService.issueRegularCertificate(id), "constancia-regular.pdf");
-    }
-
     @GetMapping("/approved-subjects")
     public ResponseEntity<byte[]> approvedSubjectsCertificate(@PathVariable Long id) {
         requireOwner(id);

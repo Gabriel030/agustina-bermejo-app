@@ -29,6 +29,11 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 |---|---|---|
 | [release/migration-smoke.md](release/migration-smoke.md) | Pasos para probar la cadena de migraciones de master (V110) a develop sobre Postgres en Docker | vigente |
 | [release/institution-sms-credential.md](release/institution-sms-credential.md) | Qué hacer si `institution.sms_password` tenía una credencial cargada antes de V214 | vigente |
+| [deploy/README.md](deploy/README.md) | Runbook de despliegue de producción: primer despliegue, actualización con migraciones, rollback, secretos y logs | vigente |
+| [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
+| [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
+| [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
+| [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
 | [../perf/README.md](../perf/README.md) | Como reproducir la medicion de rendimiento: Postgres con pg_stat_statements, perfil `perf`, presupuestos y k6 | vigente |
 
 ## Decisiones de arquitectura (`docs/adr/`)

@@ -134,6 +134,6 @@ describe('ContactListTab', () => {
     expect(await screen.findByText('Benítez, Joaquín')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getAllByText('Deuda vencida')).toHaveLength(2);
-    expect(screen.getAllByText('Motivo')).toHaveLength(2);
+    expect(screen.getAllByText('Motivo')).toHaveLength(3);
   });
 });

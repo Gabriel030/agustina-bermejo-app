@@ -18,7 +18,9 @@ import com.red_escuela.backend.billing.pricing.policy.PriceVersionCancellationCh
 import com.red_escuela.backend.billing.pricing.policy.SingleOpenPriceProposalPolicy;
 import com.red_escuela.backend.billing.pricing.policy.ScheduledPriceVersionCancellablePolicy;
 import com.red_escuela.backend.billing.pricing.policy.MarketingDiscountFixedNotAboveBasePolicy;
+import com.red_escuela.backend.billing.pricing.policy.MarketingDiscountLeavesAPricePolicy;
 import com.red_escuela.backend.billing.pricing.policy.MarketingDiscountNotNegativePolicy;
+import com.red_escuela.backend.billing.pricing.policy.OfferingListPricePositivePolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceCurrencyPolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceVersionDraft;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -36,8 +38,10 @@ public class PricingPolicySetsConfiguration {
         List<Policy<PriceVersionDraft>> ordered = List.of(
                 new PriceCurrencyPolicy(),
                 new PriceAmountWithinLimitPolicy(),
+                new OfferingListPricePositivePolicy(),
                 new MarketingDiscountNotNegativePolicy(),
-                new MarketingDiscountFixedNotAboveBasePolicy());
+                new MarketingDiscountFixedNotAboveBasePolicy(),
+                new MarketingDiscountLeavesAPricePolicy());
         return PolicySet.named("PRICE_VERSION", ordered);
     }
 

@@ -35,7 +35,7 @@ public class CourseSectionEnrollmentService {
     }
 
     @Transactional
-    public void withdraw(Long id) {
+    public void withdraw(Long id, EnrollmentChange change) {
         CourseSubjectSectionEnrollment enrollment = findOrThrow(id);
         EnrollmentStatus previousStatus = enrollment.getStatus();
         if (previousStatus != EnrollmentStatus.ENROLLED && previousStatus != EnrollmentStatus.IN_PROGRESS
@@ -45,6 +45,8 @@ public class CourseSectionEnrollmentService {
         }
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollment.setDroppedAt(LocalDateTime.now(clock));
+        enrollment.setWithdrawalReason(change.reason());
+        enrollment.setWithdrawnByPersonId(change.actorPersonId());
         courseSubjectSectionEnrollmentRepository.save(enrollment);
         if (previousStatus != EnrollmentStatus.WAITLISTED) {
             promoteNextFromWaitlist(enrollment.courseSubjectSectionId());

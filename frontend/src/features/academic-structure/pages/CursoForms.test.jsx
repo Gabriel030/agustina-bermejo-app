@@ -40,6 +40,7 @@ async function fillWizard(user) {
   await screen.findByRole('option', { name: '2027 — Anual' });
   await user.selectOptions(screen.getByLabelText(/Período académico/), '4');
   await user.type(screen.getByLabelText(/Cupo/), '20');
+  await user.type(screen.getByLabelText(/Cuota mensual/), '15000');
   await user.click(screen.getByRole('button', { name: 'Continuar' }));
   await user.type(await screen.findByLabelText(/Duración \(meses\)/), '3');
   return view;
@@ -67,7 +68,8 @@ describe('CursoWizard form', () => {
     expect(screen.getByLabelText(/Nombre del curso/)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText(/Período académico/)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText(/Cupo/)).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByText('Corregí los 3 campos marcados para continuar.')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Cuota mensual/)).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Corregí los 4 campos marcados para continuar.')).toBeInTheDocument();
   });
 });
 
@@ -76,7 +78,7 @@ describe('CursoEditarDatos form', () => {
     const { container } = renderEdit();
 
     expect(await screen.findByLabelText(/Nombre/)).toHaveValue('Primeros auxilios');
-    expect(screen.getByLabelText('Precio')).toHaveValue(15000);
+    expect(screen.getByLabelText(/Cuota mensual/)).toHaveValue(15000);
     expect(screen.getByLabelText('Modalidad')).toHaveValue('ONLINE');
     expect(container.querySelector('.grid-cols-2:not(.sm\\:grid-cols-2)')).toBeNull();
     expect(await axe(container)).toHaveNoViolations();
@@ -93,11 +95,11 @@ describe('CursoEditarDatos form', () => {
     const user = userEvent.setup();
     renderEdit();
 
-    await user.clear(await screen.findByLabelText('Precio'));
+    await user.clear(await screen.findByLabelText(/Cuota mensual/));
     await user.selectOptions(screen.getByLabelText('Modalidad'), '');
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
-    expect(screen.getByLabelText('Precio')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText(/Cuota mensual/)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText('Modalidad')).toHaveAttribute('aria-invalid', 'true');
     expect(sent).toBe(false);
   });

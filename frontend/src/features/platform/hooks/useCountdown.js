@@ -4,9 +4,13 @@ export function useCountdown(expiresAt) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!expiresAt) return undefined;
-    setNow(Date.now());
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    const tick = () => setNow(Date.now());
+    const immediate = setTimeout(tick, 0);
+    const timer = setInterval(tick, 1000);
+    return () => {
+      clearTimeout(immediate);
+      clearInterval(timer);
+    };
   }, [expiresAt]);
   if (!expiresAt) return null;
   return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now) / 1000));

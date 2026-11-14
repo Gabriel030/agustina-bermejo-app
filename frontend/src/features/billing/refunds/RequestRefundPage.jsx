@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
@@ -8,7 +9,6 @@ import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatMoney } from '@/lib/billing';
 import { formatAmountEsAr } from '../components/cashAmount';
@@ -57,8 +57,7 @@ const UNKNOWN_OUTCOME_MESSAGE =
 export function RequestRefundPage() {
   const { id: studentId } = useParams();
   const navigate = useNavigate();
-  const { usuario } = useAuth();
-  const roleBase = usuario?.roles[0]?.toLowerCase();
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const studentPath = `/${roleBase}/alumnos/${studentId}?view=financiero`;
 

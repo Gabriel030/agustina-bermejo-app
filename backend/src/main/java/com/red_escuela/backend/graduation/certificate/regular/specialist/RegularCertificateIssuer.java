@@ -19,6 +19,7 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.NotRegul
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateAlreadyIssuedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceInvalidException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingNotConfirmedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.StudentDocumentMissingException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StudentHasDebtException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
@@ -97,6 +98,7 @@ public class RegularCertificateIssuer {
     public RegularCertificateResponse issue(IssueRegularCertificateCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
         RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
+        requireDocument(facts);
         Long studentId = facts.student().getId();
         Long actorId = currentActorFinder.currentPersonId();
         rejectIfStillValid(command, studentId, actorId, now);
@@ -110,6 +112,7 @@ public class RegularCertificateIssuer {
     public RegularCertificateSubmissionResponse submitFromPortal(IssueRegularCertificateCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
         RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
+        requireDocument(facts);
         Long studentId = facts.student().getId();
         Long actorId = currentActorFinder.currentPersonId();
         rejectIfStillValid(command, studentId, actorId, now);
@@ -120,6 +123,13 @@ public class RegularCertificateIssuer {
         }
         StandingResolution standing = resolveStanding(command, studentId, actorId, now);
         return RegularCertificateSubmissionResponse.issued(create(command, facts, standing, actorId, now));
+    }
+
+    private void requireDocument(RegularEnrollmentFacts facts) {
+        String documentNumber = facts.student().getPerson().getDni();
+        if (documentNumber == null || documentNumber.isBlank()) {
+            throw new StudentDocumentMissingException();
+        }
     }
 
     private void requireRegular(IssueRegularCertificateCommand command, Long studentId, Long actorId, LocalDateTime now) {
