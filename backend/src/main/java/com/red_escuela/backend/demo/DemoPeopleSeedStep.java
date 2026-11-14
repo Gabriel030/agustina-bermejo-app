@@ -84,6 +84,8 @@ public class DemoPeopleSeedStep implements DemoSeedStep {
         request.put("username", username);
         request.put("password", DemoPersona.PASSWORD);
         request.put("institutionId", institutionId);
+        request.put("acceptedTerms", true);
+        request.put("acceptedPrivacy", true);
         session.api().register(request);
     }
 

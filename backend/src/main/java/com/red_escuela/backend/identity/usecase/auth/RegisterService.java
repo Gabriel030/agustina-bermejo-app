@@ -11,6 +11,7 @@ import com.red_escuela.backend.identity.exception.UsernameAlreadyExistsException
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
+import com.red_escuela.backend.identity.specialist.LegalAcceptanceRecorder;
 import com.red_escuela.backend.identity.specialist.PasswordPolicyValidator;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
 import com.red_escuela.backend.identity.repository.InstitutionRepository;
@@ -28,11 +29,12 @@ public class RegisterService implements RegisterUseCase {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final AuthTokenIssuer authTokenIssuer;
+    private final LegalAcceptanceRecorder legalAcceptanceRecorder;
 
     public RegisterService(PersonRepository personRepository, StudentRepository studentRepository,
                             InstitutionRepository institutionRepository, PersonFactory personFactory,
                             PasswordEncoder passwordEncoder, PasswordPolicyValidator passwordPolicyValidator,
-                            AuthTokenIssuer authTokenIssuer) {
+                            AuthTokenIssuer authTokenIssuer, LegalAcceptanceRecorder legalAcceptanceRecorder) {
         this.personRepository = personRepository;
         this.studentRepository = studentRepository;
         this.institutionRepository = institutionRepository;
@@ -40,11 +42,13 @@ public class RegisterService implements RegisterUseCase {
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
         this.authTokenIssuer = authTokenIssuer;
+        this.legalAcceptanceRecorder = legalAcceptanceRecorder;
     }
 
     @Override
     @Transactional
     public AuthTokens register(RegisterRequest request) {
+        legalAcceptanceRecorder.requireAcceptance(request.acceptedTerms(), request.acceptedPrivacy());
         passwordPolicyValidator.validate(request.password());
 
         if (personRepository.findByUsername(request.username()).isPresent()) {
@@ -64,6 +68,8 @@ public class RegisterService implements RegisterUseCase {
             student.setInstitution(institution);
             student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             studentRepository.saveAndFlush(student);
+
+            legalAcceptanceRecorder.acceptAtRegistration(person);
 
             return authTokenIssuer.issueTokens(person);
         } catch (DataIntegrityViolationException e) {

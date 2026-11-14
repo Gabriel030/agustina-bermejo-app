@@ -10,5 +10,7 @@ public record RegisterRequest(
         @NotBlank @Email String email,
         @NotBlank String username,
         @NotBlank String password,
-        @NotNull Long institutionId) {
+        @NotNull Long institutionId,
+        Boolean acceptedTerms,
+        Boolean acceptedPrivacy) {
 }

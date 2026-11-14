@@ -162,6 +162,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_WINDOW_CONFIGURATION` | no | `InvalidWindowConfigurationException` | enrollment |
 | `INVALID_YEAR_BILLING_CONFIGURATION` | no | `InvalidYearBillingConfigurationException` | billing |
 | `LEGACY_RECEIPT_HAS_NO_VERIFIABLE_PAYMENT` | no | `LegacyReceiptHasNoVerifiablePaymentException` | billing |
+| `LEGAL_ACCEPTANCE_REQUIRED` | no | `LegalAcceptanceRequiredException` | identity |
 | `MAX_EXAM_ATTEMPTS_EXCEEDED` | no | `MaxExamAttemptsExceededException` | evaluation |
 | `NEGATIVE_ADJUSTMENT_AMOUNT` | no | `NegativeAdjustmentAmountException` | shared |
 | `NEGATIVE_MONEY_AMOUNT` | no | `NegativeMoneyAmountException` | shared |
@@ -721,6 +722,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/exam-board-registrations/{id}/withdraw` | `MeExamBoardRegistrationController#withdraw` |
 | POST | `/me/invoices/{id}/bank-transfer-receipts` | `MeInvoiceController#uploadReceipt` |
 | POST | `/me/invoices/{id}/mp-preference` | `MeInvoiceController#createMpPreference` |
+| POST | `/me/legal-acceptances` | `LegalDocumentController#acceptCurrentDocuments` |
 | POST | `/me/notifications/{id}/read` | `MeNotificationController#markAsRead` |
 | POST | `/me/program-enrollment-applications` | `ProgramEnrollmentApplicationController#request` |
 | POST | `/me/program-enrollment-applications/with-documents` | `ProgramEnrollmentApplicationWithDocumentsController#requestWithDocuments` |

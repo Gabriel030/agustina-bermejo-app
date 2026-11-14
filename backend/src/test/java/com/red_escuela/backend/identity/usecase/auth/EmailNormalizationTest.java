@@ -130,7 +130,7 @@ class EmailNormalizationTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> registerUseCase.register(
-                new RegisterRequest("Ana", "Perez", "DUP@mail.com", "norm5b", "Password123", institution.getId())))
+                new RegisterRequest("Ana", "Perez", "DUP@mail.com", "norm5b", "Password123", institution.getId(), true, true)))
                 .isInstanceOf(UsernameAlreadyExistsException.class);
     }
 

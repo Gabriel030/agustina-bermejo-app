@@ -238,6 +238,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE: 'La solicitud de inscripción no está en un estado que lo permita.',
   INVALID_TRANSITION_CONFIRMATION: 'La confirmación del cambio de estado no es válida.',
   LAST_DIGITAL_PAYMENT_METHOD_REQUIRED: 'Tiene que quedar al menos un medio de pago digital activo.',
+  LEGAL_ACCEPTANCE_REQUIRED: 'Para registrarte tenés que aceptar los términos y condiciones y la política de privacidad.',
   NOT_REGULAR: 'No tenés la cursada regular de esta materia.',
   PENDING_COURSE_ENROLLMENT_APPLICATION: 'Hay una inscripción al curso pendiente de aprobación.',
   PREREQUISITE_ALREADY_EXISTS: 'Esa correlatividad ya existe.',
