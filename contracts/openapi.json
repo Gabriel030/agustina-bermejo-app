@@ -1909,7 +1909,7 @@
       "Blocker" : {
         "properties" : {
           "entityType" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS", "GRADE_ITEMS", "ATTENDANCES" ],
             "type" : "string"
           },
           "naturalKey" : {
@@ -4519,7 +4519,7 @@
       "CreatedCount" : {
         "properties" : {
           "entityType" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS", "GRADE_ITEMS", "ATTENDANCES" ],
             "type" : "string"
           },
           "total" : {
@@ -6739,7 +6739,7 @@
       "ImportBlockCounters" : {
         "properties" : {
           "entityType" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS", "GRADE_ITEMS", "ATTENDANCES" ],
             "type" : "string"
           },
           "rowsByStatus" : {
@@ -6756,7 +6756,7 @@
       "ImportFileResponse" : {
         "properties" : {
           "entityType" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS", "GRADE_ITEMS", "ATTENDANCES" ],
             "type" : "string"
           },
           "originalName" : {
@@ -6814,7 +6814,7 @@
             "type" : "string"
           },
           "entityType" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS", "GRADE_ITEMS", "ATTENDANCES" ],
             "type" : "string"
           },
           "message" : {
@@ -31732,7 +31732,7 @@
           "name" : "entityType",
           "required" : true,
           "schema" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS", "GRADE_ITEMS", "ATTENDANCES" ],
             "type" : "string"
           }
         } ],
@@ -32236,7 +32236,7 @@
           "name" : "entityType",
           "required" : true,
           "schema" : {
-            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES", "TERMS", "SECTIONS", "PROGRAM_ENROLLMENTS", "SECTION_ENROLLMENTS", "GRADE_ITEMS", "ATTENDANCES" ],
             "type" : "string"
           }
         } ],

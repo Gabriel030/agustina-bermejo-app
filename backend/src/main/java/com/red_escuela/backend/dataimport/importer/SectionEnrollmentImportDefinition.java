@@ -138,6 +138,24 @@ public class SectionEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public Set<String> aliasKeys(Map<String, String> payload) {
+        return Set.of(studentSectionKey(ImportDocumentKey.keyOf(payload), payload.get("sectionCode")));
+    }
+
+    @Override
+    public boolean aliasExistsInBase(String aliasKey) {
+        int separator = aliasKey.indexOf('|');
+        String documentKey = aliasKey.substring(0, separator);
+        return sectionRecorder.findSectionIdByCode(aliasKey.substring(separator + 1))
+                .map(sectionId -> enrollmentRecorder.sectionEnrollmentExists(ImportDocumentKey.typeOfKey(documentKey),
+                        ImportDocumentKey.numberOfKey(documentKey), sectionId)).orElse(false);
+    }
+
+    public static String studentSectionKey(String documentKey, String sectionCode) {
+        return documentKey + "|" + ImportValueParser.cleanText(sectionCode);
+    }
+
+    @Override
     public void discard(Long entityId) {
         closureRecorder.discardStudentResult(entityId);
         enrollmentRecorder.discardSectionEnrollment(entityId);

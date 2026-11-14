@@ -17,10 +17,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SectionImportDefinition implements ImportEntityDefinition {
+    private static final String LEAD_SUFFIX = "|LEAD_INSTRUCTOR";
     public static final List<String> COLUMNS = List.of("sectionCode", "subjectCode", "year", "termType", "name", "shift",
             "instructorDni", "closedOn", "actaNumber", "actaBook", "actaFolio", "programName");
 
@@ -122,6 +124,21 @@ public class SectionImportDefinition implements ImportEntityDefinition {
     @Override
     public boolean existsInBase(String naturalKey) {
         return sectionRecorder.sectionCodeExists(naturalKey);
+    }
+
+    @Override
+    public Set<String> aliasKeys(Map<String, String> payload) {
+        return ImportValueParser.cleanDocumentNumber(payload.get("instructorDni")).isEmpty() ? Set.of()
+                : Set.of(leadInstructorAlias(naturalKey(payload)));
+    }
+
+    @Override
+    public boolean aliasExistsInBase(String aliasKey) {
+        return sectionRecorder.sectionHasLeadInstructor(aliasKey.substring(0, aliasKey.length() - LEAD_SUFFIX.length()));
+    }
+
+    public static String leadInstructorAlias(String sectionCode) {
+        return sectionCode + LEAD_SUFFIX;
     }
 
     @Override
