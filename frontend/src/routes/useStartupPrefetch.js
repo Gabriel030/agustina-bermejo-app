@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { readLastRole, resolveActiveRole } from '@/lib/activeRole';
 import { myModulesQuery } from '@/hooks/useMyModules';
 import { ROLE_CONFIG } from '@/routes/roleConfig';
 import { firstRealPage } from '@/routes/menuAccess';
@@ -10,7 +11,11 @@ export function useStartupPrefetch(usuario) {
   const queryClient = useQueryClient();
   const { pathname } = useLocation();
   const userId = usuario?.id;
-  const role = usuario?.roles?.[0]?.toLowerCase();
+  const role = resolveActiveRole({
+    roles: usuario?.roles ?? [],
+    urlSegment: pathname.split('/')[1],
+    lastRole: userId == null ? null : readLastRole(userId),
+  })?.toLowerCase();
 
   useEffect(() => {
     if (!userId || !role) return;

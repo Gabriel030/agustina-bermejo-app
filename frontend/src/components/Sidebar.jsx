@@ -3,6 +3,8 @@ import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/GlassCard';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { useAuth } from '@/context/AuthContext';
+import { RoleSwitcher } from '@/components/RoleSwitcher';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { NavGroups } from '@/components/NavGroups';
 import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
 import { isDesignB } from '@/theme/design';
@@ -34,6 +36,7 @@ function ItemNav({ to, label, icon: Icon }) {
  */
 export function Sidebar({ titulo, items, groups }) {
   const { usuario, logout } = useAuth();
+  const { canSwitch } = useActiveRole();
   const { containerRef, rect } = useSlidingIndicator('.nav-item-activo');
 
   // "Opciones" se separa del resto de la navegación de contenido y se agrupa
@@ -53,12 +56,13 @@ export function Sidebar({ titulo, items, groups }) {
     <GlassCard className="hidden h-full w-64 shrink-0 flex-col gap-6 overflow-hidden p-5 lg:flex design-b:rounded-none design-b:border-0 design-b:border-r">
       <div className="shrink-0">
         <InstitutionBrand layout="horizontal" />
-        <div className="mt-4 text-sm font-semibold text-ink-faint">{titulo}</div>
+        {!canSwitch && <div className="mt-4 text-sm font-semibold text-ink-faint">{titulo}</div>}
         {usuario && (
-          <div className="mt-1 truncate font-heading text-base font-semibold text-ink">
+          <div className={cn('truncate font-heading text-base font-semibold text-ink', canSwitch ? 'mt-4' : 'mt-1')}>
             {usuario.nombre} {usuario.apellido}
           </div>
         )}
+        <RoleSwitcher variant="menu" />
       </div>
 
       {/* overflow-x-hidden explícito: sin esto, fijar solo overflow-y hace que el

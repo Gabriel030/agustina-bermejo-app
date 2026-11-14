@@ -1,14 +1,15 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { WithdrawRequestDialog } from '../authorization/WithdrawRequestDialog';
-import { inboxPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { inboxPath } from '../authorization/authorizationRequests';
 import { pendingOperationTitle } from './creditNotes';
 
 export function PendingRequestActions({ pending, subject }) {
   const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const [withdrawing, setWithdrawing] = useState(false);
   const own = pending.requestedByPersonId != null && pending.requestedByPersonId === usuario?.id;
 

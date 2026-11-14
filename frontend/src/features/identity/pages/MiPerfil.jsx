@@ -16,6 +16,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable';
 import { confirmationDeadlineLabel, sameEmail } from '@/features/identity/emailChange';
 import { InstallPrompt } from '@/pwa/InstallPrompt';
+import { RoleEntryPreference } from '@/features/identity/components/RoleEntryPreference';
 import { NotificationMatrix } from '@/features/identity/components/NotificationMatrix';
 import { LegalAcceptancesTab } from '@/features/identity/legal/LegalAcceptancesTab';
 import {
@@ -647,6 +648,8 @@ export function MiPerfil() {
           </TabsContent>
         </Tabs>
       </GlassCard>
+
+      <RoleEntryPreference />
     </PageContainer>
   );
 }

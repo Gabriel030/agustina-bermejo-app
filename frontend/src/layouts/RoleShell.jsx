@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, m } from 'motion/react';
 import { Sidebar } from '@/components/Sidebar';
@@ -12,14 +12,19 @@ import { SkipToContent } from '@/components/SkipToContent';
 import { SystemBar } from '@/pwa/SystemBar';
 import { LegalNoticeBanner } from '@/features/identity/legal/LegalNoticeBanner';
 import { isDesignB } from '@/theme/design';
+import { useAuth } from '@/context/AuthContext';
+import { readLastRole } from '@/lib/activeRole';
 
 const HEADING_WAIT_MS = 2000;
 
-function useFocusHeadingOnNavigation(mainRef, pathname) {
+function useFocusHeadingOnNavigation(mainRef, pathname, focusOnMount) {
   const previousPath = useRef(pathname);
+  const pendingFocus = useRef(focusOnMount);
   useEffect(() => {
-    if (previousPath.current === pathname) return undefined;
+    const changed = previousPath.current !== pathname;
     previousPath.current = pathname;
+    if (!changed && !pendingFocus.current) return undefined;
+    pendingFocus.current = false;
     const main = mainRef.current;
     if (!main || !isDesignB()) return undefined;
     const focusHeading = () => {
@@ -56,7 +61,13 @@ export function RoleShell({ titulo, items, groups }) {
   const element = useOutlet();
   const breadcrumbItems = useBreadcrumb();
   const mainRef = useRef(null);
-  useFocusHeadingOnNavigation(mainRef, location.pathname);
+  const { usuario } = useAuth();
+  const [arrivedFromOtherRole] = useState(() => {
+    const segment = location.pathname.split('/')[1]?.toUpperCase();
+    const lastRole = usuario ? readLastRole(usuario.id) : null;
+    return Boolean(lastRole) && lastRole !== segment;
+  });
+  useFocusHeadingOnNavigation(mainRef, location.pathname, arrivedFromOtherRole);
 
   return (
     // h-screen + overflow-hidden en la raíz: el shell ocupa exactamente el viewport

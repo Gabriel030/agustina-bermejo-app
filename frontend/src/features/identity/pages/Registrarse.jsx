@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { postLoginPathFor } from '@/lib/activeRole';
 import { Link, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
@@ -53,7 +54,7 @@ export function Registrarse() {
 
   useEffect(() => {
     if (usuario) {
-      navigate(usuario.roles.length ? `/${usuario.roles[0].toLowerCase()}/inicio` : '/catalogo', { replace: true });
+      navigate(postLoginPathFor(usuario), { replace: true });
     }
   }, [usuario, navigate]);
 

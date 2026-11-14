@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
 import { InfoTip } from '@/components/charts/InfoTip';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useTerminos } from '@/features/academic-structure';
 import { FEE_TYPE_LABELS, formatDate, formatMoney, formatSignedMoney, todayIsoDate } from '@/lib/billing';
-import { detailPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { detailPath } from '../authorization/authorizationRequests';
 import { RadioChoice } from '../discounts/RadioChoice';
 import { ViolationList } from '../discounts/ViolationList';
 import { useOfferNames } from '../hooks/useOfferNames';
@@ -74,8 +74,7 @@ function WhatHappensPanel({ lines }) {
 export function NewPriceVersionPage() {
   const { priceId } = useParams();
   const navigate = useNavigate();
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const listPath = `/${roleBase}/precios`;
   const prices = usePrices();
