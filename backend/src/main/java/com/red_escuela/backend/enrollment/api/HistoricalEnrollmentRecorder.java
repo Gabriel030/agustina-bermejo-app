@@ -72,6 +72,7 @@ public class HistoricalEnrollmentRecorder {
         enrollment.setProgram(entityManager.getReference(Program.class, programId));
         enrollment.setStatus(historical.status());
         enrollment.setEnrollmentDate(historical.enrollmentDate().atTime(HISTORICAL_TIME));
+        enrollment.setEntryYear(historical.entryYear());
         if (historical.completionDate() != null) {
             enrollment.setCompletionDate(historical.completionDate().atTime(HISTORICAL_TIME));
         }

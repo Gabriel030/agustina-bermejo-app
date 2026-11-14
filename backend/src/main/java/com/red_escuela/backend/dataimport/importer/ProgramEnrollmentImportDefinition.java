@@ -114,6 +114,7 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
         return recorder.recordProgramEnrollment(new HistoricalProgramEnrollment(type,
                 ImportDocumentKey.numberOf(payload, type), reader.text("programName"), reader.date("enrollmentDate", true),
                 reader.enumValue("status", ProgramEnrollmentStatus.class, true).orElseThrow(),
-                reader.date("completionDate", false), reader.date("withdrawalDate", false)));
+                reader.date("completionDate", false), reader.date("withdrawalDate", false),
+                reader.integer("cohortYear", false, 1990, 2100)));
     }
 }

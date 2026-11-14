@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SectionImportDefinition implements ImportEntityDefinition {
     public static final List<String> COLUMNS = List.of("sectionCode", "subjectCode", "year", "termType", "name", "shift",
-            "instructorDni", "closedOn", "actaNumber", "actaBook", "actaFolio");
+            "instructorDni", "closedOn", "actaNumber", "actaBook", "actaFolio", "programName");
 
     private final HistoricalSectionRecorder sectionRecorder;
     private final HistoricalClosureRecorder closureRecorder;
@@ -67,6 +67,9 @@ public class SectionImportDefinition implements ImportEntityDefinition {
         reader.enumValue("termType", TermType.class, true);
         reader.requiredText("name", 255);
         reader.enumValue("shift", SectionShift.class, false);
+        if (reader.text("programName").length() > 255) {
+            reader.errors().add(new ImportRowError("programName", "PROGRAM_NAME_TOO_LONG", "El texto supera 255 caracteres"));
+        }
         LocalDate closedOn = reader.date("closedOn", true);
         if (closedOn != null && closedOn.isAfter(ApplicationTime.today())) {
             reader.errors().add(new ImportRowError("closedOn", "CLOSED_ON_IN_FUTURE", "Solo se importan comisiones ya cerradas"));
@@ -85,8 +88,12 @@ public class SectionImportDefinition implements ImportEntityDefinition {
         List<ImportReference> references = new ArrayList<>();
         references.add(new ImportReference(ImportEntityType.SUBJECTS, ImportValueParser.cleanText(payload.get("subjectCode")),
                 "subjectCode", "SUBJECT_NOT_FOUND"));
-        references.add(new ImportReference(ImportEntityType.TERMS,
-                TermImportDefinition.keyOf(payload.get("year"), payload.get("termType")), "year", "TERM_NOT_FOUND"));
+        String program = ImportValueParser.cleanText(payload.get("programName"));
+        references.add(program.isEmpty()
+                ? ImportReference.anyWithPrefix(ImportEntityType.TERMS,
+                        TermImportDefinition.keyPrefixOf(payload.get("year"), payload.get("termType")), "year", "TERM_NOT_FOUND")
+                : new ImportReference(ImportEntityType.TERMS,
+                        TermImportDefinition.keyOf(payload.get("year"), payload.get("termType"), program), "programName", "TERM_NOT_FOUND"));
         String instructor = ImportValueParser.cleanDocumentNumber(payload.get("instructorDni"));
         if (!instructor.isEmpty()) {
             references.add(new ImportReference(ImportEntityType.PERSONS, "DNI:" + instructor, "instructorDni", "INSTRUCTOR_NOT_FOUND"));
@@ -100,6 +107,10 @@ public class SectionImportDefinition implements ImportEntityDefinition {
         List<ImportRowError> errors = new ArrayList<>();
         if (exists) {
             errors.add(new ImportRowError("sectionCode", "SECTION_ALREADY_EXISTS", "Ya existe una comisión con ese código"));
+        }
+        String instructor = ImportValueParser.cleanDocumentNumber(payload.get("instructorDni"));
+        if (!instructor.isEmpty() && sectionRecorder.personWithoutInstructorProfile(instructor)) {
+            errors.add(new ImportRowError("instructorDni", "INSTRUCTOR_NOT_FOUND", "La persona existe pero no es docente"));
         }
         String acta = ImportValueParser.cleanText(payload.get("actaNumber"));
         if (!acta.isEmpty() && closureRecorder.reportNumberExists(acta)) {
@@ -120,7 +131,7 @@ public class SectionImportDefinition implements ImportEntityDefinition {
                 reader.text("subjectCode"), reader.integer("year", true, 1990, 2100),
                 reader.enumValue("termType", TermType.class, true).orElseThrow(), reader.text("name"),
                 reader.enumValue("shift", SectionShift.class, false).orElse(null),
-                ImportValueParser.cleanDocumentNumber(payload.get("instructorDni"))));
+                ImportValueParser.cleanDocumentNumber(payload.get("instructorDni")), reader.text("programName")));
         closureRecorder.recordClosure(new HistoricalClosure(sectionId, reader.date("closedOn", true),
                 reader.text("actaNumber"), reader.text("actaBook"), reader.text("actaFolio")));
         return sectionId;

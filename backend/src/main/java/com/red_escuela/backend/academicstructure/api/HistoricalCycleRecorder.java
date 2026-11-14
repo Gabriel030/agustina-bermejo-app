@@ -37,8 +37,16 @@ public class HistoricalCycleRecorder {
     }
 
     @Transactional(readOnly = true)
-    public boolean cycleExists(int year, TermType termType) {
+    public boolean termExists(int year, TermType termType) {
         return termRepository.findFirstByYearAndTypeOrderByIdAsc(year, termType).isPresent();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean cycleExists(int year, TermType termType, String programName) {
+        return termRepository.findFirstByYearAndTypeOrderByIdAsc(year, termType)
+                .flatMap(term -> programRepository.findFirstByName(programName)
+                        .flatMap(program -> cycleRepository.findFirstByTermIdAndProgramIdOrderByIdAsc(term.getId(), program.getId())))
+                .isPresent();
     }
 
     @Transactional

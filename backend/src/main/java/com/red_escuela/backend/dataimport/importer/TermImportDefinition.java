@@ -37,13 +37,17 @@ public class TermImportDefinition implements ImportEntityDefinition {
         return COLUMNS;
     }
 
-    public static String keyOf(String year, String termType) {
-        return ImportValueParser.cleanText(year) + "|" + ImportValueParser.cleanText(termType).toUpperCase(Locale.ROOT);
+    public static String keyPrefixOf(String year, String termType) {
+        return ImportValueParser.cleanText(year) + "|" + ImportValueParser.cleanText(termType).toUpperCase(Locale.ROOT) + "|";
+    }
+
+    public static String keyOf(String year, String termType, String programName) {
+        return keyPrefixOf(year, termType) + ImportValueParser.cleanText(programName);
     }
 
     @Override
     public String naturalKey(Map<String, String> payload) {
-        return keyOf(payload.get("year"), payload.get("termType"));
+        return keyOf(payload.get("year"), payload.get("termType"), payload.get("programName"));
     }
 
     @Override
@@ -78,15 +82,20 @@ public class TermImportDefinition implements ImportEntityDefinition {
     public BaseCheck checkAgainstBase(Map<String, String> payload) {
         boolean exists = existsInBase(naturalKey(payload));
         return new BaseCheck(exists, exists
-                ? List.of(new ImportRowError("year", "TERM_ALREADY_EXISTS", "Ya existe un ciclo con ese año y tipo"))
+                ? List.of(new ImportRowError("year", "TERM_ALREADY_EXISTS", "Ya existe un ciclo de esa carrera con ese año y tipo"))
                 : List.of());
     }
 
     @Override
     public boolean existsInBase(String naturalKey) {
-        String[] parts = naturalKey.split("\\|", 2);
+        String[] parts = naturalKey.split("\\|", 3);
         try {
-            return parts.length == 2 && recorder.cycleExists(Integer.parseInt(parts[0]), TermType.valueOf(parts[1]));
+            if (parts.length != 3) {
+                return false;
+            }
+            int year = Integer.parseInt(parts[0]);
+            TermType type = TermType.valueOf(parts[1]);
+            return parts[2].isEmpty() ? recorder.termExists(year, type) : recorder.cycleExists(year, type, parts[2]);
         } catch (IllegalArgumentException e) {
             return false;
         }

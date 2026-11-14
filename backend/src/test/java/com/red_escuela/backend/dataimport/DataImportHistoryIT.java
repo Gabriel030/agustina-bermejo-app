@@ -115,8 +115,8 @@ class DataImportHistoryIT extends AbstractIntegrationTest {
                 + program + "," + subject + ",1,FIRST,6,MANDATORY,PROMOTIONAL,1\n");
         upload(batchId, "TERMS", "year,termType,description,startDate,endDate,programName\n"
                 + year + ",FIRST_SEMESTER,Primer cuatrimestre," + year + "-03-15,15/07/" + year + "," + program + "\n");
-        upload(batchId, "SECTIONS", "sectionCode,subjectCode,year,termType,name,shift,instructorDni,closedOn,actaNumber,actaBook,actaFolio\n"
-                + section + "," + subject + "," + year + ",FIRST_SEMESTER,Comisión A,MORNING," + teacherDni + "," + year + "-07-20,,Libro 7,Folio 45\n");
+        upload(batchId, "SECTIONS", "sectionCode,subjectCode,year,termType,name,shift,instructorDni,closedOn,actaNumber,actaBook,actaFolio,programName\n"
+                + section + "," + subject + "," + year + ",FIRST_SEMESTER,Comisión A,MORNING," + teacherDni + "," + year + "-07-20,,Libro 7,Folio 45,\n");
         upload(batchId, "PROGRAM_ENROLLMENTS", "documentType,dni,programName,enrollmentDate,status,completionDate,withdrawalDate,cohortYear\n"
                 + "DNI," + studentDni + "," + program + "," + year + "-03-01,ENROLLED,,," + year + "\n");
         upload(batchId, "SECTION_ENROLLMENTS", "documentType,dni,programName,sectionCode,attemptNumber,status,finalScore,finalGradeType,finalDate\n"
@@ -131,6 +131,7 @@ class DataImportHistoryIT extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMMITTED"));
 
+        assertThat(jdbc.queryForObject("select count(*) from program_enrollment where entry_year = ?", Integer.class, year)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from academic_offering_cycle c join program p on p.id = c.program_id where p.name = ? and c.status = 'CLOSED'",
                 Integer.class, program)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select t.status from term t join subject_section s on s.term_id = t.id where s.code = ?",
@@ -152,8 +153,8 @@ class DataImportHistoryIT extends AbstractIntegrationTest {
     @Test
     void sectionPointingToAnUnknownCycleAndEnrollmentWithoutStudentAreReported() throws Exception {
         long batchId = createBatch();
-        upload(batchId, "SECTIONS", "sectionCode,subjectCode,year,termType,name,shift,instructorDni,closedOn,actaNumber,actaBook,actaFolio\n"
-                + "X-" + suffix + ",ZZZ9,2009,FIRST_SEMESTER,Comisión A,,,2009-07-20,,,\n");
+        upload(batchId, "SECTIONS", "sectionCode,subjectCode,year,termType,name,shift,instructorDni,closedOn,actaNumber,actaBook,actaFolio,programName\n"
+                + "X-" + suffix + ",ZZZ9,2009,FIRST_SEMESTER,Comisión A,,,2009-07-20,,,,\n");
         upload(batchId, "SECTION_ENROLLMENTS", "documentType,dni,programName,sectionCode,attemptNumber,status,finalScore,finalGradeType,finalDate\n"
                 + "DNI,12345678,Carrera " + suffix + ",X-" + suffix + ",1,APPROVED,,,\n");
 

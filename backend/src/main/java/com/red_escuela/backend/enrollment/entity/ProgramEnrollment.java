@@ -61,6 +61,9 @@ public class ProgramEnrollment implements BillableEnrollment {
     @Column(name = "enrollment_date")
     private LocalDateTime enrollmentDate;
 
+    @Column(name = "entry_year")
+    private Integer entryYear;
+
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 

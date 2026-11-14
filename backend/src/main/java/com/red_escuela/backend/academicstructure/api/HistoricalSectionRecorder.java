@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
+import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
@@ -9,6 +10,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.HistoricalReferenceMissingException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
@@ -29,18 +31,21 @@ public class HistoricalSectionRecorder {
     private final TermRepository termRepository;
     private final AcademicOfferingCycleRepository cycleRepository;
     private final InstructorRepository instructorRepository;
+    private final ProgramRepository programRepository;
     private final HistoricalPersonRecorder personRecorder;
 
     public HistoricalSectionRecorder(SubjectSectionRepository sectionRepository,
             SubjectSectionInstructorRepository sectionInstructorRepository, SubjectRepository subjectRepository,
             TermRepository termRepository, AcademicOfferingCycleRepository cycleRepository,
-            InstructorRepository instructorRepository, HistoricalPersonRecorder personRecorder) {
+            InstructorRepository instructorRepository, ProgramRepository programRepository,
+            HistoricalPersonRecorder personRecorder) {
         this.sectionRepository = sectionRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.subjectRepository = subjectRepository;
         this.termRepository = termRepository;
         this.cycleRepository = cycleRepository;
         this.instructorRepository = instructorRepository;
+        this.programRepository = programRepository;
         this.personRecorder = personRecorder;
     }
 
@@ -59,6 +64,11 @@ public class HistoricalSectionRecorder {
         return findInstructor(dni).isPresent();
     }
 
+    @Transactional(readOnly = true)
+    public boolean personWithoutInstructorProfile(String dni) {
+        return personRecorder.documentExists(DocumentType.DNI, dni) && findInstructor(dni).isEmpty();
+    }
+
     @Transactional
     public Long recordSection(HistoricalSection historical) {
         Subject subject = subjectRepository.findByCode(historical.subjectCode())
@@ -75,7 +85,7 @@ public class HistoricalSectionRecorder {
         section.setShift(historical.shift());
         section.setStatus(StatusType.INACTIVE);
         section.setCreatedAt(ApplicationTime.now());
-        section.setAcademicOfferingCycle(cycleRepository.findFirstByTermIdOrderByIdAsc(term.getId()).orElse(null));
+        section.setAcademicOfferingCycle(findCycle(term, historical.programName()));
         SubjectSection saved = sectionRepository.save(section);
         if (instructor != null) {
             SubjectSectionInstructor assignment = new SubjectSectionInstructor();
@@ -87,6 +97,15 @@ public class HistoricalSectionRecorder {
             sectionInstructorRepository.save(assignment);
         }
         return saved.getId();
+    }
+
+    private AcademicOfferingCycle findCycle(Term term, String programName) {
+        if (programName.isEmpty()) {
+            return cycleRepository.findFirstByTermIdOrderByIdAsc(term.getId()).orElse(null);
+        }
+        return programRepository.findFirstByName(programName)
+                .flatMap(program -> cycleRepository.findFirstByTermIdAndProgramIdOrderByIdAsc(term.getId(), program.getId()))
+                .orElseThrow(() -> new HistoricalReferenceMissingException(programName));
     }
 
     private Optional<Instructor> findInstructor(String dni) {

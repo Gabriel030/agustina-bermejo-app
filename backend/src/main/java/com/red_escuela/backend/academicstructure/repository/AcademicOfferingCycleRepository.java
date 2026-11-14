@@ -21,4 +21,6 @@ public interface AcademicOfferingCycleRepository extends JpaRepository<AcademicO
     Optional<AcademicOfferingCycle> findByIdForUpdate(@Param("id") Long id);
 
     java.util.Optional<AcademicOfferingCycle> findFirstByTermIdOrderByIdAsc(Long termId);
+
+    java.util.Optional<AcademicOfferingCycle> findFirstByTermIdAndProgramIdOrderByIdAsc(Long termId, Long programId);
 }
