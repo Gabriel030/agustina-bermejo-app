@@ -16,6 +16,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   CLOSURE_EXCEPTION_ALREADY_GRANTED: 'El alumno ya tiene una excepción vigente en este cierre.',
   CLOSURE_EXCEPTION_NOT_FOUND: 'El alumno no tiene una excepción vigente en este cierre.',
   CLOSURE_NOT_FOUND: 'No encontramos el cierre pedido.',
+  HISTORICAL_ATTENDANCE_REFERENCE_MISSING: 'Falta la cursada del alumno o el docente titular de la comisión para cargar la asistencia.',
+  HISTORICAL_GRADE_REFERENCE_MISSING: 'El alumno no tiene la cursada importada en esa comisión.',
   HISTORICAL_CLOSURE_MISSING: 'La comisión de esta cursada no tiene acta de cierre histórica.',
   HISTORICAL_DISCARD_BLOCKED: 'No se puede deshacer: hay datos posteriores sobre lo importado.',
   HISTORICAL_ENROLLMENT_REFERENCE_MISSING: 'Falta el alumno, la carrera o la inscripción de la que depende esta cursada.',
