@@ -6,6 +6,8 @@ import com.red_escuela.backend.enrollment.dto.WithdrawEnrollmentRequest;
 
 public interface StaffEnrollmentChange {
 
+    java.util.List<com.red_escuela.backend.enrollment.dto.ChangeSectionCandidateResponse> listChangeSectionCandidates(Long sectionEnrollmentId);
+
     void withdrawSubject(Long sectionEnrollmentId, String reason);
 
     SectionEnrollmentResponse changeSubjectSection(Long sectionEnrollmentId, ChangeSectionRequest request);

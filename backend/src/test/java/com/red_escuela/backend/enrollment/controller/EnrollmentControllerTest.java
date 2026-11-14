@@ -10,6 +10,13 @@ import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.attendance.entity.Attendance;
+import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.evaluation.entity.GradeItemType;
+import com.red_escuela.backend.enrollment.events.SubjectWaitlistPromotedEvent;
+
 import com.red_escuela.backend.academicstructure.entity.Classroom;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.enrollment.events.SubjectEnrollmentWithdrawnEvent;
@@ -1018,5 +1025,159 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         assertThat(withdrawn.getWithdrawnByPersonId()).isEqualTo(student.getPerson().getId());
         assertThat(events.stream(SubjectEnrollmentWithdrawnEvent.class).toList()).singleElement()
                 .satisfies(event -> assertThat(event.notifyStudent()).isFalse());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions listCandidates(ChangeScenario scenario) throws Exception {
+        return mockMvc.perform(get("/section-enrollments/{id}/change-section-candidates", scenario.origin().getId())
+                .header("Authorization", "Bearer " + scenario.token()));
+    }
+
+    @Test
+    void candidatesTellWhichSectionsCanBeChosenAndWhyTheOthersCannot() throws Exception {
+        ChangeScenario scenario = changeScenario("60000021", null, LocalTime.of(9, 0), LocalTime.of(11, 0), "DIRECTOR");
+        Subject subject = scenario.origin().getSubjectSection().getSubject();
+        Term sameTerm = scenario.origin().getSubjectSection().getTerm();
+        SubjectSection free = persistSubjectSection(subject, sameTerm, 10);
+        persistSlot(free, DayOfWeek.TUESDAY, LocalTime.of(8, 0), LocalTime.of(10, 0));
+        SubjectSection full = persistSubjectSection(subject, sameTerm, 0);
+        SubjectSection otherPeriod = persistSubjectSection(subject, persistTermBetween(SECOND_PERIOD_START, SECOND_PERIOD_END), 10);
+        entityManager.flush();
+
+        listCandidates(scenario).andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.sectionId==" + scenario.origin().getSubjectSection().getId() + ")].blockReason", org.hamcrest.Matchers.contains("CURRENT_SECTION")))
+                .andExpect(jsonPath("$[?(@.sectionId==" + scenario.destination().getId() + ")].blockReason", org.hamcrest.Matchers.contains("SCHEDULE_OVERLAP")))
+                .andExpect(jsonPath("$[?(@.sectionId==" + scenario.destination().getId() + ")].conflictingSubject", org.hamcrest.Matchers.contains("Algebra60000021")))
+                .andExpect(jsonPath("$[?(@.sectionId==" + scenario.destination().getId() + ")].selectable", org.hamcrest.Matchers.contains(false)))
+                .andExpect(jsonPath("$[?(@.sectionId==" + full.getId() + ")].blockReason", org.hamcrest.Matchers.contains("SECTION_FULL")))
+                .andExpect(jsonPath("$[?(@.sectionId==" + otherPeriod.getId() + ")].blockReason", org.hamcrest.Matchers.contains("OTHER_TERM")))
+                .andExpect(jsonPath("$[?(@.sectionId==" + free.getId() + ")].selectable", org.hamcrest.Matchers.contains(true)))
+                .andExpect(jsonPath("$[?(@.sectionId==" + free.getId() + ")].availableSeats", org.hamcrest.Matchers.contains(10)))
+                .andExpect(jsonPath("$[?(@.sectionId==" + free.getId() + ")].slots[0].dayOfWeek", org.hamcrest.Matchers.contains("TUESDAY")));
+    }
+
+    @Test
+    void candidateThatTouchesTheOtherCursadaAtTheBoundaryIsSelectable() throws Exception {
+        ChangeScenario scenario = changeScenario("60000022", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "PRECEPTOR");
+
+        listCandidates(scenario).andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.sectionId==" + scenario.destination().getId() + ")].selectable", org.hamcrest.Matchers.contains(true)));
+    }
+
+    @Test
+    void candidatesOfAnUnknownEnrollmentReturn404() throws Exception {
+        mockMvc.perform(get("/section-enrollments/{id}/change-section-candidates", 999999999L)
+                        .header("Authorization", "Bearer " + tokenWithRole("preceptor-60000023", "PRECEPTOR")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void waitlistedStudentIsNotifiedWhenAWithdrawalFreesTheSeat() throws Exception {
+        Institution institution = persistInstitution();
+        Student seated = persistStudent("60000031", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Student waiting = persistStudent("60000032", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("Materia60000031");
+        Program program = persistProgram("Carrera60000031", 100);
+        persistProgramSubject(program, subject, 10);
+        SubjectSection section = persistSubjectSection(subject, persistTerm(null, null), 1);
+        SubjectSectionEnrollment seatedEnrollment = persistSectionEnrollment(seated, persistProgramEnrollment(seated, program, ProgramEnrollmentStatus.ENROLLED), section, EnrollmentStatus.ENROLLED, 1);
+        SubjectSectionEnrollment waitingEnrollment = persistSectionEnrollment(waiting, persistProgramEnrollment(waiting, program, ProgramEnrollmentStatus.ENROLLED), section, EnrollmentStatus.WAITLISTED, 1);
+        entityManager.flush();
+
+        withdrawSubject(seatedEnrollment.getId(), tokenWithRole("preceptor-60000031", "PRECEPTOR"), STAFF_REASON_BODY).andExpect(status().isNoContent());
+
+        List<SubjectWaitlistPromotedEvent> promoted = events.stream(SubjectWaitlistPromotedEvent.class).toList();
+        assertThat(promoted).singleElement().satisfies(event -> {
+            assertThat(event.enrollmentId()).isEqualTo(waitingEnrollment.getId());
+            assertThat(event.studentPersonId()).isEqualTo(waiting.getPerson().getId());
+            assertThat(event.subjectName()).isEqualTo("Materia60000031");
+        });
+    }
+
+    @Test
+    void attendanceAndGradesStayInTheWithdrawnEnrollmentAndTheNewOneStartsEmpty() throws Exception {
+        ChangeScenario scenario = changeScenario("60000041", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        Instructor recorder = new Instructor();
+        Person recorderPerson = new Person();
+        recorderPerson.setName("Docente");
+        recorderPerson.setLastname("Prueba");
+        recorderPerson.setDni("60000042");
+        recorderPerson.setUsername("docente-60000042");
+        recorderPerson.setEmail("docente-60000042@example.com");
+        Address address = new Address();
+        entityManager.persist(address);
+        recorderPerson.setAddress(address);
+        recorderPerson.setStatus(StatusType.ACTIVE);
+        entityManager.persist(recorderPerson);
+        recorder.setPerson(recorderPerson);
+        entityManager.persist(recorder);
+        Attendance attendance = new Attendance();
+        attendance.setProgramSubjectSectionEnrollment(scenario.origin());
+        attendance.setClassDate(java.time.LocalDate.of(2026, 4, 6));
+        attendance.setStatus(AttendanceStatus.PRESENT);
+        attendance.setRecordedBy(recorder);
+        entityManager.persist(attendance);
+        GradeItem gradeItem = new GradeItem();
+        gradeItem.setProgramSubjectSectionEnrollment(scenario.origin());
+        gradeItem.setType(GradeItemType.TP);
+        gradeItem.setSequenceNumber(1);
+        entityManager.persist(gradeItem);
+        entityManager.flush();
+        Long originId = scenario.origin().getId();
+
+        String body = changeSection(scenario, STAFF_REASON).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        Long newId = objectMapper.readTree(body).get("id").asLong();
+        assertThat(newId).isNotEqualTo(originId);
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, originId).getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(countAttendance(originId)).isEqualTo(1L);
+        assertThat(countGradeItems(originId)).isEqualTo(1L);
+        assertThat(countAttendance(newId)).isZero();
+        assertThat(countGradeItems(newId)).isZero();
+    }
+
+    private long countAttendance(Long enrollmentId) {
+        return entityManager.createQuery("select count(a) from Attendance a where a.programSubjectSectionEnrollment.id = :id", Long.class)
+                .setParameter("id", enrollmentId).getSingleResult();
+    }
+
+    private long countGradeItems(Long enrollmentId) {
+        return entityManager.createQuery("select count(g) from GradeItem g where g.programSubjectSectionEnrollment.id = :id", Long.class)
+                .setParameter("id", enrollmentId).getSingleResult();
+    }
+
+    @Test
+    void courseProgressListsEachModuleEnrollmentWithItsIdAndStatus() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000051", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Term term = persistTerm(null, null);
+        Course course = persistCourse(term, null, null);
+        CourseSubject module = persistCourseSubject(course, "Modulo 60000051");
+        CourseSubjectSection section = persistCourseSubjectSection(module, term, 10);
+        CourseEnrollment courseEnrollment = new CourseEnrollment();
+        courseEnrollment.setStudent(student);
+        courseEnrollment.setCourse(course);
+        courseEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+        courseEnrollment.setEnrollmentDate(LocalDateTime.now());
+        entityManager.persist(courseEnrollment);
+        CourseSubjectSectionEnrollment moduleEnrollment = new CourseSubjectSectionEnrollment();
+        moduleEnrollment.setStudent(student);
+        moduleEnrollment.setCourseEnrollment(courseEnrollment);
+        moduleEnrollment.setCourseSubjectSection(section);
+        moduleEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+        moduleEnrollment.setEnrolledAt(LocalDateTime.now());
+        moduleEnrollment.setAttemptNumber(1);
+        entityManager.persist(moduleEnrollment);
+        entityManager.flush();
+
+        mockMvc.perform(get("/course-enrollments/{id}/progress", courseEnrollment.getId())
+                        .header("Authorization", "Bearer " + tokenWithRole("preceptor-60000051", "PRECEPTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.moduleEnrollments[0].sectionEnrollmentId").value(moduleEnrollment.getId()))
+                .andExpect(jsonPath("$.moduleEnrollments[0].moduleId").value(module.getId()))
+                .andExpect(jsonPath("$.moduleEnrollments[0].moduleName").value("Modulo 60000051"))
+                .andExpect(jsonPath("$.moduleEnrollments[0].status").value("ENROLLED"))
+                .andExpect(jsonPath("$.modulosPendientes[0]").value("Modulo 60000051"));
     }
 }

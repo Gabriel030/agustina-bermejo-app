@@ -60,6 +60,13 @@ public class SectionFinder {
                 section.getCapacity(), section.getName());
     }
 
+    public List<ProgramSectionCandidateView> findProgramSectionCandidates(Long subjectId) {
+        return programSectionRepository.findBySubjectId(subjectId).stream()
+                .map(section -> new ProgramSectionCandidateView(section.getId(), section.getName(), section.getTerm().getId(),
+                        section.getCapacity(), isOpenForEnrollment(section)))
+                .toList();
+    }
+
     public boolean isProgramSectionOpenForEnrollment(Long id) {
         return programSectionRepository.findById(id).map(this::isOpenForEnrollment).orElse(false);
     }

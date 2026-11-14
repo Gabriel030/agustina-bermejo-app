@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 @Transactional(readOnly = true)
@@ -43,9 +44,15 @@ public class StudentScheduleOverlapGuard {
     }
 
     public void requireNoOverlapForProgramSection(Long studentId, Long targetSectionId, Long targetTermId, Long ignoredEnrollmentId) {
+        findOverlapForProgramSection(studentId, targetSectionId, targetTermId, ignoredEnrollmentId).ifPresent(overlap -> {
+            throw overlap;
+        });
+    }
+
+    public Optional<SectionScheduleOverlapException> findOverlapForProgramSection(Long studentId, Long targetSectionId, Long targetTermId, Long ignoredEnrollmentId) {
         List<SectionSlotView> targetSlots = sectionScheduleFinder.findProgramSectionSlots(targetSectionId);
         if (targetSlots.isEmpty()) {
-            return;
+            return Optional.empty();
         }
         Map<Long, TermPeriodView> periods = new HashMap<>();
         TermPeriodView targetPeriod = periods.computeIfAbsent(targetTermId, termPeriodFinder::findPeriod);
@@ -56,30 +63,38 @@ public class StudentScheduleOverlapGuard {
             }
             TermPeriodView otherPeriod = periods.computeIfAbsent(other.termId(), termPeriodFinder::findPeriod);
             if (targetPeriod.overlaps(otherPeriod)) {
-                requireDisjoint(targetSlots, sectionScheduleFinder.findProgramSectionSlots(other.getSubjectSection().getId()),
+                Optional<SectionScheduleOverlapException> overlap = findOverlap(targetSlots, sectionScheduleFinder.findProgramSectionSlots(other.getSubjectSection().getId()),
                         other.getSubjectSection().getSubject().getName());
+                if (overlap.isPresent()) {
+                    return overlap;
+                }
             }
         }
         for (CourseSubjectSectionEnrollment other : courseEnrollmentRepository.findByStudentIdAndStatusInOrderByIdAsc(studentId, ATTENDING_STATUSES)) {
             Long otherTermId = other.getCourseSubjectSection().getTerm().getId();
             TermPeriodView otherPeriod = periods.computeIfAbsent(otherTermId, termPeriodFinder::findPeriod);
             if (targetPeriod.overlaps(otherPeriod)) {
-                requireDisjoint(targetSlots, sectionScheduleFinder.findCourseSectionSlots(other.getCourseSubjectSection().getId()),
+                Optional<SectionScheduleOverlapException> overlap = findOverlap(targetSlots, sectionScheduleFinder.findCourseSectionSlots(other.getCourseSubjectSection().getId()),
                         other.getCourseSubjectSection().getModuleName());
+                if (overlap.isPresent()) {
+                    return overlap;
+                }
             }
         }
+        return Optional.empty();
     }
 
-    private void requireDisjoint(List<SectionSlotView> targetSlots, List<SectionSlotView> otherSlots, String otherSubjectName) {
+    private Optional<SectionScheduleOverlapException> findOverlap(List<SectionSlotView> targetSlots, List<SectionSlotView> otherSlots, String otherSubjectName) {
         for (SectionSlotView target : targetSlots) {
             for (SectionSlotView other : otherSlots) {
                 boolean sameDay = target.dayOfWeek() == other.dayOfWeek();
                 boolean overlapping = target.startTime().isBefore(other.endTime()) && other.startTime().isBefore(target.endTime());
                 if (sameDay && overlapping) {
-                    throw new SectionScheduleOverlapException(otherSubjectName, other.dayOfWeek().getDisplayName(TextStyle.FULL, SPANISH),
-                            other.startTime().format(TIME), other.endTime().format(TIME));
+                    return Optional.of(new SectionScheduleOverlapException(otherSubjectName, other.dayOfWeek().getDisplayName(TextStyle.FULL, SPANISH),
+                            other.startTime().format(TIME), other.endTime().format(TIME)));
                 }
             }
         }
+        return Optional.empty();
     }
 }

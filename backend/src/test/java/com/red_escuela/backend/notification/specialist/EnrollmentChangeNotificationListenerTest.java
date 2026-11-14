@@ -110,4 +110,19 @@ class EnrollmentChangeNotificationListenerTest {
         assertThat(notifications.get(1).message()).contains("dejó", "Com A");
         assertThat(notifications.get(2).message()).contains("se sumó", "Com B");
     }
+
+    @Test
+    void waitlistPromotionNotifiesTheStudentOnceEvenIfTheEventIsReplayed() {
+        guardRunsEachEffectOnlyOnce();
+        personsExist(7L);
+        com.red_escuela.backend.enrollment.events.SubjectWaitlistPromotedEvent event =
+                com.red_escuela.backend.enrollment.events.SubjectWaitlistPromotedEvent.of(5L, 7L, "Algebra", "Com A");
+
+        listener.notifyWaitlistPromoted(event);
+        listener.notifyWaitlistPromoted(event);
+
+        List<ClosureNotification> notifications = published(1);
+        assertThat(notifications.get(0).type()).isEqualTo(NotificationType.WAITLIST_PROMOTED);
+        assertThat(notifications.get(0).message()).contains("lista de espera", "Algebra", "Com A");
+    }
 }
