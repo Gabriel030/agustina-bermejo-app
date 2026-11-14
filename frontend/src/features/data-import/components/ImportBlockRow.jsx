@@ -14,15 +14,6 @@ function BlockInfo({ block }) {
   );
 }
 
-export function UpcomingBlockRow({ block }) {
-  return (
-    <li className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:gap-4" data-testid={`block-${block.key}`}>
-      <BlockInfo block={block} />
-      <StatusPill tone="neutral">Próximamente</StatusPill>
-    </li>
-  );
-}
-
 export function ImportBlockRow({ block, file, editable, uploading, onSelectFile }) {
   const inputId = `import-file-${block.entityType}`;
 

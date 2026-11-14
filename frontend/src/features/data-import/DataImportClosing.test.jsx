@@ -116,7 +116,7 @@ describe('DataImport seal and retry', () => {
       }),
     );
     renderDetail();
-    await userEvent.click(await screen.findByRole('button', { name: 'Plantilla' }));
+    await userEvent.click(within(await screen.findByTestId('block-PERSONS')).getByRole('button', { name: 'Plantilla' }));
     await waitFor(() => expect(requested).toBe(true));
   });
 });
