@@ -68,7 +68,10 @@ public class ImportBatchValidator {
         ImportEntityDefinition definition = registry.definitionFor(type);
         Map<String, Set<String>> seen = new HashMap<>();
         Map<ImportRowStatus, Integer> counts = new HashMap<>();
-        for (ImportRow row : rowRepository.findByBatchIdAndEntityTypeOrderByRowNumber(batchId, type)) {
+        List<ImportRow> fileRows = rowRepository.findByBatchIdAndEntityTypeOrderByRowNumber(batchId, type);
+        Map<Integer, List<ImportRowError>> acrossRows = definition.validateAcrossRows(fileRows.stream().map(ImportRow::getPayload).toList());
+        int index = 0;
+        for (ImportRow row : fileRows) {
             Map<String, String> payload = row.getPayload();
             List<ImportRowError> errors = new ArrayList<>(definition.validateFormat(payload));
             definition.uniquenessValues(payload).forEach((column, value) -> {
@@ -77,11 +80,23 @@ public class ImportBatchValidator {
                             "El valor está repetido en el archivo"));
                 }
             });
+            definition.references(payload).forEach(reference -> {
+                if (!referenceExists(batchId, reference)) {
+                    errors.add(new ImportRowError(reference.column(), reference.code(), "La referencia no existe en el lote ni en el sistema"));
+                }
+            });
+            errors.addAll(acrossRows.getOrDefault(index, List.of()));
             ImportRowStatus status = classify(row, definition, errors);
             row.classify(status, errors);
             counts.merge(status, 1, Integer::sum);
+            index++;
         }
         return counts;
+    }
+
+    private boolean referenceExists(Long batchId, ImportReference reference) {
+        return rowRepository.existsByBatchIdAndEntityTypeAndNaturalKey(batchId, reference.type(), reference.naturalKey())
+                || registry.definitionFor(reference.type()).existsInBase(reference.naturalKey());
     }
 
     private ImportRowStatus classify(ImportRow row, ImportEntityDefinition definition, List<ImportRowError> errors) {

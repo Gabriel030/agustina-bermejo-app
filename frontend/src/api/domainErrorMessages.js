@@ -17,6 +17,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   CLOSURE_EXCEPTION_NOT_FOUND: 'El alumno no tiene una excepción vigente en este cierre.',
   CLOSURE_NOT_FOUND: 'No encontramos el cierre pedido.',
   HISTORICAL_PERSON_EMAIL_TAKEN: 'Ese correo ya está registrado.',
+  HISTORICAL_REFERENCE_MISSING: 'Falta un dato del que depende esta fila (carrera, materia o plan de estudios).',
   IMPORT_ALREADY_RUNNING: 'Ya hay una importación en curso.',
   IMPORT_BATCH_NOT_FOUND: 'No encontramos ese lote de importación.',
   IMPORT_BATCH_STATE_INVALID: 'El lote no está en un estado que permita esa acción.',

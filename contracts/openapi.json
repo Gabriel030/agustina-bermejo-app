@@ -6652,7 +6652,7 @@
       "ImportBlockCounters" : {
         "properties" : {
           "entityType" : {
-            "enum" : [ "PERSONS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES" ],
             "type" : "string"
           },
           "rowsByStatus" : {
@@ -6669,7 +6669,7 @@
       "ImportFileResponse" : {
         "properties" : {
           "entityType" : {
-            "enum" : [ "PERSONS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES" ],
             "type" : "string"
           },
           "originalName" : {
@@ -6700,7 +6700,7 @@
             "type" : "string"
           },
           "entityType" : {
-            "enum" : [ "PERSONS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES" ],
             "type" : "string"
           },
           "message" : {
@@ -31775,7 +31775,7 @@
           "name" : "entityType",
           "required" : true,
           "schema" : {
-            "enum" : [ "PERSONS" ],
+            "enum" : [ "PERSONS", "PROGRAMS", "SUBJECTS", "CURRICULUM", "PREREQUISITES" ],
             "type" : "string"
           }
         } ],
