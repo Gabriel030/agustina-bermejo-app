@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
@@ -6,6 +6,8 @@ import { server } from "@/test/mocks/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { axe } from "@/test/axe";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
+
+vi.mock('@/hooks/useActiveRole', async () => import('@/test/activeRoleFromUrl'));
 
 const API = "http://localhost:8080";
 

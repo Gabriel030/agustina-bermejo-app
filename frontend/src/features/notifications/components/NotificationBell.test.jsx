@@ -11,6 +11,8 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { TIPO_NOTIFICACION_LABEL } from '@/lib/notificaciones';
 
+vi.mock('@/hooks/useActiveRole', async () => import('@/test/activeRoleFromUrl'));
+
 const pageOf = (items) => ({ items, page: 0, size: 10, totalElements: items.length })
 
 const API = 'http://localhost:8080';
@@ -270,8 +272,8 @@ describe('NotificationBell', () => {
 
   it.each([
     ['OFFER_CYCLE_SUBMITTED', 'CycleSubmitted', '/director/aprobaciones/oferta-academica/9'],
-    ['OFFER_CYCLE_APPROVED', 'AcademicOfferingCycle', '/oferta-academica'],
-    ['OFFER_CYCLE_REJECTED', 'AcademicOfferingCycle', '/oferta-academica'],
+    ['OFFER_CYCLE_APPROVED', 'AcademicOfferingCycle', '/director/oferta-academica'],
+    ['OFFER_CYCLE_REJECTED', 'AcademicOfferingCycle', '/director/oferta-academica'],
   ])('navigates to the offer screen when tapping %s', async (type, entityType, destination) => {
     const user = userEvent.setup();
     function Destino() {
@@ -286,15 +288,71 @@ describe('NotificationBell', () => {
     );
     renderWithProviders(
       <Routes>
-        <Route path="/" element={<NotificationBell />} />
+        <Route path="/director/inicio" element={<NotificationBell />} />
         <Route path="*" element={<Destino />} />
       </Routes>,
+      { route: '/director/inicio' },
     );
 
     await user.click(await screen.findByRole('button', { name: 'Notificaciones' }));
     await user.click(await screen.findByText(TIPO_NOTIFICACION_LABEL[type]));
 
     expect(await screen.findByText(destination)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['SUBJECT_WITHDRAWN', '/alumno/inicio', '/alumno/mis-carreras?tab=materias'],
+    ['REGULAR_CERTIFICATE_READY', '/alumno/inicio', '/alumno/mis-carreras?tab=tramites'],
+    ['SUBJECT_WITHDRAWN_TEACHER', '/docente/inicio', '/docente/mis-comisiones'],
+  ])('takes the active role to the matching screen when tapping %s', async (type, start, destination) => {
+    const user = userEvent.setup();
+    function Destino() {
+      const location = useLocation();
+      return <div>{`${location.pathname}${location.search}`}</div>;
+    }
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json(pageOf([
+          { id: 51, type, message: 'Novedad', read: true, relatedEntityType: 'X', relatedEntityId: 3, createdAt: '2026-11-01T10:00:00' },
+        ])),
+      ),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path={start} element={<NotificationBell />} />
+        <Route path="*" element={<Destino />} />
+      </Routes>,
+      { route: start },
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones' }));
+    await user.click(await screen.findByText(TIPO_NOTIFICACION_LABEL[type]));
+
+    expect(await screen.findByText(destination)).toBeInTheDocument();
+  });
+
+  it('stays on the screen and keeps the list open when the notification has no destination for the active role', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json(pageOf([
+          { id: 52, type: 'NIGHTLY_RUN_FAILED', message: 'Falló', read: true, relatedEntityType: 'Run', relatedEntityId: 3, createdAt: '2026-11-01T10:00:00' },
+        ])),
+      ),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/alumno/inicio" element={<NotificationBell />} />
+        <Route path="*" element={<div>Otra pantalla</div>} />
+      </Routes>,
+      { route: '/alumno/inicio' },
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones' }));
+    await user.click(await screen.findByText(TIPO_NOTIFICACION_LABEL.NIGHTLY_RUN_FAILED));
+
+    expect(screen.queryByText('Otra pantalla')).not.toBeInTheDocument();
+    expect(screen.getByText(TIPO_NOTIFICACION_LABEL.NIGHTLY_RUN_FAILED)).toBeInTheDocument();
   });
 
   it('navigates to the announcement on the student home when tapping an announcement', async () => {
