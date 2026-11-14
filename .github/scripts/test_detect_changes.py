@@ -84,6 +84,31 @@ class DetectChangesTest(unittest.TestCase):
     def push(self, **env):
         return self.run_script(GITHUB_EVENT_NAME='push', GITHUB_REF='refs/heads/develop', **env)
 
+    def pull_request_changing(self, files):
+        git(self.repo, 'checkout', '-q', '-b', 'pr-demo')
+        commit_files(self.repo, files, 'change')
+        return self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/1/merge', PR_BASE_SHA=self.base, PR_BASE_REF='develop')
+
+    def test_pull_request_touching_the_demo_catalog_runs_the_demo_seed_job(self):
+        result = self.pull_request_changing({'backend/src/main/java/com/red_escuela/backend/demo/DemoCatalog.java': 'x'})
+        self.assertEqual('true', result['run_demo_seed'])
+
+    def test_pull_request_touching_a_demo_config_runs_the_demo_seed_job(self):
+        result = self.pull_request_changing({'backend/src/main/java/com/red_escuela/backend/config/DemoEducationalSeedRunner.java': 'x'})
+        self.assertEqual('true', result['run_demo_seed'])
+
+    def test_pull_request_touching_a_migration_runs_the_demo_seed_job(self):
+        result = self.pull_request_changing({'backend/src/main/resources/db/migration/V999__x.sql': 'x'})
+        self.assertEqual('true', result['run_demo_seed'])
+
+    def test_pull_request_touching_other_backend_code_skips_the_demo_seed_job(self):
+        result = self.pull_request_changing({'backend/src/main/java/com/red_escuela/backend/billing/Invoice.java': 'x'})
+        self.assertEqual('false', result['run_demo_seed'])
+
+    def test_push_never_runs_the_demo_seed_job(self):
+        result = self.push()
+        self.assertEqual('false', result['run_demo_seed'])
+
     def test_push_reuses_the_areas_the_pull_request_ran_when_the_tree_matches(self):
         tree = self.merge_frontend_pull_request()
         result = self.push(GH_LAST_PUSH_SHA=self.base, GH_PR_RUN='4242', GH_RECORDED_TREE=tree, GH_BACKEND='false')

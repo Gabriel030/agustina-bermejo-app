@@ -2,7 +2,7 @@
 # Decide que partes del CI corren y si el arbol de un push a develop ya fue verificado por un PR verde.
 # Entradas (env): GITHUB_EVENT_NAME, GITHUB_REF, GITHUB_OUTPUT, GITHUB_REPOSITORY, GH_TOKEN,
 #   PR_BASE_SHA (pull_request), PR_BASE_REF (pull_request), PR_NUMBER (pull_request), TESTED_TREE_DIR (salida para PR)
-# Salidas: relevant, frontend, lockfile, run_migration, run_docs, extra_groups,
+# Salidas: relevant, frontend, lockfile, run_migration, run_demo_seed, run_docs, extra_groups,
 #   reuse_backend, reuse_frontend, reuse_run, reuse_pr
 set -uo pipefail
 
@@ -14,6 +14,7 @@ relevant=true
 frontend=true
 lockfile=true
 run_migration=true
+run_demo_seed=false
 run_docs=false
 extra_groups='[]'
 reuse_backend=false
@@ -36,6 +37,8 @@ fi
 
 backend_scope='^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)'
 migration_scope='^(backend/src/main/resources/db/migration/|backend/src/test/.*Migrat[^/]*\.java$|backend/pom\.xml$|scripts/|\.github/workflows/|\.github/scripts/)'
+
+demo_seed_scope='^(backend/src/main/java/.*/(config|demo)/[^/]*Demo[^/]*\.java$|backend/src/main/java/.*/demo/|backend/src/main/java/.*Seed[^/]*\.java$|backend/src/test/java/.*Demo[^/]*SeedIT\.java$|backend/src/main/resources/application-demo\.properties$|backend/src/main/resources/db/migration/)'
 
 base=""
 if [ "$event" = pull_request ]; then
@@ -61,6 +64,9 @@ if [ -n "$base" ]; then
     fi
     if ! grep -qE '^frontend/package-lock\.json$' <<< "$changed"; then
       lockfile=false
+    fi
+    if [ "$event" = pull_request ] && grep -qE "$demo_seed_scope" <<< "$changed"; then
+      run_demo_seed=true
     fi
     if [ "$full_tier" = false ]; then
       if ! grep -qE "$migration_scope" <<< "$changed"; then
@@ -122,6 +128,7 @@ fi
   echo "frontend=$frontend"
   echo "lockfile=$lockfile"
   echo "run_migration=$run_migration"
+  echo "run_demo_seed=$run_demo_seed"
   echo "run_docs=$run_docs"
   echo "extra_groups=$extra_groups"
   echo "reuse_backend=$reuse_backend"
