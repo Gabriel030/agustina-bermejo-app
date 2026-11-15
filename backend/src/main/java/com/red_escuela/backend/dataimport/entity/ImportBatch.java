@@ -93,7 +93,8 @@ public class ImportBatch {
     public boolean canRollback() {
         return status == ImportBatchStatus.COMMITTED
                 || status == ImportBatchStatus.PARTIAL
-                || status == ImportBatchStatus.FAILED;
+                || status == ImportBatchStatus.FAILED
+                || status == ImportBatchStatus.ROLLING_BACK;
     }
 
     public boolean canRetry() {

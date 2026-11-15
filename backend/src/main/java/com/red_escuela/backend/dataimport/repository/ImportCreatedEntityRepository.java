@@ -20,7 +20,7 @@ public interface ImportCreatedEntityRepository extends JpaRepository<ImportCreat
 
     @Query("""
             select new com.red_escuela.backend.dataimport.repository.ImportCreatedCount(c.entityType, count(c))
-            from ImportCreatedEntity c where c.batchId = :batchId group by c.entityType
+            from ImportCreatedEntity c where c.batchId = :batchId and c.naturalKey not like '%|' group by c.entityType
             """)
     List<ImportCreatedCount> countByEntityType(@Param("batchId") Long batchId);
 

@@ -107,6 +107,33 @@ public class TermImportDefinition implements ImportEntityDefinition {
     }
 
     @Override
+    public boolean parentMissing(Map<String, String> payload) {
+        ImportRowReader reader = new ImportRowReader(payload);
+        return !recorder.termExists(reader.integer("year", true, 1990, 2100),
+                reader.enumValue("termType", TermType.class, true).orElseThrow());
+    }
+
+    @Override
+    public Long parentIdOf(Long entityId) {
+        return recorder.termIdOfCycle(entityId);
+    }
+
+    @Override
+    public String parentNaturalKey(Map<String, String> payload) {
+        return keyPrefixOf(payload.get("year"), payload.get("termType"));
+    }
+
+    @Override
+    public boolean isParentRecord(String naturalKey) {
+        return naturalKey.endsWith("|");
+    }
+
+    @Override
+    public void discardParent(Long parentId) {
+        recorder.discardTermIfUnused(parentId);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
         ImportRowReader reader = new ImportRowReader(payload);
         return recorder.recordCycle(new HistoricalCycle(reader.text("programName"), reader.integer("year", true, 1990, 2100),
