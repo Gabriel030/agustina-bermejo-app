@@ -93,6 +93,14 @@ public class SectionFinder {
         return programSectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
 
+    public SubjectSection findProgramSectionWithSchemeAndTerms(Long id) {
+        return programSectionRepository.findByIdWithSchemeAndTerms(id).orElseThrow(() -> new SectionNotFoundException(id));
+    }
+
+    public CourseSubjectSection findCourseSectionWithSchemeAndTerms(Long id) {
+        return courseSectionRepository.findByIdWithSchemeAndTerms(id).orElseThrow(() -> new SectionNotFoundException(id));
+    }
+
     public CourseSubjectSection findCourseSectionEntity(Long id) {
         return courseSectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
