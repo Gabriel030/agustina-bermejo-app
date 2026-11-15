@@ -3,6 +3,7 @@ package com.red_escuela.backend.shared.audit;
 public enum AuditAction {
     STAFF_WITHDRAWN,
     STAFF_REACTIVATED,
+    STAFF_CREATED,
     PASSWORD_RESET_REQUESTED,
     PASSWORD_RESET_COMPLETED,
     PASSWORD_CHANGED,
