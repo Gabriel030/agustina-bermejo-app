@@ -40,7 +40,7 @@ function describeRisk(level, risk) {
   const percent = formatPercent(risk.absencePercent);
   const max = formatPercent(risk.maxAbsencePercent);
   if (level === 'danger') return `Inasistencias: ${percent}, por encima del máximo de ${max}. Quedaste libre en esta materia. Consultá con tu preceptor.`;
-  if (level === 'warning') return `Inasistencias: ${percent} (máximo ${max}). Justificá tus faltas a tiempo.`;
+  if (level === 'warning') return `Inasistencias: ${percent} (máximo ${max}). Justificá tus inasistencias a tiempo.`;
   return `Inasistencias: ${percent} (máximo ${max}). Estás en regla.`;
 }
 
