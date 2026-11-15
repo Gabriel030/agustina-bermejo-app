@@ -114,7 +114,33 @@ irreversibles hacia atrás, por eso se hace copia antes.
    dc logs -f --tail=100 backend
    ```
    Esperar `Started BackendApplication` y que `dc ps` muestre `healthy`.
-5. Probar `curl -fsS https://<dominio>/api/actuator/health` y entrar a la app.
+5. Correr la prueba posterior al despliegue (ver la sección siguiente) y entrar a la app.
+
+## Prueba posterior al despliegue
+
+`deploy/smoke.sh` confirma, contra la URL pública, que la app responde y que las migraciones
+corrieron. Se corre desde el checkout del código que se acaba de desplegar (de ahí toma el último
+`V###` esperado):
+
+```bash
+SMOKE_DB_VERSION_CMD="docker compose --env-file deploy/.env -f docker-compose.prod.yml exec -T postgres sh -c 'psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -Atc \"select max(version::int) from flyway_schema_history where success and version is not null\"'" \
+  deploy/smoke.sh --require-migrations https://<dominio>
+```
+
+Qué verifica: `/` sirve el `index.html` con las cabeceras de seguridad de Caddy (HSTS, nosniff,
+DENY, Referrer-Policy, Permissions-Policy, COOP, CSP con `frame-ancestors 'none'`, sin `Server`),
+`/api/actuator/health` en UP, el actuator interno oculto (404), `/api/me` sin sesión en 401 con
+`code` `UNAUTHENTICATED` (y no 500) y que la última versión de Flyway aplicada es igual al último
+`V###` del código. Sale con código 0 si todo pasa, 1 si algo falla.
+
+Sin `SMOKE_DB_VERSION_CMD` (por ejemplo, si se corre desde otra máquina sin acceso a la base) las
+migraciones quedan como `NO VERIFICADO`, que no cuenta como éxito de ese chequeo; con
+`--require-migrations` eso hace fallar el script. Desde un job se usa igual: el comando y el código
+de salida son los mismos.
+
+**Si falla:** leer qué chequeo falló, mirar `dc logs --tail=100 backend caddy` y, si la causa no es
+evidente y la app no está usable, seguir la sección «Rollback» de este runbook. El script no hace
+rollback por sí mismo.
 
 Si el release trae migraciones, mirar antes el PR del release: cualquier ventana de migraciones
 se avisa ahí.
