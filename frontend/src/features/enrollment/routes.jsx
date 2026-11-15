@@ -5,6 +5,7 @@ const InscripcionCarrera = lazyPage(() => import('@/features/enrollment/pages/In
 const InscripcionCurso = lazyPage(() => import('@/features/enrollment/pages/InscripcionCurso'), 'InscripcionCurso');
 const DetalleSolicitud = lazyPage(() => import('@/features/enrollment/pages/DetalleSolicitud'), 'DetalleSolicitud');
 const AlumnoMisCursos = lazyPage(() => import('@/features/enrollment/pages/AlumnoMisCursos'), 'AlumnoMisCursos');
+const StudentCourseDetail = lazyPage(() => import('@/features/enrollment/pages/StudentCourseDetail'), 'StudentCourseDetail');
 const AlumnoMisCarreras = lazyPage(() => import('@/features/workspace/pages/AlumnoMisCarreras'), 'AlumnoMisCarreras');
 const AlumnoMateriaDetalle = lazyPage(() => import('@/features/workspace/pages/AlumnoMateriaDetalle'), 'AlumnoMateriaDetalle');
 const DirectorAprobacionesExcepciones = lazyPage(() => import('@/features/enrollment/pages/DirectorAprobacionesExcepciones'), 'DirectorAprobacionesExcepciones');
@@ -33,6 +34,7 @@ export const routes = {
     { roles: ['preceptor', 'administrativo'], path: 'solicitudes-de-ingreso', element: <SolicitudesDeIngreso /> },
     { roles: ['preceptor', 'administrativo'], path: 'solicitudes-de-ingreso/:id', element: <SolicitudDeIngresoDetalle /> },
     { roles: ['alumno'], path: 'mis-cursos', element: <AlumnoMisCursos /> },
+    { roles: ['alumno'], path: 'mis-cursos/:id', element: <StudentCourseDetail /> },
     { roles: ['alumno'], path: 'mis-carreras', element: <AlumnoMisCarreras /> },
     { roles: ['alumno'], path: 'mis-carreras/materias/:id', element: <AlumnoMateriaDetalle /> },
     { roles: ['director'], path: 'aprobaciones/excepciones', element: <DirectorAprobacionesExcepciones /> },

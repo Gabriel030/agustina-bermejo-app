@@ -1,5 +1,5 @@
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
-import { useMiInscripcion, useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
+import { useMiInscripcion, useMisCursos, useMisMatriculaciones, useMyCourseEnrollment } from '@/features/enrollment';
 import { useComisionesDictadas } from '@/features/academic-structure';
 import { useConfiguracionComision, useConfiguracionComisionStaff } from '@/features/evaluation';
 import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
@@ -32,6 +32,9 @@ export function useBreadcrumb() {
 
   const enDetalleMateria = /^\/alumno\/mis-carreras\/materias\/[^/]+$/.test(location.pathname);
   const { data: inscripcion } = useMiInscripcion(params.id, enDetalleMateria);
+
+  const enDetalleMiCurso = /^\/alumno\/mis-cursos\/[^/]+$/.test(location.pathname);
+  const { data: cursoDetalle } = useMyCourseEnrollment(params.id, enDetalleMiCurso);
 
   const enDetallePagosCurso = /^\/alumno\/pagos\/curso\/[^/]+$/.test(location.pathname);
   const enDetallePagosCarrera = /^\/alumno\/pagos\/carrera\/[^/]+$/.test(location.pathname);
@@ -189,6 +192,13 @@ export function useBreadcrumb() {
     return [
       { label: 'Aprobaciones', to: '/director/aprobaciones' },
       { label: configRevisar ? `${configRevisar.subjectName} · ${configRevisar.sectionName}` : <Skeleton className="h-4 w-24" /> },
+    ];
+  }
+
+  if (enDetalleMiCurso) {
+    return [
+      { label: 'Mis cursos', to: '/alumno/mis-cursos' },
+      { label: cursoDetalle ? cursoDetalle.courseName : <Skeleton className="h-4 w-24" /> },
     ];
   }
 
