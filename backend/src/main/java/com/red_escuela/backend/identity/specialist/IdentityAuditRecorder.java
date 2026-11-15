@@ -23,6 +23,11 @@ public class IdentityAuditRecorder {
                 person.getId(), null, null, null));
     }
 
+    public void recordStaffCreated(Person person, String initialRole) {
+        auditTrail.record(new AuditRecord(AuditAction.STAFF_CREATED, AuditEntityType.PERSON,
+                person.getId(), null, initialRole, null));
+    }
+
     public void recordPasswordChanged(Person person) {
         auditTrail.record(new AuditRecord(AuditAction.PASSWORD_CHANGED, AuditEntityType.PERSON,
                 person.getId(), null, null, null));
