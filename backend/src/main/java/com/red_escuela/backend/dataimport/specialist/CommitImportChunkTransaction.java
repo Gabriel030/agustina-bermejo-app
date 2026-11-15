@@ -28,7 +28,13 @@ public class CommitImportChunkTransaction {
         List<ImportRow> rows = rowRepository.findAllById(rowIds).stream()
                 .sorted(Comparator.comparingInt(ImportRow::getRowNumber)).toList();
         for (ImportRow row : rows) {
-            Long entityId = registry.definitionFor(row.getEntityType()).record(row.getPayload(), institutionId);
+            ImportEntityDefinition definition = registry.definitionFor(row.getEntityType());
+            boolean parentMissing = definition.parentMissing(row.getPayload());
+            Long entityId = definition.record(row.getPayload(), institutionId);
+            if (parentMissing) {
+                createdEntityRepository.save(new ImportCreatedEntity(batchId, row.getEntityType(), definition.parentIdOf(entityId),
+                        definition.parentNaturalKey(row.getPayload()), ApplicationTime.now()));
+            }
             row.markCommitted(entityId);
             createdEntityRepository.save(new ImportCreatedEntity(batchId, row.getEntityType(), entityId,
                     row.getNaturalKey(), ApplicationTime.now()));

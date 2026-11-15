@@ -1,6 +1,7 @@
 package com.red_escuela.backend.dataimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -10,7 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dataimport.domain.ImportEntityType;
+import com.red_escuela.backend.dataimport.specialist.ImportBatchLifecycleRecorder;
 import com.red_escuela.backend.dataimport.specialist.ImportDefinitionRegistry;
+import com.red_escuela.backend.dataimport.specialist.ImportRollbackTransaction;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
@@ -45,10 +48,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ActiveProfiles("test")
 class DataImportLifecycleIT extends AbstractIntegrationTest {
     private static final String PERSON_HEADER = "documentType,dni,firstName,lastName,role,sex,birthDate,email,phone,nationality,street,city,province,postalCode,legajo,registeredAt,status,withdrawalDate,guardianFirstName,guardianLastName,guardianDocumentType,guardianDni,guardianRelationship,guardianPhone,guardianEmail,emergencyContactFirstName,emergencyContactLastName,emergencyContactRelationship,emergencyContactPhone\n";
+    private static final String PROGRAM_HEADER = "programName,level,totalYears,totalCreditsRequired,totalHours,teachingMode,status,listPrice,listEnrollmentFee,currency,graduationProfile\n";
     private static final List<String> BUSINESS_TABLES = List.of("person", "address", "student", "instructor", "program",
             "price", "price_version", "subject", "program_subject", "program_subject_prerequisite", "academic_offering_cycle",
             "subject_section", "subject_section_instructor", "program_enrollment", "subject_section_enrollment",
-            "commission_closure", "commission_closure_student");
+            "commission_closure", "commission_closure_student", "term");
     private static final List<String> SIDE_EFFECT_TABLES = List.of("notification", "notification_delivery",
             "event_publication", "invoice", "payment", "current_account_entry");
 
@@ -68,6 +72,10 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
     private FeatureSnapshotHolder snapshotHolder;
     @Autowired
     private ImportDefinitionRegistry registry;
+    @Autowired
+    private ImportBatchLifecycleRecorder lifecycleRecorder;
+    @Autowired
+    private ImportRollbackTransaction rollbackTransaction;
 
     private String directorToken;
     private String suffix;
@@ -136,6 +144,7 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
     @Test
     void rollbackKeepsTheRetainedStructureAndUndoesEverythingElse() throws Exception {
         Map<String, Long> before = businessCounts();
+        List<Long> termIdsBefore = termIds();
         long batchId = importFullHistory(suffix, studentDni, teacherDni);
         Map<String, Long> afterCommit = businessCounts();
 
@@ -157,6 +166,7 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
                 "commission_closure_student")) {
             assertThat(afterRollback.get(table)).as(table).isEqualTo(before.get(table));
         }
+        assertThat(newTermsNotPinnedByRetainedStructure(termIdsBefore)).isEmpty();
         assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ?", Integer.class, batchId)).isEqualTo(6);
         assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'COMMITTED'", Integer.class, batchId)).isEqualTo(6);
         assertThat(jdbc.queryForObject("select count(*) from import_row where batch_id = ? and status = 'VALID'", Integer.class, batchId)).isEqualTo(7);
@@ -327,6 +337,138 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void rollbackDeletesTheTermTheBatchCreatedSoNoEmptyTermIsLeftBehind() throws Exception {
+        int year = 2010;
+        int termsBefore = termCount(year, "FIRST_SEMESTER");
+        long batchId = importProgramWithCycle(suffix, year, "FIRST_SEMESTER");
+        assertThat(termCount(year, "FIRST_SEMESTER")).isEqualTo(termsBefore + 1);
+
+        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ROLLED_BACK"));
+
+        assertThat(termCount(year, "FIRST_SEMESTER")).isEqualTo(termsBefore);
+        assertThat(jdbc.queryForObject("select count(*) from academic_offering_cycle c join program p on p.id = c.program_id where p.name = ?",
+                Integer.class, "Carrera " + suffix)).isZero();
+        assertThat(jdbc.queryForObject("select detail->>'TERMS' from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'",
+                String.class, batchId)).isEqualTo("1");
+    }
+
+    @Test
+    void rollbackKeepsATermThatAlreadyExistedBeforeTheBatch() throws Exception {
+        int year = 2011;
+        jdbc.update("insert into term (year_number, type, description, start_date, end_date, status, enrollment_start, enrollment_end) "
+                + "values (?, 'ANNUAL', 'Previo', ?::timestamp, ?::timestamp, 'ACTIVE', ?::timestamp, ?::timestamp)",
+                year, year + "-03-01", year + "-12-15", year + "-03-01", year + "-12-15");
+        int termsBefore = termCount(year, "ANNUAL");
+        long batchId = importProgramWithCycle(suffix, year, "ANNUAL");
+        assertThat(termCount(year, "ANNUAL")).isEqualTo(termsBefore);
+
+        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isOk());
+
+        assertThat(termCount(year, "ANNUAL")).isEqualTo(termsBefore);
+    }
+
+    @Test
+    void rollbackKeepsTheTermWhileAnotherBatchStillUsesIt() throws Exception {
+        int year = 2012;
+        int termsBefore = termCount(year, "FIRST_SEMESTER");
+        long first = importProgramWithCycle(suffix, year, "FIRST_SEMESTER");
+        long second = importProgramWithCycle(suffix + "b", year, "FIRST_SEMESTER");
+        assertThat(termCount(year, "FIRST_SEMESTER")).isEqualTo(termsBefore + 1);
+
+        postWithConfirmation(first, "rollback", "DESHACER").andExpect(status().isOk());
+
+        assertThat(termCount(year, "FIRST_SEMESTER")).isEqualTo(termsBefore + 1);
+        assertThat(jdbc.queryForObject("select count(*) from academic_offering_cycle c join term t on t.id = c.term_id where t.year_number = ? and t.type = 'FIRST_SEMESTER'",
+                Integer.class, year)).isEqualTo(1);
+        postWithConfirmation(second, "rollback", "DESHACER").andExpect(status().isOk());
+    }
+
+    @Test
+    void rollbackDeletesASharedTermOnlyAfterTheLastCycleOfTheBatchIsGone() throws Exception {
+        int year = 2013;
+        int termsBefore = termCount(year, "FIRST_SEMESTER");
+        long batchId = createBatch();
+        upload(batchId, "PROGRAMS", PROGRAM_HEADER + "Carrera " + suffix + "a,UNDERGRADUATE,3,120,1800,IN_PERSON,ACTIVE,85000,40000,ARS,\n"
+                + "Carrera " + suffix + "b,UNDERGRADUATE,3,120,1800,IN_PERSON,ACTIVE,85000,40000,ARS,\n");
+        upload(batchId, "TERMS", "year,termType,description,startDate,endDate,programName\n"
+                + year + ",FIRST_SEMESTER,Ciclo," + year + "-03-15,15/07/" + year + ",Carrera " + suffix + "a\n"
+                + year + ",FIRST_SEMESTER,Ciclo," + year + "-03-15,15/07/" + year + ",Carrera " + suffix + "b\n");
+        validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED"));
+        commit(batchId).andExpect(status().isOk());
+        assertThat(termCount(year, "FIRST_SEMESTER")).isEqualTo(termsBefore + 1);
+
+        mockMvc.perform(get("/data-imports/" + batchId + "/rollback-preview").header("Authorization", bearer()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.created.length()").value(1))
+                .andExpect(jsonPath("$.created[0].total").value(2));
+        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isOk());
+
+        assertThat(termCount(year, "FIRST_SEMESTER")).isEqualTo(termsBefore);
+    }
+
+    @Test
+    void rollbackLeftInRollingBackByACutIsResumedAndCompletesOnce() throws Exception {
+        Map<String, Long> before = businessCounts();
+        List<Long> termIdsBefore = termIds();
+        long batchId = importFullHistory(suffix, studentDni, teacherDni, 2014);
+        Map<String, Long> afterCommit = businessCounts();
+
+        lifecycleRecorder.startRollback(batchId);
+
+        assertThat(jdbc.queryForObject("select status from import_batch where id = ?", String.class, batchId)).isEqualTo("ROLLING_BACK");
+        assertThat(businessCounts()).isEqualTo(afterCommit);
+        mockMvc.perform(get("/data-imports/" + batchId + "/rollback-preview").header("Authorization", bearer()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.canRollback").value(true));
+
+        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ROLLED_BACK"));
+
+        assertThat(businessCounts().get("person")).isEqualTo(before.get("person"));
+        assertThat(newTermsNotPinnedByRetainedStructure(termIdsBefore)).isEmpty();
+        assertThat(businessCounts().get("subject_section_enrollment")).isEqualTo(before.get("subject_section_enrollment"));
+        assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'", Integer.class, batchId)).isEqualTo(1);
+        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isConflict());
+    }
+
+    @Test
+    void cutInTheMiddleOfTheUndoLeavesEverythingIntactAndRetryFinishesIt() throws Exception {
+        Long actor = jdbc.queryForObject("select id from person order by id desc limit 1", Long.class);
+        Map<String, Long> before = businessCounts();
+        List<Long> termIdsBefore = termIds();
+        long batchId = importFullHistory(suffix, studentDni, teacherDni, 2014);
+        Map<String, Long> afterCommit = businessCounts();
+        lifecycleRecorder.startRollback(batchId);
+
+        assertThatThrownBy(() -> transactions.executeWithoutResult(status -> {
+            rollbackTransaction.execute(batchId, actor);
+            throw new IllegalStateException("cut");
+        })).hasMessage("cut");
+
+        assertThat(businessCounts()).isEqualTo(afterCommit);
+        assertThat(jdbc.queryForObject("select status from import_batch where id = ?", String.class, batchId)).isEqualTo("ROLLING_BACK");
+        assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'", Integer.class, batchId)).isZero();
+
+        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ROLLED_BACK"));
+
+        assertThat(businessCounts().get("person")).isEqualTo(before.get("person"));
+        assertThat(newTermsNotPinnedByRetainedStructure(termIdsBefore)).isEmpty();
+        assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'", Integer.class, batchId)).isEqualTo(1);
+    }
+
+    @Test
+    void secondExecutionOfAnAlreadyFinishedUndoChangesNothing() throws Exception {
+        long batchId = importPeopleAndSubject();
+        postWithConfirmation(batchId, "rollback", "DESHACER").andExpect(status().isOk());
+        Map<String, Long> afterRollback = businessCounts();
+
+        assertThat(rollbackTransaction.execute(batchId, 1L)).isEmpty();
+
+        assertThat(businessCounts()).isEqualTo(afterRollback);
+        assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'ROLLED_BACK'", Integer.class, batchId)).isEqualTo(1);
+    }
+
     private long importPeopleAndSubject() throws Exception {
         long batchId = createBatch();
         upload(batchId, "PERSONS", PERSON_HEADER + student(studentDni, "Ana", "ana." + suffix)
@@ -339,11 +481,38 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
     }
 
     private long importFullHistory(String key, String studentDocument, String teacherDocument) throws Exception {
+        return importFullHistory(key, studentDocument, teacherDocument, 2015 + ThreadLocalRandom.current().nextInt(1, 5));
+    }
+
+    private long importProgramWithCycle(String key, int year, String termType) throws Exception {
+        long batchId = createBatch();
+        upload(batchId, "PROGRAMS", PROGRAM_HEADER + "Carrera " + key + ",UNDERGRADUATE,3,120,1800,IN_PERSON,ACTIVE,85000,40000,ARS,\n");
+        upload(batchId, "TERMS", "year,termType,description,startDate,endDate,programName\n"
+                + year + "," + termType + ",Ciclo," + year + "-03-15,15/07/" + year + ",Carrera " + key + "\n");
+        validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED"));
+        commit(batchId).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMMITTED"));
+        return batchId;
+    }
+
+    private List<Long> termIds() {
+        return jdbc.queryForList("select id from term", Long.class);
+    }
+
+    private List<Long> newTermsNotPinnedByRetainedStructure(List<Long> termIdsBefore) {
+        return termIds().stream().filter(id -> !termIdsBefore.contains(id))
+                .filter(id -> jdbc.queryForObject("select count(*) from program_year_billing_template where term_id = ?", Integer.class, id) == 0)
+                .toList();
+    }
+
+    private int termCount(int year, String termType) {
+        return jdbc.queryForObject("select count(*) from term where year_number = ? and type = ?", Integer.class, year, termType);
+    }
+
+    private long importFullHistory(String key, String studentDocument, String teacherDocument, int year) throws Exception {
         String program = "Tecnicatura " + key;
         String subject = "H" + key.substring(0, 3);
         String second = "J" + key.substring(0, 3);
         String section = "SEC-" + key;
-        int year = 2015 + ThreadLocalRandom.current().nextInt(1, 5);
         long batchId = createBatch();
         upload(batchId, "PERSONS", PERSON_HEADER + student(studentDocument, "Ana", "ana." + key)
                 + "DNI," + teacherDocument + ",Marta,Ríos,INSTRUCTOR,F,1978-11-30,marta." + key + "@example.com,3511112233,Argentina,Belgrano 77,Carlos Paz,Córdoba,5152,,,ACTIVE,,,,,,,,,,,,\n");

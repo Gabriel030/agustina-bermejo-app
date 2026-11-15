@@ -8,9 +8,11 @@ import com.red_escuela.backend.dataimport.domain.ImportEntityType;
 import com.red_escuela.backend.dataimport.entity.ImportBatch;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEvent;
 import com.red_escuela.backend.dataimport.entity.ImportBatchEventType;
+import com.red_escuela.backend.dataimport.entity.ImportBatchStatus;
 import com.red_escuela.backend.dataimport.entity.ImportCreatedEntity;
 import com.red_escuela.backend.dataimport.entity.ImportRowStatus;
 import com.red_escuela.backend.dataimport.exception.ImportBatchNotFoundException;
+import com.red_escuela.backend.dataimport.exception.ImportBatchStateInvalidException;
 import com.red_escuela.backend.dataimport.exception.ImportRollbackBlockedException;
 import com.red_escuela.backend.dataimport.repository.ImportBatchEventRepository;
 import com.red_escuela.backend.dataimport.repository.ImportBatchRepository;
@@ -55,11 +57,17 @@ public class ImportRollbackTransaction {
 
     @Transactional
     public Map<ImportEntityType, Long> execute(Long batchId, Long actorPersonId) {
+        ImportBatch batch = batchRepository.findByIdForUpdate(batchId).orElseThrow(() -> new ImportBatchNotFoundException(batchId));
+        if (batch.getStatus() == ImportBatchStatus.ROLLED_BACK) {
+            return Map.of();
+        }
+        if (batch.getStatus() != ImportBatchStatus.ROLLING_BACK) {
+            throw new ImportBatchStateInvalidException("deshacer", batch.getStatus().name());
+        }
         Map<ImportEntityType, Long> discarded = discardAll(batchId);
         createdEntityRepository.deleteByBatchIdAndEntityTypeNotIn(batchId, RETAINED_TYPES);
         rowRepository.moveStatusExcludingTypes(batchId, ImportRowStatus.COMMITTED, ImportRowStatus.VALID, RETAINED_TYPES);
-        ImportBatch batch = batchRepository.findById(batchId).orElseThrow(() -> new ImportBatchNotFoundException(batchId));
-        batch.finishRollback();
+        batchRepository.findByIdForUpdate(batchId).orElseThrow(() -> new ImportBatchNotFoundException(batchId)).finishRollback();
         Map<String, Object> detail = new LinkedHashMap<>();
         discarded.forEach((type, total) -> detail.put(type.name(), total));
         eventRepository.save(new ImportBatchEvent(batchId, ImportBatchEventType.ROLLED_BACK, actorPersonId,
@@ -82,8 +90,13 @@ public class ImportRollbackTransaction {
             if (RETAINED_TYPES.contains(created.getEntityType())) {
                 continue;
             }
+            ImportEntityDefinition definition = registry.definitionFor(created.getEntityType());
             try {
-                registry.definitionFor(created.getEntityType()).discard(created.getEntityId());
+                if (definition.isParentRecord(created.getNaturalKey())) {
+                    definition.discardParent(created.getEntityId());
+                    continue;
+                }
+                definition.discard(created.getEntityId());
             } catch (HistoricalDiscardBlockedException e) {
                 throw new ImportRollbackBlockedException(created.getEntityType(), created.getNaturalKey(), e.getMessage());
             } catch (DataIntegrityViolationException e) {

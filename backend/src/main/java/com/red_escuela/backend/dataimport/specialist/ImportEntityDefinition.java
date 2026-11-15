@@ -46,6 +46,26 @@ public interface ImportEntityDefinition {
         throw new UnsupportedOperationException("Esta estructura se retiene y no se deshace");
     }
 
+    default boolean parentMissing(Map<String, String> payload) {
+        return false;
+    }
+
+    default Long parentIdOf(Long entityId) {
+        throw new UnsupportedOperationException("Esta estructura no tiene registro padre");
+    }
+
+    default String parentNaturalKey(Map<String, String> payload) {
+        throw new UnsupportedOperationException("Esta estructura no tiene registro padre");
+    }
+
+    default boolean isParentRecord(String naturalKey) {
+        return false;
+    }
+
+    default void discardParent(Long parentId) {
+        throw new UnsupportedOperationException("Esta estructura no tiene registro padre");
+    }
+
     record BaseCheck(boolean keyExists, List<ImportRowError> errors) {
     }
 }

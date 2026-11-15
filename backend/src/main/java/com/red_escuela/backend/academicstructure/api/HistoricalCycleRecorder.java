@@ -16,6 +16,7 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +78,34 @@ public class HistoricalCycleRecorder {
     public void discardCycle(Long cycleId) {
         cycleRepository.deleteById(cycleId);
         cycleRepository.flush();
+    }
+
+    @Transactional(readOnly = true)
+    public Long termIdOfCycle(Long cycleId) {
+        return cycleRepository.findById(cycleId).orElseThrow().getTerm().getId();
+    }
+
+    @Transactional
+    public void discardTermIfUnused(Long termId) {
+        entityManager.flush();
+        if (isTermReferenced(termId)) {
+            return;
+        }
+        termRepository.deleteById(termId);
+        termRepository.flush();
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean isTermReferenced(Long termId) {
+        List<Object[]> references = entityManager.createNativeQuery("""
+                select c.conrelid::regclass::text, a.attname
+                from pg_constraint c
+                join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+                where c.contype = 'f' and c.confrelid = 'term'::regclass
+                """).getResultList();
+        return references.stream().anyMatch(reference -> ((Number) entityManager.createNativeQuery(
+                "select count(*) from " + reference[0] + " where \"" + reference[1] + "\" = :id")
+                .setParameter("id", termId).getSingleResult()).longValue() > 0);
     }
 
     private static Term newTerm(HistoricalCycle historical) {
