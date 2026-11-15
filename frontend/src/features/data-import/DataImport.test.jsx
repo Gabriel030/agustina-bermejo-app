@@ -83,12 +83,13 @@ describe('DataImportDetailPage', () => {
     renderDetail();
     expect(await screen.findByTestId('block-PERSONS')).toBeInTheDocument();
     expect(screen.queryByText('Próximamente')).not.toBeInTheDocument();
-    const order = ['PERSONS', 'PROGRAMS', 'SUBJECTS', 'CURRICULUM', 'PREREQUISITES', 'TERMS', 'SECTIONS', 'PROGRAM_ENROLLMENTS', 'SECTION_ENROLLMENTS', 'GRADE_ITEMS', 'ATTENDANCES'];
+    const order = ['PERSONS', 'PROGRAMS', 'SUBJECTS', 'CURRICULUM', 'PREREQUISITES', 'TERMS', 'SECTIONS', 'PROGRAM_ENROLLMENTS', 'SECTION_ENROLLMENTS', 'GRADE_ITEMS', 'ATTENDANCES', 'GRADUATIONS'];
     const rendered = screen.getAllByTestId(/^block-/).map((item) => item.getAttribute('data-testid').replace('block-', ''));
     expect(rendered).toEqual(order);
     expect(screen.getByText('Períodos lectivos')).toBeInTheDocument();
     expect(screen.getByText('Notas por examen y parcial')).toBeInTheDocument();
     expect(screen.getByText('Asistencia por clase')).toBeInTheDocument();
+    expect(screen.getByText('Egresos')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Revisar archivos' })).toBeDisabled();
   });
 

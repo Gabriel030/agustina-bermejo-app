@@ -10,6 +10,7 @@ export const IMPORT_BLOCKS = [
   { entityType: 'SECTION_ENROLLMENTS', label: 'Cursadas', description: 'Quién cursó qué comisión, con la condición final.' },
   { entityType: 'GRADE_ITEMS', label: 'Notas por examen y parcial', description: 'Las notas de cada examen y parcial de las cursadas.' },
   { entityType: 'ATTENDANCES', label: 'Asistencia por clase', description: 'La asistencia de cada alumno en cada clase.' },
+  { entityType: 'GRADUATIONS', label: 'Egresos', description: 'Quién egresó de qué carrera, con su fecha y número de registro. La inscripción debe estar cargada como completada.' },
 ];
 
 export function blockLabel(entityType) {

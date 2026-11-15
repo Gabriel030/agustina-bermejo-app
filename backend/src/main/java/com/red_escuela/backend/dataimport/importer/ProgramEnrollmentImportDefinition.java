@@ -21,12 +21,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition {
     public static final List<String> COLUMNS = List.of("documentType", "dni", "programName", "enrollmentDate", "status",
             "completionDate", "withdrawalDate", "cohortYear", "intake");
+
+    private static final String COMPLETED_PREFIX = "completed|";
 
     private final HistoricalEnrollmentRecorder recorder;
     private final HistoricalProgramCohortRecorder cohortRecorder;
@@ -53,6 +56,32 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
     @Override
     public String naturalKey(Map<String, String> payload) {
         return keyOf(ImportDocumentKey.keyOf(payload), payload.get("programName"));
+    }
+
+    public static String completedAlias(String personKey, String programName, LocalDate completionDate) {
+        return COMPLETED_PREFIX + keyOf(personKey, programName) + "|" + completionDate;
+    }
+
+    @Override
+    public Set<String> aliasKeys(Map<String, String> payload) {
+        LocalDate completionDate = ImportValueParser.parseDateOrEmpty(payload.get("completionDate")).orElse(null);
+        boolean completed = ImportValueParser.cleanText(payload.get("status")).equalsIgnoreCase(ProgramEnrollmentStatus.COMPLETED.name());
+        if (!completed || completionDate == null) {
+            return Set.of();
+        }
+        return Set.of(completedAlias(ImportDocumentKey.keyOf(payload), payload.get("programName"), completionDate));
+    }
+
+    @Override
+    public boolean aliasExistsInBase(String aliasKey) {
+        if (!aliasKey.startsWith(COMPLETED_PREFIX)) {
+            return false;
+        }
+        String body = aliasKey.substring(COMPLETED_PREFIX.length());
+        int dateSeparator = body.lastIndexOf('|');
+        String[] parts = body.substring(0, dateSeparator).split("\\|", 2);
+        return recorder.findCompletedProgramEnrollmentId(ImportDocumentKey.typeOfKey(parts[0]),
+                ImportDocumentKey.numberOfKey(parts[0]), parts[1], LocalDate.parse(body.substring(dateSeparator + 1))).isPresent();
     }
 
     @Override

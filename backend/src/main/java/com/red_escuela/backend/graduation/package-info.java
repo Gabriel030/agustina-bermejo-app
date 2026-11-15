@@ -1,7 +1,7 @@
 /**
  * <b>Qué es</b>: módulo de graduación: solicitudes de graduación, verificación de deuda y elegibilidad, y certificados de graduación y de alumno regular con verificación pública.
  *
- * <p><b>Expone</b>: los eventos de {@code events} como interfaz con nombre {@code events}. No tiene {@code api}.
+ * <p><b>Expone</b>: los eventos de {@code events} como interfaz con nombre {@code events}. Expone además {@code api} con {@code HistoricalGraduationRecorder}, que registra egresos históricos de la importación inicial sin eventos ni avisos.
  *
  * <p><b>No hacer</b>: acceder a repositorios o entidades de otro módulo; notificar desde acá: se publica un evento y {@code notification} lo recibe.
  *
