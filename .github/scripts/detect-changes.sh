@@ -72,7 +72,7 @@ if [ -n "$base" ]; then
     if ! grep -qE '^frontend/package-lock\.json$' <<< "$changed"; then
       lockfile=false
     fi
-    if ! grep -qE '^(deploy/backup/|deploy/monitoring/|\.github/workflows/ci\.yml$|\.github/scripts/detect-changes\.sh$)' <<< "$changed"; then
+    if ! grep -qE '^(deploy/backup/|deploy/monitoring/|deploy/smoke(\.test)?\.sh$|\.github/workflows/ci\.yml$|\.github/scripts/detect-changes\.sh$)' <<< "$changed"; then
       deploy_ops=false
     fi
     if [ "$event" = pull_request ] && grep -qE "$demo_seed_scope" <<< "$changed"; then
