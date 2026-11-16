@@ -24,3 +24,5 @@ Prerrequisito: leíste tu ficha (`.claude/agents/backend.md` o `frontend.md`) y 
 - Criterio de parada: tras 2 intentos fallidos de corregir lo mismo (test que no pasa, CI roja por la misma causa) no hay tercer intento: handoff con diagnóstico y el líder relanza con un brief mejor. Los tests no se editan para hacerlos pasar. Opcional: `/compact <foco>` antes de un hito largo.
 - Bloqueo de más de 10 min (máquina saturada, semáforo, decisión): `BLOQUEADO` (comentario del PR + etiqueta `cell:blocked`), no gastes tokens esperando.
 - Commit/push denegado: no lo rodees; avisá.
+
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).

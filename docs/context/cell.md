@@ -94,6 +94,26 @@ gh project create --owner Gabriel030 --title "Célula"
 - Por ticket: `gh label create "cell:<issue>" --color BFD4F2` antes de lanzar workers.
 - En el Project "Célula" crear el campo Status (Por hacer, En curso, En revisión, Bloqueado, Hecho) y agregar issues y PRs (`gh project item-add <n> --owner Gabriel030 --url <url>`); el líder los mueve por estado al leer los comentarios.
 
+## `gh` en sesiones de la nube (sin GraphQL)
+
+Las sesiones cloud de Claude Code bloquean GraphQL (HTTP 403 "GitHub GraphQL is not available from Claude Code sessions"). Ahí no andan `gh issue view|list|comment|create`, `gh pr view|list|checks|create|comment|edit|merge` ni `gh label list`; sí andan `gh pr diff` y `gh api` (REST). En la Mac los comandos normales siguen valiendo. En la tabla, `R=repos/Gabriel030/agustina-bermejo-app`.
+
+| Para qué | Equivalente REST | Estado |
+|---|---|---|
+| Ver issue | `gh api $R/issues/N` | validado en la nube |
+| Listar issues por etiqueta | `gh api "$R/issues?labels=cell&state=all&per_page=50"` (filtrar `.pull_request == null`) | validado en la nube |
+| Listar PRs | `gh api "$R/pulls?state=open&per_page=50"` | validado en la nube |
+| Ver PR y sus archivos | `gh api $R/pulls/N`, `gh api $R/pulls/N/files`, `gh pr diff N` | validado en la nube |
+| Comentar PR o issue | `gh api $R/issues/N/comments -F body=@archivo.md` | validado en la nube |
+| Checks de un commit | `gh api $R/commits/<sha>/check-runs` | validado en la nube |
+| Crear PR | `gh api $R/pulls -f title=... -f head=<rama> -f base=develop -F draft=true -F body=@cuerpo.md` (o `mcp__github__create_pull_request`) | SIN VALIDAR |
+| Etiquetar | `gh api $R/issues/N/labels -f 'labels[]=cell:915'` | SIN VALIDAR |
+| Sacar etiqueta | `gh api -X DELETE $R/issues/N/labels/<etiqueta>` | SIN VALIDAR |
+| Crear etiqueta | `gh api $R/labels -f name=... -f color=...` | SIN VALIDAR |
+| Mergear | `gh api -X PUT $R/pulls/N/merge -f merge_method=squash` | SIN VALIDAR |
+| Pasar a ready / volver a borrador | `POST $R/pulls/N/ccr/ready_for_review` y `POST $R/pulls/N/ccr/convert_to_draft` | SIN VALIDAR |
+| Crear issue | `gh api $R/issues -f title=... -F body=@archivo.md -f 'labels[]=cell'` | SIN VALIDAR |
+
 ## Qué leer
 
 - Reglas de código y proceso: `CLAUDE.md`, `docs/context/workflow.md`, `docs/context/testing.md`.

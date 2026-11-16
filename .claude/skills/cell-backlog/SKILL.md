@@ -66,3 +66,5 @@ Estados: ✅ hecho · 🔄 en curso · 👀 en revisión · ⏳ en cola · 🛑 
 - Solo el coordinador escribe en Obsidian.
 - No copiar specs enteras al Issue: ruta y sección.
 - No crear Issues de cosas que Gabriel no priorizó.
+
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).

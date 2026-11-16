@@ -66,3 +66,5 @@ Rama propia desde `origin/develop` en tu worktree; commits en castellano con tra
 
 ## Formato de reporte al usuario
 Al pedido del usuario y en cada hito (merge, bloqueo, decisión), con la tabla fija `| Puesto | Subtarea | PR | Estado | Avance | Tokens | Bloqueo |` y debajo "Necesito de vos" (preguntas agrupadas, con opciones y recomendación). Corto. El avance por épica lo reporta el coordinador; vos reportás la célula (puestos, PRs, tokens).
+
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).

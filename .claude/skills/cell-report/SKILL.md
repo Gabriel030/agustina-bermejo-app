@@ -57,3 +57,5 @@ Secciones fijas: Estado (verde / falta), Archivos tocados, Decisiones tomadas, C
 ## Reglas
 - Datos reales (comando, exit code, conteo de tests), no "debería andar". Lo no verificado se dice.
 - Sin prosa de relleno ni resúmenes que dupliquen la salida.
+
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).
