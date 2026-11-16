@@ -70,7 +70,7 @@ y `~/.claude/instructions/workflow-git.md`):
 | **Usuarios de prueba** y qué usuario usar para probar cada flujo | [docs/context/test-users.md](docs/context/test-users.md) |
 | **Diseñar o mockear** una pantalla (flujo con `ux-advisor`) | [docs/context/frontend.md](docs/context/frontend.md), sección "Flujo de diseño" |
 | Escribir una **spec técnica/funcional nueva** antes de implementar | Skill `spec-writing` — no leas un doc, disparala directamente |
-| Trabajar en la **célula de agentes** (líder, backend, frontend, revisores, mecánico; sesiones locales o en la nube) | [docs/context/cell.md](docs/context/cell.md) |
+| Trabajar en la **célula de agentes** (líder, backend, frontend, revisores, mecánico; todo en local) | [docs/context/cell.md](docs/context/cell.md) |
 | Elegir un **patrón de diseño** (GoF o táctico DDD) para una feature o refactor | Skill `design-patterns` |
 
 Si la tarea no encaja en ninguna fila, seguí con el juicio normal — este índice

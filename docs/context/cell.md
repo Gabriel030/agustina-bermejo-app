@@ -53,8 +53,8 @@ Circuito: Gabriel prioriza => el coordinador convierte el ítem de Obsidian en u
 - Fuente de verdad = GitHub, no archivos del repo (evita conflictos): issue del ticket, PRs con etiquetas `cell:<issue>`, `role:<puesto>` y `cell:blocked`, y el Project "Célula" (kanban por estado) armado con esos issues/PRs. En el repo solo quedan el plan (una vez), el contrato (`contracts/openapi.json` + sección Contratos) y `docs/cell/handoffs/` (en la rama del worker).
 - Estado en la rama del worker: `docs/cell/progress/<issue>-<n>.md` con (a) checklist de criterios de aceptación con estado pasa/no pasa (los tests no se editan para hacerlos pasar) y (b) notas de progreso (hecho / sigue / decisiones / bloqueos); commit y push en cada hito.
 - Comentarios del PR SOLO en: arranque (PR borrador), hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` (más etiqueta `cell:blocked`) y `TERMINÉ` (más `gh pr ready`). No hay reportes periódicos: el líder mira commits y comentarios en los hitos (`gh pr view N --comments`, `gh pr list --label cell:blocked`).
-- El líder envía instrucciones a una sesión de la nube con `claude -p "<mensaje>" --cloud <session-id>`; los resultados vuelven por el PR.
-- Paralelismo: máximo 3 workers (2 backends + 1 frontend) + los subagentes revisores necesarios.
+- El líder lanza los workers como subagentes locales (herramienta Agent, con `isolation: worktree` o con un worktree propio creado con `git worktree add`) o como sesiones locales; los resultados vuelven por el PR y por SendMessage.
+- Paralelismo: máximo 2 workers de código a la vez (según capacidad de la máquina) + los subagentes revisores necesarios.
 - Reporte del líder al usuario: al pedido y en cada hito (merge, bloqueo, decisión), con la tabla fija y debajo "Necesito de vos" (preguntas agrupadas, opciones y recomendación):
 
 `| Puesto | Subtarea | PR | Estado | Avance | Tokens | Bloqueo |`
@@ -68,15 +68,24 @@ Circuito: Gabriel prioriza => el coordinador convierte el ítem de Obsidian en u
 
 ## Dónde corren
 
-| | Nube (claude.ai/code), por defecto | Local (Mac de Gabriel) |
-|---|---|---|
-| Quién | Workers (backends y frontend) | Líder y lo que necesite algo local: base demo 5433, preview en navegador, mockups/Obsidian |
-| Entorno | Cada sesión con su propia VM: 4 vCPU, 16 GB, Docker/Postgres y Vitest propios | Cargada: mirar `uptime` |
-| Concurrencia | Sin semáforo | Semáforo de Maven máx. 2 (`~/.claude/epica18/ci-slot.sh`, `backend/dev-test` lo toma solo); Vitest `--maxWorkers=2` |
-| Arranque | Hook `SessionStart` ejecuta `scripts/cloud-session-bootstrap.sh`: toolchains JDK 21 y `dockerd` | Normal |
-| Archivos de usuario | `~/.claude` no visible: todo está en el repo | `~/.claude` disponible |
+Todo corre en local (Mac de Gabriel: 8 núcleos, 16 GB). La nube se descartó el 16-nov-2026 (ver la nota al final de esta sección).
 
-En ambos casos: tests focalizados con `backend/dev-test`; suite completa y PIT en GitHub Actions.
+| Regla | Detalle |
+|---|---|
+| Quién | Líder, workers (subagentes o sesiones locales), revisores y mecánico |
+| Workers de código | Máximo 2 a la vez |
+| Maven | Semáforo de máx. 2 (`~/.claude/epica18/ci-slot.sh`; `backend/dev-test` lo toma solo) |
+| Vitest | Siempre `--maxWorkers=2` |
+| Aislamiento | Nunca dos agentes en el mismo worktree |
+| Capacidad | Antes de lanzar código correr `python3 ~/.claude/orquestacion/watch.py` y respetar el veredicto |
+| Veredicto 🟢 | Se puede lanzar código |
+| Veredicto 🟡 | Solo investigación y specs |
+| Veredicto 🔴 | No se lanza nada |
+| Recursos locales | El código local puede usar el índice de código, `~/.claude`, la base demo 5433 y el preview en navegador |
+
+Tests focalizados con `backend/dev-test`; suite completa y PIT en GitHub Actions. En 🟡/🔴 solo se hacen specs, investigación y revisión.
+
+Descartado (16-nov): la célula no usa sesiones de la nube. `scripts/cloud-session-bootstrap.sh` no se usa: la nube quedó descartada el 16-nov.
 
 ## Setup inicial de GitHub (lo corre el líder la primera vez)
 
@@ -94,25 +103,9 @@ gh project create --owner Gabriel030 --title "Célula"
 - Por ticket: `gh label create "cell:<issue>" --color BFD4F2` antes de lanzar workers.
 - En el Project "Célula" crear el campo Status (Por hacer, En curso, En revisión, Bloqueado, Hecho) y agregar issues y PRs (`gh project item-add <n> --owner Gabriel030 --url <url>`); el líder los mueve por estado al leer los comentarios.
 
-## `gh` en sesiones de la nube (sin GraphQL)
+## `gh` y la nube
 
-Las sesiones cloud de Claude Code bloquean GraphQL (HTTP 403 "GitHub GraphQL is not available from Claude Code sessions"). Ahí no andan `gh issue view|list|comment|create`, `gh pr view|list|checks|create|comment|edit|merge` ni `gh label list`; sí andan `gh pr diff` y `gh api` (REST). En la Mac los comandos normales siguen valiendo. En la tabla, `R=repos/Gabriel030/agustina-bermejo-app`.
-
-| Para qué | Equivalente REST | Estado |
-|---|---|---|
-| Ver issue | `gh api $R/issues/N` | validado en la nube |
-| Listar issues por etiqueta | `gh api "$R/issues?labels=cell&state=all&per_page=50"` (filtrar `.pull_request == null`) | validado en la nube |
-| Listar PRs | `gh api "$R/pulls?state=open&per_page=50"` | validado en la nube |
-| Ver PR y sus archivos | `gh api $R/pulls/N`, `gh api $R/pulls/N/files`, `gh pr diff N` | validado en la nube |
-| Comentar PR o issue | `gh api $R/issues/N/comments -F body=@archivo.md` | validado en la nube |
-| Checks de un commit | `gh api $R/commits/<sha>/check-runs` | validado en la nube |
-| Crear PR | `gh api $R/pulls -f title=... -f head=<rama> -f base=develop -F draft=true -F body=@cuerpo.md` (o `mcp__github__create_pull_request`) | SIN VALIDAR |
-| Etiquetar | `gh api $R/issues/N/labels -f 'labels[]=cell:915'` | SIN VALIDAR |
-| Sacar etiqueta | `gh api -X DELETE $R/issues/N/labels/<etiqueta>` | SIN VALIDAR |
-| Crear etiqueta | `gh api $R/labels -f name=... -f color=...` | SIN VALIDAR |
-| Mergear | `gh api -X PUT $R/pulls/N/merge -f merge_method=squash` | SIN VALIDAR |
-| Pasar a ready / volver a borrador | `POST $R/pulls/N/ccr/ready_for_review` y `POST $R/pulls/N/ccr/convert_to_draft` | SIN VALIDAR |
-| Crear issue | `gh api $R/issues -f title=... -F body=@archivo.md -f 'labels[]=cell'` | SIN VALIDAR |
+Descartado (16-nov): la célula no usa sesiones de la nube; las sesiones cloud bloquean GraphQL de GitHub y cobran tokens aparte. En local `gh` funciona normal.
 
 ## Qué leer
 

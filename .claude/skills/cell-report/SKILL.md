@@ -5,7 +5,7 @@ description: Formatos fijos de reporte de progreso, informe final y mensajes ent
 
 # cell-report
 
-Comentarios del PR (`gh pr comment N --body ...`) SOLO en: arranque (PR borrador), hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` y `TERMINÉ`. Sin reportes periódicos: el líder mira commits y comentarios en los hitos (`gh pr view N --comments` / `gh pr list --label cell:blocked`). El estado detallado vive en tu rama: `docs/cell/progress/<issue>-<n>.md` (checklist de criterios de aceptación pasa/no pasa, sin editar tests para hacerlos pasar, y notas: hecho / sigue / decisiones / bloqueos), con commit y push en cada hito. El líder te escribe con `claude -p "<mensaje>" --cloud <session-id>`; tus resultados vuelven por el PR. Revisores y mecánico son subagentes del líder: devuelven su resultado al líder, no comentan avance.
+Comentarios del PR (`gh pr comment N --body ...`) SOLO en: arranque (PR borrador), hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` y `TERMINÉ`. Sin reportes periódicos: el líder mira commits y comentarios en los hitos (`gh pr view N --comments` / `gh pr list --label cell:blocked`). El estado detallado vive en tu rama: `docs/cell/progress/<issue>-<n>.md` (checklist de criterios de aceptación pasa/no pasa, sin editar tests para hacerlos pasar, y notas: hecho / sigue / decisiones / bloqueos), con commit y push en cada hito. El líder te escribe por SendMessage; tus resultados vuelven por el PR. Revisores y mecánico son subagentes del líder: devuelven su resultado al líder, no comentan avance.
 
 Al arrancar: PR en BORRADOR con un primer commit chico (`gh pr create --draft`), etiquetas `cell:<issue>` y `role:<puesto>`. Al terminar: comentario `TERMINÉ` y `gh pr ready`. `BLOQUEADO` y `NECESITO DECISIÓN`: comentario + etiqueta `cell:blocked` (se saca al resolverse).
 
@@ -58,4 +58,3 @@ Secciones fijas: Estado (verde / falta), Archivos tocados, Decisiones tomadas, C
 - Datos reales (comando, exit code, conteo de tests), no "debería andar". Lo no verificado se dice.
 - Sin prosa de relleno ni resúmenes que dupliquen la salida.
 
-En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).
