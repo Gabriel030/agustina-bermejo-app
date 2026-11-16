@@ -22,3 +22,5 @@ Entrada: GitHub Issue (`gh issue view N`) y su spec. Salida: `docs/cell/plans/<i
 - Plan conciso: listas y tablas, sin prosa. Identificadores en inglés, texto en castellano.
 - No copiar specs enteras: referenciar ruta y sección.
 - Un desvío se pregunta, no se decide.
+
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).

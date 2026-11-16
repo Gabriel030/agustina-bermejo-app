@@ -38,3 +38,5 @@ Planificar subtareas, contratos, asignar workers, revisar o mergear PRs: eso es 
 - Sin códigos sueltos: cada ítem se nombra en lenguaje llano.
 - Preguntas a Gabriel con AskUserQuestion, agrupadas y con recomendación.
 - Al cerrar el día o antes de una pausa: handoff `~/.claude/epica18/handoffs/REANUDACION-<fecha>.md`.
+
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).

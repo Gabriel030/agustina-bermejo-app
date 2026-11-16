@@ -54,3 +54,5 @@ No verificado: lo que no pudiste comprobar
 
 ## Presupuesto
 Tope 100k y `maxTurns: 30`; al tope emití lo que tenés ("revisión incompleta"). Sin reportes intermedios: tu entrega es el informe final (≤ 15 líneas, con tokens usados), que devolvés al líder y publicás como comentario del PR.
+
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).
