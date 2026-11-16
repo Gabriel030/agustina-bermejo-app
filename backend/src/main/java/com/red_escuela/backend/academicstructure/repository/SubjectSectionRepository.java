@@ -38,5 +38,9 @@ public interface SubjectSectionRepository extends JpaRepository<SubjectSection, 
     @Query("select s from SubjectSection s where s.id = :id")
     Optional<SubjectSection> findByIdForUpdate(@Param("id") Long id);
 
+    @Query("select s from SubjectSection s left join fetch s.evaluationScheme left join fetch s.term "
+            + "left join fetch s.academicOfferingCycle c left join fetch c.term where s.id = :id")
+    Optional<SubjectSection> findByIdWithSchemeAndTerms(@Param("id") Long id);
+
     java.util.Optional<SubjectSection> findByCode(String code);
 }

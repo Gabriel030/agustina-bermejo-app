@@ -37,4 +37,8 @@ public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubj
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from CourseSubjectSection s where s.id = :id")
     Optional<CourseSubjectSection> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("select s from CourseSubjectSection s left join fetch s.evaluationScheme left join fetch s.term "
+            + "left join fetch s.academicOfferingCycle c left join fetch c.term where s.id = :id")
+    Optional<CourseSubjectSection> findByIdWithSchemeAndTerms(@Param("id") Long id);
 }
