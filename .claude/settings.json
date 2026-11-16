@@ -12,6 +12,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 60,
+            "statusMessage": "Preparando entorno de la sesión...",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/cloud-session-bootstrap.sh\" || true"
+          }
+        ]
+      }
     ]
   }
 }
