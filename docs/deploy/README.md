@@ -29,7 +29,7 @@ Internet --443/80--> Caddy (imagen "frontend") --/api/*--> backend:8080 --> post
 - Rate limit: lo hace el backend (Bucket4j). Caddy solo limita el tamaño del pedido (12 MB).
 
 Archivos: `docker-compose.prod.yml`, `backend/Dockerfile`, `frontend/Dockerfile`,
-`frontend/Caddyfile`, `deploy/.env.example`.
+`frontend/Caddyfile`, `deploy/.env.example`; para staging, `deploy/staging/`.
 
 ## Antes de empezar (una sola vez por instituto)
 
@@ -208,6 +208,117 @@ dc stats --no-stream                    # memoria y CPU por contenedor
   proxy. Revisar `TRUSTED_PROXIES_REGEX` contra la red de Docker (`docker network inspect`) y
   que `FORWARD_HEADERS_STRATEGY` sea `native`.
 - **Hay un balanceador o CDN delante de Caddy:** poner sus rangos en `CADDY_TRUSTED_PROXIES`.
+
+## Entorno de ensayo (staging)
+
+Un segundo despliegue igual al de producción, con datos de prueba, para ensayar importaciones,
+actualizaciones con migraciones y restauraciones antes de tocar producción. Usa el mismo
+`docker-compose.prod.yml` y las mismas imágenes; `deploy/staging/docker-compose.staging.yml` solo
+cambia el perfil de Spring, el modo inicial de facturación y la cookie de sesión.
+
+**Qué lo separa de producción** (todo sale de `COMPOSE_PROJECT_NAME`, que en staging es
+`agustina-bermejo-staging`):
+
+| Qué | Producción | Staging |
+|---|---|---|
+| Volúmenes (base, `/data`, Caddy) | `agustina-bermejo_*` | `agustina-bermejo-staging_*` |
+| Contenedores y redes | `agustina-bermejo-*` | `agustina-bermejo-staging-*` |
+| Puertos publicados | 80 / 443 | `HTTP_PORT` / `HTTPS_PORT` (por defecto 8080 / 8443) |
+| Dominio | `SITE_ADDRESS` de producción | otro dominio o subdominio |
+| Archivo de variables | `deploy/.env` | `deploy/.env.staging` |
+| Secretos | los reales | nuevos, nunca reutilizados |
+| Correo | Brevo | `TRANSACTIONAL_MAIL_PROVIDER=mock`: no sale ningún mail |
+
+Atajo (el resto de la sección usa `sc`):
+
+```bash
+alias sc='docker compose --env-file deploy/.env.staging -f docker-compose.prod.yml -f deploy/staging/docker-compose.staging.yml'
+```
+
+### Levantar
+
+```bash
+cp deploy/.env.example deploy/.env.staging
+chmod 600 deploy/.env.staging
+```
+
+Copiar al final de `deploy/.env.staging` lo de `deploy/staging/.env.staging.example` (o ajustar esas
+variables en su lugar), completar los secretos con valores nuevos y levantar:
+
+```bash
+sc up -d --build
+sc ps
+```
+
+Si staging comparte servidor con producción, los puertos tienen que ser distintos y, si hay otro
+proxy delante, apuntarlo a `HTTP_PORT`. Sin dominio: `SITE_ADDRESS=:80`, `REFRESH_COOKIE_SECURE=false`
+y entrar por `http://<servidor>:<HTTP_PORT>` (sin HTTPS el login con Google no funciona).
+
+### Cargar datos de prueba
+
+Elegir una de las dos:
+
+- **Base vacía (como producción).** Es el valor por defecto (`STAGING_SPRING_PROFILES=prod`). Sirve
+  para ensayar la importación de datos históricos desde cero.
+- **Institución demo.** En `deploy/.env.staging`: `STAGING_SPRING_PROFILES=prod,local,demo` y
+  `STAGING_DEMO_SEED=true`, y `sc up -d`. El backend siembra la institución demo hablando con su
+  propia API (idempotente: si ya hay datos no repite). Crea las cuentas `*.demo` con clave
+  `Test1234` (ver `docs/context/test-users.md`): **no dejar ese staging abierto a internet sin una
+  barrera delante** (VPN, lista de IP o autenticación del proxy). Para volver a una base vacía hay
+  que destruir los volúmenes (ver «Destruir»).
+
+Con el perfil `demo` el reloj de la app es el `DemoClock`, que sin ninguna orden de viaje en el tiempo
+(`travelTo`: no hay llamadas en el código principal) devuelve la hora real. Esto se verificó leyendo el
+código, no corriendo el seed en un servidor; al terminar mirar `sc logs backend` antes de ensayar.
+
+### Correr la prueba posterior al despliegue
+
+Es la misma de producción contra la URL de staging:
+
+```bash
+SMOKE_DB_VERSION_CMD="docker compose --env-file deploy/.env.staging -f docker-compose.prod.yml -f deploy/staging/docker-compose.staging.yml exec -T postgres sh -c 'psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -Atc \"select max(version::int) from flyway_schema_history where success and version is not null\"'" \
+  deploy/smoke.sh --require-migrations https://<dominio-de-staging>
+```
+
+Si staging corre por HTTP plano (sin dominio), los chequeos de cabeceras HTTPS pueden fallar: eso es
+esperable y no dice nada sobre producción.
+
+### Ensayar antes de producción
+
+1. **Actualización con migraciones:** desplegar en staging la etiqueta candidata siguiendo
+   «Actualizar a una versión nueva» (con `sc` en lugar de `dc`) y correr la prueba posterior.
+2. **Restauración:** restaurar en staging una copia de producción con el procedimiento de
+   `docs/deploy/backup-and-restore.md` y contrastar los conteos. Una copia real tiene datos
+   personales: staging queda con la misma protección que producción y los mails en `mock`.
+3. **Importación:** ensayar la carga de datos históricos completa en staging y revisar el resultado
+   antes de repetirla en producción.
+
+### Promover a producción
+
+Staging no promueve nada solo: lo que se ensayó es una etiqueta o commit del repo.
+
+1. Anotar la etiqueta o el commit exacto que pasó el ensayo y la prueba posterior.
+2. En producción, desplegar exactamente eso con «Actualizar a una versión nueva» (copia de la base
+   primero) y correr la prueba posterior.
+3. Si el ensayo falló, no se promueve: se corrige en una rama, se vuelve a desplegar en staging y
+   se repite.
+
+### Destruir
+
+Borra contenedores y **todos** los volúmenes de staging (base, archivos y certificados), nada de producción:
+
+```bash
+sc down -v
+```
+
+Antes de correrlo confirmar con `echo $COMPOSE_PROJECT_NAME` (o mirando `sc config | head -1`) que el
+nombre es el de staging.
+
+### Pendiente de A2 (proveedor y dominio)
+
+Parametrizado y sin definir: `SITE_ADDRESS` y las URLs del front y del backend de staging, el
+servidor donde corre (y si comparte máquina con producción), y el registro DNS. Mientras A2 no se
+resuelva el ejemplo usa `staging.escuela.example.com`.
 
 ## Qué NO hace este paquete
 
