@@ -22,6 +22,8 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [workflow.md](context/workflow.md) | Git, CI local, commits, PRs, migraciones y backport | vigente |
 | [test-users.md](context/test-users.md) | Usuarios de prueba y con cuál probar cada flujo | vigente |
 | [specs.md](context/specs.md) | Dónde viven las specs y el roadmap (Obsidian) | vigente |
+| [cell.md](context/cell.md) | Célula de agentes: roles, arranque de sesiones, flujo de un ticket, local vs nube | vigente |
+| [plans/TEMPLATE.md](cell/plans/TEMPLATE.md) | Plantilla de plan de la célula (`docs/cell/plans/<ticket>.md`) | vigente |
 
 ## Release (`docs/release/`)
 
