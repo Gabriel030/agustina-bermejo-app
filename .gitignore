@@ -18,3 +18,4 @@ frontend/coverage/
 # Perf
 perf/out/
 perf/results.json
+deploy/.env.staging
