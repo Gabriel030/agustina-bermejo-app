@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
+import { useMyModules } from '@/hooks/useMyModules';
 import { formatearFechaCorta } from '@/lib/avisos';
 import {
   useCancelRegularCertificateRequest,
@@ -114,6 +115,7 @@ function ValidDetails({ certificate, onDownload, downloading }) {
 }
 
 export function RegularCertificateCard({ carreraId }) {
+  const modules = useMyModules();
   const { data: state, isLoading, isError, error, refetch } = useRegularCertificateState(carreraId);
   const requestCertificate = useRequestRegularCertificate(carreraId);
   const cancelRequest = useCancelRegularCertificateRequest(carreraId);
@@ -185,7 +187,7 @@ export function RegularCertificateCard({ carreraId }) {
             </Button>
           </div>
         )}
-        {view === REGULAR_VIEW.UNAVAILABLE_PAYMENTS && (
+        {view === REGULAR_VIEW.UNAVAILABLE_PAYMENTS && modules.billingEnabled && (
           <div>
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link to="/alumno/pagos">Ver mis pagos</Link>

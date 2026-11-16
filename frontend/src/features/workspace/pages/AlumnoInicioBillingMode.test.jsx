@@ -31,6 +31,23 @@ const modulesWith = (mode) =>
     }),
   );
 
+const pendingAdmission = () =>
+  http.get(`${API}/me/program-enrollment-applications`, () =>
+    HttpResponse.json([
+      {
+        id: 1,
+        programName: 'Tecnicatura',
+        status: 'APPROVED',
+        admissionInvoice: {
+          id: 10,
+          total: { amount: '50000.00', currency: 'ARS' },
+          dueDate: '2099-01-01',
+          paymentStatus: 'PENDING',
+        },
+      },
+    ]),
+  );
+
 function mountWith(...handlers) {
   server.use(
     http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
@@ -85,5 +102,21 @@ describe('AlumnoInicio account card by billing mode', () => {
     expect(await screen.findByText(/estado de cuenta/i, { selector: 'div,p,span,h2,h3' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: /reintentar/i })).toBeInTheDocument());
     expect(screen.queryByText('No tenés saldo pendiente.')).not.toBeInTheDocument();
+  });
+
+  it('hides the admission fee payment card when billing is off', async () => {
+    mountWith(modulesWith('OFF'), pendingAdmission());
+    await screen.findByText('Todavía no hay novedades');
+    expect(screen.queryByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
+  });
+
+  it('shows the admission fee payment card when billing is on', async () => {
+    mountWith(
+      modulesWith('FULL'),
+      pendingAdmission(),
+      http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([paymentEntry('UP_TO_DATE')])),
+    );
+    expect(await screen.findByRole('button', { name: 'Pagar matrícula' })).toBeInTheDocument();
   });
 });

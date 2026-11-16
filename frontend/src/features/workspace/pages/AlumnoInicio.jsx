@@ -167,7 +167,7 @@ export function AlumnoInicio() {
           La mecánica (auto-avance, flechas, dots) sí es real. */}
       <BannerCarousel />
 
-      <AdmissionInvoicePendingCard />
+      {modules.billingEnabled && <AdmissionInvoicePendingCard />}
 
       {/* Identidad + estado de pago */}
       <GlassCard className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">

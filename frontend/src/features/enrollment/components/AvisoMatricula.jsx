@@ -42,7 +42,7 @@ export function AvisoMatricula({ obligacion, onPagar }) {
           {`Para inscribirte tenés que pagar la matrícula ${periodoLegible(obligacion)}${montoLegible(obligacion)}${vencimientoLegible(obligacion)}. Pagala y volvé a esta pantalla.`}
         </span>
       </div>
-      {obligacion?.invoiceId && (
+      {obligacion?.invoiceId && onPagar && (
         <Button type="button" variant="gradient" size="sm" className="self-start" onClick={() => onPagar(obligacion.invoiceId)}>
           Pagar matrícula
         </Button>
