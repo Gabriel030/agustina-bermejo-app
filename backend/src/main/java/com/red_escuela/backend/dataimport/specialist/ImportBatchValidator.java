@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,15 +35,17 @@ public class ImportBatchValidator {
     private final ImportRowRepository rowRepository;
     private final ImportBatchEventRepository eventRepository;
     private final ImportDefinitionRegistry registry;
+    private final EntityManager entityManager;
 
     public ImportBatchValidator(ImportBatchRepository batchRepository, ImportFileRepository fileRepository,
             ImportRowRepository rowRepository, ImportBatchEventRepository eventRepository,
-            ImportDefinitionRegistry registry) {
+            ImportDefinitionRegistry registry, EntityManager entityManager) {
         this.batchRepository = batchRepository;
         this.fileRepository = fileRepository;
         this.rowRepository = rowRepository;
         this.eventRepository = eventRepository;
         this.registry = registry;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -50,6 +54,7 @@ public class ImportBatchValidator {
         if (!batch.canValidate()) {
             throw new ImportBatchStateInvalidException("validar", batch.getStatus().name());
         }
+        entityManager.setFlushMode(FlushModeType.COMMIT);
         boolean hasIssues = false;
         Map<String, Object> detail = new HashMap<>();
         for (ImportFile file : fileRepository.findByBatchIdOrderByEntityType(batchId)) {
