@@ -80,6 +80,16 @@ function mockEgreso({ own = ownRequest(), post } = {}) {
       }),
     ),
     http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
+    http.get(`${API}/me/modules`, () =>
+      HttpResponse.json({
+        billing: { mode: 'FULL' },
+        fiscalInvoicing: { enabled: false },
+        analytics: { enabled: false },
+        paymentMethods: [],
+        billingNotifications: { enabled: false },
+        externalBilling: { enabled: false },
+      }),
+    ),
     http.get(`${API}/*`, () => HttpResponse.json([])),
   );
 }

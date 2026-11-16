@@ -7,6 +7,14 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
 
 const API = 'http://localhost:8080';
+const MODULES_FULL = {
+  billing: { mode: 'FULL' },
+  fiscalInvoicing: { enabled: false },
+  analytics: { enabled: false },
+  paymentMethods: [],
+  billingNotifications: { enabled: false },
+  externalBilling: { enabled: false },
+};
 const REGULAR_STUDENT = {
   kind: 'PROGRAM',
   enrollmentId: 5,
@@ -47,6 +55,7 @@ describe('AlumnoMisCarreras', () => {
         }),
       ),
       http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
+      http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
 
@@ -86,6 +95,7 @@ describe('AlumnoMisCarreras', () => {
         }),
       ),
       http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
+      http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
   }
@@ -180,6 +190,7 @@ describe('AlumnoMisCarreras — load failure', () => {
         return new HttpResponse(null, { status: 500 });
       }),
       http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
+      http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     const user = userEvent.setup();
@@ -237,6 +248,7 @@ describe('AlumnoMisCarreras — regularity', () => {
         }),
       ),
       http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
+      http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     return requested;
