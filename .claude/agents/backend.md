@@ -15,7 +15,7 @@ Implementar UNA subtarea de backend del plan `docs/cell/plans/<ticket>.md`, en e
 2. `docs/context/backend.md` (patrón feature + use case), `docs/context/modules.md` si cruzás módulos.
 3. `docs/context/testing.md`: secciones "Mapa de herramientas", "Correr tests focalizados" y "Reglas para no pagar contextos".
 4. Billing/plata: `docs/billing/decision-registry.md` (buscá las D-xxx por número; no contradecir ninguna vigente).
-5. Grep o índice de código antes de leer archivos enteros; leé rangos. Usá el índice (skill `code-index`, refleja develop); si el índice no está, grep.
+5. Grep o índice de código antes de leer archivos enteros; leé rangos. Si trabajás en la Mac podés usar el índice (skill `code-index`, refleja develop); en la nube, grep.
 
 ## Reglas de código (no negociables)
 - Identificadores, endpoints y nombres de tests en inglés. UI/mensajes al usuario en castellano. Lo existente en castellano no se renombra.
@@ -38,7 +38,7 @@ Implementar UNA subtarea de backend del plan `docs/cell/plans/<ticket>.md`, en e
 El contrato es del líder y ya está mergeado (`cell-contract`): implementalo tal cual (rutas, campos, errores, enums). Si no alcanza o hay que cambiarlo, `NECESITO DECISIÓN`; no lo modificás. Si el líder autoriza un cambio, en el MISMO PR actualizar `contracts/openapi.json` (solo aditivo salvo autorización), mocks MSW del front y `domainErrorMessages.js`. Un seed que toque tablas con trigger/constraint nuevo se actualiza también. Los endpoints de lista paginados devuelven `content`: leer `content` en seeds y tests.
 
 ## Cómo testeás
-- Local: SOLO lo afectado con `backend/dev-test <Clase1,Clase2|paquete|--changed>`. Una única invocación de Maven por tanda, `-o`, sin `clean`. Sumá a mano `architecture/` y lo que tu cambio afecte. Corrés en local (Mac con recursos limitados): semáforo de Maven máx. 2 (`~/.claude/epica18/ci-slot.sh`; `backend/dev-test` lo toma solo); base demo 5433 disponible si hace falta.
+- Local: SOLO lo afectado con `backend/dev-test <Clase1,Clase2|paquete|--changed>`. Una única invocación de Maven por tanda, `-o`, sin `clean`. Sumá a mano `architecture/` y lo que tu cambio afecte. Corrés en la NUBE por defecto (VM propia: 4 vCPU, 16 GB, Docker/Postgres propios, sin semáforo). Si te toca local (base demo 5433 u otra necesidad local): semáforo de Maven máx. 2 (`~/.claude/epica18/ci-slot.sh`; `dev-test` lo toma solo).
 - Suite completa y PIT: los corre el CI de GitHub (requisito de merge). No los corras en local ni esperes el CI. Plata: PIT local `cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`.
 - Antes de empujar: toda `architecture/` con `-Darchunit.freeze.store.default.allowStoreUpdate=false`; `billing/catalog` y `billing/invoice/domain` si tocaste billing; `shared.exception.**` si agregaste excepciones; `OpenApiSnapshotTest` si tocaste controllers.
 - Sin `Thread.sleep` (Awaitility), sin `@DirtiesContext`. Mocks con `@SharedMockBeans/@SharedSpyBeans/@SharedPropertyOverrides` (tope 24 contextos de Spring). No invoques jobs globales (barridos, emisión mensual): invocá el use case con ids. Aislamiento de datos: `TestDatabaseIsolation` o limpieza en `@AfterEach`.
@@ -72,4 +72,4 @@ El contrato es del líder y ya está mergeado (`cell-contract`): implementalo ta
 - Si la estimación supera 100k, proponé el corte al líder antes de escribir código.
 
 ## Estado y reportes
-Skill `cell-report`. Estado en tu rama: mantené `docs/cell/progress/<issue>-<n>.md` con (a) checklist de criterios de aceptación con estado pasa/no pasa y (b) notas de progreso (hecho / sigue / decisiones / bloqueos); commit y push en cada hito. Abrí el PR en BORRADOR con un primer commit chico y comentá SOLO en: arranque, hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` (más etiqueta `cell:blocked`) y `TERMINÉ` (más `gh pr ready`). Sin reportes periódicos: el líder mira commits y comentarios en los hitos. Los mensajes del líder te llegan por SendMessage; tus resultados vuelven por el PR.
+Skill `cell-report`. Estado en tu rama: mantené `docs/cell/progress/<issue>-<n>.md` con (a) checklist de criterios de aceptación con estado pasa/no pasa y (b) notas de progreso (hecho / sigue / decisiones / bloqueos); commit y push en cada hito. Abrí el PR en BORRADOR con un primer commit chico y comentá SOLO en: arranque, hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` (más etiqueta `cell:blocked`) y `TERMINÉ` (más `gh pr ready`). Sin reportes periódicos: el líder mira commits y comentarios en los hitos. Los mensajes del líder llegan a tu sesión (`claude -p ... --cloud <session-id>`); tus resultados vuelven por el PR.

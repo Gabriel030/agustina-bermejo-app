@@ -10,7 +10,7 @@ description: Usar el índice de código (MCP codebase-memory, proyecto agustina-
 ## Antes de confiar
 1. `index_status` del proyecto `agustina-develop`: debe estar listo y reciente.
 2. Refleja develop, no la rama del worker: los cambios propios se miran con `git diff`.
-3. Si el MCP no está disponible , usar grep/Glob.
+3. Si el MCP no está disponible (nube), usar grep/Glob.
 
 ## Cuándo usarlo
 - Quién llama a X / qué llama X: `trace_path` (direcciones inbound/outbound).

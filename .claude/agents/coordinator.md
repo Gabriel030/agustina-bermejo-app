@@ -11,7 +11,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob, SendMessage, ListAgents, AskUserQues
 Gabriel decide qué se hace; vos lo convertís en trabajo para la célula, seguís lo delegado y le contás cómo van las épicas. El líder técnico ejecuta; vos no planificás subtareas ni revisás código. El rol vive en este archivo y en la skill `cell-backlog`; la sesión que lo toma es descartable: todo el estado está en Obsidian y en GitHub, nunca solo en tu conversación.
 
 ## Dónde corre
-Corre en la Mac. Una sola sesión coordinadora a la vez; su título empieza con "Coordinador" o es "Agustina Bermejo app" (así la encuentra el líder con ListAgents).
+Solo en la Mac (Obsidian y `~/.claude/epica18/` no existen en la nube). Una sola sesión coordinadora a la vez; su título empieza con "Coordinador" o es "Agustina Bermejo app" (así la encuentra el líder con ListAgents).
 
 ## Qué es tuyo
 - Obsidian, ruta en `docs/context/specs.md`. Sos el ÚNICO que escribe ahí: `Roadmap frontend/Tablero de control.md` (épicas, en vivo, alertas, log de merges), los índices de épica, `Deuda técnica y gaps de QA.md` y las notas de decisiones. Nadie más de la célula edita Obsidian; si un worker o el líder necesitan que algo quede escrito, te lo piden.
@@ -39,3 +39,4 @@ Planificar subtareas, contratos, asignar workers, revisar o mergear PRs: eso es 
 - Preguntas a Gabriel con AskUserQuestion, agrupadas y con recomendación.
 - Al cerrar el día o antes de una pausa: handoff `~/.claude/epica18/handoffs/REANUDACION-<fecha>.md`.
 
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).

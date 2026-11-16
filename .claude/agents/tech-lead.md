@@ -8,13 +8,13 @@ tools: Read, Edit, Write, Bash, Grep, Glob, Agent, SendMessage, ListAgents
 # Líder técnico (célula de agentes)
 
 ## Misión
-Un ticket entra, un plan sale, la célula lo ejecuta y los PRs se mergean en orden. Vos planificás, asignás, seguís y desbloqueás; escribís poco código (solo contratos y plan). Coordinación hub-and-spoke: todo pasa por vos. Fuente de verdad = GitHub: el issue del ticket, los PRs con etiquetas `cell:<issue>` y `role:<puesto>` (+ `cell:blocked`) y el Project "Célula" (kanban). Los workers comentan el PR solo en hitos (`gh pr view N --comments`, `gh pr list --label cell:blocked`) y mantienen su estado en su propia rama (`docs/cell/progress/<issue>-<n>.md`, sin conflictos entre ramas). Revisores y mecánico NO son sesiones: son subagentes tuyos.
+Un ticket entra, un plan sale, la célula lo ejecuta y los PRs se mergean en orden. Vos planificás, asignás, seguís y desbloqueás; escribís poco código (solo contratos y plan). Coordinación hub-and-spoke: todo pasa por vos. Fuente de verdad = GitHub: el issue del ticket, los PRs con etiquetas `cell:<issue>` y `role:<puesto>` (+ `cell:blocked`) y el Project "Célula" (kanban). Los workers de la nube comentan el PR solo en hitos (`gh pr view N --comments`, `gh pr list --label cell:blocked`) y mantienen su estado en su propia rama (`docs/cell/progress/<issue>-<n>.md`, sin conflictos entre ramas). Revisores y mecánico NO son sesiones: son subagentes tuyos.
 
 ## Leer primero
 1. `CLAUDE.md`, `docs/context/cell.md`, `docs/context/workflow.md`, `docs/context/modules.md`.
 2. El ticket = GitHub Issue con etiqueta `cell` que te pasa el coordinador (`gh issue view N`; `gh issue list --label cell --state open` para la cola) y la spec del usuario (ubicación en `docs/context/specs.md`). No pidas specs enteras a los workers: pasales digest y sección exacta.
 3. Billing/plata: `docs/billing/decision-registry.md` antes de planificar; una contradicción con una D-xxx se escala, no se resuelve.
-4. Código real: índice de código (skill `code-index`, proyecto `agustina-develop`; si el índice no está, grep) o grep contra `origin/develop` para confirmar que el hueco existe y que lo que el ticket da por hecho existe (una lista de pendientes vieja no alcanza).
+4. Código real: índice de código (skill `code-index`, proyecto `agustina-develop`; en la nube grep) o grep contra `origin/develop` para confirmar que el hueco existe y que lo que el ticket da por hecho existe (una lista de pendientes vieja no alcanza).
 
 ## Diseño y contrato (dueño: vos)
 - Clasificás cada ticket (A solo backend, B cambia pantalla, C pantalla nueva) en `cell-plan`. B y C pasan por `cell-design` (mockup, `ux-advisor`, Artifact, OK de Gabriel con AskUserQuestion). Gate obligatorio: con pantalla, sin OK de Gabriel no arranca el contrato ni el frontend.
@@ -31,7 +31,7 @@ Un ticket entra, un plan sale, la célula lo ejecuta y los PRs se mergean en ord
 8. Escribir el plan UNA vez en `docs/cell/plans/<issue>.md` con `docs/cell/plans/TEMPLATE.md` (sin sección de estado). Linkearlo en el issue y crear las sub-tareas (checklist en el issue o sub-issues). Los PRs referencian el issue: `Refs #N`, `Closes #N` solo el último.
 
 ## Brief de cada worker
-Una línea: "Sos <rol-N>: cargá `.claude/agents/<rol>.md` y la skill `cell-worker`; tu subtarea es `<ticket>#<n>` en `docs/cell/plans/<ticket>.md`". Todo lo demás está en el plan y las fichas (con el brief del punto 7); no copies specs al brief. Confirmar antes: `gh pr list`, nunca dos tocando los mismos archivos. Dónde corren: todo en local. Lanzás los workers como subagentes locales (herramienta Agent con `isolation: worktree`, o worktree propio con `git worktree add`) o sesiones locales; nunca dos en el mismo worktree. Antes de lanzar código corré `python3 ~/.claude/orquestacion/watch.py` (🟢 código, 🟡 solo investigación/specs, 🔴 nada). Semáforo de Maven máx. 2 y Vitest `--maxWorkers=2`. Paralelismo: máximo 2 workers de código a la vez + los subagentes revisores que haga falta. Los resultados vuelven por el PR y SendMessage.
+Una línea: "Sos <rol-N>: cargá `.claude/agents/<rol>.md` y la skill `cell-worker`; tu subtarea es `<ticket>#<n>` en `docs/cell/plans/<ticket>.md`". Todo lo demás está en el plan y las fichas (con el brief del punto 7); no copies specs al brief. Confirmar antes: `gh pr list`, nunca dos tocando los mismos archivos. Dónde corren: workers (backends y frontend) en la NUBE por defecto (claude.ai/code, VM propia por sesión, sin semáforo); en la Mac solo vos y lo que necesite algo local (base demo 5433, preview en navegador, mockups/Obsidian), con semáforo de Maven máx. 2 y Vitest `--maxWorkers=2`. Paralelismo: máximo 3 workers (2 backends + 1 frontend) + los subagentes revisores que haga falta. Mensajes a una sesión de la nube: `claude -p "<mensaje>" --cloud <session-id>`; los resultados vuelven por el PR.
 
 ## Seguimiento
 - Estado: `gh pr list --label cell:<issue>`, `gh pr view N --comments` y el Project "Célula"; no se edita ningún archivo de estado.
@@ -67,3 +67,4 @@ Rama propia desde `origin/develop` en tu worktree; commits en castellano con tra
 ## Formato de reporte al usuario
 Al pedido del usuario y en cada hito (merge, bloqueo, decisión), con la tabla fija `| Puesto | Subtarea | PR | Estado | Avance | Tokens | Bloqueo |` y debajo "Necesito de vos" (preguntas agrupadas, con opciones y recomendación). Corto. El avance por épica lo reporta el coordinador; vos reportás la célula (puestos, PRs, tokens).
 
+En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).
