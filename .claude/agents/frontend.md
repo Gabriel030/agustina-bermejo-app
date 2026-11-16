@@ -48,6 +48,7 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 - Local: `cd frontend && npm run lint && npm run build:check` y tests focalizados `npx vitest run <ruta> --maxWorkers=2`. Suite completa en el CI.
 - MSW/fixtures actualizados con cada campo nuevo del contrato; snapshot de rutas (`routeTable`) si agregás ruta; mensaje en `domainErrorMessages.js` por cada código de error nuevo.
 - Sin esperas fijas; usar `findBy*`/`waitFor`. Tests por comportamiento visible (RTL), no por implementación. Un test que nunca falló no prueba nada: sabotealo.
+- Verificación en navegador (preview) además de los tests: abrí las pantallas tocadas en claro/oscuro y responsive y comprobá el flujo; si no podés abrirlo, decilo en el reporte.
 - Corrés en la NUBE por defecto (VM propia con Vitest propio, sin semáforo). Local (preview en navegador, base demo 5433): Vitest siempre con `--maxWorkers=2`; sin pruebas en navegador salvo que la subtarea lo pida.
 
 ## Checklist pre-PR
@@ -67,7 +68,9 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 - No mergees; no uses `--admin` ni `--force`.
 
 ## Presupuesto
-Tope fijo 150k tokens de plataforma (tu cuenta x2,2), SIN extensiones. Avisos 50/80/100 %. Al tope, o al 60 % de contexto usado: handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama, push y frená; el líder lanza uno fresco. Si estimás más de 100k, proponé el corte antes de empezar.
+- Tope fijo 150k tokens de plataforma (lo que cuentes vos x2,2), SIN extensiones; avisos al 50 %, 80 %, 100 %. El relevo es al tope o al cambiar de tarea (el contexto de 1M no es el límite): handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama (qué está verde, qué falta, archivos), push y frená; el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
+- Criterio de parada: tras 2 intentos fallidos de corregir lo mismo (test que no pasa, CI roja por la misma causa) no hay tercer intento: handoff con diagnóstico y el líder relanza con un brief mejor. Los tests no se editan para hacerlos pasar.
+- Si la estimación supera 100k, proponé el corte al líder antes de escribir código.
 
-## Reportes
-Skill `cell-report`. En la nube no podés mandar mensajes a otras sesiones: PR en borrador con un primer commit chico y reportes como COMENTARIOS del PR (`gh pr comment`): a los 10 min, luego cada 20 o por hito, una línea fija con `contexto: <%>`. Al terminar: comentario `TERMINÉ` y `gh pr ready`. `BLOQUEADO` y `NECESITO DECISIÓN` también como comentario (más etiqueta `cell:blocked`). Local: además podés mandar mensaje; la fuente de verdad son los comentarios.
+## Estado y reportes
+Skill `cell-report`. Estado en tu rama: mantené `docs/cell/progress/<issue>-<n>.md` con (a) checklist de criterios de aceptación con estado pasa/no pasa y (b) notas de progreso (hecho / sigue / decisiones / bloqueos); commit y push en cada hito. Abrí el PR en BORRADOR con un primer commit chico y comentá SOLO en: arranque, hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` (más etiqueta `cell:blocked`) y `TERMINÉ` (más `gh pr ready`). Sin reportes periódicos: el líder mira commits y comentarios en los hitos. Los mensajes del líder llegan a tu sesión (`claude -p ... --cloud <session-id>`); tus resultados vuelven por el PR.

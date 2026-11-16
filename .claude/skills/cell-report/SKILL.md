@@ -5,14 +5,13 @@ description: Formatos fijos de reporte de progreso, informe final y mensajes ent
 
 # cell-report
 
-Reportes: SOLO avance, `TERMINÉ`, `BLOQUEADO` y `NECESITO DECISIÓN`. Los workers de la nube no pueden mandar mensajes a otras sesiones: los publican como COMENTARIOS del PR (`gh pr comment N --body ...`), que es la fuente de verdad; las sesiones locales pueden además mandar mensaje. El líder los lee con `gh pr view N --comments` / `gh pr list --label cell:blocked`. El detalle va en un handoff (`docs/cell/handoffs/`), no en el reporte.
+Comentarios del PR (`gh pr comment N --body ...`) SOLO en: arranque (PR borrador), hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` y `TERMINÉ`. Sin reportes periódicos: el líder mira commits y comentarios en los hitos (`gh pr view N --comments` / `gh pr list --label cell:blocked`). El estado detallado vive en tu rama: `docs/cell/progress/<issue>-<n>.md` (checklist de criterios de aceptación pasa/no pasa, sin editar tests para hacerlos pasar, y notas: hecho / sigue / decisiones / bloqueos), con commit y push en cada hito. El líder te escribe con `claude -p "<mensaje>" --cloud <session-id>`; tus resultados vuelven por el PR. Revisores y mecánico son subagentes del líder: devuelven su resultado al líder, no comentan avance.
 
 Al arrancar: PR en BORRADOR con un primer commit chico (`gh pr create --draft`), etiquetas `cell:<issue>` y `role:<puesto>`. Al terminar: comentario `TERMINÉ` y `gh pr ready`. `BLOQUEADO` y `NECESITO DECISIÓN`: comentario + etiqueta `cell:blocked` (se saca al resolverse).
 
-## Reporte de avance (una línea)
-Primero a los 10 min, luego cada 20 min o por hito (comentario del PR):
-`[<ticket>#<n>] <ESTADO> · <%> · hecho: ... · ahora: ... · falta: ... · bloqueos: ... · tokens: <usados>/<tope> · contexto: <%>`
-ESTADO: EN CURSO | ESPERANDO | VERDE-LOCAL. Aviso explícito al 50 %, 80 % y 100 % del tope. Al 60 % de contexto: handoff en tu rama (`docs/cell/handoffs/<issue>-<n>.md`) y frená; el líder lanza uno fresco. Sin reporte en 20 min el líder lo pide; en 30 frena la sesión.
+## Comentario de hito (una línea)
+`[<ticket>#<n>] <HITO> · hecho: ... · falta: ... · bloqueos: ... · tokens: <usados>/<tope>`
+HITO: ARRANQUE | COMPILA | DOMINIO-VERDE | ITS-VERDES | LISTO. Aviso explícito al 50 %, 80 % y 100 % del tope de tokens. Al tope o al cambiar de tarea: handoff y frená. Tras 2 intentos fallidos de corregir lo mismo: handoff con diagnóstico y frená (no hay tercer intento); el líder relanza con un brief mejor.
 
 ## TERMINÉ
 ```
@@ -21,7 +20,7 @@ PR: <url> · commit: <sha> · rama: <rama>
 Tests: <comando> => <resultado real>
 Desvíos: ninguno | ...
 Plata/contrato/seguridad: sí|no
-Tokens: <usados>/<tope> · contexto: <%>
+Tokens: <usados>/<tope>
 Siguiente: <qué espera / qué desbloquea>
 ```
 Informe final ≤ 15 líneas. Parcial: `TERMINÉ (parcial)` + ruta del handoff.

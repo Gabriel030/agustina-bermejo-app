@@ -25,7 +25,7 @@ Líder: <sesión> · Fecha: <AAAA-MM-DD> · Issue: #<N> · Spec: <ruta/sección>
 
 ## Subtareas
 Una por puesto, ≤100k, un dueño por archivo; contratos definidos antes de lanzar; backend y frontend en paralelo con mocks del contrato.
-| ID | Título | Puesto | Archivos/paquetes (un dueño por archivo) | Depende de / en paralelo con | D-xxx | Tope | Plata/contrato/seguridad |
+| ID | Título | Puesto | Archivos permitidos (un dueño por archivo) | Depende de / en paralelo con | D-xxx | Tope | Plata/contrato/seguridad |
 |---|---|---|---|---|---|---|---|
 | T#1 | | backend-1 | | — | | 100k | no |
 
@@ -34,6 +34,10 @@ Una por puesto, ≤100k, un dueño por archivo; contratos definidos antes de lan
 - Cómo probarlo: <pasos o test>
 - Tests esperados: <clases/casos, incluido el borde>
 - Notas de diseño: <patrón y por qué, una línea>
+- Formato de salida esperado: <PR con ..., checklist de criterios en `docs/cell/progress/<issue>-<n>.md`>
+- FUERA DE ALCANCE: <lo que no debe tocar ni resolver>
+- Criterios de aceptación verificables: <lista pasa/no pasa>
+- Comando de verificación: <comando> (frontend: además verificación en navegador/preview)
 
 ## Orden de merge
 1. T#1 => 2. T#2 ... (indicar qué va en paralelo)
