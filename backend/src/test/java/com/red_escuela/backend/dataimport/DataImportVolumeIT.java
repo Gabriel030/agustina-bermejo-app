@@ -23,7 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -208,31 +211,22 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
 
     private static final class PeakHeap {
         private final AtomicLong peakBytes = new AtomicLong();
-        private final Thread sampler;
-
-        private PeakHeap() {
-            sampler = new Thread(() -> {
-                Runtime runtime = Runtime.getRuntime();
-                while (!Thread.currentThread().isInterrupted()) {
-                    peakBytes.accumulateAndGet(runtime.totalMemory() - runtime.freeMemory(), Math::max);
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        return;
-                    }
-                }
-            });
-            sampler.setDaemon(true);
-        }
+        private final ScheduledExecutorService sampler = Executors.newSingleThreadScheduledExecutor(task -> {
+            Thread thread = new Thread(task);
+            thread.setDaemon(true);
+            return thread;
+        });
 
         static PeakHeap start() {
             PeakHeap heap = new PeakHeap();
-            heap.sampler.start();
+            Runtime runtime = Runtime.getRuntime();
+            heap.sampler.scheduleAtFixedRate(() -> heap.peakBytes.accumulateAndGet(runtime.totalMemory() - runtime.freeMemory(), Math::max),
+                    0, 100, TimeUnit.MILLISECONDS);
             return heap;
         }
 
         long stopAndReadMegabytes() {
-            sampler.interrupt();
+            sampler.shutdownNow();
             return peakBytes.get() / (1024 * 1024);
         }
     }
