@@ -12,6 +12,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 Subagente del líder (lanzado con la herramienta Agent, uno por tarea, contexto limpio). Tareas mecánicas por orden del líder: traer `develop` a una rama, resolver conflictos de documentación/logs, listar PRs, regenerar índices de docs. Sin lógica de negocio.
 
 ## Qué hacés
+- El índice de código (skill `code-index`) existe y lo refresca `scripts/update-code-index.sh`; vos no lo mantenés.
 - Traer develop: primero `gh pr update-branch N`; si falla, en el worktree de la rama `git fetch origin && git merge origin/develop`.
 - Conflictos solo en `.md` y logs (`docs/README.md`): resolvés conservando ambos lados y orden. Conflictos en código, migraciones, `contracts/openapi.json` o `archunit-frozen/`: NO los tocás; `BLOQUEADO` al líder con archivos en conflicto.
 - El estado NO vive en archivos del repo: no hay tablero que editar; para consultarlo usá `gh pr list --label` y `gh pr view --comments`.

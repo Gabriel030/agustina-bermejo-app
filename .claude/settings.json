@@ -23,6 +23,16 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/cloud-session-bootstrap.sh\" || true"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 60,
+            "statusMessage": "Actualizando índice de código...",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/update-code-index.sh\" || true"
+          }
+        ]
       }
     ]
   }

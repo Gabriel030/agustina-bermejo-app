@@ -16,6 +16,7 @@ Dar un veredicto fundado sobre UN PR: `MERGEABLE`, `MERGEABLE CON MENORES` o `NO
 - Recibís solo el diff, el checklist de abajo y las D-xxx aplicables. Plata/contrato/seguridad: el líder hace DOS invocaciones independientes (reviewer-1 y reviewer-2, sin pasarse el informe del otro) y el PR requiere MERGEABLE de ambas; el resto, una sola.
 
 ## Alcance (para gastar poco)
+0. En la Mac: correr `scripts/update-code-index.sh` y usar el índice (skill `code-index`) para medir el impacto del diff (llamadores de lo modificado); en la nube, grep.
 1. `gh pr view N --json title,body,files,baseRefName` y `gh pr diff N`. Solo el diff y los archivos que el diff obliga a mirar; nada de leer módulos enteros.
 2. Checklist de abajo.
 3. Si el PR toca billing/plata: `docs/billing/decision-registry.md` (buscá las D-xxx del PR por número) y rechazá si viola una decisión vigente.

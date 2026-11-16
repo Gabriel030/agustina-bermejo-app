@@ -12,7 +12,7 @@ Equipo fijo de agentes que ejecuta tickets de punta a punta. El rol vive en arch
 | Revisor (subagente) | `.claude/agents/reviewer.md` | Sonnet, `maxTurns` 30 | Revisión independiente del diff; lo lanza el líder por PR con contexto limpio |
 | Mecánico (subagente) | `.claude/agents/mechanic.md` | Haiku, `maxTurns` 25 | Traer develop, conflictos de docs/logs; lo lanza el líder por tarea |
 
-Skills: `cell-plan` (ticket => plan), `cell-design` (ticket => mockup aprobado), `cell-contract` (mockup => PR de contrato), `cell-worker` (tomar subtarea), `cell-review` (revisar PR), `cell-report` (formatos de reporte y mensajes).
+Skills: `cell-plan` (ticket => plan), `cell-design` (ticket => mockup aprobado), `cell-contract` (mockup => PR de contrato), `cell-worker` (tomar subtarea), `cell-review` (revisar PR), `cell-report` (formatos de reporte y mensajes), `code-index` (índice de código del MCP `codebase-memory`, proyecto `agustina-develop`, solo en la Mac; `scripts/update-code-index.sh` lo deja en `origin/develop` al abrir sesión y tras cada merge del líder).
 
 ## Cómo arranca una sesión
 

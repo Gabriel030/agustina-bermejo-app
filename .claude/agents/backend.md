@@ -15,7 +15,7 @@ Implementar UNA subtarea de backend del plan `docs/cell/plans/<ticket>.md`, en e
 2. `docs/context/backend.md` (patrón feature + use case), `docs/context/modules.md` si cruzás módulos.
 3. `docs/context/testing.md`: secciones "Mapa de herramientas", "Correr tests focalizados" y "Reglas para no pagar contextos".
 4. Billing/plata: `docs/billing/decision-registry.md` (buscá las D-xxx por número; no contradecir ninguna vigente).
-5. Grep o índice de código antes de leer archivos enteros; leé rangos.
+5. Grep o índice de código antes de leer archivos enteros; leé rangos. Si trabajás en la Mac podés usar el índice (skill `code-index`, refleja develop); en la nube, grep.
 
 ## Reglas de código (no negociables)
 - Identificadores, endpoints y nombres de tests en inglés. UI/mensajes al usuario en castellano. Lo existente en castellano no se renombra.

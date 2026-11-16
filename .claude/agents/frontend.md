@@ -14,6 +14,7 @@ Implementar UNA subtarea de frontend del plan `docs/cell/plans/<ticket>.md` y en
 1. `CLAUDE.md` y tu subtarea + secciones Diseño y Contratos del plan. El contrato ya está mergeado: trabajás contra sus mocks MSW y `contracts/openapi.json`, sin inventar campos; si no alcanza, `NECESITO DECISIÓN` (no lo modificás).
 2. `docs/context/frontend.md` (protocolo previo, estructura por módulo, formularios, errores, responsive), `docs/context/components.md` (qué componente usar), `docs/context/design-system.md` (tokens).
 3. `docs/context/testing.md`, sección Frontend (Vitest + RTL + MSW).
+4. Si trabajás en la Mac podés ubicar componentes y llamadores con el índice de código (skill `code-index`, refleja develop); en la nube, grep.
 
 ## Dirección de diseño vigente: B (plana)
 - `DEFAULT_DESIGN = 'b'` en `frontend/src/theme/design.js`; tokens en `frontend/src/theme/tokens-b.css`. Vidrio Líquido (`vl`, `tokens.css`) es solo respaldo hasta su retiro: no diseñes nuevo en VL.

@@ -14,7 +14,7 @@ Un ticket entra, un plan sale, la célula lo ejecuta y los PRs se mergean en ord
 1. `CLAUDE.md`, `docs/context/cell.md`, `docs/context/workflow.md`, `docs/context/modules.md`.
 2. El ticket = GitHub Issue (`gh issue view N`) y la spec del usuario (ubicación en `docs/context/specs.md`). No pidas specs enteras a los workers: pasales digest y sección exacta.
 3. Billing/plata: `docs/billing/decision-registry.md` antes de planificar; una contradicción con una D-xxx se escala, no se resuelve.
-4. Código real: grep/índice contra `origin/develop` para confirmar que el hueco existe y que lo que el ticket da por hecho existe (una lista de pendientes vieja no alcanza).
+4. Código real: índice de código (skill `code-index`, proyecto `agustina-develop`; en la nube grep) o grep contra `origin/develop` para confirmar que el hueco existe y que lo que el ticket da por hecho existe (una lista de pendientes vieja no alcanza).
 
 ## Diseño y contrato (dueño: vos)
 - Clasificás cada ticket (A solo backend, B cambia pantalla, C pantalla nueva) en `cell-plan`. B y C pasan por `cell-design` (mockup, `ux-advisor`, Artifact, OK de Gabriel con AskUserQuestion). Gate obligatorio: con pantalla, sin OK de Gabriel no arranca el contrato ni el frontend.
@@ -45,6 +45,7 @@ Una línea: "Sos <rol-N>: cargá `.claude/agents/<rol>.md` y la skill `cell-work
 - Merge automático por vos cuando el revisor da MERGEABLE (o MERGEABLE CON MENORES ya corregidos) y la CI está verde (`gh pr merge N --squash`). Plata, contrato y seguridad (cuenta corriente, mora, descuentos, D-xxx, autenticación): MERGEABLE de las dos invocaciones independientes (reviewer-1 y reviewer-2) más CI verde. Lo no clasificable se trata como plata.
 - `contract-break-approved`: solo si el diff de `contracts/openapi.json` es enum-value-added o ruptura declarada en el plan; listás el diff en el PR; cerrar y reabrir el PR.
 - Releases y hotfixes a `master`: los abre/mergea el usuario. Cadencia: 15 PRs en develop desde el último release (o 5 al cierre de jornada, o antes de migraciones) => avisar para cortar `release/*`.
+- Después de cada `gh pr merge` correr `scripts/update-code-index.sh` (deja el índice en `origin/develop`); usá el índice (`code-index`) para planificar y medir el impacto de un ticket o diff.
 - Nunca `--admin`, `--force` ni saltear un checks rojo. Con migraciones: antes de mergear verificar que el `V###` no choque; si choca, renumerar el que mergea después y avisar a los PRs abiertos.
 
 ## Preguntas de negocio al usuario
