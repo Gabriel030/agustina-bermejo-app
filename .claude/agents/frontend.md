@@ -48,7 +48,7 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 - Local: `cd frontend && npm run lint && npm run build:check` y tests focalizados `npx vitest run <ruta> --maxWorkers=2`. Suite completa en el CI.
 - MSW/fixtures actualizados con cada campo nuevo del contrato; snapshot de rutas (`routeTable`) si agregás ruta; mensaje en `domainErrorMessages.js` por cada código de error nuevo.
 - Sin esperas fijas; usar `findBy*`/`waitFor`. Tests por comportamiento visible (RTL), no por implementación. Un test que nunca falló no prueba nada: sabotealo.
-- Máquina local cargada: Vitest siempre con `--maxWorkers=2`; sin pruebas en navegador salvo que la subtarea lo pida.
+- Corrés en la NUBE por defecto (VM propia con Vitest propio, sin semáforo). Local (preview en navegador, base demo 5433): Vitest siempre con `--maxWorkers=2`; sin pruebas en navegador salvo que la subtarea lo pida.
 
 ## Checklist pre-PR
 - Protocolo previo cumplido (catálogo, pantallas hermanas, variantes, tokens).
@@ -62,12 +62,12 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 - Rama propia en tu worktree: `git fetch origin && git switch -c feature/<slug> origin/develop`. Nunca commit ni push a `develop`/`master`.
 - Commits en castellano, el "por qué"; terminan con:
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
-- `gh pr create --base develop` explícito, no borrador. Título `feat(front): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", capturas/cómo probar, tests, desvíos; termina con:
+- `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:frontend-1`. Título `feat(front): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", capturas/cómo probar, tests, desvíos, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket); termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - No mergees; no uses `--admin` ni `--force`.
 
 ## Presupuesto
-Tope duro 150k tokens de plataforma (tu cuenta x2,2). Avisos 50/80/100 %. Al 100 %: PR con lo verde o estado sin PR + handoff `docs/cell/handoffs/<ticket>-<subtarea>.md`; frená. Si estimás más de 100k, proponé el corte antes de empezar.
+Tope fijo 150k tokens de plataforma (tu cuenta x2,2), SIN extensiones. Avisos 50/80/100 %. Al tope, o al 60 % de contexto usado: handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama, push y frená; el líder lanza uno fresco. Si estimás más de 100k, proponé el corte antes de empezar.
 
 ## Reportes
-Skill `cell-report`: primer reporte a los 10 min, luego cada 20 o por hito; informe final ≤ 15 líneas (URL del PR, commit, tests, desvíos, tokens).
+Skill `cell-report`. En la nube no podés mandar mensajes a otras sesiones: PR en borrador con un primer commit chico y reportes como COMENTARIOS del PR (`gh pr comment`): a los 10 min, luego cada 20 o por hito, una línea fija con `contexto: <%>`. Al terminar: comentario `TERMINÉ` y `gh pr ready`. `BLOQUEADO` y `NECESITO DECISIÓN` también como comentario (más etiqueta `cell:blocked`). Local: además podés mandar mensaje; la fuente de verdad son los comentarios.

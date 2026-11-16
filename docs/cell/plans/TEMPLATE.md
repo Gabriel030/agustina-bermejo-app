@@ -1,7 +1,7 @@
-# Plan: <ticket> — <título corto>
+# Plan: #<issue> — <título corto>
 
-Estado del plan: borrador | aprobado | en ejecución | cerrado
-Líder: <sesión> · Fecha: <AAAA-MM-DD> · Spec: <ruta/sección>
+Se escribe UNA vez al planificar; el estado vive en GitHub (issue, PRs con `cell:<issue>`, Project "Célula"), no acá.
+Líder: <sesión> · Fecha: <AAAA-MM-DD> · Issue: #<N> · Spec: <ruta/sección>
 
 ## Objetivo
 <Una frase: después de esto, quién puede hacer qué.>
@@ -18,13 +18,14 @@ Líder: <sesión> · Fecha: <AAAA-MM-DD> · Spec: <ruta/sección>
 ## Contratos
 - Endpoints: `<MÉTODO> <ruta>` — request / response / errores / permisos
 - `contracts/openapi.json`: <cambio aditivo | ruptura declarada>
-- Migraciones: `V<n>__<descripcion>.sql` (reservada; último en develop: V<x>, master: V<y>)
+- Migraciones: `V<n>__<descripcion>.sql` (número reservado; último en develop: V<x>, master: V<y>)
 - Eventos: `<NombreEvento>` — payload — productor => consumidor
 - Puertos `<modulo>.api`: ...
 - Mocks del front / `domainErrorMessages.js`: ...
 
 ## Subtareas
-| ID | Título | Rol | Archivos/paquetes (sin solapamiento) | Depende de | D-xxx | Tope | Plata/contrato/seguridad |
+Una por puesto, ≤100k, un dueño por archivo; contratos definidos antes de lanzar; backend y frontend en paralelo con mocks del contrato.
+| ID | Título | Puesto | Archivos/paquetes (un dueño por archivo) | Depende de / en paralelo con | D-xxx | Tope | Plata/contrato/seguridad |
 |---|---|---|---|---|---|---|---|
 | T#1 | | backend-1 | | — | | 100k | no |
 
@@ -35,15 +36,7 @@ Líder: <sesión> · Fecha: <AAAA-MM-DD> · Spec: <ruta/sección>
 - Notas de diseño: <patrón y por qué, una línea>
 
 ## Orden de merge
-1. T#1 => 2. T#2 ...
-
-## Revisión
-| PR | Revisor(es) | Veredicto |
-|---|---|---|
-
-## Estado (tablero)
-| Subtarea | Dueño | Rama | PR | Estado | Tokens/tope |
-|---|---|---|---|---|---|
+1. T#1 => 2. T#2 ... (indicar qué va en paralelo)
 
 ## Decisiones registradas
 - <fecha> <decisión> (billing: D-xxx en el registro)

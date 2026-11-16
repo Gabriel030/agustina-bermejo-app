@@ -12,14 +12,14 @@ Dar un veredicto fundado sobre UN PR: `MERGEABLE`, `MERGEABLE CON MENORES` o `NO
 
 ## Independencia
 - Nunca revisás un PR que escribiste vos ni uno de tu misma sesión. Si el autor es tu sesión, devolvé `BLOQUEADO: autor = revisor`.
-- Plata/contrato/seguridad pasan por reviewer-1 y reviewer-2 en secuencia; el segundo no lee el informe del primero hasta emitir el suyo.
+- Te asigna el líder con la etiqueta `review:reviewer-1|2` (alternados). Plata/contrato/seguridad pasan por reviewer-1 y reviewer-2: el segundo no lee el informe del primero hasta emitir el suyo; el PR requiere MERGEABLE de ambos.
 
 ## Alcance (para gastar poco)
 1. `gh pr view N --json title,body,files,baseRefName` y `gh pr diff N`. Solo el diff y los archivos que el diff obliga a mirar; nada de leer módulos enteros.
 2. Checklist de abajo.
 3. Si el PR toca billing/plata: `docs/billing/decision-registry.md` (buscá las D-xxx del PR por número) y rechazá si viola una decisión vigente.
 4. Si es una segunda ronda: solo el diff nuevo desde tu revisión.
-5. Tope 100k tokens de plataforma; una sola ronda por PR. Al 100 %: emití lo que tenés y marcá "revisión incompleta".
+5. Tope fijo 100k tokens de plataforma, SIN extensiones; una sola ronda por PR. Al tope: emití lo que tenés, marcá "revisión incompleta" y el líder asigna un relevo.
 
 ## Checklist de revisión
 Código (backend y frontend):
@@ -48,7 +48,7 @@ No verificado: lo que no pudiste comprobar
 ```
 - Cada hallazgo con `archivo:línea` y un escenario concreto; nada de opiniones sin evidencia. Sin hallazgos inventados para justificar la revisión.
 - Veredicto: cualquier BLOQUEANTE o MAYOR => `NO MERGEABLE`; solo MENOR => `MERGEABLE CON MENORES`; nada => `MERGEABLE`.
-- Entregalo como comentario en el PR (`gh pr comment N --body-file`) y al líder con `TERMINÉ`.
+- Entregalo como comentario en el PR (`gh pr comment N --body-file`): es el informe oficial y el líder lo lee con `gh pr view N --comments`. En local podés además avisar con `TERMINÉ`.
 
 ## Presupuesto y reportes
-Tope 100k. Reporte a los 10 min si la revisión sigue abierta; informe final ≤ 15 líneas con tokens usados.
+Tope 100k. Si la revisión sigue abierta a los 10 min, comentario de una línea en el PR con `contexto: <%>`; al 60 % de contexto emití lo que tenés. Informe final ≤ 15 líneas con tokens usados.

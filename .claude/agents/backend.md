@@ -38,7 +38,7 @@ Implementar UNA subtarea de backend del plan `docs/cell/plans/<ticket>.md`, en e
 Cambio en controllers/DTO/enums/errores: en el MISMO PR actualizar `contracts/openapi.json` (solo aditivo salvo autorización), mocks MSW del front y `domainErrorMessages.js`. Un seed que toque tablas con trigger/constraint nuevo se actualiza también. Los endpoints de lista paginados devuelven `content`: leer `content` en seeds y tests.
 
 ## Cómo testeás
-- Local: SOLO lo afectado con `backend/dev-test <Clase1,Clase2|paquete|--changed>`. Una única invocación de Maven por tanda, `-o`, sin `clean`. Sumá a mano `architecture/` y lo que tu cambio afecte. Si existe el semáforo (`~/.claude/epica18/ci-slot.sh`) `dev-test` lo toma solo; en la nube no existe y no hace falta.
+- Local: SOLO lo afectado con `backend/dev-test <Clase1,Clase2|paquete|--changed>`. Una única invocación de Maven por tanda, `-o`, sin `clean`. Sumá a mano `architecture/` y lo que tu cambio afecte. Corrés en la NUBE por defecto (VM propia: 4 vCPU, 16 GB, Docker/Postgres propios, sin semáforo). Si te toca local (base demo 5433 u otra necesidad local): semáforo de Maven máx. 2 (`~/.claude/epica18/ci-slot.sh`; `dev-test` lo toma solo).
 - Suite completa y PIT: los corre el CI de GitHub (requisito de merge). No los corras en local ni esperes el CI. Plata: PIT local `cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`.
 - Antes de empujar: toda `architecture/` con `-Darchunit.freeze.store.default.allowStoreUpdate=false`; `billing/catalog` y `billing/invoice/domain` si tocaste billing; `shared.exception.**` si agregaste excepciones; `OpenApiSnapshotTest` si tocaste controllers.
 - Sin `Thread.sleep` (Awaitility), sin `@DirtiesContext`. Mocks con `@SharedMockBeans/@SharedSpyBeans/@SharedPropertyOverrides` (tope 24 contextos de Spring). No invoques jobs globales (barridos, emisión mensual): invocá el use case con ids. Aislamiento de datos: `TestDatabaseIsolation` o limpieza en `@AfterEach`.
@@ -61,14 +61,14 @@ Cambio en controllers/DTO/enums/errores: en el MISMO PR actualizar `contracts/op
 - Rama propia en tu worktree: `git fetch origin && git switch -c <prefijo>/<slug> origin/develop` (`feature/`, `fix/`, `refactor/`). Nunca commit ni push a `develop`/`master`. Antes, `gh pr list` por duplicados.
 - Commits en castellano, el "por qué"; terminan con:
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
-- `gh pr create --base develop` explícito, no borrador. Título `tipo(módulo): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", tests y sabotajes, decisiones/D-xxx, desvíos, migraciones (número), si toca plata/contrato/seguridad, y termina con:
+- `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:<tu puesto>`. Título `tipo(módulo): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", tests y sabotajes, decisiones/D-xxx, desvíos, migraciones (número), si toca plata/contrato/seguridad, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket), y termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - Labels: `contract-break-approved` solo si el líder lo autoriza (diff enum-value-added o ruptura declarada; cerrar y reabrir el PR para que corra el chequeo). Nunca `--admin`, `--force` ni mergear: el merge lo decide el líder/usuario.
 - Si un commit o push es denegado, no lo rodees: avisá.
 
 ## Presupuesto
-- Tope duro 150k tokens de plataforma (lo que cuentes vos x2,2). Avisos al 50 %, 80 %, 100 %. Al 100 %: PR con lo verde (o estado sin PR) + handoff `docs/cell/handoffs/<ticket>-<subtarea>.md` (qué está verde, qué falta, archivos) y frená. No te reanudan: un agente nuevo lee tu handoff.
+- Tope fijo 150k tokens de plataforma (lo que cuentes vos x2,2), SIN extensiones. Avisos al 50 %, 80 %, 100 %. Al tope, o al 60 % de contexto usado: handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama (qué está verde, qué falta, archivos), push y frená. No te reanudan: el líder lanza uno fresco que lee tu handoff.
 - Si la estimación supera 100k, proponé el corte al líder antes de escribir código.
 
 ## Reportes
-Skill `cell-report`: primer reporte a los 10 min, luego cada 20 min o por hito, una línea fija; informe final ≤ 15 líneas con URL del PR, commit, tests corridos y resultado, desvíos y tokens.
+Skill `cell-report`. En la nube no podés mandar mensajes a otras sesiones: abrí el PR en borrador con un primer commit chico y reportá como COMENTARIOS del PR (`gh pr comment`): primero a los 10 min, luego cada 20 min o por hito, una línea fija con `contexto: <%>`. Al terminar: comentario `TERMINÉ` y `gh pr ready`. `BLOQUEADO` y `NECESITO DECISIÓN` también como comentario (más etiqueta `cell:blocked`). En local además podés mandar mensaje; la fuente de verdad son los comentarios.
