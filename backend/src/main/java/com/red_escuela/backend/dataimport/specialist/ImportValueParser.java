@@ -24,6 +24,14 @@ public final class ImportValueParser {
         return cleanText(raw).replace(".", "").replace(" ", "");
     }
 
+    public static Optional<LocalDate> parseDateOrEmpty(String raw) {
+        try {
+            return parseDate(raw);
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
     public static Optional<LocalDate> parseDate(String raw) {
         String value = cleanText(raw);
         if (value.isEmpty()) {

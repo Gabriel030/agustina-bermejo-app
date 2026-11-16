@@ -56,6 +56,28 @@ public class HistoricalEnrollmentRecorder {
     }
 
     @Transactional(readOnly = true)
+    public Long requireCompletedProgramEnrollmentId(DocumentType type, String number, String programName,
+            LocalDate completionDate) {
+        return findCompletedProgramEnrollmentId(type, number, programName, completionDate)
+                .orElseThrow(() -> new HistoricalEnrollmentReferenceMissingException(programName));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Long> findProgramEnrollmentId(DocumentType type, String number, String programName) {
+        return findProgramEnrollment(type, number, programName).map(ProgramEnrollment::getId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Long> findCompletedProgramEnrollmentId(DocumentType type, String number, String programName,
+            LocalDate completionDate) {
+        return findProgramEnrollment(type, number, programName)
+                .filter(enrollment -> enrollment.getStatus() == ProgramEnrollmentStatus.COMPLETED)
+                .filter(enrollment -> enrollment.getCompletionDate() != null
+                        && enrollment.getCompletionDate().toLocalDate().equals(completionDate))
+                .map(ProgramEnrollment::getId);
+    }
+
+    @Transactional(readOnly = true)
     public boolean sectionEnrollmentExists(DocumentType type, String number, Long sectionId) {
         return findStudentId(type, number)
                 .flatMap(studentId -> sectionEnrollmentRepository.findByStudentIdAndSubjectSectionId(studentId, sectionId))
