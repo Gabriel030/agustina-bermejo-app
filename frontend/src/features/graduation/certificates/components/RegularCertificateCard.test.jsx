@@ -193,8 +193,21 @@ describe('RegularCertificateCard', () => {
     renderCard();
 
     expect(await screen.findByText(/Tenés pagos pendientes/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ver mis pagos' })).toHaveAttribute('href', '/alumno/pagos');
+    expect(await screen.findByRole('link', { name: 'Ver mis pagos' })).toHaveAttribute('href', '/alumno/pagos');
     expect(screen.queryByText(/\$/)).not.toBeInTheDocument();
+  });
+
+  it('does not link to the payments page when billing is off', async () => {
+    server.use(
+      http.get(`${API}/me/modules`, () =>
+        HttpResponse.json({ billing: { mode: 'OFF' }, fiscalInvoicing: { enabled: false }, analytics: { enabled: false }, paymentMethods: [], billingNotifications: { enabled: false }, externalBilling: { enabled: false } }),
+      ),
+    );
+    mockState(stateBody({ state: 'UNAVAILABLE', unavailableType: 'PAYMENTS', staffConfirmationRequired: false }));
+    renderCard();
+
+    expect(await screen.findByText(/Tenés pagos pendientes/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Ver mis pagos' })).not.toBeInTheDocument());
   });
 
   it('shows the rejection reason written by administration', async () => {
