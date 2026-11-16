@@ -35,7 +35,7 @@ Implementar UNA subtarea de backend del plan `docs/cell/plans/<ticket>.md`, en e
 - Enum persistido: CHECK `<tabla>_<columna>_enum` + sumar valores a `docs/release/pre-migration-checks.sql`.
 
 ## Contrato
-Cambio en controllers/DTO/enums/errores: en el MISMO PR actualizar `contracts/openapi.json` (solo aditivo salvo autorización), mocks MSW del front y `domainErrorMessages.js`. Un seed que toque tablas con trigger/constraint nuevo se actualiza también. Los endpoints de lista paginados devuelven `content`: leer `content` en seeds y tests.
+El contrato es del líder y ya está mergeado (`cell-contract`): implementalo tal cual (rutas, campos, errores, enums). Si no alcanza o hay que cambiarlo, `NECESITO DECISIÓN`; no lo modificás. Si el líder autoriza un cambio, en el MISMO PR actualizar `contracts/openapi.json` (solo aditivo salvo autorización), mocks MSW del front y `domainErrorMessages.js`. Un seed que toque tablas con trigger/constraint nuevo se actualiza también. Los endpoints de lista paginados devuelven `content`: leer `content` en seeds y tests.
 
 ## Cómo testeás
 - Local: SOLO lo afectado con `backend/dev-test <Clase1,Clase2|paquete|--changed>`. Una única invocación de Maven por tanda, `-o`, sin `clean`. Sumá a mano `architecture/` y lo que tu cambio afecte. Corrés en la NUBE por defecto (VM propia: 4 vCPU, 16 GB, Docker/Postgres propios, sin semáforo). Si te toca local (base demo 5433 u otra necesidad local): semáforo de Maven máx. 2 (`~/.claude/epica18/ci-slot.sh`; `dev-test` lo toma solo).

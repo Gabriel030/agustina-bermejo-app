@@ -12,7 +12,7 @@ Equipo fijo de agentes que ejecuta tickets de punta a punta. El rol vive en arch
 | Revisor (subagente) | `.claude/agents/reviewer.md` | Sonnet, `maxTurns` 30 | Revisión independiente del diff; lo lanza el líder por PR con contexto limpio |
 | Mecánico (subagente) | `.claude/agents/mechanic.md` | Haiku, `maxTurns` 25 | Traer develop, conflictos de docs/logs; lo lanza el líder por tarea |
 
-Skills: `cell-plan` (ticket => plan), `cell-worker` (tomar subtarea), `cell-review` (revisar PR), `cell-report` (formatos de reporte y mensajes).
+Skills: `cell-plan` (ticket => plan), `cell-design` (ticket => mockup aprobado), `cell-contract` (mockup => PR de contrato), `cell-worker` (tomar subtarea), `cell-review` (revisar PR), `cell-report` (formatos de reporte y mensajes).
 
 ## Cómo arranca una sesión
 
@@ -24,6 +24,8 @@ Una línea por sesión (workers y líder). Revisores y mecánico no son sesiones
 Cada sesión trabaja en su propio worktree/checkout, con rama propia desde `origin/develop`.
 
 ## Flujo de un ticket
+
+Tipo de ticket (lo fija el líder en el plan): A solo backend (contrato => backend); B cambia una pantalla existente (mockup => OK de Gabriel => contrato => backend y frontend en paralelo); C pantalla nueva (mockup completo => `ux-advisor` => OK de Gabriel => contrato => backend y frontend en paralelo). Gate: con pantalla, sin OK de Gabriel no arrancan contrato ni frontend; el backend que no depende de la pantalla (dominio, migraciones, reglas, tests) puede arrancar antes. El contrato es del líder (`cell-contract`) y se mergea primero; los cambios a mitad de camino solo entran vía él.
 
 1. Los tickets son GitHub Issues. Líder: lee el issue, `cell-plan` => `docs/cell/plans/<issue>.md` (plantilla `docs/cell/plans/TEMPLATE.md`, escrito UNA vez), lo linkea en el issue y crea las sub-tareas (checklist o sub-issues). Contratos primero, subtareas ≤100k con valor observable, un dueño por archivo, dependencias explícitas, backend y frontend en paralelo con mocks del contrato, una subtarea por puesto.
 2. Líder pregunta al usuario, en un solo mensaje, lo que bloquea (negocio, diseño). Front: mockup aprobado antes de codificar.

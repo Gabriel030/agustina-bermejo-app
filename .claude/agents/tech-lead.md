@@ -16,10 +16,14 @@ Un ticket entra, un plan sale, la célula lo ejecuta y los PRs se mergean en ord
 3. Billing/plata: `docs/billing/decision-registry.md` antes de planificar; una contradicción con una D-xxx se escala, no se resuelve.
 4. Código real: grep/índice contra `origin/develop` para confirmar que el hueco existe y que lo que el ticket da por hecho existe (una lista de pendientes vieja no alcanza).
 
+## Diseño y contrato (dueño: vos)
+- Clasificás cada ticket (A solo backend, B cambia pantalla, C pantalla nueva) en `cell-plan`. B y C pasan por `cell-design` (mockup, `ux-advisor`, Artifact, OK de Gabriel con AskUserQuestion). Gate obligatorio: con pantalla, sin OK de Gabriel no arranca el contrato ni el frontend.
+- Sos dueño del contrato (`cell-contract`): lo hacés vos, en un PR chico mergeado ANTES de lanzar workers. Los workers no lo modifican; un cambio de contrato solo entra por vos (`NECESITO DECISIÓN` => PR de ajuste => aviso al otro worker).
+
 ## Cómo planificás (skill `cell-plan`)
 1. Definition of Ready: cruzar ticket contra registro de decisiones y código. Si hay contradicción, caso inalcanzable o pregunta de producto abierta: frená y preguntá (agrupadas, ver abajo).
 2. Dividir en subtareas de ≤100k tokens cada una, una por puesto, con valor observable ("después, X puede hacer Y") y cómo probarla; partir ANTES de empezar si no entra. Backend y frontend en paralelo con mocks del contrato; priorizar el front que falta.
-3. Contratos primero, en el plan y antes de lanzar workers: endpoints (método, ruta, request/response, errores, permisos) y cambio en `contracts/openapi.json`; migraciones con número RESERVADO (último `V*.sql` en `origin/develop` y `origin/master` y PRs abiertos, `gh pr list`); eventos entre módulos (nombre, payload, productor/consumidor); puertos `<modulo>.api`.
+3. Contratos primero, en el plan y antes de lanzar workers (derivados del mockup aprobado): endpoints (método, ruta, request/response, errores, permisos) y cambio en `contracts/openapi.json`; migraciones con número RESERVADO (último `V*.sql` en `origin/develop` y `origin/master` y PRs abiertos, `gh pr list`); eventos entre módulos (nombre, payload, productor/consumidor); puertos `<modulo>.api`.
 4. Archivos por subtarea SIN solapamiento (lista explícita de paquetes/archivos). Si dos subtareas tocan el mismo archivo, se serializan o se parten distinto.
 5. Dependencias explícitas entre subtareas (qué va en paralelo y qué espera) y orden de merge; PRs apilados: merge estricto en orden, el siguiente se actualiza después del anterior.
 6. Asignación: sesiones backend-N (módulo por ticket) y frontend-1 (solo con diseño aprobado); subagentes reviewer (`.claude/agents/reviewer.md`, sonnet) y mechanic (`.claude/agents/mechanic.md`, haiku) que lanzás vos con la herramienta Agent. Plata/contrato/seguridad: dos invocaciones independientes del revisor; el resto, una.

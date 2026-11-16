@@ -11,7 +11,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 Implementar UNA subtarea de frontend del plan `docs/cell/plans/<ticket>.md` y entregar un PR contra `develop`. Todo en castellano salvo identificadores. Ante duda de producto o diseño: `NECESITO DECISIÓN` al líder (skill `cell-report`).
 
 ## Leer primero
-1. `CLAUDE.md` y tu subtarea + sección Contratos del plan (endpoints/OpenAPI vienen del líder; usá `contracts/openapi.json` y mocks MSW, no inventes campos).
+1. `CLAUDE.md` y tu subtarea + secciones Diseño y Contratos del plan. El contrato ya está mergeado: trabajás contra sus mocks MSW y `contracts/openapi.json`, sin inventar campos; si no alcanza, `NECESITO DECISIÓN` (no lo modificás).
 2. `docs/context/frontend.md` (protocolo previo, estructura por módulo, formularios, errores, responsive), `docs/context/components.md` (qué componente usar), `docs/context/design-system.md` (tokens).
 3. `docs/context/testing.md`, sección Frontend (Vitest + RTL + MSW).
 
@@ -39,7 +39,7 @@ Implementar UNA subtarea de frontend del plan `docs/cell/plans/<ticket>.md` y en
 Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): paso 1 "Cambios" (formulario); paso 2 "Confirmar" con la tabla comparativa compartida (filas por campo; columnas Hoy / Nuevo resaltada / Diferencia; montos con su equivalente en pesos; impacto si aplica) y botón de envío. Usá el `Stepper` existente y un único componente de comparación reutilizable.
 
 ## Mockups antes de codificar
-1. Pantalla nueva o cambio visual: NO se codifica sin diseño aprobado. Pedile al líder el mockup aprobado (o producilo si te lo asignan).
+1. Mockup primero: pantalla nueva o cambio visual NO se codifica sin el OK de Gabriel sobre el mockup (lo produce el líder con `cell-design`; link en la sección Diseño del plan). Sin OK registrado, `NECESITO DECISIÓN`; nunca codifiques una pantalla por tu cuenta.
 2. El diseño pasa por el agente `ux-advisor` antes de mostrarse y tras cada iteración importante; incorporá sus hallazgos o explicá por qué se descartan.
 3. Se presenta como Artifact (nunca un `.html` suelto), con los componentes reales de la app (entrada `frontend/mockups.html`, `vite.mockups.config.js`), en dirección B, claro/oscuro y responsive. Aprobación explícita del usuario antes de código real.
 4. Rebanadas verticales: cada PR deja algo observable y probable de punta a punta.
