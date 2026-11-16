@@ -6,13 +6,14 @@ Equipo fijo de agentes que ejecuta tickets de punta a punta. El rol vive en arch
 
 | Rol | Ficha | Modelo | Qué hace |
 |---|---|---|---|
+| Coordinador | `.claude/agents/coordinator.md` | Opus, local | Backlog en Obsidian, prioridades, Issues `cell` para el líder, reporte de épicas a Gabriel; único que escribe en Obsidian |
 | Líder técnico | `.claude/agents/tech-lead.md` | Opus | Issue => plan, contratos, asignación, orden de merge, preguntas al usuario |
 | Backend (backend-1, backend-2) | `.claude/agents/backend.md` | Sonnet | Una subtarea de backend en el módulo que indique el ticket |
 | Frontend (frontend-1) | `.claude/agents/frontend.md` | Sonnet | Una subtarea de front, con diseño aprobado |
 | Revisor (subagente) | `.claude/agents/reviewer.md` | Sonnet, `maxTurns` 30 | Revisión independiente del diff; lo lanza el líder por PR con contexto limpio |
 | Mecánico (subagente) | `.claude/agents/mechanic.md` | Haiku, `maxTurns` 25 | Traer develop, conflictos de docs/logs; lo lanza el líder por tarea |
 
-Skills: `cell-plan` (ticket => plan), `cell-design` (ticket => mockup aprobado), `cell-contract` (mockup => PR de contrato), `cell-worker` (tomar subtarea), `cell-review` (revisar PR), `cell-report` (formatos de reporte y mensajes), `code-index` (índice de código del MCP `codebase-memory`, proyecto `agustina-develop`, solo en la Mac; `scripts/update-code-index.sh` lo deja en `origin/develop` al abrir sesión y tras cada merge del líder).
+Skills: `cell-backlog` (backlog en Obsidian ↔ Issues, solo coordinador), `cell-plan` (ticket => plan), `cell-design` (ticket => mockup aprobado), `cell-contract` (mockup => PR de contrato), `cell-worker` (tomar subtarea), `cell-review` (revisar PR), `cell-report` (formatos de reporte y mensajes), `code-index` (índice de código del MCP `codebase-memory`, proyecto `agustina-develop`, solo en la Mac; `scripts/update-code-index.sh` lo deja en `origin/develop` al abrir sesión y tras cada merge del líder).
 
 ## Cómo arranca una sesión
 
@@ -20,6 +21,7 @@ Una línea por sesión (workers y líder). Revisores y mecánico no son sesiones
 - "Sos backend-1: cargá `.claude/agents/backend.md` y la skill `cell-worker`; tu subtarea es `<issue>#<n>`."
 - "Sos frontend-1: cargá `.claude/agents/frontend.md` y la skill `cell-worker`; tu subtarea es `<issue>#<n>`."
 - "Sos el líder: cargá `.claude/agents/tech-lead.md` y la skill `cell-plan`; ticket: ..."
+- "Sos el coordinador: cargá `.claude/agents/coordinator.md` y la skill `cell-backlog`." (solo en la Mac)
 
 Cada sesión trabaja en su propio worktree/checkout, con rama propia desde `origin/develop`.
 
@@ -32,6 +34,18 @@ Tipo de ticket (lo fija el líder en el plan): A solo backend (contrato => backe
 3. Líder lanza workers con una línea de brief; abren PR en BORRADOR con un primer commit chico y trabajan con etiquetas `cell:<issue>` y `role:<puesto>`. Los PRs referencian el issue (`Refs #N`; `Closes #N` solo el último).
 4. Cada PR pasa por el subagente revisor (`cell-review`), una invocación; el informe es un comentario del PR. Plata/contrato/seguridad: dos invocaciones independientes (reviewer-1 y reviewer-2), MERGEABLE de ambas. Una ronda de revisión y una de correcciones.
 5. El líder mergea automático cuando el revisor asignado da MERGEABLE (o MERGEABLE CON MENORES ya corregidos) y la CI está verde; plata/contrato/seguridad requieren MERGEABLE de las dos invocaciones. PRs apilados en orden estricto; el mecánico trae develop. Releases a `master` los hace el usuario.
+
+## Coordinador y líder
+
+| | Coordinador | Líder técnico |
+|---|---|---|
+| Dueño de | Backlog en Obsidian, épicas, prioridades | Plan, contratos, workers, revisión y merge |
+| Entrada | Gabriel | Issues `cell` del coordinador |
+| Salida | Issues `cell`, Obsidian actualizado | PRs mergeados, avisos al coordinador |
+| Reporta a Gabriel | Avance de épicas y tareas | Estado de la célula (puestos, PRs, tokens) |
+| Escribe en Obsidian | Sí, el único | Nunca |
+
+Circuito: Gabriel prioriza => el coordinador convierte el ítem de Obsidian en un Issue `cell` y avisa al líder => la célula ejecuta => el líder avisa al coordinador por SendMessage en cada hito (formatos en `cell-report`) => el coordinador actualiza Obsidian (`~/.claude/epica18/on-merge.py` + índice de la épica). Sin sesión coordinadora abierta, los avisos quedan como comentario en el Issue con etiqueta `cell:coordinator`.
 
 ## Coordinación
 
@@ -67,6 +81,8 @@ En ambos casos: tests focalizados con `backend/dev-test`; suite completa y PIT e
 ## Setup inicial de GitHub (lo corre el líder la primera vez)
 
 ```
+gh label create "cell" --color 0E8A16 --description "Ticket delegado a la célula por el coordinador"
+gh label create "cell:coordinator" --color FBCA04 --description "Aviso del líder pendiente para el coordinador"
 gh label create "cell:blocked" --color D93F0B --description "Bloqueado o con decisión pendiente"
 gh label create "role:backend-1" --color 1D76DB
 gh label create "role:backend-2" --color 1D76DB

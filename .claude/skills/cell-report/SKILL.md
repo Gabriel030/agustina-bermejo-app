@@ -43,6 +43,14 @@ Bloquea: <subtareas>
 ```
 El líder agrupa estas preguntas en un solo mensaje al usuario.
 
+## Al coordinador (solo líder, SendMessage, una línea)
+- `MERGEADO #<pr> (Issue #<n>) · <qué quedó andando, en llano>`
+- `CERRADO Issue #<n> · PRs: #a, #b`
+- `BLOQUEADO Issue #<n> · <motivo> · necesita: <quién/qué>`
+- `DECISIÓN Issue #<n> · <pregunta> · A) ... B) ... · recomiendo <x>`
+- `RELEASE · <N> PRs en develop desde el último release`
+Sin sesión coordinadora: el mismo texto como comentario del Issue + etiqueta `cell:coordinator`.
+
 ## Handoff (`docs/cell/handoffs/<ticket>-<n>.md`)
 Secciones fijas: Estado (verde / falta), Archivos tocados, Decisiones tomadas, Cómo seguir (comandos), Tokens gastados. Se commitea en la rama del worker (no en un archivo de estado compartido). Lo lee un agente nuevo sin más contexto.
 
