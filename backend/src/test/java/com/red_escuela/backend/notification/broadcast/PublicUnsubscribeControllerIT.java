@@ -133,4 +133,15 @@ class PublicUnsubscribeControllerIT extends AbstractIntegrationTest {
         mockMvc.perform(get("/public/unsubscribe/" + token).with(freshClient())).andExpect(status().isOk());
         mockMvc.perform(post("/public/unsubscribe/" + token).with(freshClient())).andExpect(status().isOk());
     }
+
+    @Test
+    void tokenOfANonexistentPersonReturns404() throws Exception {
+        String token = issuer.issueToken(987_654_321L, ConsentChannel.EMAIL, BroadcastCategory.PROMOTIONAL);
+
+        mockMvc.perform(post("/public/unsubscribe/" + token).with(freshClient()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("INVALID_UNSUBSCRIBE_TOKEN"));
+        mockMvc.perform(get("/public/unsubscribe/" + token).with(freshClient()))
+                .andExpect(status().isNotFound());
+    }
 }

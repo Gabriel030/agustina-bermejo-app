@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Component
 public class NotificationDeliveryEnqueuer {
 
@@ -40,6 +42,13 @@ public class NotificationDeliveryEnqueuer {
         if (request.sendsEmail()) {
             enqueueOnce(request, DeliveryChannel.EMAIL, () -> emailChannel.enqueue(request));
         }
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public Optional<Long> enqueueEmailAndFindDeliveryId(DeliveryRequest request) {
+        enqueue(request);
+        return deliveryRepository.findByDedupKeyAndChannel(request.envelope().dedupKey(), DeliveryChannel.EMAIL)
+                .map(delivery -> delivery.getId());
     }
 
     private void enqueueOnce(DeliveryRequest request, DeliveryChannel channel, Runnable channelWork) {
