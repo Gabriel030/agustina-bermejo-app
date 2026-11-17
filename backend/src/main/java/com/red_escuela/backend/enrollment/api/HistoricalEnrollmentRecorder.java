@@ -17,6 +17,7 @@ import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.Grade;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import com.red_escuela.backend.shared.persistence.InClauseChunks;
 import java.util.Collection;
@@ -94,6 +95,13 @@ public class HistoricalEnrollmentRecorder {
     @Transactional(readOnly = true)
     public Map<StudentProgram, LocalDate> findProgramEnrollmentDates(Collection<StudentProgram> pairs) {
         Map<StudentProgram, LocalDate> dates = new HashMap<>();
+        findProgramEnrollmentRefs(pairs).forEach((pair, ref) -> dates.put(pair, ref.enrollmentDate()));
+        return dates;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<StudentProgram, ProgramEnrollmentRef> findProgramEnrollmentRefs(Collection<StudentProgram> pairs) {
+        Map<StudentProgram, ProgramEnrollmentRef> refs = new HashMap<>();
         for (List<StudentProgram> chunk : InClauseChunks.of(pairs)) {
             Set<StudentProgram> wanted = new HashSet<>(chunk);
             Set<Long> studentIds = new HashSet<>();
@@ -105,11 +113,11 @@ public class HistoricalEnrollmentRecorder {
             programEnrollmentRepository.findDateRowsByStudentIdInAndProgramIdIn(studentIds, programIds).forEach(row -> {
                 StudentProgram pair = new StudentProgram(row.studentId(), row.programId());
                 if (wanted.contains(pair)) {
-                    dates.putIfAbsent(pair, row.enrollmentDate().toLocalDate());
+                    refs.putIfAbsent(pair, new ProgramEnrollmentRef(row.enrollmentId(), row.enrollmentDate().toLocalDate()));
                 }
             });
         }
-        return dates;
+        return refs;
     }
 
     @Transactional(readOnly = true)
@@ -138,6 +146,11 @@ public class HistoricalEnrollmentRecorder {
         Long studentId = requireStudentId(historical.documentType(), historical.documentNumber());
         Long programId = programRecorder.findProgramIdByName(historical.programName())
                 .orElseThrow(() -> new HistoricalEnrollmentReferenceMissingException(historical.programName()));
+        return recordProgramEnrollment(historical, studentId, programId);
+    }
+
+    @Transactional
+    public Long recordProgramEnrollment(HistoricalProgramEnrollment historical, Long studentId, Long programId) {
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(entityManager.getReference(Student.class, studentId));
         enrollment.setProgram(entityManager.getReference(Program.class, programId));
@@ -168,13 +181,28 @@ public class HistoricalEnrollmentRecorder {
         if (section == null) {
             throw new HistoricalEnrollmentReferenceMissingException("comisión " + historical.sectionId());
         }
+        return saveSectionEnrollment(historical, studentId, programEnrollment, section, section.getTerm().getStartDate());
+    }
+
+    @Transactional
+    public Long recordSectionEnrollment(HistoricalSectionEnrollment historical, SectionEnrollmentReferences references) {
+        if (historical.finalDate() != null && historical.finalDate().isBefore(references.programEnrollmentDate())) {
+            throw new HistoricalFinalDateBeforeEnrollmentException(historical.finalDate(), references.programEnrollmentDate());
+        }
+        return saveSectionEnrollment(historical, references.studentId(),
+                entityManager.getReference(ProgramEnrollment.class, references.programEnrollmentId()),
+                entityManager.getReference(SubjectSection.class, historical.sectionId()), references.sectionTermStart());
+    }
+
+    private Long saveSectionEnrollment(HistoricalSectionEnrollment historical, Long studentId,
+            ProgramEnrollment programEnrollment, SubjectSection section, LocalDateTime enrolledAt) {
         SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
         enrollment.setStudent(entityManager.getReference(Student.class, studentId));
         enrollment.setProgramEnrollment(programEnrollment);
         enrollment.setSubjectSection(section);
         enrollment.setStatus(historical.status());
         enrollment.setAttemptNumber(historical.attemptNumber());
-        enrollment.setEnrolledAt(section.getTerm().getStartDate());
+        enrollment.setEnrolledAt(enrolledAt);
         enrollment.setFinalScore(Grade.ofNullable(historical.finalScore()));
         enrollment.setFinalGradeType(historical.finalGradeType());
         enrollment.setFinalScoreDate(historical.finalDate());
