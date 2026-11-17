@@ -44,10 +44,12 @@ public class PreviewBroadcastAudienceService implements PreviewBroadcastAudience
         for (ExclusionReason reason : ExclusionReason.values()) {
             excludedByReason.put(reason, 0);
         }
+        Map<Long, ExclusionReason> reasons = eligibilityEvaluator.findExclusionReasons(
+                people.stream().map(person -> new AudienceRecipient(person.personId(), person.fullName(), person.email(),
+                        person.emailVerified(), person.phoneNumber())).toList(),
+                request.channel(), request.category());
         List<AudienceSampleEntry> evaluated = people.stream().map(person -> {
-            Optional<ExclusionReason> reason = eligibilityEvaluator.findExclusionReason(
-                    new AudienceRecipient(person.personId(), person.fullName(), person.email(), person.emailVerified(), person.phoneNumber()),
-                    request.channel(), request.category());
+            Optional<ExclusionReason> reason = Optional.ofNullable(reasons.get(person.personId()));
             reason.ifPresent(found -> excludedByReason.merge(found, 1, Integer::sum));
             return new AudienceSampleEntry(person.personId(), person.fullName(), maskedAddress(person, request.channel()),
                     reason.isPresent() ? EXCLUDED : INCLUDED, reason.orElse(null));
