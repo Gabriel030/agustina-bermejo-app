@@ -1977,8 +1977,18 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "confirmedByName" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "createdByName" : {
+            "type" : "string"
+          },
+          "estimatedCompletionDate" : {
+            "format" : "date",
             "type" : "string"
           },
           "id" : {
@@ -2072,8 +2082,14 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "confirmedByName" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "createdByName" : {
             "type" : "string"
           },
           "id" : {
@@ -2083,12 +2099,19 @@
           "name" : {
             "type" : "string"
           },
+          "recipientCounts" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
           "status" : {
             "enum" : [ "DRAFT", "CONFIRMED", "SENDING", "COMPLETED", "CANCELLED" ],
             "type" : "string"
           }
         },
-        "required" : [ "category", "channel", "confirmedAt", "createdAt", "id", "name", "status" ],
+        "required" : [ "category", "channel", "confirmedAt", "createdAt", "id", "name", "recipientCounts", "status" ],
         "type" : "object"
       },
       "CancelBroadcastRequest" : {
