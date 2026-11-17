@@ -3,6 +3,8 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { ListaDeEsperaDetalle } from '@/features/enrollment/pages/ListaDeEsperaDetalle';
@@ -31,9 +33,12 @@ const queue = {
 function renderDetail(role = 'administrativo') {
   server.use(http.get(`${API}/waitlists/PROGRAM_SECTION/1`, () => HttpResponse.json(queue)));
   return renderWithProviders(
-    <Routes>
-      <Route path={`/${role}/inscripciones/listas-de-espera/:kind/:id`} element={<ListaDeEsperaDetalle />} />
-    </Routes>,
+    <>
+      <Routes>
+        <Route path={`/${role}/inscripciones/listas-de-espera/:kind/:id`} element={<ListaDeEsperaDetalle />} />
+      </Routes>
+      <Toaster />
+    </>,
     { route: `/${role}/inscripciones/listas-de-espera/PROGRAM_SECTION/1` },
   );
 }
@@ -165,5 +170,79 @@ describe('ListaDeEsperaDetalle', () => {
 
     expect(await screen.findByText('29 / 30')).toBeInTheDocument();
     expect(screen.getByText('30 / 30')).toBeInTheDocument();
+  });
+
+  it('promotes without a body and confirms with a toast', async () => {
+    let received = null;
+    server.use(
+      http.post(`${API}/waitlists/PROGRAM_SECTION/entries/12/promote`, async ({ request }) => {
+        received = await request.text();
+        return HttpResponse.json({});
+      }),
+    );
+    renderDetail();
+    await screen.findByText('Lucía Fernández');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Acciones para Lucía Fernández' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Promover ahora/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Promover' }));
+
+    expect(await screen.findByText('Persona promovida.')).toBeInTheDocument();
+    expect(received).toBe('');
+  });
+
+  it('removes with the reason sent to the backend', async () => {
+    let body = null;
+    server.use(
+      http.post(`${API}/waitlists/PROGRAM_SECTION/entries/13/remove`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({});
+      }),
+    );
+    renderDetail();
+    await screen.findByText('Camila Rojas');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Acciones para Camila Rojas' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Quitar de la lista/ }));
+    const confirm = await screen.findByRole('button', { name: 'Quitar' });
+    expect(confirm).toBeDisabled();
+    await userEvent.type(screen.getByRole('textbox'), 'pidió la baja por mail');
+    await userEvent.click(confirm);
+
+    await waitFor(() => expect(body).toEqual({ reason: 'pidió la baja por mail' }));
+    expect(await screen.findByText('Persona quitada de la lista.')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['promote', 'WAITLIST_NO_FREE_SEAT', 'No hay lugar libre para promover a esta persona.'],
+    ['promote', 'WAITLIST_ENTRY_NOT_WAITING', 'La persona ya no está en la lista de espera.'],
+  ])('shows the specific message when %s fails with %s', async (action, code, message) => {
+    server.use(
+      http.post(`${API}/waitlists/PROGRAM_SECTION/entries/12/${action}`, () => HttpResponse.json(errorBody(code), { status: 409 })),
+    );
+    renderDetail();
+    await screen.findByText('Lucía Fernández');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Acciones para Lucía Fernández' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Promover ahora/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Promover' }));
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+  });
+
+  it('shows the pending receipt message when removing is blocked', async () => {
+    server.use(
+      http.post(`${API}/waitlists/PROGRAM_SECTION/entries/13/remove`, () =>
+        HttpResponse.json(errorBody('WAITLIST_REMOVAL_BLOCKED_BY_PENDING_RECEIPT'), { status: 409 })),
+    );
+    renderDetail();
+    await screen.findByText('Camila Rojas');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Acciones para Camila Rojas' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Quitar de la lista/ }));
+    await userEvent.type(await screen.findByRole('textbox'), 'motivo suficiente');
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar' }));
+
+    expect(await screen.findByText('No se puede quitar: tiene un comprobante enviado sin resolver.')).toBeInTheDocument();
   });
 });

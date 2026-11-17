@@ -4,6 +4,7 @@ import { ROLE_MENU, groupMenuItems, menuGroupSlugs, menuItemsFor, pagesFor } fro
 import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
+const LEGACY_REDIRECT_PATHS = ['listas-de-espera'];
 const PENDING_SCREENS = { alumno: ['opciones'], administrativo: [], director: [] };
 
 describe('role menu manifest', () => {
@@ -17,7 +18,7 @@ describe('role menu manifest', () => {
 
   it.each(Object.keys(ROLE_MENU))('gives every top level route of %s a manifest entry', (role) => {
     const slugs = pagesFor(role);
-    const topLevel = roleRoutesFor(role).map((route) => route.path).filter((path) => !path.includes('/'));
+    const topLevel = roleRoutesFor(role).map((route) => route.path).filter((path) => !path.includes('/') && !LEGACY_REDIRECT_PATHS.includes(path));
     const orphans = topLevel.filter((path) => !slugs.includes(path));
     expect(orphans).toEqual([]);
   });
@@ -111,6 +112,6 @@ describe('role menu manifest', () => {
     expect(enrollment.label).toBe('Inscripciones');
     expect(enrollment.items.map((item) => item.to)).toEqual(['/director/inscripciones/listas-de-espera']);
     expect(roleRoutesFor('director').map((route) => route.path)).toContain('inscripciones/listas-de-espera');
-    expect(roleRoutesFor('director').map((route) => route.path)).not.toContain('listas-de-espera');
+    expect(pagesFor('director')).not.toContain('listas-de-espera');
   });
 });
