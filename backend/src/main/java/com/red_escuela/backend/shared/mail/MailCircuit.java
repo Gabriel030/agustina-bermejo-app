@@ -11,6 +11,9 @@ public final class MailCircuit {
     }
 
     public static boolean countsAsProviderFailure(Throwable failure) {
+        if (failure instanceof TransactionalEmailRejectedException) {
+            return false;
+        }
         if (failure instanceof MailParseException || failure instanceof MailPreparationException) {
             return false;
         }

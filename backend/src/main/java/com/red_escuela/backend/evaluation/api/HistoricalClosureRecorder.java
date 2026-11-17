@@ -15,6 +15,11 @@ import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.shared.domain.Grade;
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import com.red_escuela.backend.shared.persistence.InClauseChunks;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,17 +60,36 @@ public class HistoricalClosureRecorder {
         return closureRepository.save(closure).getId();
     }
 
+    @Transactional(readOnly = true)
+    public Map<Long, Long> findClosureIdsBySectionIds(Collection<Long> sectionIds) {
+        Map<Long, Long> closureIds = new HashMap<>();
+        for (List<Long> chunk : InClauseChunks.of(sectionIds)) {
+            closureRepository.findClosureIdsBySectionKindAndSectionIdIn(SectionKind.PROGRAM, chunk)
+                    .forEach(row -> closureIds.putIfAbsent(row.getSectionId(), row.getClosureId()));
+        }
+        return closureIds;
+    }
+
     @Transactional
     public Optional<Long> recordStudentResult(Long sectionId, Long enrollmentId, EnrollmentStatus status,
+            FinalGradeType gradeType, BigDecimal score) {
+        if (conditionOf(status, gradeType).isEmpty()) {
+            return Optional.empty();
+        }
+        CommissionClosure closure = closureRepository.findBySectionKindAndSectionId(SectionKind.PROGRAM, sectionId)
+                .orElseThrow(() -> new HistoricalClosureMissingException(sectionId));
+        return recordStudentResultInClosure(closure.getId(), enrollmentId, status, gradeType, score);
+    }
+
+    @Transactional
+    public Optional<Long> recordStudentResultInClosure(Long closureId, Long enrollmentId, EnrollmentStatus status,
             FinalGradeType gradeType, BigDecimal score) {
         Optional<ClosureFinalCondition> condition = conditionOf(status, gradeType);
         if (condition.isEmpty()) {
             return Optional.empty();
         }
-        CommissionClosure closure = closureRepository.findBySectionKindAndSectionId(SectionKind.PROGRAM, sectionId)
-                .orElseThrow(() -> new HistoricalClosureMissingException(sectionId));
         boolean promotes = condition.get() == ClosureFinalCondition.PROMOTES;
-        return Optional.of(closureStudentRepository.save(CommissionClosureStudent.builder().closureId(closure.getId())
+        return Optional.of(closureStudentRepository.save(CommissionClosureStudent.builder().closureId(closureId)
                 .enrollmentId(enrollmentId).finalCondition(condition.get())
                 .promotionGrade(promotes ? Grade.ofNullable(score) : null).build()).getId());
     }

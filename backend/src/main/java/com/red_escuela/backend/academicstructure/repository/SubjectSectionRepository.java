@@ -43,4 +43,10 @@ public interface SubjectSectionRepository extends JpaRepository<SubjectSection, 
     Optional<SubjectSection> findByIdWithSchemeAndTerms(@Param("id") Long id);
 
     java.util.Optional<SubjectSection> findByCode(String code);
+
+    @Query("select new com.red_escuela.backend.academicstructure.repository.NamedId(s.code, s.id) from SubjectSection s where s.code in :codes")
+    java.util.List<NamedId> findNamedIdsByCodeIn(@Param("codes") java.util.Collection<String> codes);
+
+    @Query("select new com.red_escuela.backend.academicstructure.repository.SectionTermStart(s.id, s.term.startDate) from SubjectSection s where s.id in :ids")
+    java.util.List<SectionTermStart> findTermStartsByIdIn(@Param("ids") java.util.Collection<Long> ids);
 }

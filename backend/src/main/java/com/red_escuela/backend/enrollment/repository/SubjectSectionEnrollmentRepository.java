@@ -137,4 +137,7 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     @Query("select e.id as enrollmentId, e.student.id as studentId from SubjectSectionEnrollment e where e.subjectSection.id = :sectionId")
     List<WaitlistEnrollmentStudentRow> findWaitlistEnrollmentStudentRows(@Param("sectionId") Long sectionId);
+
+    @Query("select new com.red_escuela.backend.enrollment.repository.SectionEnrollmentPairRow(e.student.id, e.subjectSection.id) from SubjectSectionEnrollment e where e.student.id in :studentIds and e.subjectSection.id in :sectionIds")
+    List<SectionEnrollmentPairRow> findPairRowsByStudentIdInAndSubjectSectionIdIn(@Param("studentIds") java.util.Collection<Long> studentIds, @Param("sectionIds") java.util.Collection<Long> sectionIds);
 }
