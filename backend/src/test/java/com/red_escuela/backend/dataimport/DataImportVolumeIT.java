@@ -67,7 +67,7 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
     @Autowired
     private FeatureSnapshotHolder snapshotHolder;
 
-    private String directorToken;
+    private Long directorId;
     private String suffix;
     private int year;
 
@@ -85,7 +85,7 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
                 entityManager.persist(institution);
                 entityManager.flush();
             }
-            directorToken = jwtService.generateAccessToken(persistDirector());
+            directorId = persistDirector().getId();
         });
     }
 
@@ -162,6 +162,7 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
 
         long baseBatch = createBatch();
         batches.add(baseBatch);
+        PeakHeap baseHeap = PeakHeap.start();
         timed("base upload", () -> {
             upload(baseBatch, "PERSONS", csv.persons());
             upload(baseBatch, "PROGRAMS", csv.programs());
@@ -173,6 +174,7 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
         });
         timed("base validate", () -> validate(baseBatch).andExpect(jsonPath("$.status").value("VALIDATED")));
         timed("base commit", () -> commit(baseBatch).andExpect(jsonPath("$.status").value("COMMITTED")));
+        System.out.println("VOLUME peak heap MB base: " + baseHeap.stopAndReadMegabytes());
         assertThat(count("person")).isEqualTo(personsBefore + VOLUME_STUDENTS + 1);
 
         for (int first = 0; first < VOLUME_STUDENTS; first += STUDENTS_PER_ENROLLMENT_BATCH) {
@@ -180,9 +182,11 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
             long batchId = createBatch();
             batches.add(batchId);
             String label = "section enrollments from student " + from;
+            PeakHeap batchHeap = PeakHeap.start();
             timed(label + " upload", () -> upload(batchId, "SECTION_ENROLLMENTS", csv.sectionEnrollments(from, STUDENTS_PER_ENROLLMENT_BATCH)));
             timed(label + " validate", () -> validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED")));
             timed(label + " commit", () -> commit(batchId).andExpect(jsonPath("$.status").value("COMMITTED")));
+            System.out.println("VOLUME peak heap MB " + label + ": " + batchHeap.stopAndReadMegabytes());
         }
 
         assertThat(count("subject_section_enrollment")).isEqualTo(sectionEnrollmentsBefore + (long) VOLUME_STUDENTS * VOLUME_SECTIONS);
@@ -231,23 +235,27 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
         }
     }
 
+    private String directorToken() {
+        return transactions.execute(status -> jwtService.generateAccessToken(entityManager.find(Person.class, directorId)));
+    }
+
     private ResultActions validate(long batchId) throws Exception {
-        return mockMvc.perform(post("/data-imports/" + batchId + "/validate").header("Authorization", "Bearer " + directorToken))
+        return mockMvc.perform(post("/data-imports/" + batchId + "/validate").header("Authorization", "Bearer " + directorToken()))
                 .andExpect(status().isOk());
     }
 
     private ResultActions commit(long batchId) throws Exception {
-        return mockMvc.perform(post("/data-imports/" + batchId + "/commit").header("Authorization", "Bearer " + directorToken)
+        return mockMvc.perform(post("/data-imports/" + batchId + "/commit").header("Authorization", "Bearer " + directorToken())
                 .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isOk());
     }
 
     private ResultActions postWithConfirmation(long batchId, String action, String word) throws Exception {
-        return mockMvc.perform(post("/data-imports/" + batchId + "/" + action).header("Authorization", "Bearer " + directorToken)
+        return mockMvc.perform(post("/data-imports/" + batchId + "/" + action).header("Authorization", "Bearer " + directorToken())
                 .contentType(MediaType.APPLICATION_JSON).content("{\"confirmation\":\"" + word + "\"}"));
     }
 
     private long createBatch() throws Exception {
-        MvcResult result = mockMvc.perform(post("/data-imports").header("Authorization", "Bearer " + directorToken)
+        MvcResult result = mockMvc.perform(post("/data-imports").header("Authorization", "Bearer " + directorToken())
                 .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Volumen\"}"))
                 .andExpect(status().isCreated()).andReturn();
         return com.jayway.jsonpath.JsonPath.parse(result.getResponse().getContentAsString()).read("$.id", Long.class);
@@ -256,7 +264,7 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
     private void upload(long batchId, String type, String csv) throws Exception {
         mockMvc.perform(multipart("/data-imports/" + batchId + "/files/" + type)
                 .file(new MockMultipartFile("file", type + ".csv", "text/csv", csv.getBytes(StandardCharsets.UTF_8)))
-                .header("Authorization", "Bearer " + directorToken)).andExpect(status().isOk());
+                .header("Authorization", "Bearer " + directorToken())).andExpect(status().isOk());
     }
 
     private long count(String table) {
