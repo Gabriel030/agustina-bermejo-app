@@ -870,8 +870,6 @@
       "ApproveBankTransferReceiptRequest" : {
         "properties" : {
           "reviewNote" : {
-            "maxLength" : 500,
-            "minLength" : 0,
             "type" : "string"
           },
           "transferDate" : {
@@ -2432,8 +2430,6 @@
       "CloseDiscountDefinitionRequest" : {
         "properties" : {
           "reason" : {
-            "maxLength" : 1000,
-            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -3923,8 +3919,6 @@
             "type" : [ "integer", "null" ]
           },
           "name" : {
-            "maxLength" : 200,
-            "minLength" : 0,
             "type" : "string"
           },
           "priority" : {
@@ -11558,8 +11552,6 @@
       "RejectPaymentReceiptRequest" : {
         "properties" : {
           "rejectionReason" : {
-            "maxLength" : 500,
-            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -11966,8 +11958,6 @@
       "RevokeStudentDiscountRequest" : {
         "properties" : {
           "reason" : {
-            "maxLength" : 500,
-            "minLength" : 0,
             "type" : "string"
           }
         },

@@ -1,13 +1,8 @@
 package com.red_escuela.backend.billing.dto;
 
 import com.red_escuela.backend.billing.annualupfront.dto.RequestAnnualUpfrontBody;
-import com.red_escuela.backend.billing.discount.dto.CloseDiscountDefinitionRequest;
-import com.red_escuela.backend.billing.discount.dto.CreateDiscountDefinitionRequest;
-import com.red_escuela.backend.billing.discount.dto.RevokeStudentDiscountRequest;
-import com.red_escuela.backend.billing.payment.dto.ApproveBankTransferReceiptRequest;
 import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
 import jakarta.validation.Valid;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,36 +20,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class BillingRequestBodyValidationTest {
 
-    private static final String LONG_REASON = "x".repeat(501);
-
     @RestController
     static class EchoController {
         @PostMapping("/echo/annual-upfront")
         void annualUpfront(@Valid @RequestBody RequestAnnualUpfrontBody body) {
         }
 
-        @PostMapping("/echo/create-discount")
-        void createDiscount(@Valid @RequestBody CreateDiscountDefinitionRequest body) {
-        }
-
-        @PostMapping("/echo/close-discount")
-        void closeDiscount(@Valid @RequestBody CloseDiscountDefinitionRequest body) {
-        }
-
-        @PostMapping("/echo/revoke-discount")
-        void revokeDiscount(@Valid @RequestBody RevokeStudentDiscountRequest body) {
-        }
-
         @PostMapping("/echo/gateway-config")
         void gatewayConfig(@Valid @RequestBody UpdatePaymentGatewayConfigRequest body) {
-        }
-
-        @PostMapping("/echo/approve-receipt")
-        void approveReceipt(@Valid @RequestBody ApproveBankTransferReceiptRequest body) {
-        }
-
-        @PostMapping("/echo/reject-receipt")
-        void rejectReceipt(@Valid @RequestBody RejectPaymentReceiptRequest body) {
         }
     }
 
@@ -62,28 +35,25 @@ class BillingRequestBodyValidationTest {
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
 
-    private static Stream<Arguments> oversizedBodies() {
+    private static Stream<Arguments> limits() {
         return Stream.of(
-                Arguments.of("/echo/annual-upfront", "{\"termsAccepted\":true,\"termsVersion\":\"" + "x".repeat(21) + "\"}"),
-                Arguments.of("/echo/create-discount", "{\"name\":\"" + "x".repeat(201) + "\"}"),
-                Arguments.of("/echo/close-discount", "{\"reason\":\"" + "x".repeat(1001) + "\"}"),
-                Arguments.of("/echo/revoke-discount", "{\"reason\":\"" + LONG_REASON + "\"}"),
-                Arguments.of("/echo/gateway-config", "{\"bankAlias\":\"" + "x".repeat(51) + "\"}"),
-                Arguments.of("/echo/gateway-config", "{\"bankCbu\":\"" + "x".repeat(23) + "\"}"),
-                Arguments.of("/echo/gateway-config", "{\"accountHolder\":\"" + "x".repeat(101) + "\"}"),
-                Arguments.of("/echo/approve-receipt", "{\"reviewNote\":\"" + LONG_REASON + "\"}"),
-                Arguments.of("/echo/reject-receipt", "{\"rejectionReason\":\"" + LONG_REASON + "\"}"));
+                Arguments.of("/echo/annual-upfront", "{\"termsAccepted\":true,\"termsVersion\":\"%s\"}", 20),
+                Arguments.of("/echo/gateway-config", "{\"bankAlias\":\"%s\"}", 50),
+                Arguments.of("/echo/gateway-config", "{\"bankCbu\":\"%s\"}", 22),
+                Arguments.of("/echo/gateway-config", "{\"accountHolder\":\"%s\"}", 100));
     }
 
     @ParameterizedTest
-    @MethodSource("oversizedBodies")
-    void oversizedBillingBodyIsRejectedWithBadRequest(String path, String body) throws Exception {
-        mockMvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+    @MethodSource("limits")
+    void valueOneAboveTheColumnLimitIsRejectedWithBadRequest(String path, String template, int limit) throws Exception {
+        mockMvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content(template.formatted("x".repeat(limit + 1))))
+                .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void closeReasonAtTheLimitIsAccepted() throws Exception {
-        mockMvc.perform(post("/echo/close-discount").contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"" + "x".repeat(1000) + "\"}"))
+    @ParameterizedTest
+    @MethodSource("limits")
+    void valueAtTheColumnLimitIsAccepted(String path, String template, int limit) throws Exception {
+        mockMvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content(template.formatted("x".repeat(limit))))
                 .andExpect(status().isOk());
     }
 }

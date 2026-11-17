@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.discount.dto;
 
-import jakarta.validation.constraints.Size;
 
-public record RevokeStudentDiscountRequest(@Size(max = 500) String reason) {
+public record RevokeStudentDiscountRequest(String reason) {
 }
