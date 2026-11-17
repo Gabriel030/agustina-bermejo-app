@@ -6,7 +6,7 @@ RUNS = int(os.environ.get("PERF_RUNS", "50"))
 BUDGET_PATH = os.environ.get("PERF_BUDGET", "perf/budget.json")
 LATEST_PATH = os.environ.get("PERF_LATEST", "perf/out/latest.json")
 PASSWORD = "Test1234"
-SECTION = 14011
+SECTION = int(os.environ.get("PERF_SECTION", "14011"))
 ENROLLMENT = 20001
 STUDENT = 20001
 
@@ -20,7 +20,10 @@ ENDPOINTS = [
     ("director", "students page search", "/students?page=0&size=25&search=perf"),
     ("director", "me notifications", "/me/notifications"),
     ("director", "me notifications unread-count", "/me/notifications/unread-count"),
+    ("director", "waitlists", "/waitlists"),
     ("director", "terms", "/terms"),
+    ("docente", "teaching-sections", "/me/teaching-sections"),
+    ("director", "program-section", f"/program-sections/{SECTION}"),
     ("director", "programs", "/programs"),
     ("director", "billing-overview", f"/students/{STUDENT}/billing-overview"),
     ("preceptor", "absence-report", f"/program-sections/{SECTION}/attendance/absence-report"),
@@ -44,7 +47,7 @@ ENDPOINTS = [
 ONLY = [x for x in os.environ.get("PERF_ONLY", "").split(",") if x]
 if ONLY:
     ENDPOINTS = [e for e in ENDPOINTS if e[1] in ONLY]
-USERS = {"administrativo": "administrativo.demo", "director": "director.demo", "preceptor": "preceptor.demo", "docente": "perf662", "alumno": "perf1"}
+USERS = {"administrativo": "administrativo.demo", "director": "director.demo", "preceptor": "preceptor.demo", "docente": os.environ.get("PERF_TEACHER", "perf662"), "alumno": "perf1"}
 
 
 def login(username):
