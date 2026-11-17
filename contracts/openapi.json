@@ -1953,6 +1953,20 @@
         "required" : [ "entityType", "naturalKey", "reason" ],
         "type" : "object"
       },
+      "BroadcastDraftResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "DRAFT", "CONFIRMED", "SENDING", "COMPLETED", "CANCELLED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "status" ],
+        "type" : "object"
+      },
       "CancelExamBoardRequest" : {
         "properties" : {
           "reason" : {
@@ -3678,6 +3692,40 @@
           }
         },
         "required" : [ "reason", "requestedStatus" ],
+        "type" : "object"
+      },
+      "CreateBroadcastDraftRequest" : {
+        "properties" : {
+          "bodyText" : {
+            "type" : "string"
+          },
+          "category" : {
+            "enum" : [ "INSTITUTIONAL", "PROMOTIONAL" ],
+            "type" : "string"
+          },
+          "channel" : {
+            "enum" : [ "EMAIL", "WHATSAPP_LINK", "WHATSAPP_API" ],
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 160,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "segmentSpec" : {
+            "$ref" : "#/components/schemas/SegmentSpecRequest"
+          },
+          "subject" : {
+            "maxLength" : 300,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "templateId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "category", "channel", "name", "segmentSpec" ],
         "type" : "object"
       },
       "CreateClassroomRequest" : {
@@ -23528,6 +23576,134 @@
           }
         },
         "tags" : [ "billing-metrics-controller" ]
+      }
+    },
+    "/broadcasts" : {
+      "post" : {
+        "operationId" : "BroadcastDraft_createBroadcastDraft",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateBroadcastDraftRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BroadcastDraftResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "broadcast-draft-controller" ]
       }
     },
     "/broadcasts/audience-preview" : {
