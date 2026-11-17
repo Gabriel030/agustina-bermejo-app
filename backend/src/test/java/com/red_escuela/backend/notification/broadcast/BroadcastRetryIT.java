@@ -6,6 +6,7 @@ import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryCha
 import com.red_escuela.backend.shared.mail.TransactionalEmail;
 import com.red_escuela.backend.shared.mail.TransactionalEmailDeliveryException;
 import com.red_escuela.backend.shared.mail.TransactionalEmailGateway;
+import com.red_escuela.backend.shared.mail.TransactionalEmailRejectedException;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -65,5 +66,26 @@ class BroadcastRetryIT extends AbstractBroadcastDispatchIT {
 
         assertThat(deliveryOf(flaky).getStatus()).isEqualTo(DeliveryStatus.SENT_SIMULATED);
         assertThat(deliveryOf(flaky).getAttempts()).isEqualTo(2);
+    }
+
+    @Test
+    void rejectedEmailIsNotRetried() {
+        LocalDate day = LocalDate.of(2043, 5, 10);
+        Long mail = queueBroadcast(persistPerson(), com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory.INSTITUTIONAL, day);
+        AtomicInteger calls = new AtomicInteger();
+        TransactionalEmailGateway rejecting = (TransactionalEmail email) -> {
+            calls.incrementAndGet();
+            throw new TransactionalEmailRejectedException("Brevo rechazo el mail con status 400", 400, null);
+        };
+        BroadcastEmailDispatchJob job = jobWith(300, 100, 100, recordingChannel(rejecting));
+
+        at(day, 9, 0);
+        job.dispatchPendingBroadcastEmails();
+        at(day, 9, 1);
+        job.dispatchPendingBroadcastEmails();
+
+        assertThat(deliveryOf(mail).getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(deliveryOf(mail).getStatusReason()).isEqualTo("PROVIDER_REJECTED");
+        assertThat(calls).hasValue(1);
     }
 }
