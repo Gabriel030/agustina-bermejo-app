@@ -10,6 +10,8 @@ import com.red_escuela.backend.shared.audit.AuditEntityType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -77,5 +79,25 @@ public class CourseSectionWaitlistQueue implements WaitlistQueue {
         CourseSubjectSectionEnrollment next = repository.findById(enrollmentId).orElseThrow();
         next.setStatus(EnrollmentStatus.ENROLLED);
         repository.save(next);
+    }
+
+    @Override
+    public Optional<WaitlistEntryOwner> findOwner(Long enrollmentId) {
+        return repository.findById(enrollmentId)
+                .map(e -> new WaitlistEntryOwner(e.getCourseSubjectSection().getId(), e.getStudent().getPerson().getId()));
+    }
+
+    @Override
+    public void markPrioritized(Long enrollmentId, LocalDateTime at) {
+        CourseSubjectSectionEnrollment entry = repository.findById(enrollmentId).orElseThrow();
+        entry.setWaitlistPrioritizedAt(at);
+        repository.save(entry);
+    }
+
+    @Override
+    public void remove(Long enrollmentId) {
+        CourseSubjectSectionEnrollment entry = repository.findById(enrollmentId).orElseThrow();
+        entry.setStatus(EnrollmentStatus.WITHDRAWN);
+        repository.save(entry);
     }
 }
