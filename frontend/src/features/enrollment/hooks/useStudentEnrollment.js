@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
+import { STALE_TIME } from '@/api/cachePolicy';
 
 export function useMisInscripciones(enabled = true) {
-  return useQuery({ queryKey: ['me', 'section-enrollments'], queryFn: () => apiFetch('/me/section-enrollments'), enabled });
+  return useQuery({ queryKey: ['me', 'section-enrollments'], queryFn: () => apiFetch('/me/section-enrollments'), staleTime: STALE_TIME.OPERATIONAL, enabled });
 }
 
 export function useSeccionesDeMateria(subjectId) {

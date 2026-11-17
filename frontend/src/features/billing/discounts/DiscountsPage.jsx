@@ -41,7 +41,7 @@ export function DiscountsPage() {
   const tab = TABS.includes(requestedTab) ? requestedTab : DEFAULT_TAB;
 
   const definitionsQuery = useDiscountDefinitions();
-  const names = useOfferNames();
+  const names = useOfferNames({ enabled: tab === 'promotions' });
   const catalogEntries = useMemo(
     () => (definitionsQuery.data ?? []).filter((entry) => CATALOG_DISCOUNT_TYPES.includes(entry.discountType)),
     [definitionsQuery.data],
@@ -94,7 +94,7 @@ export function DiscountsPage() {
             emptyTitle="Todavía no hay promociones"
             emptyDescription={isDirector ? 'Creá una para una carrera, una cohorte o un curso.' : 'Proponé la primera y el director la aprueba.'}
             entries={promotionEntries}
-            isLoading={definitionsQuery.isLoading}
+            isLoading={definitionsQuery.isLoading || names.isLoading}
             isError={definitionsQuery.isError}
             onRetry={() => definitionsQuery.refetch()}
             columns={promotionColumns}

@@ -3,9 +3,9 @@ import { useCourses, usePrograms } from '@/features/academic-structure';
 
 const ACTIVE = 'ACTIVE';
 
-export function useOfferNames() {
-  const programs = usePrograms();
-  const courses = useCourses();
+export function useOfferNames({ enabled = true } = {}) {
+  const programs = usePrograms(undefined, { enabled });
+  const courses = useCourses(undefined, { enabled });
   return useMemo(() => {
     const programList = programs.data ?? [];
     const courseList = courses.data ?? [];
