@@ -17,6 +17,7 @@ import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable'
 import { confirmationDeadlineLabel, sameEmail } from '@/features/identity/emailChange';
 import { InstallPrompt } from '@/pwa/InstallPrompt';
 import { RoleEntryPreference } from '@/features/identity/components/RoleEntryPreference';
+import { ContactConsentMatrix } from '@/features/identity/components/ContactConsentMatrix';
 import { NotificationMatrix } from '@/features/identity/components/NotificationMatrix';
 import { LegalAcceptancesTab } from '@/features/identity/legal/LegalAcceptancesTab';
 import {
@@ -641,7 +642,10 @@ export function MiPerfil() {
             <TabSeguridad />
           </TabsContent>
           <TabsContent value="notificaciones">
-            <NotificationMatrix />
+            <div className="flex flex-col gap-8">
+              <NotificationMatrix />
+              <ContactConsentMatrix />
+            </div>
           </TabsContent>
           <TabsContent value="legales">
             <LegalAcceptancesTab />
