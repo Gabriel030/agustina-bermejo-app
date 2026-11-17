@@ -193,6 +193,32 @@ class WaitlistQueueReadIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void prioritizedEntriesComeFirstWithTheirPrioritizationOrder() throws Exception {
+        CycleTestFixtures fixtures = new CycleTestFixtures(entityManager);
+        Program program = fixtures.program();
+        Term term = fixtures.term(2047);
+        Subject subject = fixtures.subject();
+        AcademicOfferingCycle cycle = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.APPROVED);
+        SubjectSection section = fixtures.section(subject, term, StatusType.ACTIVE, cycle);
+        Institution institution = institution();
+        SubjectSectionEnrollment older = persistEnrollment(fixtures, institution, program, section,
+                EnrollmentStatus.WAITLISTED, BASE_TIME, null);
+        SubjectSectionEnrollment prioritized = persistEnrollment(fixtures, institution, program, section,
+                EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(3), null);
+        prioritized.setWaitlistPrioritizedAt(BASE_TIME.plusDays(1));
+        entityManager.flush();
+
+        mockMvc.perform(get("/waitlists/{kind}/{id}", "PROGRAM_SECTION", section.getId())
+                        .header("Authorization", "Bearer " + tokenWithRole("director-wl-prio", "DIRECTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entries[0].enrollmentId").value(prioritized.getId()))
+                .andExpect(jsonPath("$.entries[0].prioritizationOrder").value(1))
+                .andExpect(jsonPath("$.entries[0].prioritizedAt").isNotEmpty())
+                .andExpect(jsonPath("$.entries[1].enrollmentId").value(older.getId()))
+                .andExpect(jsonPath("$.entries[1].prioritizationOrder").doesNotExist());
+    }
+
+    @Test
     void unknownQueueReturns404() throws Exception {
         mockMvc.perform(get("/waitlists/{kind}/{id}", "PROGRAM_SECTION", 999999L)
                         .header("Authorization", "Bearer " + tokenWithRole("preceptor-wl404", "PRECEPTOR")))

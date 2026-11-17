@@ -17,4 +17,10 @@ public interface WaitlistQueue {
     List<WaitlistCandidate> findWaitingCandidates(Long queueId);
 
     Map<Long, Long> findStudentIdByEnrollmentId(Long queueId);
+
+    void lock(Long queueId);
+
+    boolean isOpenForPromotion(Long queueId);
+
+    void promote(Long enrollmentId);
 }

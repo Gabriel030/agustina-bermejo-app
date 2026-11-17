@@ -125,7 +125,7 @@ class WaitlistCandidateEligibilityTest {
     @Test
     void courseSectionIsNotCheckedAgainstProgramRulesNorReceipts() {
         WaitlistVerdict verdict = eligibility.evaluate(new WaitlistCandidate(WaitlistKind.COURSE_SECTION, ENROLLMENT_ID, 1L,
-                "Ana Paz", "1", LocalDateTime.now(), null, null, null, null));
+                "Ana Paz", "1", LocalDateTime.now(), null, null, null, null, null));
 
         assertThat(verdict.eligible()).isTrue();
         verifyNoInteractions(subjectRetakeGuard, prerequisiteEvaluator, scheduleOverlapGuard, courseApplicationRepository);
@@ -138,11 +138,11 @@ class WaitlistCandidateEligibilityTest {
 
     private WaitlistCandidate programCandidate() {
         return new WaitlistCandidate(WaitlistKind.PROGRAM_SECTION, ENROLLMENT_ID, 1L, "Ana Paz", "1", LocalDateTime.now(),
-                PROGRAM_ENROLLMENT_ID, SUBJECT_ID, 2L, 3L);
+                PROGRAM_ENROLLMENT_ID, SUBJECT_ID, 2L, 3L, null);
     }
 
     private WaitlistCandidate courseCandidate() {
         return new WaitlistCandidate(WaitlistKind.COURSE, ENROLLMENT_ID, 1L, "Ana Paz", "1", LocalDateTime.now(),
-                null, null, null, null);
+                null, null, null, null, null);
     }
 }
