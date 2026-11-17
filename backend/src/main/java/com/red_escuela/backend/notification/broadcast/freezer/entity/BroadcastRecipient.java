@@ -51,4 +51,15 @@ public class BroadcastRecipient {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    public void markQueued(Long queuedDeliveryId, Instant now) {
+        status = BroadcastRecipientStatus.QUEUED;
+        deliveryId = queuedDeliveryId;
+        updatedAt = now;
+    }
+
+    public void markSkipped(Instant now) {
+        status = BroadcastRecipientStatus.SKIPPED;
+        updatedAt = now;
+    }
 }
