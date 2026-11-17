@@ -175,6 +175,8 @@ GET,/legal-acceptances,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/legal/documents/current,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/me,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 PUT,/me,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/broadcasts/segment-catalog,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/broadcasts/audience-preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""channel"":""EMAIL"",""category"":""INSTITUTIONAL"",""segmentSpec"":{""version"":1,""quantifier"":""ALL"",""criteria"":[{""key"":""STAFF_ROLE"",""value"":""DOCENTE""}]},""page"":0,""size"":10}"
 GET,/message-templates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/message-templates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 DELETE,/message-templates/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
