@@ -8,13 +8,14 @@ import { server } from '@/test/mocks/server';
 import { CancelEmailChangePage } from '@/features/identity/pages/CancelEmailChangePage';
 
 const API = 'http://localhost:8080';
+const TOKEN = 'a'.repeat(43);
 
 function LocationProbe() {
   const location = useLocation();
   return <span data-testid="location">{`${location.pathname}${location.search}`}</span>;
 }
 
-function renderPage(route = '/cancelar-cambio-email?token=abc') {
+function renderPage(route = `/cancelar-cambio-email?token=${TOKEN}`) {
   return render(
     <MemoryRouter initialEntries={[route]}>
       <CancelEmailChangePage />
@@ -101,7 +102,7 @@ describe('CancelEmailChangePage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar el cambio' }));
     await screen.findByText('Cambio cancelado');
 
-    expect(received.body).toEqual({ token: 'abc' });
+    expect(received.body).toEqual({ token: TOKEN });
     expect(received.url).not.toContain('token=');
   });
 
