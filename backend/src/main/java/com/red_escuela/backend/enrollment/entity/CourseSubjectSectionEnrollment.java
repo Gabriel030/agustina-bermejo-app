@@ -57,6 +57,9 @@ public class CourseSubjectSectionEnrollment {
     @Column(name = "enrolled_at")
     private LocalDateTime enrolledAt;
 
+    @Column(name = "waitlist_prioritized_at")
+    private LocalDateTime waitlistPrioritizedAt;
+
     @Column(name = "dropped_at")
     private LocalDateTime droppedAt;
 

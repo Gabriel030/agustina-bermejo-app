@@ -56,3 +56,7 @@ LOAD_DIRECTOR_VUS=20 LOAD_DURATION=2m BASE_URL=http://localhost:8461 k6 run load
 ```
 
 `perf/load.py` mide concurrencia con hilos Python y pool activo; `load/q15a.js` es la prueba de carga de Q15a.
+
+## Seed grande (33.1)
+
+`perf/seed-large.sql` reemplaza a `seed.sql` (no cargar los dos) y exige el backend `local,demo,perf` ya arrancado: depende de person id 1, `director.demo`, roles 1/2, programas 1/2, term 1, subjects 1..16 y evaluation_scheme 1 del perfil demo. Es re-ejecutable. Resultados y método en `perf/db-baseline.md`; con ese seed correr `PERF_TEACHER=perft12` antes de `measure.py`/`load.py`.
