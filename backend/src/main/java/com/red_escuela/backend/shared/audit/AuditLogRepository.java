@@ -19,4 +19,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLogEntry, Long> {
                                @Param("entityType") AuditEntityType entityType,
                                @Param("entityId") Long entityId,
                                Pageable pageable);
+
+    Page<AuditLogEntry> findByEntityTypeAndEntityIdInOrderByOccurredAtDescIdDesc(AuditEntityType entityType,
+                                                                                 java.util.Collection<Long> entityIds,
+                                                                                 Pageable pageable);
 }
