@@ -158,7 +158,8 @@ class WaitlistQueueReadIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Cosmetología Facial"))
                 .andExpect(jsonPath("$.nextExpiry").value("2045-03-11"))
                 .andExpect(jsonPath("$.entries[0].expiresOn").value("2045-03-11"))
-                .andExpect(jsonPath("$.entries[0].verdict.eligible").value(true));
+                .andExpect(jsonPath("$.entries[0].verdict.eligible").value(false))
+                .andExpect(jsonPath("$.entries[0].verdict.reason").value("ADMISSION_RECEIPT_PENDING"));
     }
 
     @Test

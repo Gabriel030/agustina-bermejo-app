@@ -92,9 +92,17 @@ class WaitlistCandidateEligibilityTest {
     }
 
     @Test
-    void courseWithReceiptPendingReviewIsSkipped() {
+    void courseWithoutAnyReceiptIsSkipped() {
         when(courseApplicationRepository.findInvoiceIdsByCourseEnrollmentId(ENROLLMENT_ID)).thenReturn(List.of(99L));
-        when(admissionInvoiceReceiptFinder.isLatestReceiptPendingReview(99L)).thenReturn(true);
+        when(admissionInvoiceReceiptFinder.isLatestReceiptApproved(99L)).thenReturn(false);
+
+        assertSkippedBecause(eligibility.evaluate(courseCandidate()), WaitlistVerdictReason.ADMISSION_RECEIPT_PENDING);
+    }
+
+    @Test
+    void courseWithRejectedReceiptIsSkipped() {
+        when(courseApplicationRepository.findInvoiceIdsByCourseEnrollmentId(ENROLLMENT_ID)).thenReturn(List.of(98L, 99L));
+        when(admissionInvoiceReceiptFinder.isLatestReceiptApproved(98L)).thenReturn(false);
 
         assertSkippedBecause(eligibility.evaluate(courseCandidate()), WaitlistVerdictReason.ADMISSION_RECEIPT_PENDING);
     }
@@ -102,16 +110,16 @@ class WaitlistCandidateEligibilityTest {
     @Test
     void courseWithApprovedReceiptIsEligible() {
         when(courseApplicationRepository.findInvoiceIdsByCourseEnrollmentId(ENROLLMENT_ID)).thenReturn(List.of(99L));
-        when(admissionInvoiceReceiptFinder.isLatestReceiptPendingReview(99L)).thenReturn(false);
+        when(admissionInvoiceReceiptFinder.isLatestReceiptApproved(99L)).thenReturn(true);
 
         assertThat(eligibility.evaluate(courseCandidate()).eligible()).isTrue();
     }
 
     @Test
-    void courseWithoutAdmissionInvoiceIsEligible() {
+    void courseWithoutAdmissionInvoiceIsSkipped() {
         when(courseApplicationRepository.findInvoiceIdsByCourseEnrollmentId(ENROLLMENT_ID)).thenReturn(List.of());
 
-        assertThat(eligibility.evaluate(courseCandidate()).eligible()).isTrue();
+        assertSkippedBecause(eligibility.evaluate(courseCandidate()), WaitlistVerdictReason.ADMISSION_RECEIPT_PENDING);
     }
 
     @Test

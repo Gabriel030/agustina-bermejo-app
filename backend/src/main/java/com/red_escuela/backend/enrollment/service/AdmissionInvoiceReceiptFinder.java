@@ -9,8 +9,6 @@ import java.util.List;
 @Service
 public class AdmissionInvoiceReceiptFinder {
 
-    private static final String PENDING_REVIEW = "PENDING_REVIEW";
-
     private final AdmissionReceiptLookup receiptLookup;
 
     public AdmissionInvoiceReceiptFinder(AdmissionReceiptLookup receiptLookup) {
@@ -21,8 +19,8 @@ public class AdmissionInvoiceReceiptFinder {
         return receiptLookup.findLatestReceiptByInvoiceIds(List.of(admissionInvoiceId)).get(admissionInvoiceId);
     }
 
-    public boolean isLatestReceiptPendingReview(Long admissionInvoiceId) {
+    public boolean isLatestReceiptApproved(Long admissionInvoiceId) {
         AdmissionReceiptSummary latest = findLatestReceiptByAdmissionInvoiceId(admissionInvoiceId);
-        return latest != null && PENDING_REVIEW.equals(latest.status());
+        return latest != null && latest.isApproved();
     }
 }

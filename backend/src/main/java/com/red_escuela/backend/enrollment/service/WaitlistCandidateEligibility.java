@@ -42,7 +42,7 @@ public class WaitlistCandidateEligibility {
         if (candidate.kind() == WaitlistKind.PROGRAM_SECTION) {
             return programSectionViolation(candidate);
         }
-        if (candidate.kind() == WaitlistKind.COURSE && hasReceiptPendingReview(candidate.enrollmentId())) {
+        if (candidate.kind() == WaitlistKind.COURSE && lacksApprovedAdmissionReceipt(candidate.enrollmentId())) {
             return Optional.of(WaitlistVerdictReason.ADMISSION_RECEIPT_PENDING);
         }
         return Optional.empty();
@@ -62,10 +62,11 @@ public class WaitlistCandidateEligibility {
         return Optional.empty();
     }
 
-    private boolean hasReceiptPendingReview(Long courseEnrollmentId) {
+    private boolean lacksApprovedAdmissionReceipt(Long courseEnrollmentId) {
         return courseApplicationRepository.findInvoiceIdsByCourseEnrollmentId(courseEnrollmentId).stream()
                 .findFirst()
-                .filter(admissionInvoiceReceiptFinder::isLatestReceiptPendingReview)
-                .isPresent();
+                .map(admissionInvoiceReceiptFinder::isLatestReceiptApproved)
+                .map(approved -> !approved)
+                .orElse(true);
     }
 }
