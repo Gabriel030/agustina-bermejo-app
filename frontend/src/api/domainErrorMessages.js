@@ -307,4 +307,5 @@ export const DOMAIN_ERROR_MESSAGES = {
   USERNAME_ALREADY_EXISTS: 'Ya existe un usuario con ese nombre.',
   RATE_LIMIT_EXCEEDED: 'Demasiados intentos seguidos. Esperá unos minutos.',
   TRANSACTIONAL_EMAIL_DELIVERY: 'No pudimos enviar el correo. Probá de nuevo en unos minutos.',
+  TRANSACTIONAL_EMAIL_REJECTED: 'El proveedor de correo rechazó el mensaje. Revisá la dirección del destinatario.',
 };
