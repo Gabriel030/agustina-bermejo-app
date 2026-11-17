@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
@@ -32,9 +32,9 @@ function renderDetail(role = 'administrativo') {
   server.use(http.get(`${API}/waitlists/PROGRAM_SECTION/1`, () => HttpResponse.json(queue)));
   return renderWithProviders(
     <Routes>
-      <Route path={`/${role}/listas-de-espera/:kind/:id`} element={<ListaDeEsperaDetalle />} />
+      <Route path={`/${role}/inscripciones/listas-de-espera/:kind/:id`} element={<ListaDeEsperaDetalle />} />
     </Routes>,
-    { route: `/${role}/listas-de-espera/PROGRAM_SECTION/1` },
+    { route: `/${role}/inscripciones/listas-de-espera/PROGRAM_SECTION/1` },
   );
 }
 
@@ -112,11 +112,58 @@ describe('ListaDeEsperaDetalle', () => {
   it('explains when the list does not exist', async () => {
     renderWithProviders(
       <Routes>
-        <Route path="/administrativo/listas-de-espera/:kind/:id" element={<ListaDeEsperaDetalle />} />
+        <Route path="/administrativo/inscripciones/listas-de-espera/:kind/:id" element={<ListaDeEsperaDetalle />} />
       </Routes>,
-      { route: '/administrativo/listas-de-espera/COURSE/999' },
+      { route: '/administrativo/inscripciones/listas-de-espera/COURSE/999' },
     );
 
     expect(await screen.findByText('No encontramos lo que buscabas')).toBeInTheDocument();
+  });
+
+  it('requires reason before prioritizing', async () => {
+    let body = null;
+    server.use(
+      http.post(`${API}/waitlists/PROGRAM_SECTION/entries/12/prioritize`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({});
+      }),
+    );
+    renderDetail();
+    await screen.findByText('Lucía Fernández');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Acciones para Lucía Fernández' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Mover a primer lugar/ }));
+    const confirm = await screen.findByRole('button', { name: 'Mover' });
+    expect(confirm).toBeDisabled();
+
+    await userEvent.type(screen.getByRole('textbox'), 'corto');
+    expect(confirm).toBeDisabled();
+    expect(screen.getByText('5/500')).toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole('textbox'), ' y suficiente');
+    expect(confirm).toBeEnabled();
+    await userEvent.click(confirm);
+
+    await waitFor(() => expect(body).toEqual({ reason: 'corto y suficiente' }));
+  });
+
+  it('promote disabled when not eligible', async () => {
+    renderDetail();
+    await screen.findByText('Matías Gómez');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Acciones para Matías Gómez' }));
+
+    expect(await screen.findByRole('menuitem', { name: /Promover ahora/ })).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('promote shows the seat change before confirming', async () => {
+    renderDetail();
+    await screen.findByText('Lucía Fernández');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Acciones para Lucía Fernández' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Promover ahora/ }));
+
+    expect(await screen.findByText('29 / 30')).toBeInTheDocument();
+    expect(screen.getByText('30 / 30')).toBeInTheDocument();
   });
 });
