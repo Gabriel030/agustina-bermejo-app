@@ -31,7 +31,9 @@ const CICLO_STATUS_CONFIG = {
 const ACTIVE_CYCLE_STATUSES = ['APPROVED', 'PENDING_APPROVAL', 'DRAFT'];
 
 function findActiveCycle(cycles, key, id) {
-  return cycles?.find((cycle) => cycle[key] === id && ACTIVE_CYCLE_STATUSES.includes(cycle.status));
+  return cycles
+    ?.filter((cycle) => cycle[key] === id && ACTIVE_CYCLE_STATUSES.includes(cycle.status))
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
 }
 
 function BadgeCiclo({ ciclo, failed = false }) {
