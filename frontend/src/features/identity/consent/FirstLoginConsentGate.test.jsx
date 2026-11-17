@@ -34,6 +34,14 @@ describe('FirstLoginConsentGate', () => {
     expect(screen.queryByText('Contenido de la app')).not.toBeInTheDocument();
   });
 
+  it('google registered account sees the first login prompt', async () => {
+    server.use(http.get(`${API}/me/contact-consents`, withoutRecord));
+    renderGate();
+
+    expect(await screen.findByRole('checkbox', { name: /avisos institucionales/i })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
+  });
+
   it('does not show the prompt when a record already exists', async () => {
     renderGate();
 
