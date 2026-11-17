@@ -45,15 +45,17 @@ class TemplateRendererTest {
     }
 
     @Test
-    void escapesHtmlInHtmlBody() {
+    void doesNotEscapeCharactersInPlainTextBody() {
         Map<TemplateVariable, String> values = values();
-        values.put(TemplateVariable.FIRST_NAME, "<script>alert(1)</script>");
+        values.put(TemplateVariable.FIRST_NAME, "O'Brien");
+        values.put(TemplateVariable.INSTITUTION, "Ingeniería & Diseño <Sur>");
 
-        RenderedContent email = TemplateRenderer.render(ChannelType.EMAIL, "s", "<p>{{nombre}}</p>", values);
-        RenderedContent whatsapp = TemplateRenderer.render(ChannelType.WHATSAPP_LINK, "s", "{{nombre}}", values);
+        RenderedContent email = TemplateRenderer.render(ChannelType.EMAIL, "Hola {{nombre}}", "{{nombre}} - {{institucion}}", values);
+        RenderedContent whatsapp = TemplateRenderer.render(ChannelType.WHATSAPP_LINK, null, "{{nombre}} - {{institucion}}", values);
 
-        assertThat(email.body()).isEqualTo("<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>");
-        assertThat(whatsapp.body()).isEqualTo("<script>alert(1)</script>");
+        assertThat(email.subject()).isEqualTo("Hola O'Brien");
+        assertThat(email.body()).isEqualTo("O'Brien - Ingeniería & Diseño <Sur>");
+        assertThat(whatsapp.body()).isEqualTo("O'Brien - Ingeniería & Diseño <Sur>");
     }
 
     @Test

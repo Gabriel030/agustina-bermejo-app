@@ -4,7 +4,6 @@ import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.domain.RenderedContent;
 import com.red_escuela.backend.notification.broadcast.template.exception.MissingRequiredVariableException;
 import com.red_escuela.backend.notification.broadcast.template.exception.UnknownTemplateVariableException;
-import org.springframework.web.util.HtmlUtils;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -18,19 +17,18 @@ public final class TemplateRenderer {
     }
 
     public static void validateVariables(String subject, String bodyText) {
-        replacePlaceholders(subject, Map.of(), false, true);
-        replacePlaceholders(bodyText, Map.of(), false, true);
+        replacePlaceholders(subject, Map.of(), true);
+        replacePlaceholders(bodyText, Map.of(), true);
     }
 
     public static RenderedContent render(ChannelType channel, String subject, String bodyText,
                                          Map<TemplateVariable, String> values) {
-        boolean escapeHtml = channel == ChannelType.EMAIL;
-        String renderedSubject = subject == null ? null : replacePlaceholders(subject, values, false, false);
-        String renderedBody = replacePlaceholders(bodyText, values, escapeHtml, false);
+        String renderedSubject = subject == null ? null : replacePlaceholders(subject, values, false);
+        String renderedBody = replacePlaceholders(bodyText, values, false);
         return new RenderedContent(renderedSubject, renderedBody);
     }
 
-    private static String replacePlaceholders(String text, Map<TemplateVariable, String> values, boolean escapeHtml,
+    private static String replacePlaceholders(String text, Map<TemplateVariable, String> values,
                                               boolean validateOnly) {
         if (text == null) {
             return null;
@@ -47,7 +45,7 @@ public final class TemplateRenderer {
                 if (value == null || value.isBlank()) {
                     throw new MissingRequiredVariableException(token);
                 }
-                replacement = escapeHtml ? HtmlUtils.htmlEscape(value) : value;
+                replacement = value;
             }
             matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
         }
