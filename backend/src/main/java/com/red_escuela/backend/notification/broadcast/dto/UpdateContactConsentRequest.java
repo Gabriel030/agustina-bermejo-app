@@ -2,10 +2,12 @@ package com.red_escuela.backend.notification.broadcast.dto;
 
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.ConsentChannel;
+import com.red_escuela.backend.notification.broadcast.domain.ConsentSource;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateContactConsentRequest(
         @NotNull ConsentChannel channel,
         @NotNull BroadcastCategory category,
-        @NotNull Boolean granted) {
+        @NotNull Boolean granted,
+        ConsentSource source) {
 }

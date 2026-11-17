@@ -89,8 +89,9 @@ public class ContactConsentLedger {
     }
 
     private ContactConsentEntry entryFor(Long personId, ConsentChannel channel, BroadcastCategory category) {
+        Optional<Instant> recordedAt = lastRecordedAt(personId, channel, category);
         return new ContactConsentEntry(channel, category, isGranted(personId, channel, category),
-                lastRecordedAt(personId, channel, category).orElse(null));
+                recordedAt.orElse(null), recordedAt.isPresent());
     }
 
     private void recordOne(Long personId, ChannelType storageChannel, BroadcastCategory category, ConsentStatus newStatus,
