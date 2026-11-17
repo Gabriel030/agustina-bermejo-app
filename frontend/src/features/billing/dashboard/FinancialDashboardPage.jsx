@@ -295,7 +295,7 @@ export function FinancialDashboardPage() {
       {ready ? (
         <>
           <MonthKpis filters={filters} month={month} />
-          <TodayKpis currency={currency} />
+          <TodayKpis currency={currency} dashboard={dashboard} />
         </>
       ) : (
         <Skeleton className="h-40 w-full" />

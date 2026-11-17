@@ -28,12 +28,10 @@ const CICLO_STATUS_CONFIG = {
   CLOSED: { label: 'Cerrado', tone: 'neutral' },
 };
 
-function useCiclosPorPrograma(programId) {
-  return useCiclos({ programId });
-}
+const ACTIVE_CYCLE_STATUSES = ['APPROVED', 'PENDING_APPROVAL', 'DRAFT'];
 
-function useCiclosPorCurso(courseId) {
-  return useCiclos({ courseId });
+function findActiveCycle(cycles, key, id) {
+  return cycles?.find((cycle) => cycle[key] === id && ACTIVE_CYCLE_STATUSES.includes(cycle.status));
 }
 
 function BadgeCiclo({ ciclo, failed = false }) {
@@ -43,10 +41,9 @@ function BadgeCiclo({ ciclo, failed = false }) {
   return <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>;
 }
 
-function FilaPrograma({ programa, navigate }) {
+function FilaPrograma({ programa, navigate, ciclos, ciclosFailed }) {
   const basePath = useRoleBasePath();
-  const { data: ciclos, isError: ciclosFailed } = useCiclosPorPrograma(programa.id);
-  const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
+  const cicloActivo = findActiveCycle(ciclos, 'programId', programa.id);
 
   return (
     <Button
@@ -67,10 +64,9 @@ function FilaPrograma({ programa, navigate }) {
   );
 }
 
-function FilaCurso({ curso, navigate }) {
+function FilaCurso({ curso, navigate, ciclos, ciclosFailed }) {
   const basePath = useRoleBasePath();
-  const { data: ciclos, isError: ciclosFailed } = useCiclosPorCurso(curso.id);
-  const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
+  const cicloActivo = findActiveCycle(ciclos, 'courseId', curso.id);
 
   return (
     <Button
@@ -124,6 +120,8 @@ export function PreceptorOfertaAcademica() {
   const { data: programas, isLoading: loadingProgramas, isError: programasFailed, error: programasError, refetch: refetchProgramas } = useProgramas();
   const { data: cursos, isLoading: loadingCursos, isError: cursosFailed, error: cursosError, refetch: refetchCursos } = useCursos();
 
+  const { data: ciclos, isError: ciclosFailed } = useCiclos({});
+
   const programasFiltrados = (programas ?? []).filter((p) =>
     p.name.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -173,7 +171,7 @@ export function PreceptorOfertaAcademica() {
                 onRetry={refetchProgramas}
                 resource="las carreras"
                 emptyText="No se encontraron carreras."
-                renderFila={(p) => <FilaPrograma key={p.id} programa={p} navigate={navigate} />}
+                renderFila={(p) => <FilaPrograma key={p.id} programa={p} navigate={navigate} ciclos={ciclos} ciclosFailed={ciclosFailed} />}
               />
             </TabsContent>
 
@@ -186,7 +184,7 @@ export function PreceptorOfertaAcademica() {
                 onRetry={refetchCursos}
                 resource="los cursos"
                 emptyText="No se encontraron cursos."
-                renderFila={(c) => <FilaCurso key={c.id} curso={c} navigate={navigate} />}
+                renderFila={(c) => <FilaCurso key={c.id} curso={c} navigate={navigate} ciclos={ciclos} ciclosFailed={ciclosFailed} />}
               />
             </TabsContent>
           </Tabs>
