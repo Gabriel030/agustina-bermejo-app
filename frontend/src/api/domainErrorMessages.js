@@ -8,6 +8,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   ATTENDANCE_STATUS_NOT_RECORDABLE: 'Ese estado de asistencia no se puede registrar.',
   BILLING_MODE_NOT_OFF: 'La importación solo se puede hacer con la facturación apagada.',
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
+  CHANNEL_NOT_AVAILABLE: 'El canal de envío no está disponible.',
   CIRCULAR_PREREQUISITE: 'Esa correlatividad genera un círculo entre materias.',
   CLOSURE_ALREADY_CLOSED: 'El cierre ya está cerrado y no se puede modificar.',
   CLOSURE_ALREADY_CONFIRMED: 'El cierre ya fue confirmado.',
