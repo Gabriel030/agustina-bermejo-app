@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.api.HistoricalProgramCohort;
 import com.red_escuela.backend.billing.api.HistoricalProgramCohortRecorder;
 import com.red_escuela.backend.dataimport.domain.ImportEntityType;
 import com.red_escuela.backend.dataimport.entity.ImportRowError;
+import com.red_escuela.backend.dataimport.specialist.BaseLookups;
 import com.red_escuela.backend.dataimport.specialist.ImportDocumentKey;
 import com.red_escuela.backend.dataimport.specialist.ImportEntityDefinition;
 import com.red_escuela.backend.dataimport.specialist.ImportReference;
@@ -33,10 +34,13 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
 
     private final HistoricalEnrollmentRecorder recorder;
     private final HistoricalProgramCohortRecorder cohortRecorder;
+    private final EnrollmentBaseLookupsLoader lookupsLoader;
 
-    public ProgramEnrollmentImportDefinition(HistoricalEnrollmentRecorder recorder, HistoricalProgramCohortRecorder cohortRecorder) {
+    public ProgramEnrollmentImportDefinition(HistoricalEnrollmentRecorder recorder, HistoricalProgramCohortRecorder cohortRecorder,
+            EnrollmentBaseLookupsLoader lookupsLoader) {
         this.recorder = recorder;
         this.cohortRecorder = cohortRecorder;
+        this.lookupsLoader = lookupsLoader;
     }
 
     @Override
@@ -142,8 +146,18 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public BaseLookups preloadBase(List<Map<String, String>> payloads) {
+        return lookupsLoader.load(payloads, false);
+    }
+
+    @Override
     public BaseCheck checkAgainstBase(Map<String, String> payload) {
-        boolean exists = existsInBase(naturalKey(payload));
+        return checkAgainstBase(payload, BaseLookups.NONE);
+    }
+
+    @Override
+    public BaseCheck checkAgainstBase(Map<String, String> payload, BaseLookups lookups) {
+        boolean exists = existsInBase(naturalKey(payload), lookups);
         return new BaseCheck(exists, exists
                 ? List.of(new ImportRowError("programName", "PROGRAM_ENROLLMENT_ALREADY_EXISTS", "El alumno ya está inscripto en la carrera"))
                 : List.of());
@@ -151,11 +165,19 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
 
     @Override
     public boolean existsInBase(String naturalKey) {
+        return existsInBase(naturalKey, BaseLookups.NONE);
+    }
+
+    @Override
+    public boolean existsInBase(String naturalKey, BaseLookups lookups) {
         String[] parts = naturalKey.split("\\|", 2);
         if (parts.length != 2) {
             return false;
         }
-        return recorder.programEnrollmentExists(ImportDocumentKey.typeOfKey(parts[0]), ImportDocumentKey.numberOfKey(parts[0]), parts[1]);
+        DocumentType type = ImportDocumentKey.typeOfKey(parts[0]);
+        String number = ImportDocumentKey.numberOfKey(parts[0]);
+        return lookups.loaded() ? lookups.programEnrollmentExists(type, number, parts[1])
+                : recorder.programEnrollmentExists(type, number, parts[1]);
     }
 
     @Override
@@ -164,14 +186,29 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public BaseLookups preloadForRecord(List<Map<String, String>> payloads) {
+        return lookupsLoader.loadForRecord(payloads, false);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
+        return record(payload, institutionId, BaseLookups.NONE);
+    }
+
+    @Override
+    public Long record(Map<String, String> payload, Long institutionId, BaseLookups lookups) {
         ImportRowReader reader = new ImportRowReader(payload);
         DocumentType type = ImportDocumentKey.typeOf(payload).orElseThrow();
+        String number = ImportDocumentKey.numberOf(payload, type);
         Integer cohortYear = reader.integer("cohortYear", false, 1990, 2100);
-        Long enrollmentId = recorder.recordProgramEnrollment(new HistoricalProgramEnrollment(type,
-                ImportDocumentKey.numberOf(payload, type), reader.text("programName"), reader.date("enrollmentDate", true),
-                reader.enumValue("status", ProgramEnrollmentStatus.class, true).orElseThrow(),
-                reader.date("completionDate", false), reader.date("withdrawalDate", false), cohortYear));
+        HistoricalProgramEnrollment historical = new HistoricalProgramEnrollment(type, number, reader.text("programName"),
+                reader.date("enrollmentDate", true), reader.enumValue("status", ProgramEnrollmentStatus.class, true).orElseThrow(),
+                reader.date("completionDate", false), reader.date("withdrawalDate", false), cohortYear);
+        Optional<Long> studentId = lookups.studentId(type, number);
+        Optional<Long> programId = lookups.programId(historical.programName());
+        Long enrollmentId = studentId.isPresent() && programId.isPresent()
+                ? recorder.recordProgramEnrollment(historical, studentId.get(), programId.get())
+                : recorder.recordProgramEnrollment(historical);
         if (cohortYear != null) {
             cohortRecorder.assignCohort(enrollmentId, new HistoricalProgramCohort(reader.text("programName"), cohortYear,
                     reader.enumValue("intake", HistoricalCohortIntake.class, true).orElseThrow()));

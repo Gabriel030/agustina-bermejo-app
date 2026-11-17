@@ -1,0 +1,253 @@
+=== Q1 invoices OVERDUE con lineas (debtors)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Unique  (cost=3813.61..5361.35 rows=4500 width=1593) (actual time=16.191..30.052 rows=4500 loops=1)
+   Buffers: shared hit=2483
+   ->  Incremental Sort  (cost=3813.61..4585.10 rows=4500 width=1593) (actual time=16.190..26.168 rows=4500 loops=1)
+         Sort Key: l.line_number, i.id, i.version, i.student_current_account_id, i.currency, i.document_type, i.invoice_type, i.issuing_reason, i.document_status, i.invoice_number, i.issue_date, i.due_date, i.payment_deadline, i.origin_invoice_id, i.student_snapshot, i.discarded_reason, i.lines_total, i.lines_total_currency, i.discounts_total, i.discounts_total_currency, i.total, i.total_currency, i.paid_amount, i.paid_amount_currency, i.credited_amount, i.credited_amount_currency, i.outstanding_amount, i.outstanding_amount_currency, i.created_at, i.updated_at, i.monthly_invoice_run_id, l.id, l.currency, l.fee_type, l.concept, l.period, l.program_enrollment_id, l.course_enrollment_id, l.subject_id, l.exam_board_registration_id, l.price_version_id, l.charge_key, l.charge_key_released_at, l.amount, l.amount_currency, l.discount_amount, l.discount_amount_currency, l.credited_amount, l.credited_amount_currency, l.free_credited_amount, l.free_credited_amount_currency, l.template_id, l.enrollment_fee_slot, l.marketing_discount_amount, l.list_amount, d.id, d.invoice_line_id, d.student_discount_id, d.discount_type, d.concept, d.currency, d.base_amount, d.base_amount_currency, d.discount_amount, d.discount_amount_currency, d.installment_number, d.installments_total, d.calculation, d.consumption_released_at
+         Presorted Key: l.line_number, i.id, i.version, i.student_current_account_id, i.currency, i.document_type, i.invoice_type, i.issuing_reason, i.document_status, i.invoice_number, i.issue_date, i.due_date, i.payment_deadline, i.origin_invoice_id, i.student_snapshot, i.discarded_reason, i.lines_total, i.lines_total_currency, i.discounts_total, i.discounts_total_currency, i.total, i.total_currency, i.paid_amount, i.paid_amount_currency, i.credited_amount, i.credited_amount_currency, i.outstanding_amount, i.outstanding_amount_currency, i.created_at, i.updated_at, i.monthly_invoice_run_id, l.id, l.currency, l.fee_type, l.concept, l.period, l.program_enrollment_id, l.course_enrollment_id, l.subject_id, l.exam_board_registration_id, l.price_version_id, l.charge_key, l.charge_key_released_at, l.amount, l.amount_currency, l.discount_amount, l.discount_amount_currency, l.credited_amount, l.credited_amount_currency, l.free_credited_amount, l.free_credited_amount_currency, l.template_id, l.enrollment_fee_slot, l.marketing_discount_amount, l.list_amount
+         Full-sort Groups: 141  Sort Method: quicksort  Average Memory: 38kB  Peak Memory: 38kB
+         Buffers: shared hit=2483
+         ->  Nested Loop Left Join  (cost=3813.48..4382.60 rows=4500 width=1593) (actual time=15.975..22.023 rows=4500 loops=1)
+               Join Filter: (l.id = d.invoice_line_id)
+               Buffers: shared hit=2483
+               ->  Gather Merge  (cost=3813.48..4326.35 rows=4500 width=965) (actual time=15.965..19.804 rows=4500 loops=1)
+                     Workers Planned: 1
+                     Workers Launched: 1
+                     Buffers: shared hit=2483
+                     ->  Sort  (cost=2813.47..2820.09 rows=2647 width=965) (actual time=13.737..13.842 rows=2250 loops=2)
+                           Sort Key: l.line_number, i.id, i.version, i.student_current_account_id, i.currency, i.document_type, i.invoice_type, i.issuing_reason, i.document_status, i.invoice_number, i.issue_date, i.due_date, i.payment_deadline, i.origin_invoice_id, i.student_snapshot, i.discarded_reason, i.lines_total, i.lines_total_currency, i.discounts_total, i.discounts_total_currency, i.total, i.total_currency, i.paid_amount, i.paid_amount_currency, i.credited_amount, i.credited_amount_currency, i.outstanding_amount, i.outstanding_amount_currency, i.created_at, i.updated_at, i.monthly_invoice_run_id, l.id, l.currency, l.fee_type, l.concept, l.period, l.program_enrollment_id, l.course_enrollment_id, l.subject_id, l.exam_board_registration_id, l.price_version_id, l.charge_key, l.charge_key_released_at, l.amount, l.amount_currency, l.discount_amount, l.discount_amount_currency, l.credited_amount, l.credited_amount_currency, l.free_credited_amount, l.free_credited_amount_currency, l.template_id, l.enrollment_fee_slot, l.marketing_discount_amount, l.list_amount
+                           Sort Method: quicksort  Memory: 1178kB
+                           Buffers: shared hit=2483
+                           Worker 0:  Sort Method: quicksort  Memory: 858kB
+                           ->  Hash Join  (cost=1287.00..2662.98 rows=2647 width=965) (actual time=9.101..11.232 rows=2250 loops=2)
+                                 Hash Cond: (i.id = l.invoice_id)
+                                 Buffers: shared hit=2394
+                                 ->  Parallel Seq Scan on invoice i  (cost=0.00..1339.59 rows=2647 width=800) (actual time=1.518..2.474 rows=2250 loops=2)
+                                       Filter: ((payment_status)::text = 'OVERDUE'::text)
+                                       Rows Removed by Filter: 12750
+                                       Buffers: shared hit=1119
+                                 ->  Hash  (cost=912.00..912.00 rows=30000 width=165) (actual time=7.384..7.384 rows=30000 loops=2)
+                                       Buckets: 32768  Batches: 1  Memory Usage: 4996kB
+                                       Buffers: shared hit=1224
+                                       ->  Seq Scan on invoice_line l  (cost=0.00..912.00 rows=30000 width=165) (actual time=0.007..2.169 rows=30000 loops=2)
+                                             Buffers: shared hit=1224
+               ->  Seq Scan on invoice_discount d  (cost=0.00..0.00 rows=1 width=628) (actual time=0.000..0.000 rows=0 loops=4500)
+ Planning:
+   Buffers: shared hit=871
+ Planning Time: 6.848 ms
+ Execution Time: 31.184 ms
+(36 rows)
+
+=== Q2 students page 0 size 25
+                                                                                                 QUERY PLAN                                                                                                  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1774.58..1774.64 rows=25 width=4869) (actual time=14.052..14.059 rows=25 loops=1)
+   Buffers: shared hit=994
+   ->  Sort  (cost=1774.58..1778.02 rows=1376 width=4869) (actual time=14.050..14.056 rows=25 loops=1)
+         Sort Key: p1.last_name, p1.name, s.id
+         Sort Method: top-N heapsort  Memory: 45kB
+         Buffers: shared hit=994
+         ->  Hash Join  (cost=1205.87..1735.75 rows=1376 width=4869) (actual time=8.372..10.772 rows=5044 loops=1)
+               Hash Cond: (p2.id = p3.id)
+               Buffers: shared hit=994
+               ->  Seq Scan on person p2  (cost=0.00..484.45 rows=8445 width=2331) (actual time=0.005..1.081 rows=5106 loops=1)
+                     Buffers: shared hit=400
+               ->  Hash  (cost=1188.67..1188.67 rows=1376 width=2554) (actual time=8.351..8.355 rows=5044 loops=1)
+                     Buckets: 8192 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 653kB
+                     Buffers: shared hit=594
+                     ->  Hash Right Join  (cost=658.79..1188.67 rows=1376 width=2554) (actual time=5.234..6.843 rows=5044 loops=1)
+                           Hash Cond: (p1.id = s.person_id)
+                           Buffers: shared hit=594
+                           ->  Seq Scan on person p1  (cost=0.00..484.45 rows=8445 width=30) (actual time=0.004..0.694 rows=5106 loops=1)
+                                 Buffers: shared hit=400
+                           ->  Hash  (cost=641.59..641.59 rows=1376 width=2532) (actual time=5.217..5.220 rows=5044 loops=1)
+                                 Buckets: 8192 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 537kB
+                                 Buffers: shared hit=194
+                                 ->  Hash Semi Join  (cost=359.34..641.59 rows=1376 width=2532) (actual time=2.727..4.129 rows=5044 loops=1)
+                                       Hash Cond: (s.person_id = p3.id)
+                                       Buffers: shared hit=194
+                                       ->  Seq Scan on student s  (cost=0.00..245.09 rows=8327 width=2516) (actual time=0.005..0.731 rows=5044 loops=1)
+                                             Filter: ((onboarding_status)::text = 'CONFIRMADO'::text)
+                                             Buffers: shared hit=141
+                                       ->  Hash  (cost=341.90..341.90 rows=1395 width=16) (actual time=2.707..2.710 rows=5044 loops=1)
+                                             Buckets: 8192 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 301kB
+                                             Buffers: shared hit=53
+                                             ->  Hash Join  (cost=105.61..341.90 rows=1395 width=16) (actual time=1.217..2.125 rows=5044 loops=1)
+                                                   Hash Cond: (p3.id = r.person_id)
+                                                   Buffers: shared hit=53
+                                                   ->  Index Only Scan using person_pkey on person p3  (cost=0.29..190.96 rows=8445 width=8) (actual time=0.018..0.355 rows=5106 loops=1)
+                                                         Heap Fetches: 0
+                                                         Buffers: shared hit=16
+                                                   ->  Hash  (cost=87.89..87.89 rows=1395 width=8) (actual time=1.186..1.187 rows=5044 loops=1)
+                                                         Buckets: 8192 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 262kB
+                                                         Buffers: shared hit=37
+                                                         ->  Nested Loop  (cost=0.29..87.89 rows=1395 width=8) (actual time=0.011..0.730 rows=5044 loops=1)
+                                                               Buffers: shared hit=37
+                                                               ->  Seq Scan on role ro  (cost=0.00..1.07 rows=1 width=8) (actual time=0.001..0.002 rows=1 loops=1)
+                                                                     Filter: ((name)::text = 'ALUMNO'::text)
+                                                                     Rows Removed by Filter: 5
+                                                                     Buffers: shared hit=1
+                                                               ->  Index Scan using ix_person_role_role on person_role r  (cost=0.29..70.07 rows=1674 width=16) (actual time=0.009..0.385 rows=5044 loops=1)
+                                                                     Index Cond: (role_id = ro.id)
+                                                                     Buffers: shared hit=36
+ Planning:
+   Buffers: shared hit=437
+ Planning Time: 1.948 ms
+ Execution Time: 14.427 ms
+(53 rows)
+
+=== Q3 debtors page
+                                                                                                                 QUERY PLAN                                                                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=7157.59..7157.66 rows=25 width=119) (actual time=27.242..27.253 rows=25 loops=1)
+   Buffers: shared hit=32626
+   ->  Sort  (cost=7157.59..7168.84 rows=4500 width=119) (actual time=27.241..27.250 rows=25 loops=1)
+         Sort Key: (('2026-11-17'::date - (min(i.due_date)))) DESC NULLS LAST, (COALESCE(ce.student_id, pe.student_id)), i.currency
+         Sort Method: top-N heapsort  Memory: 29kB
+         Buffers: shared hit=32626
+         ->  WindowAgg  (cost=6401.99..7030.61 rows=4500 width=119) (actual time=26.276..26.655 rows=3000 loops=1)
+               Buffers: shared hit=32626
+               ->  Hash Join  (cost=6401.99..6963.11 rows=4500 width=111) (actual time=24.337..25.393 rows=3000 loops=1)
+                     Hash Cond: (per.id = s.person_id)
+                     Buffers: shared hit=32626
+                     ->  Seq Scan on person per  (cost=0.00..484.45 rows=8445 width=39) (actual time=0.004..0.569 rows=5106 loops=1)
+                           Buffers: shared hit=400
+                     ->  Hash  (cost=6345.74..6345.74 rows=4500 width=88) (actual time=24.204..24.212 rows=3000 loops=1)
+                           Buckets: 8192  Batches: 1  Memory Usage: 381kB
+                           Buffers: shared hit=32226
+                           ->  Hash Join  (cost=6142.66..6345.74 rows=4500 width=88) (actual time=20.650..23.634 rows=3000 loops=1)
+                                 Hash Cond: ((COALESCE(ce.student_id, pe.student_id)) = s.id)
+                                 Buffers: shared hit=32226
+                                 ->  GroupAggregate  (cost=5814.31..5960.56 rows=4500 width=80) (actual time=19.447..21.910 rows=3000 loops=1)
+                                       Group Key: (COALESCE(ce.student_id, pe.student_id)), i.currency
+                                       Buffers: shared hit=32085
+                                       ->  Sort  (cost=5814.31..5825.56 rows=4500 width=113) (actual time=19.430..19.615 rows=4500 loops=1)
+                                             Sort Key: (COALESCE(ce.student_id, pe.student_id)), i.currency, i.due_date, i.id
+                                             Sort Method: quicksort  Memory: 638kB
+                                             Buffers: shared hit=32085
+                                             ->  Hash Left Join  (cost=1802.40..5541.25 rows=4500 width=113) (actual time=7.392..18.210 rows=4500 loops=1)
+                                                   Hash Cond: (pe.program_id = p.id)
+                                                   Buffers: shared hit=32085
+                                                   ->  Hash Left Join  (cost=1801.27..5519.96 rows=4500 width=88) (actual time=7.372..17.621 rows=4500 loops=1)
+                                                         Hash Cond: ((SubPlan 2) = pe.id)
+                                                         Join Filter: (ce.id IS NULL)
+                                                         Filter: ((ce.id IS NOT NULL) OR (pe.id IS NOT NULL))
+                                                         Buffers: shared hit=32084
+                                                         ->  Hash Right Join  (cost=1443.41..3281.66 rows=4500 width=72) (actual time=6.241..6.555 rows=4500 loops=1)
+                                                               Hash Cond: (ce.id = (SubPlan 1))
+                                                               Buffers: shared hit=4913
+                                                               ->  Nested Loop Left Join  (cost=0.00..2.03 rows=1 width=53) (actual time=0.011..0.025 rows=11 loops=1)
+                                                                     Join Filter: (c.id = ce.course_id)
+                                                                     Rows Removed by Join Filter: 36
+                                                                     Buffers: shared hit=12
+                                                                     ->  Seq Scan on course_enrollment ce  (cost=0.00..1.01 rows=1 width=24) (actual time=0.006..0.008 rows=11 loops=1)
+                                                                           Buffers: shared hit=1
+                                                                     ->  Seq Scan on course c  (cost=0.00..1.01 rows=1 width=45) (actual time=0.001..0.001 rows=4 loops=11)
+                                                                           Buffers: shared hit=11
+                                                               ->  Hash  (cost=1387.16..1387.16 rows=4500 width=19) (actual time=6.185..6.187 rows=4500 loops=1)
+                                                                     Buckets: 8192  Batches: 1  Memory Usage: 311kB
+                                                                     Buffers: shared hit=4901
+                                                                     ->  Bitmap Heap Scan on invoice i  (cost=211.91..1387.16 rows=4500 width=19) (actual time=0.177..1.623 rows=4500 loops=1)
+                                                                           Recheck Cond: ((payment_status)::text = 'OVERDUE'::text)
+                                                                           Heap Blocks: exact=379
+                                                                           Buffers: shared hit=401
+                                                                           ->  Bitmap Index Scan on ix_invoice_overdue  (cost=0.00..210.78 rows=4500 width=0) (actual time=0.145..0.145 rows=4500 loops=1)
+                                                                                 Buffers: shared hit=22
+                                                                     SubPlan 1
+                                                                       ->  Limit  (cost=8.15..8.16 rows=1 width=12) (actual time=0.001..0.001 rows=0 loops=4500)
+                                                                             Buffers: shared hit=4500
+                                                                             ->  Sort  (cost=8.15..8.16 rows=1 width=12) (actual time=0.001..0.001 rows=0 loops=4500)
+                                                                                   Sort Key: l.line_number
+                                                                                   Sort Method: quicksort  Memory: 25kB
+                                                                                   Buffers: shared hit=4500
+                                                                                   ->  Index Scan using ix_invoice_line_course_enrollment on invoice_line l  (cost=0.12..8.14 rows=1 width=12) (actual time=0.000..0.000 rows=0 loops=4500)
+                                                                                         Filter: (invoice_id = i.id)
+                                                                                         Buffers: shared hit=4500
+                                                         ->  Hash  (cost=254.05..254.05 rows=8305 width=24) (actual time=1.063..1.063 rows=5040 loops=1)
+                                                               Buckets: 16384  Batches: 1  Memory Usage: 404kB
+                                                               Buffers: shared hit=171
+                                                               ->  Seq Scan on program_enrollment pe  (cost=0.00..254.05 rows=8305 width=24) (actual time=0.003..0.514 rows=5040 loops=1)
+                                                                     Buffers: shared hit=171
+                                                         SubPlan 2
+                                                           ->  Limit  (cost=0.29..8.30 rows=1 width=12) (actual time=0.001..0.001 rows=1 loops=9000)
+                                                                 Buffers: shared hit=27000
+                                                                 ->  Index Scan using uk_invoice_line_number on invoice_line l_1  (cost=0.29..8.30 rows=1 width=12) (actual time=0.001..0.001 rows=1 loops=9000)
+                                                                       Index Cond: (invoice_id = i.id)
+                                                                       Filter: (program_enrollment_id IS NOT NULL)
+                                                                       Buffers: shared hit=27000
+                                                   ->  Hash  (cost=1.06..1.06 rows=6 width=49) (actual time=0.007..0.008 rows=9 loops=1)
+                                                         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                         Buffers: shared hit=1
+                                                         ->  Seq Scan on program p  (cost=0.00..1.06 rows=6 width=49) (actual time=0.002..0.003 rows=9 loops=1)
+                                                               Buffers: shared hit=1
+                                 ->  Hash  (cost=224.27..224.27 rows=8327 width=16) (actual time=1.062..1.063 rows=5044 loops=1)
+                                       Buckets: 16384  Batches: 1  Memory Usage: 365kB
+                                       Buffers: shared hit=141
+                                       ->  Seq Scan on student s  (cost=0.00..224.27 rows=8327 width=16) (actual time=0.003..0.472 rows=5044 loops=1)
+                                             Buffers: shared hit=141
+ Planning:
+   Buffers: shared hit=296
+ Planning Time: 1.970 ms
+ Execution Time: 27.618 ms
+(90 rows)
+
+=== Q4 waitlists
+                                                                   QUERY PLAN                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=4704.62..5240.12 rows=12600 width=131) (actual time=22.301..22.446 rows=300 loops=1)
+   Group Key: ss.id, s.name, t.description, t.year_number
+   Filter: (count(CASE WHEN ((sse.status)::text = 'WAITLISTED'::text) THEN 1 ELSE NULL::integer END) > 0)
+   Batches: 1  Memory Usage: 913kB
+   Rows Removed by Filter: 116
+   Buffers: shared hit=1709
+   ->  Hash Right Join  (cost=38.95..3288.58 rows=66637 width=92) (actual time=0.370..11.134 rows=40212 loops=1)
+         Hash Cond: (sse.program_section_id = ss.id)
+         Buffers: shared hit=1709
+         ->  Seq Scan on subject_section_enrollment sse  (cost=0.00..2333.37 rows=66637 width=17) (actual time=0.001..3.169 rows=40117 loops=1)
+               Buffers: shared hit=1667
+         ->  Hash  (cost=34.45..34.45 rows=360 width=83) (actual time=0.360..0.363 rows=416 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 57kB
+               Buffers: shared hit=42
+               ->  Nested Loop  (cost=5.36..34.45 rows=360 width=83) (actual time=0.048..0.283 rows=416 loops=1)
+                     Join Filter: (ss.term_id = t.id)
+                     Rows Removed by Join Filter: 416
+                     Buffers: shared hit=42
+                     ->  Seq Scan on term t  (cost=0.00..1.01 rows=1 width=38) (actual time=0.005..0.005 rows=2 loops=1)
+                           Buffers: shared hit=1
+                     ->  Hash Join  (cost=5.36..28.94 rows=360 width=61) (actual time=0.021..0.113 rows=416 loops=2)
+                           Hash Cond: (ss.subject_id = s.id)
+                           Buffers: shared hit=41
+                           ->  Seq Scan on subject_section ss  (cost=0.00..22.60 rows=360 width=45) (actual time=0.002..0.051 rows=416 loops=2)
+                                 Buffers: shared hit=38
+                           ->  Hash  (cost=4.05..4.05 rows=105 width=32) (actual time=0.031..0.033 rows=116 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 16kB
+                                 Buffers: shared hit=3
+                                 ->  Seq Scan on subject s  (cost=0.00..4.05 rows=105 width=32) (actual time=0.003..0.013 rows=116 loops=1)
+                                       Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=311
+ Planning Time: 1.128 ms
+ Execution Time: 22.797 ms
+(34 rows)
+
+=== Q5 program_enrollment por student_id IN (3000 ids) (debtors)
+                                                               QUERY PLAN                                                                
+-----------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=42.00..351.23 rows=3000 width=617) (actual time=1.222..2.175 rows=3000 loops=1)
+   Hash Cond: (pe.student_id = g.g)
+   Buffers: shared hit=171
+   ->  Seq Scan on program_enrollment pe  (cost=0.00..254.05 rows=8305 width=617) (actual time=0.041..0.529 rows=5040 loops=1)
+         Buffers: shared hit=171
+   ->  Hash  (cost=39.50..39.50 rows=200 width=4) (actual time=1.123..1.123 rows=3000 loops=1)
+         Buckets: 4096 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 138kB
+         ->  HashAggregate  (cost=37.50..39.50 rows=200 width=4) (actual time=0.691..0.861 rows=3000 loops=1)
+               Group Key: g.g
+               Batches: 1  Memory Usage: 257kB
+               ->  Function Scan on generate_series g  (cost=0.00..30.00 rows=3000 width=4) (actual time=0.125..0.236 rows=3000 loops=1)
+ Planning:
+   Buffers: shared hit=71
+ Planning Time: 0.279 ms
+ Execution Time: 2.367 ms
+(15 rows)
+

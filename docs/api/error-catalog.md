@@ -163,6 +163,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_SECTION_CHANGE` | no | `InvalidSectionChangeException` | enrollment |
 | `INVALID_SECTION_EVALUATION_CONFIG_TRANSITION` | no | `InvalidSectionEvaluationConfigTransitionException` | evaluation |
 | `INVALID_SECTION_OVERRIDES` | no | `InvalidSectionOverridesException` | enrollment |
+| `INVALID_SEGMENT_CRITERION` | no | `InvalidSegmentCriterionException` | notification |
 | `INVALID_SHIFT_RANGES` | no | `InvalidShiftRangesException` | academicstructure |
 | `INVALID_STAFF_ROLE` | no | `InvalidStaffRoleException` | identity |
 | `INVALID_STUDENT_DISCOUNT` | no | `InvalidStudentDiscountException` | billing |
@@ -215,6 +216,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_NOT_REGULAR` | no | `StudentNotRegularException` | evaluation |
 | `SUBJECT_NOT_IN_PROGRAM_PLAN` | no | `SubjectNotInProgramPlanException` | enrollment |
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
+| `TEMPLATE_SUBJECT_REQUIRED` | no | `TemplateSubjectRequiredException` | notification |
 | `TERM_DATES_REQUIRED` | no | `TermDatesRequiredException` | shared |
 | `TERM_ENROLLMENT_WINDOW_REQUIRED` | no | `TermEnrollmentWindowRequiredException` | shared |
 | `UNKNOWN_AUDIENCE_SEGMENT` | no | `UnknownAudienceSegmentException` | announcement |
@@ -292,7 +294,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `IMPORT_INSTITUTION_NOT_FOUND` | no | `ImportInstitutionNotFoundException` | dataimport |
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
 | `INSTRUCTOR_NOT_FOUND` | no | `InstructorNotFoundException` | academicstructure |
+| `INVALID_UNSUBSCRIBE_TOKEN` | no | `InvalidUnsubscribeTokenException` | notification |
 | `INVOICE_NOT_FOUND` | no | `InvoiceNotFoundException` | billing |
+| `MESSAGE_TEMPLATE_NOT_FOUND` | no | `MessageTemplateNotFoundException` | notification |
 | `MONTHLY_INVOICE_RUN_ITEM_NOT_FOUND` | no | `MonthlyInvoiceRunItemNotFoundException` | billing |
 | `MONTHLY_INVOICE_RUN_NOT_FOUND` | no | `MonthlyInvoiceRunNotFoundException` | billing |
 | `NIGHTLY_BILLING_RUN_NOT_FOUND` | no | `NightlyBillingRunNotFoundException` | billing |
@@ -335,6 +339,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_NOT_FOUND` | no | `SubjectNotFoundException` | academicstructure |
 | `TERM_NOT_FOUND` | no | `TermNotFoundException` | academicstructure |
 | `UNKNOWN_METRIC_PANEL` | no | `UnknownMetricPanelException` | billing |
+| `WAITLIST_QUEUE_NOT_FOUND` | no | `WaitlistQueueNotFoundException` | enrollment |
 
 ### HTTP 409
 
@@ -369,6 +374,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CASH_PAYMENT_PREVIEW_OUTDATED` | no | `CashPaymentPreviewOutdatedException` | billing |
 | `CERTIFICATE_EXPIRED` | no | `CertificateExpiredException` | graduation |
 | `CERTIFICATE_REVOKED` | no | `CertificateRevokedException` | graduation |
+| `CHANNEL_NOT_AVAILABLE` | no | `ChannelNotAvailableException` | notification |
 | `CHARGEBACK_ALREADY_REVERSED` | no | `ChargebackAlreadyReversedException` | billing |
 | `CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT` | no | `ChargebackMustBeForTheFullAmountException` | billing |
 | `CHARGE_REJECTED` | no | `ChargeRejectedException` | billing |
@@ -559,6 +565,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
+| `SEGMENT_NOT_AVAILABLE` | no | `SegmentNotAvailableException` | notification |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
@@ -582,6 +589,14 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `USERNAME_ALREADY_EXISTS` | no | `UsernameAlreadyExistsException` | identity |
 | `VERSION_ALREADY_EFFECTIVE` | no | `VersionAlreadyEffectiveException` | billing |
 | `WITHDRAWAL_REDUCTION_REJECTED` | no | `WithdrawalReductionRejectedException` | billing |
+
+### HTTP 422
+
+| Código | Reintentable | Excepción | Módulo |
+|---|---|---|---|
+| `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
+| `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
+| `UNKNOWN_TEMPLATE_VARIABLE` | no | `UnknownTemplateVariableException` | notification |
 
 ### HTTP 429
 
@@ -611,6 +626,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GOOGLE_SERVICE_UNAVAILABLE` | sí | `GoogleServiceUnavailableException` | identity |
 | `MERCADO_PAGO_GATEWAY` | sí | `MercadoPagoGatewayException` | billing |
 | `TRANSACTIONAL_EMAIL_DELIVERY` | sí | `TransactionalEmailDeliveryException` | shared |
+| `TRANSACTIONAL_EMAIL_REJECTED` | sí | `TransactionalEmailRejectedException` | shared |
 
 ### HTTP 503
 
@@ -687,6 +703,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/validation` | `CollectionReminderScheduleController#validateExceptionChange` |
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/validation` | `CollectionReminderScheduleController#validateGroupChange` |
 | POST | `/billing-runs/executions` | `BillingRunController#executeTodaysNightlyRun` |
+| POST | `/broadcasts/audience-preview` | `BroadcastAudienceController#previewBroadcastAudience` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
 | POST | `/classrooms` | `ClassroomController#create` |
@@ -774,6 +791,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/section-enrollments/{id}/change-section` | `MeEnrollmentController#changeMySection` |
 | POST | `/me/section-enrollments/{id}/withdraw` | `MeEnrollmentController#withdraw` |
 | POST | `/me/section-evaluation-configs/{sectionId}/submit` | `MeSectionEvaluationConfigController#submitForApproval` |
+| POST | `/message-templates` | `MessageTemplateController#createMessageTemplate` |
+| POST | `/message-templates/render-preview` | `MessageTemplateController#renderTemplatePreview` |
 | POST | `/monthly-invoice-runs/manual-issuances` | `ManualMonthlyInvoiceIssuanceController#issueMonthlyInvoicesManually` |
 | POST | `/monthly-invoice-runs/simulations` | `MonthlyInvoiceSimulationController#simulateMonthlyInvoices` |
 | POST | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices/discards` | `MonthlyInvoiceRunController#discardDraftInvoices` |
@@ -823,6 +842,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/prospects/{id}/confirm` | `ProspectController#confirm` |
 | POST | `/prospects/{id}/documents` | `ProspectController#addDocument` |
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |
+| POST | `/public/unsubscribe/{token}` | `PublicUnsubscribeController#confirmUnsubscribe` |
 | POST | `/refunds/{refundId}/completion` | `RefundController#completeRefund` |
 | POST | `/refunds/{refundId}/failure` | `RefundController#failRefund` |
 | POST | `/regular-certificate-requests/{id}/reject` | `RegularCertificateRequestController#reject` |

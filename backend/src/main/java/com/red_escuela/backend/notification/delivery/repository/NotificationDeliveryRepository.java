@@ -44,6 +44,15 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
                                    @Param("scheduledFor") LocalDate scheduledFor, @Param("now") Instant now,
                                    @Param("afterId") Long afterId, Pageable pageable);
 
+    @Query("""
+            select d.id from NotificationDelivery d
+            where d.channel = :channel and d.category = :category and d.status in :statuses and d.scheduledFor <= :scheduledUpTo
+              and (d.notBefore is null or d.notBefore <= :now)
+            order by d.id""")
+    List<Long> findDispatchableIdsUpTo(@Param("channel") DeliveryChannel channel, @Param("category") DeliveryCategory category,
+                                       @Param("statuses") List<DeliveryStatus> statuses,
+                                       @Param("scheduledUpTo") LocalDate scheduledUpTo, @Param("now") Instant now, Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = SKIP_LOCKED_TIMEOUT))
     @Query("""

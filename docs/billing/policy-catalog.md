@@ -128,6 +128,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | SingleOpenProposalPerTopicPolicy | PROPOSAL_ALREADY_OPEN | D-116 |
 
+## Momento BROADCAST_DELIVERY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | BroadcastConsentPolicy | OPTED_OUT, NO_CONSENT | E29D-FASE1-CONSENT-POLICY |
+
 ## Momento CASH_PAYMENT_DATING
 
 | Orden | Policy | Códigos de violación | Decisiones |

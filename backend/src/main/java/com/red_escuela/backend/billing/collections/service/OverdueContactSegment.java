@@ -61,6 +61,11 @@ public class OverdueContactSegment implements StudentSegment {
     }
 
     @Transactional(readOnly = true)
+    public List<StudentSegmentMember> findAllMembers(LocalDate asOf) {
+        return contactsOn(asOf, criteriaEffectiveOn(asOf)).stream().map(contact -> new StudentSegmentMember(contact.studentId())).toList();
+    }
+
+    @Transactional(readOnly = true)
     public Page<OverdueContact> findContacts(LocalDate asOf, Currency currency, Pageable pageable) {
         List<OverdueContact> contacts = contactsOn(asOf, criteriaEffectiveOn(asOf)).stream()
                 .filter(contact -> currency == null || contact.owesIn(currency)).toList();

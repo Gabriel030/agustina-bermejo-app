@@ -40,7 +40,7 @@ y `~/.claude/instructions/workflow-git.md`):
 - **CI local antes de abrir cualquier PR**: correr lo mismo que corre el CI y verlo
   pasar. No se abre un PR que pueda romper el CI (GitHub Actions cobra minutos).
 - **PRs siempre contra `develop`** (`--base develop` explícito); rama propia por cambio;
-  aprobación explícita antes de cada commit y de cada push; el merge lo hace el usuario.
+  aprobación explícita antes de cada commit y de cada push; el merge lo hace el Líder Técnico de la célula (dominio delegado por Gabriel el 17-nov, release a master incluido).
 - **Migraciones Flyway**: mirar el último número en `origin/develop` y `origin/master`
   antes de crear una.
 - **Todo diseño o mockup pasa por el agente `ux-advisor`** antes de mostrarse, y no se

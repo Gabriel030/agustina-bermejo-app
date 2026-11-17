@@ -6,6 +6,7 @@ public final class DeliveryStatusReason {
     public static final String OPTED_OUT = "OPTED_OUT";
     public static final String NO_VERIFIED_EMAIL = "NO_VERIFIED_EMAIL";
     public static final String PROVIDER_ERROR = "PROVIDER_ERROR";
+    public static final String PROVIDER_REJECTED = "PROVIDER_REJECTED";
     public static final String NO_LONGER_TIMELY = "NO_LONGER_TIMELY";
     public static final String NO_LONGER_APPLICABLE = "NO_LONGER_APPLICABLE";
     public static final String BILLING_NOTIFICATIONS_OFF = "BILLING_NOTIFICATIONS_OFF";

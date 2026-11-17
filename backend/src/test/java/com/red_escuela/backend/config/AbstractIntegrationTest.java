@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 @AutoConfigureMockMvc
 @SharedSpyBeans
 public abstract class AbstractIntegrationTest {
-    static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine")
+    protected static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine")
             .withTmpFs(Map.of("/var/lib/postgresql/data", "rw"))
             .withCommand("postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off", "-c", "max_connections=500");
 

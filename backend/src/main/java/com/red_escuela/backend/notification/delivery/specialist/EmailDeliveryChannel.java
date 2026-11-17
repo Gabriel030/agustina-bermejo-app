@@ -20,6 +20,7 @@ import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.mail.MaskedEmailAddress;
 import com.red_escuela.backend.shared.mail.TransactionalEmail;
 import com.red_escuela.backend.shared.mail.TransactionalEmailGateway;
+import com.red_escuela.backend.shared.mail.TransactionalEmailRejectedException;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +102,11 @@ public class EmailDeliveryChannel {
             receipt = mailBreaker.execute(() -> gateway.send(email), MailCircuit::countsAsProviderFailure);
         } catch (CircuitOpenException open) {
             log.warn("Circuito de mail abierto, la entrega queda sin consumir intentos dedup={}", delivery.getDedupKey());
+            return;
+        } catch (TransactionalEmailRejectedException rejection) {
+            log.warn("El proveedor rechazo el mail sin reintento dedup={} status={}", delivery.getDedupKey(), rejection.statusCode());
+            delivery.recordFailedAttempt(DeliveryStatusReason.PROVIDER_REJECTED, 1);
+            logOutcome(delivery, MaskedEmailAddress.of(recipient.get().address()));
             return;
         } catch (RuntimeException failure) {
             log.warn("El proveedor de mail fallo dedup={} causa={}", delivery.getDedupKey(), failure.getClass().getSimpleName());
