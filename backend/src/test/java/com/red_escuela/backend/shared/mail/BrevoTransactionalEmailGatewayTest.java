@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -31,6 +32,7 @@ class BrevoTransactionalEmailGatewayTest {
     private final AtomicInteger requestCount = new AtomicInteger();
     private final CopyOnWriteArrayList<String> requestBodies = new CopyOnWriteArrayList<>();
     private final CopyOnWriteArrayList<String> apiKeyHeaders = new CopyOnWriteArrayList<>();
+    private final CountDownLatch releaseStalledRequests = new CountDownLatch(1);
     private volatile Consumer<HttpExchange> handler;
 
     @BeforeEach
@@ -48,6 +50,7 @@ class BrevoTransactionalEmailGatewayTest {
 
     @AfterEach
     void stopServer() {
+        releaseStalledRequests.countDown();
         server.stop(0);
     }
 
@@ -116,7 +119,7 @@ class BrevoTransactionalEmailGatewayTest {
     void timeoutIsARetryableDeliveryFailure() {
         handler = exchange -> {
             try {
-                Thread.sleep(1500);
+                releaseStalledRequests.await();
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
             }
