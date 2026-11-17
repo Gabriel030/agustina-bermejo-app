@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { InstitutionalNoticesCheckbox } from '@/features/identity/consent/InstitutionalNoticesCheckbox';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/api/client';
 import { describeError } from '@/api/describeError';
@@ -40,7 +41,7 @@ export function Registrarse() {
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianRelationship, setGuardianRelationship] = useState('');
   const [acceptedLegal, setAcceptedLegal] = useState(false);
-  const [acceptedNewsletter, setAcceptedNewsletter] = useState(false);
+  const [acceptedInstitutionalNotices, setAcceptedInstitutionalNotices] = useState(false);
   const [legalError, setLegalError] = useState(null);
   const [institutionId, setInstitutionId] = useState(null);
   const [errorInstitucion, setErrorInstitucion] = useState(false);
@@ -106,7 +107,7 @@ export function Registrarse() {
         birthDate,
         acceptedTerms: acceptedLegal,
         acceptedPrivacy: acceptedLegal,
-        acceptedNewsletter,
+        acceptedInstitutionalNotices,
         ...(isMinor && { guardianName, guardianEmail, guardianRelationship }),
       });
     } catch (err) {
@@ -299,18 +300,12 @@ export function Registrarse() {
             </p>
           </div>
 
-          <div className="flex items-start gap-3 rounded-lg border border-border p-3">
-            <Checkbox
-              id="accepted-newsletter"
-              checked={acceptedNewsletter}
-              onCheckedChange={(checked) => setAcceptedNewsletter(checked === true)}
-              disabled={enviando}
-              className="mt-0.5"
-            />
-            <label htmlFor="accepted-newsletter" className="text-size-13 text-ink">
-              Quiero recibir novedades del instituto por correo (opcional).
-            </label>
-          </div>
+          <InstitutionalNoticesCheckbox
+            id="accepted-institutional-notices"
+            checked={acceptedInstitutionalNotices}
+            onCheckedChange={setAcceptedInstitutionalNotices}
+            disabled={enviando}
+          />
 
           {errorInstitucion && (
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
@@ -322,7 +317,7 @@ export function Registrarse() {
           <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <Button
               type="submit"
-              disabled={enviando || !institutionId}
+              disabled={enviando || !institutionId || !acceptedInstitutionalNotices}
               variant="gradient"
               className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
             >

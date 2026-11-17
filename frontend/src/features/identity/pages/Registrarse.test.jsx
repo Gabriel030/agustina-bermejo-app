@@ -61,6 +61,7 @@ describe('Registrarse', () => {
     renderRegistrarse();
 
     await fillBasicData(user, { passwords: 'Distinta123' });
+    await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
     expect(await screen.findByText('Las contraseñas no coinciden.')).toBeInTheDocument();
@@ -73,6 +74,7 @@ describe('Registrarse', () => {
 
     await fillBasicData(user);
     await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
+    await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
     expect(await screen.findByText('Ese email ya está registrado.')).toBeInTheDocument();
@@ -84,6 +86,7 @@ describe('Registrarse', () => {
     renderRegistrarse();
 
     await fillBasicData(user);
+    await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
     expect(await screen.findByText('Tenés que aceptar los términos y la política de privacidad.')).toBeInTheDocument();
@@ -103,7 +106,7 @@ describe('Registrarse', () => {
     expect(screen.getByRole('checkbox', { name: /acepto los términos/i }).closest('div').querySelector('label')).not.toContainElement(terms);
   });
 
-  it('sendsAcceptanceBirthDateAndNewsletterForAnAdult', async () => {
+  it('sendsAcceptanceBirthDateAndInstitutionalNoticesForAnAdult', async () => {
     const captured = captureRegisterBody();
     const user = userEvent.setup();
     renderRegistrarse();
@@ -111,7 +114,7 @@ describe('Registrarse', () => {
     await fillBasicData(user, { birthDate: '1990-05-14' });
     expect(screen.queryByLabelText('Nombre del responsable')).not.toBeInTheDocument();
     await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
-    await user.click(screen.getByRole('checkbox', { name: /novedades/i }));
+    await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
     await screen.findByRole('button', { name: /crear cuenta/i });
@@ -120,15 +123,22 @@ describe('Registrarse', () => {
       birthDate: '1990-05-14',
       acceptedTerms: true,
       acceptedPrivacy: true,
-      acceptedNewsletter: true,
+      acceptedInstitutionalNotices: true,
     });
     expect(captured.body).not.toHaveProperty('guardianName');
   });
 
-  it('keepsNewsletterUncheckedByDefault', async () => {
+  it('consent checkbox starts unchecked and blocks account creation until checked', async () => {
+    const user = userEvent.setup();
     renderRegistrarse();
 
-    expect(screen.getByRole('checkbox', { name: /novedades/i })).not.toBeChecked();
+    const notices = screen.getByRole('checkbox', { name: /avisos institucionales/i });
+    expect(notices).not.toBeChecked();
+    expect(screen.getByRole('button', { name: /crear cuenta/i })).toBeDisabled();
+    expect(screen.getByText('Texto provisional, pendiente de validación.')).toBeInTheDocument();
+
+    await user.click(notices);
+    expect(screen.getByRole('button', { name: /crear cuenta/i })).toBeEnabled();
   });
 
   it('asksForGuardianDataOnlyWhenTheBirthDateMakesThePersonAMinor', async () => {
@@ -141,6 +151,7 @@ describe('Registrarse', () => {
     await user.type(screen.getByLabelText('Correo del responsable'), 'marcela@example.com');
     await user.type(screen.getByLabelText('Vínculo con el responsable'), 'Madre');
     await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
+    await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
     await vi.waitFor(() => expect(captured.body).toBeDefined());
@@ -148,7 +159,7 @@ describe('Registrarse', () => {
       guardianName: 'Marcela Ramírez',
       guardianEmail: 'marcela@example.com',
       guardianRelationship: 'Madre',
-      acceptedNewsletter: false,
+      acceptedInstitutionalNotices: true,
     });
   });
 
@@ -174,6 +185,7 @@ describe('Registrarse', () => {
 
     await fillBasicData(user);
     await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
+    await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
     expect(await screen.findByText(message)).toBeInTheDocument();
