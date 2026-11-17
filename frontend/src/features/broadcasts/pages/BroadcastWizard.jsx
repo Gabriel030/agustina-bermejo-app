@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CheckCircle2 } from 'lucide-react';
+import { Notice } from '@/components/Notice';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Stepper } from '@/components/Stepper';
@@ -12,8 +13,8 @@ import { ChannelStep } from '../components/ChannelStep';
 import { AudienceStep } from '../components/AudienceStep';
 import { MessageStep } from '../components/MessageStep';
 import { ReviewStep } from '../components/ReviewStep';
-import { useAudiencePreview, useCreateBroadcast, useSegmentCatalog } from '../hooks/useBroadcasts';
-import { INITIAL_WIZARD_STATE, clearDraft, loadDraft, saveDraft, toSegmentSpec, validateMessage } from '../lib/broadcastWizard';
+import { useAudiencePreview, useConfirmBroadcast, useCreateBroadcast, useSegmentCatalog } from '../hooks/useBroadcasts';
+import { INITIAL_WIZARD_STATE, clearDraft, estimateSendingDays, loadDraft, saveDraft, toSegmentSpec, validateMessage } from '../lib/broadcastWizard';
 
 const STEPS = [
   { key: 1, label: 'Canal y categoría' },
@@ -30,8 +31,12 @@ export function BroadcastWizard() {
   const [visited, setVisited] = useState([1]);
   const [leaving, setLeaving] = useState(false);
   const [created, setCreated] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [draftId, setDraftId] = useState(null);
+  const [emptyAudience, setEmptyAudience] = useState(false);
   const { data: catalog = [] } = useSegmentCatalog();
   const create = useCreateBroadcast();
+  const confirm = useConfirmBroadcast();
   const catalogKeys = useMemo(() => catalog.map((entry) => entry.key), [catalog]);
   const segmentSpec = useMemo(() => toSegmentSpec(state.criteria, catalogKeys), [state.criteria, catalogKeys]);
   const previewParams = {
@@ -64,22 +69,40 @@ export function BroadcastWizard() {
     patch({ step });
   }
 
-  async function saveBroadcast() {
+  async function confirmBroadcast() {
     try {
-      await create.mutateAsync({
-        name: state.name.trim(),
-        channel: state.channel,
-        category: 'INSTITUTIONAL',
-        segmentSpec,
-        templateId: state.templateId,
-        subject: state.subject,
-        bodyText: state.bodyText,
-      });
+      let id = draftId;
+      if (id == null) {
+        const draft = await create.mutateAsync({
+          name: state.name.trim(),
+          channel: state.channel,
+          category: 'INSTITUTIONAL',
+          segmentSpec,
+          templateId: state.templateId,
+          subject: state.subject,
+          bodyText: state.bodyText,
+        });
+        id = draft.id;
+        setDraftId(id);
+      }
+      await confirm.mutateAsync(id);
       clearDraft(userId);
+      setConfirming(false);
       setCreated(true);
     } catch (error) {
-      toast.error(error.message ?? 'No pudimos guardar el envío. Probá de nuevo.');
+      setConfirming(false);
+      if (error.code === 'EMPTY_AUDIENCE') {
+        setEmptyAudience(true);
+        return;
+      }
+      toast.error(error.message ?? 'No pudimos confirmar el envío. Probá de nuevo.');
     }
+  }
+
+  function chooseAnotherSegment() {
+    setEmptyAudience(false);
+    setDraftId(null);
+    goTo(2);
   }
 
   if (created) {
@@ -87,8 +110,8 @@ export function BroadcastWizard() {
       <PageContainer>
         <GlassCard className="flex flex-col items-center gap-3 p-8 text-center">
           <CheckCircle2 size={40} className="text-success" />
-          <h1 className="font-heading text-2xl font-bold text-ink">Listo para enviar</h1>
-          <p className="text-size-13 text-ink-soft">Guardamos el envío como borrador. El envío se completa en el próximo paso del proceso.</p>
+          <h1 className="font-heading text-2xl font-bold text-ink">Envío confirmado</h1>
+          <p className="text-size-13 text-ink-soft">Los correos empiezan a salir hoy. Podés cancelar los pendientes desde el detalle del envío.</p>
           <Button variant="outline" onClick={() => navigate('/')}>
             Volver al inicio
           </Button>
@@ -121,6 +144,11 @@ export function BroadcastWizard() {
       )}
       {state.step === 3 && <MessageStep state={state} onChange={patch} preview={preview} onExcludeMissing={() => patch({ excludeMissingVariables: true })} />}
       {state.step === 4 && <ReviewStep state={state} preview={preview} />}
+      {emptyAudience && (
+        <Notice tone="danger" title="No hay destinatarios elegibles.">
+          Todas las personas del segmento están excluidas. Elegí otro segmento para continuar.
+        </Notice>
+      )}
 
       <div className="flex flex-wrap items-center justify-end gap-2.5">
         <Button type="button" variant="outline" className="mr-auto" onClick={() => setLeaving(true)}>
@@ -136,11 +164,30 @@ export function BroadcastWizard() {
             Siguiente
           </Button>
         ) : (
-          <Button type="button" variant="gradient" loading={create.isPending} onClick={saveBroadcast}>
-            Dejar listo para enviar
+          <Button type="button" variant="gradient" onClick={emptyAudience ? chooseAnotherSegment : () => setConfirming(true)}>
+            {emptyAudience ? 'Elegir otro segmento' : 'Confirmar envío'}
           </Button>
         )}
       </div>
+
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar envío</DialogTitle>
+            <DialogDescription>
+              {`Se enviará a ${preview?.included ?? 0} personas en ${estimateSendingDays(preview?.included ?? 0)} días. Esta acción no se puede deshacer, pero podés cancelar los pendientes.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" autoFocus onClick={() => setConfirming(false)}>
+              Volver
+            </Button>
+            <Button variant="gradient" loading={create.isPending || confirm.isPending} onClick={confirmBroadcast}>
+              Enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={leaving} onOpenChange={setLeaving}>
         <DialogContent>

@@ -113,3 +113,9 @@ export function clearDraft(userId) {
     return;
   }
 }
+
+export const DAILY_EMAIL_CAPACITY = 200;
+
+export function estimateSendingDays(recipients) {
+  return Math.max(1, Math.ceil(recipients / DAILY_EMAIL_CAPACITY));
+}

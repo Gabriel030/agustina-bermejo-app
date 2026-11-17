@@ -31,6 +31,12 @@ export function useCreateBroadcast() {
   });
 }
 
+export function useConfirmBroadcast() {
+  return useMutation({
+    mutationFn: (id) => apiFetch(`/broadcasts/${id}/confirm`, { method: 'POST' }),
+  });
+}
+
 export function useMessageTemplates(channel) {
   return useQuery({
     queryKey: ['message-templates', { channel }],
