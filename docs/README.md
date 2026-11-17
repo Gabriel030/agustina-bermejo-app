@@ -28,6 +28,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [progress/920-2.md](cell/progress/920-2.md) | Estado de la subtarea 920#2 (puerto de canales y política de consentimiento) | vigente |
 | [progress/928-1.md](cell/progress/928-1.md) | Estado de la subtarea 928#1 (precarga por lote en la validación de importación) | vigente |
 | [progress/928-2.md](cell/progress/928-2.md) | Estado de la subtarea 928#2 (precarga por chunk en el commit de importación) | vigente |
+| [progress/932-1.md](cell/progress/932-1.md) | Estado de la subtarea 932#1 (plantillas de mensaje con variables) | vigente |
 
 ## Release (`docs/release/`)
 

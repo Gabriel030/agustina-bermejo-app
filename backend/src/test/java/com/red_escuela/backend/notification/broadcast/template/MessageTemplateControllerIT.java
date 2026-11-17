@@ -163,6 +163,17 @@ class MessageTemplateControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void renderPreviewRejectsAPersonThatDoesNotExist() throws Exception {
+        Person director = createPerson("tpl-preview-ghost", "DIRECTOR");
+
+        mockMvc.perform(post("/message-templates/render-preview").header("Authorization", bearer(director))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"channel\":\"EMAIL\",\"subject\":\"s\",\"bodyText\":\"{{nombre}}\",\"personId\":999999999}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_PERSON_NOT_FOUND"));
+    }
+
+    @Test
     void renderPreviewReportsUnknownAndMissingVariables() throws Exception {
         Person director = createPerson("tpl-preview-errors", "DIRECTOR");
 

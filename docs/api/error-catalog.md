@@ -592,6 +592,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
+| `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
 | `UNKNOWN_TEMPLATE_VARIABLE` | no | `UnknownTemplateVariableException` | notification |
 
 ### HTTP 429

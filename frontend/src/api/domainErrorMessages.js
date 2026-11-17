@@ -10,6 +10,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
   CHANNEL_NOT_AVAILABLE: 'El canal de envío no está disponible.',
   MISSING_REQUIRED_VARIABLE: 'Falta el dato de una variable de la plantilla para esa persona.',
+  TEMPLATE_PERSON_NOT_FOUND: 'No encontramos a la persona elegida para la vista previa.',
   TEMPLATE_SUBJECT_REQUIRED: 'Las plantillas de correo necesitan un asunto.',
   UNKNOWN_TEMPLATE_VARIABLE: 'La plantilla usa una variable que no existe.',
   MESSAGE_TEMPLATE_NOT_FOUND: 'No encontramos esa plantilla.',

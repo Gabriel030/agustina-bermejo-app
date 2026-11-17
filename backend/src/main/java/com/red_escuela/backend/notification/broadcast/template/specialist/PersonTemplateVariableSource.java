@@ -3,6 +3,7 @@ package com.red_escuela.backend.notification.broadcast.template.specialist;
 import com.red_escuela.backend.identity.api.PersonTemplateFacts;
 import com.red_escuela.backend.identity.api.PersonTemplateFactsFinder;
 import com.red_escuela.backend.notification.broadcast.template.domain.TemplateVariable;
+import com.red_escuela.backend.notification.broadcast.template.exception.TemplatePersonNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +26,8 @@ public class PersonTemplateVariableSource implements TemplateVariableSource {
 
     @Override
     public Map<TemplateVariable, String> valuesFor(Long personId) {
-        PersonTemplateFacts facts = factsFinder.findTemplateFacts(personId);
+        PersonTemplateFacts facts = factsFinder.findTemplateFacts(personId)
+                .orElseThrow(() -> new TemplatePersonNotFoundException(personId));
         Map<TemplateVariable, String> values = new EnumMap<>(TemplateVariable.class);
         values.put(TemplateVariable.FIRST_NAME, facts.firstName());
         values.put(TemplateVariable.LAST_NAME, facts.lastName());
