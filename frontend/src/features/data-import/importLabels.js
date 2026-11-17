@@ -95,6 +95,7 @@ export const ENTITY_TYPE_LABELS = {
   SECTION_ENROLLMENTS: 'Cursadas',
   GRADE_ITEMS: 'Notas por examen y parcial',
   ATTENDANCES: 'Asistencia por clase',
+  GRADUATIONS: 'Egresos',
 };
 
 export function entityTypeLabel(entityType) {

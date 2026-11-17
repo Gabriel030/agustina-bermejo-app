@@ -80,32 +80,30 @@ public class TeacherGradeGridBuilder {
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForProgramSection(Long sectionId, Long instructorId) {
-        sectionFinder.requireExists(SectionKind.PROGRAM, sectionId);
+        SubjectSection section = sectionFinder.findProgramSectionWithSchemeAndTerms(sectionId);
         sectionTeachingFinder.requireTeaches(SectionKind.PROGRAM, sectionId, instructorId);
-        return programGrid(sectionId);
+        return programGrid(section);
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForProgramSectionAsStaff(Long sectionId) {
-        sectionFinder.requireExists(SectionKind.PROGRAM, sectionId);
-        return programGrid(sectionId);
+        return programGrid(sectionFinder.findProgramSectionWithSchemeAndTerms(sectionId));
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForCourseSection(Long sectionId, Long instructorId) {
-        sectionFinder.requireExists(SectionKind.COURSE, sectionId);
+        CourseSubjectSection section = sectionFinder.findCourseSectionWithSchemeAndTerms(sectionId);
         sectionTeachingFinder.requireTeaches(SectionKind.COURSE, sectionId, instructorId);
-        return courseGrid(sectionId);
+        return courseGrid(section);
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForCourseSectionAsStaff(Long sectionId) {
-        sectionFinder.requireExists(SectionKind.COURSE, sectionId);
-        return courseGrid(sectionId);
+        return courseGrid(sectionFinder.findCourseSectionWithSchemeAndTerms(sectionId));
     }
 
-    private TeacherGradeGridResponse programGrid(Long sectionId) {
-        SubjectSection section = sectionFinder.findProgramSectionEntity(sectionId);
+    private TeacherGradeGridResponse programGrid(SubjectSection section) {
+        Long sectionId = section.getId();
         List<SubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findMembersWithStudentInProgramSection(sectionId);
         List<Long> enrollmentIds = enrollments.stream().map(SubjectSectionEnrollment::getId).toList();
         Map<Long, List<GradeItem>> itemsByEnrollment = groupByEnrollment(
@@ -124,8 +122,8 @@ public class TeacherGradeGridBuilder {
         return response(SectionKind.PROGRAM, sectionId, section.getEvaluationScheme(), config.orElse(null), students, publications);
     }
 
-    private TeacherGradeGridResponse courseGrid(Long sectionId) {
-        CourseSubjectSection section = sectionFinder.findCourseSectionEntity(sectionId);
+    private TeacherGradeGridResponse courseGrid(CourseSubjectSection section) {
+        Long sectionId = section.getId();
         List<CourseSubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findMembersWithStudentInCourseSection(sectionId);
         List<Long> enrollmentIds = enrollments.stream().map(CourseSubjectSectionEnrollment::getId).toList();
         Map<Long, List<GradeItem>> itemsByEnrollment = groupByEnrollment(

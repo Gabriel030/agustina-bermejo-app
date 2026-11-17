@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarDays, Plus } from 'lucide-react';
+import { CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
@@ -28,7 +28,11 @@ function CourseCard({ enrollment }) {
   const enrolledOn = formatEnrollmentDate(enrollment.enrollmentDate);
 
   return (
-    <GlassCard className="flex flex-col gap-4 p-5">
+    <Link
+      to={`/alumno/mis-cursos/${enrollment.id}`}
+      className="block rounded-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+    >
+    <GlassCard interactive className="flex h-full flex-col gap-4 p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex size-10 items-center justify-center rounded-xl bg-accent-soft text-brand">
           <CalendarDays className="size-5" aria-hidden="true" />
@@ -40,7 +44,11 @@ function CourseCard({ enrollment }) {
         {enrolledOn && <div className="mt-0.5 text-xs text-ink-faint">Inscripto el {enrolledOn}</div>}
       </div>
       {enrollment.progressPercent != null && <ProgressBar label="Progreso" value={enrollment.progressPercent} />}
+      <span className="flex items-center justify-end gap-1 text-size-13 font-semibold text-brand">
+        Ver detalle <ChevronRight className="size-4" aria-hidden="true" />
+      </span>
     </GlassCard>
+    </Link>
   );
 }
 

@@ -73,4 +73,32 @@ describe('InscripcionMaterias', () => {
     expect(await screen.findByRole('button', { name: /Comisión A/ })).toBeInTheDocument();
     expect(screen.queryByText('No hay comisiones abiertas')).not.toBeInTheDocument();
   });
+
+  it('shows the unpaid fee notice without the pay button when billing is off', async () => {
+    useStudentWithOpenSection();
+    server.use(
+      http.get(`${API}/me/modules`, () => HttpResponse.json({ billing: { mode: 'OFF' }, fiscalInvoicing: { enabled: false }, analytics: { enabled: false }, paymentMethods: [], billingNotifications: { enabled: false }, externalBilling: { enabled: false } })),
+      http.get(`${API}/me/program-enrollments/:id/enrollment-fee-status`, () =>
+        HttpResponse.json([{ templateId: 1, periodFrom: '2026-03-01', periodTo: '2026-12-01', satisfied: false, slot: 1, slotCount: 1, status: 'PENDING', invoiceId: 55, remainingBalance: { amount: '1000.00', currency: 'ARS' }, dueDate: '2026-12-01' }]),
+      ),
+    );
+    renderWithProviders(<InscripcionMaterias carreraId={7} onCerrar={() => {}} />);
+    await userEvent.setup().click(await screen.findByRole('button', { name: /Modelado I/ }));
+
+    expect(await screen.findByText(/Para inscribirte tenés que pagar la matrícula/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
+  });
+
+  it('shows the pay button for an unpaid fee when billing is on', async () => {
+    useStudentWithOpenSection();
+    server.use(
+      http.get(`${API}/me/program-enrollments/:id/enrollment-fee-status`, () =>
+        HttpResponse.json([{ templateId: 1, periodFrom: '2026-03-01', periodTo: '2026-12-01', satisfied: false, slot: 1, slotCount: 1, status: 'PENDING', invoiceId: 55, remainingBalance: { amount: '1000.00', currency: 'ARS' }, dueDate: '2026-12-01' }]),
+      ),
+    );
+    renderWithProviders(<InscripcionMaterias carreraId={7} onCerrar={() => {}} />);
+    await userEvent.setup().click(await screen.findByRole('button', { name: /Modelado I/ }));
+
+    expect(await screen.findByRole('button', { name: 'Pagar matrícula' })).toBeInTheDocument();
+  });
 });

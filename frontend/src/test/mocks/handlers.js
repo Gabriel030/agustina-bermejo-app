@@ -234,6 +234,17 @@ export const handlers = [
   ),
   http.get(`${API}/me/teaching-sections`, () => HttpResponse.json([])),
   http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+  http.get(`${API}/me/course-enrollments/:id`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id),
+      courseId: 1,
+      courseName: 'Curso de prueba',
+      status: 'IN_PROGRESS',
+      enrollmentDate: '2026-03-01T10:00:00',
+      completionDate: null,
+      subjects: [],
+    }),
+  ),
   http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
   http.get(`${API}/students/:id/documents`, () => HttpResponse.json([])),
   http.get(`${API}/terms`, () => HttpResponse.json([])),

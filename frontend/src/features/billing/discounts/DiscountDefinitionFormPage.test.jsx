@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -60,11 +60,16 @@ async function pick(user, label, option) {
 
 describe('DiscountDefinitionFormPage', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-01T12:00:00Z') });
     auth.roles = ['DIRECTOR'];
     toastMock.success.mockClear();
     toastMock.error.mockClear();
     mockOffers();
     mockValidation();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('lets the director create an annual upfront discount directly and returns to the list', async () => {

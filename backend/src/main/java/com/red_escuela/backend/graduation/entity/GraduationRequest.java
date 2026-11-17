@@ -51,6 +51,12 @@ public class GraduationRequest {
     @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;
 
+    @Column(name = "registry_number", length = 20)
+    private String registryNumber;
+
+    @Column(name = "legacy_title_number", length = 50)
+    private String legacyTitleNumber;
+
     public void requireAwaitingDirectorDecision() {
         if (status != GraduationRequestStatus.ADMIN_VERIFIED) {
             throw new InvalidGraduationRequestStateException(id);
