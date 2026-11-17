@@ -37,6 +37,7 @@ public class WaitlistQueueReader {
     private WaitlistEntryResponse entryOf(int position, WaitlistCandidate candidate, WaitlistQueueSnapshot snapshot) {
         return new WaitlistEntryResponse(position, candidate.enrollmentId(),
                 new WaitlistEntryResponse.WaitlistStudent(candidate.studentId(), candidate.fullName(), candidate.documentNumber()),
-                candidate.joinedAt(), eligibility.evaluate(candidate), snapshot.nextExpiry());
+                candidate.joinedAt(), eligibility.evaluate(candidate), candidate.prioritizedAt(),
+                candidate.prioritizedAt() == null ? null : position, snapshot.nextExpiry());
     }
 }

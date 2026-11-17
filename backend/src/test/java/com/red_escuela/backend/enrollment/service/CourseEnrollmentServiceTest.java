@@ -27,18 +27,31 @@ import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import com.red_escuela.backend.enrollment.dto.WaitlistVerdict;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
+    @MockitoBean
+    private WaitlistCandidateEligibility waitlistCandidateEligibility;
+
+    @BeforeEach
+    void approveEveryWaitlistCandidate() {
+        when(waitlistCandidateEligibility.evaluate(any())).thenReturn(WaitlistVerdict.passing());
+    }
+
     @Autowired
     private CourseEnrollmentService courseEnrollmentService;
 

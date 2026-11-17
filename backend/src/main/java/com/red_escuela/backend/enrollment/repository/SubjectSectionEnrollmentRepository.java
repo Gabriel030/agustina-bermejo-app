@@ -127,11 +127,11 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     @Query("""
             select e.id as enrollmentId, st.id as studentId, concat(p.name, ' ', p.lastname) as fullName, p.dni as documentNumber,
-                   e.enrolledAt as joinedAt, e.programEnrollment.id as programEnrollmentId, s.subject.id as subjectId,
+                   e.enrolledAt as joinedAt, e.waitlistPrioritizedAt as prioritizedAt, e.programEnrollment.id as programEnrollmentId, s.subject.id as subjectId,
                    s.id as sectionId, s.term.id as termId
             from SubjectSectionEnrollment e join e.student st join st.person p join e.subjectSection s
             where s.id = :sectionId and e.status = :waiting
-            order by e.enrolledAt asc, e.id asc
+            order by e.waitlistPrioritizedAt asc nulls last, e.enrolledAt asc, e.id asc
             """)
     List<ProgramWaitlistEntryRow> findWaitlistEntryRows(@Param("sectionId") Long sectionId, @Param("waiting") EnrollmentStatus waiting);
 

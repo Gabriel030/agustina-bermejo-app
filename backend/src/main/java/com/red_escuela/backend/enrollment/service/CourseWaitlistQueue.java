@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
 import com.red_escuela.backend.enrollment.dto.WaitlistKind;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.CourseWaitlistQueueRow;
@@ -15,15 +17,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-@Transactional(readOnly = true)
+@Transactional
 public class CourseWaitlistQueue implements WaitlistQueue {
 
     private static final List<EnrollmentStatus> OCCUPYING = List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
 
     private final CourseEnrollmentRepository repository;
+    private final CourseCatalogFinder courseCatalogFinder;
 
-    public CourseWaitlistQueue(CourseEnrollmentRepository repository) {
+    public CourseWaitlistQueue(CourseEnrollmentRepository repository, CourseCatalogFinder courseCatalogFinder) {
         this.repository = repository;
+        this.courseCatalogFinder = courseCatalogFinder;
     }
 
     @Override
@@ -49,7 +53,7 @@ public class CourseWaitlistQueue implements WaitlistQueue {
     public List<WaitlistCandidate> findWaitingCandidates(Long queueId) {
         return repository.findWaitlistEntryRows(queueId, EnrollmentStatus.WAITLISTED).stream()
                 .map(row -> new WaitlistCandidate(kind(), row.getEnrollmentId(), row.getStudentId(), row.getFullName(),
-                        row.getDocumentNumber(), row.getJoinedAt(), null, null, null, null))
+                        row.getDocumentNumber(), row.getJoinedAt(), null, null, null, null, row.getPrioritizedAt()))
                 .toList();
     }
 
@@ -64,5 +68,22 @@ public class CourseWaitlistQueue implements WaitlistQueue {
             return null;
         }
         return row.getTermStart().toLocalDate().plusDays(row.getWaitlistDeadlineOffsetDays());
+    }
+
+    @Override
+    public void lock(Long queueId) {
+        courseCatalogFinder.lockCourse(queueId);
+    }
+
+    @Override
+    public boolean isOpenForPromotion(Long queueId) {
+        return true;
+    }
+
+    @Override
+    public void promote(Long enrollmentId) {
+        CourseEnrollment next = repository.findById(enrollmentId).orElseThrow();
+        next.setStatus(EnrollmentStatus.ENROLLED);
+        repository.save(next);
     }
 }

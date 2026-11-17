@@ -1,4 +1,4 @@
-import json, subprocess, threading, time, sys
+import os, json, subprocess, threading, time, sys
 import measure as m
 
 def active_conns():
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     time.sleep(8)
     a, _ = m.login("perf1")
     time.sleep(8)
-    t, _ = m.login("perf662")
+    t, _ = m.login(os.environ.get("PERF_TEACHER", "perf662"))
     m.psql("select pg_stat_statements_reset()")
     cases = [(d, "/financial-dashboard"), (d, "/financial-dashboard/debtors"), (d, "/students"), (a, "/me/section-enrollments"), (t, "/program-sections/14011/grade-grid"), (t, "/program-sections/14011/attendance/absence-report"), (a, "/me/program-enrollments/20001/invoices")]
     out = []
@@ -41,4 +41,4 @@ if __name__ == "__main__":
         threads, per = (4, 5) if path in ("/financial-dashboard/debtors", "/students") else (20, 10)
         out.append(run(token, path, threads, per))
         print(json.dumps(out[-1]), flush=True)
-    json.dump(out, open("/private/tmp/claude-501/load.json", "w"), indent=1)
+    json.dump(out, open("perf/out/load.json", "w"), indent=1)
