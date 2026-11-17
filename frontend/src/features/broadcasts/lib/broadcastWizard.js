@@ -13,8 +13,8 @@ export const EXCLUSION_REASON_LABELS = {
 
 export const ENROLLMENT_STATUS_LABELS = {
   STUDYING: 'Cursando',
-  REGULAR: 'Regular',
-  FREE: 'Libre',
+  REGULAR: 'Cursada regular',
+  FREE: 'Libre por inasistencias',
   GRADUATED: 'Egresado',
   WITHDRAWN: 'De baja',
 };
