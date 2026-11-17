@@ -1953,6 +1953,17 @@
         "required" : [ "entityType", "naturalKey", "reason" ],
         "type" : "object"
       },
+      "CancelEmailChangeRequest" : {
+        "properties" : {
+          "token" : {
+            "maxLength" : 128,
+            "minLength" : 32,
+            "type" : "string"
+          }
+        },
+        "required" : [ "token" ],
+        "type" : "object"
+      },
       "CancelExamBoardRequest" : {
         "properties" : {
           "reason" : {
@@ -23774,14 +23785,16 @@
     "/cancel-email-change" : {
       "post" : {
         "operationId" : "CancelEmailChange_cancelEmailChange",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "token",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelEmailChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "description" : "OK"

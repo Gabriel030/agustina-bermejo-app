@@ -1,8 +1,10 @@
 package com.red_escuela.backend.identity.controller;
 
+import com.red_escuela.backend.identity.dto.CancelEmailChangeRequest;
 import com.red_escuela.backend.identity.usecase.emailverification.CancelEmailChangeUseCase;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -15,7 +17,7 @@ public class CancelEmailChangeController {
     }
 
     @PostMapping("/cancel-email-change")
-    public void cancelEmailChange(@RequestParam String token) {
-        cancelEmailChangeUseCase.cancelFromPreviousEmail(token);
+    public void cancelEmailChange(@Valid @RequestBody CancelEmailChangeRequest request) {
+        cancelEmailChangeUseCase.cancelFromPreviousEmail(request.token());
     }
 }
