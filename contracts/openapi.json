@@ -3725,7 +3725,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "bodyText", "category", "channel", "name", "segmentSpec", "subject", "templateId" ],
+        "required" : [ "category", "channel", "name", "segmentSpec" ],
         "type" : "object"
       },
       "CreateClassroomRequest" : {

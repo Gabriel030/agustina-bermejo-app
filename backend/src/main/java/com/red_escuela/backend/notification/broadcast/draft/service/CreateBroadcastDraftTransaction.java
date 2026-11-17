@@ -5,6 +5,8 @@ import com.red_escuela.backend.notification.broadcast.draft.dto.BroadcastDraftRe
 import com.red_escuela.backend.notification.broadcast.draft.dto.CreateBroadcastDraftRequest;
 import com.red_escuela.backend.notification.broadcast.draft.entity.Broadcast;
 import com.red_escuela.backend.notification.broadcast.draft.exception.BroadcastBodyRequiredException;
+import com.red_escuela.backend.notification.broadcast.draft.exception.BroadcastContentWithTemplateException;
+import com.red_escuela.backend.notification.broadcast.draft.exception.BroadcastTemplateMismatchException;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.draft.repository.BroadcastRepository;
 import com.red_escuela.backend.notification.broadcast.template.entity.MessageTemplate;
@@ -36,8 +38,14 @@ public class CreateBroadcastDraftTransaction {
         String subject = request.subject();
         String body = request.bodyText();
         if (request.templateId() != null) {
+            if (request.subject() != null || request.bodyText() != null) {
+                throw new BroadcastContentWithTemplateException();
+            }
             MessageTemplate template = templateRepository.findByIdAndActiveTrue(request.templateId())
                     .orElseThrow(() -> new MessageTemplateNotFoundException(request.templateId()));
+            if (template.getChannel() != request.channel() || template.getCategory() != request.category()) {
+                throw new BroadcastTemplateMismatchException();
+            }
             subject = template.getSubject();
             body = template.getBodyText();
         }

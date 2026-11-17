@@ -63,6 +63,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
 | `BIRTH_DATE_REQUIRED` | no | `BirthDateRequiredException` | identity |
 | `BROADCAST_BODY_REQUIRED` | no | `BroadcastBodyRequiredException` | notification |
+| `BROADCAST_CONTENT_WITH_TEMPLATE` | no | `BroadcastContentWithTemplateException` | notification |
+| `BROADCAST_TEMPLATE_MISMATCH` | no | `BroadcastTemplateMismatchException` | notification |
 | `CANCELLATION_REASON_REQUIRED` | no | `CancellationReasonRequiredException` | billing |
 | `CASH_PAYMENT_AMOUNT_INVALID` | no | `CashPaymentAmountInvalidException` | billing |
 | `CASH_PAYMENT_BACKDATE_REASON_INVALID` | no | `CashPaymentBackdateReasonInvalidException` | billing |

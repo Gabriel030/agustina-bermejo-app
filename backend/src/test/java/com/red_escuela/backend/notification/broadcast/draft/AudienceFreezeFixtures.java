@@ -12,6 +12,11 @@ final class AudienceFreezeFixtures {
     }
 
     static Person person(EntityManager entityManager, RoleRepository roleRepository, String username, boolean emailVerified, String... roles) {
+        return personWithPhone(entityManager, roleRepository, username, emailVerified, null, roles);
+    }
+
+    static Person personWithPhone(EntityManager entityManager, RoleRepository roleRepository, String username, boolean emailVerified,
+                                  String phoneNumber, String... roles) {
         Address address = new Address();
         entityManager.persist(address);
         Person person = new Person();
@@ -20,6 +25,7 @@ final class AudienceFreezeFixtures {
         person.setLastname(username);
         person.setEmail(username + "@example.com");
         person.setEmailVerified(emailVerified);
+        person.setPhoneNumber(phoneNumber);
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
         for (String role : roles) {

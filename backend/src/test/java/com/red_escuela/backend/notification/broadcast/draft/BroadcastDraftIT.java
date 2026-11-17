@@ -88,7 +88,93 @@ class BroadcastDraftIT extends AbstractIntegrationTest {
 
         mockMvc.perform(post("/broadcasts").header("Authorization", bearer(director))
                         .contentType(MediaType.APPLICATION_JSON).content(body("EMAIL", ",\"bodyText\":\"Texto\"")))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_SUBJECT_REQUIRED"));
+    }
+
+    @Test
+    void whatsappDraftWithoutSubjectIsCreated() throws Exception {
+        Person director = AudienceFreezeFixtures.person(entityManager, roleRepository, "drf-wa", true, "DIRECTOR");
+
+        mockMvc.perform(post("/broadcasts").header("Authorization", bearer(director))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("WHATSAPP_LINK", ",\"bodyText\":\"Texto\"")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+    }
+
+    @Test
+    void draftWithoutTemplateAndWithoutBodyIsRejected() throws Exception {
+        Person director = AudienceFreezeFixtures.person(entityManager, roleRepository, "drf-nobody", true, "DIRECTOR");
+
+        mockMvc.perform(post("/broadcasts").header("Authorization", bearer(director))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("EMAIL", ",\"subject\":\"Hola\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BROADCAST_BODY_REQUIRED"));
+    }
+
+    @Test
+    void unknownOrInactiveTemplateIsNotFound() throws Exception {
+        Person director = AudienceFreezeFixtures.person(entityManager, roleRepository, "drf-notpl", true, "DIRECTOR");
+        Long inactiveId = insertTemplate(director, "INSTITUTIONAL", "EMAIL", false);
+
+        for (Long templateId : new Long[]{inactiveId, inactiveId + 1000}) {
+            mockMvc.perform(post("/broadcasts").header("Authorization", bearer(director))
+                            .contentType(MediaType.APPLICATION_JSON).content(body("EMAIL", ",\"templateId\":" + templateId)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("MESSAGE_TEMPLATE_NOT_FOUND"));
+        }
+    }
+
+    @Test
+    void templateWithDifferentChannelIsRejected() throws Exception {
+        Person director = AudienceFreezeFixtures.person(entityManager, roleRepository, "drf-tpl-channel", true, "DIRECTOR");
+        Long templateId = insertTemplate(director, "INSTITUTIONAL", "WHATSAPP_LINK", true);
+
+        mockMvc.perform(post("/broadcasts").header("Authorization", bearer(director))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("EMAIL", ",\"templateId\":" + templateId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BROADCAST_TEMPLATE_MISMATCH"));
+    }
+
+    @Test
+    void templateWithDifferentCategoryIsRejected() throws Exception {
+        Person director = AudienceFreezeFixtures.person(entityManager, roleRepository, "drf-tpl-category", true, "DIRECTOR");
+        Long templateId = insertTemplate(director, "PROMOTIONAL", "EMAIL", true);
+
+        mockMvc.perform(post("/broadcasts").header("Authorization", bearer(director))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("EMAIL", ",\"templateId\":" + templateId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BROADCAST_TEMPLATE_MISMATCH"));
+    }
+
+    @Test
+    void subjectOrBodySentWithTemplateIsRejected() throws Exception {
+        Person director = AudienceFreezeFixtures.person(entityManager, roleRepository, "drf-tpl-content", true, "DIRECTOR");
+        Long templateId = insertTemplate(director, "INSTITUTIONAL", "EMAIL", true);
+
+        for (String extra : new String[]{",\"subject\":\"Otro\"", ",\"bodyText\":\"Otro\""}) {
+            mockMvc.perform(post("/broadcasts").header("Authorization", bearer(director))
+                            .contentType(MediaType.APPLICATION_JSON).content(body("EMAIL", ",\"templateId\":" + templateId + extra)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("BROADCAST_CONTENT_WITH_TEMPLATE"));
+        }
+    }
+
+    @Test
+    void blankOrTooLongNameIsRejected() throws Exception {
+        Person director = AudienceFreezeFixtures.person(entityManager, roleRepository, "drf-name", true, "DIRECTOR");
+
+        for (String name : new String[]{"  ", "a".repeat(161)}) {
+            mockMvc.perform(post("/broadcasts").header("Authorization", bearer(director))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body("EMAIL", ",\"subject\":\"Hola\",\"bodyText\":\"Texto\"").replace("\"name\":\"Aviso\"", "\"name\":\"" + name + "\"")))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    private Long insertTemplate(Person creator, String category, String channel, boolean active) {
+        return jdbc.queryForObject("insert into message_template (name, category, channel, subject, body_text, active, created_by_person_id, created_at, updated_at) "
+                + "values ('T', ?, ?, 'Asunto', 'Cuerpo', ?, ?, now(), now()) returning id", Long.class, category, channel, active, creator.getId());
     }
 
     @Test
