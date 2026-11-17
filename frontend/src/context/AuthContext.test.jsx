@@ -167,7 +167,8 @@ describe('offline cache lifecycle', () => {
     renderProvider();
 
     await screen.findByText('user-2');
-    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+    expect(queryClient.getQueryCache().getAll().map((query) => query.queryKey)).toEqual([['me']]);
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
   });
 });
