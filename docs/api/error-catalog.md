@@ -62,6 +62,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
 | `BIRTH_DATE_REQUIRED` | no | `BirthDateRequiredException` | identity |
+| `BROADCAST_BODY_REQUIRED` | no | `BroadcastBodyRequiredException` | notification |
+| `BROADCAST_CONTENT_WITH_TEMPLATE` | no | `BroadcastContentWithTemplateException` | notification |
+| `BROADCAST_TEMPLATE_MISMATCH` | no | `BroadcastTemplateMismatchException` | notification |
 | `CANCELLATION_REASON_REQUIRED` | no | `CancellationReasonRequiredException` | billing |
 | `CASH_PAYMENT_AMOUNT_INVALID` | no | `CashPaymentAmountInvalidException` | billing |
 | `CASH_PAYMENT_BACKDATE_REASON_INVALID` | no | `CashPaymentBackdateReasonInvalidException` | billing |
@@ -163,6 +166,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_SECTION_CHANGE` | no | `InvalidSectionChangeException` | enrollment |
 | `INVALID_SECTION_EVALUATION_CONFIG_TRANSITION` | no | `InvalidSectionEvaluationConfigTransitionException` | evaluation |
 | `INVALID_SECTION_OVERRIDES` | no | `InvalidSectionOverridesException` | enrollment |
+| `INVALID_SEGMENT_CRITERION` | no | `InvalidSegmentCriterionException` | notification |
 | `INVALID_SHIFT_RANGES` | no | `InvalidShiftRangesException` | academicstructure |
 | `INVALID_STAFF_ROLE` | no | `InvalidStaffRoleException` | identity |
 | `INVALID_STUDENT_DISCOUNT` | no | `InvalidStudentDiscountException` | billing |
@@ -260,6 +264,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_NOT_FOUND` | no | `AttendanceNotFoundException` | attendance |
 | `AUTHORIZATION_REQUEST_NOT_FOUND` | no | `AuthorizationRequestNotFoundException` | billing |
 | `BILLING_RUN_STEP_NOT_FOUND` | no | `BillingRunStepNotFoundException` | billing |
+| `BROADCAST_NOT_FOUND` | no | `BroadcastNotFoundException` | notification |
 | `CERTIFICATE_NOT_FOUND` | no | `CertificateNotFoundException` | graduation |
 | `CHARGEBACK_NOT_FOUND` | no | `ChargebackNotFoundException` | billing |
 | `CLASSROOM_NOT_FOUND` | no | `ClassroomNotFoundException` | academicstructure |
@@ -564,6 +569,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
+| `SEGMENT_NOT_AVAILABLE` | no | `SegmentNotAvailableException` | notification |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
@@ -701,6 +707,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/validation` | `CollectionReminderScheduleController#validateExceptionChange` |
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/validation` | `CollectionReminderScheduleController#validateGroupChange` |
 | POST | `/billing-runs/executions` | `BillingRunController#executeTodaysNightlyRun` |
+| POST | `/broadcasts` | `BroadcastDraftController#createBroadcastDraft` |
+| POST | `/broadcasts/audience-preview` | `BroadcastAudienceController#previewBroadcastAudience` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
 | POST | `/classrooms` | `ClassroomController#create` |

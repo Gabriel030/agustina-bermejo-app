@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.enrollment.dto.WaitlistKind;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.WaitlistEnrollmentStudentRow;
@@ -13,16 +15,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-@Transactional(readOnly = true)
+@Transactional
 public class CourseSectionWaitlistQueue implements WaitlistQueue {
 
     private static final List<EnrollmentStatus> OCCUPYING =
             List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
 
     private final CourseSubjectSectionEnrollmentRepository repository;
+    private final SectionFinder sectionFinder;
 
-    public CourseSectionWaitlistQueue(CourseSubjectSectionEnrollmentRepository repository) {
+    public CourseSectionWaitlistQueue(CourseSubjectSectionEnrollmentRepository repository, SectionFinder sectionFinder) {
         this.repository = repository;
+        this.sectionFinder = sectionFinder;
     }
 
     @Override
@@ -48,7 +52,7 @@ public class CourseSectionWaitlistQueue implements WaitlistQueue {
     public List<WaitlistCandidate> findWaitingCandidates(Long queueId) {
         return repository.findWaitlistEntryRows(queueId, EnrollmentStatus.WAITLISTED).stream()
                 .map(row -> new WaitlistCandidate(kind(), row.getEnrollmentId(), row.getStudentId(), row.getFullName(),
-                        row.getDocumentNumber(), row.getJoinedAt(), null, null, null, null))
+                        row.getDocumentNumber(), row.getJoinedAt(), null, null, null, null, row.getPrioritizedAt()))
                 .toList();
     }
 
@@ -56,5 +60,22 @@ public class CourseSectionWaitlistQueue implements WaitlistQueue {
     public Map<Long, Long> findStudentIdByEnrollmentId(Long queueId) {
         return repository.findWaitlistEnrollmentStudentRows(queueId).stream()
                 .collect(Collectors.toMap(WaitlistEnrollmentStudentRow::getEnrollmentId, WaitlistEnrollmentStudentRow::getStudentId));
+    }
+
+    @Override
+    public void lock(Long queueId) {
+        sectionFinder.lockCourseSection(queueId);
+    }
+
+    @Override
+    public boolean isOpenForPromotion(Long queueId) {
+        return true;
+    }
+
+    @Override
+    public void promote(Long enrollmentId) {
+        CourseSubjectSectionEnrollment next = repository.findById(enrollmentId).orElseThrow();
+        next.setStatus(EnrollmentStatus.ENROLLED);
+        repository.save(next);
     }
 }
