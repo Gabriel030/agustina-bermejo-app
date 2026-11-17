@@ -423,6 +423,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `DUPLICATE_INVOICE_CHARGE` | no | `DuplicateInvoiceChargeException` | billing |
 | `ELECTIVE_GROUP_ALREADY_EXISTS` | no | `ElectiveGroupAlreadyExistsException` | academicstructure |
 | `ELECTIVE_GROUP_IN_USE` | no | `ElectiveGroupInUseException` | academicstructure |
+| `EMAIL_CHANGE_PENDING_BY_OWNER` | no | `EmailChangePendingByOwnerException` | identity |
 | `ENROLLMENT_FEE_ALREADY_ISSUED` | no | `EnrollmentFeeAlreadyIssuedException` | billing |
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_EXISTS` | no | `EnrollmentFeeExemptionAlreadyExistsException` | enrollment |
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_REVOKED` | no | `EnrollmentFeeExemptionAlreadyRevokedException` | enrollment |

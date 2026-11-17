@@ -64,6 +64,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   DNI_REQUIRED: 'Falta el DNI.',
   ELECTIVE_GROUP_NOT_ASSIGNED: 'La materia no pertenece a ningún grupo de optativas.',
   EMAIL_ALREADY_EXISTS: 'Ya existe una cuenta con ese correo electrónico.',
+  EMAIL_CHANGE_PENDING_BY_OWNER: 'La persona ya inició un cambio de correo que sigue pendiente de confirmación.',
   EMPTY_AUDIENCE: 'No hay destinatarios elegibles. Elegí otro segmento para continuar.',
   ENROLLMENT_FEE_NOT_PAID: 'Falta pagar la matrícula para continuar.',
   ENROLLMENT_FEE_NOT_PAID_FOR_TERM: 'Falta pagar la matrícula de este período.',

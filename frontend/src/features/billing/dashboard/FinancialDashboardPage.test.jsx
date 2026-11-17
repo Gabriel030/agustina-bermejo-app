@@ -170,6 +170,21 @@ async function openIssuingTab() {
 }
 
 describe('FinancialDashboardPage', () => {
+  it('e31 requests the financial dashboard only once on mount', async () => {
+    install();
+    let dashboardRequests = 0;
+    server.use(
+      http.get(`${API}/financial-dashboard`, () => {
+        dashboardRequests += 1;
+        return HttpResponse.json({ studentsInDebt: 12, studentsUpToDate: 140, totalsByCurrency: [{ totalDebt: money('1743500.00'), monthlyProjected: money('1.00'), monthlyCollected: money('1.00'), monthlyDebt: money('1.00') }] });
+      }),
+    );
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Alumnos al día');
+    await screen.findByText('Ana Pérez');
+    expect(dashboardRequests).toBe(1);
+  });
+
   it('e05 shows the reminders panel with its chart, the goal line and every breakdown in the table view', async () => {
     const requests = [];
     install({ requests, reminderGoal: true, onTime: { goal: false } });
