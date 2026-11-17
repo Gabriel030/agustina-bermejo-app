@@ -48,12 +48,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 public class CommissionClosureController {
 
-    private static final Set<String> STAFF_AUTHORITIES = Set.of("ROLE_PRECEPTOR", "ROLE_ADMINISTRATIVO", "ROLE_DIRECTOR");
+    private static final String TEACHER_AUTHORITY = "ROLE_DOCENTE";
 
     private final GetClosureSheetUseCase getClosureSheetUseCase;
     private final ConfirmClosureUseCase confirmClosureUseCase;
@@ -219,9 +218,9 @@ public class CommissionClosureController {
     }
 
     private ClosureViewerProfile viewerOf(Authentication authentication) {
-        boolean staff = authentication.getAuthorities().stream()
-                .anyMatch(authority -> STAFF_AUTHORITIES.contains(authority.getAuthority()));
-        return staff ? ClosureViewerProfile.STAFF : ClosureViewerProfile.TEACHER;
+        boolean teacher = authentication.getAuthorities().stream()
+                .anyMatch(authority -> TEACHER_AUTHORITY.equals(authority.getAuthority()));
+        return teacher ? ClosureViewerProfile.TEACHER : ClosureViewerProfile.STAFF;
     }
 
     private Long instructorIdFor(ClosureViewerProfile viewer) {

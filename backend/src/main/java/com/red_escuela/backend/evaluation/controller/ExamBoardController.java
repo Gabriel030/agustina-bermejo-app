@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Set;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import org.springframework.security.core.Authentication;
@@ -27,7 +26,7 @@ import org.springframework.security.core.GrantedAuthority;
 @RestController
 public class ExamBoardController {
 
-    private static final Set<String> STAFF_WITH_FULL_ACCESS = Set.of("ROLE_PRECEPTOR", "ROLE_ADMINISTRATIVO", "ROLE_DIRECTOR");
+    private static final String TEACHER_AUTHORITY = "ROLE_DOCENTE";
 
     private final ExamBoardManager examBoardService;
     private final CurrentInstructorService currentInstructorService;
@@ -37,14 +36,14 @@ public class ExamBoardController {
         this.currentInstructorService = currentInstructorService;
     }
 
-    private boolean isTeacherOnly(Authentication authentication) {
+    private boolean isTeacher(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .noneMatch(STAFF_WITH_FULL_ACCESS::contains);
+                .anyMatch(TEACHER_AUTHORITY::equals);
     }
 
     private void requireTribunalMemberIfTeacher(Long examBoardId, Authentication authentication) {
-        if (isTeacherOnly(authentication)) {
+        if (isTeacher(authentication)) {
             examBoardService.requireTribunalMember(examBoardId, currentInstructorService.resolveCurrentInstructor().getId());
         }
     }
@@ -59,7 +58,7 @@ public class ExamBoardController {
     @GetMapping("/exam-boards")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
     public List<ExamBoardResponse> list(@RequestParam(required = false) ExamBoardStatus status, Authentication authentication) {
-        List<ExamBoard> examBoards = isTeacherOnly(authentication)
+        List<ExamBoard> examBoards = isTeacher(authentication)
                 ? examBoardService.listForTribunalMember(currentInstructorService.resolveCurrentInstructor().getId(), status)
                 : examBoardService.list(status);
         return examBoards.stream().map(ExamBoardResponse::from).toList();
