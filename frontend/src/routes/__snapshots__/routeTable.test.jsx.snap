@@ -3,6 +3,7 @@
 exports[`route table > keeps every path, role and page unchanged 1`] = `
 [
   "public|-|/baja|BajaComunicaciones",
+  "public|-|/cancelar-cambio-email|CancelEmailChangePage",
   "public|-|/confirmar-responsable|ConfirmarResponsable",
   "public|-|/legal/privacidad|PrivacyPage",
   "public|-|/legal/terminos|TermsPage",

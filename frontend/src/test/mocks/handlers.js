@@ -42,6 +42,7 @@ export const handlers = [
       justificationDeadlineBusinessDays: 5,
     }),
   ),
+  http.post(`${API}/cancel-email-change`, () => new HttpResponse(null, { status: 200 })),
   http.post(`${API}/auth/login`, () =>
     HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
   ),
