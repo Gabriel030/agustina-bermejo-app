@@ -4,6 +4,7 @@ import com.red_escuela.backend.identity.entity.ContactChangeType;
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.EmailAlreadyExistsException;
+import com.red_escuela.backend.identity.exception.EmailChangePendingByOwnerException;
 import com.red_escuela.backend.identity.exception.StaffPasswordResetBlockedException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
@@ -53,6 +54,7 @@ public class EmailChangeRequester {
 
     public void requestStaffChange(Person target, String requestedEmail) {
         if (isDifferentFromCurrent(target, requestedEmail)) {
+            requireNoPendingChangeStartedByOwner(target);
             requestChange(target, currentPersonService.resolveCurrentPerson().getId(), requestedEmail);
         }
     }
@@ -61,6 +63,15 @@ public class EmailChangeRequester {
         if (tokenRepository.existsByPersonAndNewEmailIsNotNull(person)
                 || contactChangeRecorder.hasRecentEmailChange(person.getId())) {
             throw new StaffPasswordResetBlockedException(person.getId());
+        }
+    }
+
+    private void requireNoPendingChangeStartedByOwner(Person target) {
+        boolean pending = tokenRepository.existsByPersonAndNewEmailIsNotNullAndExpiresAtAfter(target,
+                ApplicationTime.now());
+        if (pending && contactChangeRecorder.lastEmailChangeRequesterId(target.getId())
+                .filter(target.getId()::equals).isPresent()) {
+            throw new EmailChangePendingByOwnerException(target.getId());
         }
     }
 

@@ -6,9 +6,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Optional;
 
 public interface ContactChangeLogRepository extends JpaRepository<ContactChangeLog, Long> {
 
     boolean existsByPersonIdAndChangeTypeInAndOccurredAtAfter(Long personId, Collection<ContactChangeType> changeTypes,
                                                               LocalDateTime since);
+
+    Optional<ContactChangeLog> findFirstByPersonIdAndChangeTypeOrderByIdDesc(Long personId, ContactChangeType changeType);
 }
