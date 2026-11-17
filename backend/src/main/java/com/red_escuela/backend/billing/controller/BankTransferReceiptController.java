@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.controller;
 
+import jakarta.validation.Valid;
+
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
 import com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler;
 import com.red_escuela.backend.billing.payment.dto.ApproveBankTransferReceiptRequest;
@@ -71,7 +73,7 @@ public class BankTransferReceiptController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public BankTransferReceiptResponse approve(@PathVariable Long id, @RequestBody(required = false) ApproveBankTransferReceiptRequest request) {
+    public BankTransferReceiptResponse approve(@PathVariable Long id, @Valid @RequestBody(required = false) ApproveBankTransferReceiptRequest request) {
         PaymentVerification verification = request == null ? PaymentVerification.none() : request.toVerification();
         return receiptResponseAssembler.assembleReviewerReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson(), verification));
     }
@@ -79,7 +81,7 @@ public class BankTransferReceiptController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public BankTransferReceiptResponse reject(@PathVariable Long id, @RequestBody(required = false) RejectPaymentReceiptRequest request) {
+    public BankTransferReceiptResponse reject(@PathVariable Long id, @Valid @RequestBody(required = false) RejectPaymentReceiptRequest request) {
         String rejectionReason = request == null ? null : request.rejectionReason();
         return receiptResponseAssembler.assembleReviewerReceiptResponse(
                 rejectPaymentReceiptUseCase.reject(id, rejectionReason, currentPersonService.resolveCurrentPerson()));

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
+import jakarta.validation.Valid;
+
 import com.red_escuela.backend.billing.annualupfront.dto.AnnualUpfrontRequestResponse;
 import com.red_escuela.backend.billing.annualupfront.dto.DiscardedAnnualUpfrontRequestResponse;
 import com.red_escuela.backend.billing.annualupfront.dto.RequestAnnualUpfrontBody;
@@ -40,7 +42,7 @@ public class AnnualUpfrontRequestController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ALUMNO')")
     public AnnualUpfrontRequestResponse requestAnnualUpfront(@PathVariable Long id, @RequestHeader(value = "Idempotency-Key") String idempotencyKey,
-                                                             @RequestBody RequestAnnualUpfrontBody body) {
+                                                             @Valid @RequestBody RequestAnnualUpfrontBody body) {
         return AnnualUpfrontRequestResponse.from(requestUseCase.requestAnnualUpfrontForCurrentStudent(id, body.termsAccepted(), body.termsVersion(), idempotencyKey));
     }
 }

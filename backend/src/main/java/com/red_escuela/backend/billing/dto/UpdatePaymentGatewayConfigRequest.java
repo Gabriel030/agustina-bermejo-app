@@ -1,8 +1,10 @@
 package com.red_escuela.backend.billing.dto;
 
+import jakarta.validation.constraints.Size;
+
 public record UpdatePaymentGatewayConfigRequest(
-        String bankAlias,
-        String bankCbu,
-        String accountHolder,
+        @Size(max = 50) String bankAlias,
+        @Size(max = 22) String bankCbu,
+        @Size(max = 100) String accountHolder,
         Boolean mpEnabled) {
 }
