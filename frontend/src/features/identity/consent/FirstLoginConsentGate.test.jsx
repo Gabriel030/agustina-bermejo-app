@@ -2,11 +2,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { FirstLoginConsentGate } from './FirstLoginConsentGate';
 
 const API = 'http://localhost:8080';
+
+const withoutRecord = () =>
+  HttpResponse.json([
+    { channel: 'EMAIL', category: 'INSTITUTIONAL', granted: false, recordedAt: '2026-11-17T10:00:00Z', hasRecord: false },
+    { channel: 'EMAIL', category: 'PROMOTIONAL', granted: false, recordedAt: '2026-11-17T10:00:00Z', hasRecord: false },
+  ]);
 
 vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ usuario: { id: 1 } }) }));
 
@@ -20,7 +27,7 @@ function renderGate() {
 
 describe('FirstLoginConsentGate', () => {
   it('first login prompt shows only when there is no record', async () => {
-    server.use(http.get(`${API}/me/contact-consents`, () => HttpResponse.json([])));
+    server.use(http.get(`${API}/me/contact-consents`, withoutRecord));
     renderGate();
 
     expect(await screen.findByText(/antes de seguir, aceptá los avisos/i)).toBeInTheDocument();
@@ -37,10 +44,10 @@ describe('FirstLoginConsentGate', () => {
   it('continue stays blocked until accepting and then records the consent and closes the prompt', async () => {
     const captured = {};
     server.use(
-      http.get(`${API}/me/contact-consents`, () => HttpResponse.json([])),
+      http.get(`${API}/me/contact-consents`, withoutRecord),
       http.put(`${API}/me/contact-consents`, async ({ request }) => {
         captured.body = await request.json();
-        return HttpResponse.json({ ...captured.body, recordedAt: '2026-11-17T10:00:00Z' });
+        return HttpResponse.json({ ...captured.body, source: undefined, recordedAt: '2026-11-17T10:00:00Z', hasRecord: true });
       }),
     );
     const user = userEvent.setup();
@@ -55,6 +62,28 @@ describe('FirstLoginConsentGate', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(await screen.findByText('Contenido de la app')).toBeInTheDocument();
-    expect(captured.body).toEqual({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true });
+    expect(captured.body).toEqual({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, source: 'ACCOUNT_CREATION' });
+  });
+
+  it('an already recorded conflict is treated as success and closes the prompt', async () => {
+    let recorded = false;
+    server.use(
+      http.get(`${API}/me/contact-consents`, () =>
+        recorded
+          ? HttpResponse.json([{ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, recordedAt: '2026-11-17T10:00:00Z', hasRecord: true }])
+          : withoutRecord(),
+      ),
+      http.put(`${API}/me/contact-consents`, () => {
+        recorded = true;
+        return HttpResponse.json(errorBody('CONTACT_CONSENT_ALREADY_RECORDED'), { status: 409 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderGate();
+
+    await user.click(await screen.findByRole('checkbox', { name: /avisos institucionales/i }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    expect(await screen.findByText('Contenido de la app')).toBeInTheDocument();
   });
 });

@@ -10,7 +10,7 @@ export function useContactConsents({ enabled = true } = {}) {
 export function useUpdateContactConsent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (change) => apiFetch('/me/contact-consents', { method: 'PUT', body: JSON.stringify(change) }),
+    mutationFn: (change) => apiFetch('/me/contact-consents', { method: 'PUT', body: JSON.stringify({ source: 'PROFILE', ...change }) }),
     onSuccess: (entry) => {
       queryClient.setQueryData(CONSENTS_KEY, (current) => {
         const entries = current ?? [];

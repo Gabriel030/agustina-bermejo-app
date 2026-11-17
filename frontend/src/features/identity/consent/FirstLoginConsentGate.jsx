@@ -13,18 +13,24 @@ const OPEN_PATH_PREFIXES = ['/legal/', '/confirmar-responsable'];
 export function FirstLoginConsentGate({ children }) {
   const { usuario } = useAuth();
   const { pathname } = useLocation();
-  const { data } = useContactConsents({ enabled: Boolean(usuario) });
+  const { data, refetch } = useContactConsents({ enabled: Boolean(usuario) });
   const [accepted, setAccepted] = useState(false);
   const update = useUpdateContactConsent();
   const isOpenPath = OPEN_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-  const hasNoRecord = Array.isArray(data) && !data.some((entry) => entry.recordedAt);
+  const hasNoRecord =
+    Array.isArray(data) &&
+    data.some((entry) => entry.channel === 'EMAIL' && entry.category === 'INSTITUTIONAL' && entry.hasRecord === false);
 
   if (!usuario || !hasNoRecord || isOpenPath) return children;
 
   async function submit() {
     try {
-      await update.mutateAsync({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true });
-    } catch {
+      await update.mutateAsync({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, source: 'ACCOUNT_CREATION' });
+    } catch (error) {
+      if (error.code === 'CONTACT_CONSENT_ALREADY_RECORDED') {
+        refetch();
+        return;
+      }
       toast.error('No pudimos guardar tu aceptación. Intentá de nuevo.');
     }
   }

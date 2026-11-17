@@ -38,6 +38,7 @@ const entries = (granted = {}) =>
       category,
       granted: granted[`${channel}:${category}`] ?? false,
       recordedAt: '2026-11-01T10:00:00Z',
+      hasRecord: true,
     })),
   );
 
@@ -49,7 +50,7 @@ function mockConsents({ granted, phone = '1155550000', onPut, failOn = [] } = {}
       const body = await request.json();
       onPut?.(body);
       if (failOn.includes(`${body.channel}:${body.category}`)) return new HttpResponse(null, { status: 500 });
-      return HttpResponse.json({ ...body, recordedAt: '2026-11-17T10:00:00Z' });
+      return HttpResponse.json({ ...body, source: undefined, recordedAt: '2026-11-17T10:00:00Z', hasRecord: true });
     }),
   );
 }
@@ -66,8 +67,8 @@ describe('ContactConsentMatrix', () => {
 
     await waitFor(() => expect(puts).toHaveLength(2));
     expect(puts).toEqual([
-      { channel: 'EMAIL', category: 'INSTITUTIONAL', granted: false },
-      { channel: 'WHATSAPP', category: 'INSTITUTIONAL', granted: true },
+      { channel: 'EMAIL', category: 'INSTITUTIONAL', granted: false, source: 'PROFILE' },
+      { channel: 'WHATSAPP', category: 'INSTITUTIONAL', granted: true, source: 'PROFILE' },
     ]);
   });
 
