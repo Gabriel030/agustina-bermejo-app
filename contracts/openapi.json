@@ -11865,6 +11865,8 @@
             "type" : "boolean"
           },
           "termsVersion" : {
+            "maxLength" : 20,
+            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -13914,12 +13916,18 @@
       "UpdatePaymentGatewayConfigRequest" : {
         "properties" : {
           "accountHolder" : {
+            "maxLength" : 100,
+            "minLength" : 0,
             "type" : "string"
           },
           "bankAlias" : {
+            "maxLength" : 50,
+            "minLength" : 0,
             "type" : "string"
           },
           "bankCbu" : {
+            "maxLength" : 22,
+            "minLength" : 0,
             "type" : "string"
           },
           "mpEnabled" : {
