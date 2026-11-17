@@ -52,6 +52,30 @@ export const handlers = [
   http.post(`${API}/auth/forgot-password`, () => new HttpResponse(null, { status: 202 })),
   http.post(`${API}/auth/verify-reset-code`, () => HttpResponse.json({ resetToken: 'reset-token-1' })),
   http.post(`${API}/auth/reset-password`, () => new HttpResponse(null, { status: 204 })),
+  http.get(`${API}/me/contact-consents`, () =>
+    HttpResponse.json(
+      ['EMAIL', 'WHATSAPP'].flatMap((channel) =>
+        ['INSTITUTIONAL', 'PROMOTIONAL'].map((category) => ({
+          channel,
+          category,
+          granted: false,
+          recordedAt: '2026-11-01T10:00:00Z',
+        })),
+      ),
+    ),
+  ),
+  http.put(`${API}/me/contact-consents`, () =>
+    HttpResponse.json({
+      channel: 'EMAIL',
+      category: 'INSTITUTIONAL',
+      granted: true,
+      recordedAt: '2026-11-17T10:00:00Z',
+    }),
+  ),
+  http.get(`${API}/public/unsubscribe/:token`, () =>
+    HttpResponse.json({ channel: 'EMAIL', category: 'PROMOTIONAL' }),
+  ),
+  http.post(`${API}/public/unsubscribe/:token`, () => new HttpResponse(null, { status: 200 })),
   http.get(`${API}/me`, () => HttpResponse.json(personResponse({ dni: '' }))),
   http.put(`${API}/me`, () => HttpResponse.json(personResponse())),
   http.post(`${API}/auth/register`, () =>
