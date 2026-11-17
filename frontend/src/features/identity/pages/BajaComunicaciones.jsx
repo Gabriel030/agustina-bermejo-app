@@ -6,7 +6,7 @@ import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { useConfirmUnsubscribe, useUnsubscribeLink } from '@/features/identity/hooks/useUnsubscribeLink';
-import { CONSENT_CATEGORY_LABELS, CONSENT_CHANNEL_LABELS } from '@/features/identity/lib/contactConsentLabels';
+import { CONSENT_CATEGORY_PLURAL_LABELS, CONSENT_CHANNEL_LABELS } from '@/features/identity/lib/contactConsentLabels';
 
 export function BajaComunicaciones() {
   const [searchParams] = useSearchParams();
@@ -16,7 +16,7 @@ export function BajaComunicaciones() {
 
   const state = !token || link.isError ? 'invalid' : confirm.isSuccess ? 'done' : link.data ? 'ready' : 'loading';
   const channelLabel = CONSENT_CHANNEL_LABELS[link.data?.channel] ?? '';
-  const categoryLabel = (CONSENT_CATEGORY_LABELS[link.data?.category] ?? '').toLowerCase();
+  const categoryLabel = CONSENT_CATEGORY_PLURAL_LABELS[link.data?.category] ?? '';
   const isInstitutional = link.data?.category === 'INSTITUTIONAL';
 
   return (
@@ -45,7 +45,7 @@ export function BajaComunicaciones() {
               <div>
                 <p className="font-heading text-lg font-bold text-ink">Darte de baja</p>
                 <p className="mt-1 text-size-13 text-ink-soft">
-                  Vas a dejar de recibir comunicaciones {categoryLabel}s por {channelLabel}.
+                  Vas a dejar de recibir comunicaciones {categoryLabel} por {channelLabel}.
                 </p>
               </div>
               {isInstitutional && (

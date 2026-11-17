@@ -32,6 +32,7 @@ describe('BajaComunicaciones', () => {
     renderPage('/baja?token=abc');
 
     expect(await screen.findByRole('button', { name: 'Confirmar baja' })).toBeInTheDocument();
+    expect(screen.getByText('Vas a dejar de recibir comunicaciones promocionales por Correo.')).toBeInTheDocument();
     expect(posts).toBe(0);
   });
 
@@ -59,7 +60,8 @@ describe('BajaComunicaciones', () => {
     );
     renderPage('/baja?token=abc');
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('La cobranza y los avisos obligatorios siguen llegando');
+    expect(await screen.findByText('Vas a dejar de recibir comunicaciones institucionales por Correo.')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('La cobranza y los avisos obligatorios siguen llegando');
     expect(screen.getByRole('button', { name: 'Confirmar baja' })).toBeInTheDocument();
   });
 
