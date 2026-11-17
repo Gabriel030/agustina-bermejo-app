@@ -164,6 +164,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   CLASS_SESSION_NOT_FOUND: 'No encontramos la clase.',
   COREQUISITE_NOT_FOUND: 'No encontramos la correlatividad simultánea.',
   COURSE_ENROLLMENT_NOT_FOUND: 'No encontramos la inscripción al curso.',
+  WAITLIST_QUEUE_NOT_FOUND: 'No encontramos esa lista de espera.',
   COURSE_NOT_FOUND: 'No encontramos el curso.',
   COURSE_SUBJECT_NOT_FOUND: 'No encontramos la materia del curso.',
   CYCLE_NOT_FOUND: 'No encontramos el ciclo.',

@@ -65,4 +65,31 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     @Query("select e.id as enrollmentId, e.course.name as name from CourseEnrollment e where e.id in :ids")
     List<EnrollmentNameRow> findNameRows(@Param("ids") Collection<Long> ids);
+
+    @Query("""
+            select c.id as id, c.name as name, t.description as termDescription, t.year as termYear, c.capacity as capacity,
+                   t.startDate as termStart, c.waitlistDeadlineOffsetDays as waitlistDeadlineOffsetDays,
+                   count(case when e.status in :occupying then 1 end) as occupied,
+                   count(case when e.status = :waiting then 1 end) as waiting
+            from Course c join c.term t
+            left join CourseEnrollment e on e.course = c
+            where (:courseId is null or c.id = :courseId) and (:termId is null or t.id = :termId)
+            group by c.id, c.name, t.description, t.year, c.capacity, t.startDate, c.waitlistDeadlineOffsetDays
+            having (:courseId is not null or count(case when e.status = :waiting then 1 end) > 0)
+            """)
+    List<CourseWaitlistQueueRow> findWaitlistQueueRows(@Param("courseId") Long courseId, @Param("termId") Long termId,
+                                                       @Param("occupying") Collection<EnrollmentStatus> occupying,
+                                                       @Param("waiting") EnrollmentStatus waiting);
+
+    @Query("""
+            select e.id as enrollmentId, st.id as studentId, concat(p.name, ' ', p.lastname) as fullName, p.dni as documentNumber,
+                   e.enrollmentDate as joinedAt
+            from CourseEnrollment e join e.student st join st.person p
+            where e.course.id = :courseId and e.status = :waiting
+            order by e.enrollmentDate asc, e.id asc
+            """)
+    List<WaitlistEntryRow> findWaitlistEntryRows(@Param("courseId") Long courseId, @Param("waiting") EnrollmentStatus waiting);
+
+    @Query("select e.id as enrollmentId, e.student.id as studentId from CourseEnrollment e where e.course.id = :courseId")
+    List<WaitlistEnrollmentStudentRow> findWaitlistEnrollmentStudentRows(@Param("courseId") Long courseId);
 }

@@ -18,4 +18,9 @@ public class AdmissionInvoiceReceiptFinder {
     public AdmissionReceiptSummary findLatestReceiptByAdmissionInvoiceId(Long admissionInvoiceId) {
         return receiptLookup.findLatestReceiptByInvoiceIds(List.of(admissionInvoiceId)).get(admissionInvoiceId);
     }
+
+    public boolean isLatestReceiptApproved(Long admissionInvoiceId) {
+        AdmissionReceiptSummary latest = findLatestReceiptByAdmissionInvoiceId(admissionInvoiceId);
+        return latest != null && latest.isApproved();
+    }
 }
