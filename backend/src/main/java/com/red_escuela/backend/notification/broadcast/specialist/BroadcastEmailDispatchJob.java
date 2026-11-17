@@ -56,10 +56,6 @@ public class BroadcastEmailDispatchJob {
         if (!settings.window().isOpenAt(LocalTime.now(clock))) {
             return 0;
         }
-        if (remainingQuotaToday() == 0) {
-            log.debug("Cupo diario de mails masivos agotado, el resto queda para el dia siguiente");
-            return 0;
-        }
         Instant now = clock.instant();
         List<Long> ids = deliveryRepository.findDispatchableIdsUpTo(DeliveryChannel.EMAIL, DeliveryCategory.BROADCAST, WAITING,
                 LocalDate.now(clock), now, PageRequest.of(0, settings.maxPerRun()));
