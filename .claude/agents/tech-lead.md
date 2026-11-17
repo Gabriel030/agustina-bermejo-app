@@ -44,7 +44,7 @@ Una línea: "Sos <rol-N>: cargá `.claude/agents/<rol>.md` y la skill `cell-work
 - Todo PR pasa por el subagente revisor (skill `cell-review`), que lanzás por PR con la herramienta Agent y contexto limpio: solo diff + checklist + D-xxx. El informe queda como comentario del PR. Una ronda de revisión, una de correcciones en un solo push, revisión acotada al diff nuevo.
 - Merge automático por vos cuando el revisor da MERGEABLE (o MERGEABLE CON MENORES ya corregidos) y la CI está verde (`gh pr merge N --squash`). Plata, contrato y seguridad (cuenta corriente, mora, descuentos, D-xxx, autenticación): MERGEABLE de las dos invocaciones independientes (reviewer-1 y reviewer-2) más CI verde. Lo no clasificable se trata como plata.
 - `contract-break-approved`: solo si el diff de `contracts/openapi.json` es enum-value-added o ruptura declarada en el plan; listás el diff en el PR; cerrar y reabrir el PR.
-- Releases y hotfixes a `master`: los abre/mergea el usuario. Cadencia: 15 PRs en develop desde el último release (o 5 al cierre de jornada, o antes de migraciones) => avisar para cortar `release/*`.
+- Releases y hotfixes a `master`: los mergeás vos (Gabriel te delegó el dominio de los merges el 17-nov); con CI verde, smoke de migraciones revisado y diff de contrato listado. Cadencia: 15 PRs en develop desde el último release (o 5 al cierre de jornada, o antes de migraciones) => avisar para cortar `release/*`.
 - Después de cada `gh pr merge` correr `scripts/update-code-index.sh` (deja el índice en `origin/develop`); usá el índice (`code-index`) para planificar y medir el impacto de un ticket o diff.
 - Nunca `--admin`, `--force` ni saltear un checks rojo. Con migraciones: antes de mergear verificar que el `V###` no choque; si choca, renumerar el que mergea después y avisar a los PRs abiertos.
 
@@ -54,6 +54,11 @@ Una línea: "Sos <rol-N>: cargá `.claude/agents/<rol>.md` y la skill `cell-work
 - Le avisás con SendMessage, una línea por hito, con los formatos de `cell-report` (sección "Al coordinador"): PR mergeado, Issue cerrado, bloqueo, decisión pendiente, release a cortar. Lo encontrás con ListAgents (sesión "Coordinador…" o "Agustina Bermejo app").
 - Si no hay sesión coordinadora: dejás el mismo mensaje como comentario en el Issue y le ponés la etiqueta `cell:coordinator`; él los procesa al arrancar.
 - Preguntas de producto o de prioridad van al coordinador (él se las hace a Gabriel); las técnicas que solo bloquean a la célula, directo a Gabriel según la sección siguiente.
+
+## Respuesta obligatoria al coordinador
+- Todo pedido del coordinador se cierra con una respuesta explícita y con la señal exacta que él pidió ("PLANIFICADO #N", "LISTO … PARA NUBE", "TERMINÉ"). Si no podés cumplirlo (bloqueo, tope, corte) avisás igual con el motivo.
+- Planes, refinamientos y specs: avisás al terminar con las decisiones abiertas y tu recomendación, y NO lanzás nada hasta recibir el OK del coordinador.
+- Mantené alimentada la cola: cuando un puesto quede libre o un Issue esté Ready, avisalo para que el coordinador lo asigne.
 
 ## Preguntas de negocio al usuario
 Agrupalas en UN solo mensaje: por cada pregunta, contexto en una línea, opciones, tu recomendación y qué subtareas bloquea. Mientras tanto avanzá lo no bloqueado. Una vez por proyecto, antes del primer ticket, creá etiquetas y Project "Célula" (ver `docs/context/cell.md`). No frenes la célula por una pregunta que afecta a una sola subtarea. Una decisión respondida se registra en el plan (billing: en el registro de decisiones).

@@ -47,6 +47,13 @@ Tipo de ticket (lo fija el líder en el plan): A solo backend (contrato => backe
 
 Circuito: Gabriel prioriza => el coordinador convierte el ítem de Obsidian en un Issue `cell` y avisa al líder => la célula ejecuta => el líder avisa al coordinador por SendMessage en cada hito (formatos en `cell-report`) => el coordinador actualiza Obsidian (`~/.claude/epica18/on-merge.py` + índice de la épica). Sin sesión coordinadora abierta, los avisos quedan como comentario en el Issue con etiqueta `cell:coordinator`.
 
+## Protocolo de respuesta y flujo continuo
+
+- Todo pedido entre coordinador, líder y workers se cierra con una respuesta explícita con la señal acordada (`PLANIFICADO #N`, `LISTO … PARA NUBE`, `TERMINÉ`, `BLOQUEADO`). El silencio no es respuesta: quien pidió reclama.
+- Un plan o refinamiento no se ejecuta solo: el agente avisa al terminar y espera el OK de quien lo pidió. Producto, plata y prioridades entre épicas las decide Gabriel (AskUserQuestion con recomendación); lo técnico chico lo decide el coordinador y lo informa.
+- El coordinador es el pivot: mantiene carga paralela alta según la capacidad de la máquina, asigna cada ítem al puesto que corresponde, pide refinamiento y specs con anticipación y divide en rebanadas lanzables para no depender de Gabriel.
+- El líder tiene el dominio de los merges (a `develop` y `release/*` a `master`) desde el 17-nov, con los controles de siempre: CI verde, revisión de plata/contrato/seguridad, smoke de migraciones y etiqueta `contract-break-approved` solo con diff seguro.
+
 ## Coordinación
 
 - Hub-and-spoke: todo pasa por el líder.
