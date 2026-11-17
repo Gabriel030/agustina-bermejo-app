@@ -58,6 +58,14 @@ public interface ImportEntityDefinition {
 
     Long record(Map<String, String> payload, Long institutionId);
 
+    default BaseLookups preloadForRecord(List<Map<String, String>> payloads) {
+        return BaseLookups.NONE;
+    }
+
+    default Long record(Map<String, String> payload, Long institutionId, BaseLookups lookups) {
+        return record(payload, institutionId);
+    }
+
     default void discard(Long entityId) {
         throw new UnsupportedOperationException("Esta estructura se retiene y no se deshace");
     }

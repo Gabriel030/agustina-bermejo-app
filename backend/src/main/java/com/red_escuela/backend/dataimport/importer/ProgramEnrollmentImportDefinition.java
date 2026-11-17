@@ -186,14 +186,29 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public BaseLookups preloadForRecord(List<Map<String, String>> payloads) {
+        return lookupsLoader.loadForRecord(payloads, false);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
+        return record(payload, institutionId, BaseLookups.NONE);
+    }
+
+    @Override
+    public Long record(Map<String, String> payload, Long institutionId, BaseLookups lookups) {
         ImportRowReader reader = new ImportRowReader(payload);
         DocumentType type = ImportDocumentKey.typeOf(payload).orElseThrow();
+        String number = ImportDocumentKey.numberOf(payload, type);
         Integer cohortYear = reader.integer("cohortYear", false, 1990, 2100);
-        Long enrollmentId = recorder.recordProgramEnrollment(new HistoricalProgramEnrollment(type,
-                ImportDocumentKey.numberOf(payload, type), reader.text("programName"), reader.date("enrollmentDate", true),
-                reader.enumValue("status", ProgramEnrollmentStatus.class, true).orElseThrow(),
-                reader.date("completionDate", false), reader.date("withdrawalDate", false), cohortYear));
+        HistoricalProgramEnrollment historical = new HistoricalProgramEnrollment(type, number, reader.text("programName"),
+                reader.date("enrollmentDate", true), reader.enumValue("status", ProgramEnrollmentStatus.class, true).orElseThrow(),
+                reader.date("completionDate", false), reader.date("withdrawalDate", false), cohortYear);
+        Optional<Long> studentId = lookups.studentId(type, number);
+        Optional<Long> programId = lookups.programId(historical.programName());
+        Long enrollmentId = studentId.isPresent() && programId.isPresent()
+                ? recorder.recordProgramEnrollment(historical, studentId.get(), programId.get())
+                : recorder.recordProgramEnrollment(historical);
         if (cohortYear != null) {
             cohortRecorder.assignCohort(enrollmentId, new HistoricalProgramCohort(reader.text("programName"), cohortYear,
                     reader.enumValue("intake", HistoricalCohortIntake.class, true).orElseThrow()));
