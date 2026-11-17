@@ -6,12 +6,14 @@ import com.red_escuela.backend.dataimport.specialist.BaseLookups;
 import com.red_escuela.backend.dataimport.specialist.ImportDocumentKey;
 import com.red_escuela.backend.dataimport.specialist.ImportValueParser;
 import com.red_escuela.backend.enrollment.api.HistoricalEnrollmentRecorder;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentRef;
 import com.red_escuela.backend.enrollment.api.StudentProgram;
+import com.red_escuela.backend.evaluation.api.HistoricalClosureRecorder;
 import com.red_escuela.backend.enrollment.api.StudentSection;
 import com.red_escuela.backend.identity.api.DocumentKey;
 import com.red_escuela.backend.identity.api.HistoricalPersonRecorder;
 import com.red_escuela.backend.shared.domain.DocumentType;
-import java.time.LocalDate;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +26,12 @@ class EnrollmentBaseLookupsLoader {
     private final HistoricalProgramRecorder programRecorder;
     private final HistoricalSectionRecorder sectionRecorder;
     private final HistoricalEnrollmentRecorder enrollmentRecorder;
+    private final HistoricalClosureRecorder closureRecorder;
 
     EnrollmentBaseLookupsLoader(HistoricalPersonRecorder personRecorder, HistoricalProgramRecorder programRecorder,
-            HistoricalSectionRecorder sectionRecorder, HistoricalEnrollmentRecorder enrollmentRecorder) {
+            HistoricalSectionRecorder sectionRecorder, HistoricalEnrollmentRecorder enrollmentRecorder,
+            HistoricalClosureRecorder closureRecorder) {
+        this.closureRecorder = closureRecorder;
         this.personRecorder = personRecorder;
         this.programRecorder = programRecorder;
         this.sectionRecorder = sectionRecorder;
@@ -34,6 +39,14 @@ class EnrollmentBaseLookupsLoader {
     }
 
     BaseLookups load(List<Map<String, String>> payloads, boolean withSections) {
+        return load(payloads, withSections, false);
+    }
+
+    BaseLookups loadForRecord(List<Map<String, String>> payloads, boolean withSections) {
+        return load(payloads, withSections, true);
+    }
+
+    private BaseLookups load(List<Map<String, String>> payloads, boolean withSections, boolean forRecord) {
         Set<DocumentKey> documents = new HashSet<>();
         Set<String> programNames = new HashSet<>();
         Set<String> sectionCodes = new HashSet<>();
@@ -60,9 +73,16 @@ class EnrollmentBaseLookupsLoader {
                 sectionPairs.add(new StudentSection(studentId, sectionId));
             }
         }
-        Map<StudentProgram, LocalDate> programEnrollmentDates = enrollmentRecorder.findProgramEnrollmentDates(programPairs);
+        Map<StudentProgram, ProgramEnrollmentRef> programEnrollments = enrollmentRecorder.findProgramEnrollmentRefs(programPairs);
+        if (forRecord) {
+            Collection<Long> loadedSectionIds = sectionIds.values();
+            return new BaseLookups(true, studentIds, programIds, sectionIds, programEnrollments, Set.of(),
+                    withSections ? sectionRecorder.findTermStartsBySectionIds(loadedSectionIds) : Map.of(),
+                    withSections ? closureRecorder.findClosureIdsBySectionIds(loadedSectionIds) : Map.of());
+        }
         Set<StudentSection> sectionEnrollments = enrollmentRecorder.findExistingSectionEnrollments(sectionPairs);
-        return new BaseLookups(true, studentIds, programIds, sectionIds, programEnrollmentDates, sectionEnrollments);
+        return new BaseLookups(true, studentIds, programIds, sectionIds, programEnrollments, sectionEnrollments, Map.of(),
+                Map.of());
     }
 
     private static DocumentKey documentOf(Map<String, String> payload) {

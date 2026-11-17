@@ -181,17 +181,33 @@ public class SectionEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public BaseLookups preloadForRecord(List<Map<String, String>> payloads) {
+        return lookupsLoader.loadForRecord(payloads, true);
+    }
+
+    @Override
     public Long record(Map<String, String> payload, Long institutionId) {
+        return record(payload, institutionId, BaseLookups.NONE);
+    }
+
+    @Override
+    public Long record(Map<String, String> payload, Long institutionId, BaseLookups lookups) {
         ImportRowReader reader = new ImportRowReader(payload);
         DocumentType type = ImportDocumentKey.typeOf(payload).orElseThrow();
-        Long sectionId = sectionRecorder.findSectionIdByCode(reader.text("sectionCode")).orElseThrow();
+        String number = ImportDocumentKey.numberOf(payload, type);
+        Long sectionId = lookups.sectionId(reader.text("sectionCode"))
+                .orElseGet(() -> sectionRecorder.findSectionIdByCode(reader.text("sectionCode")).orElseThrow());
         EnrollmentStatus status = reader.enumValue("status", EnrollmentStatus.class, true).orElseThrow();
         FinalGradeType gradeType = reader.enumValue("finalGradeType", FinalGradeType.class, false).orElse(null);
         BigDecimal score = reader.decimal("finalScore", false);
-        Long enrollmentId = enrollmentRecorder.recordSectionEnrollment(new HistoricalSectionEnrollment(type,
-                ImportDocumentKey.numberOf(payload, type), reader.text("programName"), sectionId,
-                reader.integer("attemptNumber", true, 1, 20), status, score, gradeType, reader.date("finalDate", false)));
-        closureRecorder.recordStudentResult(sectionId, enrollmentId, status, gradeType, score);
+        HistoricalSectionEnrollment historical = new HistoricalSectionEnrollment(type, number, reader.text("programName"),
+                sectionId, reader.integer("attemptNumber", true, 1, 20), status, score, gradeType, reader.date("finalDate", false));
+        Long enrollmentId = lookups.sectionEnrollmentReferences(type, number, historical.programName(), sectionId)
+                .map(references -> enrollmentRecorder.recordSectionEnrollment(historical, references))
+                .orElseGet(() -> enrollmentRecorder.recordSectionEnrollment(historical));
+        lookups.closureIdOf(sectionId)
+                .ifPresentOrElse(closureId -> closureRecorder.recordStudentResultInClosure(closureId, enrollmentId, status, gradeType, score),
+                        () -> closureRecorder.recordStudentResult(sectionId, enrollmentId, status, gradeType, score));
         return enrollmentId;
     }
 }
