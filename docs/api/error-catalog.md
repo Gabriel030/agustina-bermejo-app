@@ -163,6 +163,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_SECTION_CHANGE` | no | `InvalidSectionChangeException` | enrollment |
 | `INVALID_SECTION_EVALUATION_CONFIG_TRANSITION` | no | `InvalidSectionEvaluationConfigTransitionException` | evaluation |
 | `INVALID_SECTION_OVERRIDES` | no | `InvalidSectionOverridesException` | enrollment |
+| `INVALID_SEGMENT_CRITERION` | no | `InvalidSegmentCriterionException` | notification |
 | `INVALID_SHIFT_RANGES` | no | `InvalidShiftRangesException` | academicstructure |
 | `INVALID_STAFF_ROLE` | no | `InvalidStaffRoleException` | identity |
 | `INVALID_STUDENT_DISCOUNT` | no | `InvalidStudentDiscountException` | billing |
@@ -564,6 +565,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
+| `SEGMENT_NOT_AVAILABLE` | no | `SegmentNotAvailableException` | notification |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
@@ -701,6 +703,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/validation` | `CollectionReminderScheduleController#validateExceptionChange` |
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/validation` | `CollectionReminderScheduleController#validateGroupChange` |
 | POST | `/billing-runs/executions` | `BillingRunController#executeTodaysNightlyRun` |
+| POST | `/broadcasts/audience-preview` | `BroadcastAudienceController#previewBroadcastAudience` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
 | POST | `/classrooms` | `ClassroomController#create` |

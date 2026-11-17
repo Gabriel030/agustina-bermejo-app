@@ -1225,6 +1225,37 @@
         "required" : [ "absencePercent", "allowedAbsences", "classesHeld", "countableAbsences", "exceedsAbsenceLimit", "maxAbsencePercent", "pendingJustificationAbsences", "remainingAbsences" ],
         "type" : "object"
       },
+      "AudiencePreviewRequest" : {
+        "properties" : {
+          "category" : {
+            "enum" : [ "INSTITUTIONAL", "PROMOTIONAL" ],
+            "type" : "string"
+          },
+          "channel" : {
+            "enum" : [ "EMAIL", "WHATSAPP_LINK", "WHATSAPP_API" ],
+            "type" : "string"
+          },
+          "excludeMissingVariables" : {
+            "type" : "boolean"
+          },
+          "page" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "segmentSpec" : {
+            "$ref" : "#/components/schemas/SegmentSpecRequest"
+          },
+          "size" : {
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "category", "channel", "excludeMissingVariables", "page", "segmentSpec", "size" ],
+        "type" : "object"
+      },
       "AudiencePreviewResponse" : {
         "properties" : {
           "count" : {
@@ -12376,6 +12407,59 @@
         "required" : [ "classroomName", "dayOfWeek", "endTime", "startTime" ],
         "type" : "object"
       },
+      "SegmentCatalogEntry" : {
+        "properties" : {
+          "key" : {
+            "enum" : [ "PROGRAM", "SUBJECT", "ENROLLMENT_STATUS", "OVERDUE_DEBT", "STAFF_ROLE" ],
+            "type" : "string"
+          },
+          "parameters" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "key", "parameters" ],
+        "type" : "object"
+      },
+      "SegmentCriterionRequest" : {
+        "properties" : {
+          "key" : {
+            "enum" : [ "PROGRAM", "SUBJECT", "ENROLLMENT_STATUS", "OVERDUE_DEBT", "STAFF_ROLE" ],
+            "type" : "string"
+          },
+          "value" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "key", "value" ],
+        "type" : "object"
+      },
+      "SegmentSpecRequest" : {
+        "properties" : {
+          "criteria" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SegmentCriterionRequest"
+            },
+            "maxItems" : 10,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "quantifier" : {
+            "enum" : [ "ALL", "ANY" ],
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "criteria", "quantifier", "version" ],
+        "type" : "object"
+      },
       "SelectPaymentPlanRequest" : {
         "properties" : {
           "paymentPlanOptionId" : {
@@ -23436,6 +23520,255 @@
           }
         },
         "tags" : [ "billing-metrics-controller" ]
+      }
+    },
+    "/broadcasts/audience-preview" : {
+      "post" : {
+        "operationId" : "BroadcastAudience_previewBroadcastAudience",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AudiencePreviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AudiencePreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "broadcast-audience-controller" ]
+      }
+    },
+    "/broadcasts/segment-catalog" : {
+      "get" : {
+        "operationId" : "BroadcastAudience_listSegmentCatalog",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/SegmentCatalogEntry"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "broadcast-audience-controller" ]
       }
     },
     "/chargebacks/{chargebackId}/reversal" : {
