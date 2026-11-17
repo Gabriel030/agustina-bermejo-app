@@ -25,7 +25,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class BillingRequestBodyValidationTest {
 
-    private static final String LONG_TEXT = "x".repeat(256);
     private static final String LONG_REASON = "x".repeat(501);
 
     @RestController
@@ -65,13 +64,13 @@ class BillingRequestBodyValidationTest {
 
     private static Stream<Arguments> oversizedBodies() {
         return Stream.of(
-                Arguments.of("/echo/annual-upfront", "{\"termsAccepted\":true,\"termsVersion\":\"" + "x".repeat(51) + "\"}"),
-                Arguments.of("/echo/create-discount", "{\"name\":\"" + LONG_TEXT + "\"}"),
-                Arguments.of("/echo/close-discount", "{\"reason\":\"" + LONG_REASON + "\"}"),
+                Arguments.of("/echo/annual-upfront", "{\"termsAccepted\":true,\"termsVersion\":\"" + "x".repeat(21) + "\"}"),
+                Arguments.of("/echo/create-discount", "{\"name\":\"" + "x".repeat(201) + "\"}"),
+                Arguments.of("/echo/close-discount", "{\"reason\":\"" + "x".repeat(1001) + "\"}"),
                 Arguments.of("/echo/revoke-discount", "{\"reason\":\"" + LONG_REASON + "\"}"),
-                Arguments.of("/echo/gateway-config", "{\"bankAlias\":\"" + LONG_TEXT + "\"}"),
-                Arguments.of("/echo/gateway-config", "{\"bankCbu\":\"" + LONG_TEXT + "\"}"),
-                Arguments.of("/echo/gateway-config", "{\"accountHolder\":\"" + LONG_TEXT + "\"}"),
+                Arguments.of("/echo/gateway-config", "{\"bankAlias\":\"" + "x".repeat(51) + "\"}"),
+                Arguments.of("/echo/gateway-config", "{\"bankCbu\":\"" + "x".repeat(23) + "\"}"),
+                Arguments.of("/echo/gateway-config", "{\"accountHolder\":\"" + "x".repeat(101) + "\"}"),
                 Arguments.of("/echo/approve-receipt", "{\"reviewNote\":\"" + LONG_REASON + "\"}"),
                 Arguments.of("/echo/reject-receipt", "{\"rejectionReason\":\"" + LONG_REASON + "\"}"));
     }
@@ -84,7 +83,7 @@ class BillingRequestBodyValidationTest {
 
     @Test
     void closeReasonAtTheLimitIsAccepted() throws Exception {
-        mockMvc.perform(post("/echo/close-discount").contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"" + "x".repeat(500) + "\"}"))
+        mockMvc.perform(post("/echo/close-discount").contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"" + "x".repeat(1000) + "\"}"))
                 .andExpect(status().isOk());
     }
 }

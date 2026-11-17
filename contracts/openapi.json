@@ -2401,7 +2401,7 @@
       "CloseDiscountDefinitionRequest" : {
         "properties" : {
           "reason" : {
-            "maxLength" : 500,
+            "maxLength" : 1000,
             "minLength" : 0,
             "type" : "string"
           }
@@ -3892,7 +3892,7 @@
             "type" : [ "integer", "null" ]
           },
           "name" : {
-            "maxLength" : 255,
+            "maxLength" : 200,
             "minLength" : 0,
             "type" : "string"
           },
@@ -11842,7 +11842,7 @@
             "type" : "boolean"
           },
           "termsVersion" : {
-            "maxLength" : 50,
+            "maxLength" : 20,
             "minLength" : 0,
             "type" : "string"
           }
@@ -13842,17 +13842,17 @@
       "UpdatePaymentGatewayConfigRequest" : {
         "properties" : {
           "accountHolder" : {
-            "maxLength" : 255,
+            "maxLength" : 100,
             "minLength" : 0,
             "type" : "string"
           },
           "bankAlias" : {
-            "maxLength" : 255,
+            "maxLength" : 50,
             "minLength" : 0,
             "type" : "string"
           },
           "bankCbu" : {
-            "maxLength" : 255,
+            "maxLength" : 22,
             "minLength" : 0,
             "type" : "string"
           },

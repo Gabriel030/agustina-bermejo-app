@@ -1,6 +1,5 @@
 package com.red_escuela.backend.evaluation.dto;
 
-import com.red_escuela.backend.shared.exception.RequestFieldOutOfRangeException;
 import com.red_escuela.backend.shared.validation.RequestLimits;
 import com.red_escuela.backend.shared.validation.SelfValidatingRequest;
 import java.math.BigDecimal;
@@ -22,8 +21,5 @@ public record CreateGradeItemRequest(
         RequestLimits.requireMaxLength("comments", comments, 255);
         RequestLimits.requireMaxLength("reason", reason, 500);
         RequestLimits.requireAtMost("sequenceNumber", sequenceNumber, 1000);
-        if (weight != null && (weight < 0 || weight > 1)) {
-            throw new RequestFieldOutOfRangeException("El campo weight debe estar entre 0 y 1");
-        }
     }
 }
