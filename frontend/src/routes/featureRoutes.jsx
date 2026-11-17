@@ -6,6 +6,7 @@ import { routes as evaluation } from '@/features/evaluation/routes';
 import { routes as billing } from '@/features/billing/routes';
 import { routes as graduation } from '@/features/graduation/routes';
 import { routes as announcements } from '@/features/announcements/routes';
+import { routes as broadcasts } from '@/features/broadcasts/routes';
 import { routes as notifications } from '@/features/notifications/routes';
 import { routes as workspace } from '@/features/workspace/routes';
 import { routes as platform } from '@/features/platform/routes';
@@ -21,6 +22,7 @@ export const FEATURE_ROUTES = {
   billing,
   graduation,
   announcements,
+  broadcasts,
   notifications,
   workspace,
   platform,
