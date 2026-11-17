@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiFetchBlob } from '@/api/client';
-import { STALE_TIME } from '@/api/cachePolicy';
+import { PROFILE_STALE_TIME } from '@/api/cachePolicy';
 
 export function usePerfilPropio() {
-  return useQuery({ queryKey: ['me'], queryFn: () => apiFetch('/me'), staleTime: STALE_TIME.OPERATIONAL });
+  return useQuery({ queryKey: ['me'], queryFn: () => apiFetch('/me'), staleTime: PROFILE_STALE_TIME });
 }
 
 export function useActualizarPerfil() {

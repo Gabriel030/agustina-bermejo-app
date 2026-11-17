@@ -80,17 +80,20 @@ export function AuthProvider({ children }) {
     setSessionExpiredHandler(expireSession);
   }, [expireSession]);
 
+  const prefetchBootstrapQueries = useCallback(() => {
+    queryClient?.prefetchQuery(pendingLegalAcceptancesQuery);
+    queryClient?.prefetchQuery(myModulesQuery);
+  }, [queryClient]);
+
   const attemptRestore = useCallback(async () => {
     const wasOffline = sessionPending;
     try {
-      const perfil = await restoreStoredSession(() => {
-        queryClient?.prefetchQuery(pendingLegalAcceptancesQuery);
-        queryClient?.prefetchQuery(myModulesQuery);
-      });
+      const perfil = await restoreStoredSession(prefetchBootstrapQueries);
       if (perfil) {
-        await claimOfflineCache(perfil.id, queryClient);
+        const ownerChanged = await claimOfflineCache(perfil.id, queryClient);
         await storeOfflineProfile(perfil);
         queryClient?.setQueryData(['me'], perfil);
+        if (ownerChanged) prefetchBootstrapQueries();
         setUsuario(perfil);
       }
       setOfflineSessionMode(false);
@@ -111,7 +114,7 @@ export function AuthProvider({ children }) {
     } finally {
       setCargando(false);
     }
-  }, [queryClient, expireSession, sessionPending]);
+  }, [queryClient, expireSession, sessionPending, prefetchBootstrapQueries]);
 
   useEffect(() => {
     if (!hasSessionHint()) {
