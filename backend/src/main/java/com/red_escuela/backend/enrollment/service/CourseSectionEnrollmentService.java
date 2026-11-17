@@ -1,11 +1,11 @@
 package com.red_escuela.backend.enrollment.service;
 
 import java.time.Clock;
+import com.red_escuela.backend.enrollment.dto.WaitlistKind;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,18 +15,15 @@ import java.util.List;
 
 @Service
 public class CourseSectionEnrollmentService {
-    private static final List<EnrollmentStatus> SEAT_HOLDING_STATUSES =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
-
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
-    private final SectionFinder sectionFinder;
+    private final WaitlistPromoter waitlistPromoter;
     private final Clock clock;
 
     public CourseSectionEnrollmentService(CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            SectionFinder sectionFinder,
+            WaitlistPromoter waitlistPromoter,
             Clock clock) {
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
-        this.sectionFinder = sectionFinder;
+        this.waitlistPromoter = waitlistPromoter;
         this.clock = clock;
     }
 
@@ -54,19 +51,7 @@ public class CourseSectionEnrollmentService {
     }
 
     private void promoteNextFromWaitlist(Long courseSubjectSectionId) {
-        sectionFinder.lockCourseSection(courseSubjectSectionId);
-        Integer capacity = sectionFinder.findCourseSection(courseSubjectSectionId).capacity();
-        long occupiedSeats = courseSubjectSectionEnrollmentRepository.countByCourseSubjectSectionIdAndStatusIn(
-                courseSubjectSectionId, SEAT_HOLDING_STATUSES);
-        if (capacity != null && occupiedSeats >= capacity) {
-            return;
-        }
-        courseSubjectSectionEnrollmentRepository
-                .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
-                .ifPresent(siguiente -> {
-                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
-                    courseSubjectSectionEnrollmentRepository.save(siguiente);
-                });
+        waitlistPromoter.promoteNext(WaitlistKind.COURSE_SECTION, courseSubjectSectionId);
     }
 
     private CourseSubjectSectionEnrollment findOrThrow(Long id) {

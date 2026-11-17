@@ -17,6 +17,9 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.api.WithdrawalCause;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.WaitlistEntryRow;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -50,6 +53,8 @@ class WaitlistPromotionIT extends AbstractIntegrationTest {
     private WaitlistPromoter waitlistPromoter;
     @Autowired
     private CourseEnrollmentService courseEnrollmentService;
+    @Autowired
+    private CourseEnrollmentRepository courseEnrollmentRepository;
 
     private record ProgramQueue(Long sectionId, List<Long> waitingIds) {
     }
@@ -103,6 +108,39 @@ class WaitlistPromotionIT extends AbstractIntegrationTest {
 
         assertThat(inTransaction(() -> entityManager.find(CourseEnrollment.class, queue.waitingId()).getStatus()))
                 .isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void voluntaryCourseWithdrawalDoesNotPromoteAWaitlistedStudentWithoutApprovedReceipt() {
+        CourseQueue queue = inTransaction(() -> courseQueue(2026));
+
+        Long actorId = inTransaction(() -> new CycleTestFixtures(entityManager).person().getId());
+        inTransaction(() -> {
+            courseEnrollmentService.withdraw(queue.seatedId(), new EnrollmentWithdrawal(null, actorId, WithdrawalCause.VOLUNTARY));
+            return true;
+        });
+
+        assertThat(inTransaction(() -> entityManager.find(CourseEnrollment.class, queue.waitingId()).getStatus()))
+                .isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void courseWaitlistIsOrderedWithPrioritizedFirstThenOldest() {
+        CourseQueue queue = inTransaction(() -> courseQueue(2052));
+        Long prioritizedId = inTransaction(() -> {
+            CourseEnrollment late = courseEnrollment(new CycleTestFixtures(entityManager), institution(),
+                    entityManager.find(Course.class, queue.courseId()), EnrollmentStatus.WAITLISTED);
+            late.setEnrollmentDate(BASE_TIME.plusDays(2));
+            late.setWaitlistPrioritizedAt(BASE_TIME.plusDays(3));
+            entityManager.flush();
+            return late.getId();
+        });
+
+        List<Long> order = inTransaction(() -> courseEnrollmentRepository
+                .findWaitlistEntryRows(queue.courseId(), EnrollmentStatus.WAITLISTED).stream()
+                .map(WaitlistEntryRow::getEnrollmentId).toList());
+
+        assertThat(order).containsExactly(prioritizedId, queue.waitingId());
     }
 
     private <T> T inTransaction(Callable<T> work) {
@@ -188,7 +226,7 @@ class WaitlistPromotionIT extends AbstractIntegrationTest {
         enrollment.setStudent(student(fixtures, institution));
         enrollment.setCourse(course);
         enrollment.setStatus(status);
-        enrollment.setEnrollmentDate(BASE_TIME);
+        enrollment.setEnrollmentDate(course.getTerm().getStartDate().plusDays(5));
         entityManager.persist(enrollment);
         return enrollment;
     }
