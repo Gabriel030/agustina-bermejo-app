@@ -136,7 +136,7 @@ public class StudentDiscountController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director revocó el descuento", content = @Content(schema = @Schema(implementation = StudentDiscountResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido de revocación pendiente; vence a fin de mes si nadie lo decide", content = @Content(schema = @Schema(implementation = StudentDiscountPendingAuthorizationResponse.class)))})
-    public ResponseEntity<?> revokeStudentDiscount(@PathVariable Long id, @RequestBody RevokeStudentDiscountRequest request) {
+    public ResponseEntity<?> revokeStudentDiscount(@PathVariable Long id, @Valid @RequestBody RevokeStudentDiscountRequest request) {
         return responseOf(revokeUseCase.revokeStudentDiscount(id, request.reason()));
     }
 
