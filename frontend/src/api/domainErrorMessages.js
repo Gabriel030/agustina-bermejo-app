@@ -10,6 +10,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
   CHANNEL_NOT_AVAILABLE: 'El canal de envío no está disponible.',
   INVALID_SEGMENT_CRITERION: 'El valor elegido para el segmento no es válido.',
+  BROADCAST_BODY_REQUIRED: 'El mensaje de la comunicación no puede estar vacío.',
+  BROADCAST_NOT_FOUND: 'No encontramos esa comunicación.',
   SEGMENT_NOT_AVAILABLE: 'Ese segmento de destinatarios no está disponible.',
   MISSING_REQUIRED_VARIABLE: 'Falta el dato de una variable de la plantilla para esa persona.',
   TEMPLATE_PERSON_NOT_FOUND: 'No encontramos a la persona elegida para la vista previa.',
