@@ -15,9 +15,9 @@ describe('feature routes', () => {
       [
         'academic-structure',
         'announcements',
-        'broadcasts',
         'attendance',
         'billing',
+        'broadcasts',
         'data-import',
         'enrollment',
         'evaluation',

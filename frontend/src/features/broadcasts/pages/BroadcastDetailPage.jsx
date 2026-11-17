@@ -145,7 +145,6 @@ export function BroadcastDetailPage() {
         minLength={MIN_REASON_LENGTH}
         disableUntilMinLength
         showCounter
-
         mensajeRequerido="El motivo de la cancelación es obligatorio."
       />
     </PageContainer>
