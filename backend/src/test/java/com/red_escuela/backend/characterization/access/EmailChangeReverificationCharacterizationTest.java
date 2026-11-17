@@ -244,13 +244,9 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
 
         updateStaffEmail(admin, teacher, "docente12.nuevo@example.com")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("access.emailchg12b@example.com"))
-                .andExpect(jsonPath("$.emailChangePending").value(true));
+                .andExpect(jsonPath("$.email").value("access.emailchg12b@example.com"));
 
         assertThat(reload(teacher).emailValue()).isEqualTo("access.emailchg12b@example.com");
-        mockMvc.perform(get("/staff/" + teacher.getId()).header("Authorization", bearer(admin)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.emailChangePending").value(true));
     }
 
     @Test
@@ -265,8 +261,6 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         Person confirmed = reload(teacher);
         assertThat(confirmed.emailValue()).isEqualTo("docente13.nuevo@example.com");
         assertThat(confirmed.getEmailVerified()).isTrue();
-        mockMvc.perform(get("/staff/" + teacher.getId()).header("Authorization", bearer(admin)))
-                .andExpect(jsonPath("$.emailChangePending").value(false));
     }
 
     @Test

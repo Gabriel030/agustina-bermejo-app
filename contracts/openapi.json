@@ -1378,7 +1378,7 @@
       "AuditLogView" : {
         "properties" : {
           "action" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED" ],
+            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED" ],
             "type" : "string"
           },
           "actorPersonId" : {
@@ -12735,9 +12735,6 @@
           "email" : {
             "type" : "string"
           },
-          "emailChangePending" : {
-            "type" : "boolean"
-          },
           "emailVerified" : {
             "type" : "boolean"
           },
@@ -12769,7 +12766,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailChangePending", "emailVerified", "failedLoginAttempts", "id", "lockedUntil", "nombre", "role", "status", "telefono", "username" ],
+        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailVerified", "failedLoginAttempts", "id", "lockedUntil", "nombre", "role", "status", "telefono", "username" ],
         "type" : "object"
       },
       "StaffResponse" : {
@@ -12782,9 +12779,6 @@
           },
           "email" : {
             "type" : "string"
-          },
-          "emailChangePending" : {
-            "type" : [ "boolean", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -12806,7 +12800,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "dni", "email", "emailChangePending", "id", "nombre", "role", "status", "telefono", "username" ],
+        "required" : [ "apellido", "dni", "email", "id", "nombre", "role", "status", "telefono", "username" ],
         "type" : "object"
       },
       "StatusChangeResponse" : {
@@ -14241,6 +14235,14 @@
           "position" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "prioritizationOrder" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "prioritizedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
           },
           "student" : {
             "$ref" : "#/components/schemas/WaitlistStudent"
@@ -18330,7 +18332,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED" ],
+            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED" ],
             "type" : "string"
           }
         }, {
@@ -58704,7 +58706,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED" ],
+            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED" ],
             "type" : "string"
           }
         }, {
