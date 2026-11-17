@@ -101,6 +101,14 @@ public class HistoricalClosureRecorder {
     }
 
     @Transactional
+    public void discardStudentResults(Collection<Long> enrollmentIds) {
+        for (List<Long> chunk : InClauseChunks.of(enrollmentIds)) {
+            closureStudentRepository.deleteByEnrollmentIdIn(chunk);
+        }
+        closureStudentRepository.flush();
+    }
+
+    @Transactional
     public void discardClosure(Long sectionId) {
         closureRepository.findBySectionKindAndSectionId(SectionKind.PROGRAM, sectionId).ifPresent(closure -> {
             if (closure.getStatus() != ClosureStatus.CLOSED || closure.getReportVersion() != 1) {

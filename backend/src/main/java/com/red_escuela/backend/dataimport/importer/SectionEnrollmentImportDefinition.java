@@ -181,6 +181,17 @@ public class SectionEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public boolean discardsInBatch() {
+        return true;
+    }
+
+    @Override
+    public void discardAll(List<Long> entityIds) {
+        closureRecorder.discardStudentResults(entityIds);
+        enrollmentRecorder.discardSectionEnrollments(entityIds);
+    }
+
+    @Override
     public BaseLookups preloadForRecord(List<Map<String, String>> payloads) {
         return lookupsLoader.loadForRecord(payloads, true);
     }
