@@ -2,6 +2,7 @@ package com.red_escuela.backend.academicstructure.repository;
 
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.shared.domain.StatusType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +12,7 @@ import java.util.Optional;
 @Repository
 public interface ProgramSubjectRepository extends JpaRepository<ProgramSubject, Long> {
 
+    @EntityGraph(attributePaths = "subject")
     List<ProgramSubject> findByProgramId(Long programId);
 
     List<ProgramSubject> findByProgramIdAndStatus(Long programId, StatusType status);
