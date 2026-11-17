@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.discount.dto;
 
+import jakarta.validation.constraints.Size;
+
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionDraft;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
@@ -11,7 +13,7 @@ import org.springframework.lang.Nullable;
 
 import java.time.LocalDate;
 
-public record CreateDiscountDefinitionRequest(String name, DiscountDefinitionType discountType, InvoiceType applicableInvoiceType, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null") MonetaryAdjustment calculation,
+public record CreateDiscountDefinitionRequest(@Size(max = 255) String name, DiscountDefinitionType discountType, InvoiceType applicableInvoiceType, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null") MonetaryAdjustment calculation,
                                               @Nullable Integer installmentsTotal, LocalDate availableFrom, @Nullable LocalDate availableUntil, Integer priority,
                                               @Schema(description = "Opcional; puede venir null") @Nullable Money capPerInvoice, @Nullable Long programId, @Nullable Long programCohortId, @Nullable Long courseId,
                                               @Nullable LocalDate enrollmentWindowFrom, @Nullable LocalDate enrollmentWindowTo, @Nullable Integer quota) {

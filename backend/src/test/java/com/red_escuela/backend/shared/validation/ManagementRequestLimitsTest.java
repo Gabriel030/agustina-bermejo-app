@@ -105,6 +105,8 @@ class ManagementRequestLimitsTest {
                 Arguments.of("/echo/update-program-subject", "{\"curricularYear\":21}", "REQUEST_FIELD_OUT_OF_RANGE"),
                 Arguments.of("/echo/create-grade-item", "{\"type\":\"EXAM\",\"date\":\"2026-03-01T00:00:00\",\"score\":7,\"comments\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
                 Arguments.of("/echo/create-grade-item", "{\"type\":\"EXAM\",\"date\":\"2026-03-01T00:00:00\",\"score\":7,\"sequenceNumber\":2000000000}", "REQUEST_FIELD_OUT_OF_RANGE"),
+                Arguments.of("/echo/create-grade-item", "{\"type\":\"EXAM\",\"date\":\"2026-03-01T00:00:00\",\"score\":7,\"weight\":1.5}", "REQUEST_FIELD_OUT_OF_RANGE"),
+                Arguments.of("/echo/create-grade-item", "{\"type\":\"EXAM\",\"date\":\"2026-03-01T00:00:00\",\"score\":7,\"weight\":-0.1}", "REQUEST_FIELD_OUT_OF_RANGE"),
                 Arguments.of("/echo/save-prospect-draft", "{\"street\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
                 Arguments.of("/echo/notification-preferences", manyPreferences(), "REQUEST_LIST_TOO_LARGE"),
                 Arguments.of("/echo/notification-preferences", "{\"preferences\":{\"" + LONG_TEXT + "\":{\"push\":true}}}", "REQUEST_FIELD_TOO_LONG"));

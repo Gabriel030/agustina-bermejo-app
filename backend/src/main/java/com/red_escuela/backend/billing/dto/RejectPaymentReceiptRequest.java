@@ -1,4 +1,6 @@
 package com.red_escuela.backend.billing.dto;
 
-public record RejectPaymentReceiptRequest(String rejectionReason) {
+import jakarta.validation.constraints.Size;
+
+public record RejectPaymentReceiptRequest(@Size(max = 500) String rejectionReason) {
 }

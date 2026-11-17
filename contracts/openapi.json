@@ -870,6 +870,8 @@
       "ApproveBankTransferReceiptRequest" : {
         "properties" : {
           "reviewNote" : {
+            "maxLength" : 500,
+            "minLength" : 0,
             "type" : "string"
           },
           "transferDate" : {
@@ -2399,6 +2401,8 @@
       "CloseDiscountDefinitionRequest" : {
         "properties" : {
           "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -3888,6 +3892,8 @@
             "type" : [ "integer", "null" ]
           },
           "name" : {
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : "string"
           },
           "priority" : {
@@ -11521,6 +11527,8 @@
       "RejectPaymentReceiptRequest" : {
         "properties" : {
           "rejectionReason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -11834,6 +11842,8 @@
             "type" : "boolean"
           },
           "termsVersion" : {
+            "maxLength" : 50,
+            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -11925,6 +11935,8 @@
       "RevokeStudentDiscountRequest" : {
         "properties" : {
           "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -13830,12 +13842,18 @@
       "UpdatePaymentGatewayConfigRequest" : {
         "properties" : {
           "accountHolder" : {
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : "string"
           },
           "bankAlias" : {
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : "string"
           },
           "bankCbu" : {
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : "string"
           },
           "mpEnabled" : {
@@ -84798,6 +84816,16 @@
             },
             "description" : "Conflict"
           },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
           "429" : {
             "content" : {
               "application/json" : {
@@ -84922,6 +84950,16 @@
               }
             },
             "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
           },
           "429" : {
             "content" : {
@@ -85065,6 +85103,16 @@
               }
             },
             "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
           },
           "429" : {
             "content" : {

@@ -1,4 +1,6 @@
 package com.red_escuela.backend.billing.discount.dto;
 
-public record CloseDiscountDefinitionRequest(String reason) {
+import jakarta.validation.constraints.Size;
+
+public record CloseDiscountDefinitionRequest(@Size(max = 500) String reason) {
 }
