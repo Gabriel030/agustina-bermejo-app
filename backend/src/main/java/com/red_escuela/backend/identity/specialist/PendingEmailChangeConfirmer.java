@@ -13,14 +13,13 @@ public class PendingEmailChangeConfirmer {
 
     private final PersonRepository personRepository;
     private final ContactChangeRecorder contactChangeRecorder;
-
     private final SessionRevoker sessionRevoker;
 
     public PendingEmailChangeConfirmer(PersonRepository personRepository, ContactChangeRecorder contactChangeRecorder,
                                        SessionRevoker sessionRevoker) {
-        this.sessionRevoker = sessionRevoker;
         this.personRepository = personRepository;
         this.contactChangeRecorder = contactChangeRecorder;
+        this.sessionRevoker = sessionRevoker;
     }
 
     public void confirmIfPending(EmailVerificationToken token) {
