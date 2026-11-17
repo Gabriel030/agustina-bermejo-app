@@ -82,4 +82,10 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     List<ProgramEnrollmentDateRow> findDateRowsByStudentIdInAndProgramIdIn(@Param("studentIds") Collection<Long> studentIds, @Param("programIds") Collection<Long> programIds);
 
     java.util.Optional<ProgramEnrollment> findFirstByStudentIdAndProgramIdOrderByIdAsc(Long studentId, Long programId);
+
+    @Query("select distinct e.student.person.id from ProgramEnrollment e where e.program.id = :programId and e.status = :status and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
+    java.util.List<Long> findStudentPersonIdsByProgramAndStatus(Long programId, ProgramEnrollmentStatus status);
+
+    @Query("select distinct e.student.person.id from ProgramEnrollment e where e.status = :status and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
+    java.util.List<Long> findStudentPersonIdsByStatus(ProgramEnrollmentStatus status);
 }

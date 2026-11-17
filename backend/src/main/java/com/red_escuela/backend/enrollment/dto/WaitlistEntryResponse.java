@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 
 public record WaitlistEntryResponse(int position, Long enrollmentId, WaitlistStudent student, LocalDateTime joinedAt,
                                     WaitlistVerdict verdict,
+                                    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime prioritizedAt,
+                                    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Integer prioritizationOrder,
                                     @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate expiresOn) {
 
     public record WaitlistStudent(Long id, String fullName, @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String documentNumber) {

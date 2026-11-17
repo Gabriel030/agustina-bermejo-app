@@ -45,6 +45,9 @@ public class CourseEnrollment implements BillableEnrollment {
     @Column(name = "enrollment_date")
     private LocalDateTime enrollmentDate;
 
+    @Column(name = "waitlist_prioritized_at")
+    private LocalDateTime waitlistPrioritizedAt;
+
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 

@@ -12,4 +12,6 @@ public interface WaitlistEntryRow {
     String getDocumentNumber();
 
     LocalDateTime getJoinedAt();
+
+    LocalDateTime getPrioritizedAt();
 }
