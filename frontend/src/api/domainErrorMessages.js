@@ -174,6 +174,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   HOLIDAY_NOT_FOUND: 'No encontramos el feriado.',
   INSTITUTION_NOT_FOUND: 'No encontramos la institución.',
   INSTRUCTOR_NOT_FOUND: 'No encontramos al docente.',
+  INVALID_UNSUBSCRIBE_TOKEN: 'El enlace para darte de baja no es válido.',
   NOTIFICATION_DELIVERY_NOT_FOUND: 'No encontramos el envío de la notificación.',
   NOTIFICATION_NOT_FOUND: 'No encontramos la notificación.',
   PERSON_NOT_FOUND: 'No encontramos a la persona.',

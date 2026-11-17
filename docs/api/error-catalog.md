@@ -292,6 +292,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `IMPORT_INSTITUTION_NOT_FOUND` | no | `ImportInstitutionNotFoundException` | dataimport |
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
 | `INSTRUCTOR_NOT_FOUND` | no | `InstructorNotFoundException` | academicstructure |
+| `INVALID_UNSUBSCRIBE_TOKEN` | no | `InvalidUnsubscribeTokenException` | notification |
 | `INVOICE_NOT_FOUND` | no | `InvoiceNotFoundException` | billing |
 | `MONTHLY_INVOICE_RUN_ITEM_NOT_FOUND` | no | `MonthlyInvoiceRunItemNotFoundException` | billing |
 | `MONTHLY_INVOICE_RUN_NOT_FOUND` | no | `MonthlyInvoiceRunNotFoundException` | billing |
@@ -823,6 +824,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/prospects/{id}/confirm` | `ProspectController#confirm` |
 | POST | `/prospects/{id}/documents` | `ProspectController#addDocument` |
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |
+| POST | `/public/unsubscribe/{token}` | `PublicUnsubscribeController#confirmUnsubscribe` |
 | POST | `/refunds/{refundId}/completion` | `RefundController#completeRefund` |
 | POST | `/refunds/{refundId}/failure` | `RefundController#failRefund` |
 | POST | `/regular-certificate-requests/{id}/reject` | `RegularCertificateRequestController#reject` |
