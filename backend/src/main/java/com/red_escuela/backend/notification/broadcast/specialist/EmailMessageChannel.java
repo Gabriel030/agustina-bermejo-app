@@ -2,6 +2,7 @@ package com.red_escuela.backend.notification.broadcast.specialist;
 
 import com.red_escuela.backend.identity.api.EmailRecipient;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
+import com.red_escuela.backend.notification.broadcast.domain.BroadcastDeliveryKind;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelAddress;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelCapabilities;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
@@ -25,7 +26,6 @@ import java.util.Optional;
 @Component
 public class EmailMessageChannel implements MessageChannel {
 
-    static final String KIND = "BROADCAST";
     static final String RELATED_ENTITY_TYPE = "BROADCAST";
     static final int DISPATCH_PRIORITY = 5;
     private static final ChannelCapabilities CAPABILITIES = new ChannelCapabilities(true, false, false, 50_000);
@@ -79,7 +79,7 @@ public class EmailMessageChannel implements MessageChannel {
 
     private DispatchOutcome enqueue(OutboundMessage message) {
         DeliveryEnvelope envelope = new DeliveryEnvelope("BROADCAST_" + message.broadcastId() + "_" + message.recipientPersonId(),
-                DeliveryCategory.BROADCAST, KIND, DISPATCH_PRIORITY, message.recipientPersonId(), RELATED_ENTITY_TYPE,
+                DeliveryCategory.BROADCAST, BroadcastDeliveryKind.of(message.category()), DISPATCH_PRIORITY, message.recipientPersonId(), RELATED_ENTITY_TYPE,
                 message.broadcastId(), LocalDate.now(clock));
         DeliveryRequest request = new DeliveryRequest(envelope, null, null,
                 DeliveryContent.forEmail(message.content().subject(), message.content().body(), null), false);
