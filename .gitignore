@@ -19,3 +19,6 @@ frontend/coverage/
 perf/out/
 perf/results.json
 deploy/.env.staging
+
+__pycache__/
+*.pyc
