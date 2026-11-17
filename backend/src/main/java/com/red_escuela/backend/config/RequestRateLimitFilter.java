@@ -34,6 +34,8 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
     private static final Set<String> IGNORED_METHODS = Set.of("OPTIONS", "TRACE");
     private static final String POST = "POST";
     private static final String STAFF_PROSPECTS_PATH = "/prospects/by-staff";
+    private static final String UNSUBSCRIBE_PREFIX = "/public/unsubscribe/";
+    private static final String UNSUBSCRIBE_LIMITER_KEY = "/public/unsubscribe";
 
     private final Map<String, KeyedRateLimiter> publicLimiters;
     private final KeyedRateLimiter staffProspectsLimiter;
@@ -72,7 +74,8 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
         this.publicLimiters = Map.of(
                 "/auth/refresh", new KeyedRateLimiter(refreshCapacity, refreshRefill, maxTrackedKeys, IDLE_WINDOW, clock),
                 "/auth/reset-password", new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
-                "/prospects", new KeyedRateLimiter(prospectsCapacity, prospectsRefill, maxTrackedKeys, IDLE_WINDOW, clock));
+                "/prospects", new KeyedRateLimiter(prospectsCapacity, prospectsRefill, maxTrackedKeys, IDLE_WINDOW, clock),
+                UNSUBSCRIBE_LIMITER_KEY, new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock));
         this.staffProspectsLimiter = new KeyedRateLimiter(staffProspectsCapacity, staffProspectsRefill, maxTrackedKeys, IDLE_WINDOW, clock);
         this.userReadLimiter = new KeyedRateLimiter(userReadCapacity, userReadRefill, maxTrackedKeys, IDLE_WINDOW, clock);
         this.userWriteLimiter = new KeyedRateLimiter(userWriteCapacity, userWriteRefill, maxTrackedKeys, IDLE_WINDOW, clock);
@@ -114,7 +117,7 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
             return permitted();
         }
         String path = request.getRequestURI().substring(request.getContextPath().length());
-        KeyedRateLimiter publicLimiter = POST.equals(method) ? publicLimiters.get(path) : null;
+        KeyedRateLimiter publicLimiter = publicLimiterFor(method, path);
         if (publicLimiter != null) {
             return publicLimiter.tryConsume(request.getRemoteAddr());
         }
@@ -123,6 +126,13 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
             return permitted();
         }
         return userLimiter(method, path).tryConsume(user);
+    }
+
+    private KeyedRateLimiter publicLimiterFor(String method, String path) {
+        if (path.startsWith(UNSUBSCRIBE_PREFIX) && (POST.equals(method) || READ_METHODS.contains(method))) {
+            return publicLimiters.get(UNSUBSCRIBE_LIMITER_KEY);
+        }
+        return POST.equals(method) ? publicLimiters.get(path) : null;
     }
 
     private KeyedRateLimiter userLimiter(String method, String path) {

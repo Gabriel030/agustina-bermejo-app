@@ -24,6 +24,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [specs.md](context/specs.md) | Dónde viven las specs y el roadmap (Obsidian) | vigente |
 | [cell.md](context/cell.md) | Célula de agentes: roles, arranque de sesiones, flujo de un ticket, local vs nube | vigente |
 | [plans/TEMPLATE.md](cell/plans/TEMPLATE.md) | Plantilla de plan de la célula (`docs/cell/plans/<ticket>.md`) | vigente |
+| [progress/920-1.md](cell/progress/920-1.md) | Estado de la subtarea 920#1 (consentimiento de contacto y baja pública) | vigente |
 
 ## Release (`docs/release/`)
 
