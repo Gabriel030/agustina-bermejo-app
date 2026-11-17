@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { m } from 'motion/react';
 import { CheckCircle2, XCircle, WifiOff } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -11,13 +11,28 @@ import { describeError } from '@/api/describeError';
 
 export function CancelEmailChangePage() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const navigate = useNavigate();
+  const [token] = useState(() => searchParams.get('token'));
+  const messageRef = useRef(null);
   const [status, setStatus] = useState('idle');
   const view = token ? status : 'invalid';
 
+  useEffect(() => {
+    navigate('/cancelar-cambio-email', { replace: true });
+  }, [navigate]);
+
+  useEffect(() => {
+    if (view !== 'idle') {
+      messageRef.current?.focus();
+    }
+  }, [view]);
+
   function cancelChange() {
+    if (status === 'submitting') {
+      return;
+    }
     setStatus('submitting');
-    apiFetch(`/cancel-email-change?token=${encodeURIComponent(token)}`, { method: 'POST' })
+    apiFetch('/cancel-email-change', { method: 'POST', body: JSON.stringify({ token }) })
       .then(() => setStatus('done'))
       .catch((error) => setStatus(describeError(error).retryable ? 'network' : 'invalid'));
   }
@@ -35,7 +50,13 @@ export function CancelEmailChangePage() {
           <InstitutionBrand />
         </div>
 
-        <GlassCard className="p-8 flex flex-col items-center gap-4 text-center">
+        <GlassCard
+          ref={messageRef}
+          tabIndex={-1}
+          role={view === 'invalid' || view === 'network' ? 'alert' : 'status'}
+          aria-live={view === 'invalid' || view === 'network' ? 'assertive' : 'polite'}
+          className="p-8 flex flex-col items-center gap-4 text-center outline-none"
+        >
           {(view === 'idle' || view === 'submitting') && (
             <>
               <div>
