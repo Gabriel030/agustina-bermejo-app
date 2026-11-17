@@ -28,6 +28,7 @@ import com.red_escuela.backend.shared.audit.AuditRecord;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -65,6 +66,7 @@ class WaitlistActionsIT extends AbstractIntegrationTest {
     private SubjectSection section;
     private SubjectSectionEnrollment first;
     private SubjectSectionEnrollment second;
+    private SubjectSectionEnrollment retaker;
 
     private void givenQueue(int capacity) {
         CycleTestFixtures fixtures = new CycleTestFixtures(entityManager);
@@ -78,6 +80,8 @@ class WaitlistActionsIT extends AbstractIntegrationTest {
         persistEnrollment(fixtures, institution, program, section, EnrollmentStatus.ENROLLED, BASE_TIME, null);
         first = persistEnrollment(fixtures, institution, program, section, EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(1), null);
         second = persistEnrollment(fixtures, institution, program, section, EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(2), null);
+        SubjectSection approvedSection = fixtures.section(subject, term, StatusType.ACTIVE, cycle);
+        retaker = persistEnrollment(fixtures, institution, program, section, EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(3), approvedSection);
         entityManager.flush();
     }
 
@@ -94,9 +98,9 @@ class WaitlistActionsIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
         entityManager.flush();
         entityManager.clear();
-        org.junit.jupiter.api.Assertions.assertEquals(EnrollmentStatus.ENROLLED,
+        Assertions.assertEquals(EnrollmentStatus.ENROLLED,
                 entityManager.find(SubjectSectionEnrollment.class, first.getId()).getStatus());
-        org.junit.jupiter.api.Assertions.assertEquals(1, auditCount("WAITLIST_PROMOTED_BY_STAFF", first.getId()));
+        Assertions.assertEquals(1, auditCount("WAITLIST_PROMOTED_BY_STAFF", first.getId()));
     }
 
     @Test
@@ -121,7 +125,7 @@ class WaitlistActionsIT extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.entries[0].enrollmentId").value(second.getId()))
                 .andExpect(jsonPath("$.entries[1].enrollmentId").value(first.getId()));
-        org.junit.jupiter.api.Assertions.assertEquals(1, auditCount("WAITLIST_PRIORITIZED_BY_STAFF", second.getId()));
+        Assertions.assertEquals(1, auditCount("WAITLIST_PRIORITIZED_BY_STAFF", second.getId()));
     }
 
     @Test
@@ -146,9 +150,129 @@ class WaitlistActionsIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
         entityManager.flush();
         entityManager.clear();
-        org.junit.jupiter.api.Assertions.assertEquals(EnrollmentStatus.WITHDRAWN,
+        Assertions.assertEquals(EnrollmentStatus.WITHDRAWN,
                 entityManager.find(SubjectSectionEnrollment.class, first.getId()).getStatus());
-        org.junit.jupiter.api.Assertions.assertEquals(1, auditCount("WAITLIST_REMOVED_BY_STAFF", first.getId()));
+        Assertions.assertEquals(1, auditCount("WAITLIST_REMOVED_BY_STAFF", first.getId()));
+    }
+
+    private LocalDateTime prioritizedAtOf(Long id) {
+        entityManager.flush();
+        entityManager.clear();
+        return entityManager.find(SubjectSectionEnrollment.class, id).getWaitlistPrioritizedAt();
+    }
+
+    private void prioritize(String token, Long id) throws Exception {
+        mockMvc.perform(post("/waitlists/PROGRAM_SECTION/entries/{id}/prioritize", id)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(VALID_REASON))
+                .andExpect(status().isOk());
+        entityManager.flush();
+    }
+
+    private void assertQueueOrder(String token, Long... expected) throws Exception {
+        var result = mockMvc.perform(get("/waitlists/{kind}/{id}", "PROGRAM_SECTION", section.getId())
+                .header("Authorization", "Bearer " + token));
+        for (int index = 0; index < expected.length; index++) {
+            result.andExpect(jsonPath("$.entries[" + index + "].enrollmentId").value(expected[index]));
+        }
+    }
+
+    @Test
+    void lastPrioritizedEntryIsAlwaysFirst() throws Exception {
+        givenQueue(1);
+        String token = tokenWithRole("director-last", "DIRECTOR");
+        prioritize(token, first.getId());
+        prioritize(token, second.getId());
+        assertQueueOrder(token, second.getId(), first.getId());
+        Assertions.assertTrue(prioritizedAtOf(second.getId()).isAfter(prioritizedAtOf(first.getId())));
+    }
+
+    @Test
+    void prioritizingTheEntryThatIsAlreadyFirstIsIdempotent() throws Exception {
+        givenQueue(1);
+        String token = tokenWithRole("director-idem", "DIRECTOR");
+        prioritize(token, second.getId());
+        LocalDateTime firstTimestamp = prioritizedAtOf(second.getId());
+        prioritize(token, second.getId());
+        prioritize(token, second.getId());
+        Assertions.assertEquals(firstTimestamp, prioritizedAtOf(second.getId()));
+        Assertions.assertEquals(1, auditCount("WAITLIST_PRIORITIZED_BY_STAFF", second.getId()));
+        assertQueueOrder(token, second.getId(), first.getId());
+    }
+
+    @Test
+    void reprioritizingAnOlderPrioritizedEntryMovesItBackToFirst() throws Exception {
+        givenQueue(1);
+        String token = tokenWithRole("director-again", "DIRECTOR");
+        prioritize(token, first.getId());
+        prioritize(token, second.getId());
+        prioritize(token, first.getId());
+        assertQueueOrder(token, first.getId(), second.getId());
+        Assertions.assertEquals(2, auditCount("WAITLIST_PRIORITIZED_BY_STAFF", first.getId()));
+    }
+
+    @Test
+    void prioritizationBeatsAnExistingTimestampEqualOrInTheFuture() throws Exception {
+        givenQueue(1);
+        String token = tokenWithRole("director-tie", "DIRECTOR");
+        LocalDateTime future = LocalDateTime.now().plusDays(1);
+        first.setWaitlistPrioritizedAt(future);
+        entityManager.flush();
+        prioritize(token, second.getId());
+        assertQueueOrder(token, second.getId(), first.getId());
+        Assertions.assertTrue(prioritizedAtOf(second.getId()).isAfter(future));
+    }
+
+    @Test
+    void tiedPrioritizationTimestampsFallBackToJoinOrder() throws Exception {
+        givenQueue(1);
+        String token = tokenWithRole("director-join", "DIRECTOR");
+        LocalDateTime same = BASE_TIME.plusDays(1);
+        second.setWaitlistPrioritizedAt(same);
+        first.setWaitlistPrioritizedAt(same);
+        entityManager.flush();
+        assertQueueOrder(token, first.getId(), second.getId());
+    }
+
+    @Test
+    void promotingANotEligibleCandidateFailsAndKeepsItWaiting() throws Exception {
+        givenQueue(5);
+        mockMvc.perform(post("/waitlists/PROGRAM_SECTION/entries/{id}/promote", retaker.getId())
+                        .header("Authorization", "Bearer " + tokenWithRole("admin-noteligible", "ADMINISTRATIVO")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("WAITLIST_CANDIDATE_NOT_ELIGIBLE"));
+        entityManager.flush();
+        entityManager.clear();
+        Assertions.assertEquals(EnrollmentStatus.WAITLISTED, entityManager.find(SubjectSectionEnrollment.class, retaker.getId()).getStatus());
+        Assertions.assertEquals(0, auditCount("WAITLIST_PROMOTED_BY_STAFF", retaker.getId()));
+    }
+
+    @Test
+    void promotingTwiceFailsTheSecondTime() throws Exception {
+        givenQueue(3);
+        String token = tokenWithRole("admin-twice", "ADMINISTRATIVO");
+        mockMvc.perform(post("/waitlists/PROGRAM_SECTION/entries/{id}/promote", first.getId())
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        entityManager.flush();
+        mockMvc.perform(post("/waitlists/PROGRAM_SECTION/entries/{id}/promote", first.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("WAITLIST_ENTRY_NOT_WAITING"));
+        Assertions.assertEquals(1, auditCount("WAITLIST_PROMOTED_BY_STAFF", first.getId()));
+    }
+
+    @Test
+    void removingTwiceFailsTheSecondTime() throws Exception {
+        givenQueue(1);
+        String token = tokenWithRole("admin-remove-twice", "ADMINISTRATIVO");
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mockMvc.perform(post("/waitlists/PROGRAM_SECTION/entries/{id}/remove", first.getId())
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON).content(VALID_REASON))
+                    .andExpect(status().is(attempt == 0 ? 200 : 409));
+            entityManager.flush();
+        }
+        Assertions.assertEquals(1, auditCount("WAITLIST_REMOVED_BY_STAFF", first.getId()));
     }
 
     @Test

@@ -20,7 +20,7 @@ class WaitlistEntryActionsTest {
         WaitlistEntryLoader loader = mock(WaitlistEntryLoader.class);
         WaitlistQueue queue = mock(WaitlistQueue.class);
         when(loader.loadLocked(WaitlistKind.COURSE, 7L)).thenReturn(new WaitlistEntryContext(queue, null, null, null));
-        when(queue.hasPendingReceipt(7L)).thenReturn(true);
+        when(queue.hasReceiptBlockingRemoval(7L)).thenReturn(true);
         WaitlistEntryActions service = new WaitlistEntryActions(loader, null, mock(AuditTrail.class), mock(ApplicationEventPublisher.class));
 
         assertThrows(WaitlistRemovalBlockedByPendingReceiptException.class, () -> service.remove(WaitlistKind.COURSE, 7L, "Motivo suficiente"));
