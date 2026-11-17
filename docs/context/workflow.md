@@ -29,7 +29,7 @@ Si la fase ya la está haciendo otra sesión, avisarle con `SendMessage` en vez 
 
 - Mostrar archivos tocados + mensaje de commit propuesto y esperar un "sí" explícito **antes de cada commit**.
 - Aprobación **aparte antes de cada push**. También para fixes urgentes de CI.
-- No abrir PR sin que el usuario lo haya pedido/aprobado. El merge lo hace el usuario.
+- No abrir PR sin que el usuario lo haya pedido/aprobado. El merge lo hace el Líder Técnico de la célula (dominio delegado por Gabriel el 17-nov, release a master incluido), con CI verde y las revisiones que correspondan.
 - Mensajes de commit en español, explicando el "por qué"; un commit por unidad coherente.
 
 ## 3. CI local ANTES de abrir el PR (obligatorio)
