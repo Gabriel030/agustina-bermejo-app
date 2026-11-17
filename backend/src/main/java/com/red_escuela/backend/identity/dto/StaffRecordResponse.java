@@ -24,9 +24,11 @@ public record StaffRecordResponse(
         Boolean emailVerified,
         AuthProvider authProvider,
         @Schema(nullable = true) LocalDateTime lockedUntil,
-        @Schema(nullable = true) Integer failedLoginAttempts
+        @Schema(nullable = true) Integer failedLoginAttempts,
+        boolean emailChangePending
 ) {
-    public static StaffRecordResponse from(Person person, String role, boolean includeFailedLoginAttempts) {
+    public static StaffRecordResponse from(Person person, String role, boolean includeFailedLoginAttempts,
+                                          boolean emailChangePending) {
         return new StaffRecordResponse(
                 person.getId(),
                 person.getName(),
@@ -42,7 +44,8 @@ public record StaffRecordResponse(
                 person.getEmailVerified(),
                 person.getAuthProvider(),
                 activeLockedUntil(person),
-                includeFailedLoginAttempts ? person.getFailedLoginAttempts() : null
+                includeFailedLoginAttempts ? person.getFailedLoginAttempts() : null,
+                emailChangePending
         );
     }
 

@@ -28,6 +28,10 @@ public class StaffRoleAssignmentPolicy {
         this.emailChangeRequester = emailChangeRequester;
     }
 
+    public boolean hasEmailChangePending(Person target) {
+        return emailChangeRequester.hasEmailChangePending(target);
+    }
+
     public void requireNoEmailChangeInFlight(Person target) {
         emailChangeRequester.requireNoEmailChangeInFlight(target);
     }

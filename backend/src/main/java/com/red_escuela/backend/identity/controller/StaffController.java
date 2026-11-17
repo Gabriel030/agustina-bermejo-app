@@ -75,7 +75,8 @@ public class StaffController {
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StaffResponse updateStaff(@PathVariable Long id, @Valid @RequestBody UpdateStaffRequest request) {
         StaffUseCaseResult result = updateStaffUseCase.update(new UpdateStaffCommand(id, request));
-        return StaffResponse.from(result.person(), result.role());
+        return StaffResponse.from(result.person(), result.role(),
+                staffRoleAssignmentPolicy.hasEmailChangePending(result.person()));
     }
 
     @GetMapping
@@ -94,7 +95,8 @@ public class StaffController {
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StaffRecordResponse getRecord(@PathVariable Long id) {
         var person = getStaffRecordUseCase.getRecord(id);
-        return StaffRecordResponse.from(person, staffRoleAssignmentPolicy.resolveStaffRole(person), isDirector());
+        return StaffRecordResponse.from(person, staffRoleAssignmentPolicy.resolveStaffRole(person), isDirector(),
+                staffRoleAssignmentPolicy.hasEmailChangePending(person));
     }
 
     private boolean isDirector() {

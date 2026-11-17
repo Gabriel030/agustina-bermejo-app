@@ -64,6 +64,10 @@ public class EmailChangeRequester {
         }
     }
 
+    public boolean hasEmailChangePending(Person person) {
+        return tokenRepository.existsByPersonAndNewEmailIsNotNull(person);
+    }
+
     boolean isDifferentFromCurrent(Person person, String requestedEmail) {
         return person.getEmail() == null || !person.getEmail().equals(EmailAddress.of(requestedEmail));
     }

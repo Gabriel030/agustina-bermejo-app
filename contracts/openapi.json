@@ -12735,6 +12735,9 @@
           "email" : {
             "type" : "string"
           },
+          "emailChangePending" : {
+            "type" : "boolean"
+          },
           "emailVerified" : {
             "type" : "boolean"
           },
@@ -12766,7 +12769,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailVerified", "failedLoginAttempts", "id", "lockedUntil", "nombre", "role", "status", "telefono", "username" ],
+        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailChangePending", "emailVerified", "failedLoginAttempts", "id", "lockedUntil", "nombre", "role", "status", "telefono", "username" ],
         "type" : "object"
       },
       "StaffResponse" : {
@@ -12779,6 +12782,9 @@
           },
           "email" : {
             "type" : "string"
+          },
+          "emailChangePending" : {
+            "type" : [ "boolean", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -12800,7 +12806,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "dni", "email", "id", "nombre", "role", "status", "telefono", "username" ],
+        "required" : [ "apellido", "dni", "email", "emailChangePending", "id", "nombre", "role", "status", "telefono", "username" ],
         "type" : "object"
       },
       "StatusChangeResponse" : {

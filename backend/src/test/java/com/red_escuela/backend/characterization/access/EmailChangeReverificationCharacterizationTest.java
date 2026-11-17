@@ -232,6 +232,75 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
     }
 
     @Test
+    void staffEmailChangeDoesNotApplyUntilOwnerConfirms() throws Exception {
+        Person admin = persistPerson("access.emailchg12a", "70000216", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg12b", "70000217", "DOCENTE");
+
+        updateStaffEmail(admin, teacher, "docente12.nuevo@example.com")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("access.emailchg12b@example.com"))
+                .andExpect(jsonPath("$.emailChangePending").value(true));
+
+        assertThat(reload(teacher).emailValue()).isEqualTo("access.emailchg12b@example.com");
+        mockMvc.perform(get("/staff/" + teacher.getId()).header("Authorization", bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailChangePending").value(true));
+    }
+
+    @Test
+    void ownerConfirmApplies() throws Exception {
+        Person admin = persistPerson("access.emailchg13a", "70000218", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg13b", "70000219", "DOCENTE");
+        updateStaffEmail(admin, teacher, "docente13.nuevo@example.com").andExpect(status().isOk());
+
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(lastEmailChangeEvent(teacher))))
+                .andExpect(status().isOk());
+
+        Person confirmed = reload(teacher);
+        assertThat(confirmed.emailValue()).isEqualTo("docente13.nuevo@example.com");
+        assertThat(confirmed.getEmailVerified()).isTrue();
+        mockMvc.perform(get("/staff/" + teacher.getId()).header("Authorization", bearer(admin)))
+                .andExpect(jsonPath("$.emailChangePending").value(false));
+    }
+
+    @Test
+    void previousAddressGetsNotice() throws Exception {
+        Person admin = persistPerson("access.emailchg14a", "70000220", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg14b", "70000221", "DOCENTE");
+
+        updateStaffEmail(admin, teacher, "docente14.nuevo@example.com").andExpect(status().isOk());
+
+        EmailChangeRequestedEvent event = lastEmailChangeEvent(teacher);
+        assertThat(event.previousEmail()).isEqualTo("access.emailchg14b@example.com");
+        assertThat(event.newEmail()).isEqualTo("docente14.nuevo@example.com");
+    }
+
+    @Test
+    void expiredTokenRejected() throws Exception {
+        Person admin = persistPerson("access.emailchg15a", "70000222", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg15b", "70000223", "DOCENTE");
+        updateStaffEmail(admin, teacher, "docente15.nuevo@example.com").andExpect(status().isOk());
+        String token = tokenOf(lastEmailChangeEvent(teacher));
+
+        ApplicationTime.useClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofHours(49)));
+        try {
+            mockMvc.perform(get("/verify-email").param("token", token)).andExpect(status().isBadRequest());
+        } finally {
+            ApplicationTime.useClock(Clock.systemDefaultZone());
+        }
+        assertThat(reload(teacher).emailValue()).isEqualTo("access.emailchg15b@example.com");
+    }
+
+    @Test
+    void resetPasswordIsRejectedWhileChangePending() throws Exception {
+        Person admin = persistPerson("access.emailchg16a", "70000224", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg16b", "70000225", "DOCENTE");
+        updateStaffEmail(admin, teacher, "docente16.nuevo@example.com").andExpect(status().isOk());
+
+        resetStaffPassword(admin, teacher).andExpect(status().isConflict());
+    }
+
+    @Test
     void staffEmailChangeToAnExistingAddressIsRejected() throws Exception {
         Person admin = persistPerson("access.emailchg11a", "70000214", "ADMINISTRATIVO");
         Person teacher = persistPerson("access.emailchg11b", "70000215", "DOCENTE");
