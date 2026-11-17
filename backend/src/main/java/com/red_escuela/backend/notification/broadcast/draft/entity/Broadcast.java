@@ -80,6 +80,9 @@ public class Broadcast {
     @Column(name = "cancellation_reason", length = 500)
     private String cancellationReason;
 
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -87,6 +90,11 @@ public class Broadcast {
         status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.CONFIRM);
         confirmedByPersonId = personId;
         confirmedAt = now;
+    }
+
+    public void complete(Instant now) {
+        status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.COMPLETE);
+        completedAt = now;
     }
 
     public void cancel(Long personId, String reason, Instant now) {
