@@ -214,6 +214,27 @@ describe('offline cache lifecycle', () => {
     expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
   });
 
+  it('loginAsAnotherUserWithoutLogoutNeverExposesPreviousUserData', async () => {
+    store.set(OFFLINE_CACHE_KEY, 'cache-of-ana');
+    renderProvider();
+
+    await act(async () => {
+      await auth.login('beto', 'x');
+    });
+
+    expect(apiFetch.mock.calls.filter(([path]) => path === '/me')).toHaveLength(1);
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
+    expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
+    const cachedData = JSON.stringify(queryClient.getQueryCache().getAll().map((query) => query.state.data));
+    expect(cachedData).not.toContain('ADMIN_ONLY');
+    expect(cachedData).not.toContain('ANA');
+    expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
+    expect(store.get(OFFLINE_OWNER_KEY)).toBe(2);
+    expect(screen.getByText('user-2')).toBeInTheDocument();
+  });
+
   it('purgeCancelsInFlightQueriesOfThePreviousUser', async () => {
     renderProvider();
     await act(async () => {

@@ -138,7 +138,7 @@ describe('authenticated bootstrap', () => {
     await waitFor(() => expect(localStorage.getItem('sessionHint')).toBeNull());
     await waitUntilQuiet();
 
-    expect(countOf(tracker.calls, 'GET', '/me')).toBeLessThanOrEqual(2);
+    expect(countOf(tracker.calls, 'GET', '/me')).toBe(2);
     expect(countOf(tracker.calls, 'GET', '/me/notifications/unread-count')).toBe(0);
     expect(queryClient.getQueryCache().getAll().filter((query) => query.state.data !== undefined)).toHaveLength(0);
   });
