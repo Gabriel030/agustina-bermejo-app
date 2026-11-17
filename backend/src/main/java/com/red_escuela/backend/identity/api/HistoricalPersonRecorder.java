@@ -18,8 +18,15 @@ import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
+import com.red_escuela.backend.shared.persistence.InClauseChunks;
 import java.time.LocalTime;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +67,20 @@ public class HistoricalPersonRecorder {
     @Transactional(readOnly = true)
     public Optional<Long> findIdByDocument(DocumentType type, String number) {
         return personRepository.findByDocumentTypeAndDni(type, number).map(Person::getId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<DocumentKey, Long> findStudentIdsByDocuments(Collection<DocumentKey> documents) {
+        Map<DocumentType, Set<String>> numbersByType = new HashMap<>();
+        documents.forEach(document -> numbersByType.computeIfAbsent(document.type(), type -> new TreeSet<>()).add(document.number()));
+        Map<DocumentKey, Long> studentIds = new HashMap<>();
+        numbersByType.forEach((type, numbers) -> {
+            for (List<String> chunk : InClauseChunks.of(numbers)) {
+                studentRepository.findIdsByDocumentTypeAndNumbers(type, chunk)
+                        .forEach(row -> studentIds.putIfAbsent(new DocumentKey(type, row.documentNumber()), row.studentId()));
+            }
+        });
+        return studentIds;
     }
 
     @Transactional

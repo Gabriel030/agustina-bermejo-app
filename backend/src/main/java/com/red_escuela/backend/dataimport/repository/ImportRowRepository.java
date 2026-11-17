@@ -28,6 +28,12 @@ public interface ImportRowRepository extends JpaRepository<ImportRow, Long> {
 
     boolean existsByBatchIdAndEntityTypeAndNaturalKey(Long batchId, ImportEntityType entityType, String naturalKey);
 
+    @Query("select r.naturalKey from ImportRow r where r.batchId = :batchId and r.entityType = :entityType")
+    List<String> findNaturalKeysByBatchIdAndEntityType(@Param("batchId") Long batchId, @Param("entityType") ImportEntityType entityType);
+
+    @Query("select new com.red_escuela.backend.dataimport.repository.ImportRowCommittedKey(r.naturalKey, r.contentHash) from ImportRow r where r.entityType = :entityType and r.status = com.red_escuela.backend.dataimport.entity.ImportRowStatus.COMMITTED and r.naturalKey in :naturalKeys")
+    List<ImportRowCommittedKey> findCommittedKeys(@Param("entityType") ImportEntityType entityType, @Param("naturalKeys") Collection<String> naturalKeys);
+
     boolean existsByEntityTypeAndNaturalKeyAndContentHashAndStatus(ImportEntityType entityType, String naturalKey,
             String contentHash, ImportRowStatus status);
 

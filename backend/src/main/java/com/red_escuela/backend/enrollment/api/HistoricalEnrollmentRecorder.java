@@ -18,7 +18,14 @@ import com.red_escuela.backend.shared.domain.Grade;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import com.red_escuela.backend.shared.persistence.InClauseChunks;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,6 +89,48 @@ public class HistoricalEnrollmentRecorder {
         return findStudentId(type, number)
                 .flatMap(studentId -> sectionEnrollmentRepository.findByStudentIdAndSubjectSectionId(studentId, sectionId))
                 .isPresent();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<StudentProgram, LocalDate> findProgramEnrollmentDates(Collection<StudentProgram> pairs) {
+        Map<StudentProgram, LocalDate> dates = new HashMap<>();
+        for (List<StudentProgram> chunk : InClauseChunks.of(pairs)) {
+            Set<StudentProgram> wanted = new HashSet<>(chunk);
+            Set<Long> studentIds = new HashSet<>();
+            Set<Long> programIds = new HashSet<>();
+            chunk.forEach(pair -> {
+                studentIds.add(pair.studentId());
+                programIds.add(pair.programId());
+            });
+            programEnrollmentRepository.findDateRowsByStudentIdInAndProgramIdIn(studentIds, programIds).forEach(row -> {
+                StudentProgram pair = new StudentProgram(row.studentId(), row.programId());
+                if (wanted.contains(pair)) {
+                    dates.putIfAbsent(pair, row.enrollmentDate().toLocalDate());
+                }
+            });
+        }
+        return dates;
+    }
+
+    @Transactional(readOnly = true)
+    public Set<StudentSection> findExistingSectionEnrollments(Collection<StudentSection> pairs) {
+        Set<StudentSection> existing = new HashSet<>();
+        for (List<StudentSection> chunk : InClauseChunks.of(pairs)) {
+            Set<StudentSection> wanted = new HashSet<>(chunk);
+            Set<Long> studentIds = new HashSet<>();
+            Set<Long> sectionIds = new HashSet<>();
+            chunk.forEach(pair -> {
+                studentIds.add(pair.studentId());
+                sectionIds.add(pair.sectionId());
+            });
+            sectionEnrollmentRepository.findPairRowsByStudentIdInAndSubjectSectionIdIn(studentIds, sectionIds).forEach(row -> {
+                StudentSection pair = new StudentSection(row.studentId(), row.sectionId());
+                if (wanted.contains(pair)) {
+                    existing.add(pair);
+                }
+            });
+        }
+        return existing;
     }
 
     @Transactional

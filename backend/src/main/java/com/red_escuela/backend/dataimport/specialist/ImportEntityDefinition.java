@@ -20,6 +20,22 @@ public interface ImportEntityDefinition {
 
     BaseCheck checkAgainstBase(Map<String, String> payload);
 
+    default BaseLookups preloadBase(List<Map<String, String>> payloads) {
+        return BaseLookups.NONE;
+    }
+
+    default BaseCheck checkAgainstBase(Map<String, String> payload, BaseLookups lookups) {
+        return checkAgainstBase(payload);
+    }
+
+    default boolean existsInBase(String naturalKey, BaseLookups lookups) {
+        return existsInBase(naturalKey);
+    }
+
+    default boolean aliasExistsInBase(String aliasKey, BaseLookups lookups) {
+        return aliasExistsInBase(aliasKey);
+    }
+
     default List<ImportReference> references(Map<String, String> payload) {
         return List.of();
     }
