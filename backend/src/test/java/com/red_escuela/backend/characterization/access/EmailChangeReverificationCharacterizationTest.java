@@ -204,7 +204,7 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
     }
 
     @Test
-    void staffResetStaysBlockedForTwentyFourHoursAfterConfirmationThenWorks() throws Exception {
+    void resetBlockedFor72HoursAfterApply() throws Exception {
         Person admin = persistPerson("access.emailchg9a", "70000210", "ADMINISTRATIVO");
         Person teacher = persistPerson("access.emailchg9b", "70000211", "DOCENTE");
         updateStaffEmail(admin, teacher, "docente9.nuevo@example.com").andExpect(status().isOk());
@@ -213,7 +213,13 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
 
         resetStaffPassword(admin, teacher).andExpect(status().isConflict());
 
-        ApplicationTime.useClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofHours(25)));
+        ApplicationTime.useClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofHours(71)));
+        try {
+            resetStaffPassword(admin, teacher).andExpect(status().isConflict());
+        } finally {
+            ApplicationTime.useClock(Clock.systemDefaultZone());
+        }
+        ApplicationTime.useClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofHours(73)));
         try {
             resetStaffPassword(admin, teacher).andExpect(status().is2xxSuccessful());
         } finally {
@@ -261,6 +267,19 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         assertThat(confirmed.getEmailVerified()).isTrue();
         mockMvc.perform(get("/staff/" + teacher.getId()).header("Authorization", bearer(admin)))
                 .andExpect(jsonPath("$.emailChangePending").value(false));
+    }
+
+    @Test
+    void sessionsRevokedOnConfirm() throws Exception {
+        Person admin = persistPerson("access.emailchg17a", "70000226", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg17b", "70000227", "DOCENTE");
+        int versionBefore = reload(teacher).getTokenVersion();
+        updateStaffEmail(admin, teacher, "docente17.nuevo@example.com").andExpect(status().isOk());
+
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(lastEmailChangeEvent(teacher))))
+                .andExpect(status().isOk());
+
+        assertThat(reload(teacher).getTokenVersion()).isGreaterThan(versionBefore);
     }
 
     @Test

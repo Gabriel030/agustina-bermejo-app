@@ -14,7 +14,11 @@ public class PendingEmailChangeConfirmer {
     private final PersonRepository personRepository;
     private final ContactChangeRecorder contactChangeRecorder;
 
-    public PendingEmailChangeConfirmer(PersonRepository personRepository, ContactChangeRecorder contactChangeRecorder) {
+    private final SessionRevoker sessionRevoker;
+
+    public PendingEmailChangeConfirmer(PersonRepository personRepository, ContactChangeRecorder contactChangeRecorder,
+                                       SessionRevoker sessionRevoker) {
+        this.sessionRevoker = sessionRevoker;
         this.personRepository = personRepository;
         this.contactChangeRecorder = contactChangeRecorder;
     }
@@ -34,5 +38,6 @@ public class PendingEmailChangeConfirmer {
         person.setEmail(newEmail);
         contactChangeRecorder.recordChange(person.getId(), person.getId(), ContactChangeType.EMAIL_CHANGE_CONFIRMED,
                 previousEmail, newEmail.value());
+        sessionRevoker.revokeAllSessions(person);
     }
 }

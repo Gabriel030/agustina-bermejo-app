@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.dto.StaffResponse;
 import com.red_escuela.backend.identity.dto.UpdateStaffRequest;
 import com.red_escuela.backend.identity.specialist.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.usecase.staff.CreateStaffUseCase;
+import com.red_escuela.backend.identity.usecase.staff.CheckStaffEmailChangePendingUseCase;
 import com.red_escuela.backend.identity.usecase.staff.GetStaffRecordUseCase;
 import com.red_escuela.backend.identity.usecase.staff.ListStaffCommand;
 import com.red_escuela.backend.identity.usecase.staff.ListStaffUseCase;
@@ -40,6 +41,7 @@ public class StaffController {
     private final UpdateStaffUseCase updateStaffUseCase;
     private final ListStaffUseCase listStaffUseCase;
     private final GetStaffRecordUseCase getStaffRecordUseCase;
+    private final CheckStaffEmailChangePendingUseCase checkStaffEmailChangePendingUseCase;
     private final WithdrawStaffUseCase withdrawStaffUseCase;
     private final ReactivateStaffUseCase reactivateStaffUseCase;
     private final ResetStaffPasswordUseCase resetStaffPasswordUseCase;
@@ -49,6 +51,7 @@ public class StaffController {
                            UpdateStaffUseCase updateStaffUseCase,
                            ListStaffUseCase listStaffUseCase,
                            GetStaffRecordUseCase getStaffRecordUseCase,
+                           CheckStaffEmailChangePendingUseCase checkStaffEmailChangePendingUseCase,
                            WithdrawStaffUseCase withdrawStaffUseCase,
                            ReactivateStaffUseCase reactivateStaffUseCase,
                            ResetStaffPasswordUseCase resetStaffPasswordUseCase,
@@ -57,6 +60,7 @@ public class StaffController {
         this.updateStaffUseCase = updateStaffUseCase;
         this.listStaffUseCase = listStaffUseCase;
         this.getStaffRecordUseCase = getStaffRecordUseCase;
+        this.checkStaffEmailChangePendingUseCase = checkStaffEmailChangePendingUseCase;
         this.withdrawStaffUseCase = withdrawStaffUseCase;
         this.reactivateStaffUseCase = reactivateStaffUseCase;
         this.resetStaffPasswordUseCase = resetStaffPasswordUseCase;
@@ -75,8 +79,7 @@ public class StaffController {
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StaffResponse updateStaff(@PathVariable Long id, @Valid @RequestBody UpdateStaffRequest request) {
         StaffUseCaseResult result = updateStaffUseCase.update(new UpdateStaffCommand(id, request));
-        return StaffResponse.from(result.person(), result.role(),
-                staffRoleAssignmentPolicy.hasEmailChangePending(result.person()));
+        return StaffResponse.from(result.person(), result.role(), checkStaffEmailChangePendingUseCase.hasEmailChangePending(result.person()));
     }
 
     @GetMapping
@@ -96,7 +99,7 @@ public class StaffController {
     public StaffRecordResponse getRecord(@PathVariable Long id) {
         var person = getStaffRecordUseCase.getRecord(id);
         return StaffRecordResponse.from(person, staffRoleAssignmentPolicy.resolveStaffRole(person), isDirector(),
-                staffRoleAssignmentPolicy.hasEmailChangePending(person));
+                checkStaffEmailChangePendingUseCase.hasEmailChangePending(person));
     }
 
     private boolean isDirector() {

@@ -35,6 +35,7 @@ function record(role) {
     emailVerified: true,
     failedLoginAttempts: 0,
     lockedUntil: null,
+    emailChangePending: false,
   };
 }
 
