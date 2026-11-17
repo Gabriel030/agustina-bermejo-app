@@ -18,6 +18,11 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.pricing.OfferingFee;
 import com.red_escuela.backend.shared.pricing.OfferingPriceCatalog;
 import com.red_escuela.backend.shared.pricing.OfferingReference;
+import com.red_escuela.backend.shared.persistence.InClauseChunks;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +56,15 @@ public class HistoricalProgramRecorder {
     @Transactional(readOnly = true)
     public Optional<Long> findProgramIdByName(String name) {
         return programRepository.findFirstByName(name).map(Program::getId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> findProgramIdsByNames(Collection<String> names) {
+        Map<String, Long> programIds = new HashMap<>();
+        for (List<String> chunk : InClauseChunks.of(names)) {
+            programRepository.findNamedIdsByNameIn(chunk).forEach(row -> programIds.putIfAbsent(row.name(), row.id()));
+        }
+        return programIds;
     }
 
     @Transactional(readOnly = true)

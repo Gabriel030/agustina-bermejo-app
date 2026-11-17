@@ -4,7 +4,11 @@ import com.red_escuela.backend.shared.domain.EmailAddress;
 
 import java.util.Objects;
 
-public record TransactionalEmail(EmailAddress recipient, String subject, String bodyText, String bodyHtml) {
+public record TransactionalEmail(EmailAddress recipient, String subject, String bodyText, String bodyHtml, String unsubscribeUrl) {
+
+    public TransactionalEmail(EmailAddress recipient, String subject, String bodyText, String bodyHtml) {
+        this(recipient, subject, bodyText, bodyHtml, null);
+    }
 
     public TransactionalEmail {
         Objects.requireNonNull(recipient, "recipient");

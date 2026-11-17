@@ -19,6 +19,11 @@ import com.red_escuela.backend.identity.api.HistoricalPersonRecorder;
 import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.ApplicationTime;
+import com.red_escuela.backend.shared.persistence.InClauseChunks;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +62,15 @@ public class HistoricalSectionRecorder {
     @Transactional(readOnly = true)
     public Optional<Long> findSectionIdByCode(String code) {
         return sectionRepository.findByCode(code).map(SubjectSection::getId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> findSectionIdsByCodes(Collection<String> codes) {
+        Map<String, Long> sectionIds = new HashMap<>();
+        for (List<String> chunk : InClauseChunks.of(codes)) {
+            sectionRepository.findNamedIdsByCodeIn(chunk).forEach(row -> sectionIds.putIfAbsent(row.name(), row.id()));
+        }
+        return sectionIds;
     }
 
     @Transactional(readOnly = true)

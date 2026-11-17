@@ -3,6 +3,7 @@ package com.red_escuela.backend.dataimport.importer;
 import com.red_escuela.backend.academicstructure.api.HistoricalSectionRecorder;
 import com.red_escuela.backend.dataimport.domain.ImportEntityType;
 import com.red_escuela.backend.dataimport.entity.ImportRowError;
+import com.red_escuela.backend.dataimport.specialist.BaseLookups;
 import com.red_escuela.backend.dataimport.specialist.ImportDocumentKey;
 import com.red_escuela.backend.dataimport.specialist.ImportEntityDefinition;
 import com.red_escuela.backend.dataimport.specialist.ImportReference;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
@@ -34,12 +36,15 @@ public class SectionEnrollmentImportDefinition implements ImportEntityDefinition
     private final HistoricalEnrollmentRecorder enrollmentRecorder;
     private final HistoricalSectionRecorder sectionRecorder;
     private final HistoricalClosureRecorder closureRecorder;
+    private final EnrollmentBaseLookupsLoader lookupsLoader;
 
     public SectionEnrollmentImportDefinition(HistoricalEnrollmentRecorder enrollmentRecorder,
-            HistoricalSectionRecorder sectionRecorder, HistoricalClosureRecorder closureRecorder) {
+            HistoricalSectionRecorder sectionRecorder, HistoricalClosureRecorder closureRecorder,
+            EnrollmentBaseLookupsLoader lookupsLoader) {
         this.enrollmentRecorder = enrollmentRecorder;
         this.sectionRecorder = sectionRecorder;
         this.closureRecorder = closureRecorder;
+        this.lookupsLoader = lookupsLoader;
     }
 
     @Override
@@ -117,20 +122,34 @@ public class SectionEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public BaseLookups preloadBase(List<Map<String, String>> payloads) {
+        return lookupsLoader.load(payloads, true);
+    }
+
+    @Override
     public BaseCheck checkAgainstBase(Map<String, String> payload) {
+        return checkAgainstBase(payload, BaseLookups.NONE);
+    }
+
+    @Override
+    public BaseCheck checkAgainstBase(Map<String, String> payload, BaseLookups lookups) {
         DocumentType type = ImportDocumentKey.typeOf(payload).orElseThrow();
         String number = ImportDocumentKey.numberOf(payload, type);
+        String sectionCode = ImportValueParser.cleanText(payload.get("sectionCode"));
         List<ImportRowError> errors = new java.util.ArrayList<>();
-        boolean exists = sectionRecorder.findSectionIdByCode(ImportValueParser.cleanText(payload.get("sectionCode")))
-                .map(sectionId -> enrollmentRecorder.sectionEnrollmentExists(type, number, sectionId)).orElse(false);
+        boolean exists = lookups.loaded() ? lookups.sectionEnrollmentExists(type, number, sectionCode)
+                : sectionRecorder.findSectionIdByCode(sectionCode)
+                        .map(sectionId -> enrollmentRecorder.sectionEnrollmentExists(type, number, sectionId)).orElse(false);
         if (exists) {
             errors.add(new ImportRowError("sectionCode", "SECTION_ENROLLMENT_ALREADY_EXISTS", "El alumno ya cursó esa comisión"));
         }
         ImportRowReader reader = new ImportRowReader(payload);
         LocalDate finalDate = reader.date("finalDate", false);
         if (finalDate != null) {
-            enrollmentRecorder.findProgramEnrollmentDate(type, number, reader.text("programName"))
-                    .filter(finalDate::isBefore)
+            Optional<LocalDate> enrolledOn = lookups.loaded()
+                    ? lookups.programEnrollmentDate(type, number, reader.text("programName"))
+                    : enrollmentRecorder.findProgramEnrollmentDate(type, number, reader.text("programName"));
+            enrolledOn.filter(finalDate::isBefore)
                     .ifPresent(date -> errors.add(new ImportRowError("finalDate", "DATE_BEFORE_ENROLLMENT",
                             "La fecha de la nota es anterior a la inscripción a la carrera")));
         }

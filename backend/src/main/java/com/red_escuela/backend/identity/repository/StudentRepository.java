@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.repository;
 
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.LockModeType;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +36,9 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Student s where s.id = :id")
     Optional<Student> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("select new com.red_escuela.backend.identity.repository.StudentDocumentRow(p.dni, s.id) from Student s join s.person p where p.documentType = :type and p.dni in :numbers")
+    List<StudentDocumentRow> findIdsByDocumentTypeAndNumbers(@Param("type") DocumentType type, @Param("numbers") Collection<String> numbers);
 
     Optional<Student> findByIdAndPerson_Status(Long id, StatusType status);
 
