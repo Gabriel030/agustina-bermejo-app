@@ -86,7 +86,8 @@ public class IdentityEmailDispatcher {
                 personRepository.findById(event.personId()).ifPresentOrElse(person -> {
                     emailService.sendEmailChangeVerification(person.getName(), event.newEmail(), event.verificationLink());
                     if (event.previousEmail() != null) {
-                        emailService.sendEmailChangeNotice(person.getName(), event.previousEmail(), event.newEmail());
+                        emailService.sendEmailChangeNotice(person.getName(), event.previousEmail(), event.newEmail(),
+                                event.cancellationLink());
                     }
                 }, () -> log.warn("Email change mail skipped, person not found: personId={}", event.personId())));
     }

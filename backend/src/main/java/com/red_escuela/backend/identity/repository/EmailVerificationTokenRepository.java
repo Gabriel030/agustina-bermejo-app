@@ -10,6 +10,8 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
 
     Optional<EmailVerificationToken> findByTokenHash(String tokenHash);
 
+    Optional<EmailVerificationToken> findByCancelTokenHash(String cancelTokenHash);
+
     boolean existsByPersonAndNewEmailIsNotNull(Person person);
 
     boolean existsByNewEmailAndPersonNot(String newEmail, Person person);

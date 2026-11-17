@@ -67,6 +67,10 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         return event.verificationLink().substring(event.verificationLink().indexOf("token=") + 6);
     }
 
+    private String cancelTokenOf(EmailChangeRequestedEvent event) {
+        return event.cancellationLink().substring(event.cancellationLink().indexOf("token=") + 6);
+    }
+
     private List<ContactChangeLog> logOf(Person person) {
         entityManager.flush();
         return entityManager.createQuery("select l from ContactChangeLog l where l.personId = :id order by l.id",
@@ -154,6 +158,24 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
                 .andExpect(status().isAccepted());
         assertThat(applicationEvents.stream(PasswordResetCodeIssuedEvent.class)
                 .filter(event -> event.personId().equals(person.getId())).count()).isEqualTo(1);
+    }
+
+    @Test
+    void cancelFromPreviousEmailDiscardsRequest() throws Exception {
+        Person person = persistPerson("access.emailchg9", "70000210", "ALUMNO");
+        updateOwnProfile(person, "nuevo9@example.com", null, PASSWORD).andExpect(status().isOk());
+        EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
+
+        mockMvc.perform(post("/cancel-email-change").param("token", cancelTokenOf(event)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(event)))
+                .andExpect(status().isBadRequest());
+        assertThat(reload(person).emailValue()).isEqualTo("access.emailchg9@example.com");
+        mockMvc.perform(post("/cancel-email-change").param("token", cancelTokenOf(event)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/cancel-email-change").param("token", tokenOf(event)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

@@ -704,6 +704,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/validation` | `CollectionReminderScheduleController#validateGroupChange` |
 | POST | `/billing-runs/executions` | `BillingRunController#executeTodaysNightlyRun` |
 | POST | `/broadcasts/audience-preview` | `BroadcastAudienceController#previewBroadcastAudience` |
+| POST | `/cancel-email-change` | `CancelEmailChangeController#cancelEmailChange` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
 | POST | `/classrooms` | `ClassroomController#create` |
