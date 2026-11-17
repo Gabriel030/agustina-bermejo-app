@@ -1,0 +1,1 @@
+create index idx_subject_section_enrollment_section_status on subject_section_enrollment (program_section_id, status);
