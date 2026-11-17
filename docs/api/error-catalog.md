@@ -215,6 +215,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_NOT_REGULAR` | no | `StudentNotRegularException` | evaluation |
 | `SUBJECT_NOT_IN_PROGRAM_PLAN` | no | `SubjectNotInProgramPlanException` | enrollment |
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
+| `TEMPLATE_SUBJECT_REQUIRED` | no | `TemplateSubjectRequiredException` | notification |
 | `TERM_DATES_REQUIRED` | no | `TermDatesRequiredException` | shared |
 | `TERM_ENROLLMENT_WINDOW_REQUIRED` | no | `TermEnrollmentWindowRequiredException` | shared |
 | `UNKNOWN_AUDIENCE_SEGMENT` | no | `UnknownAudienceSegmentException` | announcement |
@@ -294,6 +295,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INSTRUCTOR_NOT_FOUND` | no | `InstructorNotFoundException` | academicstructure |
 | `INVALID_UNSUBSCRIBE_TOKEN` | no | `InvalidUnsubscribeTokenException` | notification |
 | `INVOICE_NOT_FOUND` | no | `InvoiceNotFoundException` | billing |
+| `MESSAGE_TEMPLATE_NOT_FOUND` | no | `MessageTemplateNotFoundException` | notification |
 | `MONTHLY_INVOICE_RUN_ITEM_NOT_FOUND` | no | `MonthlyInvoiceRunItemNotFoundException` | billing |
 | `MONTHLY_INVOICE_RUN_NOT_FOUND` | no | `MonthlyInvoiceRunNotFoundException` | billing |
 | `NIGHTLY_BILLING_RUN_NOT_FOUND` | no | `NightlyBillingRunNotFoundException` | billing |
@@ -585,6 +587,14 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `VERSION_ALREADY_EFFECTIVE` | no | `VersionAlreadyEffectiveException` | billing |
 | `WITHDRAWAL_REDUCTION_REJECTED` | no | `WithdrawalReductionRejectedException` | billing |
 
+### HTTP 422
+
+| Código | Reintentable | Excepción | Módulo |
+|---|---|---|---|
+| `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
+| `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
+| `UNKNOWN_TEMPLATE_VARIABLE` | no | `UnknownTemplateVariableException` | notification |
+
 ### HTTP 429
 
 | Código | Reintentable | Excepción | Módulo |
@@ -777,6 +787,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/section-enrollments/{id}/change-section` | `MeEnrollmentController#changeMySection` |
 | POST | `/me/section-enrollments/{id}/withdraw` | `MeEnrollmentController#withdraw` |
 | POST | `/me/section-evaluation-configs/{sectionId}/submit` | `MeSectionEvaluationConfigController#submitForApproval` |
+| POST | `/message-templates` | `MessageTemplateController#createMessageTemplate` |
+| POST | `/message-templates/render-preview` | `MessageTemplateController#renderTemplatePreview` |
 | POST | `/monthly-invoice-runs/manual-issuances` | `ManualMonthlyInvoiceIssuanceController#issueMonthlyInvoicesManually` |
 | POST | `/monthly-invoice-runs/simulations` | `MonthlyInvoiceSimulationController#simulateMonthlyInvoices` |
 | POST | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices/discards` | `MonthlyInvoiceRunController#discardDraftInvoices` |

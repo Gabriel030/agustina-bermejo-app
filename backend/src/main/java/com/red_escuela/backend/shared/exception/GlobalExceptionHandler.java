@@ -109,6 +109,12 @@ public class GlobalExceptionHandler {
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
+    @ExceptionHandler(UnprocessableEntityException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public ErrorCodeResponse handleUnprocessableEntity(UnprocessableEntityException exception) {
+        return ErrorCodeResponse.of(exception);
+    }
+
     @ExceptionHandler(ConflictException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorCodeResponse handleConflict(ConflictException exception) {
