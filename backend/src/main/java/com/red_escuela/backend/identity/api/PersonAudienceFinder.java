@@ -3,6 +3,7 @@ package com.red_escuela.backend.identity.api;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.shared.domain.StatusType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +25,11 @@ public class PersonAudienceFinder {
     }
 
     public Set<Long> personIdsByRoleName(String roleName) {
-        return personRepository.findByRolesName(roleName).stream().map(Person::getId).collect(Collectors.toSet());
+        return personRepository.findByRolesName(roleName).stream().filter(person -> person.getStatus() == StatusType.ACTIVE).map(Person::getId).collect(Collectors.toSet());
     }
 
     public Set<Long> personIdsOfStudents(Collection<Long> studentIds) {
-        return studentRepository.findAllById(studentIds).stream().map(student -> student.getPerson().getId()).collect(Collectors.toSet());
+        return studentRepository.findAllById(studentIds).stream().filter(student -> student.getPerson().getStatus() == StatusType.ACTIVE).map(student -> student.getPerson().getId()).collect(Collectors.toSet());
     }
 
     public List<PersonAudienceView> findByIds(Collection<Long> personIds) {

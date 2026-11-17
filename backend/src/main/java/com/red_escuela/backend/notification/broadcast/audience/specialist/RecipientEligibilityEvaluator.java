@@ -38,7 +38,10 @@ public class RecipientEligibilityEvaluator {
         }
         ConsentDecision decision = consentLedger.isAllowed(recipient.personId(), channel, category);
         if (!decision.allowed()) {
-            return Optional.of(ExclusionReason.valueOf(decision.denialReason().name()));
+            return Optional.of(switch (decision.denialReason()) {
+                case OPTED_OUT -> ExclusionReason.OPTED_OUT;
+                case NO_CONSENT -> ExclusionReason.NO_CONSENT;
+            });
         }
         return Optional.empty();
     }

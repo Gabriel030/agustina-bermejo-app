@@ -2,7 +2,6 @@ package com.red_escuela.backend.billing.api;
 
 import com.red_escuela.backend.billing.collections.service.OverdueContactSegment;
 import com.red_escuela.backend.shared.module.CurrentBillingModePort;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -32,7 +31,7 @@ public class OverdueDebtAudience {
         if (!isAvailable()) {
             return Optional.empty();
         }
-        return Optional.of(overdueContactSegment.findMembers(LocalDate.now(clock), PageRequest.of(0, Integer.MAX_VALUE)).getContent().stream()
+        return Optional.of(overdueContactSegment.findAllMembers(LocalDate.now(clock)).stream()
                 .map(StudentSegmentMember::studentId).collect(Collectors.toSet()));
     }
 }
