@@ -24,11 +24,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [specs.md](context/specs.md) | Dónde viven las specs y el roadmap (Obsidian) | vigente |
 | [cell.md](context/cell.md) | Célula de agentes: roles, arranque de sesiones, flujo de un ticket, local vs nube | vigente |
 | [plans/TEMPLATE.md](cell/plans/TEMPLATE.md) | Plantilla de plan de la célula (`docs/cell/plans/<ticket>.md`) | vigente |
-| [progress/920-1.md](cell/progress/920-1.md) | Estado de la subtarea 920#1 (consentimiento de contacto y baja pública) | vigente |
-| [progress/920-2.md](cell/progress/920-2.md) | Estado de la subtarea 920#2 (puerto de canales y política de consentimiento) | vigente |
-| [progress/928-1.md](cell/progress/928-1.md) | Estado de la subtarea 928#1 (precarga por lote en la validación de importación) | vigente |
-| [progress/933-2.md](cell/progress/933-2.md) | Estado de la subtarea 933#2 (cola y cupo de envíos masivos por correo) | vigente |
-| [progress/928-2.md](cell/progress/928-2.md) | Estado de la subtarea 928#2 (precarga por chunk en el commit de importación) | vigente |
+| `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 
 ## Release (`docs/release/`)
 
