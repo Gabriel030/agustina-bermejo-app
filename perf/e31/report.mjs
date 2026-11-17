@@ -49,7 +49,7 @@ export function buildReport(results) {
   lines.push('|---|---|---|---|---|---|');
   for (const [role, data] of Object.entries(results.roles)) {
     for (const a of data.actions ?? []) {
-      lines.push(a.measured && a.clickToResultMs >= 45000
+      lines.push(a.measured && a.clickToResultMs >= 44000
         ? `| ${role} | ${a.name} | no medible: tope de 45 s, queda una petición en vuelo que no termina (bug de la medición) | - | ${a.apiCount} | ${kb(a.apiBytes)} |`
         : a.measured
         ? `| ${role} | ${a.name} | sí | ${sec(a.clickToResultMs)} | ${a.apiCount} | ${kb(a.apiBytes)} |`

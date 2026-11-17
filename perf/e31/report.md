@@ -286,13 +286,13 @@ Respuestas más grandes: `GET /prices` 1.8 KB, `GET /courses` 1.4 KB, `GET /prog
 
 | Rol | Acción | Medida | Clic → resultado visible (s) | Peticiones | KB API |
 |---|---|---|---|---|---|
-| Director | Alumnos: abrir primer alumno | sí | 45.0 | 5 | 4.5 |
-| Director | Oferta académica: abrir primera carrera | sí | 45.0 | 5 | 4.3 |
-| Director | Aprobaciones: abrir bandeja de facturación | sí | 45.0 | 4 | 3.2 |
-| Administrativo | Alumnos: abrir primer alumno | sí | 45.0 | 5 | 4.5 |
+| Director | Alumnos: abrir primer alumno | no medible: tope de 45 s, queda una petición en vuelo que no termina (bug de la medición) | - | 5 | 4.5 |
+| Director | Oferta académica: abrir primera carrera | no medible: tope de 45 s, queda una petición en vuelo que no termina (bug de la medición) | - | 5 | 4.3 |
+| Director | Aprobaciones: abrir bandeja de facturación | no medible: tope de 45 s, queda una petición en vuelo que no termina (bug de la medición) | - | 4 | 3.2 |
+| Administrativo | Alumnos: abrir primer alumno | no medible: tope de 45 s, queda una petición en vuelo que no termina (bug de la medición) | - | 5 | 4.5 |
 | Administrativo | Facturación: pestaña Estado de cuenta | sí | 0.1 | 0 | 0.0 |
-| Docente | Mis comisiones: abrir primera comisión | sí | 45.0 | 7 | 5.7 |
-| Alumno | Mis carreras: pestaña Notas | sí | 45.0 | 7 | 6.0 |
+| Docente | Mis comisiones: abrir primera comisión | no medible: tope de 45 s, queda una petición en vuelo que no termina (bug de la medición) | - | 7 | 5.7 |
+| Alumno | Mis carreras: pestaña Notas | no medible: tope de 45 s, queda una petición en vuelo que no termina (bug de la medición) | - | 7 | 6.0 |
 
 ## No medido
 
