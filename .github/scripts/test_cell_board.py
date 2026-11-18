@@ -18,8 +18,8 @@ CONFIG = {
 NOW = '2026-11-18T02:00:00Z'
 
 
-def comment(issue, at, body):
-    return {'issue': issue, 'created_at': at, 'body': body, 'url': f'https://x/{issue}/{at}'}
+def comment(issue, at, body, association='MEMBER'):
+    return {'issue': issue, 'created_at': at, 'body': body, 'url': f'https://x/{issue}/{at}', 'author_association': association}
 
 
 class CellBoardTest(unittest.TestCase):
@@ -55,8 +55,8 @@ class CellBoardTest(unittest.TestCase):
             {'number': 6, 'title': 'c', 'url': 'u6', 'draft': True, 'mergeable_state': 'dirty', 'ci': 'rojo'},
         ]
         out = self.run_script('render', self.build([], pulls=pulls))
-        self.assertIn('| [#5](u5) | a\\|b | clean | verde |', out)
-        self.assertIn('| [#6](u6) | c (borrador) | dirty | rojo |', out)
+        self.assertIn('| [#5](u5) | `a\\|b` | clean | verde |', out)
+        self.assertIn('| [#6](u6) | `c` (borrador) | dirty | rojo |', out)
 
     def test_worker_request_is_pending_until_later_done_for_same_number(self):
         comments = [
@@ -111,7 +111,7 @@ class CellBoardTest(unittest.TestCase):
     def test_merged_table_lists_entries(self):
         merged = [{'number': 8, 'title': 'feat', 'url': 'u8', 'merged_at': '2026-11-18T01:30:00Z'}]
         out = self.run_script('render', self.build([], merged=merged))
-        self.assertIn('| [#8](u8) | feat | 2026-11-18T01:30:00Z |', out)
+        self.assertIn('| [#8](u8) | `feat` | 2026-11-18T01:30:00Z |', out)
 
     def test_stale_follow_up_issue_is_listed_and_active_one_is_not(self):
         follow = [
@@ -131,7 +131,37 @@ class CellBoardTest(unittest.TestCase):
     def test_follow_up_without_comments_falls_back_to_creation_time(self):
         follow = [{'number': 964, 'title': 'Lider', 'created_at': '2026-11-18T00:00:00Z'}]
         out = self.run_script('render', self.build([], follow=follow))
-        self.assertIn('| #964 | Lider | 2026-11-18T00:00:00Z | 2 h 0 min |', out)
+        self.assertIn('| #964 | `Lider` | 2026-11-18T00:00:00Z | 2 h 0 min |', out)
+
+    def test_external_author_cannot_request_worker(self):
+        comments = [
+            comment(10, '2026-11-18T00:10:00Z', 'NECESITO WORKER #7', 'NONE'),
+            comment(10, '2026-11-18T00:11:00Z', 'CORREGIR #8', 'CONTRIBUTOR'),
+        ]
+        directory = self.build(comments)
+        self.assertEqual(self.run_script('count-pending-workers', directory).strip(), '0')
+        out = self.run_script('render', directory)
+        self.assertNotIn('#8', out.split('### 3.')[1].split('### 4.')[0])
+
+    def test_external_author_cannot_resolve_worker_request(self):
+        comments = [
+            comment(10, '2026-11-18T00:10:00Z', 'NECESITO WORKER #7', 'OWNER'),
+            comment(10, '2026-11-18T00:20:00Z', 'CORREGIDO #7', 'NONE'),
+        ]
+        self.assertEqual(self.run_script('count-pending-workers', self.build(comments)).strip(), '1')
+
+    def test_missing_author_association_is_untrusted(self):
+        raw = comment(10, '2026-11-18T00:10:00Z', 'NECESITO WORKER #7')
+        del raw['author_association']
+        self.assertEqual(self.run_script('count-pending-workers', self.build([raw])).strip(), '0')
+
+    def test_titles_with_mentions_links_and_images_are_neutralised(self):
+        title = '@octocat [x](http://e.com) ![i](http://e.com/i.png) `bad` \nnext'
+        pulls = [{'number': 5, 'title': title, 'url': 'u5', 'draft': False, 'mergeable_state': 'clean', 'ci': 'verde'}]
+        out = self.run_script('render', self.build([], pulls=pulls))
+        row = [line for line in out.splitlines() if line.startswith('| [#5]')][0]
+        self.assertIn("`@octocat [x](http://e.com) ![i](http://e.com/i.png) 'bad' next`", row)
+        self.assertEqual(row.count('`'), 2)
 
 
 if __name__ == '__main__':

@@ -2,6 +2,29 @@
 set -euo pipefail
 
 MARKER='<!-- cell-board -->'
+
+JQ_EVENTS='
+def trusted: (.author_association // "") | IN("OWNER","MEMBER","COLLABORATOR");
+def events:
+  [ $comments[0][]
+    | select(trusted)
+    | select((.body // "") | contains($marker) | not)
+    | . as $c
+    | (.body // "" | split("\n"))[]
+    | sub("^\\s+"; "")
+    | . as $l
+    | (if test("^NECESITO WORKER") then "worker"
+       elif test("^CORREGIR #[0-9]+") then "fix"
+       elif test("^CORREGIDO #[0-9]+") then "done"
+       else null end) as $k
+    | select($k != null)
+    | { kind: $k, at: $c.created_at, url: $c.url,
+        n: (([$l | scan("#([0-9]+)") | .[0] | tonumber] | first) // $c.issue) } ];
+def pending($k):
+  events as $e
+  | [ $e[] | select(.kind == $k) | . as $r
+      | select(([$e[] | select(.kind == "done" and .n == $r.n and .at >= $r.at)] | length) == 0) ];
+'
 CONFIG="${CELL_BOARD_CONFIG:-.github/cell-board.json}"
 
 api() { gh api "$@"; }
@@ -48,7 +71,7 @@ collect() {
 
   for n in $(jq -r '.[].number' "$dir/issues.json") $(jq -r '.[]' <<<"$follow"); do
     api_stream "repos/$REPO/issues/$n/comments?per_page=100" \
-      | jq --argjson n "$n" '[.[] | {issue: $n, created_at, body, url: .html_url}]'
+      | jq --argjson n "$n" '[.[] | {issue: $n, created_at, body, url: .html_url, author_association}]'
   done | jq -s 'add // []' > "$dir/comments.json"
 
   for n in $(jq -r '.[]' <<<"$follow"); do
@@ -62,28 +85,10 @@ render() {
     --slurpfile pulls "$dir/pulls.json" \
     --slurpfile merged "$dir/merged.json" \
     --slurpfile comments "$dir/comments.json" \
-    --slurpfile follow "$dir/follow_issues.json" '
-    def esc: gsub("\\|"; "\\|");
+    --slurpfile follow "$dir/follow_issues.json" "$JQ_EVENTS"'
+    def esc: gsub("\\s+"; " ") | gsub("`"; "'"'"'") | gsub("\\|"; "\\|") | "`" + . + "`";
     def ago($t): (($now | fromdateiso8601) - ($t | fromdateiso8601)) as $s
       | if $s < 3600 then "\($s / 60 | floor) min" else "\($s / 3600 | floor) h \(($s % 3600) / 60 | floor) min" end;
-    def events:
-      [ $comments[0][]
-        | select((.body // "") | contains($marker) | not)
-        | . as $c
-        | (.body // "" | split("\n"))[]
-        | sub("^\\s+"; "")
-        | . as $l
-        | (if test("^NECESITO WORKER") then "worker"
-           elif test("^CORREGIR #[0-9]+") then "fix"
-           elif test("^CORREGIDO #[0-9]+") then "done"
-           else null end) as $k
-        | select($k != null)
-        | { kind: $k, at: $c.created_at, url: $c.url,
-            n: (([$l | scan("#([0-9]+)") | .[0] | tonumber] | first) // $c.issue) } ];
-    def pending($k):
-      events as $e
-      | [ $e[] | select(.kind == $k) | . as $r
-          | select(([$e[] | select(.kind == "done" and .n == $r.n and .at >= $r.at)] | length) == 0) ];
     def table($head; $rows; $empty):
       if ($rows | length) == 0 then $empty
       else ($head | join(" | ")) as $h
@@ -125,18 +130,7 @@ render() {
 }
 
 count_pending_workers() {
-  jq -n --slurpfile comments "$1/comments.json" --arg marker "$MARKER" '
-    [ $comments[0][]
-      | select((.body // "") | contains($marker) | not)
-      | . as $c
-      | (.body // "" | split("\n"))[]
-      | sub("^\\s+"; "")
-      | . as $l
-      | (if test("^NECESITO WORKER") then "worker" elif test("^CORREGIDO #[0-9]+") then "done" else null end) as $k
-      | select($k != null)
-      | { kind: $k, at: $c.created_at, n: (([$l | scan("#([0-9]+)") | .[0] | tonumber] | first) // $c.issue) } ] as $e
-    | [ $e[] | select(.kind == "worker") | . as $r
-        | select(([$e[] | select(.kind == "done" and .n == $r.n and .at >= $r.at)] | length) == 0) ] | length'
+  jq -n --slurpfile comments "$1/comments.json" --arg marker "$MARKER" "$JQ_EVENTS"'pending("worker") | length'
 }
 
 find_board_issue() {
