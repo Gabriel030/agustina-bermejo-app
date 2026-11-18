@@ -26,7 +26,7 @@ public class ConfirmBroadcastService implements ConfirmBroadcastUseCase {
 
     @Override
     public BroadcastStatusResponse confirmBroadcast(Long broadcastId) {
-        channelGate.requireEnabled(broadcastRepository.findById(broadcastId).orElseThrow(() -> new BroadcastNotFoundException(broadcastId)).getChannel());
+        channelGate.requireEnabled(broadcastRepository.findChannelById(broadcastId).orElseThrow(() -> new BroadcastNotFoundException(broadcastId)));
         return new BroadcastStatusResponse(broadcastId, broadcastConfirmer.confirmBroadcast(broadcastId, currentActorFinder.currentPersonId()));
     }
 }

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.draft.repository;
 
+import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatus;
 import com.red_escuela.backend.notification.broadcast.draft.entity.Broadcast;
 import jakarta.persistence.LockModeType;
@@ -15,6 +16,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BroadcastRepository extends JpaRepository<Broadcast, Long> {
+
+    @Query("select b.channel from Broadcast b where b.id = :id")
+    Optional<ChannelType> findChannelById(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select b from Broadcast b where b.id = :id")
