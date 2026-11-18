@@ -61,6 +61,9 @@ public class SubjectSectionEnrollment {
     @Column(name = "waitlist_prioritized_at")
     private LocalDateTime waitlistPrioritizedAt;
 
+    @Column(name = "waitlist_expiry_reminded_at")
+    private LocalDateTime waitlistExpiryRemindedAt;
+
     @Column(name = "dropped_at")
     private LocalDateTime droppedAt;
 
