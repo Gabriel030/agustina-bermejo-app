@@ -99,4 +99,74 @@ describe('AuditLogPage', () => {
     expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
     expect(screen.getByText(/solo para Dirección/)).toBeInTheDocument();
   });
+
+  it('shows the empty state without filters and the no results state with filters', async () => {
+    server.use(http.get(AUDIT_URL, () => HttpResponse.json(pageOf([]))));
+    const user = userEvent.setup();
+    renderPage();
+    expect(await screen.findByText('Todavía no hay actividad registrada')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Tipo de entidad'), 'STUDENT');
+    expect(await screen.findByText('Ningún evento coincide')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: 'Limpiar filtros' })[0]);
+    expect(await screen.findByText('Todavía no hay actividad registrada')).toBeInTheDocument();
+  });
+
+  it('shows a retry state on a server error', async () => {
+    server.use(http.get(AUDIT_URL, () => HttpResponse.json(errorBody('INTERNAL_ERROR', { retryable: false }), { status: 500 })));
+    renderPage();
+    expect(await screen.findByText('No pudimos cargar la auditoría')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
+
+  it('shows loading skeletons while the request is pending', () => {
+    server.use(http.get(AUDIT_URL, () => new Promise(() => {})));
+    renderPage();
+    expect(screen.getByRole('status', { name: 'Cargando auditoría' })).toBeInTheDocument();
+  });
+
+  it('rejects an inverted date range without sending it', async () => {
+    const calls = [];
+    server.use(
+      http.get(AUDIT_URL, ({ request }) => {
+        calls.push(new URL(request.url).searchParams.get('from'));
+        return HttpResponse.json(pageOf([event(1)]));
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Baja voluntaria');
+    await user.type(screen.getByLabelText('Hasta'), '2026-11-01');
+    await user.type(screen.getByLabelText('Desde'), '2026-11-10');
+    expect(await screen.findByRole('alert')).toHaveTextContent('no puede ser posterior');
+    expect(calls.every((from) => from === null || from === '')).toBe(true);
+  });
+
+  it('opens the detail with masked sensitive values', async () => {
+    server.use(
+      http.get(AUDIT_URL, () =>
+        HttpResponse.json(pageOf([event(1, { action: 'PASSWORD_CHANGED', beforeValue: '{"passwordHash":"abc123"}', afterValue: 'texto { roto' })])),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByText('Baja voluntaria'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/••••••••/, { selector: 'pre' })).toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent('abc123');
+    expect(within(dialog).getByText('texto { roto')).toBeInTheDocument();
+    expect(within(dialog).getByText(/no es JSON válido/)).toBeInTheDocument();
+  });
+
+  it('queries the platform endpoint when configured for it', async () => {
+    let hit = false;
+    server.use(
+      http.get('http://localhost:8080/platform/audit-log', () => {
+        hit = true;
+        return HttpResponse.json(pageOf([event(1)]));
+      }),
+    );
+    renderWithProviders(<AuditLogPage endpoint="/platform/audit-log" deniedAudience="el dueño de la plataforma" />);
+    await screen.findByText('Baja voluntaria');
+    expect(hit).toBe(true);
+  });
 });

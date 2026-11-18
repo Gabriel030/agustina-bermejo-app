@@ -1,4 +1,4 @@
-const SENSITIVE_KEY = /pass|token|secret|clave|hash/i;
+const SENSITIVE_KEY = /pass|token|secret|clave|hash|otp|code|api[-_]?key/i;
 export const MASK = '••••••••';
 
 function maskSensitive(value) {
@@ -25,7 +25,7 @@ export function formatAuditValue(raw) {
     const result = maskSensitive(JSON.parse(raw));
     return { text: JSON.stringify(result.value, null, 2), plain: false, masked: result.masked };
   } catch {
-    const pattern = /((?:pass|token|secret|clave|hash)\S*\s*[:=]\s*)\S+/gi;
+    const pattern = /((?:pass|token|secret|clave|hash|otp|code|api[-_]?key)\S*\s*[:=]\s*)\S+/gi;
     const masked = pattern.test(raw);
     return { text: masked ? raw.replace(pattern, `$1${MASK}`) : raw, plain: true, masked };
   }
