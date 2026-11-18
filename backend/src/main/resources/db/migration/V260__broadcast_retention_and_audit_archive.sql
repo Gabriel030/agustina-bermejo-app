@@ -2,10 +2,6 @@ alter table broadcast add column completed_at timestamptz;
 
 alter table broadcast_recipient add column anonymized_at timestamptz;
 
-alter table broadcast_recipient drop constraint ck_broadcast_recipient_reason;
-alter table broadcast_recipient add constraint ck_broadcast_recipient_reason
-    check (status <> 'EXCLUDED' or exclusion_reason is not null or anonymized_at is not null);
-
 alter table audit_log drop constraint ck_audit_log_action;
 alter table audit_log add constraint ck_audit_log_action check (action in (
     'STAFF_WITHDRAWN', 'STAFF_REACTIVATED', 'STAFF_CREATED', 'PASSWORD_RESET_REQUESTED', 'PASSWORD_RESET_COMPLETED',

@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+
 public interface AuditLogRepository extends JpaRepository<AuditLogEntry, Long>, JpaSpecificationExecutor<AuditLogEntry> {
 
     @Modifying
@@ -20,7 +22,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLogEntry, Long>, 
             insert into audit_log_archive (id, occurred_at, actor_person_id, actor_role, action, entity_type, entity_id, before_value, after_value, reason)
             select id, occurred_at, actor_person_id, actor_role, action, entity_type, entity_id, before_value, after_value, reason from moved
             """)
-    int archiveOlderThan(@Param("cutoff") java.time.LocalDateTime cutoff, @Param("batchSize") int batchSize);
+    int archiveOlderThan(@Param("cutoff") LocalDateTime cutoff, @Param("batchSize") int batchSize);
 
     Page<AuditLogEntry> findByEntityTypeAndEntityIdInOrderByOccurredAtDescIdDesc(AuditEntityType entityType,
                                                                                  java.util.Collection<Long> entityIds,

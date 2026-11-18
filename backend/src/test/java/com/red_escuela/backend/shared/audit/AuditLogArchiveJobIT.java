@@ -1,6 +1,9 @@
 package com.red_escuela.backend.shared.audit;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.repository.RoleRepository;
+import com.red_escuela.backend.notification.broadcast.draft.AudienceFreezeFixtures;
 import com.red_escuela.backend.shared.audit.service.AuditLogArchiveJob;
 import com.red_escuela.backend.shared.retention.RetentionSettings;
 import org.junit.jupiter.api.AfterEach;
@@ -10,6 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import jakarta.persistence.EntityManager;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -30,11 +35,18 @@ class AuditLogArchiveJobIT extends AbstractIntegrationTest {
     private AuditLogRepository auditLogRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private EntityManager entityManager;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @AfterEach
     void cleanInsertedRows() {
         jdbc.update("delete from audit_log where reason = 'archive-test'");
         jdbc.update("delete from audit_log_archive where reason = 'archive-test'");
+        jdbc.update("delete from person where username like 'archiveactor%'");
     }
 
     private AuditLogArchiveJob job() {
@@ -137,5 +149,28 @@ class AuditLogArchiveJobIT extends AbstractIntegrationTest {
         assertThat(secondRun).isEqualTo(1);
         assertThat(countArchivedTest()).isEqualTo(5);
         assertThat(total()).isEqualTo(before);
+    }
+
+    @Test
+    void archivedRowKeepsEveryColumn() {
+        Person actor = transactionTemplate.execute(status -> AudienceFreezeFixtures.person(entityManager, roleRepository,
+                "archiveactor" + System.nanoTime(), true, "DIRECTOR"));
+        Long id = jdbc.queryForObject("insert into audit_log (occurred_at, actor_person_id, actor_role, action, entity_type, entity_id, "
+                + "before_value, after_value, reason) values (?, ?, 'DIRECTOR', 'STAFF_WITHDRAWN', 'PERSON', 77, 'ACTIVE', 'WITHDRAWN', 'archive-test') "
+                + "returning id", Long.class, NOW.minusMonths(13), actor.getId());
+
+        job().archiveExpiredAuditEntries();
+
+        assertThat(inAuditLog(id)).isFalse();
+        var archived = jdbc.queryForMap("select * from audit_log_archive where id = ?", id);
+        assertThat(archived).containsEntry("actor_person_id", actor.getId())
+                .containsEntry("actor_role", "DIRECTOR")
+                .containsEntry("action", "STAFF_WITHDRAWN")
+                .containsEntry("entity_type", "PERSON")
+                .containsEntry("entity_id", 77L)
+                .containsEntry("before_value", "ACTIVE")
+                .containsEntry("after_value", "WITHDRAWN")
+                .containsEntry("reason", "archive-test");
+        assertThat(((java.sql.Timestamp) archived.get("occurred_at")).toLocalDateTime()).isEqualTo(NOW.minusMonths(13));
     }
 }

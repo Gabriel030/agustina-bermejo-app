@@ -15,7 +15,9 @@ import com.red_escuela.backend.notification.broadcast.freezer.entity.BroadcastRe
 import com.red_escuela.backend.notification.broadcast.freezer.repository.BroadcastRecipientRepository;
 import com.red_escuela.backend.notification.broadcast.lifecycle.specialist.BroadcastRecipientDataRetentionJob;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
+import com.red_escuela.backend.shared.retention.RetentionSettings;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,6 +30,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,8 +60,25 @@ class BroadcastRecipientDataRetentionIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    private final List<Long> createdBroadcastIds = new ArrayList<>();
+
+    @AfterEach
+    void cleanCreatedRows() {
+        for (Long broadcastId : createdBroadcastIds) {
+            jdbc.update("delete from audit_log where entity_type = 'BROADCAST' and entity_id = ?", broadcastId);
+            jdbc.update("delete from broadcast_recipient where broadcast_id = ?", broadcastId);
+            jdbc.update("delete from broadcast where id = ?", broadcastId);
+        }
+        createdBroadcastIds.clear();
+    }
+
     private BroadcastRecipientDataRetentionJob job() {
-        return new BroadcastRecipientDataRetentionJob(broadcastRepository, recipientRepository, auditTrail, CLOCK, transactionManager, 12);
+        return job(100, 100);
+    }
+
+    private BroadcastRecipientDataRetentionJob job(int batchSize, int maxBatches) {
+        return new BroadcastRecipientDataRetentionJob(broadcastRepository, recipientRepository, auditTrail,
+                new RetentionSettings(true, 12, 12, 12, 36, batchSize, maxBatches), CLOCK, transactionManager, 12);
     }
 
     private Person person() {
@@ -66,10 +87,12 @@ class BroadcastRecipientDataRetentionIT extends AbstractIntegrationTest {
     }
 
     private Broadcast broadcast(Person creator, BroadcastStatus status, Instant cancelledAt, Instant completedAt) {
-        return broadcastRepository.saveAndFlush(Broadcast.builder().name("Aviso").category(BroadcastCategory.INSTITUTIONAL)
+        Broadcast saved = broadcastRepository.saveAndFlush(Broadcast.builder().name("Aviso").category(BroadcastCategory.INSTITUTIONAL)
                 .channel(ChannelType.EMAIL).status(status).segmentSpec(SPEC).subjectSnapshot("Asunto").bodySnapshot("Cuerpo")
                 .createdByPersonId(creator.getId()).confirmedByPersonId(creator.getId()).confirmedAt(NOW.minusMonths(20).toInstant())
                 .cancelledAt(cancelledAt).completedAt(completedAt).createdAt(NOW.minusMonths(20).toInstant()).build());
+        createdBroadcastIds.add(saved.getId());
+        return saved;
     }
 
     private void recipients(Broadcast broadcast, Person sent, Person excluded) {
@@ -161,5 +184,62 @@ class BroadcastRecipientDataRetentionIT extends AbstractIntegrationTest {
             assertThat(withReason(broadcast, "OPTED_OUT")).isEqualTo(1);
             assertThat(auditEntries(broadcast)).isZero();
         }
+    }
+
+    @Test
+    void exactCutoffIsNotAnonymizedAndOneDayPastIs() {
+        Person creator = person();
+        Broadcast exactCancelled = broadcast(creator, BroadcastStatus.CANCELLED, NOW.minusMonths(12).toInstant(), null);
+        Broadcast exactCompleted = broadcast(creator, BroadcastStatus.COMPLETED, null, NOW.minusMonths(12).toInstant());
+        Broadcast dayPast = broadcast(creator, BroadcastStatus.CANCELLED, NOW.minusMonths(12).minusDays(1).toInstant(), null);
+        for (Broadcast broadcast : new Broadcast[]{exactCancelled, exactCompleted, dayPast}) {
+            recipients(broadcast, person(), person());
+        }
+
+        int anonymized = job().anonymizeExpiredRecipientData();
+
+        assertThat(anonymized).isEqualTo(1);
+        assertThat(withAddress(exactCancelled)).isEqualTo(1);
+        assertThat(withAddress(exactCompleted)).isEqualTo(1);
+        assertThat(withAddress(dayPast)).isZero();
+        assertThat(auditEntries(exactCancelled)).isZero();
+        assertThat(auditEntries(exactCompleted)).isZero();
+        assertThat(auditEntries(dayPast)).isEqualTo(1);
+    }
+
+    @Test
+    void processesSeveralBatchesAndStopsAtTheMaximumPerRun() {
+        Person creator = person();
+        List<Broadcast> expired = new ArrayList<>();
+        for (int index = 0; index < 5; index++) {
+            Broadcast broadcast = broadcast(creator, BroadcastStatus.CANCELLED, NOW.minusMonths(13).minusDays(index).toInstant(), null);
+            recipients(broadcast, person(), person());
+            expired.add(broadcast);
+        }
+
+        int firstRun = job(2, 2).anonymizeExpiredRecipientData();
+
+        assertThat(firstRun).isEqualTo(4);
+        assertThat(expired.stream().filter(broadcast -> withAddress(broadcast) == 0).count()).isEqualTo(4);
+
+        int secondRun = job(2, 2).anonymizeExpiredRecipientData();
+
+        assertThat(secondRun).isEqualTo(1);
+        assertThat(expired.stream().filter(broadcast -> withAddress(broadcast) == 0).count()).isEqualTo(5);
+        assertThat(expired.stream().mapToLong(this::auditEntries).sum()).isEqualTo(5);
+    }
+
+    @Test
+    void stopsWhenTheLastBatchIsNotFull() {
+        Person creator = person();
+        for (int index = 0; index < 3; index++) {
+            Broadcast broadcast = broadcast(creator, BroadcastStatus.COMPLETED, null, NOW.minusMonths(14).toInstant());
+            recipients(broadcast, person(), person());
+        }
+
+        int anonymized = job(2, 100).anonymizeExpiredRecipientData();
+
+        assertThat(anonymized).isEqualTo(3);
+        assertThat(job(2, 100).anonymizeExpiredRecipientData()).isZero();
     }
 }
