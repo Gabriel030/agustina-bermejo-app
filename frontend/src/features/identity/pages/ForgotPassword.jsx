@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,7 +92,6 @@ export function ForgotPassword() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <MeshBackground />
       <GlassCard className="w-full max-w-[436px] p-6 pb-7 sm:p-10 sm:pb-9">
         <div className="mb-7">
           <InstitutionBrand titulo={titulo} subtitulo={subtitulo} />

@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Skeleton } from '@/components/Skeleton';
@@ -91,7 +90,6 @@ export function VerifyCertificate() {
 
   return (
     <div className="relative min-h-screen px-4 pt-5 pb-12">
-      <MeshBackground />
       <div className="mx-auto flex max-w-[560px] flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <InstitutionBrand layout="horizontal" titulo="Instituto Agustina Bermejo" />
