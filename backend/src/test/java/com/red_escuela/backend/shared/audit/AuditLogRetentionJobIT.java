@@ -100,6 +100,23 @@ class AuditLogRetentionJobIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void archivePurgeDeletesEveryExpiredRowAcrossSeveralBatches() {
+        long[] expired = new long[5];
+        for (int i = 0; i < expired.length; i++) {
+            expired[i] = insertArchived(NOW.minusMonths(25).minusDays(i));
+        }
+        long keptAtCutoff = insertArchived(NOW.minusMonths(24));
+
+        int deleted = new AuditLogRetentionJob(purger, CLOCK, true, 24).deleteExpiredAuditEntries();
+
+        assertThat(deleted).isEqualTo(5);
+        for (long id : expired) {
+            assertThat(archived(id)).isFalse();
+        }
+        assertThat(archived(keptAtCutoff)).isTrue();
+    }
+
+    @Test
     void theArchiveIsNotDeletedWhenRetentionIsOff() {
         long archivedExpired = insertArchived(NOW.minusMonths(60));
 

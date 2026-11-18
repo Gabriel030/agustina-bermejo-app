@@ -2,6 +2,7 @@ package com.red_escuela.backend.notification.broadcast.freezer.repository;
 
 import com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatus;
 import com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatusCount;
+import com.red_escuela.backend.notification.broadcast.freezer.domain.ExclusionReasonCount;
 import com.red_escuela.backend.notification.broadcast.freezer.domain.RecipientStatusCount;
 import com.red_escuela.backend.notification.broadcast.freezer.entity.BroadcastRecipient;
 import org.springframework.data.domain.Page;
@@ -14,6 +15,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRecipient, Long> {
@@ -28,6 +30,10 @@ public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRec
 
     long countByBroadcastId(Long broadcastId);
 
+    long countByBroadcastIdAndStatusIn(Long broadcastId, Collection<BroadcastRecipientStatus> statuses);
+
+    Optional<BroadcastRecipient> findByDeliveryId(Long deliveryId);
+
     List<BroadcastRecipient> findByBroadcastIdAndStatusIn(Long broadcastId, Collection<BroadcastRecipientStatus> statuses);
 
     Page<BroadcastRecipient> findByBroadcastId(Long broadcastId, Pageable pageable);
@@ -41,4 +47,14 @@ public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRec
     @Query("select new com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatusCount(r.broadcastId, r.status, count(r)) "
             + "from BroadcastRecipient r where r.broadcastId in :broadcastIds group by r.broadcastId, r.status")
     List<BroadcastRecipientStatusCount> countByStatusForBroadcasts(@Param("broadcastIds") Collection<Long> broadcastIds);
+    @Query("select new com.red_escuela.backend.notification.broadcast.freezer.domain.ExclusionReasonCount(r.exclusionReason, count(r)) "
+            + "from BroadcastRecipient r where r.broadcastId = :broadcastId and r.status = com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatus.EXCLUDED "
+            + "group by r.exclusionReason")
+    List<ExclusionReasonCount> countExcludedByReason(@Param("broadcastId") Long broadcastId);
+
+    @Query("select r.deliveryId from BroadcastRecipient r, NotificationDelivery d "
+            + "where r.status = com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatus.QUEUED "
+            + "and d.id = r.deliveryId and d.status not in (com.red_escuela.backend.notification.delivery.domain.DeliveryStatus.QUEUED, "
+            + "com.red_escuela.backend.notification.delivery.domain.DeliveryStatus.DEFERRED) order by r.id")
+    List<Long> findQueuedDeliveryIdsAlreadyResolved(org.springframework.data.domain.Pageable pageable);
 }

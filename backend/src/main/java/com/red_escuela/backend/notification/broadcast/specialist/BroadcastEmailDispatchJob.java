@@ -31,16 +31,18 @@ public class BroadcastEmailDispatchJob {
     private final NotificationDeliveryRepository deliveryRepository;
     private final EmailDeliveryChannel emailChannel;
     private final BroadcastConsentRecheck consentRecheck;
+    private final BroadcastProgressTracker progressTracker;
     private final BroadcastDispatchSettings settings;
     private final Clock clock;
     private final ScheduledJobFailureCounter failureCounter;
 
     public BroadcastEmailDispatchJob(NotificationDeliveryRepository deliveryRepository, EmailDeliveryChannel emailChannel,
-                                     BroadcastConsentRecheck consentRecheck, BroadcastDispatchSettings settings, Clock clock,
-                                     MeterRegistry meterRegistry) {
+                                     BroadcastConsentRecheck consentRecheck, BroadcastProgressTracker progressTracker,
+                                     BroadcastDispatchSettings settings, Clock clock, MeterRegistry meterRegistry) {
         this.deliveryRepository = deliveryRepository;
         this.emailChannel = emailChannel;
         this.consentRecheck = consentRecheck;
+        this.progressTracker = progressTracker;
         this.settings = settings;
         this.clock = clock;
         this.failureCounter = new ScheduledJobFailureCounter(meterRegistry);
@@ -59,6 +61,7 @@ public class BroadcastEmailDispatchJob {
         Instant now = clock.instant();
         List<Long> ids = deliveryRepository.findDispatchableIdsUpTo(DeliveryChannel.EMAIL, DeliveryCategory.BROADCAST, WAITING,
                 LocalDate.now(clock), now, PageRequest.of(0, settings.maxPerRun()));
+        reconcileResolvedDeliveries();
         int attempted = 0;
         for (Long id : ids) {
             if (!settings.window().isOpenAt(LocalTime.now(clock)) || remainingQuotaToday() == 0) {
@@ -69,6 +72,10 @@ public class BroadcastEmailDispatchJob {
             }
         }
         return attempted;
+    }
+
+    private void reconcileResolvedDeliveries() {
+        progressTracker.findResolvedQueuedDeliveryIds(settings.maxPerRun()).forEach(this::syncProgress);
     }
 
     private int remainingQuotaToday() {
@@ -83,6 +90,22 @@ public class BroadcastEmailDispatchJob {
     }
 
     private boolean dispatchOne(Long id) {
+        syncProgress(id);
+        boolean attempted = attemptDelivery(id);
+        syncProgress(id);
+        return attempted;
+    }
+
+    private void syncProgress(Long id) {
+        try {
+            progressTracker.syncDelivery(id);
+        } catch (RuntimeException failure) {
+            failureCounter.record("BroadcastEmailDispatchJob", failure);
+            log.warn("Fallo la actualizacion del avance del envio masivo para la entrega {} causa={}", id, failure.getClass().getSimpleName());
+        }
+    }
+
+    private boolean attemptDelivery(Long id) {
         try {
             if (consentRecheck.suppressIfConsentWithdrawn(id)) {
                 return false;

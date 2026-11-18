@@ -61,15 +61,8 @@ public class BroadcastRecipient {
         updatedAt = now;
     }
 
-    public void markSkipped(Instant now) {
-        status = BroadcastRecipientStatus.SKIPPED;
-        updatedAt = now;
-    }
-
-    public void markSkipped(Instant now, ExclusionReason reason) {
-        status = BroadcastRecipientStatus.SKIPPED;
-        exclusionReason = reason;
-        updatedAt = now;
+    public boolean isAwaitingDelivery() {
+        return status == BroadcastRecipientStatus.QUEUED;
     }
 
     public void markSent(Instant now) {
@@ -79,6 +72,17 @@ public class BroadcastRecipient {
 
     public void markFailed(Instant now) {
         status = BroadcastRecipientStatus.FAILED;
+        updatedAt = now;
+    }
+
+    public void markSkipped(Instant now) {
+        status = BroadcastRecipientStatus.SKIPPED;
+        updatedAt = now;
+    }
+
+    public void markSkipped(Instant now, ExclusionReason reason) {
+        status = BroadcastRecipientStatus.SKIPPED;
+        exclusionReason = reason;
         updatedAt = now;
     }
 }
