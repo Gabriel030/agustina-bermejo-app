@@ -75,28 +75,6 @@ describe('FirstLoginConsentGate', () => {
     expect(captured.body).toEqual({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, source: 'ACCOUNT_CREATION' });
   });
 
-  it('an already recorded conflict is treated as success and closes the prompt', async () => {
-    let recorded = false;
-    server.use(
-      http.get(`${API}/me/contact-consents`, () =>
-        recorded
-          ? HttpResponse.json([{ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, recordedAt: '2026-11-17T10:00:00Z', hasRecord: true }])
-          : withoutRecord(),
-      ),
-      http.put(`${API}/me/contact-consents`, () => {
-        recorded = true;
-        return HttpResponse.json(errorBody('CONTACT_CONSENT_ALREADY_RECORDED'), { status: 409 });
-      }),
-    );
-    const user = userEvent.setup();
-    renderGate();
-
-    await user.click(await screen.findByRole('checkbox', { name: /avisos institucionales/i }));
-    await user.click(screen.getByRole('button', { name: 'Continuar' }));
-
-    expect(await screen.findByText('Contenido de la app')).toBeInTheDocument();
-  });
-
   it('does not render the app content while the consents are loading', async () => {
     server.use(http.get(`${API}/me/contact-consents`, async () => {
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -104,7 +82,8 @@ describe('FirstLoginConsentGate', () => {
     }));
     renderGate();
 
-    expect(screen.queryByText('Contenido de la app')).not.toBeVisible();
+    expect(screen.getByRole('status', { name: 'Cargando' })).toBeInTheDocument();
+    expect(screen.queryByText('Contenido de la app')).not.toBeInTheDocument();
     expect(await screen.findByText(/antes de seguir, aceptá los avisos/i)).toBeInTheDocument();
     expect(screen.queryByText('Contenido de la app')).not.toBeInTheDocument();
   });

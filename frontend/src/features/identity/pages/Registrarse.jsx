@@ -12,7 +12,8 @@ import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/api/client';
 import { describeError } from '@/api/describeError';
 import { messageForAuthError } from '@/features/identity/lib/loginErrors';
-import { isMinorOn } from '@/features/identity/lib/legalDocuments';
+import { useCurrentLegalDocuments } from '@/features/identity/hooks/useLegal';
+import { isMinorOn, formatLegalDate } from '@/features/identity/lib/legalDocuments';
 
 const LEGAL_CODES = ['LEGAL_ACCEPTANCE_REQUIRED', 'BIRTH_DATE_REQUIRED', 'MINOR_GUARDIAN_REQUIRED'];
 
@@ -43,7 +44,9 @@ export function Registrarse() {
   const [enviando, setEnviando] = useState(false);
   const { usuario, register } = useAuth();
   const navigate = useNavigate();
+  const { data: legalDocuments } = useCurrentLegalDocuments();
   const isMinor = isMinorOn(birthDate);
+  const termsVersion = legalDocuments?.documents?.find((document) => document.type === 'TERMS')?.version;
 
   useEffect(() => {
     if (usuario) {
@@ -249,6 +252,7 @@ export function Registrarse() {
             checked={acceptedInstitutionalNotices}
             onCheckedChange={setAcceptedInstitutionalNotices}
             disabled={enviando}
+            termsVersion={termsVersion && (formatLegalDate(termsVersion) || termsVersion)}
           />
 
           {errorInstitucion && (
@@ -258,8 +262,8 @@ export function Registrarse() {
           )}
           {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
-          <p id="register-submit-hint" className="sr-only">
-            Marcá la casilla de avisos institucionales y Términos y Condiciones para crear la cuenta.
+          <p id="register-submit-hint" className="text-size-12 text-ink-soft empty:hidden">
+            {acceptedInstitutionalNotices ? '' : 'Marcá la casilla de aceptación para crear la cuenta.'}
           </p>
 
           <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>

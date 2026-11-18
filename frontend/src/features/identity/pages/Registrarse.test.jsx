@@ -79,12 +79,12 @@ describe('Registrarse', () => {
     expect(await screen.findByText('Ese email ya está registrado.')).toBeInTheDocument();
   });
 
-  it('offersASingleConsentCheckboxWithTheTermsLink', async () => {
+  it('offersASingleConsentCheckboxWithTheTermsAndPrivacyLinks', async () => {
     renderRegistrarse();
 
     expect(screen.getAllByRole('checkbox')).toHaveLength(1);
-    expect(screen.queryByRole('checkbox', { name: /acepto los términos y condiciones y la política/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Términos y Condiciones' })).toHaveAttribute('href', '/legal/terminos');
+    expect(screen.getByRole('link', { name: 'Términos y condiciones' })).toHaveAttribute('href', '/legal/terminos');
+    expect(screen.getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute('href', '/legal/privacidad');
   });
 
   it('keepsSubmitBlockedWithAnAccessibleHintUntilTheConsentIsChecked', async () => {
@@ -96,7 +96,7 @@ describe('Registrarse', () => {
     const submit = screen.getByRole('button', { name: /crear cuenta/i });
 
     expect(submit).toBeDisabled();
-    expect(submit).toHaveAccessibleDescription(/marcá la casilla de avisos institucionales/i);
+    expect(submit).toHaveAccessibleDescription(/marcá la casilla de aceptación/i);
     expect(captured.body).toBeUndefined();
   });
 
@@ -128,7 +128,7 @@ describe('Registrarse', () => {
     const notices = screen.getByRole('checkbox', { name: /avisos institucionales/i });
     expect(notices).not.toBeChecked();
     expect(screen.getByRole('button', { name: /crear cuenta/i })).toBeDisabled();
-    expect(screen.getByText('Texto provisional, pendiente de validación.')).toBeInTheDocument();
+    expect(screen.queryByText(/texto provisional/i)).not.toBeInTheDocument();
 
     await user.click(notices);
     expect(screen.getByRole('button', { name: /crear cuenta/i })).toBeEnabled();

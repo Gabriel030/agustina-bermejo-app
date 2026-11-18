@@ -1,6 +1,17 @@
 import { Checkbox } from '@/components/ui/checkbox';
+import { LEGAL_DOCUMENT_LABEL, LEGAL_DOCUMENT_PATH } from '@/features/identity/lib/legalDocuments';
 
-export function InstitutionalNoticesCheckbox({ id, checked, onCheckedChange, disabled }) {
+const LINK_CLASS = 'font-semibold text-brand hover:text-accent-2';
+
+function LegalLink({ type }) {
+  return (
+    <a href={LEGAL_DOCUMENT_PATH[type]} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+      {LEGAL_DOCUMENT_LABEL[type]}
+    </a>
+  );
+}
+
+export function InstitutionalNoticesCheckbox({ id, checked, onCheckedChange, disabled, termsVersion }) {
   return (
     <div className="rounded-lg border border-border p-3">
       <div className="flex items-start gap-3">
@@ -9,25 +20,14 @@ export function InstitutionalNoticesCheckbox({ id, checked, onCheckedChange, dis
           checked={checked}
           onCheckedChange={(value) => onCheckedChange(value === true)}
           disabled={disabled}
-          aria-describedby={`${id}-provisional`}
           className="mt-0.5"
         />
         <label htmlFor={id} className="text-size-13 font-semibold text-ink">
-          Acepto recibir avisos institucionales (novedades, fechas y calendario) y los{' '}
-          <a
-            href="/legal/terminos"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-brand hover:text-accent-2"
-          >
-            Términos y Condiciones
-          </a>
-          .
+          Acepto recibir avisos institucionales (novedades, fechas y calendario), los{' '}
+          <LegalLink type="TERMS" /> y la <LegalLink type="PRIVACY" />.
         </label>
       </div>
-      <p id={`${id}-provisional`} className="mt-1.5 pl-7 text-size-12 italic text-ink-faint">
-        Texto provisional, pendiente de validación.
-      </p>
+      {termsVersion && <p className="mt-1.5 pl-7 text-size-12 text-ink-soft">Versión {termsVersion}</p>}
     </div>
   );
 }

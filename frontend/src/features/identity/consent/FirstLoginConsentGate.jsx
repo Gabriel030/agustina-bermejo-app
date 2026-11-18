@@ -1,18 +1,18 @@
 import { useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useContactConsents, useUpdateContactConsent } from '@/features/identity/hooks/useContactConsents';
 import { InstitutionalNoticesCheckbox } from '@/features/identity/consent/InstitutionalNoticesCheckbox';
 
-const OPEN_PATH_PREFIXES = ['/legal/', '/confirmar-responsable'];
+const OPEN_PATH_PREFIXES = ['/legal/', '/confirmar-responsable', '/login', '/registrarse'];
 
 export function FirstLoginConsentGate({ children }) {
   const { usuario, logout } = useAuth();
   const { pathname } = useLocation();
-  const { data, isPending, refetch } = useContactConsents({ enabled: Boolean(usuario), retry: false });
+  const { data, isPending } = useContactConsents({ enabled: Boolean(usuario), retry: false });
   const [accepted, setAccepted] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const errorRef = useRef(null);
@@ -22,24 +22,20 @@ export function FirstLoginConsentGate({ children }) {
     Array.isArray(data) &&
     data.some((entry) => entry.channel === 'EMAIL' && entry.category === 'INSTITUTIONAL' && entry.hasRecord === false);
 
-  const loading = Boolean(usuario) && !isOpenPath && isPending;
-  if (!usuario || isOpenPath || !hasNoRecord) {
+  if (usuario && !isOpenPath && isPending) {
     return (
-      <div style={{ display: loading ? 'none' : 'contents' }}>
-        {children}
+      <div className="flex min-h-screen items-center justify-center" role="status" aria-label="Cargando">
+        <Loader2 className="size-6 animate-spin text-ink-soft" />
       </div>
     );
   }
+  if (!usuario || isOpenPath || !hasNoRecord) return children;
 
   async function submit() {
     setSaveError(false);
     try {
       await update.mutateAsync({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, source: 'ACCOUNT_CREATION' });
-    } catch (error) {
-      if (error.code === 'CONTACT_CONSENT_ALREADY_RECORDED') {
-        refetch();
-        return;
-      }
+    } catch {
       setSaveError(true);
       requestAnimationFrame(() => errorRef.current?.focus());
     }
@@ -47,11 +43,10 @@ export function FirstLoginConsentGate({ children }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <MeshBackground />
       <GlassCard className="flex w-full max-w-[480px] flex-col gap-4 p-6 sm:p-10">
         <h1 className="font-heading text-lg font-bold text-ink">Antes de seguir, aceptá los avisos de la institución</h1>
         <p className="text-size-13 text-ink-soft">
-          Tu cuenta fue creada por la institución. Para continuar, aceptá recibir avisos institucionales.
+          Para continuar, aceptá recibir los avisos institucionales.
         </p>
         <InstitutionalNoticesCheckbox id="first-login-notices" checked={accepted} onCheckedChange={setAccepted} />
         {saveError && (
@@ -59,7 +54,10 @@ export function FirstLoginConsentGate({ children }) {
             No pudimos guardar tu aceptación. Intentá de nuevo.
           </p>
         )}
-        <Button variant="gradient" disabled={!accepted} loading={update.isPending} onClick={submit}>
+        <p id="first-login-hint" className="text-size-12 text-ink-soft">
+          {accepted ? '' : 'Marcá la casilla para poder continuar.'}
+        </p>
+        <Button variant="gradient" aria-describedby="first-login-hint" disabled={!accepted} loading={update.isPending} onClick={submit}>
           Continuar
         </Button>
         <Button variant="ghost" onClick={logout}>
