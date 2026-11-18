@@ -19,10 +19,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class BroadcastLifecycleEndToEndIT extends AbstractBroadcastDispatchIT {
 
@@ -311,5 +316,47 @@ class BroadcastLifecycleEndToEndIT extends AbstractBroadcastDispatchIT {
         assertThat(breakdownSum).isEqualTo(completed.getExcludedTotal()).isEqualTo(2);
         assertThat(jdbc.queryForObject("select (excluded_by_reason ->> 'OPTED_OUT')::int from broadcast where id = ?", Integer.class,
                 broadcast.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void twoConcurrentSyncsOfTheLastTwoDeliveriesWaitForTheBroadcastLockAndCompleteItExactlyOnce() throws Exception {
+        Broadcast broadcast = confirmedBroadcast(2, false);
+        List<Long> deliveries = queuedDeliveryIds(broadcast);
+        deliveries.forEach(this::markDeliverySentWithoutSync);
+        jdbc.update("update broadcast set status = 'SENDING' where id = ?", broadcast.getId());
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<?>> syncs = transactionTemplate.execute(status -> {
+                broadcastRepository.findByIdForUpdate(broadcast.getId()).orElseThrow();
+                List<Future<?>> submitted = deliveries.stream().<Future<?>>map(id -> executor.submit(() -> progressTracker.syncDelivery(id))).toList();
+                await().atMost(Duration.ofSeconds(20)).until(() -> jdbc.queryForObject(
+                        "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()", Long.class) >= 2);
+                return submitted;
+            });
+            for (Future<?> sync : syncs) {
+                sync.get();
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        Broadcast completed = reload(broadcast);
+        assertThat(completed.getStatus()).isEqualTo(BroadcastStatus.COMPLETED);
+        assertThat(completed.getSentTotal()).isEqualTo(2);
+        assertThat(recipients(broadcast, BroadcastRecipientStatus.SENT)).isEqualTo(2);
+        assertThat(auditEntries(broadcast, "BROADCAST_COMPLETED")).isEqualTo(1);
+    }
+
+    @Test
+    void invalidNumberRecipientsAreFrozenAsDiscardedAndDoNotKeepTheBroadcastOpen() {
+        Broadcast broadcast = confirmedBroadcast(2, false);
+        jdbc.update("update broadcast_recipient set status = 'INVALID_NUMBER' where id = (select min(id) from broadcast_recipient where broadcast_id = ?)",
+                broadcast.getId());
+        drain(jobWith(10, 0, 100, recordingChannel(realGateway)));
+
+        Broadcast completed = reload(broadcast);
+        assertThat(completed.getStatus()).isEqualTo(BroadcastStatus.COMPLETED);
+        assertThat(completed.getDiscardedTotal()).isEqualTo(1);
+        assertThat(completed.getSentTotal()).isEqualTo(1);
     }
 }

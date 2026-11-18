@@ -85,14 +85,4 @@ public class BroadcastRecipient {
         exclusionReason = reason;
         updatedAt = now;
     }
-
-    public void markSent(Instant now) {
-        status = BroadcastRecipientStatus.SENT;
-        updatedAt = now;
-    }
-
-    public void markFailed(Instant now) {
-        status = BroadcastRecipientStatus.FAILED;
-        updatedAt = now;
-    }
 }
