@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, m } from 'motion/react';
 import { Sidebar } from '@/components/Sidebar';
-import { MeshBackground } from '@/components/MeshBackground';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { TopHeader } from '@/components/TopHeader';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
@@ -80,7 +79,6 @@ export function RoleShell({ titulo, items, groups }) {
     // no a una bottom tab bar — decisión revisada con el usuario (ver docs/context/frontend.md).
     <div className="flex h-screen flex-col gap-(--shell-gap) overflow-hidden p-(--shell-pad) lg:flex-row">
       <SkipToContent />
-      <MeshBackground />
       <Sidebar titulo={titulo} items={items} groups={groups} />
       {/* Columna de contenido junto al Sidebar, en mobile y desktop por igual —
           apila TopHeader arriba de <main>. Antes este wrapper colapsaba con

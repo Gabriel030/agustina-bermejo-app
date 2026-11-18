@@ -13,7 +13,6 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `PageContainer` [shared] | Envoltorio de toda pantalla de contenido (ancho máximo, gap); con `title`/`action` dibuja la cabecera (h1 + acción principal a la derecha) | `className`, `title`, `action` |
 | `GlassCard` [shared] | Superficie de vidrio; base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
-| `MeshBackground` [shared] | Fondo de pantallas públicas | — |
 | `InstitutionBrand` [shared] | Marca de la institución en pantallas públicas | — |
 | `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `ROLE_CONFIG` (`routes/roleConfig.js`) | — |
 
