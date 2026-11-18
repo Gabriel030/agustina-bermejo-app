@@ -20,6 +20,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -66,7 +68,7 @@ class StudentScheduleOverlapGuardTest {
     void slotThatStartsExactlyWhenTheOtherEndsDoesNotOverlap() {
         period(TARGET_TERM, 3, 7);
         when(scheduleFinder.findProgramSectionSlots(TARGET_SECTION)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 10, 12)));
-        when(scheduleFinder.findProgramSectionSlots(200L)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 8, 10)));
+        when(scheduleFinder.findProgramSectionSlots(Set.of(200L))).thenReturn(Map.of(200L, List.of(slot(DayOfWeek.MONDAY, 8, 10))));
         when(subjectRepository.findByStudentId(STUDENT)).thenReturn(List.of(programEnrollment(2L, 200L, TARGET_TERM, "Algebra", EnrollmentStatus.ENROLLED)));
 
         assertThatCode(() -> guard.requireNoOverlapForProgramSection(STUDENT, TARGET_SECTION, TARGET_TERM, 1L)).doesNotThrowAnyException();
@@ -76,7 +78,7 @@ class StudentScheduleOverlapGuardTest {
     void slotThatOverlapsInTheSamePeriodNamesTheConflictingSubjectDayAndTimes() {
         period(TARGET_TERM, 3, 7);
         when(scheduleFinder.findProgramSectionSlots(TARGET_SECTION)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 9, 11)));
-        when(scheduleFinder.findProgramSectionSlots(200L)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 8, 10)));
+        when(scheduleFinder.findProgramSectionSlots(Set.of(200L))).thenReturn(Map.of(200L, List.of(slot(DayOfWeek.MONDAY, 8, 10))));
         when(subjectRepository.findByStudentId(STUDENT)).thenReturn(List.of(programEnrollment(2L, 200L, TARGET_TERM, "Algebra", EnrollmentStatus.IN_PROGRESS)));
 
         assertThatThrownBy(() -> guard.requireNoOverlapForProgramSection(STUDENT, TARGET_SECTION, TARGET_TERM, 1L))
@@ -89,7 +91,7 @@ class StudentScheduleOverlapGuardTest {
         period(TARGET_TERM, 3, 7);
         period(11L, 8, 12);
         when(scheduleFinder.findProgramSectionSlots(TARGET_SECTION)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 8, 10)));
-        when(scheduleFinder.findProgramSectionSlots(200L)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 8, 10)));
+        when(scheduleFinder.findProgramSectionSlots(Set.of(200L))).thenReturn(Map.of(200L, List.of(slot(DayOfWeek.MONDAY, 8, 10))));
         when(subjectRepository.findByStudentId(STUDENT)).thenReturn(List.of(programEnrollment(2L, 200L, 11L, "Algebra", EnrollmentStatus.ENROLLED)));
 
         assertThatCode(() -> guard.requireNoOverlapForProgramSection(STUDENT, TARGET_SECTION, TARGET_TERM, 1L)).doesNotThrowAnyException();
@@ -99,7 +101,7 @@ class StudentScheduleOverlapGuardTest {
     void sameHoursOnAnotherDayDoNotOverlap() {
         period(TARGET_TERM, 3, 7);
         when(scheduleFinder.findProgramSectionSlots(TARGET_SECTION)).thenReturn(List.of(slot(DayOfWeek.TUESDAY, 8, 10)));
-        when(scheduleFinder.findProgramSectionSlots(200L)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 8, 10)));
+        when(scheduleFinder.findProgramSectionSlots(Set.of(200L))).thenReturn(Map.of(200L, List.of(slot(DayOfWeek.MONDAY, 8, 10))));
         when(subjectRepository.findByStudentId(STUDENT)).thenReturn(List.of(programEnrollment(2L, 200L, TARGET_TERM, "Algebra", EnrollmentStatus.ENROLLED)));
 
         assertThatCode(() -> guard.requireNoOverlapForProgramSection(STUDENT, TARGET_SECTION, TARGET_TERM, 1L)).doesNotThrowAnyException();
@@ -109,7 +111,7 @@ class StudentScheduleOverlapGuardTest {
     void withdrawnWaitlistedAndTheIgnoredEnrollmentDoNotCount() {
         period(TARGET_TERM, 3, 7);
         when(scheduleFinder.findProgramSectionSlots(TARGET_SECTION)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 8, 10)));
-        when(scheduleFinder.findProgramSectionSlots(200L)).thenReturn(List.of(slot(DayOfWeek.MONDAY, 8, 10)));
+        when(scheduleFinder.findProgramSectionSlots(Set.of(200L))).thenReturn(Map.of(200L, List.of(slot(DayOfWeek.MONDAY, 8, 10))));
         when(subjectRepository.findByStudentId(STUDENT)).thenReturn(List.of(
                 programEnrollment(2L, 200L, TARGET_TERM, "Retirada", EnrollmentStatus.WITHDRAWN),
                 programEnrollment(3L, 200L, TARGET_TERM, "Espera", EnrollmentStatus.WAITLISTED),
@@ -130,7 +132,7 @@ class StudentScheduleOverlapGuardTest {
         CourseSubjectSectionEnrollment courseEnrollment = new CourseSubjectSectionEnrollment();
         courseEnrollment.setCourseSubjectSection(courseSection);
         when(scheduleFinder.findProgramSectionSlots(TARGET_SECTION)).thenReturn(List.of(slot(DayOfWeek.WEDNESDAY, 18, 20)));
-        when(scheduleFinder.findCourseSectionSlots(300L)).thenReturn(List.of(slot(DayOfWeek.WEDNESDAY, 19, 21)));
+        when(scheduleFinder.findCourseSectionSlots(Set.of(300L))).thenReturn(Map.of(300L, List.of(slot(DayOfWeek.WEDNESDAY, 19, 21))));
         when(subjectRepository.findByStudentId(STUDENT)).thenReturn(List.of());
         when(courseRepository.findByStudentIdAndStatusInOrderByIdAsc(org.mockito.ArgumentMatchers.eq(STUDENT), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(courseEnrollment));

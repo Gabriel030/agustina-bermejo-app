@@ -4,7 +4,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GoogleLogin } from '@react-oauth/google';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,7 +110,6 @@ export function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <MeshBackground />
       <GlassCard className="w-full max-w-[436px] p-10 pb-9">
         <div className="mb-7">
           <InstitutionBrand subtitulo="Ingresá a tu cuenta" />

@@ -4,7 +4,6 @@ import { Stagger } from '@/components/Stagger';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { formatChartValue } from '@/components/charts';
-import { useFinancialDashboard } from '@/features/billing/hooks/useFinancialDashboard';
 import { useMonthlyMetric } from '@/features/billing/hooks/useMonthlyMetric';
 import { cn, formatMoney } from '@/lib/utils';
 import { deltaBetween, formatLongMonth, formatPointsDelta, formatShortMonth, goalStatusAt, previousMonthOf, valueAt } from './dashboardMetrics';
@@ -133,8 +132,7 @@ export function MonthKpis({ filters, month }) {
   );
 }
 
-export function TodayKpis({ currency }) {
-  const dashboard = useFinancialDashboard();
+export function TodayKpis({ currency, dashboard }) {
   const { data, isLoading, isError } = dashboard;
   const retry = () => dashboard.refetch();
   const totals = (data?.totalsByCurrency ?? []).find((candidate) => candidate.totalDebt?.currency === currency);
