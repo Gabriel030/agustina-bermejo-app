@@ -13,12 +13,15 @@ import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditRecord;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
+import com.red_escuela.backend.notification.broadcast.specialist.BroadcastProgressTracker;
+import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class BroadcastCanceller {
@@ -29,16 +32,18 @@ public class BroadcastCanceller {
     private final BroadcastRecipientRepository recipientRepository;
     private final NotificationDeliveryRepository deliveryRepository;
     private final BroadcastTotalsFreezer totalsFreezer;
+    private final BroadcastProgressTracker progressTracker;
     private final AuditTrail auditTrail;
     private final Clock clock;
 
     public BroadcastCanceller(BroadcastRepository broadcastRepository, BroadcastRecipientRepository recipientRepository,
-                              NotificationDeliveryRepository deliveryRepository, BroadcastTotalsFreezer totalsFreezer,
+                              NotificationDeliveryRepository deliveryRepository, BroadcastTotalsFreezer totalsFreezer, BroadcastProgressTracker progressTracker,
                               AuditTrail auditTrail, Clock clock) {
         this.broadcastRepository = broadcastRepository;
         this.recipientRepository = recipientRepository;
         this.deliveryRepository = deliveryRepository;
         this.totalsFreezer = totalsFreezer;
+        this.progressTracker = progressTracker;
         this.auditTrail = auditTrail;
         this.clock = clock;
     }
@@ -51,17 +56,26 @@ public class BroadcastCanceller {
         broadcast.cancel(cancelledByPersonId, reason.strip(), now);
         List<BroadcastRecipient> open = recipientRepository.findByBroadcastIdAndStatusIn(broadcastId,
                 List.of(BroadcastRecipientStatus.PENDING, BroadcastRecipientStatus.QUEUED));
-        open.forEach(recipient -> {
-            if (recipient.getDeliveryId() != null) {
-                deliveryRepository.findByIdForUpdate(recipient.getDeliveryId())
-                        .filter(delivery -> delivery.getStatus().isWaitingForDispatch())
-                        .ifPresent(delivery -> delivery.discard(DISCARD_REASON));
-            }
-            recipient.markSkipped(now);
-        });
+        open.forEach(recipient -> settleOpenRecipient(recipient, now));
         totalsFreezer.freezeTotals(broadcast);
         auditTrail.record(new AuditRecord(AuditAction.BROADCAST_CANCELLED, AuditEntityType.BROADCAST, broadcastId,
                 before.name(), broadcast.getStatus().name(), broadcast.getCancellationReason()));
         return broadcast.getStatus();
+    }
+
+    private void settleOpenRecipient(BroadcastRecipient recipient, Instant now) {
+        Optional<NotificationDelivery> delivery = recipient.getDeliveryId() == null
+                ? Optional.empty()
+                : deliveryRepository.findByIdForUpdate(recipient.getDeliveryId());
+        if (delivery.isEmpty()) {
+            recipient.markSkipped(now);
+            return;
+        }
+        if (delivery.get().getStatus().isWaitingForDispatch()) {
+            delivery.get().discard(DISCARD_REASON);
+            recipient.markSkipped(now);
+            return;
+        }
+        progressTracker.applyDeliveryOutcome(recipient, delivery.get(), now);
     }
 }

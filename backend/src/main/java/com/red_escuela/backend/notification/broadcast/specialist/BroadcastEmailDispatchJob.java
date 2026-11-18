@@ -61,6 +61,7 @@ public class BroadcastEmailDispatchJob {
         Instant now = clock.instant();
         List<Long> ids = deliveryRepository.findDispatchableIdsUpTo(DeliveryChannel.EMAIL, DeliveryCategory.BROADCAST, WAITING,
                 LocalDate.now(clock), now, PageRequest.of(0, settings.maxPerRun()));
+        reconcileResolvedDeliveries();
         int attempted = 0;
         for (Long id : ids) {
             if (!settings.window().isOpenAt(LocalTime.now(clock)) || remainingQuotaToday() == 0) {
@@ -71,6 +72,10 @@ public class BroadcastEmailDispatchJob {
             }
         }
         return attempted;
+    }
+
+    private void reconcileResolvedDeliveries() {
+        progressTracker.findResolvedQueuedDeliveryIds(settings.maxPerRun()).forEach(this::syncProgress);
     }
 
     private int remainingQuotaToday() {

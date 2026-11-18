@@ -15,6 +15,7 @@ public class BroadcastTotalsFreezer {
     }
 
     public void freezeTotals(Broadcast broadcast) {
-        broadcast.freezeTotals(BroadcastTotals.from(recipientRepository.countByStatus(broadcast.getId())));
+        broadcast.freezeTotals(BroadcastTotals.from(recipientRepository.countByStatus(broadcast.getId()),
+                recipientRepository.countExcludedByReason(broadcast.getId())));
     }
 }

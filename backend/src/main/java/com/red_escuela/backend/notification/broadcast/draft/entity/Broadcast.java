@@ -96,6 +96,10 @@ public class Broadcast {
     @Column(name = "discarded_total")
     private Integer discardedTotal;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "excluded_by_reason", columnDefinition = "jsonb")
+    private String excludedByReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -118,6 +122,7 @@ public class Broadcast {
         failedTotal = totals.failed();
         excludedTotal = totals.excluded();
         discardedTotal = totals.discarded();
+        excludedByReason = totals.excludedByReasonAsJson();
     }
 
     public void complete(Instant now) {
