@@ -14,12 +14,14 @@ public record AuditLogView(Long id, LocalDateTime occurredAt, Long actorPersonId
                            Long entityId, String beforeValue, String afterValue, String reason) {
 
     public static final String SYSTEM_ACTOR_NAME = "Sistema";
+    public static final String DELETED_ACTOR_NAME = "Persona eliminada";
 
     public static AuditLogView from(AuditLogEntry entry, String actorName) {
-        String resolvedName = entry.getActorPersonId() == null ? SYSTEM_ACTOR_NAME : actorName;
+        String resolvedName = entry.getActorPersonId() == null ? SYSTEM_ACTOR_NAME
+                : actorName != null ? actorName : DELETED_ACTOR_NAME;
         return new AuditLogView(entry.getId(), entry.getOccurredAt(), entry.getActorPersonId(), entry.getActorRole(),
                 resolvedName, entry.getAction(), entry.getEntityType(), entry.getEntityId(),
                 AuditValueMasker.mask(entry.getBeforeValue()), AuditValueMasker.mask(entry.getAfterValue()),
-                entry.getReason());
+                AuditValueMasker.mask(entry.getReason()));
     }
 }

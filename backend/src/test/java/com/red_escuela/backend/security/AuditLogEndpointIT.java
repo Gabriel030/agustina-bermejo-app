@@ -29,6 +29,8 @@ class AuditLogEndpointIT extends AuthorizationMatrixSupport {
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private EntityManagerFactory entityManagerFactory;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
 
     private Long directorId;
     private Long administrativeId;
@@ -93,12 +95,48 @@ class AuditLogEndpointIT extends AuthorizationMatrixSupport {
     }
 
     @Test
-    void directorOnlySeesOwnInstitute() throws Exception {
+    void directorAndPlatformAdminAreIsolatedByEndpoint() throws Exception {
         mockMvc.perform(directorGet("/audit-log")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(6));
         mockMvc.perform(directorGet("/platform/audit-log")).andExpect(status().isForbidden());
         mockMvc.perform(get("/audit-log").header("Authorization", "Bearer " + fixtures.tokenFor(MatrixRole.PLATFORM_ADMIN)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void platformEndpointAppliesFiltersMasksValuesAndResolvesNames() throws Exception {
+        String platformToken = fixtures.tokenFor(MatrixRole.PLATFORM_ADMIN);
+
+        MvcResult result = mockMvc.perform(get("/platform/audit-log").header("Authorization", "Bearer " + platformToken)
+                        .param("actorRole", "DIRECTOR").param("from", "2026-11-14").param("to", "2026-11-14"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].actorName").value("Matriz DIRECTOR"))
+                .andReturn();
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("$2a$10$old", "$2a$10$new");
+
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", "Bearer " + platformToken)
+                        .param("action", "PASSWORD_RESET_COMPLETED"))
+                .andExpect(jsonPath("$.items[0].actorName").value("Sistema"));
+    }
+
+    @Test
+    void unknownActorRoleReturnsAnEmptyPage() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("actorRole", "NOT_A_ROLE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void reasonIsMaskedWhenItCarriesSecrets() throws Exception {
+        auditLogRepository.save(AuditLogEntry.builder().occurredAt(LocalDateTime.of(2026, 11, 15, 8, 0))
+                .actorPersonId(directorId).actorRole("DIRECTOR").action(AuditAction.STAFF_CREATED)
+                .entityType(AuditEntityType.PERSON).entityId(2L).reason("alta con password=Temp-4821").build());
+
+        MvcResult result = mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_CREATED").param("from", "2026-11-15"))
+                .andExpect(status().isOk()).andReturn();
+
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("Temp-4821");
     }
 
     @Test
@@ -120,6 +158,8 @@ class AuditLogEndpointIT extends AuthorizationMatrixSupport {
 
     private long statementsFor(MockHttpServletRequestBuilder request) throws Exception {
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        entityManager.flush();
+        entityManager.clear();
         statistics.setStatisticsEnabled(true);
         statistics.clear();
         mockMvc.perform(request).andExpect(status().isOk());
