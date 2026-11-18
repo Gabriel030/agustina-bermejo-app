@@ -41,7 +41,8 @@ public class AuditLogRetentionJob {
             return 0;
         }
         LocalDateTime cutoff = LocalDateTime.now(clock).minusMonths(retentionMonths);
-        return purger.purge("audit_log", "audit_log", "occurred_at < :auditCutoff",
-                new MapSqlParameterSource("auditCutoff", cutoff));
+        MapSqlParameterSource parameters = new MapSqlParameterSource("auditCutoff", cutoff);
+        return purger.purge("audit_log", "audit_log", "occurred_at < :auditCutoff", parameters)
+                + purger.purge("audit_log_archive", "audit_log_archive", "occurred_at < :auditCutoff", parameters);
     }
 }
