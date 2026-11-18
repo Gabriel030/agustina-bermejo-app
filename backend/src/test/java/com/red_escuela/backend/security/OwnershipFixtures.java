@@ -69,6 +69,7 @@ final class OwnershipFixtures {
     private Long instructorPersonId;
     private Long examBoardId;
     private Long closureId;
+    private Long closureSectionId;
     private String teacherDirectorToken;
     private String teacherStudentToken;
 
@@ -110,8 +111,8 @@ final class OwnershipFixtures {
         return examBoardId;
     }
 
-    Long sectionId() {
-        return sectionId;
+    Long closureSectionId() {
+        return closureSectionId;
     }
 
     String teacherDirectorToken() {
@@ -206,7 +207,9 @@ final class OwnershipFixtures {
         entityManager.flush();
         attendanceId = absence.getId();
         examBoardId = persistExamBoard(subject, term, instructor);
-        closureId = persistClosure(section);
+        Long closureSectionId = persistClosureSection(subject, term, scheme, instructor);
+        this.closureSectionId = closureSectionId;
+        closureId = persistClosure(closureSectionId);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
 
@@ -237,10 +240,29 @@ final class OwnershipFixtures {
         return board.getId();
     }
 
-    private Long persistClosure(SubjectSection section) {
+    private Long persistClosureSection(Subject subject, Term term, EvaluationScheme scheme, Instructor instructor) {
+        SubjectSection section = new SubjectSection();
+        section.setName("Comision cierre matriz");
+        section.setSubject(subject);
+        section.setTerm(term);
+        section.setEvaluationScheme(scheme);
+        section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
+        section.setCapacity(30);
+        section.setStatus(StatusType.ACTIVE);
+        entityManager.persist(section);
+        SubjectSectionInstructor assignment = new SubjectSectionInstructor();
+        assignment.setSection(section);
+        assignment.setInstructor(instructor);
+        assignment.setRole(InstructorRole.LEAD);
+        entityManager.persist(assignment);
+        entityManager.flush();
+        return section.getId();
+    }
+
+    private Long persistClosure(Long sectionId) {
         CommissionClosure closure = CommissionClosure.builder()
                 .sectionKind(SectionKind.PROGRAM)
-                .sectionId(section.getId())
+                .sectionId(sectionId)
                 .status(ClosureStatus.DRAFT_AVAILABLE)
                 .build();
         entityManager.persist(closure);

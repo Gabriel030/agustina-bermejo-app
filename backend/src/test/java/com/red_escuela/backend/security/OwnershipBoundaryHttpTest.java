@@ -37,7 +37,7 @@ class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
 
     private long existingIdOf(Resource resource) {
         return switch (resource) {
-            case CLOSURE_SHEET -> ownership.sectionId();
+            case CLOSURE_SHEET -> ownership.closureSectionId();
             case CLOSURE_EXPORT -> ownership.closureId();
             case EXAM_BOARD, EXAM_BOARD_REGISTRATIONS -> ownership.examBoardId();
         };
