@@ -20,7 +20,7 @@ const annualTerms = { slug: 'terminos-del-pago-anual', label: 'Términos del pag
 const financial ={ slug: 'financiero', label: 'Financiero', icon: BarChart2 };
 const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText };
 const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicitudes de ingreso', icon: UserPlus };
-const waitlists = { slug: 'listas-de-espera', label: 'Listas de espera', icon: ListOrdered };
+const waitlists = { slug: 'inscripciones/listas-de-espera', label: 'Listas de espera', icon: ListOrdered };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const closures = { slug: 'cierres-de-comision', label: 'Cierres de comisión', icon: FileSignature };
@@ -119,10 +119,11 @@ const MENU_GROUPS = {
   director: [
     { id: 'main', label: null, slugs: ['inicio', 'aprobaciones'] },
     { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal'] },
+    { id: 'enrollment', label: 'Inscripciones', slugs: ['inscripciones/listas-de-espera'] },
     {
       id: 'academic',
       label: 'Académico',
-      slugs: ['oferta-academica', 'listas-de-espera', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias'],
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias'],
     },
     {
       id: 'billing',

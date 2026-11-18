@@ -92,4 +92,7 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     @Query("select e.id as enrollmentId, e.student.id as studentId from CourseEnrollment e where e.course.id = :courseId")
     List<WaitlistEnrollmentStudentRow> findWaitlistEnrollmentStudentRows(@Param("courseId") Long courseId);
+
+    @Query("select e.id from CourseEnrollment e where e.status = :waiting and e.waitlistExpiryRemindedAt is null and e.course.id in :courseIds order by e.id")
+    List<Long> findWaitlistedIdsToRemind(@Param("courseIds") java.util.Collection<Long> courseIds, @Param("waiting") EnrollmentStatus waiting);
 }

@@ -72,6 +72,13 @@ public class CourseCatalogFinder {
                 .toList();
     }
 
+    public List<Long> findCourseIdsWithWaitlistDeadlineBetween(LocalDate after, LocalDate untilInclusive) {
+        return courseRepository.findByWaitlistDeadlineOffsetDaysIsNotNull().stream()
+                .filter(course -> course.waitlistDeadline().isAfter(after) && !course.waitlistDeadline().isAfter(untilInclusive))
+                .map(Course::getId)
+                .toList();
+    }
+
     private CourseModuleView toModuleView(CourseSubject courseSubject) {
         return new CourseModuleView(courseSubject.getId(), courseSubject.getName());
     }

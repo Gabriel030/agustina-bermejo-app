@@ -8,3 +8,4 @@ export { MyDiscountsTab } from './discounts/MyDiscountsTab';
 export { CreditBalanceCard } from './credit-notes/CreditBalanceCard';
 export { AnnualUpfrontCards } from './annual-upfront/AnnualUpfrontCards';
 export { AnnualUpfrontStaffSection } from './annual-upfront/AnnualUpfrontStaffSection';
+export { useDebtors } from './hooks/useFinancialDashboard';

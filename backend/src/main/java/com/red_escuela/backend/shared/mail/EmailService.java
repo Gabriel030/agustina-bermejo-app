@@ -12,5 +12,5 @@ public interface EmailService {
 
     void sendGuardianLegalConfirmation(String guardianName, String guardianEmail, String minorFirstName, String institutionName, String confirmationLink);
 
-    void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail);
+    void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail, String cancellationLink);
 }

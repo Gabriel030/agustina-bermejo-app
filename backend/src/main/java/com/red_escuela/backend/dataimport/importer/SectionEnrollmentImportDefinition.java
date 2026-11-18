@@ -1,5 +1,6 @@
 package com.red_escuela.backend.dataimport.importer;
 
+import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
 import com.red_escuela.backend.academicstructure.api.HistoricalSectionRecorder;
 import com.red_escuela.backend.dataimport.domain.ImportEntityType;
 import com.red_escuela.backend.dataimport.entity.ImportRowError;
@@ -178,6 +179,20 @@ public class SectionEnrollmentImportDefinition implements ImportEntityDefinition
     public void discard(Long entityId) {
         closureRecorder.discardStudentResult(entityId);
         enrollmentRecorder.discardSectionEnrollment(entityId);
+    }
+
+    @Override
+    public boolean discardsInBatch() {
+        return true;
+    }
+
+    @Override
+    public void discardBatch(List<Long> entityIds) {
+        int deletedResults = closureRecorder.discardStudentResults(entityIds);
+        int deleted = enrollmentRecorder.discardSectionEnrollments(entityIds);
+        if (deleted != entityIds.size() || deletedResults > deleted) {
+            throw new HistoricalDiscardBlockedException("Faltan inscripciones importadas para deshacer en lote");
+        }
     }
 
     @Override
