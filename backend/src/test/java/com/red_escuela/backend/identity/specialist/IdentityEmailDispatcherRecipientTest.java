@@ -85,6 +85,20 @@ class IdentityEmailDispatcherRecipientTest {
         verify(emailService).sendPasswordResetLockoutNotice("Ana", "ana@example.com");
     }
 
+    @Test
+    void emailChangeSendsTheLinkToTheNewAddressAndTheNoticeToThePreviousOne() {
+        Person person = mock(Person.class);
+        when(person.getName()).thenReturn("Ana");
+        when(personRepository.findById(7L)).thenReturn(Optional.of(person));
+
+        dispatcher.onEmailChangeRequested(EmailChangeRequestedEvent.requestedFor(7L, "anterior@example.com",
+                "nuevo@example.com", "https://example.test/verificar-email?token=abc"));
+
+        verify(emailService).sendEmailChangeVerification("Ana", "nuevo@example.com",
+                "https://example.test/verificar-email?token=abc");
+        verify(emailService).sendEmailChangeNotice("Ana", "anterior@example.com", "nuevo@example.com");
+    }
+
     private MailRecipient recipientFor(String name, String username, String email) {
         Person person = mock(Person.class);
         when(person.getId()).thenReturn(7L);

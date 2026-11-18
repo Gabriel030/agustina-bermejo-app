@@ -54,7 +54,6 @@ class RequestBodyValidationRulesTest {
 
     static ArchRule managementWriteBodiesAreValidated() {
         return methods().that().areDeclaredInClassesThat().resideInAPackage("..controller..")
-                .and().areDeclaredInClassesThat().resideOutsideOfPackage("..billing..")
                 .and(new com.tngtech.archunit.base.DescribedPredicate<JavaMethod>("write mapping") {
                     @Override
                     public boolean test(JavaMethod method) {

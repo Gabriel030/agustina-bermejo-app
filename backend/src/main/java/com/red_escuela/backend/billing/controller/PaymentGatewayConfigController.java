@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.controller;
 
+import jakarta.validation.Valid;
+
 import com.red_escuela.backend.billing.dto.PaymentGatewayConfigResponse;
 import com.red_escuela.backend.billing.dto.UpdatePaymentGatewayConfigRequest;
 import com.red_escuela.backend.billing.entity.PaymentGatewayConfig;
@@ -57,7 +59,7 @@ public class PaymentGatewayConfigController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PutMapping
     @PreAuthorize("hasRole('DIRECTOR')")
-    public PaymentGatewayConfigResponse updateConfig(@RequestBody UpdatePaymentGatewayConfigRequest request) {
+    public PaymentGatewayConfigResponse updateConfig(@Valid @RequestBody UpdatePaymentGatewayConfigRequest request) {
         return updateConfigUseCase.update(request, currentPersonService.resolveCurrentPerson());
     }
 
