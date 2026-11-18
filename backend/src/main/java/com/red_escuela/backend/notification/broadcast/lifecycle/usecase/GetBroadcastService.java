@@ -32,7 +32,7 @@ public class GetBroadcastService implements GetBroadcastUseCase {
     @Override
     public BroadcastDetailResponse getBroadcast(Long broadcastId) {
         var broadcast = broadcastRepository.findById(broadcastId).orElseThrow(() -> new BroadcastNotFoundException(broadcastId));
-        Map<BroadcastRecipientStatus, Long> counts = recipientCounts.countByBroadcast(java.util.List.of(broadcastId)).get(broadcastId);
+        Map<BroadcastRecipientStatus, Long> counts = recipientCounts.countByBroadcast(java.util.List.of(broadcast)).get(broadcastId);
         Map<Long, String> names = personNameFinder.findFullNamesByPersonId(
                 Stream.of(broadcast.getCreatedByPersonId(), broadcast.getConfirmedByPersonId()).filter(Objects::nonNull).toList());
         return BroadcastDetailResponse.from(broadcast, counts, names, completionEstimator.estimate(broadcast.getStatus(), counts));

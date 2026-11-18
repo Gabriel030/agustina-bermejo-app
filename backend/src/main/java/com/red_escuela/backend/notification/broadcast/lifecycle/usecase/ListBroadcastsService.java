@@ -39,7 +39,7 @@ public class ListBroadcastsService implements ListBroadcastsUseCase {
                 Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
         Page<Broadcast> result = status == null ? broadcastRepository.findAll(pageable) : broadcastRepository.findByStatus(status, pageable);
         List<Broadcast> rows = result.getContent();
-        var counts = recipientCounts.countByBroadcast(rows.stream().map(Broadcast::getId).toList());
+        var counts = recipientCounts.countByBroadcast(rows);
         Map<Long, String> names = personNameFinder.findFullNamesByPersonId(rows.stream()
                 .flatMap(row -> Stream.of(row.getCreatedByPersonId(), row.getConfirmedByPersonId())).filter(Objects::nonNull).distinct().toList());
         List<BroadcastSummaryResponse> content = rows.stream().map(row -> BroadcastSummaryResponse.from(row, names, counts.get(row.getId()))).toList();

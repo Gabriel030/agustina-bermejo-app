@@ -1,4 +1,4 @@
-import { BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered } from 'lucide-react';
+import { Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -24,6 +24,8 @@ const waitlists = { slug: 'inscripciones/listas-de-espera', label: 'Listas de es
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const closures = { slug: 'cierres-de-comision', label: 'Cierres de comisión', icon: FileSignature };
+const broadcasts = { slug: 'comunicaciones', label: 'Comunicaciones', icon: Megaphone };
+const audit = { slug: 'auditoria', label: 'Auditoría', icon: History };
 const approvals = { slug: 'aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 };
 
 export const ROLE_MENU = {
@@ -74,11 +76,13 @@ export const ROLE_MENU = {
     academicManagement,
     periodos,
     { slug: 'feriados', label: 'Feriados', icon: CalendarDays },
+    broadcasts,
   ],
   director: [
     inicio,
     alumnos,
     waitlists,
+    broadcasts,
     academicOffering,
     personal,
     approvals,
@@ -88,6 +92,7 @@ export const ROLE_MENU = {
     closures,
     { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
     { slug: 'importacion-inicial', label: 'Importación inicial', icon: Upload },
+    audit,
     invoicing,
     discounts,
     prices,
@@ -100,7 +105,7 @@ export const ROLE_MENU = {
     certificates,
     periodos,
   ],
-  platform_admin: [{ ...inicio, hidden: true }, { slug: 'modulos', label: 'Módulos', icon: Puzzle }, { slug: 'primer-director', label: 'Primer director', icon: UserPlus }],
+  platform_admin: [{ ...inicio, hidden: true }, { slug: 'modulos', label: 'Módulos', icon: Puzzle }, { slug: 'primer-director', label: 'Primer director', icon: UserPlus }, audit],
 };
 
 export function pagesFor(role) {
@@ -116,7 +121,7 @@ export function menuItemsFor(role) {
 const MENU_GROUPS = {
   director: [
     { id: 'main', label: null, slugs: ['inicio', 'aprobaciones'] },
-    { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal'] },
+    { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal', 'comunicaciones'] },
     { id: 'enrollment', label: 'Inscripciones', slugs: ['inscripciones/listas-de-espera'] },
     {
       id: 'academic',
@@ -137,7 +142,7 @@ const MENU_GROUPS = {
         'financiero',
       ],
     },
-    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto', 'importacion-inicial'] },
+    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto', 'importacion-inicial', 'auditoria'] },
   ],
 };
 

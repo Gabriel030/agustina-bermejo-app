@@ -5,5 +5,5 @@ import com.red_escuela.backend.notification.broadcast.domain.ConsentChannel;
 
 import java.time.Instant;
 
-public record ContactConsentEntry(ConsentChannel channel, BroadcastCategory category, boolean granted, Instant recordedAt) {
+public record ContactConsentEntry(ConsentChannel channel, BroadcastCategory category, boolean granted, Instant recordedAt, boolean hasRecord) {
 }

@@ -33,6 +33,7 @@ const personResponse = (overrides = {}) => ({
  */
 export const handlers = [
   http.get(`${API}/regular-certificate-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/graduation-requests`, () => HttpResponse.json([])),
   http.get(`${API}/regular-certificates`, () => HttpResponse.json([])),
   http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
   http.get(`${API}/institution/academic-settings`, () =>
@@ -61,6 +62,7 @@ export const handlers = [
           category,
           granted: false,
           recordedAt: '2026-11-01T10:00:00Z',
+          hasRecord: true,
         })),
       ),
     ),
@@ -71,6 +73,7 @@ export const handlers = [
       category: 'INSTITUTIONAL',
       granted: true,
       recordedAt: '2026-11-17T10:00:00Z',
+      hasRecord: true,
     }),
   ),
   http.get(`${API}/public/unsubscribe/:token`, () =>
