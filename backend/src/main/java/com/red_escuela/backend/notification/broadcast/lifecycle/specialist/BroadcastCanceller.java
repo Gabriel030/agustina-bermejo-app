@@ -7,6 +7,7 @@ import com.red_escuela.backend.notification.broadcast.draft.repository.Broadcast
 import com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatus;
 import com.red_escuela.backend.notification.broadcast.freezer.entity.BroadcastRecipient;
 import com.red_escuela.backend.notification.broadcast.freezer.repository.BroadcastRecipientRepository;
+import com.red_escuela.backend.notification.broadcast.freezer.specialist.BroadcastTotalsFreezer;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
 import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
@@ -30,14 +31,17 @@ public class BroadcastCanceller {
     private final BroadcastRepository broadcastRepository;
     private final BroadcastRecipientRepository recipientRepository;
     private final NotificationDeliveryRepository deliveryRepository;
+    private final BroadcastTotalsFreezer totalsFreezer;
     private final AuditTrail auditTrail;
     private final Clock clock;
 
     public BroadcastCanceller(BroadcastRepository broadcastRepository, BroadcastRecipientRepository recipientRepository,
-                              NotificationDeliveryRepository deliveryRepository, AuditTrail auditTrail, Clock clock) {
+                              NotificationDeliveryRepository deliveryRepository, BroadcastTotalsFreezer totalsFreezer,
+                              AuditTrail auditTrail, Clock clock) {
         this.broadcastRepository = broadcastRepository;
         this.recipientRepository = recipientRepository;
         this.deliveryRepository = deliveryRepository;
+        this.totalsFreezer = totalsFreezer;
         this.auditTrail = auditTrail;
         this.clock = clock;
     }
@@ -51,6 +55,7 @@ public class BroadcastCanceller {
         List<BroadcastRecipient> open = recipientRepository.findByBroadcastIdAndStatusIn(broadcastId,
                 List.of(BroadcastRecipientStatus.PENDING, BroadcastRecipientStatus.QUEUED));
         open.forEach(recipient -> settleRecipient(recipient, now));
+        totalsFreezer.freezeTotals(broadcast);
         auditTrail.record(new AuditRecord(AuditAction.BROADCAST_CANCELLED, AuditEntityType.BROADCAST, broadcastId,
                 before.name(), broadcast.getStatus().name(), broadcast.getCancellationReason()));
         return broadcast.getStatus();

@@ -5,6 +5,7 @@ import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastEvent;
 import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatus;
 import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatusStateMachine;
+import com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastTotals;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -83,6 +84,18 @@ public class Broadcast {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "sent_total")
+    private Integer sentTotal;
+
+    @Column(name = "failed_total")
+    private Integer failedTotal;
+
+    @Column(name = "excluded_total")
+    private Integer excludedTotal;
+
+    @Column(name = "discarded_total")
+    private Integer discardedTotal;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -90,6 +103,21 @@ public class Broadcast {
         status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.CONFIRM);
         confirmedByPersonId = personId;
         confirmedAt = now;
+    }
+
+    public void startSending() {
+        status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.START_SENDING);
+    }
+
+    public boolean hasFrozenTotals() {
+        return sentTotal != null;
+    }
+
+    public void freezeTotals(BroadcastTotals totals) {
+        sentTotal = totals.sent();
+        failedTotal = totals.failed();
+        excludedTotal = totals.excluded();
+        discardedTotal = totals.discarded();
     }
 
     public void complete(Instant now) {
