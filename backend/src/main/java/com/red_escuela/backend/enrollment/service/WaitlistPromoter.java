@@ -16,22 +16,34 @@ public class WaitlistPromoter {
         this.eligibility = eligibility;
     }
 
-    public void promoteNext(WaitlistKind kind, Long queueId) {
+    public boolean promoteNext(WaitlistKind kind, Long queueId) {
         WaitlistQueue queue = waitlistQueues.of(kind);
         queue.lock(queueId);
         if (!queue.isOpenForPromotion(queueId)) {
-            return;
+            return false;
         }
         boolean hasFreeSeat = queue.findQueues(queueId, null).stream()
                 .findFirst()
                 .map(snapshot -> snapshot.free() == null || snapshot.free() > 0)
                 .orElse(false);
         if (!hasFreeSeat) {
-            return;
+            return false;
         }
-        queue.findWaitingCandidates(queueId).stream()
+        return queue.findWaitingCandidates(queueId).stream()
                 .filter(candidate -> eligibility.evaluate(candidate).eligible())
                 .findFirst()
-                .ifPresent(candidate -> queue.promote(candidate.enrollmentId()));
+                .map(candidate -> {
+                    queue.promote(candidate.enrollmentId());
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    public int promoteWhileSeatsAreFree(WaitlistKind kind, Long queueId) {
+        int promoted = 0;
+        while (promoteNext(kind, queueId)) {
+            promoted++;
+        }
+        return promoted;
     }
 }

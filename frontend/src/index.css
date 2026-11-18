@@ -268,7 +268,3 @@
 .nota-fila {
   border-left: 3px solid var(--accent-2);
 }
-
-:root[data-design='b'] .mesh-blob {
-  display: none;
-}

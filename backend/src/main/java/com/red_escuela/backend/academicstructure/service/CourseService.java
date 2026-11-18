@@ -34,9 +34,12 @@ public class CourseService {
     private final OfferingPriceCatalog offeringPriceCatalog;
     private final OfferingListPriceReader listPriceReader;
     private final CurrentPersonService currentPersonService;
+    private final CapacityChangeEvents capacityChangeEvents;
 
     public CourseService(CourseRepository courseRepository, TermRepository termRepository,
-                          OfferingPriceCatalog offeringPriceCatalog, OfferingListPriceReader listPriceReader, CurrentPersonService currentPersonService) {
+                          OfferingPriceCatalog offeringPriceCatalog, OfferingListPriceReader listPriceReader, CurrentPersonService currentPersonService,
+                          CapacityChangeEvents capacityChangeEvents) {
+        this.capacityChangeEvents = capacityChangeEvents;
         this.courseRepository = courseRepository;
         this.termRepository = termRepository;
         this.offeringPriceCatalog = offeringPriceCatalog;
@@ -74,6 +77,7 @@ public class CourseService {
     @Transactional
     public Course update(Long id, UpdateCourseRequest request) {
         Course course = findOrThrow(id);
+        Integer previousCapacity = course.getCapacity();
         if (request.price() != null) {
             requirePositive(request.price());
         }
@@ -86,7 +90,9 @@ public class CourseService {
         Optional.ofNullable(request.registrationStart()).ifPresent(course::setRegistrationStart);
         Optional.ofNullable(request.registrationEnd()).ifPresent(course::setRegistrationEnd);
         course.requireValidRegistrationWindow();
-        return withListPrice(courseRepository.save(course));
+        Course saved = courseRepository.save(course);
+        capacityChangeEvents.courseChanged(saved.getId(), previousCapacity, saved.getCapacity());
+        return withListPrice(saved);
     }
 
     private void adjustPriceIfChanged(Course course, Money requested) {

@@ -33,6 +33,7 @@ import java.util.stream.StreamSupport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -162,7 +163,7 @@ class DiscountDefinitionApprovalHttpIT extends AbstractIntegrationTest {
     void a11OnlyTheProposerWithdrawsAPendingProposalAndNobodyWithdrawsAnApprovedOne() throws Exception {
         Long withdrawnId = proposedBy(administrative, annualUpfront("a11 retirada"));
 
-        decide("withdraw", withdrawnId, otherAdministrative).andExpect(status().isForbidden());
+        decide("withdraw", withdrawnId, otherAdministrative).andExpect(status().isNotFound()).andExpect(content().string(""));
         decide("withdraw", withdrawnId, administrative).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("WITHDRAWN"));
 
         Long approvedId = proposedBy(administrative, annualUpfront("a11 aprobada"));

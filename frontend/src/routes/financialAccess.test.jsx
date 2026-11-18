@@ -49,7 +49,7 @@ async function signInAs(role, path) {
 
 describe('Financiero access by role', () => {
   it('d2-01 lets the administrative role open Financiero from the menu and see the page', async () => {
-    await signInAs('ADMINISTRATIVO', '/administrativo/inicio');
+    await signInAs('ADMINISTRATIVO', '/administrativo/alumnos');
     await screen.findByRole('heading', { name: 'Padrón de alumnos' });
 
     const links = await screen.findAllByRole('link', { name: 'Financiero' });
@@ -60,7 +60,7 @@ describe('Financiero access by role', () => {
   });
 
   it('d2-02 keeps the administrative menu with a single Facturación entry and no billing sub-menu (D-355)', async () => {
-    await signInAs('ADMINISTRATIVO', '/administrativo/inicio');
+    await signInAs('ADMINISTRATIVO', '/administrativo/alumnos');
 
     const nav = (await screen.findAllByRole('navigation'))[0];
     await within(nav).findByRole('link', { name: 'Facturación' });

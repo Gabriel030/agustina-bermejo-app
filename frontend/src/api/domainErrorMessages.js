@@ -17,6 +17,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   BROADCAST_TEMPLATE_MISMATCH: 'La plantilla elegida no corresponde al canal o la categoría de la comunicación.',
   BROADCAST_CONTENT_WITH_TEMPLATE: 'Con una plantilla no se puede enviar asunto ni mensaje propios.',
   BROADCAST_NOT_FOUND: 'No encontramos esa comunicación.',
+  ILLEGAL_BROADCAST_STATUS_TRANSITION: 'La comunicación ya no está en un estado que permita esa acción.',
   SEGMENT_NOT_AVAILABLE: 'Ese segmento de destinatarios no está disponible.',
   MISSING_REQUIRED_VARIABLE: 'Falta el dato de una variable de la plantilla para esa persona.',
   TEMPLATE_PERSON_NOT_FOUND: 'No encontramos a la persona elegida para la vista previa.',
