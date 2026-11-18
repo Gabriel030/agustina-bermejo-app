@@ -20,11 +20,17 @@ import com.red_escuela.backend.dataimport.repository.ImportCreatedEntityReposito
 import com.red_escuela.backend.dataimport.repository.ImportRowRepository;
 import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
 import com.red_escuela.backend.shared.time.ApplicationTime;
+import jakarta.persistence.EntityManager;
+import java.sql.Connection;
+import java.sql.Savepoint;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.hibernate.Session;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,12 +48,14 @@ public class ImportRollbackTransaction {
     private final ImportBatchEventRepository eventRepository;
     private final ImportDefinitionRegistry registry;
     private final AuditTrail auditTrail;
+    private final EntityManager entityManager;
 
     public ImportRollbackTransaction(ImportBatchRepository batchRepository,
             ImportCreatedEntityRepository createdEntityRepository, ImportRowRepository rowRepository,
             ImportBatchEventRepository eventRepository, ImportDefinitionRegistry registry,
-            AuditTrail auditTrail) {
+            AuditTrail auditTrail, EntityManager entityManager) {
         this.auditTrail = auditTrail;
+        this.entityManager = entityManager;
         this.batchRepository = batchRepository;
         this.createdEntityRepository = createdEntityRepository;
         this.rowRepository = rowRepository;
@@ -86,24 +94,59 @@ public class ImportRollbackTransaction {
 
     private Map<ImportEntityType, Long> discardAll(Long batchId) {
         Map<ImportEntityType, Long> discarded = new EnumMap<>(ImportEntityType.class);
+        List<ImportCreatedEntity> pending = new ArrayList<>();
         for (ImportCreatedEntity created : createdEntityRepository.findByBatchIdOrderByIdDesc(batchId)) {
             if (RETAINED_TYPES.contains(created.getEntityType())) {
                 continue;
             }
             ImportEntityDefinition definition = registry.definitionFor(created.getEntityType());
-            try {
-                if (definition.isParentRecord(created.getNaturalKey())) {
-                    definition.discardParent(created.getEntityId());
-                    continue;
+            if (definition.discardsInBatch() && !definition.isParentRecord(created.getNaturalKey())) {
+                if (!pending.isEmpty() && pending.get(0).getEntityType() != created.getEntityType()) {
+                    discardPending(pending, discarded);
                 }
-                definition.discard(created.getEntityId());
-            } catch (HistoricalDiscardBlockedException e) {
-                throw new ImportRollbackBlockedException(created.getEntityType(), created.getNaturalKey(), e.getMessage());
-            } catch (DataIntegrityViolationException e) {
-                throw new ImportRollbackBlockedException(created.getEntityType(), created.getNaturalKey(), LATER_DATA_REASON);
+                pending.add(created);
+                continue;
             }
-            discarded.merge(created.getEntityType(), 1L, Long::sum);
+            discardPending(pending, discarded);
+            discardOne(created, definition, discarded);
         }
+        discardPending(pending, discarded);
         return discarded;
+    }
+
+    private void discardPending(List<ImportCreatedEntity> pending, Map<ImportEntityType, Long> discarded) {
+        if (pending.isEmpty()) {
+            return;
+        }
+        ImportCreatedEntity first = pending.get(0);
+        ImportEntityDefinition definition = registry.definitionFor(first.getEntityType());
+        entityManager.flush();
+        Session session = entityManager.unwrap(Session.class);
+        Savepoint savepoint = session.doReturningWork(Connection::setSavepoint);
+        try {
+            definition.discardBatch(pending.stream().map(ImportCreatedEntity::getEntityId).toList());
+            session.doWork(connection -> connection.releaseSavepoint(savepoint));
+            discarded.merge(first.getEntityType(), (long) pending.size(), Long::sum);
+        } catch (HistoricalDiscardBlockedException | DataIntegrityViolationException e) {
+            session.doWork(connection -> connection.rollback(savepoint));
+            entityManager.clear();
+            pending.forEach(created -> discardOne(created, definition, discarded));
+        }
+        pending.clear();
+    }
+
+    private void discardOne(ImportCreatedEntity created, ImportEntityDefinition definition, Map<ImportEntityType, Long> discarded) {
+        try {
+            if (definition.isParentRecord(created.getNaturalKey())) {
+                definition.discardParent(created.getEntityId());
+                return;
+            }
+            definition.discard(created.getEntityId());
+        } catch (HistoricalDiscardBlockedException e) {
+            throw new ImportRollbackBlockedException(created.getEntityType(), created.getNaturalKey(), e.getMessage());
+        } catch (DataIntegrityViolationException e) {
+            throw new ImportRollbackBlockedException(created.getEntityType(), created.getNaturalKey(), LATER_DATA_REASON);
+        }
+        discarded.merge(created.getEntityType(), 1L, Long::sum);
     }
 }
