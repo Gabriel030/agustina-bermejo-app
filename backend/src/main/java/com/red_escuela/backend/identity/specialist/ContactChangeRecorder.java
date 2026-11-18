@@ -8,11 +8,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ContactChangeRecorder {
 
-    private static final Duration RECENT_EMAIL_CHANGE_WINDOW = Duration.ofHours(24);
+    private static final Duration RECENT_EMAIL_CHANGE_WINDOW = Duration.ofHours(72);
 
     private final ContactChangeLogRepository contactChangeLogRepository;
 
@@ -28,7 +29,12 @@ public class ContactChangeRecorder {
 
     public boolean hasRecentEmailChange(Long personId) {
         return contactChangeLogRepository.existsByPersonIdAndChangeTypeInAndOccurredAtAfter(personId,
-                List.of(ContactChangeType.EMAIL_CHANGE_REQUESTED, ContactChangeType.EMAIL_CHANGE_CONFIRMED),
+                List.of(ContactChangeType.EMAIL_CHANGE_CONFIRMED),
                 ApplicationTime.now().minus(RECENT_EMAIL_CHANGE_WINDOW));
+    }
+
+    public Optional<Long> lastEmailChangeRequesterId(Long personId) {
+        return contactChangeLogRepository.findFirstByPersonIdAndChangeTypeOrderByIdDesc(personId,
+                ContactChangeType.EMAIL_CHANGE_REQUESTED).map(ContactChangeLog::getActorPersonId);
     }
 }
