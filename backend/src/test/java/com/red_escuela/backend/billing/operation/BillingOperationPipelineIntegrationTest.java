@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.operation;
 
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestAccessDeniedException;
+import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestNotFoundException;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestStatus;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationResumeOutcome;
 import com.red_escuela.backend.billing.authorization.domain.IllegalAuthorizationRequestTransitionException;
@@ -333,7 +334,7 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> approveRequest.approve(id, "me apruebo")).isInstanceOf(AuthorizationRequestAccessDeniedException.class);
         assertThatThrownBy(() -> rejectRequest.reject(id, "no")).isInstanceOf(AuthorizationRequestAccessDeniedException.class);
         authenticateAs(director);
-        assertThatThrownBy(() -> withdrawRequest.withdraw(id)).isInstanceOf(AuthorizationRequestAccessDeniedException.class);
+        assertThatThrownBy(() -> withdrawRequest.withdraw(id)).isInstanceOf(AuthorizationRequestNotFoundException.class);
         assertThat(requestRepository.findById(id).orElseThrow().getStatus()).isEqualTo(AuthorizationRequestStatus.PENDING);
 
         authenticateAs(administrative);

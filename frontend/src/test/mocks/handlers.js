@@ -76,6 +76,52 @@ export const handlers = [
     HttpResponse.json({ channel: 'EMAIL', category: 'PROMOTIONAL' }),
   ),
   http.post(`${API}/public/unsubscribe/:token`, () => new HttpResponse(null, { status: 200 })),
+  http.get(`${API}/broadcasts`, () =>
+    HttpResponse.json({
+      items: [
+        {
+          id: 1,
+          name: 'Aviso de inicio de clases',
+          category: 'INSTITUTIONAL',
+          channel: 'EMAIL',
+          status: 'CONFIRMED',
+          createdAt: '2026-11-17T10:00:00Z',
+          confirmedAt: '2026-11-17T10:05:00Z',
+        },
+      ],
+      page: 0,
+      size: 20,
+      totalElements: 1,
+    }),
+  ),
+  http.get(`${API}/broadcasts/:id`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id),
+      name: 'Aviso de inicio de clases',
+      category: 'INSTITUTIONAL',
+      channel: 'EMAIL',
+      status: 'CONFIRMED',
+      subject: 'Inicio de clases',
+      bodyText: 'Las clases comienzan el lunes.',
+      createdAt: '2026-11-17T10:00:00Z',
+      confirmedAt: '2026-11-17T10:05:00Z',
+      recipientCounts: { PENDING: 0, QUEUED: 1, SENT: 0, FAILED: 0, EXCLUDED: 0, DONE: 0, SKIPPED: 0, INVALID_NUMBER: 0 },
+    }),
+  ),
+  http.get(`${API}/broadcasts/:id/recipients`, () =>
+    HttpResponse.json({
+      items: [{ personId: 10, fullName: 'Ana Pérez', status: 'QUEUED', addressMasked: 'a***@example.com' }],
+      page: 0,
+      size: 50,
+      totalElements: 1,
+    }),
+  ),
+  http.post(`${API}/broadcasts/:id/confirm`, ({ params }) =>
+    HttpResponse.json({ id: Number(params.id), status: 'CONFIRMED' }),
+  ),
+  http.post(`${API}/broadcasts/:id/cancel`, ({ params }) =>
+    HttpResponse.json({ id: Number(params.id), status: 'CANCELLED' }),
+  ),
   http.get(`${API}/me`, () => HttpResponse.json(personResponse({ dni: '' }))),
   http.put(`${API}/me`, () => HttpResponse.json(personResponse())),
   http.post(`${API}/auth/register`, () =>

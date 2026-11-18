@@ -8,5 +8,6 @@ public enum AuditEntityType {
     PROGRAM_ENROLLMENT,
     COURSE_ENROLLMENT,
     DATA_IMPORT_BATCH,
+    BROADCAST,
     INSTITUTE_SETTING
 }
