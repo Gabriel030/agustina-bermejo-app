@@ -348,6 +348,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `TERM_NOT_FOUND` | no | `TermNotFoundException` | academicstructure |
 | `UNKNOWN_METRIC_PANEL` | no | `UnknownMetricPanelException` | billing |
 | `WAITLIST_QUEUE_NOT_FOUND` | no | `WaitlistQueueNotFoundException` | enrollment |
+| `WHATSAPP_TEMPLATE_MAPPING_NOT_FOUND` | no | `WhatsappTemplateMappingNotFoundException` | notification |
 
 ### HTTP 409
 
@@ -606,6 +607,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `WAITLIST_NO_FREE_SEAT` | no | `WaitlistNoFreeSeatException` | enrollment |
 | `WAITLIST_REMOVAL_BLOCKED_BY_PENDING_RECEIPT` | no | `WaitlistRemovalBlockedByPendingReceiptException` | enrollment |
 | `WHATSAPP_PROVIDER_NOT_CONFIGURED` | no | `WhatsappProviderNotConfiguredException` | platform |
+| `WHATSAPP_TEMPLATE_MAPPING_ALREADY_EXISTS` | no | `WhatsappTemplateMappingAlreadyExistsException` | notification |
+| `WHATSAPP_TEMPLATE_NOT_APPROVED` | no | `WhatsappTemplateNotApprovedException` | notification |
 | `WITHDRAWAL_REDUCTION_REJECTED` | no | `WithdrawalReductionRejectedException` | billing |
 
 ### HTTP 422
@@ -636,6 +639,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INTERNAL_ERROR` | no | `InvoiceStatusInconsistentWithAmountsException` | billing |
 | `INTERNAL_ERROR` | no | `PaymentSourceIntegrityException` | billing |
 | `INTERNAL_ERROR` | no | `UnsupportedGatewayOperationException` | billing |
+| `INTERNAL_ERROR` | no | `WhatsAppProviderRejectedException` | notification |
+| `INTERNAL_ERROR` | no | `WhatsAppProviderUnavailableException` | notification |
 
 ### HTTP 502
 
@@ -788,6 +793,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |
 | POST | `/graduation-requests/{id}/verify-debt` | `GraduationRequestController#verifyDebt` |
 | POST | `/holidays` | `HolidayController#create` |
+| POST | `/institute-settings/notifications/whatsapp/templates` | `WhatsAppTemplateMappingController#createMapping` |
 | POST | `/invoices/{invoiceId}/cancellations` | `InvoiceCancellationController#cancelOrRequestInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/cancellations/preview` | `InvoiceCancellationController#previewInvoiceCancellation` |
 | POST | `/late-payment-settings` | `LatePaymentSettingsController#create` |
