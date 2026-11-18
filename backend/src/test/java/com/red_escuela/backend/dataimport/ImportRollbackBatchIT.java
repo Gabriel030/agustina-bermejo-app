@@ -1,36 +1,29 @@
 package com.red_escuela.backend.dataimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import jakarta.persistence.EntityManagerFactory;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class ImportRollbackBatchIT extends AbstractDataImportIT {
     private static final int FEW = 10;
     private static final int MANY = 100;
-    private static final Pattern EXECUTION = Pattern.compile("duration: [0-9.]+ ms\\s+execute [^:]*: (.*)");
-    private static final Pattern TRANSACTION_CONTROL = Pattern.compile("(?i)^\\s*(begin|commit|rollback|set |show |discard ).*");
+    private static final int BEYOND_ONE_CHUNK = 1005;
+    private static final int BLOCKING_POSITION = 57;
+    private static final long STATEMENTS_TO_ROLL_BACK = 14;
 
-    @BeforeEach
-    void enableStatementLogging() {
-        jdbc.execute("alter system set log_min_duration_statement = 0");
-        jdbc.execute("select pg_reload_conf()");
-        await().until(() -> "0".equals(jdbc.queryForObject("show log_min_duration_statement", String.class)));
-    }
-
-    @AfterEach
-    void disableStatementLogging() {
-        jdbc.execute("alter system reset log_min_duration_statement");
-        jdbc.execute("select pg_reload_conf()");
-    }
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
 
     @Test
     void rollbackRestoresEnrollmentsAndClosureResultsToTheirStateBeforeTheImport() throws Exception {
@@ -40,10 +33,7 @@ class ImportRollbackBatchIT extends AbstractDataImportIT {
         long enrollmentsBefore = count("subject_section_enrollment");
         long closureResultsBefore = count("commission_closure_student");
         long closuresBefore = count("commission_closure");
-        long batchId = createBatch();
-        upload(batchId, "SECTION_ENROLLMENTS", csv.sectionEnrollments(0, FEW));
-        validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED"));
-        commit(batchId).andExpect(jsonPath("$.status").value("COMMITTED"));
+        long batchId = importEnrollments(csv, FEW);
         assertThat(count("subject_section_enrollment")).isEqualTo(enrollmentsBefore + FEW);
         assertThat(count("commission_closure_student")).isEqualTo(closureResultsBefore + FEW);
 
@@ -60,6 +50,124 @@ class ImportRollbackBatchIT extends AbstractDataImportIT {
     }
 
     @Test
+    void rollbackOfOneImportKeepsExactlyTheEnrollmentsAndResultsOfTheOtherImport() throws Exception {
+        HistoricalDatasetCsv first = newDataset("ZA", 2011, FEW);
+        HistoricalDatasetCsv second = newDataset("ZB", 2012, FEW);
+        long firstBase = createBatch();
+        importBaseStructure(firstBase, first);
+        long secondBase = createBatch();
+        importBaseStructure(secondBase, second);
+        long firstBatch = importEnrollments(first, FEW);
+        long secondBatch = importEnrollments(second, FEW);
+        List<Long> firstIds = importedEnrollmentIds(firstBatch);
+        List<Long> secondIds = importedEnrollmentIds(secondBatch);
+        assertThat(firstIds).hasSize(FEW);
+        assertThat(secondIds).hasSize(FEW);
+        assertThat(existingEnrollmentIds(firstIds)).containsExactlyInAnyOrderElementsOf(firstIds);
+        assertThat(existingResultEnrollmentIds(firstIds)).containsExactlyInAnyOrderElementsOf(firstIds);
+
+        rollback(firstBatch).andExpect(status().isOk());
+
+        assertThat(existingEnrollmentIds(firstIds)).isEmpty();
+        assertThat(existingResultEnrollmentIds(firstIds)).isEmpty();
+        assertThat(existingEnrollmentIds(secondIds)).containsExactlyInAnyOrderElementsOf(secondIds);
+        assertThat(existingResultEnrollmentIds(secondIds)).containsExactlyInAnyOrderElementsOf(secondIds);
+        assertThat(importedEnrollmentIds(secondBatch)).containsExactlyInAnyOrderElementsOf(secondIds);
+        assertThat(importedEnrollmentIds(firstBatch)).isEmpty();
+        rollback(secondBatch).andExpect(status().isOk());
+        rollback(secondBase);
+        rollback(firstBase);
+    }
+
+    @Test
+    void rollbackDeletesImportedEnrollmentsThatWereModifiedAfterTheImportAndKeepsTheOtherImportUntouched() throws Exception {
+        HistoricalDatasetCsv first = newDataset("ZC", 2011, FEW);
+        HistoricalDatasetCsv second = newDataset("ZD", 2012, FEW);
+        long firstBase = createBatch();
+        importBaseStructure(firstBase, first);
+        long secondBase = createBatch();
+        importBaseStructure(secondBase, second);
+        long firstBatch = importEnrollments(first, FEW);
+        long secondBatch = importEnrollments(second, FEW);
+        List<Long> firstIds = importedEnrollmentIds(firstBatch);
+        List<Long> secondIds = importedEnrollmentIds(secondBatch);
+        jdbc.update("update subject_section_enrollment set final_score = 4.50, version = version + 3 where id = any(?)",
+                (Object) firstIds.toArray(Long[]::new));
+        jdbc.update("update subject_section_enrollment set final_score = 3.25, version = version + 2 where id = ?", secondIds.get(0));
+
+        rollback(firstBatch).andExpect(status().isOk());
+
+        assertThat(existingEnrollmentIds(firstIds)).isEmpty();
+        assertThat(existingResultEnrollmentIds(firstIds)).isEmpty();
+        assertThat(existingEnrollmentIds(secondIds)).containsExactlyInAnyOrderElementsOf(secondIds);
+        assertThat(jdbc.queryForObject("select final_score from subject_section_enrollment where id = ?", java.math.BigDecimal.class,
+                secondIds.get(0))).isEqualByComparingTo("3.25");
+        rollback(secondBatch).andExpect(status().isOk());
+        rollback(secondBase);
+        rollback(firstBase);
+    }
+
+    @Test
+    void rollbackOfMoreEnrollmentsThanOneChunkRemovesAllOfThemAndKeepsTheOtherImport() throws Exception {
+        HistoricalDatasetCsv large = newDataset("ZE", 2011, BEYOND_ONE_CHUNK);
+        HistoricalDatasetCsv small = newDataset("ZF", 2012, FEW);
+        long largeBase = createBatch();
+        importBaseStructure(largeBase, large);
+        long smallBase = createBatch();
+        importBaseStructure(smallBase, small);
+        long largeBatch = importEnrollments(large, BEYOND_ONE_CHUNK);
+        long smallBatch = importEnrollments(small, FEW);
+        List<Long> largeIds = importedEnrollmentIds(largeBatch);
+        List<Long> smallIds = importedEnrollmentIds(smallBatch);
+        assertThat(largeIds).hasSize(BEYOND_ONE_CHUNK);
+
+        rollback(largeBatch).andExpect(status().isOk());
+
+        assertThat(existingEnrollmentIds(largeIds)).isEmpty();
+        assertThat(existingResultEnrollmentIds(largeIds)).isEmpty();
+        assertThat(existingEnrollmentIds(smallIds)).containsExactlyInAnyOrderElementsOf(smallIds);
+        assertThat(existingResultEnrollmentIds(smallIds)).containsExactlyInAnyOrderElementsOf(smallIds);
+        rollback(smallBatch).andExpect(status().isOk());
+        rollback(smallBase);
+        rollback(largeBase);
+    }
+
+    @Test
+    void rollbackBlockedByLaterDataOnTheFiftySeventhEnrollmentReportsThatEnrollmentAndChangesNothing() throws Exception {
+        HistoricalDatasetCsv csv = newDataset("ZG", 2011, MANY);
+        long baseBatch = createBatch();
+        importBaseStructure(baseBatch, csv);
+        long batchId = importEnrollments(csv, MANY);
+        List<Long> ids = importedEnrollmentIds(batchId);
+        assertThat(ids).hasSize(MANY);
+        long blockingId = ids.get(BLOCKING_POSITION - 1);
+        String blockingKey = jdbc.queryForObject(
+                "select natural_key from import_created_entity where batch_id = ? and entity_type = 'SECTION_ENROLLMENTS' and entity_id = ?",
+                String.class, batchId, blockingId);
+        jdbc.update("insert into grade_item (program_section_enrollment_id, type, sequence_number, score) values (?, 'EXAM', 1, 7.0)",
+                blockingId);
+        long enrollmentsAfterImport = count("subject_section_enrollment");
+        long resultsAfterImport = count("commission_closure_student");
+
+        mockMvc.perform(get("/data-imports/" + batchId + "/rollback-preview").header("Authorization", "Bearer " + directorToken()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.canRollback").value(false))
+                .andExpect(jsonPath("$.blockers[0].entityType").value("SECTION_ENROLLMENTS"))
+                .andExpect(jsonPath("$.blockers[0].naturalKey").value(blockingKey));
+        rollback(batchId).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IMPORT_ROLLBACK_BLOCKED"))
+                .andExpect(jsonPath("$.details.blockers[0].entityType").value("SECTION_ENROLLMENTS"))
+                .andExpect(jsonPath("$.details.blockers[0].naturalKey").value(blockingKey));
+
+        assertThat(count("subject_section_enrollment")).isEqualTo(enrollmentsAfterImport);
+        assertThat(count("commission_closure_student")).isEqualTo(resultsAfterImport);
+        assertThat(existingEnrollmentIds(ids)).containsExactlyInAnyOrderElementsOf(ids);
+        assertThat(jdbc.queryForObject("select status from import_batch where id = ?", String.class, batchId)).isEqualTo("COMMITTED");
+        jdbc.update("delete from grade_item where program_section_enrollment_id = ?", blockingId);
+        rollback(batchId).andExpect(status().isOk());
+        assertThat(existingEnrollmentIds(ids)).isEmpty();
+        rollback(baseBatch);
+    }
+
+    @Test
     void rollbackStatementCountDoesNotGrowWithTheNumberOfEnrollments() throws Exception {
         HistoricalDatasetCsv csv = newDataset("ZS", 2012, MANY);
         long baseBatch = createBatch();
@@ -67,33 +175,55 @@ class ImportRollbackBatchIT extends AbstractDataImportIT {
         long fewStatements = statementsToRollBack(csv, FEW);
         long manyStatements = statementsToRollBack(csv, MANY);
         rollback(baseBatch);
-        System.out.printf("ROLLBACK QUERIES enrollments=%d statements=%d | enrollments=%d statements=%d%n", FEW, fewStatements,
-                MANY, manyStatements);
         assertThat(manyStatements).isEqualTo(fewStatements);
+        assertThat(manyStatements).isEqualTo(STATEMENTS_TO_ROLL_BACK);
     }
 
     private long statementsToRollBack(HistoricalDatasetCsv csv, int students) throws Exception {
+        long batchId = importEnrollments(csv, students);
+        String token = directorToken();
+        Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        boolean wasEnabled = statistics.isStatisticsEnabled();
+        statistics.setStatisticsEnabled(true);
+        statistics.clear();
+        try {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                    .post("/data-imports/" + batchId + "/rollback").header("Authorization", "Bearer " + token)
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{\"confirmation\":\"DESHACER\"}"))
+                    .andExpect(status().isOk());
+            return statistics.getPrepareStatementCount();
+        } finally {
+            statistics.setStatisticsEnabled(wasEnabled);
+        }
+    }
+
+    private long importEnrollments(HistoricalDatasetCsv csv, int students) throws Exception {
         long batchId = createBatch();
         upload(batchId, "SECTION_ENROLLMENTS", csv.sectionEnrollments(0, students));
         validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED"));
         commit(batchId).andExpect(jsonPath("$.status").value("COMMITTED"));
+        return batchId;
+    }
 
-        String startMarker = "rollback-start-" + UUID.randomUUID();
-        String endMarker = "rollback-end-" + UUID.randomUUID();
-        jdbc.queryForObject("select '" + startMarker + "'", String.class);
-        rollback(batchId).andExpect(status().isOk());
-        jdbc.queryForObject("select '" + endMarker + "'", String.class);
+    private List<Long> importedEnrollmentIds(long batchId) {
+        return jdbc.queryForList(
+                "select entity_id from import_created_entity where batch_id = ? and entity_type = 'SECTION_ENROLLMENTS' order by id",
+                Long.class, batchId);
+    }
 
-        String logs = await().until(postgres::getLogs, text -> text.contains(endMarker));
-        String window = logs.substring(logs.lastIndexOf(startMarker), logs.lastIndexOf(endMarker));
-        long statements = window.lines().map(EXECUTION::matcher).filter(Matcher::find).map(matcher -> matcher.group(1))
-                .filter(sql -> !TRANSACTION_CONTROL.matcher(sql).matches()).count();
-        return statements;
+    private Set<Long> existingEnrollmentIds(List<Long> ids) {
+        return Set.copyOf(jdbc.queryForList("select id from subject_section_enrollment where id = any(?)", Long.class,
+                (Object) ids.toArray(Long[]::new)));
+    }
+
+    private Set<Long> existingResultEnrollmentIds(List<Long> ids) {
+        return Set.copyOf(jdbc.queryForList("select enrollment_id from commission_closure_student where enrollment_id = any(?)",
+                Long.class, (Object) ids.toArray(Long[]::new)));
     }
 
     private HistoricalDatasetCsv newDataset(String subjectPrefix, int datasetYear, int students) {
         long firstDni = ThreadLocalRandom.current().nextLong(10_000_000L, 60_000_000L);
-        return new HistoricalDatasetCsv(suffix, subjectPrefix, datasetYear, firstDni, students, 1);
+        return new HistoricalDatasetCsv(UUID.randomUUID().toString().substring(0, 8), subjectPrefix, datasetYear, firstDni, students, 1);
     }
 
     private long count(String table) {

@@ -20,7 +20,7 @@ public interface CommissionClosureStudentRepository extends JpaRepository<Commis
 
     @Modifying
     @Query("delete from CommissionClosureStudent s where s.enrollmentId in :enrollmentIds")
-    void deleteByEnrollmentIdIn(@Param("enrollmentIds") Collection<Long> enrollmentIds);
+    int deleteByEnrollmentIdIn(@Param("enrollmentIds") Collection<Long> enrollmentIds);
 
     Optional<CommissionClosureStudent> findByClosureIdAndEnrollmentId(Long closureId, Long enrollmentId);
 }

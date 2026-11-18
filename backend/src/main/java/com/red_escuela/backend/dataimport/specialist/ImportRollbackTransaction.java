@@ -20,6 +20,9 @@ import com.red_escuela.backend.dataimport.repository.ImportCreatedEntityReposito
 import com.red_escuela.backend.dataimport.repository.ImportRowRepository;
 import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
 import com.red_escuela.backend.shared.time.ApplicationTime;
+import jakarta.persistence.EntityManager;
+import java.sql.Connection;
+import java.sql.Savepoint;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -27,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.hibernate.Session;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,12 +48,14 @@ public class ImportRollbackTransaction {
     private final ImportBatchEventRepository eventRepository;
     private final ImportDefinitionRegistry registry;
     private final AuditTrail auditTrail;
+    private final EntityManager entityManager;
 
     public ImportRollbackTransaction(ImportBatchRepository batchRepository,
             ImportCreatedEntityRepository createdEntityRepository, ImportRowRepository rowRepository,
             ImportBatchEventRepository eventRepository, ImportDefinitionRegistry registry,
-            AuditTrail auditTrail) {
+            AuditTrail auditTrail, EntityManager entityManager) {
         this.auditTrail = auditTrail;
+        this.entityManager = entityManager;
         this.batchRepository = batchRepository;
         this.createdEntityRepository = createdEntityRepository;
         this.rowRepository = rowRepository;
@@ -113,14 +119,19 @@ public class ImportRollbackTransaction {
             return;
         }
         ImportCreatedEntity first = pending.get(0);
+        ImportEntityDefinition definition = registry.definitionFor(first.getEntityType());
+        entityManager.flush();
+        Session session = entityManager.unwrap(Session.class);
+        Savepoint savepoint = session.doReturningWork(Connection::setSavepoint);
         try {
-            registry.definitionFor(first.getEntityType()).discardAll(pending.stream().map(ImportCreatedEntity::getEntityId).toList());
-        } catch (HistoricalDiscardBlockedException e) {
-            throw new ImportRollbackBlockedException(first.getEntityType(), first.getNaturalKey(), e.getMessage());
-        } catch (DataIntegrityViolationException e) {
-            throw new ImportRollbackBlockedException(first.getEntityType(), first.getNaturalKey(), LATER_DATA_REASON);
+            definition.discardBatch(pending.stream().map(ImportCreatedEntity::getEntityId).toList());
+            session.doWork(connection -> connection.releaseSavepoint(savepoint));
+            discarded.merge(first.getEntityType(), (long) pending.size(), Long::sum);
+        } catch (HistoricalDiscardBlockedException | DataIntegrityViolationException e) {
+            session.doWork(connection -> connection.rollback(savepoint));
+            entityManager.clear();
+            pending.forEach(created -> discardOne(created, definition, discarded));
         }
-        discarded.merge(first.getEntityType(), (long) pending.size(), Long::sum);
         pending.clear();
     }
 

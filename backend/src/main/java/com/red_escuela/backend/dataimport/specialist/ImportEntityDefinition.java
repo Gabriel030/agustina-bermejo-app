@@ -74,7 +74,7 @@ public interface ImportEntityDefinition {
         return false;
     }
 
-    default void discardAll(List<Long> entityIds) {
+    default void discardBatch(List<Long> entityIds) {
         entityIds.forEach(this::discard);
     }
 

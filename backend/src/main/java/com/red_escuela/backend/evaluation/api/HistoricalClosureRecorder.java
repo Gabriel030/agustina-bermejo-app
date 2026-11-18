@@ -101,11 +101,13 @@ public class HistoricalClosureRecorder {
     }
 
     @Transactional
-    public void discardStudentResults(Collection<Long> enrollmentIds) {
+    public int discardStudentResults(Collection<Long> enrollmentIds) {
+        int deleted = 0;
         for (List<Long> chunk : InClauseChunks.of(enrollmentIds)) {
-            closureStudentRepository.deleteByEnrollmentIdIn(chunk);
+            deleted += closureStudentRepository.deleteByEnrollmentIdIn(chunk);
         }
         closureStudentRepository.flush();
+        return deleted;
     }
 
     @Transactional

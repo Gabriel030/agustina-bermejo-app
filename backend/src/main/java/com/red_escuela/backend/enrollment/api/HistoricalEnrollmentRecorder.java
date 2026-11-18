@@ -222,11 +222,13 @@ public class HistoricalEnrollmentRecorder {
     }
 
     @Transactional
-    public void discardSectionEnrollments(Collection<Long> enrollmentIds) {
+    public int discardSectionEnrollments(Collection<Long> enrollmentIds) {
+        int deleted = 0;
         for (List<Long> chunk : InClauseChunks.of(enrollmentIds)) {
-            sectionEnrollmentRepository.deleteAllByIdInBatch(chunk);
+            deleted += sectionEnrollmentRepository.deleteByIdIn(chunk);
         }
         sectionEnrollmentRepository.flush();
+        return deleted;
     }
 
     @Transactional(readOnly = true)
