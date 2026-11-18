@@ -30,7 +30,6 @@ const SOURCES = {
   '/program-enrollment-applications/pending': () => contractList('/program-enrollment-applications/pending', [{ requestedAt: daysAgo(5), admissionInvoice: null }]),
   '/attendance/justifications': () => contractList('/attendance/justifications', [{ classDate: daysAgo(4).slice(0, 10) }]),
   '/attendance/change-requests': () => contractList('/attendance/change-requests', [{ createdAt: daysAgo(1) }]),
-  '/financial-dashboard/debtors/page': () => contractList('/financial-dashboard/debtors/page', [{ debtAgeDays: 94, totalDebt: { amount: '1.00', currency: 'ARS', negative: false, zero: false } }]),
 };
 
 function serve({ billing = 'FULL', empty = false, failing = [] } = {}) {
@@ -106,7 +105,6 @@ describe('StaffHome', () => {
     renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
     const graduations = await readyCard('Egresos por verificar');
     expect(within(graduations).getByRole('link', { name: 'Egresos por verificar' })).toHaveAttribute('href', '/administrativo/egresos-por-verificar');
-    expect(await readyCard('Morosos')).toBeInTheDocument();
     expect(screen.queryByRole('article', { name: 'Otras aprobaciones' })).not.toBeInTheDocument();
     expect(screen.queryByRole('article', { name: 'Excepciones elevadas' })).not.toBeInTheDocument();
     expect(screen.queryByRole('article', { name: 'Mesas de examen' })).not.toBeInTheDocument();
@@ -126,15 +124,37 @@ describe('StaffHome', () => {
     expect(requests.filter((request) => request.startsWith('GET /authorization-requests'))).toHaveLength(1);
   });
 
+  it.each(['FULL', 'OFF'])('administrativo does not request director-only endpoints with billing %s', async (billing) => {
+    serve({ billing });
+    const forbidden = [];
+    ['/financial-dashboard/debtors/page', '/financial-dashboard/debtors', '/financial-dashboard', '/director-approval-requests', '/authorization-requests'].forEach((path) =>
+      server.use(
+        http.get(`${API}${path}`, () => {
+          forbidden.push(path);
+          return HttpResponse.json(errorBody('ACCESS_DENIED'), { status: 403 });
+        }),
+      ),
+    );
+    const recorder = recordApiRequests();
+    renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
+    await readyCard('Egresos por verificar');
+    await readyCard('Cierres a aprobar');
+    await settledRequests(recorder);
+    recorder.stop();
+    expect(forbidden).toEqual([]);
+    expect(screen.queryByText(/Morosos/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Facturación por autorizar/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('administrativo requests each source once', async () => {
     serve();
     const recorder = recordApiRequests();
     renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
-    await readyCard('Morosos');
     await readyCard('Egresos por verificar');
     const requests = await settledRequests(recorder);
     recorder.stop();
     expect(recorder.duplicates()).toEqual([]);
-    expect(requests.filter((request) => request.startsWith('GET /financial-dashboard/debtors'))).toHaveLength(1);
+    expect(requests.filter((request) => request.startsWith('GET /commission-closures'))).toHaveLength(1);
   });
 });

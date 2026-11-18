@@ -2,7 +2,7 @@ import { useMyModules } from '@/hooks/useMyModules';
 import { useConfigsPendientes, useClosureList, useMesas } from '@/features/evaluation';
 import { useEgresosPendientes, useEgresosPorVerificar, usePendingRegularRequests } from '@/features/graduation';
 import { useExcepcionesPendientes, usePendingApplications } from '@/features/enrollment';
-import { useAuthorizationRequests, useDebtors } from '@/features/billing';
+import { useAuthorizationRequests } from '@/features/billing';
 import { usePendingOfferCycles } from '@/features/academic-structure';
 import { useJustificacionesPendientes, useSolicitudesPendientes } from '@/features/attendance';
 import { formatearFecha } from '@/lib/comisiones';
@@ -83,16 +83,14 @@ export function useDirectorHomeCards() {
 }
 
 export function useAdministrativoHomeCards() {
-  const modules = useMyModules();
   const graduations = useEgresosPorVerificar();
   const certificates = usePendingRegularRequests();
   const applications = usePendingApplications();
   const justifications = useJustificacionesPendientes();
   const attendanceChanges = useSolicitudesPendientes();
   const closures = useClosureList(CLOSURES_WAITING);
-  const debtors = useDebtors({ enabled: modules.billingEnabled });
 
-  const cards = [
+  return [
     listCard({ id: 'graduations', title: 'Egresos por verificar', icon: 'cap', to: '/administrativo/egresos-por-verificar', unit: 'pendientes', tip: 'Solicitudes de egreso a las que les falta verificar la documentación antes de elevarlas a Dirección.' }, graduations, 'requestedAt'),
     listCard({ id: 'certificates', title: 'Constancias solicitadas', icon: 'file', to: '/administrativo/constancias', unit: 'pendientes', tip: 'Constancias que pidieron los alumnos y todavía no se emitieron.' }, certificates, 'requestedAt'),
     listCard({ id: 'applications', title: 'Solicitudes de ingreso', icon: 'userPlus', to: '/administrativo/solicitudes-de-ingreso', unit: 'pendientes', tip: 'Postulantes con solicitud de ingreso sin resolver.' }, applications, 'requestedAt'),
@@ -100,20 +98,4 @@ export function useAdministrativoHomeCards() {
     listCard({ id: 'attendanceChanges', title: 'Cambios de asistencia', icon: 'userCheck', to: '/administrativo/solicitudes-de-asistencia?tab=correcciones', unit: 'pendientes', tip: 'Cambios de asistencia pedidos por docentes que esperan aprobación.' }, attendanceChanges, 'createdAt'),
     closuresCard({ id: 'closures', title: 'Cierres a aprobar', icon: 'lock', to: '/administrativo/cierres-de-comision?status=TEACHER_CONFIRMED', unit: 'pendientes', tip: 'Cierres de comisión que esperan la aprobación administrativa.' }, closures),
   ];
-
-  if (modules.billingEnabled) {
-    cards.push(
-      toCard(
-        { id: 'debtors', title: 'Morosos', icon: 'wallet', to: '/administrativo/financiero', unit: 'alumnos', tip: 'Alumnos con cuotas vencidas. La antigüedad es la deuda más vieja.' },
-        [debtors],
-        () => {
-          const items = debtors.data?.items ?? [];
-          const total = debtors.data?.totalElements ?? items.length;
-          const ages = items.map((item) => item.debtAgeDays).filter((age) => age !== null && age !== undefined);
-          return { count: total, ageDays: ages.length ? Math.max(...ages) : null, tone: 'danger' };
-        },
-      ),
-    );
-  }
-  return cards;
 }
