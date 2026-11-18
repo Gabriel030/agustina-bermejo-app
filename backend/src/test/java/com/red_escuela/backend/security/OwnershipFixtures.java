@@ -91,7 +91,6 @@ final class OwnershipFixtures {
             case ANNUAL_UPFRONT_REQUEST -> annualUpfrontRequestId;
             case STAFF_RECORD -> instructorPersonId;
             case EXAM_BOARD_TRIBUNAL -> examBoardId;
-            case CLOSURE_INSTRUCTOR -> closureId;
         };
     }
 

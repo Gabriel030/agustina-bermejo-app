@@ -38,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
@@ -267,9 +268,9 @@ class ExamBoardFinalGradesRecorderTest extends ExamBoardChangeFixture {
         entityManager.flush();
         Long foreignTeacherId = other.tribunal().getId();
 
-        Throwable foreign = org.assertj.core.api.Assertions.catchThrowable(
+        Throwable foreign = catchThrowable(
                 () -> finalGradesRecorder.record(board.board().getId(), foreignTeacherId, List.of()));
-        Throwable missing = org.assertj.core.api.Assertions.catchThrowable(
+        Throwable missing = catchThrowable(
                 () -> finalGradesRecorder.record(987654321L, foreignTeacherId, List.of()));
 
         assertThat(foreign).isInstanceOf(NotExamBoardTribunalMemberException.class)

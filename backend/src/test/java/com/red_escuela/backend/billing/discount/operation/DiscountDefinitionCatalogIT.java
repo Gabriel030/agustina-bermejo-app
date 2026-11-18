@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.discount.operation;
 
-import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestAccessDeniedException;
+import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestNotFoundException;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestStatus;
 import com.red_escuela.backend.billing.authorization.domain.IllegalAuthorizationRequestTransitionException;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
@@ -194,7 +194,7 @@ class DiscountDefinitionCatalogIT extends AbstractIntegrationTest {
         Long withdrawnId = proposeAsAdministrative(administrative, DiscountDraftBuilder.annualUpfront().named("Propuesta retirada").build());
 
         authenticateAs(otherAdministrative);
-        assertThatThrownBy(() -> withdrawRequest.withdraw(withdrawnId)).isInstanceOf(AuthorizationRequestAccessDeniedException.class);
+        assertThatThrownBy(() -> withdrawRequest.withdraw(withdrawnId)).isInstanceOf(AuthorizationRequestNotFoundException.class);
         authenticateAs(administrative);
         withdrawRequest.withdraw(withdrawnId);
         assertThat(requestRepository.findById(withdrawnId).orElseThrow().getStatus()).isEqualTo(AuthorizationRequestStatus.WITHDRAWN);
