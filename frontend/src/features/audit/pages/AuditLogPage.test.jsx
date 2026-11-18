@@ -14,6 +14,7 @@ function event(id, overrides = {}) {
     id,
     action: 'STUDENT_WITHDRAWN',
     actorPersonId: 7,
+    actorName: 'Marcela Quiroga',
     actorRole: 'DIRECTOR',
     entityType: 'STUDENT',
     entityId: 1307,
@@ -52,7 +53,7 @@ describe('AuditLogPage', () => {
     const rows = await screen.findAllByRole('row');
     expect(within(rows[1]).getByText('Reciente')).toBeInTheDocument();
     expect(within(rows[2]).getByText('Antiguo')).toBeInTheDocument();
-    expect(screen.getAllByText('Persona #7').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Marcela Quiroga').length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: /Siguiente/ }));
     expect(await screen.findByText('Segunda página')).toBeInTheDocument();
     expect(pages).toEqual([0, 1]);
@@ -80,7 +81,7 @@ describe('AuditLogPage', () => {
     server.use(
       http.get(AUDIT_URL, ({ request }) => {
         const roles = new URL(request.url).searchParams.getAll('actorRole');
-        const all = [event(1, { actorRole: 'DIRECTOR', reason: 'Del director' }), event(2, { actorRole: 'DOCENTE', reason: 'Del docente' })];
+        const all = [event(1, { actorRole: 'DIRECTOR', reason: 'Del director' }), event(2, { actorRole: 'DOCENTE', actorName: 'Rubén Ledesma', reason: 'Del docente' })];
         return HttpResponse.json(pageOf(roles.length ? all.filter((item) => roles.includes(item.actorRole)) : all));
       }),
     );
