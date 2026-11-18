@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
 const ROOT = 'waitlists';
@@ -31,5 +31,17 @@ export function useWaitlistHistory(kind, id, page, enabled) {
     queryFn: () => apiFetch(`/waitlists/${kind}/${id}/history?${params.toString()}`),
     enabled: !!kind && !!id && enabled,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useWaitlistEntryAction(kind, enrollmentId, action) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reason) =>
+      apiFetch(`/waitlists/${kind}/entries/${enrollmentId}/${action}`, {
+        method: 'POST',
+        body: action === 'promote' ? undefined : JSON.stringify({ reason }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [ROOT] }),
   });
 }

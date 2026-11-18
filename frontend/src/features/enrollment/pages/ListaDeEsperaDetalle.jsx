@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable } from '@/components/table/DataTable';
 import { useActiveRole } from '@/hooks/useActiveRole';
+import { WaitlistEntryMenu } from '@/features/enrollment/components/WaitlistEntryMenu';
 import { WaitlistVerdictPill } from '@/features/enrollment/components/WaitlistVerdictPill';
 import {
   WAITLIST_HISTORY_PAGE_SIZE,
@@ -20,6 +21,7 @@ import {
   useWaitlistQueue,
 } from '@/features/enrollment/hooks/useWaitlists';
 import {
+  WAITLIST_BASE_SLUG,
   WAITLIST_KIND_LABEL,
   firstEligiblePosition,
   historyActionPresentation,
@@ -33,8 +35,8 @@ function formatDateTime(iso) {
   return new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function buildColumns(nextPosition) {
-  return [
+function buildColumns(nextPosition, queue, canAct) {
+  const columns = [
     {
       id: 'position',
       header: 'Pos.',
@@ -76,7 +78,14 @@ function buildColumns(nextPosition) {
       header: 'Requisitos',
       accessorFn: (entry) => entry.verdict.reason ?? 'OK',
       enableSorting: false,
-      cell: ({ row }) => <WaitlistVerdictPill verdict={row.original.verdict} />,
+      cell: ({ row }) => (
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <WaitlistVerdictPill verdict={row.original.verdict} />
+          {row.original.prioritizationOrder != null && (
+            <StatusPill tone="accent">{`Prioridad manual ${row.original.prioritizationOrder}`}</StatusPill>
+          )}
+        </span>
+      ),
     },
     {
       id: 'expiresOn',
@@ -91,11 +100,21 @@ function buildColumns(nextPosition) {
         ),
     },
   ];
+  if (!canAct) return columns;
+  return [
+    ...columns,
+    {
+      id: 'actions',
+      header: '',
+      enableSorting: false,
+      cell: ({ row }) => <WaitlistEntryMenu queue={queue} entry={row.original} />,
+    },
+  ];
 }
 
-function QueueTab({ queue }) {
+function QueueTab({ queue, canAct }) {
   const nextPosition = firstEligiblePosition(queue.entries);
-  const columns = useMemo(() => buildColumns(nextPosition), [nextPosition]);
+  const columns = useMemo(() => buildColumns(nextPosition, queue, canAct), [nextPosition, queue, canAct]);
   return (
     <GlassCard className="p-3 md:p-4">
       <DataTable
@@ -175,7 +194,7 @@ export function ListaDeEsperaDetalle() {
   const [tab, setTab] = useState('queue');
   const validKind = KINDS.includes(kind);
   const queue = useWaitlistQueue(validKind ? kind : null, id);
-  const listPath = `/${roleBase}/listas-de-espera`;
+  const listPath = `/${roleBase}/${WAITLIST_BASE_SLUG}`;
 
   if (!validKind) {
     return <LoadErrorState error={{ status: 404 }} backTo={listPath} backLabel="las listas de espera" />;
@@ -238,7 +257,7 @@ export function ListaDeEsperaDetalle() {
           <TabsTrigger value="history">Historial</TabsTrigger>
         </TabsList>
         <TabsContent value="queue" className="mt-0">
-          <QueueTab queue={data} />
+          <QueueTab queue={data} canAct={!isReadOnly} />
         </TabsContent>
         <TabsContent value="history" className="mt-0">
           <HistoryTab kind={kind} id={id} active={tab === 'history'} />
