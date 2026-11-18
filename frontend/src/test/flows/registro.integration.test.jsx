@@ -58,7 +58,7 @@ async function registrarse(user) {
   await user.type(screen.getByPlaceholderText('Contraseña'), 'Test1234');
   await user.type(screen.getByPlaceholderText('Repetir contraseña'), 'Test1234');
   fireEvent.change(screen.getByLabelText('Fecha de nacimiento'), { target: { value: '1990-05-14' } });
-  await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
+  await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
   await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 }
 

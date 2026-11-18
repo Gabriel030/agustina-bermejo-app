@@ -4,5 +4,6 @@ public enum ConsentSource {
     PROFILE,
     EMAIL_LINK,
     STAFF_ON_BEHALF,
-    IMPORT
+    IMPORT,
+    ACCOUNT_CREATION
 }

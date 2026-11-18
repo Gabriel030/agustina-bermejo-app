@@ -61,6 +61,7 @@ export const handlers = [
           category,
           granted: false,
           recordedAt: '2026-11-01T10:00:00Z',
+          hasRecord: true,
         })),
       ),
     ),
@@ -71,6 +72,7 @@ export const handlers = [
       category: 'INSTITUTIONAL',
       granted: true,
       recordedAt: '2026-11-17T10:00:00Z',
+      hasRecord: true,
     }),
   ),
   http.get(`${API}/public/unsubscribe/:token`, () =>

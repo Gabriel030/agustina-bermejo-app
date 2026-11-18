@@ -101,6 +101,19 @@
         "required" : [ "announcementEmailEnabled", "evaluationConfigDueDays", "justificationDeadlineBusinessDays" ],
         "type" : "object"
       },
+      "AccountCreationConsentChoice" : {
+        "properties" : {
+          "category" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "granted" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "category", "granted" ],
+        "type" : "object"
+      },
       "AccountCreditAllocationResponse" : {
         "properties" : {
           "allocations" : {
@@ -3419,12 +3432,15 @@
           "granted" : {
             "type" : "boolean"
           },
+          "hasRecord" : {
+            "type" : "boolean"
+          },
           "recordedAt" : {
             "format" : "date-time",
             "type" : "string"
           }
         },
-        "required" : [ "category", "channel", "granted", "recordedAt" ],
+        "required" : [ "category", "channel", "granted", "hasRecord", "recordedAt" ],
         "type" : "object"
       },
       "CorequisiteResponse" : {
@@ -11551,6 +11567,9 @@
       },
       "RegisterRequest" : {
         "properties" : {
+          "acceptedInstitutionalNotices" : {
+            "type" : "boolean"
+          },
           "acceptedNewsletter" : {
             "type" : [ "boolean", "null" ]
           },
@@ -11567,6 +11586,12 @@
           "birthDate" : {
             "format" : "date",
             "type" : "string"
+          },
+          "contactConsents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccountCreationConsentChoice"
+            },
+            "type" : [ "array", "null" ]
           },
           "email" : {
             "format" : "email",
@@ -11606,7 +11631,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "acceptedPrivacy", "acceptedTerms", "apellido", "birthDate", "email", "institutionId", "nombre", "password", "username" ],
+        "required" : [ "acceptedInstitutionalNotices", "acceptedPrivacy", "acceptedTerms", "apellido", "birthDate", "email", "institutionId", "nombre", "password", "username" ],
         "type" : "object"
       },
       "RegularCertificateRequestResponse" : {
@@ -14003,6 +14028,10 @@
           },
           "granted" : {
             "type" : "boolean"
+          },
+          "source" : {
+            "enum" : [ "PROFILE", "EMAIL_LINK", "STAFF_ON_BEHALF", "IMPORT", "ACCOUNT_CREATION" ],
+            "type" : "string"
           }
         },
         "required" : [ "category", "channel", "granted" ],
