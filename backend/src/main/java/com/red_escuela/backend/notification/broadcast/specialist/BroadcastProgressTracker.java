@@ -13,6 +13,7 @@ import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditRecord;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +47,11 @@ public class BroadcastProgressTracker {
         this.clock = clock;
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> findResolvedQueuedDeliveryIds(int limit) {
+        return recipientRepository.findQueuedDeliveryIdsAlreadyResolved(PageRequest.of(0, limit));
+    }
+
     @Transactional
     public void syncDelivery(Long deliveryId) {
         Optional<BroadcastRecipient> found = recipientRepository.findByDeliveryId(deliveryId);
@@ -64,12 +70,19 @@ public class BroadcastProgressTracker {
         if (recipient.isAwaitingDelivery()) {
             deliveryRepository.findById(deliveryId).ifPresent(delivery -> applyDeliveryOutcome(recipient, delivery, now));
         }
+        completeWhenNoOpenRecipients(broadcast, now);
+    }
+
+    public void completeWhenNoOpenRecipients(Broadcast broadcast, Instant now) {
         if (recipientRepository.countByBroadcastIdAndStatusIn(broadcast.getId(), OPEN) == 0) {
+            if (broadcast.getStatus() == BroadcastStatus.CONFIRMED) {
+                broadcast.startSending();
+            }
             completeBroadcast(broadcast, now);
         }
     }
 
-    private void applyDeliveryOutcome(BroadcastRecipient recipient, NotificationDelivery delivery, Instant now) {
+    public void applyDeliveryOutcome(BroadcastRecipient recipient, NotificationDelivery delivery, Instant now) {
         switch (delivery.getStatus()) {
             case SENT, SENT_SIMULATED -> recipient.markSent(now);
             case FAILED -> recipient.markFailed(now);

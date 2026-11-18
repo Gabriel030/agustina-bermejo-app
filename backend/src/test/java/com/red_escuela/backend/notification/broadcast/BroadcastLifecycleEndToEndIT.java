@@ -235,4 +235,81 @@ class BroadcastLifecycleEndToEndIT extends AbstractBroadcastDispatchIT {
                 .containsExactly(0, 1, 0, 1);
         assertThat(sentSubjects).isEmpty();
     }
+
+    private List<Long> queuedDeliveryIds(Broadcast broadcast) {
+        return jdbc.queryForList("select delivery_id from broadcast_recipient where broadcast_id = ? and status = 'QUEUED' order by id",
+                Long.class, broadcast.getId());
+    }
+
+    private void markDeliverySentWithoutSync(Long deliveryId) {
+        jdbc.update("update notification_delivery set status = 'SENT', sent_at = now() where id = ?", deliveryId);
+    }
+
+    @Test
+    void jobReconcilesQueuedRecipientWhoseDeliveryWasSentButTheSyncNeverRan() {
+        Broadcast broadcast = confirmedBroadcast(1, false);
+        markDeliverySentWithoutSync(queuedDeliveryIds(broadcast).get(0));
+        assertThat(recipients(broadcast, BroadcastRecipientStatus.QUEUED)).isEqualTo(1);
+        BroadcastEmailDispatchJob job = jobWith(10, 0, 100, recordingChannel(realGateway));
+
+        job.dispatchPendingBroadcastEmails();
+        job.dispatchPendingBroadcastEmails();
+
+        Broadcast reconciled = reload(broadcast);
+        assertThat(reconciled.getStatus()).isEqualTo(BroadcastStatus.COMPLETED);
+        assertThat(recipients(broadcast, BroadcastRecipientStatus.SENT)).isEqualTo(1);
+        assertThat(recipients(broadcast, BroadcastRecipientStatus.QUEUED)).isZero();
+        assertThat(reconciled.getSentTotal()).isEqualTo(1);
+        assertThat(auditEntries(broadcast, "BROADCAST_COMPLETED")).isEqualTo(1);
+        assertThat(sentSubjects).isEmpty();
+    }
+
+    @Test
+    void cancellingKeepsAsSentTheRecipientWhoseDeliveryWasAlreadySentBeforeTheSync() {
+        Broadcast broadcast = confirmedBroadcast(2, false);
+        List<Long> deliveries = queuedDeliveryIds(broadcast);
+        markDeliverySentWithoutSync(deliveries.get(0));
+
+        canceller.cancelBroadcast(broadcast.getId(), persistPerson().getId(), "Error en el texto");
+
+        Broadcast cancelled = reload(broadcast);
+        assertThat(recipients(broadcast, BroadcastRecipientStatus.SENT)).isEqualTo(1);
+        assertThat(recipients(broadcast, BroadcastRecipientStatus.SKIPPED)).isEqualTo(1);
+        assertThat(List.of(cancelled.getSentTotal(), cancelled.getFailedTotal(), cancelled.getExcludedTotal(), cancelled.getDiscardedTotal()))
+                .containsExactly(1, 0, 0, 1);
+    }
+
+    @Test
+    void aConfirmedBroadcastWithNoOpenRecipientLeftCompletesInsteadOfStayingConfirmedForever() {
+        Broadcast broadcast = confirmedBroadcast(2, false);
+        jdbc.update("update notification_delivery set status = 'DISCARDED', status_reason = 'BROADCAST_CANCELLED' where id in (select delivery_id from broadcast_recipient where broadcast_id = ?)",
+                broadcast.getId());
+        jdbc.update("update broadcast_recipient set status = 'SKIPPED' where broadcast_id = ?", broadcast.getId());
+
+        transactionTemplate.executeWithoutResult(status ->
+                progressTracker.completeWhenNoOpenRecipients(broadcastRepository.findByIdForUpdate(broadcast.getId()).orElseThrow(),
+                        MutableClock.INSTANCE.instant()));
+
+        Broadcast completed = reload(broadcast);
+        assertThat(completed.getStatus()).isEqualTo(BroadcastStatus.COMPLETED);
+        assertThat(completed.getCompletedAt()).isNotNull();
+        assertThat(completed.getDiscardedTotal()).isEqualTo(2);
+        assertThat(auditEntries(broadcast, "BROADCAST_COMPLETED")).isEqualTo(1);
+    }
+
+    @Test
+    void frozenTotalsKeepTheExclusionBreakdownAndAddUpToEveryRecipient() {
+        Broadcast broadcast = confirmedBroadcast(2, true);
+        drain(jobWith(10, 0, 100, recordingChannel(realGateway)));
+
+        Broadcast completed = reload(broadcast);
+        long allRecipients = jdbc.queryForObject("select count(*) from broadcast_recipient where broadcast_id = ?", Long.class, broadcast.getId());
+        assertThat(completed.getSentTotal() + completed.getFailedTotal() + completed.getExcludedTotal() + completed.getDiscardedTotal())
+                .isEqualTo((int) allRecipients);
+        Integer breakdownSum = jdbc.queryForObject("select broadcast_reason_counts_sum(excluded_by_reason) from broadcast where id = ?",
+                Integer.class, broadcast.getId());
+        assertThat(breakdownSum).isEqualTo(completed.getExcludedTotal()).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select (excluded_by_reason ->> 'OPTED_OUT')::int from broadcast where id = ?", Integer.class,
+                broadcast.getId())).isEqualTo(1);
+    }
 }

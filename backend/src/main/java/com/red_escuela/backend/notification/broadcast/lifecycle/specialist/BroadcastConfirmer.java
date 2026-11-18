@@ -21,6 +21,7 @@ import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditRecord;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
+import com.red_escuela.backend.notification.broadcast.specialist.BroadcastProgressTracker;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,15 +40,17 @@ public class BroadcastConfirmer {
     private final BroadcastRecipientRepository recipientRepository;
     private final RecipientFreezer recipientFreezer;
     private final ChannelRegistry channelRegistry;
+    private final BroadcastProgressTracker progressTracker;
     private final AuditTrail auditTrail;
     private final Clock clock;
 
     public BroadcastConfirmer(BroadcastRepository broadcastRepository, BroadcastRecipientRepository recipientRepository,
-                              RecipientFreezer recipientFreezer, ChannelRegistry channelRegistry, AuditTrail auditTrail, Clock clock) {
+                              RecipientFreezer recipientFreezer, ChannelRegistry channelRegistry, BroadcastProgressTracker progressTracker, AuditTrail auditTrail, Clock clock) {
         this.broadcastRepository = broadcastRepository;
         this.recipientRepository = recipientRepository;
         this.recipientFreezer = recipientFreezer;
         this.channelRegistry = channelRegistry;
+        this.progressTracker = progressTracker;
         this.auditTrail = auditTrail;
         this.clock = clock;
     }
@@ -71,6 +74,7 @@ public class BroadcastConfirmer {
         pending.forEach(recipient -> queueRecipient(channel, broadcast, content, recipient, now));
         auditTrail.record(new AuditRecord(AuditAction.BROADCAST_CONFIRMED, AuditEntityType.BROADCAST, broadcastId,
                 before.name(), broadcast.getStatus().name(), null));
+        progressTracker.completeWhenNoOpenRecipients(broadcast, now);
         return broadcast.getStatus();
     }
 
