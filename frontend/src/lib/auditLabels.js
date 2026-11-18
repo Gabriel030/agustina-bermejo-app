@@ -1,0 +1,56 @@
+const ACTIONS = {
+  STAFF_WITHDRAWN: ['Baja de personal', 'danger'],
+  STAFF_REACTIVATED: ['Reactivación de personal', 'success'],
+  STAFF_CREATED: ['Alta de personal', 'success'],
+  PASSWORD_RESET_REQUESTED: ['Reseteo de clave solicitado', 'warning'],
+  PASSWORD_RESET_COMPLETED: ['Reseteo de clave completado', 'warning'],
+  PASSWORD_CHANGED: ['Cambio de clave', 'warning'],
+  STUDENT_WITHDRAWN: ['Baja de alumno', 'danger'],
+  STUDENT_REACTIVATED: ['Reactivación de alumno', 'success'],
+  ENROLLMENT_WITHDRAWN_BY_STAFF: ['Baja de inscripción', 'danger'],
+  ENROLLMENT_SECTION_CHANGED_BY_STAFF: ['Cambio de comisión', 'accent'],
+  DATA_IMPORT_CREATED: ['Importación creada', 'neutral'],
+  DATA_IMPORT_COMMITTED: ['Importación confirmada', 'success'],
+  DATA_IMPORT_RETRIED: ['Importación reintentada', 'neutral'],
+  DATA_IMPORT_SEALED: ['Importación sellada', 'neutral'],
+  DATA_IMPORT_ROLLED_BACK: ['Importación revertida', 'danger'],
+  DATA_IMPORT_ROLLBACK_BLOCKED: ['Reversión bloqueada', 'warning'],
+  DATA_IMPORT_REPORT_DOWNLOADED: ['Reporte descargado', 'neutral'],
+  CONTACT_CONSENT_GRANTED: ['Consentimiento otorgado', 'success'],
+  CONTACT_CONSENT_REVOKED: ['Consentimiento revocado', 'warning'],
+  WAITLIST_PROMOTED_AUTOMATICALLY: ['Promovido de lista de espera (auto)', 'success'],
+  WAITLIST_PROMOTED_BY_STAFF: ['Promovido de lista de espera', 'success'],
+  WAITLIST_PRIORITIZED_BY_STAFF: ['Priorizado en lista de espera', 'accent'],
+  WAITLIST_REMOVED_BY_STAFF: ['Quitado de lista de espera', 'danger'],
+  WAITLIST_EXPIRED: ['Lista de espera vencida', 'neutral'],
+};
+
+const ENTITIES = {
+  PERSON: 'Persona',
+  STUDENT: 'Alumno',
+  SECTION_ENROLLMENT: 'Inscripción a comisión',
+  COURSE_SECTION_ENROLLMENT: 'Inscripción a materia',
+  PROGRAM_ENROLLMENT: 'Inscripción a carrera',
+  COURSE_ENROLLMENT: 'Inscripción a cursada',
+  DATA_IMPORT_BATCH: 'Lote de importación',
+};
+
+const ROLES = {
+  DIRECTOR: ['Director', 'accent'],
+  ADMINISTRATIVO: ['Administrativo', 'neutral'],
+  PRECEPTOR: ['Preceptor', 'success'],
+  DOCENTE: ['Docente', 'warning'],
+  ALUMNO: ['Alumno', 'neutral'],
+  PLATFORM_ADMIN: ['Plataforma', 'accent'],
+  SYSTEM: ['Sistema', 'neutral'],
+};
+
+export const AUDIT_ACTION_CODES = Object.keys(ACTIONS);
+export const AUDIT_ENTITY_CODES = Object.keys(ENTITIES);
+export const AUDIT_ROLE_CODES = Object.keys(ROLES);
+
+export const auditActionLabel = (code) => ACTIONS[code]?.[0] ?? code;
+export const auditActionTone = (code) => ACTIONS[code]?.[1] ?? 'neutral';
+export const auditEntityLabel = (code) => ENTITIES[code] ?? code;
+export const auditRoleLabel = (code) => ROLES[code]?.[0] ?? code ?? '—';
+export const auditRoleTone = (code) => ROLES[code]?.[1] ?? 'neutral';
