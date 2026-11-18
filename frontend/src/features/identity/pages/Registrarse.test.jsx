@@ -73,37 +73,31 @@ describe('Registrarse', () => {
     renderRegistrarse();
 
     await fillBasicData(user);
-    await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
     await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
     expect(await screen.findByText('Ese email ya está registrado.')).toBeInTheDocument();
   });
 
-  it('blocksSubmitWithoutAcceptingTermsAndMarksTheCheckboxInvalid', async () => {
+  it('offersASingleConsentCheckboxWithTheTermsLink', async () => {
+    renderRegistrarse();
+
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+    expect(screen.queryByRole('checkbox', { name: /acepto los términos y condiciones y la política/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Términos y Condiciones' })).toHaveAttribute('href', '/legal/terminos');
+  });
+
+  it('keepsSubmitBlockedWithAnAccessibleHintUntilTheConsentIsChecked', async () => {
     const captured = captureRegisterBody();
     const user = userEvent.setup();
     renderRegistrarse();
 
     await fillBasicData(user);
-    await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
-    await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
+    const submit = screen.getByRole('button', { name: /crear cuenta/i });
 
-    expect(await screen.findByText('Tenés que aceptar los términos y la política de privacidad.')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /acepto los términos/i })).toHaveAttribute('aria-invalid', 'true');
+    expect(submit).toBeDisabled();
+    expect(submit).toHaveAccessibleDescription(/marcá la casilla de avisos institucionales/i);
     expect(captured.body).toBeUndefined();
-  });
-
-  it('linksToLegalDocumentsOutsideTheLabelInANewTab', async () => {
-    renderRegistrarse();
-
-    const terms = await screen.findByRole('link', { name: 'Términos y condiciones' });
-    const privacy = screen.getByRole('link', { name: 'Política de privacidad' });
-    expect(terms).toHaveAttribute('href', '/legal/terminos');
-    expect(terms).toHaveAttribute('target', '_blank');
-    expect(privacy).toHaveAttribute('href', '/legal/privacidad');
-    expect(privacy).toHaveAttribute('target', '_blank');
-    expect(screen.getByRole('checkbox', { name: /acepto los términos/i }).closest('div').querySelector('label')).not.toContainElement(terms);
   });
 
   it('sendsAcceptanceBirthDateAndInstitutionalNoticesForAnAdult', async () => {
@@ -113,7 +107,6 @@ describe('Registrarse', () => {
 
     await fillBasicData(user, { birthDate: '1990-05-14' });
     expect(screen.queryByLabelText('Nombre del responsable')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
     await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
@@ -150,7 +143,6 @@ describe('Registrarse', () => {
     await user.type(screen.getByLabelText('Nombre del responsable'), 'Marcela Ramírez');
     await user.type(screen.getByLabelText('Correo del responsable'), 'marcela@example.com');
     await user.type(screen.getByLabelText('Vínculo con el responsable'), 'Madre');
-    await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
     await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 
@@ -184,7 +176,6 @@ describe('Registrarse', () => {
     renderRegistrarse();
 
     await fillBasicData(user);
-    await user.click(screen.getByRole('checkbox', { name: /acepto los términos/i }));
     await user.click(screen.getByRole('checkbox', { name: /avisos institucionales/i }));
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 

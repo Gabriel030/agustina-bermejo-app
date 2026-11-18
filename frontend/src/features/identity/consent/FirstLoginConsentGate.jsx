@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Button } from '@/components/ui/button';
@@ -11,19 +10,29 @@ import { InstitutionalNoticesCheckbox } from '@/features/identity/consent/Instit
 const OPEN_PATH_PREFIXES = ['/legal/', '/confirmar-responsable'];
 
 export function FirstLoginConsentGate({ children }) {
-  const { usuario } = useAuth();
+  const { usuario, logout } = useAuth();
   const { pathname } = useLocation();
-  const { data, refetch } = useContactConsents({ enabled: Boolean(usuario) });
+  const { data, isPending, refetch } = useContactConsents({ enabled: Boolean(usuario), retry: false });
   const [accepted, setAccepted] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const errorRef = useRef(null);
   const update = useUpdateContactConsent();
   const isOpenPath = OPEN_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const hasNoRecord =
     Array.isArray(data) &&
     data.some((entry) => entry.channel === 'EMAIL' && entry.category === 'INSTITUTIONAL' && entry.hasRecord === false);
 
-  if (!usuario || !hasNoRecord || isOpenPath) return children;
+  const loading = Boolean(usuario) && !isOpenPath && isPending;
+  if (!usuario || isOpenPath || !hasNoRecord) {
+    return (
+      <div style={{ display: loading ? 'none' : 'contents' }}>
+        {children}
+      </div>
+    );
+  }
 
   async function submit() {
+    setSaveError(false);
     try {
       await update.mutateAsync({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, source: 'ACCOUNT_CREATION' });
     } catch (error) {
@@ -31,7 +40,8 @@ export function FirstLoginConsentGate({ children }) {
         refetch();
         return;
       }
-      toast.error('No pudimos guardar tu aceptación. Intentá de nuevo.');
+      setSaveError(true);
+      requestAnimationFrame(() => errorRef.current?.focus());
     }
   }
 
@@ -44,8 +54,16 @@ export function FirstLoginConsentGate({ children }) {
           Tu cuenta fue creada por la institución. Para continuar, aceptá recibir avisos institucionales.
         </p>
         <InstitutionalNoticesCheckbox id="first-login-notices" checked={accepted} onCheckedChange={setAccepted} />
+        {saveError && (
+          <p ref={errorRef} tabIndex={-1} role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
+            No pudimos guardar tu aceptación. Intentá de nuevo.
+          </p>
+        )}
         <Button variant="gradient" disabled={!accepted} loading={update.isPending} onClick={submit}>
           Continuar
+        </Button>
+        <Button variant="ghost" onClick={logout}>
+          Cerrar sesión
         </Button>
       </GlassCard>
     </div>

@@ -3,8 +3,8 @@ import { apiFetch } from '@/api/client';
 
 const CONSENTS_KEY = ['me', 'contact-consents'];
 
-export function useContactConsents({ enabled = true } = {}) {
-  return useQuery({ queryKey: CONSENTS_KEY, queryFn: () => apiFetch('/me/contact-consents'), enabled });
+export function useContactConsents({ enabled = true, retry } = {}) {
+  return useQuery({ queryKey: CONSENTS_KEY, queryFn: () => apiFetch('/me/contact-consents'), enabled, retry });
 }
 
 export function useUpdateContactConsent() {

@@ -15,7 +15,9 @@ const withoutRecord = () =>
     { channel: 'EMAIL', category: 'PROMOTIONAL', granted: false, recordedAt: '2026-11-17T10:00:00Z', hasRecord: false },
   ]);
 
-vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ usuario: { id: 1 } }) }));
+const logout = vi.fn();
+
+vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ usuario: { id: 1 }, logout }) }));
 
 function renderGate() {
   return renderWithProviders(
@@ -93,5 +95,58 @@ describe('FirstLoginConsentGate', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(await screen.findByText('Contenido de la app')).toBeInTheDocument();
+  });
+
+  it('does not render the app content while the consents are loading', async () => {
+    server.use(http.get(`${API}/me/contact-consents`, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      return withoutRecord();
+    }));
+    renderGate();
+
+    expect(screen.queryByText('Contenido de la app')).not.toBeVisible();
+    expect(await screen.findByText(/antes de seguir, aceptá los avisos/i)).toBeInTheDocument();
+    expect(screen.queryByText('Contenido de la app')).not.toBeInTheDocument();
+  });
+
+  it('a network error while loading does not block the app', async () => {
+    server.use(http.get(`${API}/me/contact-consents`, () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 })));
+    renderGate();
+
+    expect(await screen.findByText('Contenido de la app')).toBeInTheDocument();
+  });
+
+  it('there is no promotional checkbox', async () => {
+    server.use(http.get(`${API}/me/contact-consents`, withoutRecord));
+    renderGate();
+
+    await screen.findByRole('checkbox', { name: /avisos institucionales/i });
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+    expect(screen.queryByText(/promociones/i)).not.toBeInTheDocument();
+  });
+
+  it('the prompt stays open and shows an alert when saving fails', async () => {
+    server.use(
+      http.get(`${API}/me/contact-consents`, withoutRecord),
+      http.put(`${API}/me/contact-consents`, () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 })),
+    );
+    const user = userEvent.setup();
+    renderGate();
+
+    await user.click(await screen.findByRole('checkbox', { name: /avisos institucionales/i }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos guardar tu aceptación.');
+    expect(screen.queryByText('Contenido de la app')).not.toBeInTheDocument();
+  });
+
+  it('offers a way out through logout', async () => {
+    server.use(http.get(`${API}/me/contact-consents`, withoutRecord));
+    const user = userEvent.setup();
+    renderGate();
+
+    await user.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+
+    expect(logout).toHaveBeenCalledTimes(1);
   });
 });
