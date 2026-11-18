@@ -4,6 +4,7 @@ import { ROLE_MENU, groupMenuItems, menuGroupSlugs, menuItemsFor, pagesFor } fro
 import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
+const LEGACY_REDIRECT_PATHS = ['listas-de-espera'];
 const PENDING_SCREENS = { alumno: ['opciones'], administrativo: [], director: [] };
 
 describe('role menu manifest', () => {
@@ -17,7 +18,7 @@ describe('role menu manifest', () => {
 
   it.each(Object.keys(ROLE_MENU))('gives every top level route of %s a manifest entry', (role) => {
     const slugs = pagesFor(role);
-    const topLevel = roleRoutesFor(role).map((route) => route.path).filter((path) => !path.includes('/'));
+    const topLevel = roleRoutesFor(role).map((route) => route.path).filter((path) => !path.includes('/') && !LEGACY_REDIRECT_PATHS.includes(path));
     const orphans = topLevel.filter((path) => !slugs.includes(path));
     expect(orphans).toEqual([]);
   });
@@ -62,7 +63,7 @@ describe('role menu manifest', () => {
 
   it('drops groups left without visible items', () => {
     const withoutAcademic = menuItemsFor('director').filter(
-      (item) => !['oferta-academica', 'listas-de-espera', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias'].some((slug) => item.to.endsWith(slug)),
+      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias'].some((slug) => item.to.endsWith(slug)),
     );
     expect(groupMenuItems('director', withoutAcademic).map((group) => group.id)).not.toContain('academic');
   });
@@ -104,5 +105,13 @@ describe('role menu manifest', () => {
   it('lists the commission closures of the director under the academic group', () => {
     const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
     expect(academic.items.map((item) => item.to)).toContain('/director/cierres-de-comision');
+  });
+
+  it('menu entry lives under Enrollments', () => {
+    const enrollment = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'enrollment');
+    expect(enrollment.label).toBe('Inscripciones');
+    expect(enrollment.items.map((item) => item.to)).toEqual(['/director/inscripciones/listas-de-espera']);
+    expect(roleRoutesFor('director').map((route) => route.path)).toContain('inscripciones/listas-de-espera');
+    expect(pagesFor('director')).not.toContain('listas-de-espera');
   });
 });

@@ -1,3 +1,7 @@
+export const WAITLIST_BASE_SLUG = 'inscripciones/listas-de-espera';
+export const WAITLIST_REASON_MIN_LENGTH = 10;
+export const WAITLIST_REASON_MAX_LENGTH = 500;
+
 export const WAITLIST_KIND_LABEL = {
   PROGRAM_SECTION: 'Materia',
   COURSE_SECTION: 'Módulo de curso',
@@ -58,5 +62,11 @@ export function firstEligiblePosition(entries) {
 }
 
 export function waitlistPath(kind, id) {
-  return `listas-de-espera/${kind}/${id}`;
+  return `${WAITLIST_BASE_SLUG}/${kind}/${id}`;
+}
+
+export function promoteBlockedReason(entry, free) {
+  if (free != null && free < 1) return 'No hay lugares libres. Ampliá el cupo.';
+  if (!entry.verdict?.eligible) return 'No cumple los requisitos. Conserva su lugar en la cola.';
+  return null;
 }

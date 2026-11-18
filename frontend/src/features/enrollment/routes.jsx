@@ -17,6 +17,7 @@ const ListasDeEspera = lazyPage(() => import('@/features/enrollment/pages/Listas
 const ListaDeEsperaDetalle = lazyPage(() => import('@/features/enrollment/pages/ListaDeEsperaDetalle'), 'ListaDeEsperaDetalle');
 const PadronAlumnos = lazyPage(() => import('@/features/identity/pages/PadronAlumnos'), 'PadronAlumnos');
 import { Navigate } from 'react-router-dom';
+import { LegacyWaitlistDetailRedirect } from '@/features/enrollment/components/LegacyWaitlistDetailRedirect';
 import { lazyPage } from '@/routes/lazyPage';
 
 export const routes = {
@@ -35,8 +36,10 @@ export const routes = {
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos/:id/inscribir', element: <InscribirAlumno /> },
     { roles: ['preceptor', 'administrativo'], path: 'solicitudes-de-ingreso', element: <SolicitudesDeIngreso /> },
     { roles: ['preceptor', 'administrativo'], path: 'solicitudes-de-ingreso/:id', element: <SolicitudDeIngresoDetalle /> },
-    { roles: ['preceptor', 'administrativo', 'director'], path: 'listas-de-espera', element: <ListasDeEspera /> },
-    { roles: ['preceptor', 'administrativo', 'director'], path: 'listas-de-espera/:kind/:id', element: <ListaDeEsperaDetalle /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'inscripciones/listas-de-espera', element: <ListasDeEspera /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'inscripciones/listas-de-espera/:kind/:id', element: <ListaDeEsperaDetalle /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'listas-de-espera', element: <Navigate to="../inscripciones/listas-de-espera" replace /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'listas-de-espera/:kind/:id', element: <LegacyWaitlistDetailRedirect /> },
     { roles: ['alumno'], path: 'mis-cursos', element: <AlumnoMisCursos /> },
     { roles: ['alumno'], path: 'mis-cursos/:id', element: <StudentCourseDetail /> },
     { roles: ['alumno'], path: 'mis-carreras', element: <AlumnoMisCarreras /> },
