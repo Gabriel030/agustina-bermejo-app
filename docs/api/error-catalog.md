@@ -227,6 +227,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `UNSUPPORTED_FILE_TYPE` | no | `UnsupportedFileTypeException` | shared |
 | `VERIFIED_PAYMENT_AMOUNT_INVALID` | no | `VerifiedPaymentAmountInvalidException` | billing |
 | `VERIFIED_PAYMENT_CURRENCY_MISMATCH` | no | `VerifiedPaymentCurrencyMismatchException` | billing |
+| `WAITLIST_REASON_REQUIRED` | no | `WaitlistReasonRequiredException` | enrollment |
 | `WITHDRAWAL_DATE_OUT_OF_ALLOWED_RANGE` | no | `WithdrawalDateOutOfAllowedRangeException` | enrollment |
 
 ### HTTP 401
@@ -594,6 +595,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `UPFRONT_WINDOW_CLOSED` | no | `UpfrontWindowClosedException` | billing |
 | `USERNAME_ALREADY_EXISTS` | no | `UsernameAlreadyExistsException` | identity |
 | `VERSION_ALREADY_EFFECTIVE` | no | `VersionAlreadyEffectiveException` | billing |
+| `WAITLIST_CANDIDATE_NOT_ELIGIBLE` | no | `WaitlistCandidateNotEligibleException` | enrollment |
+| `WAITLIST_ENTRY_NOT_WAITING` | no | `WaitlistEntryNotWaitingException` | enrollment |
+| `WAITLIST_NO_FREE_SEAT` | no | `WaitlistNoFreeSeatException` | enrollment |
+| `WAITLIST_REMOVAL_BLOCKED_BY_PENDING_RECEIPT` | no | `WaitlistRemovalBlockedByPendingReceiptException` | enrollment |
 | `WITHDRAWAL_REDUCTION_REJECTED` | no | `WithdrawalReductionRejectedException` | billing |
 
 ### HTTP 422
@@ -891,6 +896,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/terms/{id}/enrollment/clear-override` | `TermController#removeOverride` |
 | POST | `/terms/{id}/enrollment/close` | `TermController#closeEnrollment` |
 | POST | `/terms/{id}/enrollment/open` | `TermController#openEnrollment` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/prioritize` | `WaitlistController#prioritize` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/promote` | `WaitlistController#promote` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/remove` | `WaitlistController#remove` |
 | POST | `/year-billing-templates/{id}/cohorts` | `ProgramYearBillingTemplateController#createCohort` |
 | PATCH | `/year-billing-templates/{id}/configuration` | `ProgramYearBillingTemplateController#updateConfiguration` |
 

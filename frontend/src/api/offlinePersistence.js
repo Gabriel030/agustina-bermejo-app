@@ -77,6 +77,8 @@ export async function clearOfflineCache() {
 }
 
 export async function purgeOfflineData(queryClient) {
+  queryClient?.cancelQueries();
+
   try {
     await clearOfflineCache();
   } finally {
@@ -90,6 +92,7 @@ export async function claimOfflineCache(userId, queryClient) {
     await purgeOfflineData(queryClient);
   }
   await safely(() => set(OFFLINE_OWNER_KEY, userId), undefined);
+  return owner !== undefined && owner !== userId;
 }
 
 export async function storeOfflineProfile(profile) {
