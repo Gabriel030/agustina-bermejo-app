@@ -26,6 +26,6 @@ No verificado: ...
 
 ## Reglas
 - BLOQUEANTE/MAYOR => NO MERGEABLE. Solo MENOR => MERGEABLE CON MENORES. Sin hallazgos inventados.
-- Una sola ronda por PR; tope fijo 100k tokens, sin extensiones (al tope: lo que tenés, "revisión incompleta" y relevo). `maxTurns: 30`. El líder mergea con tu MERGEABLE (o CON MENORES corregidos) y CI verde; en plata/contrato/seguridad hace falta el MERGEABLE de ambas invocaciones. No editás ni pusheás ni mergeás.
+- Una sola ronda por PR; tope fijo 100k tokens, sin extensiones (al tope: lo que tenés, "revisión incompleta" y relevo). `maxTurns: 30`. El líder comenta `APROBADO #N` con tu MERGEABLE (o CON MENORES corregidos) y CI verde, y el worker dueño mergea; en plata/contrato/seguridad hace falta el MERGEABLE de ambas invocaciones. No editás ni pusheás ni mergeás.
 
 En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).

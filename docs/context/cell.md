@@ -33,7 +33,7 @@ Tipo de ticket (lo fija el líder en el plan): A solo backend (contrato => backe
 2. Líder pregunta al usuario, en un solo mensaje, lo que bloquea (negocio, diseño). Front: mockup aprobado antes de codificar.
 3. Líder lanza workers con una línea de brief; abren PR en BORRADOR con un primer commit chico y trabajan con etiquetas `cell:<issue>` y `role:<puesto>`. Los PRs referencian el issue (`Refs #N`; `Closes #N` solo el último).
 4. Cada PR pasa por el subagente revisor (`cell-review`), una invocación; el informe es un comentario del PR. Plata/contrato/seguridad: dos invocaciones independientes (reviewer-1 y reviewer-2), MERGEABLE de ambas. Una ronda de revisión y una de correcciones.
-5. El líder mergea automático cuando el revisor asignado da MERGEABLE (o MERGEABLE CON MENORES ya corregidos) y la CI está verde; plata/contrato/seguridad requieren MERGEABLE de las dos invocaciones. PRs apilados en orden estricto; el mecánico trae develop. Los PRs sin migración se mergean con auto-merge (regla 2 de "Reglas de comportamiento"). Releases a `master`: ver "Protocolo de respuesta y flujo continuo".
+5. El PR lo mergea el worker dueño, una vez que el líder comenta `APROBADO #N` en el PR (el revisor asignado dio MERGEABLE, o MERGEABLE CON MENORES ya corregidos; plata/contrato/seguridad requieren MERGEABLE de las dos invocaciones) y la CI está verde sobre el head real. Los `release/*` y hotfix a `master` los mergea el líder. PRs apilados en orden estricto; el mecánico trae develop. Los PRs sin migración se mergean con auto-merge (regla 2 de "Reglas de comportamiento"). Releases a `master`: ver "Protocolo de respuesta y flujo continuo".
 
 ## Coordinador y líder
 
@@ -59,11 +59,37 @@ Circuito: Gabriel prioriza => el coordinador convierte el ítem de Obsidian en u
 Viven acá y en las fichas de `.claude/agents/`, no en la memoria local de ninguna sesión: lo que deba valer para otras sesiones se escribe en estos archivos.
 
 1. **Nombres.** Al hablar con Gabriel se nombra a las sesiones por el título que él ve en claude.ai/code, no por alias (Líder-N, worker-N). Los prompts de apertura de sesión empiezan con la línea `Nombre de la sesión: <nombre>`. Todo prompt que Gabriel deba pegar va completo y autocontenido en un bloque de código en el chat.
-2. **Líderes.** Un líder nunca deja un PR listo sin acción. Cuando su revisión da conforme y el PR no lleva migración, activa el auto-merge (`develop` exige los checks `backend` y `frontend`) y anuncia `AUTO-MERGE ACTIVADO #N`. Si empujan un commit después de su aprobación, re-revisa el delta. Los PRs con migración se mergean a mano, anunciando `MIGRACIÓN V<n> EN MERGE` y `MERGEADO V<n>` en el Issue de relevo; el número se renumera al siguiente libre sobre el máximo de `develop` al mergear (Flyway sin `outOfOrder`).
+2. **Líderes.** Un líder nunca deja un PR listo sin acción. Cuando los revisores dan conforme, comenta `APROBADO #N` en el PR y avisa al worker dueño, que mergea. Si el worker no mergeó a los 6 minutos del `APROBADO` (o ya no existe), mergea el líder: sin migración activa el auto-merge (`develop` exige los checks `backend` y `frontend`) y anuncia `AUTO-MERGE ACTIVADO #N`. Si empujan un commit después de su aprobación, re-revisa el delta. Los PRs con migración se mergean a mano, anunciando `MIGRACIÓN V<n> EN MERGE` y `MERGEADO V<n>` en el Issue de relevo; el número se renumera al siguiente libre sobre el máximo de `develop` al mergear (Flyway sin `outOfOrder`).
 3. **Comunicación.** Los mensajes entre sesiones en la nube son de una sola vía y los workers y líderes no vigilan el CI por su cuenta. Toda corrección se cierra con un comentario explícito en el Issue: `ARRANQUE`, `TERMINÉ`, `CORREGIDO #N`, `BLOQUEADO` + motivo, `NECESITO WORKER #N`. El coordinador avisa al líder en el momento en que un PR queda `clean`. Un push que no dispara CI se corrige con un push normal con cambio real, nunca con commit vacío. Un rerun no re-evalúa la etiqueta `contract-break-approved`: el workflow solo la lee en `opened`, `synchronize`, `reopened` y `ready_for_review`; para re-evaluarla se cierra y reabre el PR (único caso en que se hace).
-4. **Workers.** Tope de 90k tokens y 30 minutos. Un worker que agotó el presupuesto avisa `BLOQUEADO` y pide uno fresco. Sesión nueva (o `/clear`) al 50 % de contexto. No se mergea desde un worker.
+4. **Workers.** Tope de 90k tokens y 30 minutos. Un worker que agotó el presupuesto avisa `BLOQUEADO` y pide uno fresco. Sesión nueva (o `/clear`) al 50 % de contexto. El worker mergea solo su propio PR y solo después del `APROBADO #N` del líder en el PR y con CI verde sobre el head real: sin migración, `gh pr merge N --squash --auto`; con migración, a mano anunciando `MIGRACIÓN V<n> EN MERGE` y `MERGEADO V<n>` en el Issue de relevo, tras traer `origin/develop` y renumerar al siguiente libre. Nunca mergea PRs ajenos, ni `release/*`, ni con `--admin`, y si empuja un commit después del `APROBADO`, espera uno nuevo.
 5. **Contrato.** `contract-break-approved` solo con diff aditivo listado en el cuerpo del PR; un filtro que pasa de valor único a lista se considera aditivo.
 6. **Rol del coordinador.** Es el único que escribe en el vault de Obsidian privado (repo `Gabriel030/agustina-bermejo-vault`, vía el agente `obsidian-dev`). No guarda en memoria local reglas que deban valer para otras sesiones: van a estos archivos.
+
+## Matriz de avisos y pedido de worker
+
+Canal único y confiable: comentario en el Issue de la tarea. El mensaje directo entre sesiones es de una vía y puede no leerse: acelera, nunca reemplaza al comentario.
+
+**Cómo pedir un worker** (lo pide el líder; solo Gabriel puede abrir sesiones nuevas en la nube):
+1. Comentar en el Issue `NECESITO WORKER #<PR o Issue>` con cinco datos: rama, qué hacer (una frase), áreas o archivos, criterio de listo (checks que deben quedar verdes) y tope (90k tokens / 30 minutos).
+2. Avisar al coordinador por mensaje. El coordinador responde en el mismo turno pegándole a Gabriel el prompt completo, con `Nombre de la sesión: <nombre>` en la primera línea, en un bloque de código.
+3. Si el worker existente tiene menos del 50 % de contexto y presupuesto, se lo reutiliza con un mensaje y no se abre otro.
+4. Si pasan 6 minutos sin `ARRANQUE` del worker, el líder escribe `PEDIDO DE REPORTE`.
+
+**Quién avisa a quién y cuándo:**
+
+| Quién | A quién | Cuándo | Cómo |
+|---|---|---|---|
+| Worker | Líder | Al empezar (10 min), en cada hito, al terminar, al trabarse | Issue: `ARRANQUE`, `TERMINÉ`, `BLOQUEADO` + motivo |
+| Worker | Líder | Antes de cada push | Local: chequeo de contrato, tests afectados y `ModularityTest`; no se pushea con algo conocido en rojo |
+| Líder | Worker | PR rojo o `DIRTY` | Mensaje con la lista completa de lo que falla (no de a uno) y comentario en el Issue |
+| Líder | Coordinador | Necesita worker o decisión de Gabriel | `NECESITO WORKER #N` / `NECESITO DECISIÓN` |
+| Líder | Todos | Merge con migración | `MIGRACIÓN V<n> EN MERGE`, después `MERGEADO V<n>` en el Issue de relevo |
+| Líder | Worker | Revisores conformes | Comentario `APROBADO #N` en el PR; el worker mergea |
+| Líder | Todos | PR `clean` con `APROBADO` y sin merge del worker en 6 minutos | Mergea o activa auto-merge él mismo |
+| Coordinador | Líder | PR `clean` o `CORREGIDO` | Mensaje y comentario en el mismo turno |
+| Coordinador | Gabriel | Algo que solo él puede hacer | Prompt completo en bloque de código |
+
+**Sin avance, escalar (regla de Gabriel, 18-nov):** ninguna tarea abierta puede pasar 30 minutos sin un avance observable (push, merge o comentario con novedad). A los 6 minutos sin respuesta el dueño reclama con `PEDIDO DE REPORTE`; a los 15 el coordinador le pega a Gabriel el prompt para despertar a la sesión; a los 30 se reasigna a un worker fresco (`NECESITO WORKER #N`). Cada escalón queda comentado en el Issue.
 
 ## Protocolo de reporte
 

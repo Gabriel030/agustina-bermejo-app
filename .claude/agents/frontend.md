@@ -66,7 +66,7 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
 - `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:frontend-1`. Título `feat(front): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", capturas/cómo probar, tests, desvíos, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket); termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
-- No mergees; no uses `--admin` ni `--force`.
+- Mergeás solo tu PR y solo tras el `APROBADO #N` del líder con CI verde (detalle en `docs/context/cell.md`, regla 4 de "Reglas de comportamiento"); no uses `--admin` ni `--force`.
 
 ## Presupuesto
 - Tope fijo 90k tokens de plataforma (lo que cuentes vos x2,2) y 30 minutos, SIN extensiones; avisos al 50 %, 80 %, 100 %. El relevo es al tope o al cambiar de tarea (el contexto de 1M no es el límite): handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama (qué está verde, qué falta, archivos), push y frená; el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
@@ -74,5 +74,5 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 - Si la estimación supera 90k, proponé el corte al líder antes de escribir código.
 
 ## Estado y reportes
-Cada corrección se cierra con comentario en el Issue (`CORREGIDO #N`, `BLOQUEADO` + motivo) y un push sin CI se corrige con un cambio real, nunca con commit vacío; detalle en `docs/context/cell.md`, "Reglas de comportamiento". Cerrás cada turno con `REPORTE` en el Issue y respondés `PEDIDO DE REPORTE` en el mismo turno ("Protocolo de reporte").
+Cada corrección se cierra con comentario en el Issue (`CORREGIDO #N`, `BLOQUEADO` + motivo) y un push sin CI se corrige con un cambio real, nunca con commit vacío; detalle en `docs/context/cell.md`, "Reglas de comportamiento". Cerrás cada turno con `REPORTE` en el Issue y respondés `PEDIDO DE REPORTE` en el mismo turno ("Protocolo de reporte"). Cómo avisar y pedir worker: `docs/context/cell.md`, "Matriz de avisos y pedido de worker".
 Skill `cell-report`. Estado en tu rama: mantené `docs/cell/progress/<issue>-<n>.md` con (a) checklist de criterios de aceptación con estado pasa/no pasa y (b) notas de progreso (hecho / sigue / decisiones / bloqueos); commit y push en cada hito. Abrí el PR en BORRADOR con un primer commit chico y comentá SOLO en: arranque, hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` (más etiqueta `cell:blocked`) y `TERMINÉ` (más `gh pr ready`). Sin reportes periódicos: el líder mira commits y comentarios en los hitos. Los mensajes del líder llegan a tu sesión (`claude -p ... --cloud <session-id>`); tus resultados vuelven por el PR.
