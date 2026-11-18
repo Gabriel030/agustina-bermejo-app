@@ -1,6 +1,5 @@
 import { GlassCard } from '@/components/GlassCard';
 import { ChoiceChip } from '@/components/ChoiceChip';
-import { Input } from '@/components/ui/input';
 import { StatusPill } from '@/components/StatusPill';
 import { usePrograms } from '@/features/academic-structure';
 import { useSubjects } from '@/features/academic-structure/hooks/useSubjects';
@@ -8,10 +7,6 @@ import { OptionCombobox } from './OptionCombobox';
 import { AudienceCounter } from './AudienceCounter';
 import { ENROLLMENT_STATUS_LABELS, EXCLUSION_REASON_LABELS, STAFF_ROLE_LABELS } from '../lib/broadcastWizard';
 import { useState } from 'react';
-
-function toggle(list, value) {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
-}
 
 export function AudienceStep({ state, onCriteria, catalogKeys, preview, previewState }) {
   const { criteria } = state;
@@ -41,7 +36,7 @@ export function AudienceStep({ state, onCriteria, catalogKeys, preview, previewS
           <span className="text-size-13 font-semibold text-ink">Estado de cursada</span>
           <div role="group" aria-label="Estado de cursada" className="flex flex-wrap gap-2">
             {Object.entries(ENROLLMENT_STATUS_LABELS).map(([key, label]) => (
-              <ChoiceChip key={key} selected={criteria.statuses.includes(key)} onClick={() => onCriteria({ statuses: toggle(criteria.statuses, key) })}>
+              <ChoiceChip key={key} selected={criteria.statuses.includes(key)} onClick={() => onCriteria({ statuses: criteria.statuses.includes(key) ? [] : [key] })}>
                 {label}
               </ChoiceChip>
             ))}
@@ -52,36 +47,13 @@ export function AudienceStep({ state, onCriteria, catalogKeys, preview, previewS
             <span className="text-size-13 font-semibold text-ink">Personal</span>
             <div role="group" aria-label="Personal" className="flex flex-wrap gap-2">
               {Object.entries(STAFF_ROLE_LABELS).map(([key, label]) => (
-                <ChoiceChip key={key} selected={criteria.staffRoles.includes(key)} onClick={() => onCriteria({ staffRoles: toggle(criteria.staffRoles, key) })}>
+                <ChoiceChip key={key} selected={criteria.staffRoles.includes(key)} onClick={() => onCriteria({ staffRoles: criteria.staffRoles.includes(key) ? [] : [key] })}>
                   {label}
                 </ChoiceChip>
               ))}
             </div>
           </div>
         )}
-        <div className="flex flex-wrap items-end gap-4">
-          <label className="flex items-center gap-2 text-size-13 font-semibold text-ink">
-            <input type="checkbox" checked={criteria.risk} onChange={(event) => onCriteria({ risk: event.target.checked })} />
-            Riesgo de asistencia
-          </label>
-          {criteria.risk && (
-            <div className="flex items-center gap-2">
-              <label htmlFor="risk-threshold" className="text-size-13 text-ink-soft">
-                Asistencia menor a
-              </label>
-              <Input
-                id="risk-threshold"
-                type="number"
-                min={0}
-                max={100}
-                className="w-20"
-                value={criteria.riskThreshold}
-                onChange={(event) => onCriteria({ riskThreshold: Number(event.target.value) })}
-              />
-              <span aria-hidden="true">%</span>
-            </div>
-          )}
-        </div>
         {catalogKeys.includes('OVERDUE_DEBT') && (
           <label className="flex items-center gap-2 text-size-13 font-semibold text-ink">
             <input type="checkbox" checked={criteria.overdueDebt} onChange={(event) => onCriteria({ overdueDebt: event.target.checked })} />
@@ -90,7 +62,7 @@ export function AudienceStep({ state, onCriteria, catalogKeys, preview, previewS
         )}
       </GlassCard>
       <div className="flex flex-col gap-3">
-        <AudienceCounter {...previewState} preview={preview} reasonFilter={reasonFilter} onReasonFilter={setReasonFilter} />
+        <AudienceCounter {...previewState} idle={previewState.idle} preview={preview} reasonFilter={reasonFilter} onReasonFilter={setReasonFilter} />
         {sample.length > 0 && (
           <GlassCard className="flex flex-col gap-2 p-4">
             {sample.map((row) => (

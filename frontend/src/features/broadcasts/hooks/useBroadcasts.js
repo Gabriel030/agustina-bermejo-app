@@ -8,7 +8,7 @@ export function useSegmentCatalog() {
   return useQuery({ queryKey: ['broadcasts', 'segment-catalog'], queryFn: () => apiFetch('/broadcasts/segment-catalog') });
 }
 
-export function useAudiencePreview(params) {
+export function useAudiencePreview(params, enabled = true) {
   const serialized = JSON.stringify(params);
   const [debounced, setDebounced] = useState(serialized);
 
@@ -21,8 +21,9 @@ export function useAudiencePreview(params) {
     queryKey: ['broadcasts', 'audience-preview', debounced],
     queryFn: () => apiFetch('/broadcasts/audience-preview', { method: 'POST', body: debounced }),
     placeholderData: (previous) => previous,
+    enabled,
   });
-  return { ...query, recalculating: serialized !== debounced || query.isFetching };
+  return { ...query, recalculating: enabled && (serialized !== debounced || query.isFetching) };
 }
 
 export function useCreateBroadcast() {

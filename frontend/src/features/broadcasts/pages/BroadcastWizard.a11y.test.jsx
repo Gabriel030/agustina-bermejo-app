@@ -6,6 +6,7 @@ import { axe } from '@/test/axe';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { BroadcastWizard } from './BroadcastWizard';
+import { seedWizardDraft } from './seedWizardDraft';
 
 const API = 'http://localhost:8080';
 
@@ -13,6 +14,7 @@ vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ usuario: { id: 7 }, 
 
 describe('BroadcastWizard accessibility', () => {
   it('audienceStepHasNoAxeViolations', async () => {
+    seedWizardDraft(7);
     server.use(
       http.get('*/broadcasts/segment-catalog', () => HttpResponse.json([{ key: 'PROGRAM', parameters: [] }])),
       http.post('*/broadcasts/audience-preview', () =>
@@ -38,6 +40,7 @@ describe('BroadcastWizard accessibility', () => {
   });
 
   it('messageStepAndConfirmDialogHaveNoAxeViolations', async () => {
+    seedWizardDraft(7);
     server.use(
       http.get('*/broadcasts/segment-catalog', () => HttpResponse.json([{ key: 'PROGRAM', parameters: [] }])),
       http.post('*/broadcasts/audience-preview', () =>

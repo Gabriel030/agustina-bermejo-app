@@ -5,7 +5,9 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { toast } from 'sonner';
+import { validateAgainstContract } from '@/test/contract/validateAgainstContract';
 import { BroadcastWizard } from './BroadcastWizard';
+import { seedWizardDraft } from './seedWizardDraft';
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
@@ -24,12 +26,28 @@ const previewBody = (overrides = {}) => ({
   ...overrides,
 });
 
-function mockBackend({ onConfirm, confirmResponse, catalog = [{ key: 'PROGRAM', parameters: [] }, { key: 'OVERDUE_DEBT', parameters: [] }], preview = previewBody(), onCreate, templates = [], createResponse } = {}) {
+function contractViolations(pathname, body) {
+  return validateAgainstContract({ method: 'POST', pathname, request: { hasBody: true, body } }).violations;
+}
+
+function rejectContractViolations(pathname, body) {
+  const violations = contractViolations(pathname, body);
+  return violations.length > 0 ? HttpResponse.json({ code: 'CONTRACT_VIOLATION', message: violations.join('; ') }, { status: 400 }) : null;
+}
+
+function mockBackend({ onPreview, onConfirm, confirmResponse, catalog = [{ key: 'PROGRAM', parameters: [] }, { key: 'OVERDUE_DEBT', parameters: [] }], preview = previewBody(), onCreate, templates = [], createResponse } = {}) {
   server.use(
     http.get('*/broadcasts/segment-catalog', () => HttpResponse.json(catalog)),
-    http.post('*/broadcasts/audience-preview', () => HttpResponse.json(preview)),
+    http.post('*/broadcasts/audience-preview', async ({ request }) => {
+      const body = await request.json();
+      onPreview?.(body);
+      return rejectContractViolations('/broadcasts/audience-preview', body) ?? HttpResponse.json(preview);
+    }),
     http.post('*/broadcasts', async ({ request }) => {
-      onCreate?.(await request.json());
+      const body = await request.json();
+      onCreate?.(body);
+      const rejection = rejectContractViolations('/broadcasts', body);
+      if (rejection) return rejection;
       return createResponse?.() ?? HttpResponse.json({ id: 1, status: 'DRAFT' });
     }),
     http.post('*/broadcasts/:id/confirm', ({ params }) => {
@@ -60,6 +78,7 @@ describe('BroadcastWizard', () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
+    seedWizardDraft(7);
   });
 
   it('walks the four steps and confirms the broadcast', async () => {
@@ -185,7 +204,7 @@ describe('BroadcastWizard', () => {
 
     await screen.findByText('Envío confirmado');
     expect(bodies).toHaveLength(1);
-    expect(bodies[0]).toStrictEqual({ name: 'Mesas', channel: 'EMAIL', category: 'INSTITUTIONAL', segmentSpec: { criteria: [] }, templateId: 5 });
+    expect(bodies[0]).toStrictEqual({ name: 'Mesas', channel: 'EMAIL', category: 'INSTITUTIONAL', segmentSpec: { version: 1, quantifier: 'ALL', criteria: [{ key: 'ENROLLMENT_STATUS', value: 'IN_COURSE' }] }, templateId: 5 });
   });
 
   it('creates a new draft when the message changed after a failed confirm', async () => {
@@ -297,4 +316,69 @@ describe('BroadcastWizard', () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Con una plantilla no se puede enviar asunto ni mensaje propios.'));
   });
+
+  it('sends a segment spec that matches the contract', async () => {
+    const previews = [];
+    let created = null;
+    seedWizardDraft(7, { statuses: ['REGULAR'], staffRoles: ['DOCENTE'], overdueDebt: true, programIds: [4], subjectId: 9 });
+    mockBackend({
+      catalog: [{ key: 'PROGRAM', parameters: [] }, { key: 'OVERDUE_DEBT', parameters: [] }],
+      onPreview: (body) => previews.push(body),
+      onCreate: (body) => (created = body),
+    });
+    renderWithProviders(<BroadcastWizard />);
+    await userEvent.type(await screen.findByLabelText('Nombre interno'), 'Mesas');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await waitFor(() => expect(previews.at(-1)?.segmentSpec.criteria).toHaveLength(5));
+    const previewed = previews.at(-1);
+
+    expect(previewed.segmentSpec).toEqual({
+      version: 1,
+      quantifier: 'ALL',
+      criteria: [
+        { key: 'PROGRAM', value: '4' },
+        { key: 'SUBJECT', value: '9' },
+        { key: 'ENROLLMENT_STATUS', value: 'REGULAR' },
+        { key: 'OVERDUE_DEBT', value: '' },
+        { key: 'STAFF_ROLE', value: 'DOCENTE' },
+      ],
+    });
+    expect(contractViolations('/broadcasts/audience-preview', previewed)).toEqual([]);
+    expect(created).toBeNull();
+  });
+
+  it('does not request the audience until a criterion is chosen', async () => {
+    window.localStorage.clear();
+    const onPreview = vi.fn();
+    mockBackend({ onPreview });
+    renderWithProviders(<BroadcastWizard />);
+    await userEvent.type(await screen.findByLabelText('Nombre interno'), 'Mesas');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+
+    expect(await screen.findByText('Elegí un criterio')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled();
+    expect(onPreview).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cursando' }));
+    await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
+    expect(contractViolations('/broadcasts/audience-preview', onPreview.mock.calls[0][0])).toEqual([]);
+  });
+
+  it('keeps a single enrollment status selected at a time', async () => {
+    window.localStorage.clear();
+    mockBackend();
+    renderWithProviders(<BroadcastWizard />);
+    await userEvent.type(await screen.findByLabelText('Nombre interno'), 'Mesas');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Cursando' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cursada regular' }));
+
+    expect(screen.getByRole('button', { name: 'Cursando' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Cursada regular' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('flags a body that breaks the contract', () => {
+    expect(contractViolations('/broadcasts/audience-preview', { channel: 'EMAIL', category: 'INSTITUTIONAL', segmentSpec: { criteria: [{ key: 'SECTION', values: [1] }] }, page: 0, size: 10 })).not.toEqual([]);
+  });
 });
+

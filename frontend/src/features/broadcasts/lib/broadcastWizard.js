@@ -12,9 +12,8 @@ export const EXCLUSION_REASON_LABELS = {
 };
 
 export const ENROLLMENT_STATUS_LABELS = {
-  STUDYING: 'Cursando',
+  IN_COURSE: 'Cursando',
   REGULAR: 'Cursada regular',
-  FREE: 'Libre por inasistencias',
   GRADUATED: 'Egresado',
   WITHDRAWN: 'De baja',
 };
@@ -35,10 +34,7 @@ export const INITIAL_WIZARD_STATE = {
   criteria: {
     programIds: [],
     subjectId: null,
-    sectionId: null,
     statuses: [],
-    risk: false,
-    riskThreshold: 75,
     overdueDebt: false,
     staffRoles: [],
   },
@@ -48,16 +44,16 @@ export const INITIAL_WIZARD_STATE = {
   bodyText: '',
 };
 
+export const SEGMENT_SPEC_VERSION = 1;
+
 export function toSegmentSpec(criteria, catalogKeys) {
   const spec = [];
-  if (criteria.programIds.length) spec.push({ key: 'PROGRAM', values: criteria.programIds });
-  if (criteria.subjectId) spec.push({ key: 'SUBJECT', values: [criteria.subjectId] });
-  if (criteria.sectionId) spec.push({ key: 'SECTION', values: [criteria.sectionId] });
-  if (criteria.statuses.length) spec.push({ key: 'ENROLLMENT_STATUS', values: criteria.statuses });
-  if (criteria.risk) spec.push({ key: 'ATTENDANCE_RISK', values: [criteria.riskThreshold] });
-  if (criteria.overdueDebt && catalogKeys.includes('OVERDUE_DEBT')) spec.push({ key: 'OVERDUE_DEBT', values: [] });
-  if (criteria.staffRoles.length) spec.push({ key: 'STAFF_ROLE', values: criteria.staffRoles });
-  return { criteria: spec };
+  criteria.programIds.forEach((id) => spec.push({ key: 'PROGRAM', value: String(id) }));
+  if (criteria.subjectId) spec.push({ key: 'SUBJECT', value: String(criteria.subjectId) });
+  criteria.statuses.forEach((status) => spec.push({ key: 'ENROLLMENT_STATUS', value: status }));
+  if (criteria.overdueDebt && catalogKeys.includes('OVERDUE_DEBT')) spec.push({ key: 'OVERDUE_DEBT', value: '' });
+  criteria.staffRoles.forEach((role) => spec.push({ key: 'STAFF_ROLE', value: role }));
+  return { version: SEGMENT_SPEC_VERSION, quantifier: 'ALL', criteria: spec };
 }
 
 export function findUnknownVariables(text) {

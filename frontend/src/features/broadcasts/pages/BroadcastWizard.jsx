@@ -49,8 +49,9 @@ export function BroadcastWizard() {
     page: 0,
     size: 10,
   };
-  const previewQuery = useAudiencePreview(previewParams);
-  const preview = previewQuery.data;
+  const hasCriteria = segmentSpec.criteria.length > 0;
+  const previewQuery = useAudiencePreview(previewParams, hasCriteria);
+  const preview = hasCriteria ? previewQuery.data : undefined;
 
   useEffect(() => {
     if (!created) saveDraft(userId, state);
@@ -61,7 +62,7 @@ export function BroadcastWizard() {
 
   const canAdvance = {
     1: state.name.trim() !== '',
-    2: (preview?.included ?? 0) > 0,
+    2: hasCriteria && !previewQuery.recalculating && (preview?.included ?? 0) > 0,
     3: Object.keys(validateMessage(state)).length === 0,
     4: true,
   }[state.step];
@@ -142,6 +143,7 @@ export function BroadcastWizard() {
             error: previewQuery.error,
             onRetry: previewQuery.refetch,
             recalculating: previewQuery.recalculating,
+            idle: !hasCriteria,
           }}
         />
       )}

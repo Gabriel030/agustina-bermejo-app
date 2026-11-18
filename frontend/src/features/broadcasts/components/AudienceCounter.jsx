@@ -6,7 +6,14 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/Skeleton';
 import { EXCLUSION_REASON_LABELS } from '../lib/broadcastWizard';
 
-export function AudienceCounter({ preview, isError, error, onRetry, recalculating, reasonFilter, onReasonFilter }) {
+export function AudienceCounter({ preview, isError, error, onRetry, recalculating, reasonFilter, onReasonFilter, idle }) {
+  if (idle) {
+    return (
+      <GlassCard className="p-5">
+        <EmptyState icon="🎯" title="Elegí un criterio" description="Seleccioná al menos una carrera, materia, estado o rol para ver quiénes reciben el envío." />
+      </GlassCard>
+    );
+  }
   if (isError && !preview) {
     return <LoadErrorState error={error} onRetry={onRetry} resource="los destinatarios" />;
   }
