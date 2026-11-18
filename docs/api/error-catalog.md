@@ -380,6 +380,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CERTIFICATE_EXPIRED` | no | `CertificateExpiredException` | graduation |
 | `CERTIFICATE_REVOKED` | no | `CertificateRevokedException` | graduation |
 | `CHANNEL_NOT_AVAILABLE` | no | `ChannelNotAvailableException` | notification |
+| `CHANNEL_NOT_ENABLED` | no | `ChannelNotEnabledException` | notification |
 | `CHARGEBACK_ALREADY_REVERSED` | no | `ChargebackAlreadyReversedException` | billing |
 | `CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT` | no | `ChargebackMustBeForTheFullAmountException` | billing |
 | `CHARGE_REJECTED` | no | `ChargeRejectedException` | billing |
@@ -598,6 +599,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `WAITLIST_ENTRY_NOT_WAITING` | no | `WaitlistEntryNotWaitingException` | enrollment |
 | `WAITLIST_NO_FREE_SEAT` | no | `WaitlistNoFreeSeatException` | enrollment |
 | `WAITLIST_REMOVAL_BLOCKED_BY_PENDING_RECEIPT` | no | `WaitlistRemovalBlockedByPendingReceiptException` | enrollment |
+| `WHATSAPP_PROVIDER_NOT_CONFIGURED` | no | `WhatsappProviderNotConfiguredException` | platform |
 | `WITHDRAWAL_REDUCTION_REJECTED` | no | `WithdrawalReductionRejectedException` | billing |
 
 ### HTTP 422

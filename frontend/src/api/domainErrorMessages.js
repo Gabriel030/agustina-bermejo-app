@@ -9,6 +9,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   BILLING_MODE_NOT_OFF: 'La importación solo se puede hacer con la facturación apagada.',
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
   CHANNEL_NOT_AVAILABLE: 'El canal de envío no está disponible.',
+  CHANNEL_NOT_ENABLED: 'El canal de envío no está habilitado. El Director puede habilitarlo desde Configuración, en la sección Notificaciones.',
+  WHATSAPP_PROVIDER_NOT_CONFIGURED: 'El proveedor de WhatsApp todavía no está configurado, por eso no se puede habilitar el canal.',
   INVALID_SEGMENT_CRITERION: 'El valor elegido para el segmento no es válido.',
   BROADCAST_BODY_REQUIRED: 'El mensaje de la comunicación no puede estar vacío.',
   BROADCAST_TEMPLATE_MISMATCH: 'La plantilla elegida no corresponde al canal o la categoría de la comunicación.',

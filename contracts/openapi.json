@@ -1378,7 +1378,7 @@
       "AuditLogView" : {
         "properties" : {
           "action" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED" ],
+            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
             "type" : "string"
           },
           "actorPersonId" : {
@@ -1399,7 +1399,7 @@
             "type" : "integer"
           },
           "entityType" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "INSTITUTE_SETTING" ],
             "type" : "string"
           },
           "id" : {
@@ -1953,6 +1953,19 @@
         "required" : [ "entityType", "naturalKey", "reason" ],
         "type" : "object"
       },
+      "BroadcastChannelEntry" : {
+        "properties" : {
+          "channel" : {
+            "enum" : [ "EMAIL", "WHATSAPP_LINK", "WHATSAPP_API" ],
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "channel", "enabled" ],
+        "type" : "object"
+      },
       "BroadcastDraftResponse" : {
         "properties" : {
           "id" : {
@@ -2284,6 +2297,20 @@
           }
         },
         "required" : [ "newSectionId" ],
+        "type" : "object"
+      },
+      "ChangeWhatsAppApiSettingRequest" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "enabled" ],
         "type" : "object"
       },
       "ChargebackSummaryResponse" : {
@@ -6967,7 +6994,7 @@
             "type" : "string"
           },
           "code" : {
-            "enum" : [ "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS" ],
+            "enum" : [ "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "WHATSAPP_API" ],
             "type" : "string"
           },
           "id" : {
@@ -14456,6 +14483,32 @@
         "required" : [ "eligible" ],
         "type" : "object"
       },
+      "WhatsAppApiSettingResponse" : {
+        "properties" : {
+          "dailyLimit" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "pendingRequirements" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "providerConfigured" : {
+            "type" : "boolean"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "dailyLimit", "enabled", "pendingRequirements", "providerConfigured", "version" ],
+        "type" : "object"
+      },
       "WithdrawEnrollmentRequest" : {
         "properties" : {
           "effectiveDate" : {
@@ -18397,7 +18450,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED" ],
+            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
             "type" : "string"
           }
         }, {
@@ -18405,7 +18458,7 @@
           "name" : "entityType",
           "required" : false,
           "schema" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "INSTITUTE_SETTING" ],
             "type" : "string"
           }
         }, {
@@ -23841,6 +23894,127 @@
           }
         },
         "tags" : [ "broadcast-audience-controller" ]
+      }
+    },
+    "/broadcasts/channels" : {
+      "get" : {
+        "operationId" : "BroadcastChannel_listBroadcastChannels",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/BroadcastChannelEntry"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "broadcast-channel-controller" ]
       }
     },
     "/broadcasts/segment-catalog" : {
@@ -42103,6 +42277,250 @@
         "tags" : [ "institute-settings-controller" ]
       }
     },
+    "/institute-settings/notifications/whatsapp" : {
+      "get" : {
+        "operationId" : "WhatsAppApiSettings_getSetting",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WhatsAppApiSettingResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "whats-app-api-settings-controller" ]
+      },
+      "put" : {
+        "operationId" : "WhatsAppApiSettings_changeSetting",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeWhatsAppApiSettingRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WhatsAppApiSettingResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "whats-app-api-settings-controller" ]
+      }
+    },
     "/institute-settings/payment-methods/{code}" : {
       "put" : {
         "operationId" : "InstituteSettings_changePaymentMethod",
@@ -58899,7 +59317,7 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED" ],
+            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
             "type" : "string"
           }
         }, {
@@ -58907,7 +59325,7 @@
           "name" : "entityType",
           "required" : false,
           "schema" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "INSTITUTE_SETTING" ],
             "type" : "string"
           }
         }, {
