@@ -42,6 +42,7 @@ export const handlers = [
       justificationDeadlineBusinessDays: 5,
     }),
   ),
+  http.post(`${API}/cancel-email-change`, () => new HttpResponse(null, { status: 200 })),
   http.post(`${API}/auth/login`, () =>
     HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
   ),
@@ -89,6 +90,9 @@ export const handlers = [
           status: 'CONFIRMED',
           createdAt: '2026-11-17T10:00:00Z',
           confirmedAt: '2026-11-17T10:05:00Z',
+          createdByName: 'Laura Gómez',
+          confirmedByName: 'Laura Gómez',
+          recipientCounts: { PENDING: 0, QUEUED: 1, SENT: 0, FAILED: 0, EXCLUDED: 0, DONE: 0, SKIPPED: 0, INVALID_NUMBER: 0 },
         },
       ],
       page: 0,
@@ -108,6 +112,9 @@ export const handlers = [
       createdAt: '2026-11-17T10:00:00Z',
       confirmedAt: '2026-11-17T10:05:00Z',
       recipientCounts: { PENDING: 0, QUEUED: 1, SENT: 0, FAILED: 0, EXCLUDED: 0, DONE: 0, SKIPPED: 0, INVALID_NUMBER: 0 },
+      createdByName: 'Laura Gómez',
+      confirmedByName: 'Laura Gómez',
+      estimatedCompletionDate: '2026-11-18',
     }),
   ),
   http.get(`${API}/broadcasts/:id/recipients`, () =>

@@ -1,7 +1,7 @@
 /**
  * <b>Qué es</b>: confirmación y cancelación transaccionales de una comunicación.
  *
- * <p><b>Expone</b>: {@code BroadcastConfirmer, BroadcastCanceller}.
+ * <p><b>Expone</b>: {@code BroadcastConfirmer, BroadcastCanceller, BroadcastRecipientCounts, BroadcastCompletionEstimator}.
  *
  * <p><b>No hacer</b>: enviar mensajes directamente ni saltear la máquina de estados.
  *
