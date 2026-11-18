@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -146,4 +147,10 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     @Query("select distinct e.student.person.id from SubjectSectionEnrollment e where e.status in :statuses and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
     java.util.List<Long> findStudentPersonIdsByStatusIn(java.util.Collection<EnrollmentStatus> statuses);
+
+    @Query("select distinct e.subjectSection.id from SubjectSectionEnrollment e where e.status = :waiting and e.subjectSection.term.enrollmentEnd < :now and (e.subjectSection.term.enrollmentOverride is null or e.subjectSection.term.enrollmentOverride <> com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.OPEN)")
+    List<Long> findWaitlistedQueueIdsPastEnrollmentEnd(@Param("now") LocalDateTime now, @Param("waiting") EnrollmentStatus waiting);
+
+    @Query("select e.id from SubjectSectionEnrollment e where e.status = :waiting and e.waitlistExpiryRemindedAt is null and e.subjectSection.term.enrollmentEnd > :now and e.subjectSection.term.enrollmentEnd <= :until and (e.subjectSection.term.enrollmentOverride is null or e.subjectSection.term.enrollmentOverride <> com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.CLOSED) order by e.id")
+    List<Long> findWaitlistedIdsToRemind(@Param("now") LocalDateTime now, @Param("until") LocalDateTime until, @Param("waiting") EnrollmentStatus waiting);
 }

@@ -1,0 +1,7 @@
+{
+  "board_label": "cell:board",
+  "board_title": "Tablero de la célula",
+  "follow_up_issues": [964],
+  "stale_minutes": 30,
+  "merged_window_hours": 2
+}

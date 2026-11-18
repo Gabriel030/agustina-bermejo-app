@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -92,11 +93,13 @@ class IdentityEmailDispatcherRecipientTest {
         when(personRepository.findById(7L)).thenReturn(Optional.of(person));
 
         dispatcher.onEmailChangeRequested(EmailChangeRequestedEvent.requestedFor(7L, "anterior@example.com",
-                "nuevo@example.com", "https://example.test/verificar-email?token=abc"));
+                "nuevo@example.com", "https://example.test/verificar-email?token=abc",
+                "https://example.test/cancelar-cambio-email?token=def"));
 
         verify(emailService).sendEmailChangeVerification("Ana", "nuevo@example.com",
                 "https://example.test/verificar-email?token=abc");
-        verify(emailService).sendEmailChangeNotice("Ana", "anterior@example.com", "nuevo@example.com");
+        verify(emailService).sendEmailChangeNotice("Ana", "anterior@example.com", "nuevo@example.com",
+                "https://example.test/cancelar-cambio-email?token=def");
     }
 
     private MailRecipient recipientFor(String name, String username, String email) {
@@ -113,5 +116,37 @@ class IdentityEmailDispatcherRecipientTest {
         ArgumentCaptor<MailRecipient> captor = ArgumentCaptor.forClass(MailRecipient.class);
         verify(emailService).sendPasswordResetCode(captor.capture(), org.mockito.ArgumentMatchers.eq("Instituto Norte"), org.mockito.ArgumentMatchers.eq("123456"));
         return captor.getValue();
+    }
+
+    @Test
+    void emailChangeSendsVerificationToNewAddressAndCancellationToPreviousAddress() {
+        Person person = mock(Person.class);
+        when(person.getName()).thenReturn("Ana");
+        when(personRepository.findById(5L)).thenReturn(Optional.of(person));
+
+        dispatcher.onEmailChangeRequested(new EmailChangeRequestedEvent(UUID.randomUUID(), "corr", Instant.now(), 5L,
+                "old@example.com", "new@example.com", "https://app.test/verificar-email?token=v",
+                "https://app.test/cancelar-cambio-email?token=c"));
+
+        verify(emailService).sendEmailChangeVerification("Ana", "new@example.com",
+                "https://app.test/verificar-email?token=v");
+        verify(emailService).sendEmailChangeNotice("Ana", "old@example.com", "new@example.com",
+                "https://app.test/cancelar-cambio-email?token=c");
+        verifyNoMoreInteractions(emailService);
+    }
+
+    @Test
+    void emailChangeWithoutPreviousAddressSendsNoCancellationLink() {
+        Person person = mock(Person.class);
+        when(person.getName()).thenReturn("Ana");
+        when(personRepository.findById(6L)).thenReturn(Optional.of(person));
+
+        dispatcher.onEmailChangeRequested(new EmailChangeRequestedEvent(UUID.randomUUID(), "corr", Instant.now(), 6L,
+                null, "new@example.com", "https://app.test/verificar-email?token=v",
+                "https://app.test/cancelar-cambio-email?token=c"));
+
+        verify(emailService).sendEmailChangeVerification("Ana", "new@example.com",
+                "https://app.test/verificar-email?token=v");
+        verifyNoMoreInteractions(emailService);
     }
 }

@@ -20,10 +20,10 @@ const queues = [
 function renderList() {
   return renderWithProviders(
     <Routes>
-      <Route path="/preceptor/listas-de-espera" element={<ListasDeEspera />} />
-      <Route path="/preceptor/listas-de-espera/:kind/:id" element={<div>Detalle de la lista</div>} />
+      <Route path="/preceptor/inscripciones/listas-de-espera" element={<ListasDeEspera />} />
+      <Route path="/preceptor/inscripciones/listas-de-espera/:kind/:id" element={<div>Detalle de la lista</div>} />
     </Routes>,
-    { route: '/preceptor/listas-de-espera' },
+    { route: '/preceptor/inscripciones/listas-de-espera' },
   );
 }
 
