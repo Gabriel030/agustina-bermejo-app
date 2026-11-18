@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRecipient, Long> {
@@ -27,6 +28,10 @@ public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRec
     int anonymizeByBroadcastId(@Param("broadcastId") Long broadcastId, @Param("now") Instant now);
 
     long countByBroadcastId(Long broadcastId);
+
+    long countByBroadcastIdAndStatusIn(Long broadcastId, Collection<BroadcastRecipientStatus> statuses);
+
+    Optional<BroadcastRecipient> findByDeliveryId(Long deliveryId);
 
     List<BroadcastRecipient> findByBroadcastIdAndStatusIn(Long broadcastId, Collection<BroadcastRecipientStatus> statuses);
 

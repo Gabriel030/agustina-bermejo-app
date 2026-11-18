@@ -29,8 +29,15 @@ public class GetBroadcastService implements GetBroadcastUseCase {
         for (BroadcastRecipientStatus status : BroadcastRecipientStatus.values()) {
             counts.put(status, 0L);
         }
-        for (RecipientStatusCount count : recipientRepository.countByStatus(broadcastId)) {
-            counts.put(count.status(), count.total());
+        if (broadcast.hasFrozenTotals()) {
+            counts.put(BroadcastRecipientStatus.SENT, broadcast.getSentTotal().longValue());
+            counts.put(BroadcastRecipientStatus.FAILED, broadcast.getFailedTotal().longValue());
+            counts.put(BroadcastRecipientStatus.EXCLUDED, broadcast.getExcludedTotal().longValue());
+            counts.put(BroadcastRecipientStatus.SKIPPED, broadcast.getDiscardedTotal().longValue());
+        } else {
+            for (RecipientStatusCount count : recipientRepository.countByStatus(broadcastId)) {
+                counts.put(count.status(), count.total());
+            }
         }
         return BroadcastDetailResponse.from(broadcast, counts);
     }

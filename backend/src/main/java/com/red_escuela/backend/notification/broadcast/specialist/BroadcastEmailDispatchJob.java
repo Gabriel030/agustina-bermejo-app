@@ -31,16 +31,18 @@ public class BroadcastEmailDispatchJob {
     private final NotificationDeliveryRepository deliveryRepository;
     private final EmailDeliveryChannel emailChannel;
     private final BroadcastConsentRecheck consentRecheck;
+    private final BroadcastProgressTracker progressTracker;
     private final BroadcastDispatchSettings settings;
     private final Clock clock;
     private final ScheduledJobFailureCounter failureCounter;
 
     public BroadcastEmailDispatchJob(NotificationDeliveryRepository deliveryRepository, EmailDeliveryChannel emailChannel,
-                                     BroadcastConsentRecheck consentRecheck, BroadcastDispatchSettings settings, Clock clock,
-                                     MeterRegistry meterRegistry) {
+                                     BroadcastConsentRecheck consentRecheck, BroadcastProgressTracker progressTracker,
+                                     BroadcastDispatchSettings settings, Clock clock, MeterRegistry meterRegistry) {
         this.deliveryRepository = deliveryRepository;
         this.emailChannel = emailChannel;
         this.consentRecheck = consentRecheck;
+        this.progressTracker = progressTracker;
         this.settings = settings;
         this.clock = clock;
         this.failureCounter = new ScheduledJobFailureCounter(meterRegistry);
@@ -83,6 +85,22 @@ public class BroadcastEmailDispatchJob {
     }
 
     private boolean dispatchOne(Long id) {
+        syncProgress(id);
+        boolean attempted = attemptDelivery(id);
+        syncProgress(id);
+        return attempted;
+    }
+
+    private void syncProgress(Long id) {
+        try {
+            progressTracker.syncDelivery(id);
+        } catch (RuntimeException failure) {
+            failureCounter.record("BroadcastEmailDispatchJob", failure);
+            log.warn("Fallo la actualizacion del avance del envio masivo para la entrega {} causa={}", id, failure.getClass().getSimpleName());
+        }
+    }
+
+    private boolean attemptDelivery(Long id) {
         try {
             if (consentRecheck.suppressIfConsentWithdrawn(id)) {
                 return false;

@@ -61,6 +61,20 @@ public class BroadcastRecipient {
         updatedAt = now;
     }
 
+    public boolean isAwaitingDelivery() {
+        return status == BroadcastRecipientStatus.QUEUED;
+    }
+
+    public void markSent(Instant now) {
+        status = BroadcastRecipientStatus.SENT;
+        updatedAt = now;
+    }
+
+    public void markFailed(Instant now) {
+        status = BroadcastRecipientStatus.FAILED;
+        updatedAt = now;
+    }
+
     public void markSkipped(Instant now) {
         status = BroadcastRecipientStatus.SKIPPED;
         updatedAt = now;
