@@ -86,7 +86,7 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
                    e.enrollmentDate as joinedAt, e.waitlistPrioritizedAt as prioritizedAt
             from CourseEnrollment e join e.student st join st.person p
             where e.course.id = :courseId and e.status = :waiting
-            order by e.waitlistPrioritizedAt asc nulls last, e.enrollmentDate asc, e.id asc
+            order by e.waitlistPrioritizedAt desc nulls last, e.enrollmentDate asc, e.id asc
             """)
     List<WaitlistEntryRow> findWaitlistEntryRows(@Param("courseId") Long courseId, @Param("waiting") EnrollmentStatus waiting);
 

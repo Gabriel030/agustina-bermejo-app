@@ -4,7 +4,9 @@ import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
 import com.red_escuela.backend.enrollment.dto.WaitlistKind;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.CourseWaitlistQueueRow;
 import com.red_escuela.backend.enrollment.repository.WaitlistEnrollmentStudentRow;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Optional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,8 +28,17 @@ public class CourseWaitlistQueue implements WaitlistQueue {
 
     private final CourseEnrollmentRepository repository;
     private final CourseCatalogFinder courseCatalogFinder;
+    private final CourseSubjectSectionEnrollmentRepository sectionEnrollmentRepository;
+    private final CourseEnrollmentApplicationRepository applicationRepository;
+    private final AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder;
 
-    public CourseWaitlistQueue(CourseEnrollmentRepository repository, CourseCatalogFinder courseCatalogFinder) {
+    public CourseWaitlistQueue(CourseEnrollmentRepository repository, CourseCatalogFinder courseCatalogFinder,
+                               CourseSubjectSectionEnrollmentRepository sectionEnrollmentRepository,
+                               CourseEnrollmentApplicationRepository applicationRepository,
+                               AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder) {
+        this.sectionEnrollmentRepository = sectionEnrollmentRepository;
+        this.applicationRepository = applicationRepository;
+        this.admissionInvoiceReceiptFinder = admissionInvoiceReceiptFinder;
         this.repository = repository;
         this.courseCatalogFinder = courseCatalogFinder;
     }
@@ -85,5 +98,37 @@ public class CourseWaitlistQueue implements WaitlistQueue {
         CourseEnrollment next = repository.findById(enrollmentId).orElseThrow();
         next.setStatus(EnrollmentStatus.ENROLLED);
         repository.save(next);
+    }
+
+    @Override
+    public Optional<WaitlistEntryOwner> findOwner(Long enrollmentId) {
+        return repository.findById(enrollmentId)
+                .map(e -> new WaitlistEntryOwner(e.getCourse().getId(), e.getStudent().getPerson().getId()));
+    }
+
+    @Override
+    public void markPrioritized(Long enrollmentId, LocalDateTime at) {
+        CourseEnrollment entry = repository.findById(enrollmentId).orElseThrow();
+        entry.setWaitlistPrioritizedAt(at);
+        repository.save(entry);
+    }
+
+    @Override
+    public void remove(Long enrollmentId) {
+        CourseEnrollment entry = repository.findById(enrollmentId).orElseThrow();
+        entry.setStatus(EnrollmentStatus.WITHDRAWN);
+        repository.save(entry);
+        sectionEnrollmentRepository.findByCourseEnrollmentId(enrollmentId).stream()
+                .filter(sub -> sub.getStatus() == EnrollmentStatus.WAITLISTED)
+                .forEach(sub -> {
+                    sub.setStatus(EnrollmentStatus.WITHDRAWN);
+                    sectionEnrollmentRepository.save(sub);
+                });
+    }
+
+    @Override
+    public boolean hasReceiptBlockingRemoval(Long enrollmentId) {
+        return applicationRepository.findInvoiceIdsByCourseEnrollmentId(enrollmentId).stream()
+                .anyMatch(admissionInvoiceReceiptFinder::isLatestReceiptPendingReviewOrApproved);
     }
 }
