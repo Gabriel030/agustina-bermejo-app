@@ -6,16 +6,16 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 
-final class AudienceFreezeFixtures {
+public final class AudienceFreezeFixtures {
 
     private AudienceFreezeFixtures() {
     }
 
-    static Person person(EntityManager entityManager, RoleRepository roleRepository, String username, boolean emailVerified, String... roles) {
+    public static Person person(EntityManager entityManager, RoleRepository roleRepository, String username, boolean emailVerified, String... roles) {
         return personWithPhone(entityManager, roleRepository, username, emailVerified, null, roles);
     }
 
-    static Person personWithPhone(EntityManager entityManager, RoleRepository roleRepository, String username, boolean emailVerified,
+    public static Person personWithPhone(EntityManager entityManager, RoleRepository roleRepository, String username, boolean emailVerified,
                                   String phoneNumber, String... roles) {
         Address address = new Address();
         entityManager.persist(address);
