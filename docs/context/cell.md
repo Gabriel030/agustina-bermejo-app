@@ -65,6 +65,31 @@ Viven acá y en las fichas de `.claude/agents/`, no en la memoria local de ningu
 5. **Contrato.** `contract-break-approved` solo con diff aditivo listado en el cuerpo del PR; un filtro que pasa de valor único a lista se considera aditivo.
 6. **Rol del coordinador.** Es el único que escribe en el vault de Obsidian privado (repo `Gabriel030/agustina-bermejo-vault`, vía el agente `obsidian-dev`). No guarda en memoria local reglas que deban valer para otras sesiones: van a estos archivos.
 
+## Matriz de avisos y pedido de worker
+
+Canal único y confiable: comentario en el Issue de la tarea. El mensaje directo entre sesiones es de una vía y puede no leerse: acelera, nunca reemplaza al comentario.
+
+**Cómo pedir un worker** (lo pide el líder; solo Gabriel puede abrir sesiones nuevas en la nube):
+1. Comentar en el Issue `NECESITO WORKER #<PR o Issue>` con cinco datos: rama, qué hacer (una frase), áreas o archivos, criterio de listo (checks que deben quedar verdes) y tope (90k tokens / 30 minutos).
+2. Avisar al coordinador por mensaje. El coordinador responde en el mismo turno pegándole a Gabriel el prompt completo, con `Nombre de la sesión: <nombre>` en la primera línea, en un bloque de código.
+3. Si el worker existente tiene menos del 50 % de contexto y presupuesto, se lo reutiliza con un mensaje y no se abre otro.
+4. Si pasan 6 minutos sin `ARRANQUE` del worker, el líder escribe `PEDIDO DE REPORTE`.
+
+**Quién avisa a quién y cuándo:**
+
+| Quién | A quién | Cuándo | Cómo |
+|---|---|---|---|
+| Worker | Líder | Al empezar (10 min), en cada hito, al terminar, al trabarse | Issue: `ARRANQUE`, `TERMINÉ`, `BLOQUEADO` + motivo |
+| Worker | Líder | Antes de cada push | Local: chequeo de contrato, tests afectados y `ModularityTest`; no se pushea con algo conocido en rojo |
+| Líder | Worker | PR rojo o `DIRTY` | Mensaje con la lista completa de lo que falla (no de a uno) y comentario en el Issue |
+| Líder | Coordinador | Necesita worker o decisión de Gabriel | `NECESITO WORKER #N` / `NECESITO DECISIÓN` |
+| Líder | Todos | Merge con migración | `MIGRACIÓN V<n> EN MERGE`, después `MERGEADO V<n>` en el Issue de relevo |
+| Líder | Todos | PR `clean` | Mergea o activa auto-merge en el mismo turno (máximo 6 minutos) |
+| Coordinador | Líder | PR `clean` o `CORREGIDO` | Mensaje y comentario en el mismo turno |
+| Coordinador | Gabriel | Algo que solo él puede hacer | Prompt completo en bloque de código |
+
+**Sin avance, escalar (regla de Gabriel, 18-nov):** ninguna tarea abierta puede pasar 30 minutos sin un avance observable (push, merge o comentario con novedad). A los 6 minutos sin respuesta el dueño reclama con `PEDIDO DE REPORTE`; a los 15 el coordinador le pega a Gabriel el prompt para despertar a la sesión; a los 30 se reasigna a un worker fresco (`NECESITO WORKER #N`). Cada escalón queda comentado en el Issue.
+
 ## Protocolo de reporte
 
 1. **Reportar.** Toda sesión (líder o worker) cierra cada turno con un comentario `REPORTE` en el Issue de su tarea, formato fijo de 4 líneas: `HECHO` (con PR/commit/hora UTC), `ESPERA` (qué y de quién: CI, worker, decisión, merge), `SIGUIENTE` (acción concreta) y `BLOQUEOS`. Un líder no cierra turno si queda un PR `clean` sin acción (mergea, activa auto-merge o pide worker); un PR `clean` sin acción no puede quedar más de 6 minutos.

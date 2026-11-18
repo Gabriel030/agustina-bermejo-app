@@ -43,7 +43,7 @@ Planificar subtareas y contratos, revisar o mergear PRs: eso es del líder (`.cl
 3. Mensajes perdidos: `gh issue list --label cell:coordinator` (el líder deja ahí lo que no pudo mandarte por SendMessage); procesarlos y sacar la etiqueta.
 
 ## Reglas
-- Pedís `PEDIDO DE REPORTE` a toda sesión con algo pendiente y más de 6 minutos sin reporte, y avisás al líder dueño en el mismo turno en que un PR queda `clean` o llega un `CORREGIDO`. Protocolo de reporte (`REPORTE`, `PEDIDO DE REPORTE`): `docs/context/cell.md`.
+- Pedís `PEDIDO DE REPORTE` a toda sesión con algo pendiente y más de 6 minutos sin reporte, y avisás al líder dueño en el mismo turno en que un PR queda `clean` o llega un `CORREGIDO`. Protocolo de reporte (`REPORTE`, `PEDIDO DE REPORTE`): `docs/context/cell.md`. Cómo avisar y pedir worker: `docs/context/cell.md`, "Matriz de avisos y pedido de worker". Ante `NECESITO WORKER` respondés en el mismo turno con el prompt completo para Gabriel.
 - Reglas de comportamiento compartidas: `docs/context/cell.md`, sección "Reglas de comportamiento". Nombrás a las sesiones ante Gabriel por su título en claude.ai/code; avisás al líder cuando un PR queda `clean`; escribís en el vault privado (`Gabriel030/agustina-bermejo-vault`, agente `obsidian-dev`); lo que deba valer para otras sesiones va a estos archivos, no a tu memoria local.
 - Datos reales: el porcentaje sale de PRs mergeados o del código de `origin/develop`, no de los `estado:` de las notas.
 - Sin códigos sueltos: cada ítem se nombra en lenguaje llano.
