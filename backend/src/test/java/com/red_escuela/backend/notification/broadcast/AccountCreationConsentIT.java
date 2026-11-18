@@ -159,36 +159,90 @@ class AccountCreationConsentIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void firstLoginConsentUsesAccountCreationSourceOnlyOnce() throws Exception {
-        Person person = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "first-login-consent");
-        String body = "{\"channel\":\"EMAIL\",\"category\":\"INSTITUTIONAL\",\"granted\":true,\"source\":\"ACCOUNT_CREATION\"}";
+    void accountCreationSourceIsInternalAndRejectedOnUpdate() throws Exception {
+        Person person = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "first-login-source");
 
         mockMvc.perform(put("/me/contact-consents").header("Authorization", bearer(person))
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.hasRecord").value(true));
-        assertThat(jdbc.queryForObject("select source from contact_consent where person_id = ? and channel = 'EMAIL'",
-                String.class, person.getId())).isEqualTo("ACCOUNT_CREATION");
-
-        mockMvc.perform(put("/me/contact-consents").header("Authorization", bearer(person))
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CONTACT_CONSENT_ALREADY_RECORDED"));
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"channel\":\"EMAIL\",\"category\":\"INSTITUTIONAL\",\"granted\":true,\"source\":\"ACCOUNT_CREATION\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CONSENT_SOURCE_NOT_ACCEPTED"));
+        assertThat(jdbc.queryForObject("select count(*) from contact_consent where person_id = ?", Integer.class, person.getId())).isZero();
     }
 
     @Test
-    void foreignSourcesAndDisabledPromotionalAreRejectedOnUpdate() throws Exception {
+    void foreignSourcesAreRejectedOnUpdate() throws Exception {
         Person person = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "first-login-rejects");
 
         mockMvc.perform(put("/me/contact-consents").header("Authorization", bearer(person))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"channel\":\"EMAIL\",\"category\":\"INSTITUTIONAL\",\"granted\":true,\"source\":\"STAFF_ON_BEHALF\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CONSENT_SOURCE_NOT_ACCEPTED"));
+        assertThat(jdbc.queryForObject("select count(*) from contact_consent where person_id = ?", Integer.class, person.getId())).isZero();
+    }
+
+    @Test
+    void updateWithoutSourceRecordsProfileConsent() throws Exception {
+        Person person = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "update-without-source");
+
         mockMvc.perform(put("/me/contact-consents").header("Authorization", bearer(person))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"channel\":\"EMAIL\",\"category\":\"PROMOTIONAL\",\"granted\":true,\"source\":\"ACCOUNT_CREATION\"}"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("PROMOTIONAL_CONSENT_DISABLED"));
-        assertThat(jdbc.queryForObject("select count(*) from contact_consent where person_id = ?", Integer.class, person.getId())).isZero();
+                        .content("{\"channel\":\"EMAIL\",\"category\":\"INSTITUTIONAL\",\"granted\":false}"))
+                .andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("select source from contact_consent where person_id = ? and channel = 'EMAIL'",
+                String.class, person.getId())).isEqualTo("PROFILE");
+    }
+
+    @Test
+    void institutionalCategoryInContactConsentsIsRejected() throws Exception {
+        Long institutionId = institutionId();
+
+        for (String granted : new String[] {"true", "false"}) {
+            String suffix = "institutional" + granted;
+            mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+                            .content(registration(suffix, institutionId, "[{\"category\":\"INSTITUTIONAL\",\"granted\":" + granted + "}]")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("CONSENT_CATEGORY_NOT_OPTIONAL"));
+            assertThat(consentRows(suffix)).isZero();
+        }
+    }
+
+    @Test
+    void repeatedCategoryInContactConsentsIsRejected() throws Exception {
+        mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content(registration("repeated", institutionId(),
+                                "[{\"category\":\"PROMOTIONAL\",\"granted\":false},{\"category\":\"PROMOTIONAL\",\"granted\":false}]")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CONSENT_CATEGORY_REPEATED"));
+        assertThat(consentRows("repeated")).isZero();
+    }
+
+    @Test
+    void oldClientWithoutInstitutionalNoticesFieldIsRejectedEvenWithNewsletter() throws Exception {
+        Long institutionId = institutionId();
+        String withoutNotices = registration("old-client", institutionId, null, null)
+                .replace("\"birthDate\":\"2000-01-15\"", "\"birthDate\":\"2000-01-15\",\"acceptedNewsletter\":true");
+
+        mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(withoutNotices))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("LEGAL_ACCEPTANCE_REQUIRED"));
+        assertThat(consentRows("old-client")).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from person where username = ?", Integer.class, "consent.old-client")).isZero();
+    }
+
+    @Test
+    void newClientWithNewsletterAndInstitutionalNoticesRecordsBoth() throws Exception {
+        String withBoth = registration("new-client", institutionId(), null)
+                .replace("\"birthDate\":\"2000-01-15\"", "\"birthDate\":\"2000-01-15\",\"acceptedNewsletter\":true");
+
+        mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(withBoth))
+                .andExpect(status().isCreated());
+
+        assertThat(consentRows("new-client")).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select n.opted_in from newsletter_preference n join person p on p.id = n.person_id where p.username = ?",
+                Boolean.class, "consent.new-client")).isTrue();
+        assertThat(jdbc.queryForObject("select count(*) from contact_consent c join person p on p.id = c.person_id where p.username = ? and c.category = 'PROMOTIONAL'",
+                Integer.class, "consent.new-client")).isZero();
     }
 }

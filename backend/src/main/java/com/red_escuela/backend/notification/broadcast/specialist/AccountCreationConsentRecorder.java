@@ -5,12 +5,13 @@ import com.red_escuela.backend.identity.api.AccountCreationConsentPort;
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.ConsentChannel;
 import com.red_escuela.backend.notification.broadcast.domain.ConsentSource;
+import com.red_escuela.backend.notification.broadcast.exception.ConsentCategoryRepeatedException;
 import com.red_escuela.backend.notification.broadcast.exception.ConsentCategoryNotOptionalException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,22 +30,28 @@ public class AccountCreationConsentRecorder implements AccountCreationConsentPor
     @Override
     @Transactional
     public void recordAccountCreationConsents(Long personId, List<AccountCreationConsentChoice> choices) {
-        if (choices == null || choices.isEmpty()) {
-            return;
-        }
-        Set<BroadcastCategory> seen = new HashSet<>();
-        for (AccountCreationConsentChoice choice : choices) {
-            BroadcastCategory category = optionalCategory(choice.category());
+        List<AccountCreationConsentChoice> optionalChoices = choices == null ? List.of() : choices;
+        Set<BroadcastCategory> seen = EnumSet.noneOf(BroadcastCategory.class);
+        for (AccountCreationConsentChoice choice : optionalChoices) {
+            BroadcastCategory category = knownCategory(choice.category());
+            if (category == BroadcastCategory.INSTITUTIONAL) {
+                throw new ConsentCategoryNotOptionalException(choice.category());
+            }
             if (!seen.add(category)) {
-                throw new IllegalArgumentException("Duplicate consent category " + category);
+                throw new ConsentCategoryRepeatedException(choice.category());
             }
             promotionalConsentSettings.requireAllowed(category, choice.granted());
         }
-        choices.forEach(choice -> contactConsentLedger.recordConsent(personId, ConsentChannel.EMAIL,
-                optionalCategory(choice.category()), choice.granted(), ConsentSource.ACCOUNT_CREATION, null));
+        record(personId, BroadcastCategory.INSTITUTIONAL, true);
+        optionalChoices.forEach(choice -> record(personId, knownCategory(choice.category()), choice.granted()));
     }
 
-    private static BroadcastCategory optionalCategory(String category) {
+    private void record(Long personId, BroadcastCategory category, boolean granted) {
+        contactConsentLedger.recordConsent(personId, ConsentChannel.EMAIL, category, granted,
+                ConsentSource.ACCOUNT_CREATION, null);
+    }
+
+    private static BroadcastCategory knownCategory(String category) {
         return Arrays.stream(BroadcastCategory.values())
                 .filter(candidate -> candidate.name().equals(category))
                 .findFirst()

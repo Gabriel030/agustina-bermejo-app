@@ -78,12 +78,12 @@ class LegalAcceptanceControllerTest extends AbstractIntegrationTest {
 
     private RegisterRequest registration(String suffix, Long institutionId, Boolean terms, Boolean privacy) {
         return new RegisterRequest("Sofía", "Ramírez", "legal." + suffix + "@example.com", "legal." + suffix,
-                "Test1234", institutionId, terms, privacy, LocalDate.of(2000, 1, 15), null, null, null, null);
+                "Test1234", institutionId, terms, privacy, LocalDate.of(2000, 1, 15), null, null, null, null, true, null);
     }
 
     private RegisterRequest minorRegistration(String suffix, Long institutionId, String guardianName, String guardianEmail) {
         return new RegisterRequest("Lucía", "Gómez", "legal." + suffix + "@example.com", "legal." + suffix,
-                "Test1234", institutionId, true, true, LocalDate.of(2012, 5, 14), guardianName, guardianEmail, "Madre", null);
+                "Test1234", institutionId, true, true, LocalDate.of(2012, 5, 14), guardianName, guardianEmail, "Madre", null, true, null);
     }
 
     private String guardianToken(ApplicationEvents events) {
@@ -264,7 +264,7 @@ class LegalAcceptanceControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MINOR_GUARDIAN_REQUIRED"));
         RegisterRequest noBirthDate = new RegisterRequest("Ana", "Perez", "legal.nobd@example.com", "legal.nobd", "Test1234",
-                institutionId, true, true, null, null, null, null, null);
+                institutionId, true, true, null, null, null, null, null, true, null);
         mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(noBirthDate)))
                 .andExpect(status().isBadRequest())
@@ -355,7 +355,7 @@ class LegalAcceptanceControllerTest extends AbstractIntegrationTest {
         Long institutionId = persistInstitution();
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 13, 10, 0));
         RegisterRequest request = new RegisterRequest("Sofía", "Ramírez", "legal.news@example.com", "legal.news", "Test1234",
-                institutionId, true, true, LocalDate.of(2000, 1, 15), null, null, null, true);
+                institutionId, true, true, LocalDate.of(2000, 1, 15), null, null, null, true, true, null);
         String token = registerAndGetToken(request);
 
         mockMvc.perform(get("/me/newsletter-preference").header("Authorization", "Bearer " + token))

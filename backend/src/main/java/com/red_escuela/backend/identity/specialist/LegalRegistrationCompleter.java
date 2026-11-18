@@ -58,7 +58,7 @@ public class LegalRegistrationCompleter {
         if (request.acceptedNewsletter() != null) {
             newsletterPreferenceRepository.upsert(person.getId(), request.acceptedNewsletter(), LocalDateTime.now(clock));
         }
-        accountCreationConsentPort.recordAccountCreationConsents(person.getId(), request.accountCreationConsentChoices());
+        accountCreationConsentPort.recordAccountCreationConsents(person.getId(), request.contactConsents());
         if (legalMinorChecker.isMinor(request.birthDate())) {
             guardianConfirmationIssuer.issue(person, request.guardianName(), request.guardianEmail(), request.guardianRelationship());
         } else {

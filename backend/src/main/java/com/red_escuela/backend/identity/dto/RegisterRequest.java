@@ -10,7 +10,6 @@ import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 public record RegisterRequest(
@@ -29,17 +28,4 @@ public record RegisterRequest(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Boolean acceptedNewsletter,
         Boolean acceptedInstitutionalNotices,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) @Valid List<@NotNull @Valid AccountCreationConsentChoice> contactConsents) {
-
-    public RegisterRequest(String nombre, String apellido, String email, String username, String password, Long institutionId,
-                           Boolean acceptedTerms, Boolean acceptedPrivacy, LocalDate birthDate, String guardianName,
-                           String guardianEmail, String guardianRelationship, Boolean acceptedNewsletter) {
-        this(nombre, apellido, email, username, password, institutionId, acceptedTerms, acceptedPrivacy, birthDate,
-                guardianName, guardianEmail, guardianRelationship, acceptedNewsletter, true, null);
-    }
-
-    public List<AccountCreationConsentChoice> accountCreationConsentChoices() {
-        List<AccountCreationConsentChoice> choices = new ArrayList<>(contactConsents == null ? List.of() : contactConsents);
-        choices.add(new AccountCreationConsentChoice("INSTITUTIONAL", true));
-        return choices;
-    }
 }

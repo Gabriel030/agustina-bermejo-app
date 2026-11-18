@@ -13812,7 +13812,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "category", "channel", "granted", "source" ],
+        "required" : [ "category", "channel", "granted" ],
         "type" : "object"
       },
       "UpdateCourseRequest" : {

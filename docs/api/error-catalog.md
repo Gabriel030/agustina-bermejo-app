@@ -77,6 +77,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CIRCULAR_PREREQUISITE` | no | `CircularPrerequisiteException` | academicstructure |
 | `CLASS_ON_HOLIDAY` | no | `ClassOnHolidayException` | attendance |
 | `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
+| `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
+| `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
 | `CREDIT_NOTE_JUSTIFICATION_REQUIRED` | no | `CreditNoteJustificationRequiredException` | billing |
 | `CREDIT_NOTE_LINES_INVALID` | no | `CreditNoteLinesInvalidException` | billing |
 | `CURRENCY_MISMATCH` | no | `CurrencyMismatchException` | billing |
@@ -399,7 +401,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | billing |
 | `COHORT_PROMOTION_ALREADY_ACQUIRED` | no | `CohortPromotionAlreadyAcquiredException` | billing |
 | `CONCURRENT_REGULAR_CERTIFICATE_ISSUE` | no | `ConcurrentRegularCertificateIssueException` | graduation |
-| `CONTACT_CONSENT_ALREADY_RECORDED` | no | `ContactConsentAlreadyRecordedException` | notification |
 | `COREQUISITE_ALREADY_EXISTS` | no | `CorequisiteAlreadyExistsException` | academicstructure |
 | `COURSE_ADMISSION_ALREADY_CHARGED` | no | `CourseAdmissionAlreadyChargedException` | enrollment |
 | `COURSE_ADMISSION_CHARGE_REJECTED` | no | `CourseAdmissionChargeRejectedException` | enrollment |

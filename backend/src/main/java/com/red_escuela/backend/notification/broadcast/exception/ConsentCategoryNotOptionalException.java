@@ -5,6 +5,6 @@ import com.red_escuela.backend.shared.exception.BadRequestException;
 public class ConsentCategoryNotOptionalException extends BadRequestException {
 
     public ConsentCategoryNotOptionalException(String category) {
-        super("Consent category " + category + " is not optional");
+        super("Consent category " + category + " does not admit an optional consent");
     }
 }
