@@ -71,16 +71,55 @@ class AuditLogEndpointIT extends AuthorizationMatrixSupport {
     }
 
     @Test
-    void multipleActionsReturnTheUnionAndASingleActionBehavesAsBefore() throws Exception {
+    void repeatedActionParametersReturnTheUnion() throws Exception {
         mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_CREATED", "STAFF_REACTIVATED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void commaSeparatedActionsReturnTheUnion() throws Exception {
         mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_CREATED,STAFF_REACTIVATED,PASSWORD_CHANGED"))
                 .andExpect(jsonPath("$.totalElements").value(3));
+    }
+
+    @Test
+    void singleActionBehavesAsBefore() throws Exception {
         mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_WITHDRAWN"))
                 .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void missingActionDoesNotFilter() throws Exception {
         mockMvc.perform(directorGet("/audit-log")).andExpect(jsonPath("$.totalElements").value(6));
-        mockMvc.perform(directorGet("/audit-log").param("action", "NOT_AN_ACTION")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void emptyActionDoesNotFilter() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("action", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(6));
+    }
+
+    @Test
+    void trailingCommaInActionIsIgnored() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_WITHDRAWN,"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void duplicatedActionsDoNotDuplicateResults() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_WITHDRAWN", "STAFF_WITHDRAWN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void invalidActionReturns400WithTheParameterTypeCode() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("action", "NOT_AN_ACTION"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PARAMETER_TYPE"));
     }
 
     @Test
@@ -108,12 +147,12 @@ class AuditLogEndpointIT extends AuthorizationMatrixSupport {
     @Test
     void actorNameIsResolvedInOneQuery() throws Exception {
         long statementsForOneEntry = statementsFor(directorGet("/audit-log").param("size", "1"));
-        long statementsForFullPage = statementsFor(directorGet("/audit-log").param("size", "6"));
-        long statementsWithActions = statementsFor(directorGet("/audit-log").param("size", "6")
+        long statementsForFullPage = statementsFor(directorGet("/audit-log").param("size", "5"));
+        long statementsWithActions = statementsFor(directorGet("/audit-log").param("size", "5")
                 .param("action", "STAFF_WITHDRAWN", "STAFF_CREATED", "STAFF_REACTIVATED", "PASSWORD_CHANGED"));
 
         assertThat(statementsForFullPage).isEqualTo(statementsForOneEntry);
-        assertThat(statementsWithActions).isLessThanOrEqualTo(statementsForFullPage);
+        assertThat(statementsWithActions).isEqualTo(statementsForFullPage);
 
         mockMvc.perform(directorGet("/audit-log").param("actorPersonId", String.valueOf(directorId)))
                 .andExpect(jsonPath("$.items[0].actorName").value("Matriz DIRECTOR"));
