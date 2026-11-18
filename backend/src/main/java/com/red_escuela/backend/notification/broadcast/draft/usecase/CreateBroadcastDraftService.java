@@ -8,6 +8,7 @@ import com.red_escuela.backend.notification.broadcast.audience.exception.Segment
 import com.red_escuela.backend.notification.broadcast.audience.specialist.SegmentResolver;
 import com.red_escuela.backend.notification.broadcast.draft.dto.BroadcastDraftResponse;
 import com.red_escuela.backend.notification.broadcast.draft.dto.CreateBroadcastDraftRequest;
+import com.red_escuela.backend.notification.broadcast.specialist.BroadcastChannelGate;
 import com.red_escuela.backend.notification.broadcast.draft.service.CreateBroadcastDraftTransaction;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -21,17 +22,21 @@ public class CreateBroadcastDraftService implements CreateBroadcastDraftUseCase 
     private final CurrentActorFinder currentActorFinder;
     private final ObjectMapper objectMapper;
     private final CreateBroadcastDraftTransaction transaction;
+    private final BroadcastChannelGate channelGate;
 
     public CreateBroadcastDraftService(SegmentResolver segmentResolver, CurrentActorFinder currentActorFinder,
-                                       ObjectMapper objectMapper, CreateBroadcastDraftTransaction transaction) {
+                                       ObjectMapper objectMapper, CreateBroadcastDraftTransaction transaction,
+                                       BroadcastChannelGate channelGate) {
         this.segmentResolver = segmentResolver;
         this.currentActorFinder = currentActorFinder;
         this.objectMapper = objectMapper;
         this.transaction = transaction;
+        this.channelGate = channelGate;
     }
 
     @Override
     public BroadcastDraftResponse createBroadcastDraft(CreateBroadcastDraftRequest request) {
+        channelGate.requireEnabled(request.channel());
         Set<?> available = segmentResolver.availableSegments().stream().map(descriptor -> descriptor.key()).collect(Collectors.toSet());
         for (SegmentCriterionRequest criterion : request.segmentSpec().criteria()) {
             if (!available.contains(criterion.key())) {

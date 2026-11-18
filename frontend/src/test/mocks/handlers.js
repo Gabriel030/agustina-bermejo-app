@@ -33,6 +33,7 @@ const personResponse = (overrides = {}) => ({
  */
 export const handlers = [
   http.get(`${API}/regular-certificate-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/graduation-requests`, () => HttpResponse.json([])),
   http.get(`${API}/regular-certificates`, () => HttpResponse.json([])),
   http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
   http.get(`${API}/institution/academic-settings`, () =>

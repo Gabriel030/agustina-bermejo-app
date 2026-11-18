@@ -9,6 +9,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   BILLING_MODE_NOT_OFF: 'La importación solo se puede hacer con la facturación apagada.',
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
   CHANNEL_NOT_AVAILABLE: 'El canal de envío no está disponible.',
+  CHANNEL_NOT_ENABLED: 'El canal de envío no está habilitado. El Director puede habilitarlo desde Configuración, en la sección Notificaciones.',
+  WHATSAPP_PROVIDER_NOT_CONFIGURED: 'El proveedor de WhatsApp todavía no está configurado, por eso no se puede habilitar el canal.',
   CONSENT_CATEGORY_NOT_OPTIONAL: 'Esa categoría de avisos no se elige al registrarse: no admite consentimiento.',
   CONSENT_CATEGORY_REPEATED: 'Elegiste dos veces la misma categoría de avisos.',
   CONSENT_SOURCE_NOT_ACCEPTED: 'Ese origen de consentimiento no se puede registrar desde acá.',
