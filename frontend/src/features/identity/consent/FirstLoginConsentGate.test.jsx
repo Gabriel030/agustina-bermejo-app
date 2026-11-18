@@ -72,7 +72,28 @@ describe('FirstLoginConsentGate', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(await screen.findByText('Contenido de la app')).toBeInTheDocument();
-    expect(captured.body).toEqual({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, source: 'ACCOUNT_CREATION' });
+    expect(captured.body).toEqual({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true });
+  });
+
+  it('records the consent against a backend that rejects any source other than profile', async () => {
+    server.use(
+      http.get(`${API}/me/contact-consents`, withoutRecord),
+      http.put(`${API}/me/contact-consents`, async ({ request }) => {
+        const body = await request.json();
+        if (body.source !== undefined && body.source !== 'PROFILE') {
+          return HttpResponse.json(errorBody('CONSENT_SOURCE_NOT_ACCEPTED'), { status: 400 });
+        }
+        return HttpResponse.json({ ...body, recordedAt: '2026-11-17T10:00:00Z', hasRecord: true });
+      }),
+    );
+    const user = userEvent.setup();
+    renderGate();
+
+    await user.click(await screen.findByRole('checkbox', { name: /avisos institucionales/i }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    expect(await screen.findByText('Contenido de la app')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('does not render the app content while the consents are loading', async () => {

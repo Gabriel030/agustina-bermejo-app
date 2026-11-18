@@ -34,7 +34,7 @@ export function FirstLoginConsentGate({ children }) {
   async function submit() {
     setSaveError(false);
     try {
-      await update.mutateAsync({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true, source: 'ACCOUNT_CREATION' });
+      await update.mutateAsync({ channel: 'EMAIL', category: 'INSTITUTIONAL', granted: true });
     } catch {
       setSaveError(true);
       requestAnimationFrame(() => errorRef.current?.focus());
