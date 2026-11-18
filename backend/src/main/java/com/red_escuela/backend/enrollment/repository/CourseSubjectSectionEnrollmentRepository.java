@@ -79,9 +79,9 @@ public interface CourseSubjectSectionEnrollmentRepository extends JpaRepository<
     @Query("select e.id as enrollmentId, e.student.id as studentId from CourseSubjectSectionEnrollment e where e.courseSubjectSection.id = :sectionId")
     List<WaitlistEnrollmentStudentRow> findWaitlistEnrollmentStudentRows(@Param("sectionId") Long sectionId);
 
-    @Query("select distinct e.courseSubjectSection.id from CourseSubjectSectionEnrollment e where e.status = :waiting and e.courseSubjectSection.term.enrollmentEnd < :now")
+    @Query("select distinct e.courseSubjectSection.id from CourseSubjectSectionEnrollment e where e.status = :waiting and e.courseSubjectSection.term.enrollmentEnd < :now and (e.courseSubjectSection.term.enrollmentOverride is null or e.courseSubjectSection.term.enrollmentOverride <> com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.OPEN)")
     List<Long> findWaitlistedQueueIdsPastEnrollmentEnd(@Param("now") LocalDateTime now, @Param("waiting") EnrollmentStatus waiting);
 
-    @Query("select e.id from CourseSubjectSectionEnrollment e where e.status = :waiting and e.waitlistExpiryRemindedAt is null and e.courseSubjectSection.term.enrollmentEnd > :now and e.courseSubjectSection.term.enrollmentEnd <= :until order by e.id")
+    @Query("select e.id from CourseSubjectSectionEnrollment e where e.status = :waiting and e.waitlistExpiryRemindedAt is null and e.courseSubjectSection.term.enrollmentEnd > :now and e.courseSubjectSection.term.enrollmentEnd <= :until and (e.courseSubjectSection.term.enrollmentOverride is null or e.courseSubjectSection.term.enrollmentOverride <> com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.CLOSED) order by e.id")
     List<Long> findWaitlistedIdsToRemind(@Param("now") LocalDateTime now, @Param("until") LocalDateTime until, @Param("waiting") EnrollmentStatus waiting);
 }

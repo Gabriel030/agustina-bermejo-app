@@ -45,11 +45,15 @@ public class SectionWaitlistExpiration {
     }
 
     @Transactional
-    public void expireProgramSection(Long sectionId) {
+    public void expireProgramSection(Long sectionId, LocalDateTime now) {
         WaitlistQueue queue = waitlistQueues.of(WaitlistKind.PROGRAM_SECTION);
         queue.lock(sectionId);
+        List<SubjectSectionEnrollment> waitlisted = programRepository.findBySubjectSectionIdAndStatusIn(sectionId, List.of(EnrollmentStatus.WAITLISTED));
+        if (waitlisted.isEmpty() || !waitlisted.get(0).getSubjectSection().getTerm().hasEnrollmentEndedAt(now)) {
+            return;
+        }
         String queueName = queueNameOf(queue, sectionId);
-        for (SubjectSectionEnrollment enrollment : programRepository.findBySubjectSectionIdAndStatusIn(sectionId, List.of(EnrollmentStatus.WAITLISTED))) {
+        for (SubjectSectionEnrollment enrollment : waitlisted) {
             enrollment.setStatus(EnrollmentStatus.WAITLIST_EXPIRED);
             programRepository.save(enrollment);
             recordExpiry(queue, enrollment.getId(), enrollment.getStudent().getPerson().getId(), queueName);
@@ -57,11 +61,15 @@ public class SectionWaitlistExpiration {
     }
 
     @Transactional
-    public void expireCourseSection(Long sectionId) {
+    public void expireCourseSection(Long sectionId, LocalDateTime now) {
         WaitlistQueue queue = waitlistQueues.of(WaitlistKind.COURSE_SECTION);
         queue.lock(sectionId);
+        List<CourseSubjectSectionEnrollment> waitlisted = courseSectionRepository.findByCourseSubjectSectionIdAndStatusIn(sectionId, List.of(EnrollmentStatus.WAITLISTED));
+        if (waitlisted.isEmpty() || !waitlisted.get(0).getCourseSubjectSection().getTerm().hasEnrollmentEndedAt(now)) {
+            return;
+        }
         String queueName = queueNameOf(queue, sectionId);
-        for (CourseSubjectSectionEnrollment enrollment : courseSectionRepository.findByCourseSubjectSectionIdAndStatusIn(sectionId, List.of(EnrollmentStatus.WAITLISTED))) {
+        for (CourseSubjectSectionEnrollment enrollment : waitlisted) {
             enrollment.setStatus(EnrollmentStatus.WAITLIST_EXPIRED);
             courseSectionRepository.save(enrollment);
             recordExpiry(queue, enrollment.getId(), enrollment.getStudent().getPerson().getId(), queueName);

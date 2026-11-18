@@ -12,7 +12,14 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
+import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
+import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.academicstructure.service.CapacityChangeEvents;
+import com.red_escuela.backend.academicstructure.service.CourseSectionService;
+import com.red_escuela.backend.academicstructure.service.CourseService;
+import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
+import com.red_escuela.backend.enrollment.events.WaitlistEntryExpiredEvent;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.WaitlistVerdict;
 import com.red_escuela.backend.enrollment.dto.WaitlistVerdictReason;
@@ -44,6 +51,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -73,6 +81,12 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
     private CourseWaitlistExpiration courseWaitlistExpiration;
     @Autowired
     private ApplicationEvents applicationEvents;
+    @Autowired
+    private CourseService courseService;
+    @Autowired
+    private SubjectSectionService subjectSectionService;
+    @Autowired
+    private CourseSectionService courseSectionService;
 
     @BeforeEach
     void everyoneIsEligibleByDefault() {
@@ -179,7 +193,9 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         moduleCourse.getTerm().setEnrollmentEnd(NOW.minusDays(1));
         CourseSubjectSection section = moduleSection(moduleCourse);
         CourseEnrollment parent = courseEnrollment(moduleCourse, EnrollmentStatus.ENROLLED, NOW.minusDays(10), null);
-        CourseSubjectSectionEnrollment moduleWaiting = moduleEnrollment(section, parent);
+        CourseSubjectSectionEnrollment moduleWaiting = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED);
+        SubjectSectionEnrollment programEnrolled = programEntry(programWaiting.getSubjectSection(), programWaiting.getProgramEnrollment().getProgram(), EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment moduleEnrolled = moduleEnrollment(section, parent, EnrollmentStatus.ENROLLED);
         entityManager.flush();
 
         new CourseEnrollmentWaitlistExpiryJob(courseCatalogFinder, courseWaitlistExpiration, FIXED_CLOCK).expireWaitlists();
@@ -190,6 +206,8 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         assertThat(statusOf(SubjectSectionEnrollment.class, programWaiting.getId())).isEqualTo(EnrollmentStatus.WAITLIST_EXPIRED);
         assertThat(statusOf(CourseEnrollment.class, courseWaiting.getId())).isEqualTo(EnrollmentStatus.WAITLIST_EXPIRED);
         assertThat(statusOf(CourseSubjectSectionEnrollment.class, moduleWaiting.getId())).isEqualTo(EnrollmentStatus.WAITLIST_EXPIRED);
+        assertThat(statusOf(SubjectSectionEnrollment.class, programEnrolled.getId())).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(statusOf(CourseSubjectSectionEnrollment.class, moduleEnrolled.getId())).isEqualTo(EnrollmentStatus.ENROLLED);
         Long audits = entityManager.createQuery("select count(a) from AuditLogEntry a where a.action = :action and a.entityId in :ids", Long.class)
                 .setParameter("action", com.red_escuela.backend.shared.audit.AuditAction.WAITLIST_EXPIRED)
                 .setParameter("ids", java.util.List.of(programWaiting.getId(), courseWaiting.getId(), moduleWaiting.getId()))
@@ -205,6 +223,193 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         new WaitlistExpiryJob(sectionExpiration, reminder, FIXED_CLOCK).expireSectionWaitlists();
 
         assertThat(programWaiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void courseUpdateRaisingCapacityPromotesTheOldestWaitingEntry() {
+        Course course = course(2071, 1);
+        courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW, null);
+        CourseEnrollment first = courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusDays(1), null);
+        CourseEnrollment second = courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusDays(2), null);
+        entityManager.flush();
+
+        courseService.update(course.getId(), new UpdateCourseRequest(null, null, 2, null, null, null, null, null));
+
+        assertThat(first.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(second.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void courseUpdateWithoutCapacityIncreaseDoesNotPromote() {
+        Course course = course(2072, 1);
+        courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW, null);
+        CourseEnrollment waiting = courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusDays(1), null);
+        entityManager.flush();
+
+        courseService.update(course.getId(), new UpdateCourseRequest("Otro nombre", null, null, null, null, null, null, null));
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void programSectionUpdateRaisingCapacityPromotesTheWaitingEntry() {
+        SubjectSectionEnrollment waiting = programWaiting(2073, NOW.plusDays(10));
+        SubjectSection section = waiting.getSubjectSection();
+        programEntry(section, waiting.getProgramEnrollment().getProgram(), EnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        subjectSectionService.update(section.getId(), new UpdateSectionRequest(null, null, 2, null));
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void courseSectionUpdateRaisingCapacityPromotesTheWaitingEntry() {
+        Course course = course(2074, 5);
+        CourseSubjectSection section = moduleSection(course);
+        CourseEnrollment parent = courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW.minusDays(10), null);
+        moduleEnrollment(section, parent, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment waiting = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED);
+        entityManager.flush();
+
+        courseSectionService.update(section.getId(), new UpdateSectionRequest(null, null, 2, null));
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void oneFreeSeatPromotesOnlyOneOfTwoCandidates() {
+        Course course = course(2075, 1);
+        courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW, null);
+        CourseEnrollment first = courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusDays(1), null);
+        CourseEnrollment second = courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusDays(2), null);
+        entityManager.flush();
+
+        course.setCapacity(2);
+        capacityChangeEvents.courseChanged(course.getId(), 1, 2);
+
+        assertThat(first.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(second.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void seatTakenByManualPromotionIsNotGivenAwayAgain() {
+        Course course = course(2076, 1);
+        courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW, null);
+        CourseEnrollment promotedManually = courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusDays(1), null);
+        CourseEnrollment waiting = courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusDays(2), null);
+        entityManager.flush();
+        promotedManually.setStatus(EnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        course.setCapacity(2);
+        capacityChangeEvents.courseChanged(course.getId(), 1, 2);
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void failureWhilePromotingPropagatesToTheCapacityUpdate() {
+        Course course = course(2077, 1);
+        courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW, null);
+        courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusDays(1), null);
+        entityManager.flush();
+        when(eligibility.evaluate(any())).thenThrow(new IllegalStateException("eligibility down"));
+
+        assertThatThrownBy(() -> courseService.update(course.getId(), new UpdateCourseRequest(null, null, 2, null, null, null, null, null)))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void expiryTwiceExpiresAndNotifiesOnlyOnce() {
+        SubjectSectionEnrollment waiting = programWaiting(2078, NOW.minusDays(1));
+        entityManager.flush();
+        WaitlistExpiryJob job = new WaitlistExpiryJob(sectionExpiration, reminder, FIXED_CLOCK);
+
+        job.expireSectionWaitlists();
+        entityManager.flush();
+        job.expireSectionWaitlists();
+        entityManager.flush();
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLIST_EXPIRED);
+        assertThat(applicationEvents.stream(WaitlistEntryExpiredEvent.class)
+                .filter(event -> event.enrollmentId().equals(waiting.getId()))).hasSize(1);
+        Long audits = entityManager.createQuery("select count(a) from AuditLogEntry a where a.action = :action and a.entityId = :id", Long.class)
+                .setParameter("action", com.red_escuela.backend.shared.audit.AuditAction.WAITLIST_EXPIRED)
+                .setParameter("id", waiting.getId())
+                .getSingleResult();
+        assertThat(audits).isEqualTo(1L);
+    }
+
+    @Test
+    void expiryKeepsEnrolledEntriesOfTheSameSection() {
+        SubjectSectionEnrollment waiting = programWaiting(2079, NOW.minusDays(1));
+        SubjectSectionEnrollment enrolled = programEntry(waiting.getSubjectSection(), waiting.getProgramEnrollment().getProgram(), EnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        new WaitlistExpiryJob(sectionExpiration, reminder, FIXED_CLOCK).expireSectionWaitlists();
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLIST_EXPIRED);
+        assertThat(enrolled.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void expiryDoesNotRunWhenEnrollmentIsForcedOpenAfterTheEndDate() {
+        SubjectSectionEnrollment waiting = programWaiting(2080, NOW.minusDays(1));
+        waiting.getSubjectSection().getTerm().setEnrollmentOverride(TermEnrollmentOverride.OPEN);
+        entityManager.flush();
+
+        new WaitlistExpiryJob(sectionExpiration, reminder, FIXED_CLOCK).expireSectionWaitlists();
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+        assertThat(applicationEvents.stream(WaitlistEntryExpiredEvent.class)).isEmpty();
+    }
+
+    @Test
+    void expiryStillRunsWhenEnrollmentIsForcedClosedAfterTheEndDate() {
+        SubjectSectionEnrollment waiting = programWaiting(2081, NOW.minusDays(1));
+        waiting.getSubjectSection().getTerm().setEnrollmentOverride(TermEnrollmentOverride.CLOSED);
+        entityManager.flush();
+
+        new WaitlistExpiryJob(sectionExpiration, reminder, FIXED_CLOCK).expireSectionWaitlists();
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLIST_EXPIRED);
+    }
+
+    @Test
+    void reminderIsNotSentWhenEnrollmentIsForcedClosed() {
+        SubjectSectionEnrollment waiting = programWaiting(2082, NOW.plusDays(2));
+        waiting.getSubjectSection().getTerm().setEnrollmentOverride(TermEnrollmentOverride.CLOSED);
+        entityManager.flush();
+
+        new WaitlistExpiryJob(sectionExpiration, reminder, FIXED_CLOCK).sendExpiryReminders();
+
+        assertThat(applicationEvents.stream(WaitlistExpiryReminderEvent.class)
+                .filter(event -> event.enrollmentId().equals(waiting.getId()))).isEmpty();
+    }
+
+    @Test
+    void expiryAbortsWhenTheWindowWasExtendedAfterSelectingTheSection() {
+        SubjectSectionEnrollment waiting = programWaiting(2083, NOW.plusDays(5));
+        entityManager.flush();
+
+        sectionExpiration.expireProgramSection(waiting.getSubjectSection().getId(), NOW);
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    void courseSectionExpiryAbortsWhenTheWindowWasExtendedAfterSelectingTheSection() {
+        Course course = course(2084, 1);
+        course.getTerm().setEnrollmentEnd(NOW.plusDays(5));
+        CourseSubjectSection section = moduleSection(course);
+        CourseEnrollment parent = courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW.minusDays(10), null);
+        CourseSubjectSectionEnrollment waiting = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED);
+        entityManager.flush();
+
+        sectionExpiration.expireCourseSection(section.getId(), NOW);
+
+        assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
     }
 
     private <T> EnrollmentStatus statusOf(Class<T> type, Long id) {
@@ -227,6 +432,10 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         AcademicOfferingCycle cycle = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.APPROVED);
         SubjectSection section = fixtures.section(subject, term, StatusType.ACTIVE, cycle);
         section.setCapacity(1);
+        return programEntry(section, program, EnrollmentStatus.WAITLISTED);
+    }
+
+    private SubjectSectionEnrollment programEntry(SubjectSection section, Program program, EnrollmentStatus status) {
         Student student = student();
         ProgramEnrollment programEnrollment = new ProgramEnrollment();
         programEnrollment.setStudent(student);
@@ -238,7 +447,7 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         enrollment.setProgramEnrollment(programEnrollment);
         enrollment.setStudent(student);
         enrollment.setSubjectSection(section);
-        enrollment.setStatus(EnrollmentStatus.WAITLISTED);
+        enrollment.setStatus(status);
         enrollment.setEnrolledAt(NOW.minusDays(5));
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
@@ -296,12 +505,12 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         return enrollment;
     }
 
-    private CourseSubjectSectionEnrollment moduleEnrollment(CourseSubjectSection section, CourseEnrollment parent) {
+    private CourseSubjectSectionEnrollment moduleEnrollment(CourseSubjectSection section, CourseEnrollment parent, EnrollmentStatus status) {
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
         enrollment.setStudent(student());
         enrollment.setCourseEnrollment(parent);
         enrollment.setCourseSubjectSection(section);
-        enrollment.setStatus(EnrollmentStatus.WAITLISTED);
+        enrollment.setStatus(status);
         enrollment.setEnrolledAt(NOW.minusDays(5));
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
