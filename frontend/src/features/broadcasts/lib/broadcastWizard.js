@@ -119,3 +119,14 @@ export const DAILY_EMAIL_CAPACITY = 200;
 export function estimateSendingDays(recipients) {
   return Math.max(1, Math.ceil(recipients / DAILY_EMAIL_CAPACITY));
 }
+
+export function buildCreatePayload(state, segmentSpec) {
+  const base = {
+    name: state.name.trim(),
+    channel: state.channel,
+    category: 'INSTITUTIONAL',
+    segmentSpec,
+  };
+  if (state.templateId != null) return { ...base, templateId: state.templateId };
+  return { ...base, subject: state.subject, bodyText: state.bodyText };
+}

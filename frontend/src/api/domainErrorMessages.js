@@ -9,6 +9,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   BILLING_MODE_NOT_OFF: 'La importación solo se puede hacer con la facturación apagada.',
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
   CHANNEL_NOT_AVAILABLE: 'El canal de envío no está disponible.',
+  ILLEGAL_BROADCAST_STATUS_TRANSITION: 'La comunicación ya no está en un estado que permita esa acción.',
   INVALID_SEGMENT_CRITERION: 'El valor elegido para el segmento no es válido.',
   BROADCAST_BODY_REQUIRED: 'El mensaje de la comunicación no puede estar vacío.',
   BROADCAST_TEMPLATE_MISMATCH: 'La plantilla elegida no corresponde al canal o la categoría de la comunicación.',

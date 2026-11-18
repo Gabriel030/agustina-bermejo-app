@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CheckCircle2 } from 'lucide-react';
@@ -8,13 +8,14 @@ import { GlassCard } from '@/components/GlassCard';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { describeError } from '@/api/describeError';
 import { useAuth } from '@/context/AuthContext';
 import { ChannelStep } from '../components/ChannelStep';
 import { AudienceStep } from '../components/AudienceStep';
 import { MessageStep } from '../components/MessageStep';
 import { ReviewStep } from '../components/ReviewStep';
 import { useAudiencePreview, useConfirmBroadcast, useCreateBroadcast, useSegmentCatalog } from '../hooks/useBroadcasts';
-import { INITIAL_WIZARD_STATE, clearDraft, estimateSendingDays, loadDraft, saveDraft, toSegmentSpec, validateMessage } from '../lib/broadcastWizard';
+import { CHANNEL_LABELS, INITIAL_WIZARD_STATE, buildCreatePayload, clearDraft, estimateSendingDays, loadDraft, saveDraft, toSegmentSpec, validateMessage } from '../lib/broadcastWizard';
 
 const STEPS = [
   { key: 1, label: 'Canal y categoría' },
@@ -32,8 +33,9 @@ export function BroadcastWizard() {
   const [leaving, setLeaving] = useState(false);
   const [created, setCreated] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [draftId, setDraftId] = useState(null);
-  const [emptyAudience, setEmptyAudience] = useState(false);
+  const draft = useRef(null);
+  const submitting = useRef(false);
+  const [emptyAudience, setEmptyAudience] = useState(null);
   const { data: catalog = [] } = useSegmentCatalog();
   const create = useCreateBroadcast();
   const confirm = useConfirmBroadcast();
@@ -70,38 +72,39 @@ export function BroadcastWizard() {
   }
 
   async function confirmBroadcast() {
+    if (submitting.current) return;
+    submitting.current = true;
     try {
-      let id = draftId;
-      if (id == null) {
-        const draft = await create.mutateAsync({
-          name: state.name.trim(),
-          channel: state.channel,
-          category: 'INSTITUTIONAL',
-          segmentSpec,
-          templateId: state.templateId,
-          subject: state.subject,
-          bodyText: state.bodyText,
-        });
-        id = draft.id;
-        setDraftId(id);
+      const payload = buildCreatePayload(state, segmentSpec);
+      const fingerprint = JSON.stringify(payload);
+      if (draft.current?.fingerprint !== fingerprint) {
+        const created = await create.mutateAsync(payload);
+        draft.current = { id: created.id, fingerprint };
       }
-      await confirm.mutateAsync(id);
+      try {
+        await confirm.mutateAsync(draft.current.id);
+      } catch (error) {
+        if (error.code !== 'ILLEGAL_BROADCAST_STATUS_TRANSITION') throw error;
+      }
       clearDraft(userId);
       setConfirming(false);
       setCreated(true);
     } catch (error) {
       setConfirming(false);
       if (error.code === 'EMPTY_AUDIENCE') {
-        setEmptyAudience(true);
+        draft.current = null;
+        setEmptyAudience(error);
         return;
       }
-      toast.error(error.message ?? 'No pudimos confirmar el envío. Probá de nuevo.');
+      toast.error(describeError(error, { fallback: 'No pudimos confirmar el envío. Probá de nuevo.' }).message);
+    } finally {
+      submitting.current = false;
     }
   }
 
   function chooseAnotherSegment() {
-    setEmptyAudience(false);
-    setDraftId(null);
+    setEmptyAudience(null);
+    draft.current = null;
     goTo(2);
   }
 
@@ -146,7 +149,7 @@ export function BroadcastWizard() {
       {state.step === 4 && <ReviewStep state={state} preview={preview} />}
       {emptyAudience && (
         <Notice tone="danger" title="No hay destinatarios elegibles.">
-          Todas las personas del segmento están excluidas. Elegí otro segmento para continuar.
+          {describeError(emptyAudience).message}
         </Notice>
       )}
 
@@ -177,6 +180,12 @@ export function BroadcastWizard() {
             <DialogDescription>
               {`Se enviará a ${preview?.included ?? 0} personas en ${estimateSendingDays(preview?.included ?? 0)} días. Esta acción no se puede deshacer, pero podés cancelar los pendientes.`}
             </DialogDescription>
+            <dl className="grid grid-cols-[100px_1fr] gap-1 text-size-13">
+              <dt className="text-ink-soft">Canal</dt>
+              <dd className="text-ink">{CHANNEL_LABELS[state.channel]}</dd>
+              <dt className="text-ink-soft">Categoría</dt>
+              <dd className="text-ink">Institucional</dd>
+            </dl>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" autoFocus onClick={() => setConfirming(false)}>

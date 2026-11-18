@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { toast } from 'sonner';
 import { BroadcastWizard } from './BroadcastWizard';
+
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const API = 'http://localhost:8080';
 
@@ -21,19 +24,19 @@ const previewBody = (overrides = {}) => ({
   ...overrides,
 });
 
-function mockBackend({ onConfirm, confirmResponse, catalog = [{ key: 'PROGRAM', parameters: [] }, { key: 'OVERDUE_DEBT', parameters: [] }], preview = previewBody(), onCreate } = {}) {
+function mockBackend({ onConfirm, confirmResponse, catalog = [{ key: 'PROGRAM', parameters: [] }, { key: 'OVERDUE_DEBT', parameters: [] }], preview = previewBody(), onCreate, templates = [], createResponse } = {}) {
   server.use(
     http.get('*/broadcasts/segment-catalog', () => HttpResponse.json(catalog)),
     http.post('*/broadcasts/audience-preview', () => HttpResponse.json(preview)),
     http.post('*/broadcasts', async ({ request }) => {
       onCreate?.(await request.json());
-      return HttpResponse.json({ id: 1, status: 'DRAFT' });
+      return createResponse?.() ?? HttpResponse.json({ id: 1, status: 'DRAFT' });
     }),
     http.post('*/broadcasts/:id/confirm', ({ params }) => {
       onConfirm?.(params.id);
       return confirmResponse ?? HttpResponse.json({ id: Number(params.id), status: 'CONFIRMED' });
     }),
-    http.get(`${API}/message-templates`, () => HttpResponse.json([])),
+    http.get(`${API}/message-templates`, () => HttpResponse.json(templates)),
     http.post(`${API}/message-templates/render-preview`, async ({ request }) => {
       const { subject, bodyText } = await request.json();
       return HttpResponse.json({ subject, body: bodyText.replace('{{nombre}}', 'Ana') });
@@ -54,7 +57,10 @@ async function reachReview() {
 }
 
 describe('BroadcastWizard', () => {
-  beforeEach(() => window.localStorage.clear());
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.clearAllMocks();
+  });
 
   it('walks the four steps and confirms the broadcast', async () => {
     let created = null;
@@ -162,5 +168,133 @@ describe('BroadcastWizard', () => {
     expect(await screen.findByText('No hay destinatarios elegibles.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Elegir otro segmento' }));
     expect(await screen.findByText('Reciben')).toBeInTheDocument();
+  });
+
+  it('sends only the template id when a template is chosen', async () => {
+    const bodies = [];
+    mockBackend({ onCreate: (body) => bodies.push(body), templates: [{ id: 5, name: 'Mesas', channel: 'EMAIL', category: 'INSTITUTIONAL', active: true, updatedAt: '2026-11-01T10:00:00Z', subject: 'Asunto base', bodyText: 'Cuerpo base' }] });
+    renderWithProviders(<BroadcastWizard />);
+    await userEvent.type(await screen.findByLabelText('Nombre interno'), 'Mesas');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Siguiente' })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await userEvent.selectOptions(await screen.findByLabelText('Plantilla'), 'Mesas');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+
+    await screen.findByText('Envío confirmado');
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toStrictEqual({ name: 'Mesas', channel: 'EMAIL', category: 'INSTITUTIONAL', segmentSpec: { criteria: [] }, templateId: 5 });
+  });
+
+  it('creates a new draft when the message changed after a failed confirm', async () => {
+    const bodies = [];
+    let confirms = 0;
+    mockBackend({ onCreate: (body) => bodies.push(body) });
+    server.use(
+      http.post('*/broadcasts/:id/confirm', ({ params }) => {
+        confirms += 1;
+        if (confirms === 1) return HttpResponse.json({ code: 'INTERNAL_ERROR' }, { status: 500 });
+        return HttpResponse.json({ id: Number(params.id), status: 'CONFIRMED' });
+      }),
+    );
+    renderWithProviders(<BroadcastWizard />);
+    await reachReview();
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+    await waitFor(() => expect(confirms).toBe(1));
+    await userEvent.click(await screen.findByRole('button', { name: 'Atrás' }));
+    await userEvent.type(await screen.findByLabelText('Mensaje'), ' cambiado');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+
+    await screen.findByText('Envío confirmado');
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1].bodyText).toBe('Hola nombre cambiado');
+  });
+
+  it('reuses the draft when retrying with the same content', async () => {
+    let creates = 0;
+    let confirms = 0;
+    mockBackend({ onCreate: () => (creates += 1) });
+    server.use(
+      http.post('*/broadcasts/:id/confirm', ({ params }) => {
+        confirms += 1;
+        if (confirms === 1) return HttpResponse.json({ code: 'INTERNAL_ERROR' }, { status: 500 });
+        return HttpResponse.json({ id: Number(params.id), status: 'CONFIRMED' });
+      }),
+    );
+    renderWithProviders(<BroadcastWizard />);
+    await reachReview();
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+    await waitFor(() => expect(confirms).toBe(1));
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+
+    await screen.findByText('Envío confirmado');
+    expect(creates).toBe(1);
+  });
+
+  it('treats an illegal status transition on confirm as already confirmed', async () => {
+    mockBackend({ confirmResponse: HttpResponse.json({ code: 'ILLEGAL_BROADCAST_STATUS_TRANSITION' }, { status: 409 }) });
+    renderWithProviders(<BroadcastWizard />);
+    await reachReview();
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+
+    expect(await screen.findByText('Envío confirmado')).toBeInTheDocument();
+  });
+
+  it('sends nothing when the confirm dialog is cancelled', async () => {
+    let creates = 0;
+    let confirms = 0;
+    mockBackend({ onCreate: () => (creates += 1), onConfirm: () => (confirms += 1) });
+    renderWithProviders(<BroadcastWizard />);
+    await reachReview();
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Volver' }));
+
+    expect(creates).toBe(0);
+    expect(confirms).toBe(0);
+  });
+
+  it('sends a single create and confirm on double click', async () => {
+    let creates = 0;
+    let confirms = 0;
+    mockBackend({ onCreate: () => (creates += 1), onConfirm: () => (confirms += 1) });
+    renderWithProviders(<BroadcastWizard />);
+    await reachReview();
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    const send = await screen.findByRole('button', { name: 'Enviar' });
+    fireEvent.click(send);
+    fireEvent.click(send);
+
+    await screen.findByText('Envío confirmado');
+    expect(creates).toBe(1);
+    expect(confirms).toBe(1);
+  });
+
+  it('confirm dialog shows channel and category', async () => {
+    mockBackend();
+    renderWithProviders(<BroadcastWizard />);
+    await reachReview();
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByText('Correo')).toBeInTheDocument();
+    expect(within(dialog).getByText('Institucional')).toBeInTheDocument();
+  });
+
+  it('shows the template content error from the backend', async () => {
+    mockBackend({ createResponse: () => HttpResponse.json({ code: 'BROADCAST_CONTENT_WITH_TEMPLATE' }, { status: 400 }) });
+    renderWithProviders(<BroadcastWizard />);
+    await reachReview();
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar envío' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Con una plantilla no se puede enviar asunto ni mensaje propios.'));
   });
 });

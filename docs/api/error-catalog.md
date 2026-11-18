@@ -468,6 +468,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ILLEGAL_ANNUAL_UPFRONT_REQUEST_TRANSITION` | no | `IllegalAnnualUpfrontRequestTransitionException` | billing |
 | `ILLEGAL_AUTHORIZATION_REQUEST_TRANSITION` | no | `IllegalAuthorizationRequestTransitionException` | billing |
 | `ILLEGAL_BILLING_RUN_TRANSITION` | no | `IllegalBillingRunTransitionException` | billing |
+| `ILLEGAL_BROADCAST_STATUS_TRANSITION` | no | `IllegalBroadcastStatusTransitionException` | notification |
 | `ILLEGAL_CONFIGURATION_VERSION_STATUS_TRANSITION` | no | `IllegalConfigurationVersionStatusTransitionException` | billing |
 | `ILLEGAL_DISCOUNT_DEFINITION_TRANSITION` | no | `IllegalDiscountDefinitionTransitionException` | billing |
 | `ILLEGAL_ENROLLMENT_PAYMENT_STATUS_TRANSITION` | no | `IllegalEnrollmentPaymentStatusTransitionException` | billing |
