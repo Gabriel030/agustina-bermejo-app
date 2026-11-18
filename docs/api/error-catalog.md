@@ -62,6 +62,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
 | `BIRTH_DATE_REQUIRED` | no | `BirthDateRequiredException` | identity |
+| `BROADCAST_BODY_REQUIRED` | no | `BroadcastBodyRequiredException` | notification |
+| `BROADCAST_CONTENT_WITH_TEMPLATE` | no | `BroadcastContentWithTemplateException` | notification |
+| `BROADCAST_TEMPLATE_MISMATCH` | no | `BroadcastTemplateMismatchException` | notification |
 | `CANCELLATION_REASON_REQUIRED` | no | `CancellationReasonRequiredException` | billing |
 | `CASH_PAYMENT_AMOUNT_INVALID` | no | `CashPaymentAmountInvalidException` | billing |
 | `CASH_PAYMENT_BACKDATE_REASON_INVALID` | no | `CashPaymentBackdateReasonInvalidException` | billing |
@@ -243,7 +246,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `AUTHORIZATION_INBOX_ACCESS_DENIED` | no | `AuthorizationInboxAccessDeniedException` | billing |
 | `AUTHORIZATION_REQUEST_ACCESS_DENIED` | no | `AuthorizationRequestAccessDeniedException` | billing |
-| `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
 | `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
@@ -262,6 +264,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_NOT_FOUND` | no | `AttendanceNotFoundException` | attendance |
 | `AUTHORIZATION_REQUEST_NOT_FOUND` | no | `AuthorizationRequestNotFoundException` | billing |
 | `BILLING_RUN_STEP_NOT_FOUND` | no | `BillingRunStepNotFoundException` | billing |
+| `BROADCAST_NOT_FOUND` | no | `BroadcastNotFoundException` | notification |
 | `CERTIFICATE_NOT_FOUND` | no | `CertificateNotFoundException` | graduation |
 | `CHARGEBACK_NOT_FOUND` | no | `ChargebackNotFoundException` | billing |
 | `CLASSROOM_NOT_FOUND` | no | `ClassroomNotFoundException` | academicstructure |
@@ -303,6 +306,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NIGHTLY_BILLING_RUN_NOT_FOUND` | no | `NightlyBillingRunNotFoundException` | billing |
 | `NOTIFICATION_DELIVERY_NOT_FOUND` | no | `NotificationDeliveryNotFoundException` | notification |
 | `NOTIFICATION_NOT_FOUND` | no | `NotificationNotFoundException` | notification |
+| `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_OWN_ENROLLMENT` | no | `NotOwnEnrollmentException` | billing |
 | `NOT_OWN_SECTION` | no | `NotOwnSectionException` | academicstructure |
 | `NOT_SECTION_INSTRUCTOR` | no | `NotSectionInstructorException` | announcement |
@@ -420,6 +424,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `DUPLICATE_INVOICE_CHARGE` | no | `DuplicateInvoiceChargeException` | billing |
 | `ELECTIVE_GROUP_ALREADY_EXISTS` | no | `ElectiveGroupAlreadyExistsException` | academicstructure |
 | `ELECTIVE_GROUP_IN_USE` | no | `ElectiveGroupInUseException` | academicstructure |
+| `EMAIL_CHANGE_PENDING_BY_OWNER` | no | `EmailChangePendingByOwnerException` | identity |
 | `ENROLLMENT_FEE_ALREADY_ISSUED` | no | `EnrollmentFeeAlreadyIssuedException` | billing |
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_EXISTS` | no | `EnrollmentFeeExemptionAlreadyExistsException` | enrollment |
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_REVOKED` | no | `EnrollmentFeeExemptionAlreadyRevokedException` | enrollment |
@@ -708,6 +713,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/validation` | `CollectionReminderScheduleController#validateExceptionChange` |
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/validation` | `CollectionReminderScheduleController#validateGroupChange` |
 | POST | `/billing-runs/executions` | `BillingRunController#executeTodaysNightlyRun` |
+| POST | `/broadcasts` | `BroadcastDraftController#createBroadcastDraft` |
 | POST | `/broadcasts/audience-preview` | `BroadcastAudienceController#previewBroadcastAudience` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |

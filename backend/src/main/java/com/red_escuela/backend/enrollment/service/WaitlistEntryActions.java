@@ -14,6 +14,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
 @Component
 @Transactional
 public class WaitlistEntryActions {
@@ -51,7 +56,16 @@ public class WaitlistEntryActions {
     public void prioritize(WaitlistKind kind, Long enrollmentId, String reason) {
         String validReason = WaitlistReason.validated(reason);
         WaitlistEntryContext context = loader.loadLocked(kind, enrollmentId);
-        context.queue().markPrioritized(enrollmentId, ApplicationTime.now());
+        List<WaitlistCandidate> waiting = context.queue().findWaitingCandidates(context.owner().queueId());
+        WaitlistCandidate head = waiting.get(0);
+        if (head.enrollmentId().equals(enrollmentId) && head.prioritizedAt() != null) {
+            return;
+        }
+        LocalDateTime now = ApplicationTime.now();
+        LocalDateTime latest = waiting.stream().map(WaitlistCandidate::prioritizedAt).filter(Objects::nonNull)
+                .max(Comparator.naturalOrder()).orElse(null);
+        LocalDateTime at = latest != null && !now.isAfter(latest) ? latest.plusNanos(1000) : now;
+        context.queue().markPrioritized(enrollmentId, at);
         auditTrail.record(new AuditRecord(AuditAction.WAITLIST_PRIORITIZED_BY_STAFF, context.queue().auditEntityType(), enrollmentId,
                 null, "PRIORITIZED", validReason));
     }
@@ -59,7 +73,7 @@ public class WaitlistEntryActions {
     public void remove(WaitlistKind kind, Long enrollmentId, String reason) {
         String validReason = WaitlistReason.validated(reason);
         WaitlistEntryContext context = loader.loadLocked(kind, enrollmentId);
-        if (context.queue().hasPendingReceipt(enrollmentId)) {
+        if (context.queue().hasReceiptBlockingRemoval(enrollmentId)) {
             throw new WaitlistRemovalBlockedByPendingReceiptException();
         }
         context.queue().remove(enrollmentId);

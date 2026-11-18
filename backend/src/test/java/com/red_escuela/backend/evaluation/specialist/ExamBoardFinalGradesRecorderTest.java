@@ -38,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
@@ -257,6 +258,26 @@ class ExamBoardFinalGradesRecorderTest extends ExamBoardChangeFixture {
 
         assertThatThrownBy(() -> record(board, score(student, "7", null)))
                 .isInstanceOf(ExamBoardClosedException.class);
+    }
+
+    @Test
+    void foreignTeacherGetsTheSameResponseOnAnotherTeachersBoardAsOnAMissingBoard() {
+        Board board = board("74000091", LocalDateTime.now().minusDays(1));
+        Board other = board("74000092", LocalDateTime.now().minusDays(1));
+        board.board().setStatus(ExamBoardStatus.CLOSED);
+        entityManager.flush();
+        Long foreignTeacherId = other.tribunal().getId();
+
+        Throwable foreign = catchThrowable(
+                () -> finalGradesRecorder.record(board.board().getId(), foreignTeacherId, List.of()));
+        Throwable missing = catchThrowable(
+                () -> finalGradesRecorder.record(987654321L, foreignTeacherId, List.of()));
+
+        assertThat(foreign).isInstanceOf(NotExamBoardTribunalMemberException.class)
+                .isInstanceOf(com.red_escuela.backend.shared.exception.NotFoundException.class);
+        assertThat(missing).isInstanceOf(com.red_escuela.backend.shared.exception.NotFoundException.class);
+        assertThat(foreign).isNotInstanceOf(com.red_escuela.backend.shared.exception.ReportsErrorCode.class);
+        assertThat(missing).isNotInstanceOf(com.red_escuela.backend.shared.exception.ReportsErrorCode.class);
     }
 
     @Test

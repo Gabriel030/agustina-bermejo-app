@@ -10,6 +10,7 @@ import {
   storeOfflineProfile,
 } from '@/api/offlinePersistence';
 import { apiFetch, setOfflineSessionMode } from '@/api/client';
+import { LEGAL_KEYS } from '@/features/identity/hooks/useLegal';
 
 const store = new Map();
 
@@ -97,6 +98,9 @@ describe('offline cache lifecycle', () => {
 
   function renderProvider() {
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['me'], { id: 1, roles: ['ADMIN'] });
+    queryClient.setQueryData(['me', 'modules'], { modules: ['ADMIN_ONLY'] });
+    queryClient.setQueryData(LEGAL_KEYS.pending, { documents: [{ type: 'ANA' }] });
     queryClient.setQueryData(['me', 'notifications'], [{ id: 1 }]);
     return render(
       <QueryClientProvider client={queryClient}>
@@ -153,6 +157,9 @@ describe('offline cache lifecycle', () => {
     });
 
     expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
     expect(store.get(OFFLINE_OWNER_KEY)).toBe(2);
     expect(screen.getByText('user-2')).toBeInTheDocument();
@@ -167,8 +174,97 @@ describe('offline cache lifecycle', () => {
     renderProvider();
 
     await screen.findByText('user-2');
-    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
+  });
+
+  it('restoredSessionOfAnotherOwnerNeverExposesPreviousUserQueries', async () => {
+    store.set(OFFLINE_OWNER_KEY, 1);
+    localStorage.setItem('sessionHint', '1');
+    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [] }));
+
+    renderProvider();
+
+    await screen.findByText('user-2');
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    const cachedData = JSON.stringify(queryClient.getQueryCache().getAll().map((query) => query.state.data));
+    expect(cachedData).not.toContain('ADMIN_ONLY');
+    expect(cachedData).not.toContain('ANA');
+    expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
+  });
+
+  it('logoutThenLoginAsAnotherUserNeverExposesPreviousUserQueries', async () => {
+    renderProvider();
+    await act(async () => {
+      await auth.login('ana', 'x');
+    });
+
+    await act(async () => {
+      await auth.logout();
+    });
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+
+    await act(async () => {
+      await auth.login('beto', 'x');
+    });
+
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
+  });
+
+  it('loginAsAnotherUserWithoutLogoutNeverExposesPreviousUserData', async () => {
+    store.set(OFFLINE_CACHE_KEY, 'cache-of-ana');
+    renderProvider();
+
+    await act(async () => {
+      await auth.login('beto', 'x');
+    });
+
+    expect(apiFetch.mock.calls.filter(([path]) => path === '/me')).toHaveLength(1);
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
+    expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
+    const cachedData = JSON.stringify(queryClient.getQueryCache().getAll().map((query) => query.state.data));
+    expect(cachedData).not.toContain('ADMIN_ONLY');
+    expect(cachedData).not.toContain('ANA');
+    expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
+    expect(store.get(OFFLINE_OWNER_KEY)).toBe(2);
+    expect(screen.getByText('user-2')).toBeInTheDocument();
+  });
+
+  it('purgeCancelsInFlightQueriesOfThePreviousUser', async () => {
+    renderProvider();
+    await act(async () => {
+      await auth.login('ana', 'x');
+    });
+    let release;
+    const inFlight = queryClient.fetchQuery({
+      queryKey: ['me', 'modules'],
+      queryFn: () => new Promise((resolve) => { release = () => resolve({ modules: ['ADMIN_ONLY'] }); }),
+    }).then(() => 'resolved', () => 'cancelled');
+
+    await act(async () => {
+      await auth.logout();
+    });
+    release();
+
+    expect(await inFlight).toBe('cancelled');
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+  });
+
+  it('restoredSessionOfAnotherOwnerRefetchesBootstrapQueriesAfterThePurge', async () => {
+    store.set(OFFLINE_OWNER_KEY, 1);
+    localStorage.setItem('sessionHint', '1');
+    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [], path }));
+
+    renderProvider();
+
+    await screen.findByText('user-2');
+    await waitFor(() => expect(queryClient.getQueryData(['me', 'modules'])).toEqual({ id: 2, roles: [], path: '/me/modules' }));
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toEqual({ id: 2, roles: [], path: '/me/legal-acceptances/pending' });
   });
 });
 

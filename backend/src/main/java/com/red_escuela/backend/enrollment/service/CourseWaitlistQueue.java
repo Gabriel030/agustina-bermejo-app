@@ -127,11 +127,8 @@ public class CourseWaitlistQueue implements WaitlistQueue {
     }
 
     @Override
-    public boolean hasPendingReceipt(Long enrollmentId) {
+    public boolean hasReceiptBlockingRemoval(Long enrollmentId) {
         return applicationRepository.findInvoiceIdsByCourseEnrollmentId(enrollmentId).stream()
-                .findFirst()
-                .map(admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId)
-                .map(receipt -> "PENDING_REVIEW".equals(receipt.status()))
-                .orElse(false);
+                .anyMatch(admissionInvoiceReceiptFinder::isLatestReceiptPendingReviewOrApproved);
     }
 }

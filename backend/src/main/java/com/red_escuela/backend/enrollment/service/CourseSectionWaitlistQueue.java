@@ -100,4 +100,9 @@ public class CourseSectionWaitlistQueue implements WaitlistQueue {
         entry.setStatus(EnrollmentStatus.WITHDRAWN);
         repository.save(entry);
     }
+
+    @Override
+    public boolean hasReceiptBlockingRemoval(Long enrollmentId) {
+        return false;
+    }
 }

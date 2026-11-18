@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @Transactional(readOnly = true)
@@ -38,10 +40,11 @@ public class ProgramProgressReader {
         Program program = enrollment.getProgram();
 
         List<ProgramSubjectView> entries = programCurriculumFinder.findProgramSubjects(program.getId());
-        List<ProgramSubjectView> approved = listApprovedSubjects(programEnrollmentId);
+        Set<Long> approvedSubjectIds = subjectIdsWithStatus(programEnrollmentId, entries, List.of(EnrollmentStatus.APPROVED));
+        List<ProgramSubjectView> approved = entriesOfSubjects(entries, approvedSubjectIds);
 
         List<String> pendingMandatory = entries.stream()
-                .filter(entry -> !entry.isElective() && !approved.contains(entry))
+                .filter(entry -> !entry.isElective() && !approvedSubjectIds.contains(entry.subjectId()))
                 .map(ProgramSubjectView::subjectName)
                 .toList();
 
@@ -77,10 +80,11 @@ public class ProgramProgressReader {
                         programEnrollmentId, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS))) {
             return false;
         }
-        List<ProgramSubjectView> coursed = entries.stream()
-                .filter(entry -> hasSubjectWithStatus(programEnrollmentId, entry, List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR)))
-                .toList();
-        boolean mandatoryPending = entries.stream().anyMatch(entry -> !entry.isElective() && !coursed.contains(entry));
+        Set<Long> coursedSubjectIds = subjectIdsWithStatus(programEnrollmentId, entries,
+                List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR));
+        List<ProgramSubjectView> coursed = entriesOfSubjects(entries, coursedSubjectIds);
+        boolean mandatoryPending = entries.stream()
+                .anyMatch(entry -> !entry.isElective() && !coursedSubjectIds.contains(entry.subjectId()));
         int coursedCredits = coursed.stream().mapToInt(ProgramSubjectView::credits).sum();
         boolean electiveGroupsMet = programCurriculumFinder.findElectiveGroupRequirements(program.getId()).stream()
                 .allMatch(group -> countElectivesOfGroup(coursed, group) >= group.minRequired());
@@ -96,9 +100,8 @@ public class ProgramProgressReader {
 
     public List<ProgramSubjectView> listApprovedSubjects(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
-        return programCurriculumFinder.findProgramSubjects(enrollment.getProgram().getId()).stream()
-                .filter(entry -> hasSubjectWithStatus(programEnrollmentId, entry, List.of(EnrollmentStatus.APPROVED)))
-                .toList();
+        List<ProgramSubjectView> entries = programCurriculumFinder.findProgramSubjects(enrollment.getProgram().getId());
+        return entriesOfSubjects(entries, subjectIdsWithStatus(programEnrollmentId, entries, List.of(EnrollmentStatus.APPROVED)));
     }
 
     private ElectiveGroupProgressView toGroupProgress(ElectiveGroupRequirementView group, List<ProgramSubjectView> approved) {
@@ -114,11 +117,19 @@ public class ProgramProgressReader {
                 .count();
     }
 
-    private boolean hasSubjectWithStatus(Long programEnrollmentId, ProgramSubjectView entry, List<EnrollmentStatus> statuses) {
-        return !subjectSectionEnrollmentRepository
-                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                        programEnrollmentId, entry.subjectId(), statuses)
-                .isEmpty();
+    private Set<Long> subjectIdsWithStatus(Long programEnrollmentId, List<ProgramSubjectView> entries, List<EnrollmentStatus> statuses) {
+        if (entries.isEmpty()) {
+            return Set.of();
+        }
+        List<Long> subjectIds = entries.stream().map(ProgramSubjectView::subjectId).distinct().toList();
+        return subjectSectionEnrollmentRepository
+                .findPrerequisiteStatusRows(List.of(programEnrollmentId), subjectIds, statuses).stream()
+                .map(SubjectSectionEnrollmentRepository.PrerequisiteStatusRow::getSubjectId)
+                .collect(Collectors.toSet());
+    }
+
+    private List<ProgramSubjectView> entriesOfSubjects(List<ProgramSubjectView> entries, Set<Long> subjectIds) {
+        return entries.stream().filter(entry -> subjectIds.contains(entry.subjectId())).toList();
     }
 
     private ProgramEnrollment findOrThrow(Long id) {

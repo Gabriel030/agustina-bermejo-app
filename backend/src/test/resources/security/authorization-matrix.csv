@@ -140,11 +140,11 @@ PUT,/evaluation-schemes/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/exam-board-registrations/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/exam-boards,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
-GET,/exam-boards/{id},DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/exam-boards/{id},DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/cancel,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/exam-boards/{id}/close,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 PUT,/exam-boards/{id}/final-grades,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,"{""items"":[{""registrationId"":1,""absent"":true}]}"
-GET,/exam-boards/{id}/registrations,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/exam-boards/{id}/registrations,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/registrations,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/exam-boards/{id}/reschedule,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/exam-boards/{id}/tribunal,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
@@ -176,6 +176,7 @@ GET,/legal/documents/current,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/me,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 PUT,/me,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/broadcasts/segment-catalog,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/broadcasts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""name"":""Aviso"",""channel"":""EMAIL"",""category"":""INSTITUTIONAL"",""segmentSpec"":{""version"":1,""quantifier"":""ALL"",""criteria"":[{""key"":""STAFF_ROLE"",""value"":""DOCENTE""}]},""subject"":""Hola"",""bodyText"":""Texto""}"
 POST,/broadcasts/audience-preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""channel"":""EMAIL"",""category"":""INSTITUTIONAL"",""segmentSpec"":{""version"":1,""quantifier"":""ALL"",""criteria"":[{""key"":""STAFF_ROLE"",""value"":""DOCENTE""}]},""page"":0,""size"":10}"
 GET,/message-templates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/message-templates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,

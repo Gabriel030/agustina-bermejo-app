@@ -26,19 +26,11 @@ public interface WaitlistQueue {
 
     void promote(Long enrollmentId);
 
-    default Optional<WaitlistEntryOwner> findOwner(Long enrollmentId) {
-        throw new UnsupportedOperationException();
-    }
+    Optional<WaitlistEntryOwner> findOwner(Long enrollmentId);
 
-    default void markPrioritized(Long enrollmentId, LocalDateTime at) {
-        throw new UnsupportedOperationException();
-    }
+    void markPrioritized(Long enrollmentId, LocalDateTime at);
 
-    default void remove(Long enrollmentId) {
-        throw new UnsupportedOperationException();
-    }
+    void remove(Long enrollmentId);
 
-    default boolean hasPendingReceipt(Long enrollmentId) {
-        return false;
-    }
+    boolean hasReceiptBlockingRemoval(Long enrollmentId);
 }

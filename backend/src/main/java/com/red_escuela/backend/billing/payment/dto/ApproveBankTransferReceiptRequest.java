@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.dto;
 
+
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.shared.domain.Money;
 import io.swagger.v3.oas.annotations.media.Schema;
