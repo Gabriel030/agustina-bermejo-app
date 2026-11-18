@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -56,15 +57,18 @@ public class RecipientFreezer {
                 .filter(person -> !alreadyFrozen.contains(person.personId()))
                 .sorted(Comparator.comparing(PersonAudienceView::personId))
                 .toList();
-        List<BroadcastRecipient> rows = people.stream().map(person -> toRecipient(broadcast, person)).toList();
+        Map<Long, ExclusionReason> reasons = eligibilityEvaluator.findExclusionReasons(
+                people.stream().map(person -> new AudienceRecipient(person.personId(), person.fullName(), person.email(),
+                        person.emailVerified(), person.phoneNumber())).toList(),
+                broadcast.getChannel(), broadcast.getCategory());
+        List<BroadcastRecipient> rows = people.stream()
+                .map(person -> toRecipient(broadcast, person, Optional.ofNullable(reasons.get(person.personId()))))
+                .toList();
         recipientRepository.saveAll(rows);
         return rows.size();
     }
 
-    private BroadcastRecipient toRecipient(Broadcast broadcast, PersonAudienceView person) {
-        Optional<ExclusionReason> reason = eligibilityEvaluator.findExclusionReason(
-                new AudienceRecipient(person.personId(), person.fullName(), person.email(), person.emailVerified(), person.phoneNumber()),
-                broadcast.getChannel(), broadcast.getCategory());
+    private BroadcastRecipient toRecipient(Broadcast broadcast, PersonAudienceView person, Optional<ExclusionReason> reason) {
         return BroadcastRecipient.builder()
                 .broadcastId(broadcast.getId())
                 .personId(person.personId())
