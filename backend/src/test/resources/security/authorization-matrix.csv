@@ -55,6 +55,7 @@ GET,/billing-configuration/collection-reminder-schedules/{group}/versions,DENY,D
 GET,/billing/configuration-alerts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/billing/metrics/first-month,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/billing/metrics/{panel},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/cancel-email-change,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/chargebacks/{chargebackId}/reversal,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/chargebacks/{chargebackId}/reversal/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/classrooms,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
@@ -140,11 +141,11 @@ PUT,/evaluation-schemes/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/exam-board-registrations/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/exam-boards,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
-GET,/exam-boards/{id},DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/exam-boards/{id},DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/cancel,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/exam-boards/{id}/close,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 PUT,/exam-boards/{id}/final-grades,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,"{""items"":[{""registrationId"":1,""absent"":true}]}"
-GET,/exam-boards/{id}/registrations,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/exam-boards/{id}/registrations,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/registrations,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/exam-boards/{id}/reschedule,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/exam-boards/{id}/tribunal,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
@@ -176,7 +177,13 @@ GET,/legal/documents/current,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/me,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 PUT,/me,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/broadcasts/segment-catalog,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/broadcasts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""name"":""Aviso"",""channel"":""EMAIL"",""category"":""INSTITUTIONAL"",""segmentSpec"":{""version"":1,""quantifier"":""ALL"",""criteria"":[{""key"":""STAFF_ROLE"",""value"":""DOCENTE""}]},""subject"":""Hola"",""bodyText"":""Texto""}"
 POST,/broadcasts/audience-preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""channel"":""EMAIL"",""category"":""INSTITUTIONAL"",""segmentSpec"":{""version"":1,""quantifier"":""ALL"",""criteria"":[{""key"":""STAFF_ROLE"",""value"":""DOCENTE""}]},""page"":0,""size"":10}"
+GET,/broadcasts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/broadcasts/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/broadcasts/{id}/recipients,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/broadcasts/{id}/confirm,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/broadcasts/{id}/cancel,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo""}"
 GET,/message-templates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/message-templates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 DELETE,/message-templates/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
@@ -542,3 +549,6 @@ GET,/platform/audit-log,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/waitlists,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/waitlists/{kind}/{id},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/waitlists/{kind}/{id}/history,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/waitlists/{kind}/entries/{enrollmentId}/promote,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/waitlists/{kind}/entries/{enrollmentId}/prioritize,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/waitlists/{kind}/entries/{enrollmentId}/remove,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"

@@ -62,6 +62,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
 | `BIRTH_DATE_REQUIRED` | no | `BirthDateRequiredException` | identity |
+| `BROADCAST_BODY_REQUIRED` | no | `BroadcastBodyRequiredException` | notification |
+| `BROADCAST_CONTENT_WITH_TEMPLATE` | no | `BroadcastContentWithTemplateException` | notification |
+| `BROADCAST_TEMPLATE_MISMATCH` | no | `BroadcastTemplateMismatchException` | notification |
 | `CANCELLATION_REASON_REQUIRED` | no | `CancellationReasonRequiredException` | billing |
 | `CASH_PAYMENT_AMOUNT_INVALID` | no | `CashPaymentAmountInvalidException` | billing |
 | `CASH_PAYMENT_BACKDATE_REASON_INVALID` | no | `CashPaymentBackdateReasonInvalidException` | billing |
@@ -224,6 +227,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `UNSUPPORTED_FILE_TYPE` | no | `UnsupportedFileTypeException` | shared |
 | `VERIFIED_PAYMENT_AMOUNT_INVALID` | no | `VerifiedPaymentAmountInvalidException` | billing |
 | `VERIFIED_PAYMENT_CURRENCY_MISMATCH` | no | `VerifiedPaymentCurrencyMismatchException` | billing |
+| `WAITLIST_REASON_REQUIRED` | no | `WaitlistReasonRequiredException` | enrollment |
 | `WITHDRAWAL_DATE_OUT_OF_ALLOWED_RANGE` | no | `WithdrawalDateOutOfAllowedRangeException` | enrollment |
 
 ### HTTP 401
@@ -242,7 +246,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `AUTHORIZATION_INBOX_ACCESS_DENIED` | no | `AuthorizationInboxAccessDeniedException` | billing |
 | `AUTHORIZATION_REQUEST_ACCESS_DENIED` | no | `AuthorizationRequestAccessDeniedException` | billing |
-| `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
 | `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
@@ -261,6 +264,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_NOT_FOUND` | no | `AttendanceNotFoundException` | attendance |
 | `AUTHORIZATION_REQUEST_NOT_FOUND` | no | `AuthorizationRequestNotFoundException` | billing |
 | `BILLING_RUN_STEP_NOT_FOUND` | no | `BillingRunStepNotFoundException` | billing |
+| `BROADCAST_NOT_FOUND` | no | `BroadcastNotFoundException` | notification |
 | `CERTIFICATE_NOT_FOUND` | no | `CertificateNotFoundException` | graduation |
 | `CHARGEBACK_NOT_FOUND` | no | `ChargebackNotFoundException` | billing |
 | `CLASSROOM_NOT_FOUND` | no | `ClassroomNotFoundException` | academicstructure |
@@ -302,6 +306,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NIGHTLY_BILLING_RUN_NOT_FOUND` | no | `NightlyBillingRunNotFoundException` | billing |
 | `NOTIFICATION_DELIVERY_NOT_FOUND` | no | `NotificationDeliveryNotFoundException` | notification |
 | `NOTIFICATION_NOT_FOUND` | no | `NotificationNotFoundException` | notification |
+| `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_OWN_ENROLLMENT` | no | `NotOwnEnrollmentException` | billing |
 | `NOT_OWN_SECTION` | no | `NotOwnSectionException` | academicstructure |
 | `NOT_SECTION_INSTRUCTOR` | no | `NotSectionInstructorException` | announcement |
@@ -419,6 +424,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `DUPLICATE_INVOICE_CHARGE` | no | `DuplicateInvoiceChargeException` | billing |
 | `ELECTIVE_GROUP_ALREADY_EXISTS` | no | `ElectiveGroupAlreadyExistsException` | academicstructure |
 | `ELECTIVE_GROUP_IN_USE` | no | `ElectiveGroupInUseException` | academicstructure |
+| `EMAIL_CHANGE_PENDING_BY_OWNER` | no | `EmailChangePendingByOwnerException` | identity |
+| `EMPTY_AUDIENCE` | no | `EmptyAudienceException` | notification |
 | `ENROLLMENT_FEE_ALREADY_ISSUED` | no | `EnrollmentFeeAlreadyIssuedException` | billing |
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_EXISTS` | no | `EnrollmentFeeExemptionAlreadyExistsException` | enrollment |
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_REVOKED` | no | `EnrollmentFeeExemptionAlreadyRevokedException` | enrollment |
@@ -463,6 +470,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ILLEGAL_ANNUAL_UPFRONT_REQUEST_TRANSITION` | no | `IllegalAnnualUpfrontRequestTransitionException` | billing |
 | `ILLEGAL_AUTHORIZATION_REQUEST_TRANSITION` | no | `IllegalAuthorizationRequestTransitionException` | billing |
 | `ILLEGAL_BILLING_RUN_TRANSITION` | no | `IllegalBillingRunTransitionException` | billing |
+| `ILLEGAL_BROADCAST_STATUS_TRANSITION` | no | `IllegalBroadcastStatusTransitionException` | notification |
 | `ILLEGAL_CONFIGURATION_VERSION_STATUS_TRANSITION` | no | `IllegalConfigurationVersionStatusTransitionException` | billing |
 | `ILLEGAL_DISCOUNT_DEFINITION_TRANSITION` | no | `IllegalDiscountDefinitionTransitionException` | billing |
 | `ILLEGAL_ENROLLMENT_PAYMENT_STATUS_TRANSITION` | no | `IllegalEnrollmentPaymentStatusTransitionException` | billing |
@@ -588,6 +596,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `UPFRONT_WINDOW_CLOSED` | no | `UpfrontWindowClosedException` | billing |
 | `USERNAME_ALREADY_EXISTS` | no | `UsernameAlreadyExistsException` | identity |
 | `VERSION_ALREADY_EFFECTIVE` | no | `VersionAlreadyEffectiveException` | billing |
+| `WAITLIST_CANDIDATE_NOT_ELIGIBLE` | no | `WaitlistCandidateNotEligibleException` | enrollment |
+| `WAITLIST_ENTRY_NOT_WAITING` | no | `WaitlistEntryNotWaitingException` | enrollment |
+| `WAITLIST_NO_FREE_SEAT` | no | `WaitlistNoFreeSeatException` | enrollment |
+| `WAITLIST_REMOVAL_BLOCKED_BY_PENDING_RECEIPT` | no | `WaitlistRemovalBlockedByPendingReceiptException` | enrollment |
 | `WITHDRAWAL_REDUCTION_REJECTED` | no | `WithdrawalReductionRejectedException` | billing |
 
 ### HTTP 422
@@ -703,7 +715,11 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/validation` | `CollectionReminderScheduleController#validateExceptionChange` |
 | POST | `/billing-configuration/collection-reminder-schedules/{group}/validation` | `CollectionReminderScheduleController#validateGroupChange` |
 | POST | `/billing-runs/executions` | `BillingRunController#executeTodaysNightlyRun` |
+| POST | `/broadcasts` | `BroadcastDraftController#createBroadcastDraft` |
 | POST | `/broadcasts/audience-preview` | `BroadcastAudienceController#previewBroadcastAudience` |
+| POST | `/broadcasts/{id}/cancel` | `BroadcastLifecycleController#cancelBroadcast` |
+| POST | `/broadcasts/{id}/confirm` | `BroadcastLifecycleController#confirmBroadcast` |
+| POST | `/cancel-email-change` | `CancelEmailChangeController#cancelEmailChange` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
 | POST | `/classrooms` | `ClassroomController#create` |
@@ -884,6 +900,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/terms/{id}/enrollment/clear-override` | `TermController#removeOverride` |
 | POST | `/terms/{id}/enrollment/close` | `TermController#closeEnrollment` |
 | POST | `/terms/{id}/enrollment/open` | `TermController#openEnrollment` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/prioritize` | `WaitlistController#prioritize` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/promote` | `WaitlistController#promote` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/remove` | `WaitlistController#remove` |
 | POST | `/year-billing-templates/{id}/cohorts` | `ProgramYearBillingTemplateController#createCohort` |
 | PATCH | `/year-billing-templates/{id}/configuration` | `ProgramYearBillingTemplateController#updateConfiguration` |
 

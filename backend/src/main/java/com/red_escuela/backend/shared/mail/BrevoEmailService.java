@@ -69,11 +69,13 @@ public class BrevoEmailService implements EmailService {
     }
 
     @Override
-    public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail) {
+    public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail,
+                                      String cancellationLink) {
         String body = "<p>Hola " + HtmlUtils.htmlEscape(recipientName) + ",</p>"
                 + "<p>Se pidió cambiar el email de tu cuenta a " + HtmlUtils.htmlEscape(newEmail)
                 + ". El cambio recién se aplica cuando se confirma desde esa dirección; hasta entonces seguís usando este email.</p>"
-                + "<p>Si no fuiste vos, avisá a la institución y cambiá tu contraseña.</p>";
+                + "<p><a href=\"" + HtmlUtils.htmlEscape(cancellationLink) + "\">Cancelar el cambio de email</a></p>"
+                + "<p>Si no fuiste vos, cancelá el cambio con el enlace de arriba, avisá a la institución y cambiá tu contraseña.</p>";
         sendChangeMessage(previousEmail, "Se pidió cambiar el email de tu cuenta", body);
     }
 

@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrentLegalDocuments } from '@/features/identity/hooks/useLegal';
@@ -16,7 +15,6 @@ function LegalDocumentPage({ type }) {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center gap-4 px-4 py-8">
-      <MeshBackground />
       <div
         role="note"
         className="flex w-full max-w-[760px] items-center gap-2.5 rounded-lg bg-warning-bg px-3.5 py-3 text-size-13 font-semibold text-warning-ink"

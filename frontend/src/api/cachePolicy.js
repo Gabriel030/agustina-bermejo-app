@@ -6,6 +6,8 @@ export const STALE_TIME = Object.freeze({
   STATIC: 60 * 60_000,
 })
 
+export const PROFILE_STALE_TIME = STALE_TIME.OPERATIONAL
+
 export const POLL_INTERVAL = Object.freeze({
   NOTIFICATIONS: 15_000,
   ANNOUNCEMENTS: 60_000,

@@ -10,11 +10,12 @@ export function useFinancialDashboard() {
 
 export const DEBTORS_PAGE_SIZE = 25;
 
-export function useDebtors({ sortBy = 'DEBT_AGE', page = 0, size = DEBTORS_PAGE_SIZE } = {}) {
+export function useDebtors({ sortBy = 'DEBT_AGE', page = 0, size = DEBTORS_PAGE_SIZE, enabled = true } = {}) {
   return useQuery({
     queryKey: ['financial-dashboard', 'debtors', { sortBy, page, size }],
     queryFn: () => apiFetch(`/financial-dashboard/debtors/page?sortBy=${sortBy}&page=${page}&size=${size}`),
     placeholderData: (previous) => previous,
+    enabled,
   });
 }
 

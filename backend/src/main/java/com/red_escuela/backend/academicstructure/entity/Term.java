@@ -73,6 +73,10 @@ public class Term {
         return new EnrollmentWindow(enrollmentStart, enrollmentEnd);
     }
 
+    public boolean hasEnrollmentEndedAt(LocalDateTime moment) {
+        return enrollmentOverride != TermEnrollmentOverride.OPEN && enrollmentEnd.isBefore(moment);
+    }
+
     public boolean isEnrollmentOpenAt(LocalDateTime moment) {
         return enrollmentWindow().isOpenAt(moment, enrollmentOverride);
     }

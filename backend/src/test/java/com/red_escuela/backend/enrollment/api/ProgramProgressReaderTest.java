@@ -15,7 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +46,8 @@ class ProgramProgressReaderTest {
     private final ProgramSubjectView electiveOne = subject(3L, "Taller", 2, 70L);
     private final ProgramSubjectView electiveTwo = subject(4L, "Seminario", 2, 70L);
 
+    private final Map<List<EnrollmentStatus>, List<SubjectSectionEnrollmentRepository.PrerequisiteStatusRow>> marked = new HashMap<>();
+
     @BeforeEach
     void setUp() {
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
@@ -56,8 +61,7 @@ class ProgramProgressReaderTest {
                 .thenReturn(List.of(new ElectiveGroupRequirementView(70L, "Optativas", 1, 2)));
         when(sectionRepository.findByProgramEnrollmentId(ENROLLMENT_ID)).thenReturn(List.of());
         when(sectionRepository.existsByProgramEnrollmentIdAndStatusIn(eq(ENROLLMENT_ID), any())).thenReturn(false);
-        when(sectionRepository.findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                eq(ENROLLMENT_ID), any(), any())).thenReturn(List.of());
+        when(sectionRepository.findPrerequisiteStatusRows(any(), any(), any())).thenReturn(List.of());
     }
 
     private static ProgramSubjectView subject(Long id, String name, int credits, Long groupId) {
@@ -65,9 +69,12 @@ class ProgramProgressReaderTest {
     }
 
     private void markAs(ProgramSubjectView subject, EnrollmentStatus... statuses) {
-        when(sectionRepository.findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                ENROLLMENT_ID, subject.subjectId(), List.of(statuses)))
-                .thenReturn(List.of(mock(SubjectSectionEnrollment.class)));
+        SubjectSectionEnrollmentRepository.PrerequisiteStatusRow row = mock(SubjectSectionEnrollmentRepository.PrerequisiteStatusRow.class);
+        when(row.getSubjectId()).thenReturn(subject.subjectId());
+        List<EnrollmentStatus> statusList = List.of(statuses);
+        List<SubjectSectionEnrollmentRepository.PrerequisiteStatusRow> rows = marked.computeIfAbsent(statusList, key -> new ArrayList<>());
+        rows.add(row);
+        when(sectionRepository.findPrerequisiteStatusRows(eq(List.of(ENROLLMENT_ID)), any(), eq(statusList))).thenReturn(rows);
     }
 
     private void markAsCoursed(ProgramSubjectView... subjects) {
