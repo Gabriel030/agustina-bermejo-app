@@ -548,3 +548,6 @@ GET,/platform/audit-log,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/waitlists,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/waitlists/{kind}/{id},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/waitlists/{kind}/{id}/history,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/waitlists/{kind}/entries/{enrollmentId}/promote,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/waitlists/{kind}/entries/{enrollmentId}/prioritize,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/waitlists/{kind}/entries/{enrollmentId}/remove,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
