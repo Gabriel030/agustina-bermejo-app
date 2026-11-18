@@ -13,8 +13,8 @@ public final class AuditLogSpecifications {
     public static Specification<AuditLogEntry> matching(AuditLogFilter filter) {
         return (root, query, builder) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
-            if (filter.action() != null) {
-                predicates.add(builder.equal(root.get("action"), filter.action()));
+            if (!filter.actions().isEmpty()) {
+                predicates.add(root.get("action").in(filter.actions()));
             }
             if (filter.entityType() != null) {
                 predicates.add(builder.equal(root.get("entityType"), filter.entityType()));
