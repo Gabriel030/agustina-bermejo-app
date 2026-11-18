@@ -1378,7 +1378,11 @@
       "AuditLogView" : {
         "properties" : {
           "action" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED" ],
+            "description" : "Acción registrada. Conjunto abierto: pueden aparecer valores nuevos, por ejemplo STAFF_WITHDRAWN, PASSWORD_CHANGED o DATA_IMPORT_COMMITTED",
+            "example" : "STAFF_WITHDRAWN",
+            "type" : "string"
+          },
+          "actorName" : {
             "type" : "string"
           },
           "actorPersonId" : {
@@ -1399,7 +1403,8 @@
             "type" : "integer"
           },
           "entityType" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH" ],
+            "description" : "Tipo de entidad afectada. Conjunto abierto: pueden aparecer valores nuevos, por ejemplo PERSON o STUDENT",
+            "example" : "PERSON",
             "type" : "string"
           },
           "id" : {
@@ -1414,7 +1419,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "action", "actorPersonId", "actorRole", "afterValue", "beforeValue", "entityId", "entityType", "id", "occurredAt", "reason" ],
+        "required" : [ "action", "actorName", "actorPersonId", "actorRole", "afterValue", "beforeValue", "entityId", "entityType", "id", "occurredAt", "reason" ],
         "type" : "object"
       },
       "AuditedAnnualUpfrontTermsResponse" : {
@@ -18415,6 +18420,40 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorPersonId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorRole",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -58917,6 +58956,40 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorPersonId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorRole",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
