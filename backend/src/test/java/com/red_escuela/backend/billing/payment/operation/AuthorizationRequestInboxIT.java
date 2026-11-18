@@ -11,6 +11,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Instant;
@@ -58,6 +59,23 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
 
     private int statusOf(String path, String token) throws Exception {
         return mockMvc.perform(get(path).header("Authorization", "Bearer " + token)).andReturn().getResponse().getStatus();
+    }
+
+    private MockHttpServletResponse responseOf(String path, String token) throws Exception {
+        return mockMvc.perform(get(path).header("Authorization", "Bearer " + token)).andReturn().getResponse();
+    }
+
+    private MockHttpServletResponse decisionResponse(String action, long requestId, String token) throws Exception {
+        return mockMvc.perform(decision(action, requestId, token)).andReturn().getResponse();
+    }
+
+    private void assertIdenticalNotFound(MockHttpServletResponse foreign,
+                                         MockHttpServletResponse missing) throws Exception {
+        assertThat(foreign.getStatus()).isEqualTo(404);
+        assertThat(missing.getStatus()).isEqualTo(404);
+        assertThat(foreign.getContentAsString()).isEmpty();
+        assertThat(missing.getContentAsString()).isEmpty();
+        assertThat(foreign.getContentAsString()).doesNotContain("code");
     }
 
     private int decisionStatus(String action, long requestId, String token) throws Exception {
@@ -194,7 +212,7 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
 
     @Test
     @Tag("D-216")
-    void theDetailAndTheListAreForbiddenToStudentsAndToAdministrativesAskingForSomeoneElsesRequest() throws Exception {
+    void theDetailAndTheListAreForbiddenToStudentsAndTheDetailOfSomeoneElsesRequestLooksMissingToAdministratives() throws Exception {
         Person owner = newStaffPerson();
         String ownerToken = tokenOf(owner, "ADMINISTRATIVO");
         long requestId = refundRequestedBy(ownerToken);
@@ -205,7 +223,8 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
         assertThat(statusOf("/authorization-requests", studentTokenOf(student))).isEqualTo(403);
         assertThat(statusOf(detail, staffToken("DOCENTE"))).isEqualTo(403);
         assertThat(statusOf("/authorization-requests", staffToken("PRECEPTOR"))).isEqualTo(403);
-        assertThat(statusOf(detail, staffToken("ADMINISTRATIVO"))).isEqualTo(403);
+        assertIdenticalNotFound(responseOf(detail, staffToken("ADMINISTRATIVO")),
+                responseOf("/authorization-requests/999999999", staffToken("ADMINISTRATIVO")));
         assertThat(statusOf(detail, ownerToken)).isEqualTo(200);
         assertThat(statusOf(detail, staffToken("DIRECTOR"))).isEqualTo(200);
         assertThat(statusOf("/authorization-requests/999999999", staffToken("DIRECTOR"))).isEqualTo(404);
@@ -239,8 +258,10 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
         String ownerToken = tokenOf(owner, "ADMINISTRATIVO");
         long requestId = refundRequestedBy(ownerToken);
 
-        assertThat(decisionStatus("withdraw", requestId, staffToken("DIRECTOR"))).isEqualTo(403);
-        assertThat(decisionStatus("withdraw", requestId, staffToken("ADMINISTRATIVO"))).isEqualTo(403);
+        for (String strangerRole : List.of("DIRECTOR", "ADMINISTRATIVO")) {
+            assertIdenticalNotFound(decisionResponse("withdraw", requestId, staffToken(strangerRole)),
+                    decisionResponse("withdraw", 999999999L, staffToken(strangerRole)));
+        }
         assertThat(authorizationStatus(requestId)).isEqualTo("PENDING");
         assertThat(decisionStatus("withdraw", requestId, ownerToken)).isEqualTo(200);
         assertThat(authorizationStatus(requestId)).isEqualTo("WITHDRAWN");

@@ -2,7 +2,9 @@ package com.red_escuela.backend.notification.broadcast.draft.entity;
 
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
+import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastEvent;
 import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatus;
+import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatusStateMachine;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -69,6 +71,28 @@ public class Broadcast {
     @Column(name = "confirmed_at")
     private Instant confirmedAt;
 
+    @Column(name = "cancelled_by_person_id")
+    private Long cancelledByPersonId;
+
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
+    @Column(name = "cancellation_reason", length = 500)
+    private String cancellationReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    public void confirm(Long personId, Instant now) {
+        status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.CONFIRM);
+        confirmedByPersonId = personId;
+        confirmedAt = now;
+    }
+
+    public void cancel(Long personId, String reason, Instant now) {
+        status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.CANCEL);
+        cancelledByPersonId = personId;
+        cancellationReason = reason;
+        cancelledAt = now;
+    }
 }
