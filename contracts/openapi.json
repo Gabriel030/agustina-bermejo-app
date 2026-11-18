@@ -1995,8 +1995,18 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "confirmedByName" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "createdByName" : {
+            "type" : "string"
+          },
+          "estimatedCompletionDate" : {
+            "format" : "date",
             "type" : "string"
           },
           "id" : {
@@ -2090,8 +2100,14 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "confirmedByName" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "createdByName" : {
             "type" : "string"
           },
           "id" : {
@@ -2101,12 +2117,19 @@
           "name" : {
             "type" : "string"
           },
+          "recipientCounts" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
           "status" : {
             "enum" : [ "DRAFT", "CONFIRMED", "SENDING", "COMPLETED", "CANCELLED" ],
             "type" : "string"
           }
         },
-        "required" : [ "category", "channel", "confirmedAt", "createdAt", "id", "name", "status" ],
+        "required" : [ "category", "channel", "confirmedAt", "createdAt", "id", "name", "recipientCounts", "status" ],
         "type" : "object"
       },
       "CancelBroadcastRequest" : {
@@ -18649,8 +18672,11 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
-            "type" : "string"
+            "items" : {
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
@@ -60358,8 +60384,11 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
-            "type" : "string"
+            "items" : {
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
