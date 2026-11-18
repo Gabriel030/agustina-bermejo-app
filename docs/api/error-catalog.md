@@ -76,6 +76,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGEBACK_REFERENCE_INVALID` | no | `ChargebackReferenceInvalidException` | billing |
 | `CIRCULAR_PREREQUISITE` | no | `CircularPrerequisiteException` | academicstructure |
 | `CLASS_ON_HOLIDAY` | no | `ClassOnHolidayException` | attendance |
+| `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
+| `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
+| `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
 | `CREDIT_NOTE_JUSTIFICATION_REQUIRED` | no | `CreditNoteJustificationRequiredException` | billing |
 | `CREDIT_NOTE_LINES_INVALID` | no | `CreditNoteLinesInvalidException` | billing |
 | `CURRENCY_MISMATCH` | no | `CurrencyMismatchException` | billing |
@@ -380,6 +383,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CERTIFICATE_EXPIRED` | no | `CertificateExpiredException` | graduation |
 | `CERTIFICATE_REVOKED` | no | `CertificateRevokedException` | graduation |
 | `CHANNEL_NOT_AVAILABLE` | no | `ChannelNotAvailableException` | notification |
+| `CHANNEL_NOT_ENABLED` | no | `ChannelNotEnabledException` | notification |
 | `CHARGEBACK_ALREADY_REVERSED` | no | `ChargebackAlreadyReversedException` | billing |
 | `CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT` | no | `ChargebackMustBeForTheFullAmountException` | billing |
 | `CHARGE_REJECTED` | no | `ChargeRejectedException` | billing |
@@ -545,6 +549,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PROGRAM_NOT_AVAILABLE` | no | `ProgramNotAvailableException` | enrollment |
 | `PROGRAM_SUBJECT_ALREADY_EXISTS` | no | `ProgramSubjectAlreadyExistsException` | academicstructure |
 | `PROGRAM_YEAR_BILLING_TEMPLATE_MISMATCH` | no | `ProgramYearBillingTemplateMismatchException` | billing |
+| `PROMOTIONAL_CONSENT_DISABLED` | no | `PromotionalConsentDisabledException` | notification |
 | `PROMOTION_ALREADY_CLOSED` | no | `PromotionAlreadyClosedException` | billing |
 | `PROPOSAL_ALREADY_OPEN` | no | `ProposalAlreadyOpenException` | billing |
 | `PROPOSAL_EXPIRED` | no | `ProposalExpiredException` | billing |
@@ -600,6 +605,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `WAITLIST_ENTRY_NOT_WAITING` | no | `WaitlistEntryNotWaitingException` | enrollment |
 | `WAITLIST_NO_FREE_SEAT` | no | `WaitlistNoFreeSeatException` | enrollment |
 | `WAITLIST_REMOVAL_BLOCKED_BY_PENDING_RECEIPT` | no | `WaitlistRemovalBlockedByPendingReceiptException` | enrollment |
+| `WHATSAPP_PROVIDER_NOT_CONFIGURED` | no | `WhatsappProviderNotConfiguredException` | platform |
 | `WITHDRAWAL_REDUCTION_REJECTED` | no | `WithdrawalReductionRejectedException` | billing |
 
 ### HTTP 422

@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryServic
 import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.platform.specialist.WhatsAppProviderConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockReset;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
@@ -26,7 +27,8 @@ import java.lang.annotation.Target;
         PendingInvoiceQueryService.class,
         LateFeeChargeRepository.class,
         EnrollmentWithdrawalBillingPort.class,
-        OnlinePaymentDependencyPort.class
+        OnlinePaymentDependencyPort.class,
+        WhatsAppProviderConfiguration.class
 }, reset = MockReset.AFTER)
 public @interface SharedSpyBeans {
 }

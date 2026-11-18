@@ -6,11 +6,13 @@ import { routes as evaluation } from '@/features/evaluation/routes';
 import { routes as billing } from '@/features/billing/routes';
 import { routes as graduation } from '@/features/graduation/routes';
 import { routes as announcements } from '@/features/announcements/routes';
+import { routes as broadcasts } from '@/features/broadcasts/routes';
 import { routes as notifications } from '@/features/notifications/routes';
 import { routes as workspace } from '@/features/workspace/routes';
 import { routes as platform } from '@/features/platform/routes';
 import { routes as institution } from '@/features/institution/routes';
 import { routes as dataImport } from '@/features/data-import/routes';
+import { routes as audit } from '@/features/audit/routes';
 
 export const FEATURE_ROUTES = {
   identity,
@@ -21,11 +23,13 @@ export const FEATURE_ROUTES = {
   billing,
   graduation,
   announcements,
+  broadcasts,
   notifications,
   workspace,
   platform,
   institution,
   'data-import': dataImport,
+  audit,
 };
 
 const collect = (kind) => Object.values(FEATURE_ROUTES).flatMap((featureRoutes) => featureRoutes[kind]);
