@@ -510,6 +510,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `LEGACY_RECEIPT_PENDING_ON_INVOICE` | no | `LegacyReceiptPendingOnInvoiceException` | billing |
 | `MANUAL_ISSUANCE_OUTSIDE_CURRENT_MONTH` | no | `ManualIssuanceOutsideCurrentMonthException` | billing |
 | `MANUAL_ISSUANCE_REQUIRES_SIMULATION` | no | `ManualIssuanceRequiresSimulationException` | billing |
+| `MODULE_NOT_ENABLED` | no | `ModuleNotEnabledException` | platform |
 | `MONTHLY_INVOICE_RUN_ALREADY_EXISTS` | no | `MonthlyInvoiceRunAlreadyExistsException` | billing |
 | `MONTHLY_INVOICE_RUN_NOT_AWAITING_REVIEW` | no | `MonthlyInvoiceRunNotAwaitingReviewException` | billing |
 | `NIGHTLY_BILLING_NOT_COMPLETED` | no | `NightlyBillingNotCompletedException` | billing |

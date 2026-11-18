@@ -12,6 +12,7 @@ import java.lang.annotation.Target;
 public @interface RequiresModule {
 
     String BILLING = "billing";
+    String ANALYTICS = "analytics";
 
     String value();
 
