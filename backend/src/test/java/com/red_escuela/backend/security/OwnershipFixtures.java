@@ -207,8 +207,7 @@ final class OwnershipFixtures {
         entityManager.flush();
         attendanceId = absence.getId();
         examBoardId = persistExamBoard(subject, term, instructor);
-        Long closureSectionId = persistClosureSection(subject, term, scheme, instructor);
-        this.closureSectionId = closureSectionId;
+        closureSectionId = persistClosureSection(subject, term, scheme, instructor);
         closureId = persistClosure(closureSectionId);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);

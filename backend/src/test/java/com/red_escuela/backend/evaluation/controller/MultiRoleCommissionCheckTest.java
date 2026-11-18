@@ -1,9 +1,9 @@
 package com.red_escuela.backend.evaluation.controller;
 
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.evaluation.domain.ClosureViewerProfile;
-import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
@@ -20,8 +20,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
