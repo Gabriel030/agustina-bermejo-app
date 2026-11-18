@@ -33,6 +33,7 @@ class WhatsAppApiSwitchIT extends AbstractIntegrationTest {
 
     private static final String URL = "/institute-settings/notifications/whatsapp";
     private static final String TURN_ON = "{\"enabled\":true,\"reason\":\"Número verificado con Meta\"}";
+    private static final String WA_BROADCAST_CHANNELS = "select channel from broadcast where created_by_person_id in (select id from person where username like 'wa-%')";
     private static final String WHATSAPP_DRAFT = "{\"name\":\"Aviso\",\"channel\":\"WHATSAPP_API\",\"category\":\"INSTITUTIONAL\",\"bodyText\":\"Texto\","
             + "\"segmentSpec\":{\"version\":1,\"quantifier\":\"ALL\",\"criteria\":[{\"key\":\"STAFF_ROLE\",\"value\":\"DOCENTE\"}]}}";
 
@@ -154,7 +155,27 @@ class WhatsAppApiSwitchIT extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("DRAFT"));
 
-        assertThat(jdbc.queryForList("select channel from broadcast", String.class)).containsExactly("WHATSAPP_API");
+        assertThat(jdbc.queryForList(WA_BROADCAST_CHANNELS, String.class)).containsExactly("WHATSAPP_API");
+    }
+
+    @Test
+    void confirmingWhatsAppBroadcastAfterTurningTheChannelOffIsRejectedAndLeavesTheDraft() throws Exception {
+        configureProvider();
+        mockMvc.perform(put(URL).header("Authorization", directorToken).contentType(MediaType.APPLICATION_JSON).content(TURN_ON))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/broadcasts").header("Authorization", directorToken).contentType(MediaType.APPLICATION_JSON).content(WHATSAPP_DRAFT))
+                .andExpect(status().isCreated());
+        Long broadcastId = jdbc.queryForObject("select id from broadcast where created_by_person_id in (select id from person where username like 'wa-%')", Long.class);
+        mockMvc.perform(put(URL).header("Authorization", directorToken).contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/broadcasts/" + broadcastId + "/confirm").header("Authorization", directorToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CHANNEL_NOT_ENABLED"));
+
+        assertThat(jdbc.queryForObject("select status from broadcast where id = ?", String.class, broadcastId)).isEqualTo("DRAFT");
+        assertThat(jdbc.queryForObject("select count(*) from notification_delivery where related_entity_type = 'BROADCAST' and related_entity_id = ?", Integer.class, broadcastId)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where action = 'BROADCAST_CONFIRMED' and entity_id = ?", Integer.class, broadcastId)).isZero();
     }
 
     @Test
