@@ -1,0 +1,32 @@
+name: Cell board
+
+on:
+  issue_comment:
+    types: [created, edited, deleted]
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, closed, labeled, unlabeled]
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+concurrency:
+  group: cell-board
+  cancel-in-progress: false
+
+jobs:
+  board:
+    if: github.event_name != 'issue_comment' || !contains(github.event.comment.body, '<!-- cell-board -->')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Update board
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: scripts/cell-board.sh publish
