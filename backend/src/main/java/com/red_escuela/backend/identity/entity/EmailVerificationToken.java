@@ -26,6 +26,9 @@ public class EmailVerificationToken {
     @Column(name = "token_hash", nullable = false, unique = true)
     private String tokenHash;
 
+    @Column(name = "cancel_token_hash")
+    private String cancelTokenHash;
+
     @Column(name = "new_email")
     private String newEmail;
 

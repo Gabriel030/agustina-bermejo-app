@@ -26,7 +26,6 @@ const ARBITRARY_RADIUS_PENDING = [
 ];
 
 const SHELL_ALLOWED = [
-  '/src/components/MeshBackground.jsx',
   '/src/layouts/RoleShell.jsx',
   '/src/components/Sidebar.jsx',
   '/src/components/TopHeader.jsx',
@@ -36,18 +35,6 @@ const SHELL_ALLOWED = [
 
 const SHELL_PENDING = [
   '/src/features/notifications/components/NotificationBell.jsx',
-  '/src/features/identity/legal/LegalDocumentPage.jsx',
-  '/src/features/identity/legal/GuardianWaitingScreen.jsx',
-  '/src/features/identity/pages/ForgotPassword.jsx',
-  '/src/features/identity/pages/BajaComunicaciones.jsx',
-  '/src/features/identity/pages/ConfirmarResponsable.jsx',
-  '/src/features/identity/pages/VerificacionEmail.jsx',
-  '/src/features/identity/pages/Login.jsx',
-  '/src/features/identity/pages/Registrarse.jsx',
-  '/src/features/graduation/certificates/pages/VerifyCertificate.jsx',
-  '/src/pages/CargaInicial.jsx',
-  '/src/pages/RolePicker.jsx',
-  '/src/pages/NoAutorizado.jsx',
 ];
 
 const RULES = [
@@ -66,7 +53,7 @@ const RULES = [
   {
     name: 'MeshBackground import or usage',
     pattern: /\bMeshBackground\b/g,
-    allowed: [...SHELL_ALLOWED, ...SHELL_PENDING],
+    allowed: [],
     exemptUi: true,
   },
   {
@@ -108,10 +95,10 @@ describe('restyle regression guards', () => {
     expect(findViolations('/src/features/identity/pages/PadronAlumnos.jsx', 'const a = "font-mono";')).toEqual([]);
   });
 
-  it('flags MeshBackground outside the shell', () => {
+  it('flags any MeshBackground import or usage', () => {
     const sample = "import { MeshBackground } from '@/components/MeshBackground'; <MeshBackground />";
     expect(findViolations('/src/features/x/Page.jsx', sample).length).toBeGreaterThan(0);
-    expect(findViolations('/src/layouts/RoleShell.jsx', sample)).toEqual([]);
+    expect(findViolations('/src/layouts/RoleShell.jsx', sample).length).toBeGreaterThan(0);
   });
 
   it('flags the design-b prefix outside the shell and button', () => {

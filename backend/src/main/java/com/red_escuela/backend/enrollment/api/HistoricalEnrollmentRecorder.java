@@ -221,6 +221,16 @@ public class HistoricalEnrollmentRecorder {
         sectionEnrollmentRepository.flush();
     }
 
+    @Transactional
+    public int discardSectionEnrollments(Collection<Long> enrollmentIds) {
+        int deleted = 0;
+        for (List<Long> chunk : InClauseChunks.of(enrollmentIds)) {
+            deleted += sectionEnrollmentRepository.deleteByIdIn(chunk);
+        }
+        sectionEnrollmentRepository.flush();
+        return deleted;
+    }
+
     @Transactional(readOnly = true)
     public Optional<Long> findSectionEnrollmentId(DocumentType type, String number, Long sectionId) {
         return findStudentId(type, number)

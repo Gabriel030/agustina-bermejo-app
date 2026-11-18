@@ -163,7 +163,7 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
         long toWithdraw = pendingRequestId(requestCreditNote(scenario.invoiceId(), administrative, creditNoteBody("BILLING_ERROR", "Error", 1, "2000.00"), 202));
 
         decide("reject", toReject, director, 200);
-        decide("withdraw", toWithdraw, otherAdministrative, 403);
+        decide("withdraw", toWithdraw, otherAdministrative, 404);
         decide("withdraw", toWithdraw, administrative, 200);
 
         assertThat(jdbc.queryForObject("select status from authorization_request where id = ?", String.class, toReject)).isEqualTo("REJECTED");

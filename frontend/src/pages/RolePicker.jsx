@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { GlassCard } from '@/components/GlassCard';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
-import { MeshBackground } from '@/components/MeshBackground';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -72,7 +71,6 @@ export function RolePicker() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <MeshBackground />
       <GlassCard className="w-full max-w-md p-6 sm:p-8">
         <InstitutionBrand layout="horizontal" />
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">

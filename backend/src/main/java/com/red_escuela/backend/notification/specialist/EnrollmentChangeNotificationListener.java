@@ -3,8 +3,10 @@ package com.red_escuela.backend.notification.specialist;
 import com.red_escuela.backend.enrollment.events.SubjectEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.enrollment.events.SubjectSectionChangedEvent;
 import com.red_escuela.backend.enrollment.events.SubjectWaitlistPromotedEvent;
+import com.red_escuela.backend.enrollment.events.WaitlistEntryExpiredEvent;
 import com.red_escuela.backend.enrollment.events.WaitlistEntryPromotedEvent;
 import com.red_escuela.backend.enrollment.events.WaitlistEntryRemovedEvent;
+import com.red_escuela.backend.enrollment.events.WaitlistExpiryReminderEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.ClosureNotification;
 import com.red_escuela.backend.notification.domain.NotificationRecipient;
@@ -25,6 +27,8 @@ public class EnrollmentChangeNotificationListener {
     static final String NOTIFY_WAITLIST_PROMOTED_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistPromoted";
     static final String NOTIFY_ENTRY_PROMOTED_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistEntryPromoted";
     static final String NOTIFY_ENTRY_REMOVED_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistEntryRemoved";
+    static final String NOTIFY_ENTRY_EXPIRED_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistEntryExpired";
+    static final String NOTIFY_EXPIRY_REMINDER_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistExpiryReminder";
     static final String SECTION_ENROLLMENT_ENTITY_TYPE = "SubjectSectionEnrollment";
 
     private final ProcessedEffectGuard effectGuard;
@@ -93,6 +97,22 @@ public class EnrollmentChangeNotificationListener {
         effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_ENTRY_REMOVED_HANDLER, () ->
                 publish(NotificationType.SUBJECT_WITHDRAWN,
                         "Te quitamos de la lista de espera de " + event.queueName() + ". Consultá con la institución si tenés dudas.",
+                        List.of(event.studentPersonId()), event.enrollmentId()));
+    }
+
+    @ApplicationModuleListener
+    public void notifyWaitlistEntryExpired(WaitlistEntryExpiredEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_ENTRY_EXPIRED_HANDLER, () ->
+                publish(NotificationType.SUBJECT_WITHDRAWN,
+                        "Venció tu lugar en la lista de espera de " + event.queueName() + " porque cerró la inscripción.",
+                        List.of(event.studentPersonId()), event.enrollmentId()));
+    }
+
+    @ApplicationModuleListener
+    public void notifyWaitlistExpiryReminder(WaitlistExpiryReminderEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_EXPIRY_REMINDER_HANDLER, () ->
+                publish(NotificationType.SUBJECT_WITHDRAWN,
+                        "Tu lugar en la lista de espera de " + event.queueName() + " vence el " + event.closesOn() + " si no se libera un cupo.",
                         List.of(event.studentPersonId()), event.enrollmentId()));
     }
 

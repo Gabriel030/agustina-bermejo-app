@@ -3,7 +3,6 @@ import { postLoginPathFor } from '@/lib/activeRole';
 import { Link, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,7 +112,6 @@ export function Registrarse() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <MeshBackground />
       <GlassCard className="w-full max-w-[480px] p-6 pb-7 sm:p-10 sm:pb-8">
         <div className="mb-6">
           <InstitutionBrand titulo="Creá tu cuenta" subtitulo="Registrate para solicitar una carrera o anotarte a un curso" />

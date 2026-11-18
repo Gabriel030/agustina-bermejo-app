@@ -1,5 +1,6 @@
 package com.red_escuela.backend.characterization.access;
 
+import com.red_escuela.backend.identity.dto.CancelEmailChangeRequest;
 import com.red_escuela.backend.identity.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.dto.UpdateStaffRequest;
@@ -67,6 +68,10 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
 
     private String tokenOf(EmailChangeRequestedEvent event) {
         return event.verificationLink().substring(event.verificationLink().indexOf("token=") + 6);
+    }
+
+    private String cancelTokenOf(EmailChangeRequestedEvent event) {
+        return event.cancellationLink().substring(event.cancellationLink().indexOf("token=") + 6);
     }
 
     private List<ContactChangeLog> logOf(Person person) {
@@ -184,6 +189,122 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
                 .andExpect(status().isAccepted());
         assertThat(applicationEvents.stream(PasswordResetCodeIssuedEvent.class)
                 .filter(event -> event.personId().equals(person.getId())).count()).isEqualTo(1);
+    }
+
+    private ResultActions cancelEmailChange(String token) throws Exception {
+        return mockMvc.perform(post("/cancel-email-change")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new CancelEmailChangeRequest(token))));
+    }
+
+    private String unknownToken() {
+        return "x".repeat(43);
+    }
+
+    @Test
+    void cancelFromPreviousEmailDiscardsRequest() throws Exception {
+        Person person = persistPerson("access.emailchg9", "70000210", "ALUMNO");
+        updateOwnProfile(person, "nuevo9@example.com", null, PASSWORD).andExpect(status().isOk());
+        EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
+
+        cancelEmailChange(cancelTokenOf(event)).andExpect(status().isOk());
+
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(event)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+        assertThat(reload(person).emailValue()).isEqualTo("access.emailchg9@example.com");
+        cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+        cancelEmailChange(tokenOf(event)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+    }
+
+    @Test
+    void cancelWithExpiredTokenIsRejectedAndKeepsTheRequestPending() throws Exception {
+        Person person = persistPerson("access.emailchg40", "70000260", "ALUMNO");
+        updateOwnProfile(person, "nuevo40@example.com", null, PASSWORD).andExpect(status().isOk());
+        EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
+
+        ApplicationTime.useClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofHours(49)));
+        try {
+            cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+        } finally {
+            ApplicationTime.useClock(Clock.systemDefaultZone());
+        }
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isOk());
+        assertThat(reload(person).emailValue()).isEqualTo("nuevo40@example.com");
+    }
+
+    @Test
+    void cancelWithUnknownTokenIsRejected() throws Exception {
+        cancelEmailChange(unknownToken()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+    }
+
+    @Test
+    void cancelAfterConfirmIsRejectedAndDoesNotRevertTheNewEmail() throws Exception {
+        Person person = persistPerson("access.emailchg41", "70000261", "ALUMNO");
+        updateOwnProfile(person, "nuevo41@example.com", null, PASSWORD).andExpect(status().isOk());
+        EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isOk());
+
+        cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+
+        assertThat(reload(person).emailValue()).isEqualTo("nuevo41@example.com");
+    }
+
+    @Test
+    void confirmAfterCancelIsRejectedAndKeepsThePreviousEmail() throws Exception {
+        Person person = persistPerson("access.emailchg42", "70000262", "ALUMNO");
+        updateOwnProfile(person, "nuevo42@example.com", null, PASSWORD).andExpect(status().isOk());
+        EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
+        cancelEmailChange(cancelTokenOf(event)).andExpect(status().isOk());
+
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+
+        assertThat(reload(person).emailValue()).isEqualTo("access.emailchg42@example.com");
+    }
+
+    @Test
+    void cancelTokenTravelsOnlyInTheBody() throws Exception {
+        Person person = persistPerson("access.emailchg43", "70000263", "ALUMNO");
+        updateOwnProfile(person, "nuevo43@example.com", null, PASSWORD).andExpect(status().isOk());
+        EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
+
+        mockMvc.perform(post("/cancel-email-change").param("token", cancelTokenOf(event)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST_BODY"));
+
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isOk());
+    }
+
+    @Test
+    void cancelWithInvalidTokenShapeIsRejectedByValidation() throws Exception {
+        for (String token : new String[] {" ", "", "x".repeat(31), "x".repeat(129)}) {
+            cancelEmailChange(token).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        }
+        mockMvc.perform(post("/cancel-email-change").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void cancelWithoutBodyIsRejectedAsMalformed() throws Exception {
+        mockMvc.perform(post("/cancel-email-change").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST_BODY"));
+    }
+
+    @Test
+    void cancelAcceptsTheShortestAndLongestAllowedToken() throws Exception {
+        cancelEmailChange("x".repeat(32)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+        cancelEmailChange("x".repeat(128)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
     }
 
     @Test

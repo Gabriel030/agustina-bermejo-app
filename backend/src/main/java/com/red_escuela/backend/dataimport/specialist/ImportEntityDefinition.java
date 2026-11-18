@@ -70,6 +70,14 @@ public interface ImportEntityDefinition {
         throw new UnsupportedOperationException("Esta estructura se retiene y no se deshace");
     }
 
+    default boolean discardsInBatch() {
+        return false;
+    }
+
+    default void discardBatch(List<Long> entityIds) {
+        entityIds.forEach(this::discard);
+    }
+
     default boolean parentMissing(Map<String, String> payload) {
         return false;
     }
