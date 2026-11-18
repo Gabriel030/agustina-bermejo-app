@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-export function useCourses(status) {
+export function useCourses(status, { enabled = true } = {}) {
   const params = status ? `?status=${status}` : '';
   return useQuery({
     queryKey: ['admin-courses', status ?? 'all'],
     queryFn: () => apiFetch(`/courses${params}`),
+    enabled,
   });
 }
 
