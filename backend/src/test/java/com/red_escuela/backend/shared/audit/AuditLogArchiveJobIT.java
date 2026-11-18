@@ -3,6 +3,7 @@ package com.red_escuela.backend.shared.audit;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.audit.service.AuditLogArchiveJob;
 import com.red_escuela.backend.shared.retention.RetentionSettings;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,8 +31,22 @@ class AuditLogArchiveJobIT extends AbstractIntegrationTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @AfterEach
+    void cleanInsertedRows() {
+        jdbc.update("delete from audit_log where reason = 'archive-test'");
+        jdbc.update("delete from audit_log_archive where reason = 'archive-test'");
+    }
+
     private AuditLogArchiveJob job() {
-        return new AuditLogArchiveJob(auditLogRepository, new RetentionSettings(true, 12, 12, 12, 36, 2, 100), CLOCK, transactionManager, 12);
+        return job(100, 100);
+    }
+
+    private AuditLogArchiveJob job(int batchSize, int maxBatches) {
+        return new AuditLogArchiveJob(auditLogRepository, new RetentionSettings(true, 12, 12, 12, 36, batchSize, maxBatches), CLOCK, transactionManager, 12);
+    }
+
+    private long countArchivedTest() {
+        return jdbc.queryForObject("select count(*) from audit_log_archive where reason = 'archive-test'", Long.class);
     }
 
     private long insert(LocalDateTime occurredAt) {
@@ -86,6 +101,41 @@ class AuditLogArchiveJobIT extends AbstractIntegrationTest {
         assertThat(inAuditLog(boundary)).isTrue();
         assertThat(inAuditLog(recent)).isTrue();
         assertThat(inArchive(boundary)).isFalse();
+        assertThat(total()).isEqualTo(before);
+    }
+
+    @Test
+    void justPastTwelveMonthsIsArchivedAndExactCutoffIsNot() {
+        long justPast = insert(NOW.minusMonths(12).minusMinutes(1));
+        long dayPast = insert(NOW.minusMonths(12).minusDays(1));
+        long exactCutoff = insert(NOW.minusMonths(12));
+        long before = total();
+
+        job().archiveExpiredAuditEntries();
+
+        assertThat(inArchive(justPast)).isTrue();
+        assertThat(inArchive(dayPast)).isTrue();
+        assertThat(inAuditLog(exactCutoff)).isTrue();
+        assertThat(inArchive(exactCutoff)).isFalse();
+        assertThat(total()).isEqualTo(before);
+    }
+
+    @Test
+    void archivesAcrossSeveralBatchesAndStopsAtMaxBatches() {
+        for (int index = 0; index < 5; index++) {
+            insert(NOW.minusMonths(13).minusDays(index));
+        }
+        long before = total();
+
+        int firstRun = job(2, 2).archiveExpiredAuditEntries();
+
+        assertThat(firstRun).isEqualTo(4);
+        assertThat(countArchivedTest()).isEqualTo(4);
+
+        int secondRun = job(2, 2).archiveExpiredAuditEntries();
+
+        assertThat(secondRun).isEqualTo(1);
+        assertThat(countArchivedTest()).isEqualTo(5);
         assertThat(total()).isEqualTo(before);
     }
 }

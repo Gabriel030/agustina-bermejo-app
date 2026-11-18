@@ -85,9 +85,14 @@ class BroadcastRecipientDataRetentionIT extends AbstractIntegrationTest {
                 Long.class, broadcast.getId());
     }
 
-    private long withAddressOrReason(Broadcast broadcast) {
-        return jdbc.queryForObject("select count(*) from broadcast_recipient where broadcast_id = ? and (address_masked is not null or exclusion_reason is not null)",
+    private long withAddress(Broadcast broadcast) {
+        return jdbc.queryForObject("select count(*) from broadcast_recipient where broadcast_id = ? and address_masked is not null",
                 Long.class, broadcast.getId());
+    }
+
+    private long withReason(Broadcast broadcast, String reason) {
+        return jdbc.queryForObject("select count(*) from broadcast_recipient where broadcast_id = ? and exclusion_reason = ?",
+                Long.class, broadcast.getId(), reason);
     }
 
     @Test
@@ -101,7 +106,8 @@ class BroadcastRecipientDataRetentionIT extends AbstractIntegrationTest {
         job().anonymizeExpiredRecipientData();
 
         for (Broadcast broadcast : new Broadcast[]{cancelled, completed}) {
-            assertThat(withAddressOrReason(broadcast)).isZero();
+            assertThat(withAddress(broadcast)).isZero();
+            assertThat(withReason(broadcast, "OPTED_OUT")).isEqualTo(1);
             assertThat(recipientRepository.countByBroadcastId(broadcast.getId())).isEqualTo(2);
             assertThat(recipientRepository.countByStatus(broadcast.getId())).extracting(count -> count.status().name() + ":" + count.total())
                     .containsExactlyInAnyOrder("SENT:1", "EXCLUDED:1");
@@ -131,18 +137,28 @@ class BroadcastRecipientDataRetentionIT extends AbstractIntegrationTest {
     @Test
     void nothingBeforeTwelveMonths() {
         Person creator = person();
+        Instant old = NOW.minusMonths(20).toInstant();
         Broadcast cancelledRecently = broadcast(creator, BroadcastStatus.CANCELLED, NOW.minusMonths(12).plusMinutes(1).toInstant(), null);
         Broadcast completedRecently = broadcast(creator, BroadcastStatus.COMPLETED, null, NOW.minusMonths(11).toInstant());
-        Broadcast stillSending = broadcast(creator, BroadcastStatus.SENDING, null, null);
+        Broadcast sendingWithOldDates = broadcast(creator, BroadcastStatus.SENDING, old, old);
+        Broadcast confirmedWithOldDates = broadcast(creator, BroadcastStatus.CONFIRMED, old, old);
+        Broadcast draftWithOldDates = broadcast(creator, BroadcastStatus.DRAFT, old, old);
         Broadcast completedWithoutDate = broadcast(creator, BroadcastStatus.COMPLETED, null, null);
-        for (Broadcast broadcast : new Broadcast[]{cancelledRecently, completedRecently, stillSending, completedWithoutDate}) {
+        Broadcast[] untouched = {cancelledRecently, completedRecently, sendingWithOldDates, confirmedWithOldDates, draftWithOldDates, completedWithoutDate};
+        for (Broadcast broadcast : untouched) {
             recipients(broadcast, person(), person());
         }
+        Broadcast expired = broadcast(creator, BroadcastStatus.CANCELLED, NOW.minusMonths(12).minusMinutes(1).toInstant(), null);
+        recipients(expired, person(), person());
 
-        job().anonymizeExpiredRecipientData();
+        int anonymized = job().anonymizeExpiredRecipientData();
 
-        for (Broadcast broadcast : new Broadcast[]{cancelledRecently, completedRecently, stillSending, completedWithoutDate}) {
-            assertThat(withAddressOrReason(broadcast)).isEqualTo(2);
+        assertThat(anonymized).isGreaterThanOrEqualTo(1);
+        assertThat(withAddress(expired)).isZero();
+        assertThat(auditEntries(expired)).isEqualTo(1);
+        for (Broadcast broadcast : untouched) {
+            assertThat(withAddress(broadcast)).isEqualTo(1);
+            assertThat(withReason(broadcast, "OPTED_OUT")).isEqualTo(1);
             assertThat(auditEntries(broadcast)).isZero();
         }
     }
