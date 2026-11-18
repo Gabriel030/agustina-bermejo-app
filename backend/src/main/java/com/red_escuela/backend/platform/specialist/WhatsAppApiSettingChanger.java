@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class WhatsAppApiSettingChanger {
 
+    private static final long AUDIT_ENTITY_ID = 1L;
     private static final String DEFAULT_REASON = "Cambio del interruptor de WhatsApp por API";
 
     private final InstituteSettingChanger settingChanger;
@@ -36,7 +37,7 @@ public class WhatsAppApiSettingChanger {
         auditTrail.record(new AuditRecord(
                 change.enabled() ? AuditAction.WHATSAPP_API_ENABLED : AuditAction.WHATSAPP_API_DISABLED,
                 AuditEntityType.INSTITUTE_SETTING,
-                (long) InstituteSettingCode.WHATSAPP_API.ordinal(),
+                AUDIT_ENTITY_ID,
                 String.valueOf(!change.enabled()),
                 String.valueOf(change.enabled()),
                 reason));

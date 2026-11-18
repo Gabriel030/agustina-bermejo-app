@@ -75,6 +75,9 @@ class WhatsAppApiSwitchIT extends AbstractIntegrationTest {
     @AfterEach
     void restore() {
         resetSetting();
+        jdbc.update("delete from broadcast where created_by_person_id in (select id from person where username like 'wa-%')");
+        jdbc.update("delete from person_role where person_id in (select id from person where username like 'wa-%')");
+        jdbc.update("delete from person where username like 'wa-%'");
     }
 
     @Test
@@ -95,6 +98,20 @@ class WhatsAppApiSwitchIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value("WHATSAPP_PROVIDER_NOT_CONFIGURED"));
 
         assertThat(jdbc.queryForObject("select enabled from institute_setting where code = 'WHATSAPP_API'", Boolean.class)).isFalse();
+        assertThat(jdbc.queryForObject("select count(*) from institute_setting_change_log where code = 'WHATSAPP_API'", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'INSTITUTE_SETTING'", Integer.class)).isZero();
+    }
+
+    @Test
+    void disablingWorksWithoutProvider() throws Exception {
+        jdbc.update("update institute_setting set enabled = true where code = 'WHATSAPP_API'");
+        snapshotHolder.refresh();
+
+        mockMvc.perform(put(URL).header("Authorization", directorToken).contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled").value(false));
+
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where action = 'WHATSAPP_API_DISABLED'", Integer.class)).isEqualTo(1);
     }
 
     @Test
@@ -134,7 +151,10 @@ class WhatsAppApiSwitchIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/broadcasts").header("Authorization", directorToken).contentType(MediaType.APPLICATION_JSON).content(WHATSAPP_DRAFT))
-                .andExpect(status().is2xxSuccessful());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+
+        assertThat(jdbc.queryForList("select channel from broadcast", String.class)).containsExactly("WHATSAPP_API");
     }
 
     @Test
@@ -151,6 +171,10 @@ class WhatsAppApiSwitchIT extends AbstractIntegrationTest {
                 .containsExactly("WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED");
         assertThat(jdbc.queryForObject("select reason from audit_log where action = 'WHATSAPP_API_ENABLED'", String.class))
                 .isEqualTo("Número verificado con Meta");
+        assertThat(jdbc.queryForMap("select before_value, after_value, entity_id from audit_log where action = 'WHATSAPP_API_ENABLED'"))
+                .containsEntry("before_value", "false").containsEntry("after_value", "true").containsEntry("entity_id", 1L);
+        assertThat(jdbc.queryForMap("select before_value, after_value, entity_id from audit_log where action = 'WHATSAPP_API_DISABLED'"))
+                .containsEntry("before_value", "true").containsEntry("after_value", "false").containsEntry("entity_id", 1L);
         assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'INSTITUTE_SETTING' and actor_person_id is not null and occurred_at is not null", Integer.class))
                 .isEqualTo(2);
     }

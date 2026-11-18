@@ -4,7 +4,8 @@ alter table institute_setting add constraint institute_setting_code_enum check (
 alter table institute_setting_change_log drop constraint institute_setting_change_log_code_enum;
 alter table institute_setting_change_log add constraint institute_setting_change_log_code_enum check (code in ('BILLING_NOTIFICATIONS', 'PAYMENT_METHOD_BANK_TRANSFER', 'PAYMENT_METHOD_CASH', 'PAYMENT_METHOD_GATEWAY', 'WHATSAPP_API'));
 
-insert into institute_setting (code, enabled, version, updated_at) values ('WHATSAPP_API', false, 0, now());
+insert into institute_setting (code, enabled, version, updated_at) values ('WHATSAPP_API', false, 0, now())
+on conflict (code) do nothing;
 
 do $$
 declare

@@ -14,17 +14,18 @@ import java.util.List;
 @Service
 public class WhatsAppApiSettingReader {
 
-    private final InstituteSettingRepository settingRepository;
     private static final List<String> PENDING_REQUIREMENTS = List.of(
             "Proveedor de WhatsApp configurado",
             "Número de WhatsApp Business verificado con Meta",
             "Plantillas aprobadas por Meta");
 
+    private final InstituteSettingRepository settingRepository;
     private final WhatsAppProviderConfiguration providerConfiguration;
     private final int dailyLimit;
 
-    public WhatsAppApiSettingReader(InstituteSettingRepository settingRepository, WhatsAppProviderConfiguration providerConfiguration,
-                                  @Value("${app.broadcast.providers.whatsapp.daily-limit:250}") int dailyLimit) {
+    public WhatsAppApiSettingReader(InstituteSettingRepository settingRepository,
+                                    WhatsAppProviderConfiguration providerConfiguration,
+                                    @Value("${app.broadcast.providers.whatsapp.daily-limit:250}") int dailyLimit) {
         this.settingRepository = settingRepository;
         this.providerConfiguration = providerConfiguration;
         this.dailyLimit = dailyLimit;
