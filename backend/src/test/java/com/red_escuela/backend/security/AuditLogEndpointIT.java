@@ -71,11 +71,49 @@ class AuditLogEndpointIT extends AuthorizationMatrixSupport {
     }
 
     @Test
+    void multipleActionsReturnTheUnionAndASingleActionBehavesAsBefore() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_CREATED", "STAFF_REACTIVATED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+        mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_CREATED,STAFF_REACTIVATED,PASSWORD_CHANGED"))
+                .andExpect(jsonPath("$.totalElements").value(3));
+        mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_WITHDRAWN"))
+                .andExpect(jsonPath("$.totalElements").value(2));
+        mockMvc.perform(directorGet("/audit-log")).andExpect(jsonPath("$.totalElements").value(6));
+        mockMvc.perform(directorGet("/audit-log").param("action", "NOT_AN_ACTION")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void multipleActionsCombineWithRoleAndDateRangeAsAnd() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("action", "STAFF_WITHDRAWN", "STAFF_CREATED")
+                        .param("actorRole", "ADMINISTRATIVO").param("from", "2026-11-12").param("to", "2026-11-12"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].action").value("STAFF_CREATED"));
+    }
+
+    @Test
+    void platformEndpointAcceptsMultipleActions() throws Exception {
+        String token = "Bearer " + fixtures.tokenFor(MatrixRole.PLATFORM_ADMIN);
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", token)
+                        .param("action", "STAFF_CREATED", "STAFF_REACTIVATED"))
+                .andExpect(jsonPath("$.totalElements").value(2));
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", token).param("action", "STAFF_CREATED"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", token)).andExpect(jsonPath("$.totalElements").value(6));
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", token).param("action", "NOT_AN_ACTION"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void actorNameIsResolvedInOneQuery() throws Exception {
         long statementsForOneEntry = statementsFor(directorGet("/audit-log").param("size", "1"));
         long statementsForFullPage = statementsFor(directorGet("/audit-log").param("size", "6"));
+        long statementsWithActions = statementsFor(directorGet("/audit-log").param("size", "6")
+                .param("action", "STAFF_WITHDRAWN", "STAFF_CREATED", "STAFF_REACTIVATED", "PASSWORD_CHANGED"));
 
         assertThat(statementsForFullPage).isEqualTo(statementsForOneEntry);
+        assertThat(statementsWithActions).isLessThanOrEqualTo(statementsForFullPage);
 
         mockMvc.perform(directorGet("/audit-log").param("actorPersonId", String.valueOf(directorId)))
                 .andExpect(jsonPath("$.items[0].actorName").value("Matriz DIRECTOR"));
