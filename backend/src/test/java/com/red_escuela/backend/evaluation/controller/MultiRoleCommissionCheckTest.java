@@ -47,10 +47,19 @@ class MultiRoleCommissionCheckTest {
     }
 
     @Test
-    void teacherWithStaffRoleStillMustBelongToTheCommissionOnClosureSheet() {
+    void teacherWithStaffRoleKeepsStaffViewOnClosureSheet() {
+        GetClosureSheetCommand command = readClosureSheetAs("ROLE_DOCENTE", "ROLE_DIRECTOR");
+
+        assertThat(command.viewer()).isEqualTo(ClosureViewerProfile.STAFF);
+        assertThat(command.instructorId()).isNull();
+        verify(currentInstructorService, never()).resolveCurrentInstructor();
+    }
+
+    @Test
+    void teacherOnlyMustBelongToTheCommissionOnClosureSheet() {
         currentInstructorIs(55L);
 
-        GetClosureSheetCommand command = readClosureSheetAs("ROLE_DOCENTE", "ROLE_PRECEPTOR");
+        GetClosureSheetCommand command = readClosureSheetAs("ROLE_DOCENTE");
 
         assertThat(command.viewer()).isEqualTo(ClosureViewerProfile.TEACHER);
         assertThat(command.instructorId()).isEqualTo(55L);
@@ -76,13 +85,26 @@ class MultiRoleCommissionCheckTest {
     }
 
     @Test
-    void teacherWithStaffRoleMustBeTribunalMemberToReadExamBoard() {
-        currentInstructorIs(55L);
+    void teacherWithStaffRoleSkipsTribunalCheckOnExamBoard() {
         ExamBoardManager examBoardManager = mock(ExamBoardManager.class);
         ExamBoardController controller = new ExamBoardController(examBoardManager, currentInstructorService);
 
         try {
             controller.get(3L, authenticatedWith("ROLE_DOCENTE", "ROLE_DIRECTOR"));
+        } catch (RuntimeException ignored) {
+        }
+
+        verify(examBoardManager, never()).requireTribunalMember(any(), any());
+    }
+
+    @Test
+    void teacherWithStudentRoleMustBeTribunalMemberToReadExamBoard() {
+        currentInstructorIs(55L);
+        ExamBoardManager examBoardManager = mock(ExamBoardManager.class);
+        ExamBoardController controller = new ExamBoardController(examBoardManager, currentInstructorService);
+
+        try {
+            controller.get(3L, authenticatedWith("ROLE_DOCENTE", "ROLE_ALUMNO"));
         } catch (RuntimeException ignored) {
         }
 

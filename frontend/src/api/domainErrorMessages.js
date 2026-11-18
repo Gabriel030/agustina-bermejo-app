@@ -162,7 +162,6 @@ export const DOMAIN_ERROR_MESSAGES = {
   INVALID_GOOGLE_TOKEN: 'No pudimos validar tu cuenta de Google. Probá de nuevo.',
   INVALID_PASSWORD_RESET_TOKEN: 'El enlace para restablecer la contraseña venció o no es válido. Pedí uno nuevo.',
   INVALID_REFRESH_TOKEN: 'Tu sesión venció. Ingresá de nuevo.',
-  NOT_EXAM_BOARD_TRIBUNAL_MEMBER: 'No integrás el tribunal de esta mesa de examen.',
   NOT_OWN_SECTION: 'Esa comisión no es tuya.',
   NOT_SECTION_INSTRUCTOR: 'No sos docente de esta comisión.',
   NOT_SECTION_LEAD_INSTRUCTOR: 'Solo el docente a cargo de la comisión puede hacer esto.',
