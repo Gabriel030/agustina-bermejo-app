@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -87,6 +86,22 @@ class IdentityEmailDispatcherRecipientTest {
         verify(emailService).sendPasswordResetLockoutNotice("Ana", "ana@example.com");
     }
 
+    @Test
+    void emailChangeSendsTheLinkToTheNewAddressAndTheNoticeToThePreviousOne() {
+        Person person = mock(Person.class);
+        when(person.getName()).thenReturn("Ana");
+        when(personRepository.findById(7L)).thenReturn(Optional.of(person));
+
+        dispatcher.onEmailChangeRequested(EmailChangeRequestedEvent.requestedFor(7L, "anterior@example.com",
+                "nuevo@example.com", "https://example.test/verificar-email?token=abc",
+                "https://example.test/cancelar-cambio-email?token=def"));
+
+        verify(emailService).sendEmailChangeVerification("Ana", "nuevo@example.com",
+                "https://example.test/verificar-email?token=abc");
+        verify(emailService).sendEmailChangeNotice("Ana", "anterior@example.com", "nuevo@example.com",
+                "https://example.test/cancelar-cambio-email?token=def");
+    }
+
     private MailRecipient recipientFor(String name, String username, String email) {
         Person person = mock(Person.class);
         when(person.getId()).thenReturn(7L);
@@ -132,6 +147,6 @@ class IdentityEmailDispatcherRecipientTest {
 
         verify(emailService).sendEmailChangeVerification("Ana", "new@example.com",
                 "https://app.test/verificar-email?token=v");
-        verify(emailService, never()).sendEmailChangeNotice(any(), any(), any(), any());
+        verifyNoMoreInteractions(emailService);
     }
 }

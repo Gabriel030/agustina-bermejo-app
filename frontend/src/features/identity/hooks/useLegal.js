@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
+import { STALE_TIME } from '@/api/cachePolicy';
 
 export const LEGAL_KEYS = {
   current: ['legal', 'documents', 'current'],
@@ -15,13 +16,15 @@ export function useCurrentLegalDocuments() {
   });
 }
 
+export const pendingLegalAcceptancesQuery = {
+  queryKey: LEGAL_KEYS.pending,
+  queryFn: () => apiFetch('/me/legal-acceptances/pending'),
+  retry: false,
+  staleTime: STALE_TIME.OPERATIONAL,
+};
+
 export function usePendingLegalAcceptances(enabled = true) {
-  return useQuery({
-    queryKey: LEGAL_KEYS.pending,
-    queryFn: () => apiFetch('/me/legal-acceptances/pending'),
-    enabled,
-    retry: false,
-  });
+  return useQuery({ ...pendingLegalAcceptancesQuery, enabled });
 }
 
 export function useAcceptLegalDocuments() {

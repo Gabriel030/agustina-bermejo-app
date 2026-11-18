@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { m } from 'motion/react';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { apiFetch } from '@/api/client';
 
@@ -25,7 +24,6 @@ export function VerificacionEmail() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
-      <MeshBackground />
       <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

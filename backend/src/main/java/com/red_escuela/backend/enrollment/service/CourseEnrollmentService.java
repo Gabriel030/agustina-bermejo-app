@@ -305,10 +305,12 @@ public class CourseEnrollmentService {
         List<CourseSubjectSectionEnrollment> inscripciones = courseSubjectSectionEnrollmentRepository
                 .findByCourseEnrollmentId(enrollment.getId());
 
+        Set<Long> approvedModuleIds = inscripciones.stream()
+                .filter(inscripcion -> inscripcion.getStatus() == EnrollmentStatus.APPROVED)
+                .map(CourseSubjectSectionEnrollment::courseSubjectId)
+                .collect(Collectors.toSet());
         List<String> modulosPendientes = modulos.stream()
-                .filter(modulo -> inscripciones.stream().noneMatch(inscripcion ->
-                        inscripcion.courseSubjectId().equals(modulo.id())
-                                && inscripcion.getStatus() == EnrollmentStatus.APPROVED))
+                .filter(modulo -> !approvedModuleIds.contains(modulo.id()))
                 .map(CourseModuleView::name)
                 .toList();
 

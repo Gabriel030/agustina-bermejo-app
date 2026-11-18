@@ -4,6 +4,7 @@ import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.entity.Person;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface EmailVerificationTokenRepository extends JpaRepository<EmailVerificationToken, Long> {
@@ -13,6 +14,8 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
     Optional<EmailVerificationToken> findByCancelTokenHash(String cancelTokenHash);
 
     boolean existsByPersonAndNewEmailIsNotNull(Person person);
+
+    boolean existsByPersonAndNewEmailIsNotNullAndExpiresAtAfter(Person person, LocalDateTime now);
 
     boolean existsByNewEmailAndPersonNot(String newEmail, Person person);
 
