@@ -15,11 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 @Transactional(readOnly = true)
@@ -56,6 +58,7 @@ public class StudentScheduleOverlapGuard {
         }
         Map<Long, TermPeriodView> periods = new HashMap<>();
         TermPeriodView targetPeriod = periods.computeIfAbsent(targetTermId, termPeriodFinder::findPeriod);
+        List<SubjectSectionEnrollment> programCandidates = new ArrayList<>();
         for (SubjectSectionEnrollment other : subjectEnrollmentRepository.findByStudentId(studentId)) {
             if (other.getId().equals(ignoredEnrollmentId) || !ATTENDING_STATUSES.contains(other.getStatus())
                     || other.getSubjectSection().getId().equals(targetSectionId)) {
@@ -63,22 +66,33 @@ public class StudentScheduleOverlapGuard {
             }
             TermPeriodView otherPeriod = periods.computeIfAbsent(other.termId(), termPeriodFinder::findPeriod);
             if (targetPeriod.overlaps(otherPeriod)) {
-                Optional<SectionScheduleOverlapException> overlap = findOverlap(targetSlots, sectionScheduleFinder.findProgramSectionSlots(other.getSubjectSection().getId()),
-                        other.getSubjectSection().getSubject().getName());
-                if (overlap.isPresent()) {
-                    return overlap;
-                }
+                programCandidates.add(other);
             }
         }
+        Map<Long, List<SectionSlotView>> programSlots = sectionScheduleFinder.findProgramSectionSlots(
+                programCandidates.stream().map(other -> other.getSubjectSection().getId()).collect(Collectors.toSet()));
+        for (SubjectSectionEnrollment other : programCandidates) {
+            Optional<SectionScheduleOverlapException> overlap = findOverlap(targetSlots,
+                    programSlots.getOrDefault(other.getSubjectSection().getId(), List.of()), other.getSubjectSection().getSubject().getName());
+            if (overlap.isPresent()) {
+                return overlap;
+            }
+        }
+        List<CourseSubjectSectionEnrollment> courseCandidates = new ArrayList<>();
         for (CourseSubjectSectionEnrollment other : courseEnrollmentRepository.findByStudentIdAndStatusInOrderByIdAsc(studentId, ATTENDING_STATUSES)) {
             Long otherTermId = other.getCourseSubjectSection().getTerm().getId();
             TermPeriodView otherPeriod = periods.computeIfAbsent(otherTermId, termPeriodFinder::findPeriod);
             if (targetPeriod.overlaps(otherPeriod)) {
-                Optional<SectionScheduleOverlapException> overlap = findOverlap(targetSlots, sectionScheduleFinder.findCourseSectionSlots(other.getCourseSubjectSection().getId()),
-                        other.getCourseSubjectSection().getModuleName());
-                if (overlap.isPresent()) {
-                    return overlap;
-                }
+                courseCandidates.add(other);
+            }
+        }
+        Map<Long, List<SectionSlotView>> courseSlots = sectionScheduleFinder.findCourseSectionSlots(
+                courseCandidates.stream().map(other -> other.getCourseSubjectSection().getId()).collect(Collectors.toSet()));
+        for (CourseSubjectSectionEnrollment other : courseCandidates) {
+            Optional<SectionScheduleOverlapException> overlap = findOverlap(targetSlots,
+                    courseSlots.getOrDefault(other.getCourseSubjectSection().getId(), List.of()), other.getCourseSubjectSection().getModuleName());
+            if (overlap.isPresent()) {
+                return overlap;
             }
         }
         return Optional.empty();

@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.authorization.service;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationInboxAccessDeniedException;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestAccessDeniedException;
+import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestNotFoundException;
 import com.red_escuela.backend.billing.authorization.domain.OwnAuthorizationRequestDecisionException;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.identity.entity.Person;
@@ -32,7 +33,7 @@ public class AuthorizationCallerAccess {
     public void requireMayRead(AuthorizationRequest request) {
         InboxScope scope = scopeOfCurrentCaller();
         if (!scope.includes(request)) {
-            throw new AuthorizationInboxAccessDeniedException(request.getId());
+            throw new AuthorizationRequestNotFoundException(request.getId());
         }
     }
 
@@ -47,7 +48,7 @@ public class AuthorizationCallerAccess {
 
     public void requireIsRequester(AuthorizationRequest request, Person person) {
         if (!request.getRequestedBy().getId().equals(person.getId())) {
-            throw new AuthorizationRequestAccessDeniedException(request.getId());
+            throw new AuthorizationRequestNotFoundException(request.getId());
         }
     }
 

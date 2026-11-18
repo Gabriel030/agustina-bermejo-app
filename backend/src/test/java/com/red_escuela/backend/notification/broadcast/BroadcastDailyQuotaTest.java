@@ -48,6 +48,15 @@ class BroadcastDailyQuotaTest {
         assertThatThrownBy(() -> new BroadcastDailyQuota(0, -1)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void theQuotaIsExactlyZeroAtTheLimitAndOneJustBelow() {
+        assertThat(quota.remaining(0, 199)).isEqualTo(1);
+        assertThat(quota.remaining(0, 200)).isEqualTo(0);
+        assertThat(quota.remaining(0, 201)).isEqualTo(0);
+        assertThat(quota.remaining(101, 198)).isEqualTo(1);
+        assertThat(quota.remaining(101, 199)).isEqualTo(0);
+    }
+
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 17);
 
     @Test

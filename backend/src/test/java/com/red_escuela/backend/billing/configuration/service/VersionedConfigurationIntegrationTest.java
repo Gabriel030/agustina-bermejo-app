@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.configuration.service;
 
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestAccessDeniedException;
+import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestNotFoundException;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestStatus;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationResumeOutcome;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
@@ -437,7 +438,7 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
         Long proposed = propose(ALLOCATION, false, DECEMBER_FIRST);
         Person other = persistPerson("administrative.other", "ADMINISTRATIVO");
         authenticateAs(other);
-        assertThatThrownBy(() -> withdrawRequest.withdraw(proposed)).isInstanceOf(AuthorizationRequestAccessDeniedException.class);
+        assertThatThrownBy(() -> withdrawRequest.withdraw(proposed)).isInstanceOf(AuthorizationRequestNotFoundException.class);
         assertThat(versionOf(proposed).getStatus()).isEqualTo(ConfigurationVersionStatus.PROPOSED);
     }
 

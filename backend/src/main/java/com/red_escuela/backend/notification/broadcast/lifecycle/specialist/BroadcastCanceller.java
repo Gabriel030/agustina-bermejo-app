@@ -7,6 +7,8 @@ import com.red_escuela.backend.notification.broadcast.draft.repository.Broadcast
 import com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatus;
 import com.red_escuela.backend.notification.broadcast.freezer.entity.BroadcastRecipient;
 import com.red_escuela.backend.notification.broadcast.freezer.repository.BroadcastRecipientRepository;
+import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
+import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
 import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class BroadcastCanceller {
@@ -47,16 +50,29 @@ public class BroadcastCanceller {
         broadcast.cancel(cancelledByPersonId, reason.strip(), now);
         List<BroadcastRecipient> open = recipientRepository.findByBroadcastIdAndStatusIn(broadcastId,
                 List.of(BroadcastRecipientStatus.PENDING, BroadcastRecipientStatus.QUEUED));
-        open.forEach(recipient -> {
-            if (recipient.getDeliveryId() != null) {
-                deliveryRepository.findByIdForUpdate(recipient.getDeliveryId())
-                        .filter(delivery -> delivery.getStatus().isWaitingForDispatch())
-                        .ifPresent(delivery -> delivery.discard(DISCARD_REASON));
-            }
-            recipient.markSkipped(now);
-        });
+        open.forEach(recipient -> settleRecipient(recipient, now));
         auditTrail.record(new AuditRecord(AuditAction.BROADCAST_CANCELLED, AuditEntityType.BROADCAST, broadcastId,
                 before.name(), broadcast.getStatus().name(), broadcast.getCancellationReason()));
         return broadcast.getStatus();
+    }
+
+    private void settleRecipient(BroadcastRecipient recipient, Instant now) {
+        Optional<NotificationDelivery> delivery = Optional.ofNullable(recipient.getDeliveryId())
+                .flatMap(deliveryRepository::findByIdForUpdate);
+        if (delivery.isEmpty()) {
+            recipient.markSkipped(now);
+            return;
+        }
+        DeliveryStatus deliveryStatus = delivery.get().getStatus();
+        if (deliveryStatus.isWaitingForDispatch()) {
+            delivery.get().discard(DISCARD_REASON);
+            recipient.markSkipped(now);
+        } else if (deliveryStatus == DeliveryStatus.SENT || deliveryStatus == DeliveryStatus.SENT_SIMULATED) {
+            recipient.markSent(now);
+        } else if (deliveryStatus == DeliveryStatus.FAILED) {
+            recipient.markFailed(now);
+        } else {
+            recipient.markSkipped(now);
+        }
     }
 }

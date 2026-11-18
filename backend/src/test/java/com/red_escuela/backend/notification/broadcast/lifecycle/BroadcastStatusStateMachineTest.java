@@ -32,8 +32,11 @@ class BroadcastStatusStateMachineTest {
             CONFIRMED, Map.of(START_SENDING, SENDING, CANCEL, CANCELLED),
             SENDING, Map.of(COMPLETE, COMPLETED, CANCEL, CANCELLED));
 
-    static Stream<TransitionExpectation> everyPair() {
+    static List<TransitionExpectation> expectedTransitions() {
         List<TransitionExpectation> expectations = new ArrayList<>();
+        for (BroadcastEvent event : BroadcastEvent.values()) {
+            expectations.add(TransitionExpectation.rejects(null, event, IllegalBroadcastStatusTransitionException.class));
+        }
         for (BroadcastStatus from : BroadcastStatus.values()) {
             for (BroadcastEvent event : BroadcastEvent.values()) {
                 BroadcastStatus target = ALLOWED.getOrDefault(from, Map.of()).get(event);
@@ -41,7 +44,11 @@ class BroadcastStatusStateMachineTest {
                         : TransitionExpectation.rejects(from, event, IllegalBroadcastStatusTransitionException.class));
             }
         }
-        return expectations.stream();
+        return expectations;
+    }
+
+    static Stream<TransitionExpectation> everyPair() {
+        return expectedTransitions().stream().filter(expectation -> expectation.fromState() != null);
     }
 
     @ParameterizedTest(name = "{0}")

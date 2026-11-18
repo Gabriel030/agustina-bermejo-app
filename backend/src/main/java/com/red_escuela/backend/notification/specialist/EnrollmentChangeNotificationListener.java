@@ -3,6 +3,8 @@ package com.red_escuela.backend.notification.specialist;
 import com.red_escuela.backend.enrollment.events.SubjectEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.enrollment.events.SubjectSectionChangedEvent;
 import com.red_escuela.backend.enrollment.events.SubjectWaitlistPromotedEvent;
+import com.red_escuela.backend.enrollment.events.WaitlistEntryPromotedEvent;
+import com.red_escuela.backend.enrollment.events.WaitlistEntryRemovedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.ClosureNotification;
 import com.red_escuela.backend.notification.domain.NotificationRecipient;
@@ -21,6 +23,8 @@ public class EnrollmentChangeNotificationListener {
     static final String NOTIFY_SUBJECT_WITHDRAWN_HANDLER = "EnrollmentChangeNotificationListener.notifySubjectWithdrawn";
     static final String NOTIFY_SECTION_CHANGED_HANDLER = "EnrollmentChangeNotificationListener.notifySectionChanged";
     static final String NOTIFY_WAITLIST_PROMOTED_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistPromoted";
+    static final String NOTIFY_ENTRY_PROMOTED_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistEntryPromoted";
+    static final String NOTIFY_ENTRY_REMOVED_HANDLER = "EnrollmentChangeNotificationListener.notifyWaitlistEntryRemoved";
     static final String SECTION_ENROLLMENT_ENTITY_TYPE = "SubjectSectionEnrollment";
 
     private final ProcessedEffectGuard effectGuard;
@@ -73,6 +77,22 @@ public class EnrollmentChangeNotificationListener {
         effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_WAITLIST_PROMOTED_HANDLER, () ->
                 publish(NotificationType.WAITLIST_PROMOTED,
                         "Se liberó un lugar y pasaste de la lista de espera a cursar " + event.subjectName() + " (" + event.sectionName() + ").",
+                        List.of(event.studentPersonId()), event.enrollmentId()));
+    }
+
+    @ApplicationModuleListener
+    public void notifyWaitlistEntryPromoted(WaitlistEntryPromotedEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_ENTRY_PROMOTED_HANDLER, () ->
+                publish(NotificationType.WAITLIST_PROMOTED,
+                        "Se liberó un lugar y pasaste de la lista de espera a cursar " + event.queueName() + ".",
+                        List.of(event.studentPersonId()), event.enrollmentId()));
+    }
+
+    @ApplicationModuleListener
+    public void notifyWaitlistEntryRemoved(WaitlistEntryRemovedEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_ENTRY_REMOVED_HANDLER, () ->
+                publish(NotificationType.SUBJECT_WITHDRAWN,
+                        "Te quitamos de la lista de espera de " + event.queueName() + ". Consultá con la institución si tenés dudas.",
                         List.of(event.studentPersonId()), event.enrollmentId()));
     }
 
