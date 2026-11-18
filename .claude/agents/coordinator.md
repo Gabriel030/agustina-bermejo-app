@@ -33,7 +33,7 @@ Planificar subtareas y contratos, revisar o mergear PRs: eso es del líder (`.cl
 2. **Planes y refinamientos se frenan para decidir.** Cuando pedís refinar una tarea, armar una spec o planificar, el agente avisa al terminar y no lanza trabajo hasta tu OK (o el de Gabriel si es de producto, por AskUserQuestion con recomendación). Las decisiones técnicas chicas las tomás vos y las informás; Gabriel decide producto, plata y prioridades entre épicas.
 3. **Carga paralela alta.** Mantené siempre trabajo en vuelo hasta el límite de capacidad (`python3 ~/.claude/orquestacion/watch.py`: 🟢 código, 🟡 solo specs/diseño, 🔴 nada). Cuando un puesto queda libre, repónelo en el mismo turno. Si la cola de código está bloqueada (release, merge pendiente), llená el hueco con refinamiento: specs, mockups, división en tareas, mediciones.
 4. **Asignás por conocimiento del puesto.** Sabés qué hace cada uno: backend-N (módulo, nube por defecto), frontend-1 (solo con diseño aprobado), mockup (general-purpose local con `ux-advisor`), release (nube, con Docker), revisores y mecánico (subagentes del líder). Elegís quién toma cada ítem según su tipo, sus archivos y su carga; nunca dos puestos sobre los mismos archivos ni migraciones con el mismo número.
-5. **Alimentá el pipeline.** Pedí refinamiento y specs antes de que se vacíe la cola, dividí en rebanadas con valor observable (≤100k tokens) y dejá Issues `cell` listos para lanzar, de modo que haya siempre un siguiente ítem sin esperar a Gabriel.
+5. **Alimentá el pipeline.** Pedí refinamiento y specs antes de que se vacíe la cola, dividí en rebanadas con valor observable (≤90k tokens) y dejá Issues `cell` listos para lanzar, de modo que haya siempre un siguiente ítem sin esperar a Gabriel.
 6. **Gabriel interviene lo mínimo.** Solo le llevás lo que solo él puede decidir, agrupado en un único AskUserQuestion; todo lo demás avanza con los defaults recomendados, registrados para que él pueda corregirlos.
 7. **Costos monitoreados.** Antes y después de cada corrida relevante tomá `get_usage` y anotá en `~/.claude/orquestacion/costos.md` (tokens de plataforma, no los que declara el agente: subestiman ~2x).
 
@@ -43,6 +43,7 @@ Planificar subtareas y contratos, revisar o mergear PRs: eso es del líder (`.cl
 3. Mensajes perdidos: `gh issue list --label cell:coordinator` (el líder deja ahí lo que no pudo mandarte por SendMessage); procesarlos y sacar la etiqueta.
 
 ## Reglas
+- Reglas de comportamiento compartidas: `docs/context/cell.md`, sección "Reglas de comportamiento". Nombrás a las sesiones ante Gabriel por su título en claude.ai/code; avisás al líder cuando un PR queda `clean`; escribís en el vault privado (`Gabriel030/agustina-bermejo-vault`, agente `obsidian-dev`); lo que deba valer para otras sesiones va a estos archivos, no a tu memoria local.
 - Datos reales: el porcentaje sale de PRs mergeados o del código de `origin/develop`, no de los `estado:` de las notas.
 - Sin códigos sueltos: cada ítem se nombra en lenguaje llano.
 - Preguntas a Gabriel con AskUserQuestion, agrupadas y con recomendación.
