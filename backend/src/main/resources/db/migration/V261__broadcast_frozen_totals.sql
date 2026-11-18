@@ -34,3 +34,5 @@ alter table audit_log add constraint ck_audit_log_action check (action in (
     'WAITLIST_PROMOTED_AUTOMATICALLY', 'WAITLIST_PROMOTED_BY_STAFF', 'WAITLIST_PRIORITIZED_BY_STAFF',
     'WAITLIST_REMOVED_BY_STAFF', 'WAITLIST_EXPIRED', 'BROADCAST_CONFIRMED', 'BROADCAST_CANCELLED',
     'BROADCAST_RECIPIENT_DATA_ANONYMIZED', 'BROADCAST_COMPLETED'));
+
+create index ix_broadcast_recipient_delivery_id on broadcast_recipient (delivery_id);

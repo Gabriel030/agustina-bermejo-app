@@ -359,4 +359,11 @@ class BroadcastLifecycleEndToEndIT extends AbstractBroadcastDispatchIT {
         assertThat(completed.getDiscardedTotal()).isEqualTo(1);
         assertThat(completed.getSentTotal()).isEqualTo(1);
     }
+
+    @Test
+    void recipientLookupByDeliveryIsBackedByAnIndex() {
+        Long indexes = jdbc.queryForObject("select count(*) from pg_indexes where tablename = 'broadcast_recipient' and indexname = 'ix_broadcast_recipient_delivery_id'",
+                Long.class);
+        assertThat(indexes).isEqualTo(1L);
+    }
 }
