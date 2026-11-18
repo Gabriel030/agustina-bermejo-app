@@ -22,7 +22,7 @@ public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRec
     Set<Long> findPersonIdsByBroadcastId(@Param("broadcastId") Long broadcastId);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("update BroadcastRecipient r set r.addressMasked = null, r.exclusionReason = null, r.anonymizedAt = :now "
+    @Query("update BroadcastRecipient r set r.addressMasked = null, r.anonymizedAt = :now "
             + "where r.broadcastId = :broadcastId and r.anonymizedAt is null")
     int anonymizeByBroadcastId(@Param("broadcastId") Long broadcastId, @Param("now") Instant now);
 
