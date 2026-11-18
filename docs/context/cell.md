@@ -65,6 +65,22 @@ Viven acá y en las fichas de `.claude/agents/`, no en la memoria local de ningu
 5. **Contrato.** `contract-break-approved` solo con diff aditivo listado en el cuerpo del PR; un filtro que pasa de valor único a lista se considera aditivo.
 6. **Rol del coordinador.** Es el único que escribe en el vault de Obsidian privado (repo `Gabriel030/agustina-bermejo-vault`, vía el agente `obsidian-dev`). No guarda en memoria local reglas que deban valer para otras sesiones: van a estos archivos.
 
+## Protocolo de reporte
+
+1. **Reportar.** Toda sesión (líder o worker) cierra cada turno con un comentario `REPORTE` en el Issue de su tarea, formato fijo de 4 líneas: `HECHO` (con PR/commit/hora UTC), `ESPERA` (qué y de quién: CI, worker, decisión, merge), `SIGUIENTE` (acción concreta) y `BLOQUEOS`. Un líder no cierra turno si queda un PR `clean` sin acción (mergea, activa auto-merge o pide worker); un PR `clean` sin acción no puede quedar más de 6 minutos.
+2. **Pedir reporte.** Si una sesión lleva más de 6 minutos sin reporte teniendo algo pendiente, el coordinador le escribe `PEDIDO DE REPORTE` y la sesión responde en el mismo turno con el formato anterior. El coordinador avisa al líder dueño en el mismo turno en que un PR queda `clean` o llega un `CORREGIDO`, sin depender de que Gabriel intermedie.
+
+## Lecciones del 18-nov (error → regla)
+
+- Se dijo "CI verde" con el verde del head viejo (#999) → decirlo solo sobre el head real y con la base actual.
+- Se dieron cifras sin medir (CI estimado en 25 min, tarda ~6-10) → no dar cifras sin medirlas.
+- Sesiones nuevas de más → abrir una solo si el worker agotó presupuesto o llegó al 50 % de contexto; si no, reanudar la existente.
+- Rebases repetidos de PRs apilados → un PR apilado queda `dirty` cuando entra su base: rebasear recién cuando le toca el merge.
+- Choque de números de migración al rebasear → usar el siguiente libre sobre `develop` al empujar; el líder renumera al mergear.
+- `contract-break-approved` no se re-evaluó con un rerun → se evalúa solo en `opened`/`synchronize`/`reopened`/`ready_for_review`: un push real, no rerun ni commit vacío.
+- Un PR borró un componente compartido (p. ej. `MeshBackground`) y rompió a otros → los PRs abiertos que lo importan quitan el import antes de mergear.
+- Rebase + renumeración + mayores abiertos no entra en el tope normal → esa tarea justifica 120k tokens y 40 min; el resto 90k y 30.
+
 ## Coordinación
 
 - Hub-and-spoke: todo pasa por el líder.
