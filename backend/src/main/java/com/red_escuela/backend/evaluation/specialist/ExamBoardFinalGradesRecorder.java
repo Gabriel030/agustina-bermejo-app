@@ -89,14 +89,14 @@ public class ExamBoardFinalGradesRecorder {
     }
 
     private void requireOpenBoardOfTribunalMember(ExamBoard board, Long instructorId) {
+        if (!examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(board.getId(), instructorId)) {
+            throw new NotExamBoardTribunalMemberException(instructorId, board.getId());
+        }
         if (board.getStatus() == ExamBoardStatus.CANCELED) {
             throw new ExamBoardCanceledException(board.getId());
         }
         if (board.getStatus() != ExamBoardStatus.SCHEDULED) {
             throw new ExamBoardClosedException(board.getId());
-        }
-        if (!examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(board.getId(), instructorId)) {
-            throw new NotExamBoardTribunalMemberException(instructorId, board.getId());
         }
         takenChecker.requireTaken(board);
     }
