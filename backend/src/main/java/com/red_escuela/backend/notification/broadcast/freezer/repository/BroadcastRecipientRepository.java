@@ -1,6 +1,7 @@
 package com.red_escuela.backend.notification.broadcast.freezer.repository;
 
 import com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatus;
+import com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatusCount;
 import com.red_escuela.backend.notification.broadcast.freezer.domain.RecipientStatusCount;
 import com.red_escuela.backend.notification.broadcast.freezer.entity.BroadcastRecipient;
 import org.springframework.data.domain.Page;
@@ -29,4 +30,8 @@ public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRec
     @Query("select new com.red_escuela.backend.notification.broadcast.freezer.domain.RecipientStatusCount(r.status, count(r)) "
             + "from BroadcastRecipient r where r.broadcastId = :broadcastId group by r.status")
     List<RecipientStatusCount> countByStatus(@Param("broadcastId") Long broadcastId);
+
+    @Query("select new com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastRecipientStatusCount(r.broadcastId, r.status, count(r)) "
+            + "from BroadcastRecipient r where r.broadcastId in :broadcastIds group by r.broadcastId, r.status")
+    List<BroadcastRecipientStatusCount> countByStatusForBroadcasts(@Param("broadcastIds") Collection<Long> broadcastIds);
 }
