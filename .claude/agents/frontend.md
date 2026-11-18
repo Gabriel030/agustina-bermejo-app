@@ -66,7 +66,7 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
 - `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:frontend-1`. Título `feat(front): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", capturas/cómo probar, tests, desvíos, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket); termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
-- No mergees; no uses `--admin` ni `--force`.
+- Mergeás solo tu PR y solo tras el `APROBADO #N` del líder con CI verde (detalle en `docs/context/cell.md`, regla 4 de "Reglas de comportamiento"); no uses `--admin` ni `--force`.
 
 ## Presupuesto
 - Tope fijo 90k tokens de plataforma (lo que cuentes vos x2,2) y 30 minutos, SIN extensiones; avisos al 50 %, 80 %, 100 %. El relevo es al tope o al cambiar de tarea (el contexto de 1M no es el límite): handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama (qué está verde, qué falta, archivos), push y frená; el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
