@@ -3,20 +3,18 @@ import { postLoginPathFor } from '@/lib/activeRole';
 import { Link, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
-import { Checkbox } from '@/components/ui/checkbox';
+import { InstitutionalNoticesCheckbox } from '@/features/identity/consent/InstitutionalNoticesCheckbox';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/api/client';
 import { describeError } from '@/api/describeError';
 import { messageForAuthError } from '@/features/identity/lib/loginErrors';
 import { useCurrentLegalDocuments } from '@/features/identity/hooks/useLegal';
-import { isMinorOn, LEGAL_DOCUMENT_LABEL, LEGAL_DOCUMENT_PATH, formatLegalDate } from '@/features/identity/lib/legalDocuments';
+import { isMinorOn, formatLegalDate } from '@/features/identity/lib/legalDocuments';
 
-const LEGAL_ERROR_MESSAGE = 'Tenés que aceptar los términos y la política de privacidad.';
 const LEGAL_CODES = ['LEGAL_ACCEPTANCE_REQUIRED', 'BIRTH_DATE_REQUIRED', 'MINOR_GUARDIAN_REQUIRED'];
 
 const PASSWORD_MIN_LENGTH = 8;
@@ -39,9 +37,7 @@ export function Registrarse() {
   const [guardianName, setGuardianName] = useState('');
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianRelationship, setGuardianRelationship] = useState('');
-  const [acceptedLegal, setAcceptedLegal] = useState(false);
-  const [acceptedNewsletter, setAcceptedNewsletter] = useState(false);
-  const [legalError, setLegalError] = useState(null);
+  const [acceptedInstitutionalNotices, setAcceptedInstitutionalNotices] = useState(false);
   const [institutionId, setInstitutionId] = useState(null);
   const [errorInstitucion, setErrorInstitucion] = useState(false);
   const [error, setError] = useState(null);
@@ -80,17 +76,10 @@ export function Registrarse() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
-    setLegalError(null);
 
     const errorValidacion = validar();
     if (errorValidacion) {
       setError(errorValidacion);
-      return;
-    }
-
-    if (!acceptedLegal) {
-      setLegalError(LEGAL_ERROR_MESSAGE);
-      document.getElementById('accepted-legal')?.focus();
       return;
     }
 
@@ -104,9 +93,9 @@ export function Registrarse() {
         password,
         institutionId,
         birthDate,
-        acceptedTerms: acceptedLegal,
-        acceptedPrivacy: acceptedLegal,
-        acceptedNewsletter,
+        acceptedTerms: acceptedInstitutionalNotices,
+        acceptedPrivacy: acceptedInstitutionalNotices,
+        acceptedInstitutionalNotices,
         ...(isMinor && { guardianName, guardianEmail, guardianRelationship }),
       });
     } catch (err) {
@@ -126,7 +115,6 @@ export function Registrarse() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <MeshBackground />
       <GlassCard className="w-full max-w-[480px] p-6 pb-7 sm:p-10 sm:pb-8">
         <div className="mb-6">
           <InstitutionBrand titulo="Creá tu cuenta" subtitulo="Registrate para solicitar una carrera o anotarte a un curso" />
@@ -259,58 +247,13 @@ export function Registrarse() {
             </fieldset>
           )}
 
-          <div className={`rounded-lg border p-3 ${legalError ? 'border-danger bg-danger-bg' : 'border-border'}`}>
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="accepted-legal"
-                checked={acceptedLegal}
-                onCheckedChange={(checked) => {
-                  setAcceptedLegal(checked === true);
-                  if (checked === true) setLegalError(null);
-                }}
-                aria-invalid={Boolean(legalError)}
-                aria-describedby="accepted-legal-links accepted-legal-error"
-                disabled={enviando}
-                className="mt-0.5"
-              />
-              <label htmlFor="accepted-legal" className="text-size-13 font-semibold text-ink">
-                Acepto los términos y condiciones y la política de privacidad.
-              </label>
-            </div>
-            <div id="accepted-legal-links" className="mt-1.5 pl-7 text-size-12 text-ink-soft">
-              {['TERMS', 'PRIVACY'].map((type, index) => (
-                <span key={type}>
-                  {index > 0 && ' · '}
-                  <a
-                    href={LEGAL_DOCUMENT_PATH[type]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-brand hover:text-accent-2"
-                  >
-                    {LEGAL_DOCUMENT_LABEL[type]}
-                  </a>
-                </span>
-              ))}{' '}
-              (se abren en una pestaña nueva; tu formulario se conserva)
-              {termsVersion && <span className="block">Versión {formatLegalDate(termsVersion) || termsVersion}</span>}
-            </div>
-            <p id="accepted-legal-error" role="alert" className="mt-1.5 pl-7 text-size-12 font-medium text-danger empty:hidden">
-              {legalError}
-            </p>
-          </div>
-
-          <div className="flex items-start gap-3 rounded-lg border border-border p-3">
-            <Checkbox
-              id="accepted-newsletter"
-              checked={acceptedNewsletter}
-              onCheckedChange={(checked) => setAcceptedNewsletter(checked === true)}
-              disabled={enviando}
-              className="mt-0.5"
-            />
-            <label htmlFor="accepted-newsletter" className="text-size-13 text-ink">
-              Quiero recibir novedades del instituto por correo (opcional).
-            </label>
-          </div>
+          <InstitutionalNoticesCheckbox
+            id="accepted-institutional-notices"
+            checked={acceptedInstitutionalNotices}
+            onCheckedChange={setAcceptedInstitutionalNotices}
+            disabled={enviando}
+            termsVersion={termsVersion && (formatLegalDate(termsVersion) || termsVersion)}
+          />
 
           {errorInstitucion && (
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
@@ -319,10 +262,15 @@ export function Registrarse() {
           )}
           {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
+          <p id="register-submit-hint" className="text-size-12 text-ink-soft empty:hidden">
+            {acceptedInstitutionalNotices ? '' : 'Marcá la casilla de aceptación para crear la cuenta.'}
+          </p>
+
           <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <Button
               type="submit"
-              disabled={enviando || !institutionId}
+              disabled={enviando || !institutionId || !acceptedInstitutionalNotices}
+              aria-describedby="register-submit-hint"
               variant="gradient"
               className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
             >

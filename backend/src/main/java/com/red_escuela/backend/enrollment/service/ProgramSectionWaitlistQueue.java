@@ -12,6 +12,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -85,5 +87,30 @@ public class ProgramSectionWaitlistQueue implements WaitlistQueue {
         repository.save(next);
         eventPublisher.publishEvent(SubjectWaitlistPromotedEvent.of(next.getId(), next.getStudent().getPerson().getId(),
                 next.getSubjectSection().getSubject().getName(), next.getSubjectSection().getName()));
+    }
+
+    @Override
+    public Optional<WaitlistEntryOwner> findOwner(Long enrollmentId) {
+        return repository.findById(enrollmentId)
+                .map(e -> new WaitlistEntryOwner(e.getSubjectSection().getId(), e.getStudent().getPerson().getId()));
+    }
+
+    @Override
+    public void markPrioritized(Long enrollmentId, LocalDateTime at) {
+        SubjectSectionEnrollment entry = repository.findById(enrollmentId).orElseThrow();
+        entry.setWaitlistPrioritizedAt(at);
+        repository.save(entry);
+    }
+
+    @Override
+    public void remove(Long enrollmentId) {
+        SubjectSectionEnrollment entry = repository.findById(enrollmentId).orElseThrow();
+        entry.setStatus(EnrollmentStatus.WITHDRAWN);
+        repository.save(entry);
+    }
+
+    @Override
+    public boolean hasReceiptBlockingRemoval(Long enrollmentId) {
+        return false;
     }
 }

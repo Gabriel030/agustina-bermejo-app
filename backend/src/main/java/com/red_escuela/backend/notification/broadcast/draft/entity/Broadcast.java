@@ -2,7 +2,10 @@ package com.red_escuela.backend.notification.broadcast.draft.entity;
 
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
+import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastEvent;
 import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatus;
+import com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatusStateMachine;
+import com.red_escuela.backend.notification.broadcast.freezer.domain.BroadcastTotals;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -69,6 +72,68 @@ public class Broadcast {
     @Column(name = "confirmed_at")
     private Instant confirmedAt;
 
+    @Column(name = "cancelled_by_person_id")
+    private Long cancelledByPersonId;
+
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
+    @Column(name = "cancellation_reason", length = 500)
+    private String cancellationReason;
+
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
+    @Column(name = "sent_total")
+    private Integer sentTotal;
+
+    @Column(name = "failed_total")
+    private Integer failedTotal;
+
+    @Column(name = "excluded_total")
+    private Integer excludedTotal;
+
+    @Column(name = "discarded_total")
+    private Integer discardedTotal;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "excluded_by_reason", columnDefinition = "jsonb")
+    private String excludedByReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    public void confirm(Long personId, Instant now) {
+        status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.CONFIRM);
+        confirmedByPersonId = personId;
+        confirmedAt = now;
+    }
+
+    public void startSending() {
+        status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.START_SENDING);
+    }
+
+    public boolean hasFrozenTotals() {
+        return sentTotal != null;
+    }
+
+    public void freezeTotals(BroadcastTotals totals) {
+        sentTotal = totals.sent();
+        failedTotal = totals.failed();
+        excludedTotal = totals.excluded();
+        discardedTotal = totals.discarded();
+        excludedByReason = totals.excludedByReasonAsJson();
+    }
+
+    public void complete(Instant now) {
+        status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.COMPLETE);
+        completedAt = now;
+    }
+
+    public void cancel(Long personId, String reason, Instant now) {
+        status = BroadcastStatusStateMachine.requireTargetStateFor(status, BroadcastEvent.CANCEL);
+        cancelledByPersonId = personId;
+        cancellationReason = reason;
+        cancelledAt = now;
+    }
 }

@@ -33,7 +33,7 @@ Tipo de ticket (lo fija el líder en el plan): A solo backend (contrato => backe
 2. Líder pregunta al usuario, en un solo mensaje, lo que bloquea (negocio, diseño). Front: mockup aprobado antes de codificar.
 3. Líder lanza workers con una línea de brief; abren PR en BORRADOR con un primer commit chico y trabajan con etiquetas `cell:<issue>` y `role:<puesto>`. Los PRs referencian el issue (`Refs #N`; `Closes #N` solo el último).
 4. Cada PR pasa por el subagente revisor (`cell-review`), una invocación; el informe es un comentario del PR. Plata/contrato/seguridad: dos invocaciones independientes (reviewer-1 y reviewer-2), MERGEABLE de ambas. Una ronda de revisión y una de correcciones.
-5. El líder mergea automático cuando el revisor asignado da MERGEABLE (o MERGEABLE CON MENORES ya corregidos) y la CI está verde; plata/contrato/seguridad requieren MERGEABLE de las dos invocaciones. PRs apilados en orden estricto; el mecánico trae develop. Releases a `master` los hace el usuario.
+5. El líder mergea automático cuando el revisor asignado da MERGEABLE (o MERGEABLE CON MENORES ya corregidos) y la CI está verde; plata/contrato/seguridad requieren MERGEABLE de las dos invocaciones. PRs apilados en orden estricto; el mecánico trae develop. Los PRs sin migración se mergean con auto-merge (regla 2 de "Reglas de comportamiento"). Releases a `master`: ver "Protocolo de respuesta y flujo continuo".
 
 ## Coordinador y líder
 
@@ -54,6 +54,33 @@ Circuito: Gabriel prioriza => el coordinador convierte el ítem de Obsidian en u
 - El coordinador es el pivot: mantiene carga paralela alta según la capacidad de la máquina, asigna cada ítem al puesto que corresponde, pide refinamiento y specs con anticipación y divide en rebanadas lanzables para no depender de Gabriel.
 - El líder tiene el dominio de los merges (a `develop` y `release/*` a `master`) desde el 17-nov, con los controles de siempre: CI verde, revisión de plata/contrato/seguridad, smoke de migraciones y etiqueta `contract-break-approved` solo con diff seguro.
 
+## Reglas de comportamiento (valen para todas las sesiones)
+
+Viven acá y en las fichas de `.claude/agents/`, no en la memoria local de ninguna sesión: lo que deba valer para otras sesiones se escribe en estos archivos.
+
+1. **Nombres.** Al hablar con Gabriel se nombra a las sesiones por el título que él ve en claude.ai/code, no por alias (Líder-N, worker-N). Los prompts de apertura de sesión empiezan con la línea `Nombre de la sesión: <nombre>`. Todo prompt que Gabriel deba pegar va completo y autocontenido en un bloque de código en el chat.
+2. **Líderes.** Un líder nunca deja un PR listo sin acción. Cuando su revisión da conforme y el PR no lleva migración, activa el auto-merge (`develop` exige los checks `backend` y `frontend`) y anuncia `AUTO-MERGE ACTIVADO #N`. Si empujan un commit después de su aprobación, re-revisa el delta. Los PRs con migración se mergean a mano, anunciando `MIGRACIÓN V<n> EN MERGE` y `MERGEADO V<n>` en el Issue de relevo; el número se renumera al siguiente libre sobre el máximo de `develop` al mergear (Flyway sin `outOfOrder`).
+3. **Comunicación.** Los mensajes entre sesiones en la nube son de una sola vía y los workers y líderes no vigilan el CI por su cuenta. Toda corrección se cierra con un comentario explícito en el Issue: `ARRANQUE`, `TERMINÉ`, `CORREGIDO #N`, `BLOQUEADO` + motivo, `NECESITO WORKER #N`. El coordinador avisa al líder en el momento en que un PR queda `clean`. Un push que no dispara CI se corrige con un push normal con cambio real, nunca con commit vacío. Un rerun no re-evalúa la etiqueta `contract-break-approved`: el workflow solo la lee en `opened`, `synchronize`, `reopened` y `ready_for_review`; para re-evaluarla se cierra y reabre el PR (único caso en que se hace).
+4. **Workers.** Tope de 90k tokens y 30 minutos. Un worker que agotó el presupuesto avisa `BLOQUEADO` y pide uno fresco. Sesión nueva (o `/clear`) al 50 % de contexto. No se mergea desde un worker.
+5. **Contrato.** `contract-break-approved` solo con diff aditivo listado en el cuerpo del PR; un filtro que pasa de valor único a lista se considera aditivo.
+6. **Rol del coordinador.** Es el único que escribe en el vault de Obsidian privado (repo `Gabriel030/agustina-bermejo-vault`, vía el agente `obsidian-dev`). No guarda en memoria local reglas que deban valer para otras sesiones: van a estos archivos.
+
+## Protocolo de reporte
+
+1. **Reportar.** Toda sesión (líder o worker) cierra cada turno con un comentario `REPORTE` en el Issue de su tarea, formato fijo de 4 líneas: `HECHO` (con PR/commit/hora UTC), `ESPERA` (qué y de quién: CI, worker, decisión, merge), `SIGUIENTE` (acción concreta) y `BLOQUEOS`. Un líder no cierra turno si queda un PR `clean` sin acción (mergea, activa auto-merge o pide worker); un PR `clean` sin acción no puede quedar más de 6 minutos.
+2. **Pedir reporte.** Si una sesión lleva más de 6 minutos sin reporte teniendo algo pendiente, el coordinador le escribe `PEDIDO DE REPORTE` y la sesión responde en el mismo turno con el formato anterior. El coordinador avisa al líder dueño en el mismo turno en que un PR queda `clean` o llega un `CORREGIDO`, sin depender de que Gabriel intermedie.
+
+## Lecciones del 18-nov (error → regla)
+
+- Se dijo "CI verde" con el verde del head viejo (#999) → decirlo solo sobre el head real y con la base actual.
+- Se dieron cifras sin medir (CI estimado en 25 min, tarda ~6-10) → no dar cifras sin medirlas.
+- Sesiones nuevas de más → abrir una solo si el worker agotó presupuesto o llegó al 50 % de contexto; si no, reanudar la existente.
+- Rebases repetidos de PRs apilados → un PR apilado queda `dirty` cuando entra su base: rebasear recién cuando le toca el merge.
+- Choque de números de migración al rebasear → usar el siguiente libre sobre `develop` al empujar; el líder renumera al mergear.
+- `contract-break-approved` no se re-evaluó con un rerun → se evalúa solo en `opened`/`synchronize`/`reopened`/`ready_for_review`: un push real, no rerun ni commit vacío.
+- Un PR borró un componente compartido (p. ej. `MeshBackground`) y rompió a otros → los PRs abiertos que lo importan quitan el import antes de mergear.
+- Rebase + renumeración + mayores abiertos no entra en el tope normal → esa tarea justifica 120k tokens y 40 min; el resto 90k y 30.
+
 ## Coordinación
 
 - Hub-and-spoke: todo pasa por el líder.
@@ -68,8 +95,8 @@ Circuito: Gabriel prioriza => el coordinador convierte el ítem de Obsidian en u
 
 ## Presupuesto y contexto
 
-- Planificación del líder ~120k, corte 150k con handoff. Topes fijos SIN extensiones: worker 150k, revisor 100k, mecánico 80k (tokens de plataforma; la propia cuenta subestima ~2,2x).
-- Con ventanas de contexto de 1M el límite real es el tope de tokens, no un % de contexto: el relevo es al tope (worker 150k, sin extensiones) o al cambiar de tarea. El worker escribe el handoff (`docs/cell/handoffs/<issue>-<n>.md`, en su rama) y el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
+- Planificación del líder ~120k, corte 150k con handoff. Topes fijos SIN extensiones: worker 90k tokens y 30 minutos, revisor 100k, mecánico 80k (tokens de plataforma; la propia cuenta subestima ~2,2x).
+- Con ventanas de contexto de 1M el límite real es el tope de tokens, no un % de contexto: el relevo es al tope (worker 90k o 30 minutos, sin extensiones) o al cambiar de tarea. El worker escribe el handoff (`docs/cell/handoffs/<issue>-<n>.md`, en su rama) y el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
 - Criterio de parada: tras 2 intentos fallidos de corregir lo mismo (test que no pasa, CI roja por la misma causa) no hay tercer intento: handoff con diagnóstico y el líder relanza con un brief mejor.
 - Brief de cada subtarea (lo escribe el líder en el plan): objetivo, formato de salida esperado, archivos permitidos, FUERA DE ALCANCE explícito, criterios de aceptación verificables y comando de verificación (frontend: además navegador/preview).
 

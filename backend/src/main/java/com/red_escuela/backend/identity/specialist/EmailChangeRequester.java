@@ -4,6 +4,7 @@ import com.red_escuela.backend.identity.entity.ContactChangeType;
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.EmailAlreadyExistsException;
+import com.red_escuela.backend.identity.exception.EmailChangePendingByOwnerException;
 import com.red_escuela.backend.identity.exception.StaffPasswordResetBlockedException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
@@ -53,6 +54,7 @@ public class EmailChangeRequester {
 
     public void requestStaffChange(Person target, String requestedEmail) {
         if (isDifferentFromCurrent(target, requestedEmail)) {
+            requireNoPendingChangeStartedByOwner(target);
             requestChange(target, currentPersonService.resolveCurrentPerson().getId(), requestedEmail);
         }
     }
@@ -61,6 +63,15 @@ public class EmailChangeRequester {
         if (tokenRepository.existsByPersonAndNewEmailIsNotNull(person)
                 || contactChangeRecorder.hasRecentEmailChange(person.getId())) {
             throw new StaffPasswordResetBlockedException(person.getId());
+        }
+    }
+
+    private void requireNoPendingChangeStartedByOwner(Person target) {
+        boolean pending = tokenRepository.existsByPersonAndNewEmailIsNotNullAndExpiresAtAfter(target,
+                ApplicationTime.now());
+        if (pending && contactChangeRecorder.lastEmailChangeRequesterId(target.getId())
+                .filter(target.getId()::equals).isPresent()) {
+            throw new EmailChangePendingByOwnerException(target.getId());
         }
     }
 
@@ -80,13 +91,13 @@ public class EmailChangeRequester {
         }
 
         tokenRepository.deleteByPerson(person);
-        byte[] bytes = new byte[32];
-        secureRandom.nextBytes(bytes);
-        String clearToken = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        String clearToken = newClearToken();
+        String clearCancelToken = newClearToken();
         EmailVerificationToken token = new EmailVerificationToken();
         token.setPerson(person);
         token.setNewEmail(newEmail.value());
         token.setTokenHash(TokenHashUtil.sha256Hex(clearToken));
+        token.setCancelTokenHash(TokenHashUtil.sha256Hex(clearCancelToken));
         token.setExpiresAt(ApplicationTime.now().plusHours(EXPIRATION_HOURS));
         tokenRepository.save(token);
 
@@ -94,6 +105,13 @@ public class EmailChangeRequester {
         contactChangeRecorder.recordChange(person.getId(), actorPersonId, ContactChangeType.EMAIL_CHANGE_REQUESTED,
                 previousEmail, newEmail.value());
         eventPublisher.publishEvent(EmailChangeRequestedEvent.requestedFor(person.getId(), previousEmail,
-                newEmail.value(), frontendBaseUrl + "/verificar-email?token=" + clearToken));
+                newEmail.value(), frontendBaseUrl + "/verificar-email?token=" + clearToken,
+                frontendBaseUrl + "/cancelar-cambio-email?token=" + clearCancelToken));
+    }
+
+    private String newClearToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 }

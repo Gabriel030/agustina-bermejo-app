@@ -21,8 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 
 @Component
 public class ContactConsentLedger {
@@ -45,7 +51,30 @@ public class ContactConsentLedger {
     @Transactional(readOnly = true)
     public ConsentDecision isAllowed(Long personId, ChannelType channel, BroadcastCategory category) {
         Optional<ContactConsent> record = contactConsentRepository.findByPersonIdAndChannelAndCategory(personId, channel, category);
-        return decide(personId, channel, category, record.map(ContactConsent::getStatus));
+        return decide(personId, channel, category, record.map(ContactConsent::getStatus), newsletterPreferenceFinder::isOptedIn);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, ConsentDecision> isAllowedAll(Collection<Long> personIds, ChannelType channel, BroadcastCategory category) {
+        Set<Long> distinctIds = new HashSet<>(personIds);
+        Map<Long, ConsentStatus> statusByPerson = new HashMap<>();
+        if (!distinctIds.isEmpty()) {
+            contactConsentRepository.findAllByPersonIdInAndChannelAndCategory(distinctIds, channel, category)
+                    .forEach(record -> statusByPerson.put(record.getPersonId(), record.getStatus()));
+        }
+        Set<Long> optedInIds = Set.of();
+        if (channel == ChannelType.EMAIL && category != BroadcastCategory.INSTITUTIONAL) {
+            Set<Long> withoutRecord = new HashSet<>(distinctIds);
+            withoutRecord.removeAll(statusByPerson.keySet());
+            if (!withoutRecord.isEmpty()) {
+                optedInIds = newsletterPreferenceFinder.findOptedInPersonIds(withoutRecord);
+            }
+        }
+        Predicate<Long> newsletterOptedIn = optedInIds::contains;
+        Map<Long, ConsentDecision> decisions = new HashMap<>();
+        distinctIds.forEach(personId -> decisions.put(personId,
+                decide(personId, channel, category, Optional.ofNullable(statusByPerson.get(personId)), newsletterOptedIn)));
+        return decisions;
     }
 
     @Transactional(readOnly = true)
@@ -89,8 +118,9 @@ public class ContactConsentLedger {
     }
 
     private ContactConsentEntry entryFor(Long personId, ConsentChannel channel, BroadcastCategory category) {
+        Optional<Instant> recordedAt = lastRecordedAt(personId, channel, category);
         return new ContactConsentEntry(channel, category, isGranted(personId, channel, category),
-                lastRecordedAt(personId, channel, category).orElse(null));
+                recordedAt.orElse(null), recordedAt.isPresent());
     }
 
     private void recordOne(Long personId, ChannelType storageChannel, BroadcastCategory category, ConsentStatus newStatus,
@@ -110,7 +140,8 @@ public class ContactConsentLedger {
         }
     }
 
-    private ConsentDecision decide(Long personId, ChannelType channel, BroadcastCategory category, Optional<ConsentStatus> status) {
+    private ConsentDecision decide(Long personId, ChannelType channel, BroadcastCategory category, Optional<ConsentStatus> status,
+                                   Predicate<Long> newsletterOptedIn) {
         if (category == BroadcastCategory.INSTITUTIONAL) {
             return status.filter(ConsentStatus.REVOKED::equals).isPresent()
                     ? ConsentDecision.denied(DenialReason.OPTED_OUT)
@@ -119,7 +150,7 @@ public class ContactConsentLedger {
         if (status.isPresent()) {
             return status.get() == ConsentStatus.GRANTED ? ConsentDecision.permitted() : ConsentDecision.denied(DenialReason.OPTED_OUT);
         }
-        return channel == ChannelType.EMAIL && newsletterPreferenceFinder.isOptedIn(personId)
+        return channel == ChannelType.EMAIL && newsletterOptedIn.test(personId)
                 ? ConsentDecision.permitted()
                 : ConsentDecision.denied(DenialReason.NO_CONSENT);
     }

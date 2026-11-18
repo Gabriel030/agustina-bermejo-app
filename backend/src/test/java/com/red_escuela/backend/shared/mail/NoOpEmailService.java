@@ -28,6 +28,6 @@ public class NoOpEmailService implements EmailService {
     }
 
     @Override
-    public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail) {
+    public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail, String cancellationLink) {
     }
 }

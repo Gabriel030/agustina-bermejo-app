@@ -76,6 +76,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGEBACK_REFERENCE_INVALID` | no | `ChargebackReferenceInvalidException` | billing |
 | `CIRCULAR_PREREQUISITE` | no | `CircularPrerequisiteException` | academicstructure |
 | `CLASS_ON_HOLIDAY` | no | `ClassOnHolidayException` | attendance |
+| `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
+| `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
+| `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
 | `CREDIT_NOTE_JUSTIFICATION_REQUIRED` | no | `CreditNoteJustificationRequiredException` | billing |
 | `CREDIT_NOTE_LINES_INVALID` | no | `CreditNoteLinesInvalidException` | billing |
 | `CURRENCY_MISMATCH` | no | `CurrencyMismatchException` | billing |
@@ -227,6 +230,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `UNSUPPORTED_FILE_TYPE` | no | `UnsupportedFileTypeException` | shared |
 | `VERIFIED_PAYMENT_AMOUNT_INVALID` | no | `VerifiedPaymentAmountInvalidException` | billing |
 | `VERIFIED_PAYMENT_CURRENCY_MISMATCH` | no | `VerifiedPaymentCurrencyMismatchException` | billing |
+| `WAITLIST_REASON_REQUIRED` | no | `WaitlistReasonRequiredException` | enrollment |
 | `WITHDRAWAL_DATE_OUT_OF_ALLOWED_RANGE` | no | `WithdrawalDateOutOfAllowedRangeException` | enrollment |
 
 ### HTTP 401
@@ -245,7 +249,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `AUTHORIZATION_INBOX_ACCESS_DENIED` | no | `AuthorizationInboxAccessDeniedException` | billing |
 | `AUTHORIZATION_REQUEST_ACCESS_DENIED` | no | `AuthorizationRequestAccessDeniedException` | billing |
-| `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
 | `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
@@ -306,6 +309,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NIGHTLY_BILLING_RUN_NOT_FOUND` | no | `NightlyBillingRunNotFoundException` | billing |
 | `NOTIFICATION_DELIVERY_NOT_FOUND` | no | `NotificationDeliveryNotFoundException` | notification |
 | `NOTIFICATION_NOT_FOUND` | no | `NotificationNotFoundException` | notification |
+| `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_OWN_ENROLLMENT` | no | `NotOwnEnrollmentException` | billing |
 | `NOT_OWN_SECTION` | no | `NotOwnSectionException` | academicstructure |
 | `NOT_SECTION_INSTRUCTOR` | no | `NotSectionInstructorException` | announcement |
@@ -423,6 +427,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `DUPLICATE_INVOICE_CHARGE` | no | `DuplicateInvoiceChargeException` | billing |
 | `ELECTIVE_GROUP_ALREADY_EXISTS` | no | `ElectiveGroupAlreadyExistsException` | academicstructure |
 | `ELECTIVE_GROUP_IN_USE` | no | `ElectiveGroupInUseException` | academicstructure |
+| `EMAIL_CHANGE_PENDING_BY_OWNER` | no | `EmailChangePendingByOwnerException` | identity |
 | `EMPTY_AUDIENCE` | no | `EmptyAudienceException` | notification |
 | `ENROLLMENT_FEE_ALREADY_ISSUED` | no | `EnrollmentFeeAlreadyIssuedException` | billing |
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_EXISTS` | no | `EnrollmentFeeExemptionAlreadyExistsException` | enrollment |
@@ -543,6 +548,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PROGRAM_NOT_AVAILABLE` | no | `ProgramNotAvailableException` | enrollment |
 | `PROGRAM_SUBJECT_ALREADY_EXISTS` | no | `ProgramSubjectAlreadyExistsException` | academicstructure |
 | `PROGRAM_YEAR_BILLING_TEMPLATE_MISMATCH` | no | `ProgramYearBillingTemplateMismatchException` | billing |
+| `PROMOTIONAL_CONSENT_DISABLED` | no | `PromotionalConsentDisabledException` | notification |
 | `PROMOTION_ALREADY_CLOSED` | no | `PromotionAlreadyClosedException` | billing |
 | `PROPOSAL_ALREADY_OPEN` | no | `ProposalAlreadyOpenException` | billing |
 | `PROPOSAL_EXPIRED` | no | `ProposalExpiredException` | billing |
@@ -594,6 +600,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `UPFRONT_WINDOW_CLOSED` | no | `UpfrontWindowClosedException` | billing |
 | `USERNAME_ALREADY_EXISTS` | no | `UsernameAlreadyExistsException` | identity |
 | `VERSION_ALREADY_EFFECTIVE` | no | `VersionAlreadyEffectiveException` | billing |
+| `WAITLIST_CANDIDATE_NOT_ELIGIBLE` | no | `WaitlistCandidateNotEligibleException` | enrollment |
+| `WAITLIST_ENTRY_NOT_WAITING` | no | `WaitlistEntryNotWaitingException` | enrollment |
+| `WAITLIST_NO_FREE_SEAT` | no | `WaitlistNoFreeSeatException` | enrollment |
+| `WAITLIST_REMOVAL_BLOCKED_BY_PENDING_RECEIPT` | no | `WaitlistRemovalBlockedByPendingReceiptException` | enrollment |
 | `WITHDRAWAL_REDUCTION_REJECTED` | no | `WithdrawalReductionRejectedException` | billing |
 
 ### HTTP 422
@@ -713,6 +723,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/broadcasts/audience-preview` | `BroadcastAudienceController#previewBroadcastAudience` |
 | POST | `/broadcasts/{id}/cancel` | `BroadcastLifecycleController#cancelBroadcast` |
 | POST | `/broadcasts/{id}/confirm` | `BroadcastLifecycleController#confirmBroadcast` |
+| POST | `/cancel-email-change` | `CancelEmailChangeController#cancelEmailChange` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
 | POST | `/classrooms` | `ClassroomController#create` |
@@ -893,6 +904,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/terms/{id}/enrollment/clear-override` | `TermController#removeOverride` |
 | POST | `/terms/{id}/enrollment/close` | `TermController#closeEnrollment` |
 | POST | `/terms/{id}/enrollment/open` | `TermController#openEnrollment` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/prioritize` | `WaitlistController#prioritize` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/promote` | `WaitlistController#promote` |
+| POST | `/waitlists/{kind}/entries/{enrollmentId}/remove` | `WaitlistController#remove` |
 | POST | `/year-billing-templates/{id}/cohorts` | `ProgramYearBillingTemplateController#createCohort` |
 | PATCH | `/year-billing-templates/{id}/configuration` | `ProgramYearBillingTemplateController#updateConfiguration` |
 

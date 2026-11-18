@@ -101,6 +101,19 @@
         "required" : [ "announcementEmailEnabled", "evaluationConfigDueDays", "justificationDeadlineBusinessDays" ],
         "type" : "object"
       },
+      "AccountCreationConsentChoice" : {
+        "properties" : {
+          "category" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "granted" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "category", "granted" ],
+        "type" : "object"
+      },
       "AccountCreditAllocationResponse" : {
         "properties" : {
           "allocations" : {
@@ -1378,7 +1391,11 @@
       "AuditLogView" : {
         "properties" : {
           "action" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED" ],
+            "description" : "Acción registrada. Conjunto abierto: pueden aparecer valores nuevos, por ejemplo STAFF_WITHDRAWN, PASSWORD_CHANGED o DATA_IMPORT_COMMITTED",
+            "example" : "STAFF_WITHDRAWN",
+            "type" : "string"
+          },
+          "actorName" : {
             "type" : "string"
           },
           "actorPersonId" : {
@@ -1399,7 +1416,8 @@
             "type" : "integer"
           },
           "entityType" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST" ],
+            "description" : "Tipo de entidad afectada. Conjunto abierto: pueden aparecer valores nuevos, por ejemplo PERSON o STUDENT",
+            "example" : "PERSON",
             "type" : "string"
           },
           "id" : {
@@ -1414,7 +1432,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "action", "actorPersonId", "actorRole", "afterValue", "beforeValue", "entityId", "entityType", "id", "occurredAt", "reason" ],
+        "required" : [ "action", "actorName", "actorPersonId", "actorRole", "afterValue", "beforeValue", "entityId", "entityType", "id", "occurredAt", "reason" ],
         "type" : "object"
       },
       "AuditedAnnualUpfrontTermsResponse" : {
@@ -1977,8 +1995,18 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "confirmedByName" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "createdByName" : {
+            "type" : "string"
+          },
+          "estimatedCompletionDate" : {
+            "format" : "date",
             "type" : "string"
           },
           "id" : {
@@ -2072,8 +2100,14 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "confirmedByName" : {
+            "type" : "string"
+          },
           "createdAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "createdByName" : {
             "type" : "string"
           },
           "id" : {
@@ -2083,12 +2117,19 @@
           "name" : {
             "type" : "string"
           },
+          "recipientCounts" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
           "status" : {
             "enum" : [ "DRAFT", "CONFIRMED", "SENDING", "COMPLETED", "CANCELLED" ],
             "type" : "string"
           }
         },
-        "required" : [ "category", "channel", "confirmedAt", "createdAt", "id", "name", "status" ],
+        "required" : [ "category", "channel", "confirmedAt", "createdAt", "id", "name", "recipientCounts", "status" ],
         "type" : "object"
       },
       "CancelBroadcastRequest" : {
@@ -2100,6 +2141,17 @@
           }
         },
         "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "CancelEmailChangeRequest" : {
+        "properties" : {
+          "token" : {
+            "maxLength" : 128,
+            "minLength" : 32,
+            "type" : "string"
+          }
+        },
+        "required" : [ "token" ],
         "type" : "object"
       },
       "CancelExamBoardRequest" : {
@@ -3380,12 +3432,15 @@
           "granted" : {
             "type" : "boolean"
           },
+          "hasRecord" : {
+            "type" : "boolean"
+          },
           "recordedAt" : {
             "format" : "date-time",
             "type" : "string"
           }
         },
-        "required" : [ "category", "channel", "granted", "recordedAt" ],
+        "required" : [ "category", "channel", "granted", "hasRecord", "recordedAt" ],
         "type" : "object"
       },
       "CorequisiteResponse" : {
@@ -11512,6 +11567,9 @@
       },
       "RegisterRequest" : {
         "properties" : {
+          "acceptedInstitutionalNotices" : {
+            "type" : "boolean"
+          },
           "acceptedNewsletter" : {
             "type" : [ "boolean", "null" ]
           },
@@ -11528,6 +11586,12 @@
           "birthDate" : {
             "format" : "date",
             "type" : "string"
+          },
+          "contactConsents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccountCreationConsentChoice"
+            },
+            "type" : [ "array", "null" ]
           },
           "email" : {
             "format" : "email",
@@ -11567,7 +11631,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "acceptedPrivacy", "acceptedTerms", "apellido", "birthDate", "email", "institutionId", "nombre", "password", "username" ],
+        "required" : [ "acceptedInstitutionalNotices", "acceptedPrivacy", "acceptedTerms", "apellido", "birthDate", "email", "institutionId", "nombre", "password", "username" ],
         "type" : "object"
       },
       "RegularCertificateRequestResponse" : {
@@ -13964,6 +14028,10 @@
           },
           "granted" : {
             "type" : "boolean"
+          },
+          "source" : {
+            "enum" : [ "PROFILE", "EMAIL_LINK", "STAFF_ON_BEHALF", "IMPORT", "ACCOUNT_CREATION" ],
+            "type" : "string"
           }
         },
         "required" : [ "category", "channel", "granted" ],
@@ -14599,6 +14667,15 @@
           }
         },
         "required" : [ "id", "kind", "name", "occupied", "termName", "waiting" ],
+        "type" : "object"
+      },
+      "WaitlistReasonRequest" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "WaitlistStudent" : {
@@ -18571,8 +18648,11 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED" ],
-            "type" : "string"
+            "items" : {
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_COMPLETED" ],
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
@@ -18589,6 +18669,40 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorPersonId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorRole",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -24823,6 +24937,127 @@
           }
         },
         "tags" : [ "broadcast-lifecycle-controller" ]
+      }
+    },
+    "/cancel-email-change" : {
+      "post" : {
+        "operationId" : "CancelEmailChange_cancelEmailChange",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelEmailChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "cancel-email-change-controller" ]
       }
     },
     "/chargebacks/{chargebackId}/reversal" : {
@@ -59760,8 +59995,11 @@
           "name" : "action",
           "required" : false,
           "schema" : {
-            "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED" ],
-            "type" : "string"
+            "items" : {
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_COMPLETED" ],
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
@@ -59778,6 +60016,40 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorPersonId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorRole",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -86141,6 +86413,410 @@
                 }
               }
             },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "waitlist-controller" ]
+      }
+    },
+    "/waitlists/{kind}/entries/{enrollmentId}/prioritize" : {
+      "post" : {
+        "operationId" : "Waitlist_prioritize",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "kind",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAM_SECTION", "COURSE_SECTION", "COURSE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "enrollmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WaitlistReasonRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "waitlist-controller" ]
+      }
+    },
+    "/waitlists/{kind}/entries/{enrollmentId}/promote" : {
+      "post" : {
+        "operationId" : "Waitlist_promote",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "kind",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAM_SECTION", "COURSE_SECTION", "COURSE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "enrollmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "waitlist-controller" ]
+      }
+    },
+    "/waitlists/{kind}/entries/{enrollmentId}/remove" : {
+      "post" : {
+        "operationId" : "Waitlist_remove",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "kind",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAM_SECTION", "COURSE_SECTION", "COURSE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "enrollmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WaitlistReasonRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
             "description" : "OK"
           },
           "400" : {

@@ -217,7 +217,7 @@ class PriceProposalFlowIT extends AbstractIntegrationTest {
         long requestId = proposeAccepted(120000, SEPTEMBER_FIRST);
         String otherToken = jwtService.generateAccessToken(person("administrative", "ADMINISTRATIVO"));
 
-        mockMvc.perform(post("/authorization-requests/{id}/withdraw", requestId).header("Authorization", "Bearer " + otherToken)).andExpect(status().isForbidden());
+        mockMvc.perform(post("/authorization-requests/{id}/withdraw", requestId).header("Authorization", "Bearer " + otherToken)).andExpect(status().isNotFound()).andExpect(content().string(""));
         assertThat(versionStatusOf(requestId)).isEqualTo("PROPOSED");
 
         mockMvc.perform(post("/authorization-requests/{id}/withdraw", requestId).header("Authorization", "Bearer " + administrativeToken)).andExpect(status().isOk());

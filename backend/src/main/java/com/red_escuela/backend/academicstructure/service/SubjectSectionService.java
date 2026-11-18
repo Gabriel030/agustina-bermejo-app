@@ -46,6 +46,7 @@ public class SubjectSectionService {
     private final SectionConflictChecker conflictChecker;
     private final SectionScheduleSlotRepository slotRepository;
     private final SectionEnrollmentActivityPort enrollmentActivityPort;
+    private final CapacityChangeEvents capacityChangeEvents;
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
@@ -58,7 +59,9 @@ public class SubjectSectionService {
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
             SectionScheduleSlotRepository slotRepository,
-            SectionEnrollmentActivityPort enrollmentActivityPort) {
+            SectionEnrollmentActivityPort enrollmentActivityPort,
+            CapacityChangeEvents capacityChangeEvents) {
+        this.capacityChangeEvents = capacityChangeEvents;
         this.enrollmentActivityPort = enrollmentActivityPort;
         this.sectionRepository = sectionRepository;
         this.subjectRepository = subjectRepository;
@@ -102,6 +105,7 @@ public class SubjectSectionService {
     @Transactional
     public SubjectSection update(Long id, UpdateSectionRequest request) {
         SubjectSection section = findOrThrow(id);
+        Integer previousCapacity = section.getCapacity();
         if (request.name() != null) {
             section.setName(request.name());
         }
@@ -123,7 +127,9 @@ public class SubjectSectionService {
         if (request.maxAbsencePercent() != null) {
             section.setMaxAbsenceRate(request.maxAbsencePercent());
         }
-        return sectionRepository.save(section);
+        SubjectSection saved = sectionRepository.save(section);
+        capacityChangeEvents.programSectionChanged(saved.getId(), previousCapacity, saved.getCapacity());
+        return saved;
     }
 
     public List<SubjectSection> listBySubject(Long subjectId, StatusType status) {

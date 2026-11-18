@@ -11,6 +11,7 @@ import com.red_escuela.backend.notification.broadcast.domain.ConsentSource;
 import com.red_escuela.backend.notification.broadcast.specialist.BroadcastConsentRecheck;
 import com.red_escuela.backend.notification.broadcast.specialist.BroadcastDispatchSettings;
 import com.red_escuela.backend.notification.broadcast.specialist.BroadcastEmailDispatchJob;
+import com.red_escuela.backend.notification.broadcast.specialist.BroadcastProgressTracker;
 import com.red_escuela.backend.notification.broadcast.specialist.ContactConsentLedger;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryCategory;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
@@ -62,6 +63,8 @@ abstract class AbstractBroadcastDispatchIT extends AbstractIntegrationTest {
     protected ContactConsentLedger consentLedger;
     @Autowired
     protected BroadcastConsentRecheck consentRecheck;
+    @Autowired
+    protected BroadcastProgressTracker progressTracker;
     @Autowired
     protected TransactionTemplate transactionTemplate;
     @Autowired
@@ -172,7 +175,7 @@ abstract class AbstractBroadcastDispatchIT extends AbstractIntegrationTest {
 
     protected BroadcastEmailDispatchJob jobWith(int dailyLimit, int reserved, int maxPerRun, EmailDeliveryChannel channel) {
         BroadcastDispatchSettings settings = new BroadcastDispatchSettings(dailyLimit, reserved, maxPerRun, "09:00", "20:00");
-        return new BroadcastEmailDispatchJob(deliveryRepository, channel, consentRecheck, settings, MutableClock.INSTANCE,
+        return new BroadcastEmailDispatchJob(deliveryRepository, channel, consentRecheck, progressTracker, settings, MutableClock.INSTANCE,
                 new SimpleMeterRegistry());
     }
 

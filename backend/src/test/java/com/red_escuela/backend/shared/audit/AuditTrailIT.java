@@ -104,9 +104,9 @@ class AuditTrailIT extends AbstractIntegrationTest {
             auditTrail.record(RECORD);
         });
 
-        var all = auditLogReader.search(null, null, null, 0, 10);
-        var withdrawn = auditLogReader.search(AuditAction.STAFF_WITHDRAWN, null, null, 0, 10);
-        var forEntity = auditLogReader.search(null, null, 77L, 0, 10);
+        var all = auditLogReader.search(AuditLogFilter.none(), 0, 10, ids -> java.util.Map.of());
+        var withdrawn = auditLogReader.search(new AuditLogFilter(java.util.List.of(AuditAction.STAFF_WITHDRAWN), null, null, null, null, null, null), 0, 10, ids -> java.util.Map.of());
+        var forEntity = auditLogReader.search(new AuditLogFilter(null, null, 77L, null, null, null, null), 0, 10, ids -> java.util.Map.of());
 
         assertThat(all.totalElements()).isEqualTo(2);
         assertThat(all.items().get(0).action()).isEqualTo(AuditAction.STAFF_REACTIVATED);

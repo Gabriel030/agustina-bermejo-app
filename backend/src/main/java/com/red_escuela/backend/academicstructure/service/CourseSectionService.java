@@ -46,6 +46,7 @@ public class CourseSectionService {
     private final SectionConflictChecker conflictChecker;
     private final SectionScheduleSlotRepository slotRepository;
     private final SectionEnrollmentActivityPort enrollmentActivityPort;
+    private final CapacityChangeEvents capacityChangeEvents;
 
     public CourseSectionService(
             CourseSubjectSectionRepository sectionRepository,
@@ -58,7 +59,9 @@ public class CourseSectionService {
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
             SectionScheduleSlotRepository slotRepository,
-            SectionEnrollmentActivityPort enrollmentActivityPort) {
+            SectionEnrollmentActivityPort enrollmentActivityPort,
+            CapacityChangeEvents capacityChangeEvents) {
+        this.capacityChangeEvents = capacityChangeEvents;
         this.enrollmentActivityPort = enrollmentActivityPort;
         this.sectionRepository = sectionRepository;
         this.courseSubjectRepository = courseSubjectRepository;
@@ -102,6 +105,7 @@ public class CourseSectionService {
     @Transactional
     public CourseSubjectSection update(Long id, UpdateSectionRequest request) {
         CourseSubjectSection section = findOrThrow(id);
+        Integer previousCapacity = section.getCapacity();
         if (request.name() != null) {
             section.setName(request.name());
         }
@@ -120,7 +124,9 @@ public class CourseSectionService {
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
-        return sectionRepository.save(section);
+        CourseSubjectSection saved = sectionRepository.save(section);
+        capacityChangeEvents.courseSectionChanged(saved.getId(), previousCapacity, saved.getCapacity());
+        return saved;
     }
 
     public List<CourseSubjectSection> listByCourseSubject(Long courseSubjectId, StatusType status) {
