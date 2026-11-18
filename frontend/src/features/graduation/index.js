@@ -2,3 +2,5 @@ export { useEgresosPendientes, useMiSolicitudEgreso, useSolicitarEgreso } from '
 export { GraduationTab } from './components/GraduationTab';
 export { GraduationRequestAction } from './components/GraduationRequestAction';
 export { RegularCertificateCard } from './certificates/components/RegularCertificateCard';
+export { useEgresosPorVerificar } from './hooks/useGraduation';
+export { usePendingRegularRequests } from './certificates/hooks/useStaffRegularCertificates';
