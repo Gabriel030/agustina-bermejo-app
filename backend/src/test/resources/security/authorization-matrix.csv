@@ -140,11 +140,11 @@ PUT,/evaluation-schemes/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/exam-board-registrations/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/exam-boards,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
-GET,/exam-boards/{id},DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/exam-boards/{id},DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/cancel,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/exam-boards/{id}/close,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 PUT,/exam-boards/{id}/final-grades,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,"{""items"":[{""registrationId"":1,""absent"":true}]}"
-GET,/exam-boards/{id}/registrations,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/exam-boards/{id}/registrations,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/registrations,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/exam-boards/{id}/reschedule,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/exam-boards/{id}/tribunal,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,

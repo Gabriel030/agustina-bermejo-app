@@ -246,7 +246,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `AUTHORIZATION_INBOX_ACCESS_DENIED` | no | `AuthorizationInboxAccessDeniedException` | billing |
 | `AUTHORIZATION_REQUEST_ACCESS_DENIED` | no | `AuthorizationRequestAccessDeniedException` | billing |
-| `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
 | `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
@@ -307,6 +306,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NIGHTLY_BILLING_RUN_NOT_FOUND` | no | `NightlyBillingRunNotFoundException` | billing |
 | `NOTIFICATION_DELIVERY_NOT_FOUND` | no | `NotificationDeliveryNotFoundException` | notification |
 | `NOTIFICATION_NOT_FOUND` | no | `NotificationNotFoundException` | notification |
+| `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_OWN_ENROLLMENT` | no | `NotOwnEnrollmentException` | billing |
 | `NOT_OWN_SECTION` | no | `NotOwnSectionException` | academicstructure |
 | `NOT_SECTION_INSTRUCTOR` | no | `NotSectionInstructorException` | announcement |
