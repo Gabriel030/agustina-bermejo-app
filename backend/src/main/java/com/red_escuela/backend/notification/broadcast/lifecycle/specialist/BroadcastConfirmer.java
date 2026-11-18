@@ -1,6 +1,8 @@
 package com.red_escuela.backend.notification.broadcast.lifecycle.specialist;
 
 import com.red_escuela.backend.notification.broadcast.domain.ChannelAddress;
+import com.red_escuela.backend.notification.broadcast.audience.domain.ExclusionReason;
+import com.red_escuela.backend.notification.broadcast.domain.DenialReason;
 import com.red_escuela.backend.notification.broadcast.domain.DispatchOutcome;
 import com.red_escuela.backend.notification.broadcast.domain.OutboundMessage;
 import com.red_escuela.backend.notification.broadcast.domain.RenderedContent;
@@ -75,16 +77,23 @@ public class BroadcastConfirmer {
     private void queueRecipient(MessageChannel channel, Broadcast broadcast, RenderedContent content, BroadcastRecipient recipient, Instant now) {
         Optional<ChannelAddress> address = channel.resolveAddress(recipient.getPersonId());
         if (address.isEmpty()) {
-            recipient.markSkipped(now);
+            recipient.markSkipped(now, ExclusionReason.NO_CHANNEL_ADDRESS);
             return;
         }
         DispatchOutcome outcome = channel.dispatch(new OutboundMessage(broadcast.getId(), recipient.getPersonId(), address.get(), content,
                 broadcast.getCategory()));
         switch (outcome) {
             case DispatchOutcome.Queued queued -> recipient.markQueued(queued.deliveryId(), now);
-            case DispatchOutcome.Rejected rejected -> recipient.markSkipped(now);
-            case DispatchOutcome.ReadyForManualAction manual -> {
-            }
+            case DispatchOutcome.Rejected rejected -> recipient.markSkipped(now, exclusionReasonOf(rejected.reason()));
+            case DispatchOutcome.ReadyForManualAction manual ->
+                    throw new UnsupportedOperationException("Manual dispatch is not supported when confirming a broadcast");
         }
+    }
+
+    private static ExclusionReason exclusionReasonOf(DenialReason reason) {
+        return switch (reason) {
+            case OPTED_OUT -> ExclusionReason.OPTED_OUT;
+            case NO_CONSENT -> ExclusionReason.NO_CONSENT;
+        };
     }
 }
