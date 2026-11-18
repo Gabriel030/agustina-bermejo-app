@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.dto.UpdateStaffRequest;
 import com.red_escuela.backend.identity.entity.ContactChangeLog;
 import com.red_escuela.backend.identity.entity.ContactChangeType;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.identity.specialist.EmailChangeRequestedEvent;
 import com.red_escuela.backend.shared.time.ApplicationTime;
@@ -19,6 +20,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,6 +78,34 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         entityManager.flush();
         return entityManager.createQuery("select l from ContactChangeLog l where l.personId = :id order by l.id",
                 ContactChangeLog.class).setParameter("id", person.getId()).getResultList();
+    }
+
+    private RefreshToken persistRefreshToken(Person person, String tokenHash) {
+        RefreshToken token = new RefreshToken();
+        token.setPerson(person);
+        token.setTokenHash(tokenHash);
+        token.setExpiresAt(LocalDateTime.now().plusDays(7));
+        token.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(token);
+        entityManager.flush();
+        return token;
+    }
+
+    private boolean isRevoked(RefreshToken token) {
+        return entityManager.find(RefreshToken.class, token.getId()).getRevoked();
+    }
+
+    private void withClockOffset(Duration offset, ThrowingRunnable action) throws Exception {
+        ApplicationTime.useClock(Clock.offset(Clock.systemDefaultZone(), offset));
+        try {
+            action.run();
+        } finally {
+            ApplicationTime.useClock(Clock.systemDefaultZone());
+        }
+    }
+
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 
     private Person reload(Person person) {
@@ -180,73 +210,101 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         cancelEmailChange(cancelTokenOf(event)).andExpect(status().isOk());
 
         mockMvc.perform(get("/verify-email").param("token", tokenOf(event)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
         assertThat(reload(person).emailValue()).isEqualTo("access.emailchg9@example.com");
-        cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest());
-        cancelEmailChange(tokenOf(event)).andExpect(status().isBadRequest());
+        cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+        cancelEmailChange(tokenOf(event)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
     }
 
     @Test
     void cancelWithExpiredTokenIsRejectedAndKeepsTheRequestPending() throws Exception {
-        Person person = persistPerson("access.emailchg18", "70000228", "ALUMNO");
-        updateOwnProfile(person, "nuevo18@example.com", null, PASSWORD).andExpect(status().isOk());
+        Person person = persistPerson("access.emailchg40", "70000260", "ALUMNO");
+        updateOwnProfile(person, "nuevo40@example.com", null, PASSWORD).andExpect(status().isOk());
         EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
 
         ApplicationTime.useClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofHours(49)));
         try {
-            cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest());
+            cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
         } finally {
             ApplicationTime.useClock(Clock.systemDefaultZone());
         }
         mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isOk());
-        assertThat(reload(person).emailValue()).isEqualTo("nuevo18@example.com");
+        assertThat(reload(person).emailValue()).isEqualTo("nuevo40@example.com");
     }
 
     @Test
     void cancelWithUnknownTokenIsRejected() throws Exception {
-        cancelEmailChange(unknownToken()).andExpect(status().isBadRequest());
+        cancelEmailChange(unknownToken()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
     }
 
     @Test
     void cancelAfterConfirmIsRejectedAndDoesNotRevertTheNewEmail() throws Exception {
-        Person person = persistPerson("access.emailchg19", "70000229", "ALUMNO");
-        updateOwnProfile(person, "nuevo19@example.com", null, PASSWORD).andExpect(status().isOk());
+        Person person = persistPerson("access.emailchg41", "70000261", "ALUMNO");
+        updateOwnProfile(person, "nuevo41@example.com", null, PASSWORD).andExpect(status().isOk());
         EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
         mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isOk());
 
-        cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest());
+        cancelEmailChange(cancelTokenOf(event)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
 
-        assertThat(reload(person).emailValue()).isEqualTo("nuevo19@example.com");
+        assertThat(reload(person).emailValue()).isEqualTo("nuevo41@example.com");
     }
 
     @Test
     void confirmAfterCancelIsRejectedAndKeepsThePreviousEmail() throws Exception {
-        Person person = persistPerson("access.emailchg20", "70000230", "ALUMNO");
-        updateOwnProfile(person, "nuevo20@example.com", null, PASSWORD).andExpect(status().isOk());
+        Person person = persistPerson("access.emailchg42", "70000262", "ALUMNO");
+        updateOwnProfile(person, "nuevo42@example.com", null, PASSWORD).andExpect(status().isOk());
         EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
         cancelEmailChange(cancelTokenOf(event)).andExpect(status().isOk());
 
-        mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
 
-        assertThat(reload(person).emailValue()).isEqualTo("access.emailchg20@example.com");
+        assertThat(reload(person).emailValue()).isEqualTo("access.emailchg42@example.com");
     }
 
     @Test
     void cancelTokenTravelsOnlyInTheBody() throws Exception {
-        Person person = persistPerson("access.emailchg21", "70000231", "ALUMNO");
-        updateOwnProfile(person, "nuevo21@example.com", null, PASSWORD).andExpect(status().isOk());
+        Person person = persistPerson("access.emailchg43", "70000263", "ALUMNO");
+        updateOwnProfile(person, "nuevo43@example.com", null, PASSWORD).andExpect(status().isOk());
         EmailChangeRequestedEvent event = lastEmailChangeEvent(person);
 
         mockMvc.perform(post("/cancel-email-change").param("token", cancelTokenOf(event)))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST_BODY"));
 
         mockMvc.perform(get("/verify-email").param("token", tokenOf(event))).andExpect(status().isOk());
     }
 
     @Test
-    void cancelWithBlankOrOversizedTokenIsRejectedByValidation() throws Exception {
-        cancelEmailChange(" ").andExpect(status().isBadRequest());
-        cancelEmailChange("x".repeat(129)).andExpect(status().isBadRequest());
+    void cancelWithInvalidTokenShapeIsRejectedByValidation() throws Exception {
+        for (String token : new String[] {" ", "", "x".repeat(31), "x".repeat(129)}) {
+            cancelEmailChange(token).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        }
+        mockMvc.perform(post("/cancel-email-change").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void cancelWithoutBodyIsRejectedAsMalformed() throws Exception {
+        mockMvc.perform(post("/cancel-email-change").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST_BODY"));
+    }
+
+    @Test
+    void cancelAcceptsTheShortestAndLongestAllowedToken() throws Exception {
+        cancelEmailChange("x".repeat(32)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
+        cancelEmailChange("x".repeat(128)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EMAIL_VERIFICATION_TOKEN"));
     }
 
     @Test
@@ -297,7 +355,7 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
     }
 
     @Test
-    void resetBlockedFor72HoursAfterApply() throws Exception {
+    void resetBlockedFor72HoursAfterConfirmation() throws Exception {
         Person admin = persistPerson("access.emailchg9a", "70000210", "ADMINISTRATIVO");
         Person teacher = persistPerson("access.emailchg9b", "70000211", "DOCENTE");
         updateStaffEmail(admin, teacher, "docente9.nuevo@example.com").andExpect(status().isOk());
@@ -343,7 +401,7 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
     }
 
     @Test
-    void ownerConfirmApplies() throws Exception {
+    void ownerConfirmationActivatesTheNewEmail() throws Exception {
         Person admin = persistPerson("access.emailchg13a", "70000218", "ADMINISTRATIVO");
         Person teacher = persistPerson("access.emailchg13b", "70000219", "DOCENTE");
         updateStaffEmail(admin, teacher, "docente13.nuevo@example.com").andExpect(status().isOk());
@@ -360,13 +418,82 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
     void sessionsRevokedOnConfirm() throws Exception {
         Person admin = persistPerson("access.emailchg17a", "70000226", "ADMINISTRATIVO");
         Person teacher = persistPerson("access.emailchg17b", "70000227", "DOCENTE");
+        Person bystander = persistPerson("access.emailchg17c", "70000228", "DOCENTE");
+        RefreshToken teacherToken = persistRefreshToken(teacher, "hash-17-teacher");
+        RefreshToken bystanderToken = persistRefreshToken(bystander, "hash-17-bystander");
         int versionBefore = reload(teacher).getTokenVersion();
         updateStaffEmail(admin, teacher, "docente17.nuevo@example.com").andExpect(status().isOk());
+        assertThat(isRevoked(teacherToken)).isFalse();
 
         mockMvc.perform(get("/verify-email").param("token", tokenOf(lastEmailChangeEvent(teacher))))
                 .andExpect(status().isOk());
 
         assertThat(reload(teacher).getTokenVersion()).isGreaterThan(versionBefore);
+        assertThat(isRevoked(teacherToken)).isTrue();
+        assertThat(isRevoked(bystanderToken)).isFalse();
+    }
+
+    @Test
+    void ownChangeConfirmationAlsoRevokesSessions() throws Exception {
+        Person person = persistPerson("access.emailchg18", "70000229", "ALUMNO");
+        RefreshToken token = persistRefreshToken(person, "hash-18-own");
+        int versionBefore = reload(person).getTokenVersion();
+        updateOwnProfile(person, "nuevo18@example.com", null, PASSWORD).andExpect(status().isOk());
+
+        mockMvc.perform(get("/verify-email").param("token", tokenOf(lastEmailChangeEvent(person))))
+                .andExpect(status().isOk());
+
+        assertThat(reload(person).getTokenVersion()).isGreaterThan(versionBefore);
+        assertThat(isRevoked(token)).isTrue();
+    }
+
+    @Test
+    void secondPendingChangeReplacesTheFirst() throws Exception {
+        Person admin = persistPerson("access.emailchg19a", "70000230", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg19b", "70000231", "DOCENTE");
+        updateStaffEmail(admin, teacher, "docente19.primero@example.com").andExpect(status().isOk());
+        String firstToken = tokenOf(lastEmailChangeEvent(teacher));
+        updateStaffEmail(admin, teacher, "docente19.segundo@example.com").andExpect(status().isOk());
+        String secondToken = tokenOf(lastEmailChangeEvent(teacher));
+
+        mockMvc.perform(get("/verify-email").param("token", firstToken)).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/verify-email").param("token", secondToken)).andExpect(status().isOk());
+
+        assertThat(reload(teacher).emailValue()).isEqualTo("docente19.segundo@example.com");
+    }
+
+    @Test
+    void administrativeChangeCannotOverwriteAPendingChangeStartedByTheOwner() throws Exception {
+        Person admin = persistPerson("access.emailchg20a", "70000232", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg20b", "70000233", "DOCENTE");
+        updateOwnProfile(teacher, "docente20.propio@example.com", null, PASSWORD).andExpect(status().isOk());
+        String ownerToken = tokenOf(lastEmailChangeEvent(teacher));
+
+        updateStaffEmail(admin, teacher, "docente20.admin@example.com")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("EMAIL_CHANGE_PENDING_BY_OWNER"));
+
+        mockMvc.perform(get("/verify-email").param("token", ownerToken)).andExpect(status().isOk());
+        assertThat(reload(teacher).emailValue()).isEqualTo("docente20.propio@example.com");
+    }
+
+    @Test
+    void administrativeChangeIsAllowedOnceTheOwnersPendingChangeExpired() throws Exception {
+        Person admin = persistPerson("access.emailchg21a", "70000234", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg21b", "70000235", "DOCENTE");
+        updateOwnProfile(teacher, "docente21.propio@example.com", null, PASSWORD).andExpect(status().isOk());
+
+        withClockOffset(Duration.ofHours(49), () ->
+                updateStaffEmail(admin, teacher, "docente21.admin@example.com").andExpect(status().isOk()));
+    }
+
+    @Test
+    void unconfirmedExpiredChangeKeepsBlockingTheStaffReset() throws Exception {
+        Person admin = persistPerson("access.emailchg22a", "70000236", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.emailchg22b", "70000237", "DOCENTE");
+        updateStaffEmail(admin, teacher, "docente22.nuevo@example.com").andExpect(status().isOk());
+
+        withClockOffset(Duration.ofHours(49), () -> resetStaffPassword(admin, teacher).andExpect(status().isConflict()));
     }
 
     @Test
@@ -395,15 +522,6 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
             ApplicationTime.useClock(Clock.systemDefaultZone());
         }
         assertThat(reload(teacher).emailValue()).isEqualTo("access.emailchg15b@example.com");
-    }
-
-    @Test
-    void resetPasswordIsRejectedWhileChangePending() throws Exception {
-        Person admin = persistPerson("access.emailchg16a", "70000224", "ADMINISTRATIVO");
-        Person teacher = persistPerson("access.emailchg16b", "70000225", "DOCENTE");
-        updateStaffEmail(admin, teacher, "docente16.nuevo@example.com").andExpect(status().isOk());
-
-        resetStaffPassword(admin, teacher).andExpect(status().isConflict());
     }
 
     @Test

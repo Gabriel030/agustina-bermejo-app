@@ -171,5 +171,25 @@ class WaitlistPromoterTest {
         public void promote(Long enrollmentId) {
             promoted.add(enrollmentId);
         }
+
+        @Override
+        public java.util.Optional<WaitlistEntryOwner> findOwner(Long enrollmentId) {
+            return java.util.Optional.empty();
+        }
+
+        @Override
+        public void markPrioritized(Long enrollmentId, LocalDateTime at) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void remove(Long enrollmentId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasReceiptBlockingRemoval(Long enrollmentId) {
+            return false;
+        }
     }
 }

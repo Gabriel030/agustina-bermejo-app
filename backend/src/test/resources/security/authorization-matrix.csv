@@ -177,6 +177,7 @@ GET,/legal/documents/current,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/me,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 PUT,/me,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/broadcasts/segment-catalog,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/broadcasts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""name"":""Aviso"",""channel"":""EMAIL"",""category"":""INSTITUTIONAL"",""segmentSpec"":{""version"":1,""quantifier"":""ALL"",""criteria"":[{""key"":""STAFF_ROLE"",""value"":""DOCENTE""}]},""subject"":""Hola"",""bodyText"":""Texto""}"
 POST,/broadcasts/audience-preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""channel"":""EMAIL"",""category"":""INSTITUTIONAL"",""segmentSpec"":{""version"":1,""quantifier"":""ALL"",""criteria"":[{""key"":""STAFF_ROLE"",""value"":""DOCENTE""}]},""page"":0,""size"":10}"
 GET,/message-templates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/message-templates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
@@ -543,3 +544,6 @@ GET,/platform/audit-log,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/waitlists,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/waitlists/{kind}/{id},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/waitlists/{kind}/{id}/history,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/waitlists/{kind}/entries/{enrollmentId}/promote,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/waitlists/{kind}/entries/{enrollmentId}/prioritize,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/waitlists/{kind}/entries/{enrollmentId}/remove,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"

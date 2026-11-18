@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.dto;
 
+
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionDraft;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
