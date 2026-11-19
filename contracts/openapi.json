@@ -14760,6 +14760,77 @@
         "required" : [ "dailyLimit", "enabled", "pendingRequirements", "providerConfigured", "version" ],
         "type" : "object"
       },
+      "WhatsAppTemplateMappingRequest" : {
+        "properties" : {
+          "languageCode" : {
+            "pattern" : "^[a-z]{2}(_[A-Z]{2})?$",
+            "type" : "string"
+          },
+          "messageTemplateId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "providerTemplateName" : {
+            "maxLength" : 120,
+            "minLength" : 0,
+            "pattern" : "^[a-z0-9_]+$",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "APPROVED", "PENDING", "REJECTED" ],
+            "type" : "string"
+          },
+          "variableOrder" : {
+            "items" : {
+              "minLength" : 1,
+              "type" : "string"
+            },
+            "maxItems" : 10,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "languageCode", "messageTemplateId", "providerTemplateName", "status", "variableOrder" ],
+        "type" : "object"
+      },
+      "WhatsAppTemplateMappingResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "languageCode" : {
+            "type" : "string"
+          },
+          "messageTemplateId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "providerTemplateName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "APPROVED", "PENDING", "REJECTED" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "updatedBy" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "variableOrder" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "id", "languageCode", "messageTemplateId", "providerTemplateName", "status", "updatedAt", "updatedBy", "variableOrder" ],
+        "type" : "object"
+      },
       "WithdrawEnrollmentRequest" : {
         "properties" : {
           "effectiveDate" : {
@@ -43615,6 +43686,390 @@
           }
         },
         "tags" : [ "whats-app-api-settings-controller" ]
+      }
+    },
+    "/institute-settings/notifications/whatsapp/templates" : {
+      "get" : {
+        "operationId" : "WhatsAppTemplateMapping_listMappings",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/WhatsAppTemplateMappingResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "whats-app-template-mapping-controller" ]
+      },
+      "post" : {
+        "operationId" : "WhatsAppTemplateMapping_createMapping",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WhatsAppTemplateMappingRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WhatsAppTemplateMappingResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "whats-app-template-mapping-controller" ]
+      }
+    },
+    "/institute-settings/notifications/whatsapp/templates/{id}" : {
+      "put" : {
+        "operationId" : "WhatsAppTemplateMapping_updateMapping",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WhatsAppTemplateMappingRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WhatsAppTemplateMappingResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "whats-app-template-mapping-controller" ]
       }
     },
     "/institute-settings/payment-methods/{code}" : {

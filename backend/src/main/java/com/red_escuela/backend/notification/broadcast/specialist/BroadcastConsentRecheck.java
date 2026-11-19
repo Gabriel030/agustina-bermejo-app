@@ -4,6 +4,7 @@ import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastDeliveryKind;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.policy.BroadcastDeliveryContext;
+import com.red_escuela.backend.notification.delivery.domain.DeliveryChannel;
 import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -40,10 +41,11 @@ public class BroadcastConsentRecheck {
         if (!delivery.getStatus().isWaitingForDispatch()) {
             return false;
         }
+        ChannelType channel = delivery.getChannel() == DeliveryChannel.WHATSAPP_API ? ChannelType.WHATSAPP_API : ChannelType.EMAIL;
         BroadcastCategory category = BroadcastDeliveryKind.categoryOf(delivery.getKind());
         Long personId = delivery.getRecipientPersonId();
-        BroadcastDeliveryContext context = new BroadcastDeliveryContext(personId, ChannelType.EMAIL, category,
-                contactConsentLedger.isAllowed(personId, ChannelType.EMAIL, category));
+        BroadcastDeliveryContext context = new BroadcastDeliveryContext(personId, channel, category,
+                contactConsentLedger.isAllowed(personId, channel, category));
         Optional<String> denialCode = broadcastDeliveryPolicySet.evaluateRulesUntilFirstViolation(context).firstDenial()
                 .map(denial -> denial.code());
         denialCode.ifPresent(code -> {

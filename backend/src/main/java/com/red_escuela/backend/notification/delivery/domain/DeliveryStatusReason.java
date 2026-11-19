@@ -10,6 +10,7 @@ public final class DeliveryStatusReason {
     public static final String NO_LONGER_TIMELY = "NO_LONGER_TIMELY";
     public static final String NO_LONGER_APPLICABLE = "NO_LONGER_APPLICABLE";
     public static final String BILLING_NOTIFICATIONS_OFF = "BILLING_NOTIFICATIONS_OFF";
+    public static final String NO_WHATSAPP_NUMBER = "NO_WHATSAPP_NUMBER";
     public static final String DAILY_CAP_REACHED = "DAILY_CAP_REACHED";
 
     private DeliveryStatusReason() {

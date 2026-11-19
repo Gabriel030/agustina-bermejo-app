@@ -23,6 +23,11 @@ public class PersonContactFinder {
                 .map(this::toRecipient);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<String> findPhoneNumber(Long personId) {
+        return personRepository.findById(personId).map(Person::getPhoneNumber).filter(phone -> !phone.isBlank());
+    }
+
     private EmailRecipient toRecipient(Person person) {
         return new EmailRecipient(person.getId(), person.getEmail(), Boolean.TRUE.equals(person.getEmailVerified()));
     }
