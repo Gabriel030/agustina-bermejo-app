@@ -57,7 +57,7 @@ class MeContactConsentControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.length()").value(4))
                 .andExpect(jsonPath("$[?(@.channel=='EMAIL' && @.category=='INSTITUTIONAL')].granted").value(true))
                 .andExpect(jsonPath("$[?(@.channel=='EMAIL' && @.category=='PROMOTIONAL')].granted").value(false))
-                .andExpect(jsonPath("$[?(@.channel=='WHATSAPP' && @.category=='INSTITUTIONAL')].granted").value(true))
+                .andExpect(jsonPath("$[?(@.channel=='WHATSAPP' && @.category=='INSTITUTIONAL')].granted").value(false))
                 .andExpect(jsonPath("$[?(@.channel=='WHATSAPP' && @.category=='PROMOTIONAL')].granted").value(false));
     }
 
