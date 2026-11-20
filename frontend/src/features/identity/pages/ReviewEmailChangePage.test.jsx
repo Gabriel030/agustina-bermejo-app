@@ -392,6 +392,38 @@ describe('ReviewEmailChangePage', () => {
       expect(await screen.findByText('Enlace no válido')).toBeInTheDocument();
     });
 
+    it.each([
+      [404, 'No encontramos el cambio'],
+      [409, 'El cambio ya no se puede resolver'],
+    ])('tellsStatus%dApartWhenCancelling', async (status, title) => {
+      server.use(http.post(CANCEL_URL, () => HttpResponse.json(errorBody('SOME_ERROR'), { status })));
+      renderPage(legacyRoute, 'cancel');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Cancelar el cambio' }));
+
+      expect(await screen.findByText(title)).toBeInTheDocument();
+    });
+
+    it('treatsTooManyRequestsAsRetryableWhenCancelling', async () => {
+      let calls = 0;
+      server.use(
+        http.post(CANCEL_URL, () => {
+          calls += 1;
+          if (calls === 1) return HttpResponse.json(errorBody('RATE_LIMITED', { retryable: true }), { status: 429, headers: { 'Retry-After': '1' } });
+          return new HttpResponse(null, { status: 200 });
+        }),
+      );
+      const user = userEvent.setup();
+      renderPage(legacyRoute, 'cancel');
+
+      await user.click(screen.getByRole('button', { name: 'Cancelar el cambio' }));
+      expect(await screen.findByText('Sin conexión')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+      expect(await screen.findByText('Cambio cancelado')).toBeInTheDocument();
+      expect(calls).toBe(2);
+    });
+
     it('showsInvalidLinkWithoutRequestWhenTheTokenIsMissing', () => {
       renderPage('/cancelar-cambio-email', 'cancel');
 
