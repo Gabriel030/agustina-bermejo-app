@@ -12,6 +12,7 @@ class BackupStatusAssessorTest {
 
     private static final Instant NOW = Instant.parse("2026-11-20T12:00:00Z");
     private static final int RPO_HOURS = 4;
+    private static final BackupDisk HEALTHY_DISK = new BackupDisk(10, 100, "/backups");
 
     private static BackupTierStatus tier(BackupVerification verification) {
         return new BackupTierStatus(BackupTier.DAILY, NOW.minus(Duration.ofHours(3)), null, 10, 20, verification, 7, List.of("a.dump"));
@@ -19,8 +20,13 @@ class BackupStatusAssessorTest {
 
     private static BackupStatusSnapshot snapshot(Instant generatedAt, BackupVerification verification, RestoreTestStatus restoreTest,
                                                  List<BackupAlert> alerts, int consecutiveFailures) {
-        return new BackupStatusSnapshot(generatedAt, NOW.minus(Duration.ofMinutes(90)), new BackupDisk(10, 100, "/backups"),
+        return new BackupStatusSnapshot(generatedAt, RPO_HOURS, NOW.minus(Duration.ofMinutes(90)), HEALTHY_DISK,
                 List.of(tier(verification)), restoreTest, alerts, consecutiveFailures);
+    }
+
+    private static BackupStatusSnapshot snapshotWith(int targetRpoHours, Instant lastCompleteBackupAt, BackupDisk disk) {
+        return new BackupStatusSnapshot(NOW, targetRpoHours, lastCompleteBackupAt, disk,
+                List.of(tier(BackupVerification.VERIFIED)), null, List.of(), 0);
     }
 
     private static BackupStatusSnapshot healthy() {
@@ -29,7 +35,7 @@ class BackupStatusAssessorTest {
     }
 
     private static BackupStatus assess(BackupStatusSnapshot snapshot) {
-        return BackupStatusAssessor.assess(snapshot, NOW, RPO_HOURS);
+        return BackupStatusAssessor.assess(snapshot, NOW);
     }
 
     @Test
@@ -49,12 +55,24 @@ class BackupStatusAssessorTest {
 
     @Test
     void withoutACompleteBackupTheHoursAreNull() {
-        BackupStatusSnapshot snapshot = new BackupStatusSnapshot(NOW, null, null, List.of(), null, List.of(), 0);
+        BackupStatusSnapshot snapshot = new BackupStatusSnapshot(NOW, RPO_HOURS, null, null, List.of(), null, List.of(), 0);
 
         BackupSummary summary = assess(snapshot).summary();
 
         assertThat(summary.hoursSinceLastCompleteBackup()).isNull();
         assertThat(summary.potentialLossHours()).isNull();
+    }
+
+    @Test
+    void aSnapshotWithoutACompleteBackupNeedsAttention() {
+        assertThat(assess(snapshotWith(RPO_HOURS, null, HEALTHY_DISK)).state()).isEqualTo(BackupState.ATTENTION);
+    }
+
+    @Test
+    void aBackupOlderThanTheRpoNeedsAttentionEvenWhenTheFileIsFresh() {
+        BackupStatusSnapshot snapshot = snapshotWith(RPO_HOURS, NOW.minus(Duration.ofHours(5)), HEALTHY_DISK);
+
+        assertThat(assess(snapshot).state()).isEqualTo(BackupState.ATTENTION);
     }
 
     @Test
@@ -73,14 +91,22 @@ class BackupStatusAssessorTest {
     }
 
     @Test
-    void aCriticalAlertNeedsAttentionButAWarningDoesNot() {
-        BackupStatusSnapshot critical = snapshot(NOW, BackupVerification.VERIFIED, null,
-                List.of(new BackupAlert(NOW.minus(Duration.ofDays(1)), BackupAlertLevel.CRITICAL, BackupAlertCode.DISK_CRITICAL)), 0);
-        BackupStatusSnapshot warning = snapshot(NOW, BackupVerification.VERIFIED, null,
-                List.of(new BackupAlert(NOW.minus(Duration.ofDays(1)), BackupAlertLevel.WARNING, BackupAlertCode.DISK_LOW)), 0);
+    void aCriticalDiskNeedsAttentionAndALowDiskOnlyWarns() {
+        BackupStatusSnapshot critical = snapshotWith(RPO_HOURS, NOW.minus(Duration.ofHours(1)), new BackupDisk(4, 100, "/backups"));
+        BackupStatusSnapshot low = snapshotWith(RPO_HOURS, NOW.minus(Duration.ofHours(1)), new BackupDisk(10, 100, "/backups"));
 
         assertThat(assess(critical).state()).isEqualTo(BackupState.ATTENTION);
-        assertThat(assess(warning).state()).isEqualTo(BackupState.OK);
+        assertThat(assess(low).state()).isEqualTo(BackupState.OK);
+    }
+
+    @Test
+    void aResolvedCriticalAlertFromTwentyDaysAgoDoesNotNeedAttention() {
+        BackupAlert resolved = new BackupAlert(NOW.minus(Duration.ofDays(20)), BackupAlertLevel.CRITICAL, BackupAlertCode.DISK_CRITICAL);
+
+        BackupStatus status = assess(snapshot(NOW, BackupVerification.VERIFIED, null, List.of(resolved), 0));
+
+        assertThat(status.state()).isEqualTo(BackupState.OK);
+        assertThat(status.alerts()).containsExactly(resolved);
     }
 
     @Test
@@ -88,6 +114,16 @@ class BackupStatusAssessorTest {
         BackupStatusSnapshot snapshot = snapshot(NOW, BackupVerification.VERIFIED, null, List.of(), 1);
 
         assertThat(assess(snapshot).state()).isEqualTo(BackupState.ATTENTION);
+    }
+
+    @Test
+    void theTargetRpoComesFromTheFile() {
+        BackupStatusSnapshot strict = snapshotWith(2, NOW.minus(Duration.ofHours(3)), HEALTHY_DISK);
+        BackupStatusSnapshot lenient = snapshotWith(6, NOW.minus(Duration.ofHours(3)), HEALTHY_DISK);
+
+        assertThat(assess(strict).state()).isEqualTo(BackupState.ATTENTION);
+        assertThat(assess(strict).summary().targetRpoHours()).isEqualTo(2);
+        assertThat(assess(lenient).state()).isEqualTo(BackupState.OK);
     }
 
     @Test

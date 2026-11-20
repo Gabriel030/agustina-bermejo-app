@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -105,9 +106,9 @@ class BackupStatusControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.state").value("OK"))
                 .andExpect(jsonPath("$.disk.freeBytes").value(100))
-                .andExpect(jsonPath("$.disk.path").doesNotExist())
+                .andExpect(jsonPath("$.disk.path").value(nullValue()))
                 .andExpect(jsonPath("$.tiers[0].tier").value("DAILY"))
-                .andExpect(jsonPath("$.tiers[0].fileNames").doesNotExist())
+                .andExpect(jsonPath("$.tiers[0].fileNames").value(nullValue()))
                 .andExpect(jsonPath("$.alerts[0].code").value("DISK_LOW"));
     }
 

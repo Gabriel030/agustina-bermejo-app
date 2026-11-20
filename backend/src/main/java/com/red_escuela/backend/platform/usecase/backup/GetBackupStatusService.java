@@ -14,22 +14,22 @@ public class GetBackupStatusService implements GetBackupStatusUseCase {
 
     private final BackupStatusSource statusSource;
     private final Clock clock;
-    private final int targetRpoHours;
+    private final int configuredTargetRpoHours;
 
     public GetBackupStatusService(BackupStatusSource statusSource, Clock clock,
-                                  @Value("${app.backup.target-rpo-hours:4}") int targetRpoHours) {
-        if (targetRpoHours < 1) {
+                                  @Value("${app.backup.target-rpo-hours:4}") int configuredTargetRpoHours) {
+        if (configuredTargetRpoHours < 1) {
             throw new IllegalArgumentException("app.backup.target-rpo-hours debe ser mayor o igual a 1");
         }
         this.statusSource = statusSource;
         this.clock = clock;
-        this.targetRpoHours = targetRpoHours;
+        this.configuredTargetRpoHours = configuredTargetRpoHours;
     }
 
     @Override
     public BackupStatus read(BackupStatusViewer viewer) {
         return statusSource.read()
-                .map(snapshot -> BackupStatusAssessor.assess(snapshot, clock.instant(), targetRpoHours))
-                .orElseGet(() -> BackupStatusAssessor.notConfigured(targetRpoHours));
+                .map(snapshot -> BackupStatusAssessor.assess(snapshot, clock.instant()))
+                .orElseGet(() -> BackupStatusAssessor.notConfigured(configuredTargetRpoHours));
     }
 }

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -17,7 +18,7 @@ import java.util.Optional;
 public class FileBackupStatusSource implements BackupStatusSource {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileBackupStatusSource.class);
-    private static final long MAX_FILE_BYTES = 1024 * 1024;
+    private static final int MAX_FILE_BYTES = 1024 * 1024;
 
     private final Path statusFile;
 
@@ -32,16 +33,29 @@ public class FileBackupStatusSource implements BackupStatusSource {
                 LOG.warn("Archivo de estado de backups ausente: {}", statusFile);
                 return Optional.empty();
             }
-            if (Files.size(statusFile) > MAX_FILE_BYTES) {
+            byte[] content = readBounded();
+            if (content == null) {
                 LOG.warn("Archivo de estado de backups descartado por superar {} bytes: {}", MAX_FILE_BYTES, statusFile);
                 return Optional.empty();
             }
-            try (InputStream content = Files.newInputStream(statusFile)) {
-                return Optional.of(BackupStatusFileParser.parse(content));
-            }
+            return Optional.of(BackupStatusFileParser.parse(new ByteArrayInputStream(content)));
         } catch (IOException | RuntimeException e) {
-            LOG.warn("Archivo de estado de backups ilegible o inválido ({}): {}", statusFile, e.getMessage());
+            LOG.warn("Archivo de estado de backups ilegible o inválido ({}): {}", statusFile, describe(e));
             return Optional.empty();
         }
+    }
+
+    private byte[] readBounded() throws IOException {
+        try (InputStream in = Files.newInputStream(statusFile)) {
+            byte[] content = in.readNBytes(MAX_FILE_BYTES + 1);
+            return content.length > MAX_FILE_BYTES ? null : content;
+        }
+    }
+
+    private static String describe(Exception e) {
+        if (e instanceof InvalidBackupStatusFileException invalid) {
+            return e.getClass().getSimpleName() + " en el campo " + invalid.field();
+        }
+        return e.getClass().getSimpleName();
     }
 }

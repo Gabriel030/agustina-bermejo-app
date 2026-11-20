@@ -35,7 +35,7 @@ final class BackupStatusFileParser {
     private static final int MAX_PATH_LENGTH = 256;
     private static final int MAX_LABEL_LENGTH = 32;
     private static final int MAX_FILE_NAME_LENGTH = 128;
-    private static final Pattern LABEL = Pattern.compile("^v?[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$");
+    private static final Pattern LABEL = Pattern.compile("^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.]+)?$");
     private static final Pattern FILE_NAME = Pattern.compile("^(?!\\.+$)[A-Za-z0-9._-]+$");
     private static final Set<String> ROOT_FIELDS = Set.of("schemaVersion", "generatedAt", "targetRpoHours", "destination", "tiers",
             "lastRestoreTest", "alerts", "consecutiveFailures", "lastCompleteBackupAt");
@@ -57,9 +57,10 @@ final class BackupStatusFileParser {
         JsonNode root = MAPPER.readTree(content);
         requireObject(root, "root", ROOT_FIELDS);
         requireSchemaVersion(root.get("schemaVersion"));
-        requireInteger(root.get("targetRpoHours"), "targetRpoHours", 1, Integer.MAX_VALUE);
+        int targetRpoHours = (int) requireInteger(root.get("targetRpoHours"), "targetRpoHours", 1, Integer.MAX_VALUE);
         return new BackupStatusSnapshot(
                 instant(root.get("generatedAt"), "generatedAt"),
+                targetRpoHours,
                 nullableInstant(root.get("lastCompleteBackupAt"), "lastCompleteBackupAt"),
                 disk(root.get("destination")),
                 tiers(root.get("tiers")),
@@ -102,15 +103,15 @@ final class BackupStatusFileParser {
     }
 
     private static String label(JsonNode node, BackupTier tier) {
-        if (node == null || !node.isNull() && !node.isTextual()) {
+        if (node == null) {
             throw invalid("tiers[].label");
         }
-        if (node.isNull()) {
+        if (!node.isTextual()) {
             return null;
         }
         String label = node.asText();
         if (tier != BackupTier.PRE_RELEASE || label.length() > MAX_LABEL_LENGTH || !LABEL.matcher(label).matches()) {
-            throw invalid("tiers[].label");
+            return null;
         }
         return label;
     }

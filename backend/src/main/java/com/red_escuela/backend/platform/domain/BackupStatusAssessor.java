@@ -9,6 +9,7 @@ public final class BackupStatusAssessor {
 
     private static final Duration ALERT_WINDOW = Duration.ofDays(30);
     private static final int STALE_AFTER_RPO_MULTIPLES = 2;
+    private static final double DISK_CRITICAL_FREE_RATIO = 0.05;
 
     private BackupStatusAssessor() {
     }
@@ -18,35 +19,45 @@ public final class BackupStatusAssessor {
                 null, List.of(), null, null, List.of());
     }
 
-    public static BackupStatus assess(BackupStatusSnapshot snapshot, Instant now, int targetRpoHours) {
+    public static BackupStatus assess(BackupStatusSnapshot snapshot, Instant now) {
         List<BackupAlert> recentAlerts = snapshot.alerts().stream()
                 .filter(alert -> !alert.at().isBefore(now.minus(ALERT_WINDOW)))
                 .sorted(Comparator.comparing(BackupAlert::at).reversed())
                 .toList();
         Double hoursSinceLastCompleteBackup = hoursBetween(snapshot.lastCompleteBackupAt(), now);
         BackupSummary summary = new BackupSummary(snapshot.lastCompleteBackupAt(), hoursSinceLastCompleteBackup,
-                hoursSinceLastCompleteBackup, targetRpoHours, snapshot.consecutiveFailures());
-        return new BackupStatus(stateOf(snapshot, recentAlerts, now, targetRpoHours), summary, snapshot.generatedAt(),
+                hoursSinceLastCompleteBackup, snapshot.targetRpoHours(), snapshot.consecutiveFailures());
+        return new BackupStatus(stateOf(snapshot, now), summary, snapshot.generatedAt(),
                 snapshot.tiers(), snapshot.lastRestoreTest(), snapshot.disk(), recentAlerts);
     }
 
-    private static BackupState stateOf(BackupStatusSnapshot snapshot, List<BackupAlert> recentAlerts, Instant now,
-                                       int targetRpoHours) {
-        if (isStale(snapshot.generatedAt(), now, targetRpoHours)) {
+    private static BackupState stateOf(BackupStatusSnapshot snapshot, Instant now) {
+        if (isStale(snapshot.generatedAt(), now, snapshot.targetRpoHours())) {
             return BackupState.STALE;
         }
-        return needsAttention(snapshot, recentAlerts) ? BackupState.ATTENTION : BackupState.OK;
+        return needsAttention(snapshot, now) ? BackupState.ATTENTION : BackupState.OK;
     }
 
     private static boolean isStale(Instant generatedAt, Instant now, int targetRpoHours) {
         return Duration.between(generatedAt, now).compareTo(Duration.ofHours((long) STALE_AFTER_RPO_MULTIPLES * targetRpoHours)) > 0;
     }
 
-    private static boolean needsAttention(BackupStatusSnapshot snapshot, List<BackupAlert> recentAlerts) {
-        return snapshot.tiers().stream().anyMatch(tier -> tier.verification() == BackupVerification.DAMAGED)
+    private static boolean needsAttention(BackupStatusSnapshot snapshot, Instant now) {
+        return snapshot.lastCompleteBackupAt() == null
+                || exceedsRpo(snapshot.lastCompleteBackupAt(), now, snapshot.targetRpoHours())
+                || snapshot.tiers().stream().anyMatch(tier -> tier.verification() == BackupVerification.DAMAGED)
                 || (snapshot.lastRestoreTest() != null && snapshot.lastRestoreTest().result() == RestoreTestResult.FAILED)
-                || recentAlerts.stream().anyMatch(alert -> alert.level() == BackupAlertLevel.CRITICAL)
-                || snapshot.consecutiveFailures() > 0;
+                || snapshot.consecutiveFailures() > 0
+                || isDiskCritical(snapshot.disk());
+    }
+
+    private static boolean exceedsRpo(Instant lastCompleteBackupAt, Instant now, int targetRpoHours) {
+        return Duration.between(lastCompleteBackupAt, now).compareTo(Duration.ofHours(targetRpoHours)) > 0;
+    }
+
+    private static boolean isDiskCritical(BackupDisk disk) {
+        return disk != null && disk.totalBytes() > 0
+                && (double) disk.freeBytes() / disk.totalBytes() < DISK_CRITICAL_FREE_RATIO;
     }
 
     private static Double hoursBetween(Instant since, Instant now) {

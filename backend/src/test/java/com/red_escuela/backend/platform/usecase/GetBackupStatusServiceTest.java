@@ -22,8 +22,8 @@ class GetBackupStatusServiceTest {
     private static final Instant NOW = Instant.parse("2026-11-20T12:00:00Z");
     private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
 
-    private static BackupStatusSnapshot snapshot(Instant generatedAt) {
-        return new BackupStatusSnapshot(generatedAt, generatedAt, new BackupDisk(1, 2, "/backups"), List.of(), null, List.of(), 0);
+    private static BackupStatusSnapshot snapshot(Instant generatedAt, int targetRpoHours) {
+        return new BackupStatusSnapshot(generatedAt, targetRpoHours, generatedAt, new BackupDisk(1, 2, "/backups"), List.of(), null, List.of(), 0);
     }
 
     @Test
@@ -38,7 +38,7 @@ class GetBackupStatusServiceTest {
 
     @Test
     void freshSnapshotIsOkAndUsesTheInjectedClock() {
-        GetBackupStatusService service = new GetBackupStatusService(() -> Optional.of(snapshot(NOW.minusSeconds(3600))), CLOCK, 4);
+        GetBackupStatusService service = new GetBackupStatusService(() -> Optional.of(snapshot(NOW.minusSeconds(3600), 4)), CLOCK, 4);
 
         BackupStatus status = service.read(BackupStatusViewer.PLATFORM_ADMIN);
 
@@ -47,13 +47,20 @@ class GetBackupStatusServiceTest {
     }
 
     @Test
-    void oldSnapshotIsStaleAccordingToTheConfiguredFrequency() {
+    void oldSnapshotIsStaleAccordingToItsOwnTarget() {
         Instant tenHoursAgo = NOW.minusSeconds(10 * 3600);
 
-        assertThat(new GetBackupStatusService(() -> Optional.of(snapshot(tenHoursAgo)), CLOCK, 4).read(BackupStatusViewer.DIRECTOR).state())
+        assertThat(new GetBackupStatusService(() -> Optional.of(snapshot(tenHoursAgo, 4)), CLOCK, 4).read(BackupStatusViewer.DIRECTOR).state())
                 .isEqualTo(BackupState.STALE);
-        assertThat(new GetBackupStatusService(() -> Optional.of(snapshot(tenHoursAgo)), CLOCK, 6).read(BackupStatusViewer.DIRECTOR).state())
+        assertThat(new GetBackupStatusService(() -> Optional.of(snapshot(tenHoursAgo, 12)), CLOCK, 4).read(BackupStatusViewer.DIRECTOR).state())
                 .isEqualTo(BackupState.OK);
+    }
+
+    @Test
+    void theSummaryTargetComesFromTheFileNotFromTheConfiguration() {
+        GetBackupStatusService service = new GetBackupStatusService(() -> Optional.of(snapshot(NOW, 6)), CLOCK, 4);
+
+        assertThat(service.read(BackupStatusViewer.DIRECTOR).summary().targetRpoHours()).isEqualTo(6);
     }
 
     @Test

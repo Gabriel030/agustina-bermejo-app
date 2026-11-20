@@ -9,6 +9,7 @@ import com.red_escuela.backend.platform.domain.RestoreTestResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -86,21 +87,27 @@ class BackupStatusFileParserTest {
     }
 
     @ParameterizedTest
-    @CsvSource(delimiter = '|', value = {
-            "v1.42.0-beta|label con sufijo distinto de rc",
-            "v1.42.0-rc|rc sin numero",
-            "1.2|menos de tres numeros",
-            "v1.42.0 -rc.1|con espacio",
-            "<b>v1.0.0</b>|con markup",
-            "v1.42.0-rc.1111111111111111111111111111111111|mas de 32 caracteres"
-    })
-    void invalidPreReleaseLabelIsRejected(String label, String reason) {
-        assertRejected(validJson().replace("v1.42.0-rc.2", label));
+    @ValueSource(strings = {"v1.42.0-beta", "v1.42.0-rc1", "v1.42.0-rc.2", "1.42.0"})
+    void preReleaseLabelWithAVersionSuffixIsKept(String label) throws IOException {
+        BackupStatusSnapshot snapshot = parse(validJson().replace("v1.42.0-rc.2", label));
+
+        assertThat(snapshot.tiers().get(1).label()).isEqualTo(label);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"<b>v1.0.0</b>", "v1.42.0 -rc.1", "v1.42.0-rc.1111111111111111111111111111111111"})
+    void unexpectedPreReleaseLabelIsNormalizedToNullAndTheFileIsStillRead(String label) throws IOException {
+        BackupStatusSnapshot snapshot = parse(validJson().replace("v1.42.0-rc.2", label));
+
+        assertThat(snapshot.tiers().get(1).label()).isNull();
+        assertThat(snapshot.tiers()).hasSize(2);
     }
 
     @Test
-    void labelOnATierThatIsNotPreReleaseIsRejected() {
-        assertRejected(validJson().replace("\"label\": null, \"dumpSizeBytes\": 10", "\"label\": \"v1.0.0\", \"dumpSizeBytes\": 10"));
+    void labelOnATierThatIsNotPreReleaseIsNormalizedToNull() throws IOException {
+        BackupStatusSnapshot snapshot = parse(validJson().replace("\"label\": null, \"dumpSizeBytes\": 10", "\"label\": \"v1.0.0\", \"dumpSizeBytes\": 10"));
+
+        assertThat(snapshot.tiers().get(0).label()).isNull();
     }
 
     @ParameterizedTest
