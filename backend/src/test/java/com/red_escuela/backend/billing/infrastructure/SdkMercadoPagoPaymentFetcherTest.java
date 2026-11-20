@@ -12,6 +12,9 @@ import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 
@@ -23,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(OutputCaptureExtension.class)
 class SdkMercadoPagoPaymentFetcherTest {
 
     private static final String REFERENCE = "6f1c2f0a-3b1e-4c1b-9a3e-2d5b8f7a1c90";
@@ -144,8 +148,9 @@ class SdkMercadoPagoPaymentFetcherTest {
     }
 
     @Test
-    void paymentWithLegacyNumericReferenceIsNotCredited() {
+    void paymentWithLegacyNumericReferenceIsNotCredited(CapturedOutput output) {
         assertThat(fetchWith(payment("approved", "ARS", "credit_card", "45", "10.00", 1), "999")).isEmpty();
+        assertThat(output.getOut()).contains("ALERTA_PASARELA tipo=PAGO_SIN_CHECKOUT").contains("pagoMp=999");
         assertThat(fetchWith(payment("approved", "ARS", "credit_card", "99999999999999999999", "10.00", 1), "999")).isEmpty();
     }
 

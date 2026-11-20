@@ -82,7 +82,7 @@ class MercadoPagoWebhookRegistrationIT {
     @BeforeEach
     void checkoutIsKnown() {
         when(registrationPort.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(
-                new MercadoPagoCheckoutMatch(7L, Money.of(new BigDecimal("100.00"), Currency.ARS), false)));
+                new MercadoPagoCheckoutMatch(7L, Money.of(new BigDecimal("100.00"), Currency.ARS), false, null)));
     }
 
     @Test

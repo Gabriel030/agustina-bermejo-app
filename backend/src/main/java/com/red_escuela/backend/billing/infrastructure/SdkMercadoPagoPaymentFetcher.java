@@ -74,6 +74,8 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
         if (publicReference.isEmpty()) {
             log.warn("Pago de Mercado Pago sin referencia de checkout válida, no se acredita: pagoMp={}, referencia={}",
                     LogSanitizer.sanitize(mpPaymentId), LogSanitizer.sanitize(String.valueOf(payment.getExternalReference())));
+            log.error("ALERTA_PASARELA tipo=PAGO_SIN_CHECKOUT pagoMp={} referencia={}", LogSanitizer.sanitize(mpPaymentId),
+                    LogSanitizer.sanitize(String.valueOf(payment.getExternalReference())));
             return Optional.empty();
         }
         ReportedGatewayAllocation reported = new ReportedGatewayAllocation(

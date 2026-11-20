@@ -17,6 +17,10 @@ public interface ApprovedPaymentRegistrationPort {
 
     void recordMercadoPagoExpiredCheckout(Long invoiceId, String mercadoPagoPaymentId);
 
+    void recordMercadoPagoDuplicatePaymentForCheckout(Long invoiceId, String creditedGatewayPaymentId, String mercadoPagoPaymentId);
+
+    void markMercadoPagoCheckoutCredited(UUID publicReference, String mercadoPagoPaymentId);
+
     void recordMercadoPagoUnmatchedPayment(String mercadoPagoPaymentId, UUID publicReference);
 
     Long registerApprovedMercadoPagoPayment(Long reportedInvoiceId, Money amount, Integer installments, CardPaymentType cardType, String mercadoPagoPaymentId);

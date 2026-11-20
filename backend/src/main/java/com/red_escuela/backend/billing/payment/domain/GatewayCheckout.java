@@ -57,4 +57,13 @@ public class GatewayCheckout {
 
     @Column(name = "expires_at", nullable = false, updatable = false)
     private LocalDateTime expiresAt;
+
+    @Column(name = "credited_gateway_payment_id", length = 120)
+    private String creditedGatewayPaymentId;
+
+    public void markCreditedBy(String gatewayPaymentId) {
+        if (creditedGatewayPaymentId == null) {
+            creditedGatewayPaymentId = gatewayPaymentId;
+        }
+    }
 }

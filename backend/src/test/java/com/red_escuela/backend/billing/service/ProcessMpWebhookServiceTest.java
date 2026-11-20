@@ -53,8 +53,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -169,7 +172,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
-        java.util.UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoiceId, ars(reportedAmount));
+        UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoiceId, ars(reportedAmount));
         return serviceFetching(mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(publicReference, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
     }
@@ -250,7 +253,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void theWebhookStoresTheCardTypeAndInstallmentsReportedByTheGateway() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
-        java.util.UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoice.getId(), ars(BigDecimal.valueOf(10000)));
+        UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoice.getId(), ars(BigDecimal.valueOf(10000)));
         ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
                         new ReportedGatewayAllocation(publicReference, ars(BigDecimal.valueOf(10000))), 6, CardPaymentType.CREDIT)),
                 new MpWebhookSignatureVerifier("", true));
@@ -529,7 +532,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     @Tag("D-537")
     void amountMismatchIsCreditedAndAuditedInTheDatabase() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
-        java.util.UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoice.getId(), ars(BigDecimal.valueOf(10000)));
+        UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoice.getId(), ars(BigDecimal.valueOf(10000)));
         String mpPaymentId = String.valueOf(System.nanoTime());
         ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
                         new ReportedGatewayAllocation(publicReference, ars(BigDecimal.valueOf(4000))), 1)),
@@ -550,7 +553,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     @Tag("D-538")
     void expiredCheckoutIsCreditedAndAuditedInTheDatabase() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
-        java.util.UUID publicReference = java.util.UUID.randomUUID();
+        UUID publicReference = UUID.randomUUID();
         jdbc.update("insert into gateway_checkout (public_reference, invoice_id, gateway, amount, currency, gateway_preference_id, created_at, expires_at) "
                 + "values (?, ?, 'MERCADO_PAGO', 10000, 'ARS', 'pref-expired', now() - interval '50 hours', now() - interval '2 hours')", publicReference, invoice.getId());
         String mpPaymentId = String.valueOf(System.nanoTime());
@@ -569,9 +572,54 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-537")
+    void aPaymentInAnotherCurrencyThanTheCheckoutIsNotCreditedAndIsAudited() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoice.getId(), ars(BigDecimal.valueOf(10000)));
+        String mpPaymentId = String.valueOf(System.nanoTime());
+        ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
+                        new ReportedGatewayAllocation(publicReference, Money.of(BigDecimal.valueOf(10000), Currency.USD)), 1)),
+                new MpWebhookSignatureVerifier("", true));
+
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
+
+        assertThat(mpPayments(mpPaymentId)).isEmpty();
+        assertThat(jdbc.queryForList("select before_value, after_value from audit_log where action = 'GATEWAY_PAYMENT_AMOUNT_MISMATCH' and entity_id = ?",
+                invoice.getId())).singleElement().satisfies(row -> {
+                    assertThat(row.get("before_value")).isEqualTo("10000.00 ARS");
+                    assertThat(row.get("after_value")).isEqualTo("10000.00 USD");
+                });
+    }
+
+    @Test
+    @Tag("D-089")
+    void aSecondApprovedPaymentOnACreditedCheckoutIsCreditedAsAccountCreditAndAudited() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoice.getId(), ars(BigDecimal.valueOf(10000)));
+        String firstPaymentId = String.valueOf(System.nanoTime());
+        String secondPaymentId = firstPaymentId + "1";
+        ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
+                        new ReportedGatewayAllocation(publicReference, ars(BigDecimal.valueOf(10000))), 1)),
+                new MpWebhookSignatureVerifier("", true));
+
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", firstPaymentId));
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-2", secondPaymentId));
+
+        assertThat(mpPayments(firstPaymentId)).hasSize(1);
+        assertThat(mpPayments(secondPaymentId)).hasSize(1);
+        assertThat(jdbc.queryForObject("select credited_gateway_payment_id from gateway_checkout where public_reference = ?", String.class, publicReference))
+                .isEqualTo(firstPaymentId);
+        assertThat(jdbc.queryForList("select before_value, after_value from audit_log where action = 'GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT' and entity_id = ?",
+                invoice.getId())).singleElement().satisfies(row -> {
+                    assertThat(row.get("before_value")).isEqualTo(firstPaymentId);
+                    assertThat(row.get("after_value")).isEqualTo(secondPaymentId);
+                });
+    }
+
+    @Test
+    @Tag("D-537")
     void anApprovedPaymentWithAReferenceNoCheckoutWasIssuedForRegistersNothing(CapturedOutput output) {
         String mpPaymentId = "ghost-" + System.nanoTime();
-        java.util.UUID unknownReference = java.util.UUID.randomUUID();
+        UUID unknownReference = UUID.randomUUID();
         ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
                         new ReportedGatewayAllocation(unknownReference, ars(BigDecimal.valueOf(10000))), 1)),
                 new MpWebhookSignatureVerifier("", true));

@@ -67,7 +67,7 @@ public class ApprovedPaymentRegistrationAdapter implements ApprovedPaymentRegist
         return checkouts.findByPublicReference(publicReference)
                 .filter(checkout -> checkout.getGateway() == PaymentGatewayCode.MERCADO_PAGO)
                 .map(checkout -> new MercadoPagoCheckoutMatch(checkout.getInvoiceId(), checkout.getAmount().value(),
-                        ApplicationTime.now().isAfter(checkout.getExpiresAt())));
+                        ApplicationTime.now().isAfter(checkout.getExpiresAt()), checkout.getCreditedGatewayPaymentId()));
     }
 
     @Override
@@ -84,6 +84,17 @@ public class ApprovedPaymentRegistrationAdapter implements ApprovedPaymentRegist
     public void recordMercadoPagoExpiredCheckout(Long invoiceId, String mercadoPagoPaymentId) {
         auditTrail.record(new AuditRecord(AuditAction.GATEWAY_PAYMENT_CHECKOUT_EXPIRED, AuditEntityType.INVOICE, invoiceId,
                 null, null, "pagoMp=" + mercadoPagoPaymentId));
+    }
+
+    @Override
+    public void recordMercadoPagoDuplicatePaymentForCheckout(Long invoiceId, String creditedGatewayPaymentId, String mercadoPagoPaymentId) {
+        auditTrail.record(new AuditRecord(AuditAction.GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT, AuditEntityType.INVOICE, invoiceId,
+                creditedGatewayPaymentId, mercadoPagoPaymentId, "pagoMp=" + mercadoPagoPaymentId));
+    }
+
+    @Override
+    public void markMercadoPagoCheckoutCredited(UUID publicReference, String mercadoPagoPaymentId) {
+        checkouts.findByPublicReference(publicReference).ifPresent(checkout -> checkout.markCreditedBy(mercadoPagoPaymentId));
     }
 
     @Override

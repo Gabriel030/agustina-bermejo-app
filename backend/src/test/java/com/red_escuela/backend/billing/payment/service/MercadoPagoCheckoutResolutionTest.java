@@ -77,7 +77,7 @@ class MercadoPagoCheckoutResolutionTest {
     void paymentIsCreditedToTheCheckoutInvoice() {
         approvedPaymentWithReference();
         when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(
-                new MercadoPagoCheckoutMatch(77L, Money.of(new BigDecimal("1500.00"), Currency.ARS), false)));
+                new MercadoPagoCheckoutMatch(77L, Money.of(new BigDecimal("1500.00"), Currency.ARS), false, null)));
 
         registration.register("", "request", MP_PAYMENT_ID);
 
@@ -89,7 +89,7 @@ class MercadoPagoCheckoutResolutionTest {
         approvedPaymentWithReference();
         when(port.isMercadoPagoPaymentRegistered(MP_PAYMENT_ID)).thenReturn(false, true);
         when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(
-                new MercadoPagoCheckoutMatch(77L, PAID, false)));
+                new MercadoPagoCheckoutMatch(77L, PAID, false, null)));
 
         registration.register("", "request-1", MP_PAYMENT_ID);
         registration.register("", "request-2", MP_PAYMENT_ID);
@@ -129,7 +129,7 @@ class MercadoPagoCheckoutResolutionTest {
     void amountMismatchIsCreditedAndAudited() {
         approvedPaymentWithReference();
         Money expected = Money.of(new BigDecimal("1500.00"), Currency.ARS);
-        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, expected, false)));
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, expected, false, null)));
 
         registration.register("", "request", MP_PAYMENT_ID);
 
@@ -141,7 +141,7 @@ class MercadoPagoCheckoutResolutionTest {
     @Test
     void matchingAmountOnALiveCheckoutIsNotAudited() {
         approvedPaymentWithReference();
-        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, PAID, false)));
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, PAID, false, null)));
 
         registration.register("", "request", MP_PAYMENT_ID);
 
@@ -152,7 +152,7 @@ class MercadoPagoCheckoutResolutionTest {
     @Test
     void expiredCheckoutIsCreditedAndAudited() {
         approvedPaymentWithReference();
-        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, PAID, true)));
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, PAID, true, null)));
 
         registration.register("", "request", MP_PAYMENT_ID);
 
@@ -190,5 +190,41 @@ class MercadoPagoCheckoutResolutionTest {
         adapter.recordMercadoPagoUnmatchedPayment("mp-abc", REFERENCE);
 
         Mockito.verifyNoInteractions(auditTrail);
+    }
+
+    @Test
+    void currencyMismatchIsNotCreditedButAudited() {
+        when(fetcher.fetchApproved(MP_PAYMENT_ID)).thenReturn(Optional.of(new MercadoPagoApprovedPayment(
+                new ReportedGatewayAllocation(REFERENCE, Money.of(new BigDecimal("1500.00"), Currency.USD)), 1)));
+        Money expected = Money.of(new BigDecimal("1500.00"), Currency.ARS);
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, expected, false, null)));
+
+        registration.register("", "request", MP_PAYMENT_ID);
+
+        verify(port, never()).registerApprovedMercadoPagoPayment(any(), any(), any(), any(), anyString());
+        verify(port).recordMercadoPagoAmountMismatch(77L, expected, Money.of(new BigDecimal("1500.00"), Currency.USD), MP_PAYMENT_ID);
+    }
+
+    @Test
+    void firstPaymentMarksTheCheckoutAsCredited() {
+        approvedPaymentWithReference();
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, PAID, false, null)));
+
+        registration.register("", "request", MP_PAYMENT_ID);
+
+        verify(port).markMercadoPagoCheckoutCredited(REFERENCE, MP_PAYMENT_ID);
+        verify(port, never()).recordMercadoPagoDuplicatePaymentForCheckout(any(), anyString(), anyString());
+    }
+
+    @Test
+    void secondPaymentOnACreditedCheckoutIsCreditedWithAnAuditRow() {
+        approvedPaymentWithReference();
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, PAID, false, "mp-0")));
+
+        registration.register("", "request", MP_PAYMENT_ID);
+
+        verify(port).registerApprovedMercadoPagoPayment(eq(77L), eq(PAID), eq(1), eq(null), eq(MP_PAYMENT_ID));
+        verify(port).recordMercadoPagoDuplicatePaymentForCheckout(77L, "mp-0", MP_PAYMENT_ID);
+        verify(port, never()).markMercadoPagoCheckoutCredited(any(), anyString());
     }
 }
