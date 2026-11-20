@@ -198,7 +198,7 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     }
 
     private EmailDeliveryChannel channelWith(TransactionalEmailGateway gateway) {
-        return new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gateway, circuitBreakerFactory) {
+        return new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gateway, circuitBreakerFactory, (category, kind, recipientPersonId) -> Optional.empty()) {
             @Override
             public void dispatchDelivery(Long deliveryId) {
                 transactionTemplate.executeWithoutResult(status -> super.dispatchDelivery(deliveryId));

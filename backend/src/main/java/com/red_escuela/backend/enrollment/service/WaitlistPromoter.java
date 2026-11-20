@@ -1,6 +1,9 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.enrollment.dto.WaitlistKind;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,10 +13,12 @@ public class WaitlistPromoter {
 
     private final WaitlistQueues waitlistQueues;
     private final WaitlistCandidateEligibility eligibility;
+    private final AuditTrail auditTrail;
 
-    public WaitlistPromoter(WaitlistQueues waitlistQueues, WaitlistCandidateEligibility eligibility) {
+    public WaitlistPromoter(WaitlistQueues waitlistQueues, WaitlistCandidateEligibility eligibility, AuditTrail auditTrail) {
         this.waitlistQueues = waitlistQueues;
         this.eligibility = eligibility;
+        this.auditTrail = auditTrail;
     }
 
     public boolean promoteNext(WaitlistKind kind, Long queueId) {
@@ -34,6 +39,8 @@ public class WaitlistPromoter {
                 .findFirst()
                 .map(candidate -> {
                     queue.promote(candidate.enrollmentId());
+                    auditTrail.record(new AuditRecord(AuditAction.WAITLIST_PROMOTED_AUTOMATICALLY, queue.auditEntityType(),
+                            candidate.enrollmentId(), "WAITLISTED", "ENROLLED", null));
                     return true;
                 })
                 .orElse(false);
