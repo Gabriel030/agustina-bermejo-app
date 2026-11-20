@@ -5,7 +5,6 @@ import { roleRoutesFor } from '@/routes/featureRoutes';
 
 const REDIRECTED_PAGE = 'inicio';
 const PLACEHOLDER_PAGES = {
-  alumno: ['opciones'],
   administrativo: ['constancias'],
   director: ['constancias'],
 };
