@@ -291,6 +291,19 @@ final class OwnershipFixtures {
         return closure.getId();
     }
 
+    private EvaluationScheme persistScheme() {
+        EvaluationScheme scheme = new EvaluationScheme();
+        scheme.setName("Esquema " + TestSubjectCodes.next());
+        scheme.setExamCountExpected(2);
+        scheme.setTpCountExpected(0);
+        scheme.setHasFinal(false);
+        scheme.setAggregationMethod(GradeAggregationMethod.SIMPLE_AVERAGE);
+        scheme.setMinRegularGrade(Grade.of(BigDecimal.valueOf(4.0)));
+        scheme.setMinApprovalGrade(Grade.of(BigDecimal.valueOf(6.0)));
+        entityManager.persist(scheme);
+        return scheme;
+    }
+
     private Long persistCourseSectionEnrollment(Student student, Term term, Instructor instructor) {
         Course course = new Course();
         course.setName("Curso matriz");
@@ -304,6 +317,7 @@ final class OwnershipFixtures {
         courseSection.setName("Comision curso matriz");
         courseSection.setCourseSubject(courseSubject);
         courseSection.setTerm(term);
+        courseSection.setEvaluationScheme(persistScheme());
         courseSection.setStatus(StatusType.ACTIVE);
         entityManager.persist(courseSection);
         CourseSubjectSectionInstructor courseAssignment = new CourseSubjectSectionInstructor();
