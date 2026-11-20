@@ -106,7 +106,8 @@ class OwnerEmailChangeApprovalIT extends AbstractIntegrationTest {
             assertThat(event.personId()).isEqualTo(owner.getId());
             assertThat(event.currentEmail()).isEqualTo("owner-a@example.com");
             assertThat(event.requestedEmail()).isEqualTo("owner-a-new@example.com");
-            assertThat(event.reviewLink()).contains("/cancelar-cambio-email?token=");
+            assertThat(event.approvalLink()).contains("/revisar-cambio-email?token=");
+            assertThat(event.cancellationLink()).contains("/cancelar-cambio-email?token=");
         });
         assertThat(publicPasswordResetBlockPolicy.blocks(owner)).isTrue();
     }

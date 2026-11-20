@@ -8,12 +8,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record EmailChangeOwnerApprovalRequestedEvent(UUID eventId, String correlationId, Instant occurredAt, Long personId,
-                                                     String currentEmail, String requestedEmail, String reviewLink)
+                                                     String currentEmail, String requestedEmail, String approvalLink,
+                                                     String cancellationLink)
         implements DeduplicableDomainEvent {
 
     public static EmailChangeOwnerApprovalRequestedEvent requestedFor(Long personId, String currentEmail, String requestedEmail,
-                                                                      String reviewLink) {
+                                                                      String approvalLink, String cancellationLink) {
         return new EmailChangeOwnerApprovalRequestedEvent(UUID.randomUUID(), CorrelationIds.current(), ApplicationTime.instant(),
-                personId, currentEmail, requestedEmail, reviewLink);
+                personId, currentEmail, requestedEmail, approvalLink, cancellationLink);
     }
 }

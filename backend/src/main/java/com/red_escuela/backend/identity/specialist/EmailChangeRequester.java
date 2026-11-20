@@ -120,8 +120,9 @@ public class EmailChangeRequester {
         contactChangeRecorder.recordChange(person.getId(), actorPersonId, ContactChangeType.EMAIL_CHANGE_REQUESTED,
                 previousEmail, newEmail.value());
         if (awaitingOwnerApproval) {
+            String ownerToken = frontendBaseUrl + "%s?token=" + clearCancelToken;
             eventPublisher.publishEvent(EmailChangeOwnerApprovalRequestedEvent.requestedFor(person.getId(), previousEmail,
-                    newEmail.value(), frontendBaseUrl + "/cancelar-cambio-email?token=" + clearCancelToken));
+                    newEmail.value(), ownerToken.formatted("/revisar-cambio-email"), ownerToken.formatted("/cancelar-cambio-email")));
             return;
         }
         eventPublisher.publishEvent(EmailChangeRequestedEvent.requestedFor(person.getId(), previousEmail,
