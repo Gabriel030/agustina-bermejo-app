@@ -96,6 +96,25 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
     protected Term term;
     protected CourseEnrollment enrollment;
 
+    protected Student persistAnotherStudent() {
+        String username = "late.fee.other." + System.nanoTime();
+        Person other = new Person();
+        other.setUsername(username);
+        other.setDni(Long.toString(Math.abs((long) username.hashCode())));
+        other.setName("Otra");
+        other.setLastname("Persona");
+        other.setEmail(username + "@example.com");
+        other.setAddress(addressRepository.save(new Address()));
+        other.setStatus(StatusType.ACTIVE);
+        Institution otherInstitution = new Institution();
+        otherInstitution.setName("Instituto otro " + System.nanoTime());
+        Student otherStudent = new Student();
+        otherStudent.setPerson(personRepository.save(other));
+        otherStudent.setInstitution(institutionRepository.save(otherInstitution));
+        otherStudent.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
+        return studentRepository.save(otherStudent);
+    }
+
     protected void arrange(int year) {
         invariants = BillingInvariantChecker.startingNow(jdbc);
         scenarioStart = jdbc.queryForObject("select now()", java.sql.Timestamp.class);

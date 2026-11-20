@@ -245,7 +245,7 @@ class CourseEnrollmentRulesTest {
         when(courseEnrollmentRepository.countByCourseIdAndStatusIn(COURSE_ID, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS)))
                 .thenReturn(30L);
         when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 30L)).thenReturn(false);
-        when(courseEnrollmentRepository.save(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(courseEnrollmentRepository.saveAndFlush(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
 
         CourseEnrollment saved = service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null));
 
@@ -261,7 +261,7 @@ class CourseEnrollmentRulesTest {
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of());
         when(courseCatalogFinder.findCourseEntity(COURSE_ID)).thenReturn(course);
         when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 0L)).thenReturn(true);
-        when(courseEnrollmentRepository.save(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(courseEnrollmentRepository.saveAndFlush(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
 
         CourseEnrollment saved = service.enrollSelfService(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null));
 
@@ -388,7 +388,7 @@ class CourseEnrollmentRulesTest {
         when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L)));
         when(courseCatalogFinder.findCourseEntity(COURSE_ID)).thenReturn(course);
         when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 0L)).thenReturn(true);
-        when(courseEnrollmentRepository.save(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(courseEnrollmentRepository.saveAndFlush(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
         CourseSubjectSectionEnrollment previous = subEnrollment(100L, 31L, 21L, EnrollmentStatus.WITHDRAWN);
         previous.setEnrolledAt(NOW.minusYears(1));
         when(subEnrollmentRepository.findByStudentIdAndCourseSubjectSectionId(7L, 31L)).thenReturn(Optional.of(previous));

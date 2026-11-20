@@ -47,6 +47,7 @@ public class ResetPasswordService implements ResetPasswordUseCase {
         String hash = TokenHashUtil.sha256Hex(command.exchangeToken());
         PasswordResetToken resetToken = passwordResetTokenRepository
                 .findByExchangeTokenHashAndExchangeExpiresAtAfter(hash, ApplicationTime.now())
+                .filter(found -> passwordResetTokenRepository.consumeExchangeToken(hash, ApplicationTime.now()) == 1)
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
         Person person = resetToken.getPerson();
