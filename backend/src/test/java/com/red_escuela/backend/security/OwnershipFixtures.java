@@ -33,10 +33,13 @@ import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RoleRepository;
+import com.red_escuela.backend.notification.entity.Notification;
+import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -68,6 +71,9 @@ final class OwnershipFixtures {
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
+    private Long invoiceId;
+    private Long notificationId;
+    private Long sessionId;
     private Long closureId;
     private Long closureSectionId;
     private String teacherDirectorToken;
@@ -92,6 +98,9 @@ final class OwnershipFixtures {
             case ANNUAL_UPFRONT_REQUEST -> annualUpfrontRequestId;
             case STAFF_RECORD -> instructorPersonId;
             case EXAM_BOARD_TRIBUNAL -> examBoardId;
+            case INVOICE -> invoiceId;
+            case NOTIFICATION -> notificationId;
+            case SESSION -> sessionId;
         };
     }
 
@@ -211,6 +220,8 @@ final class OwnershipFixtures {
         closureId = persistClosure(closureSectionId);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
+        notificationId = persistNotification(ownerPerson);
+        sessionId = persistRefreshToken(ownerPerson);
 
         ownerStudentToken = jwtService.generateAccessToken(ownerPerson);
         strangerStudentToken = jwtService.generateAccessToken(strangerPerson);
@@ -317,6 +328,7 @@ final class OwnershipFixtures {
                     100, 'ARS', 0, 'ARS', 100, 'ARS', 0, 'ARS', 0, 'ARS', 100, 'ARS', now(), now())
                 returning id
                 """).setParameter("accountId", accountId).getSingleResult()).longValue();
+        this.invoiceId = invoiceId;
         return ((Number) entityManager.createNativeQuery("""
                 insert into annual_upfront_request (program_enrollment_id, lective_year_term_id, invoice_id, status, requested_by_person_id, requested_at,
                     accepted_terms_version, accepted_terms_text, accepted_at, accepted_by_person_id)
@@ -324,6 +336,28 @@ final class OwnershipFixtures {
                 returning id
                 """).setParameter("programEnrollmentId", programEnrollment.getId()).setParameter("termId", term.getId()).setParameter("invoiceId", invoiceId)
                 .setParameter("personId", person.getId()).getSingleResult()).longValue();
+    }
+
+    private Long persistNotification(Person recipient) {
+        Notification notification = new Notification();
+        notification.setRecipient(recipient);
+        notification.setType(NotificationType.values()[0]);
+        notification.setMessage("Notificacion matriz");
+        notification.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(notification);
+        entityManager.flush();
+        return notification.getId();
+    }
+
+    private Long persistRefreshToken(Person person) {
+        RefreshToken token = new RefreshToken();
+        token.setPerson(person);
+        token.setTokenHash("matrix-session-" + person.getId());
+        token.setExpiresAt(LocalDateTime.now().plusDays(7));
+        token.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(token);
+        entityManager.flush();
+        return token.getId();
     }
 
     private Person persistPerson(String username, String dni, String roleName, String... extraRoleNames) {
