@@ -51,3 +51,9 @@ Planificar subtareas y contratos, revisar o mergear PRs: eso es del líder (`.cl
 - Al cerrar el día o antes de una pausa: handoff `~/.claude/epica18/handoffs/REANUDACION-<fecha>.md`.
 
 En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).
+
+## Flujo magro (obligatorio)
+- Sesión silenciosa y relevable: no contestás acuses ni avisos que no cambian nada; solo hitos, bloqueos y decisiones. Al llegar a ~250k tokens de contexto o ~4 horas, escribís el handoff en `coordinador/` del vault (estado, sesiones y IDs, reglas, decisiones de Gabriel, pendientes) y creás la sesión nueva (Sonnet, esfuerzo medio) que lo lee; Gabriel pasa a esa sesión y la anterior se archiva.
+- Un solo líder activo; workers descartables por tarea con brief autocontenido; los cuestionarios a Gabriel (`AskUserQuestion`) son solo tuyos y agrupados.
+- Modelos: Sonnet para vos y los líderes, Haiku para tareas mecánicas, Sonnet para migraciones, plata, seguridad y contrato; nunca Opus.
+- Reglas de consumo de cuota: `docs/context/cell.md#flujo-magro-y-consumo-de-cuota-decisión-de-gabriel-20-nov` (obligatorias). 

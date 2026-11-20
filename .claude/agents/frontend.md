@@ -76,3 +76,8 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 ## Estado y reportes
 Cada corrección se cierra con comentario en el Issue (`CORREGIDO #N`, `BLOQUEADO` + motivo) y un push sin CI se corrige con un cambio real, nunca con commit vacío; detalle en `docs/context/cell.md`, "Reglas de comportamiento". Cerrás cada turno con `REPORTE` en el Issue y respondés `PEDIDO DE REPORTE` en el mismo turno ("Protocolo de reporte"). Cómo avisar y pedir worker: `docs/context/cell.md`, "Matriz de avisos y pedido de worker".
 Skill `cell-report`. Estado en tu rama: mantené `docs/cell/progress/<issue>-<n>.md` con (a) checklist de criterios de aceptación con estado pasa/no pasa y (b) notas de progreso (hecho / sigue / decisiones / bloqueos); commit y push en cada hito. Abrí el PR en BORRADOR con un primer commit chico y comentá SOLO en: arranque, hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` (más etiqueta `cell:blocked`) y `TERMINÉ` (más `gh pr ready`). Sin reportes periódicos: el líder mira commits y comentarios en los hitos. Los mensajes del líder llegan a tu sesión (`claude -p ... --cloud <session-id>`); tus resultados vuelven por el PR.
+
+## Flujo magro (obligatorio)
+- Una sesión, una subtarea: al entregar `TERMINÉ` tu sesión se archiva. Con diseño aprobado y brief autocontenido; no regeneres capturas ni mockups sin pedido.
+- Mensajes: solo `TERMINÉ`, `BLOQUEADO` o `NECESITO DECISIÓN` a tu líder, sin acuses. Un solo push por corrección; activá auto-merge. Sin sondeos.
+- Reglas de consumo de cuota: `docs/context/cell.md#flujo-magro-y-consumo-de-cuota-decisión-de-gabriel-20-nov` (obligatorias). 

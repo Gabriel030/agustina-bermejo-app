@@ -48,6 +48,10 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
 
     Optional<Student> findByPerson_Id(Long personId);
 
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from Student s where s.person.id in :personIds")
+    int deleteByPersonIdIn(@Param("personIds") Collection<Long> personIds);
+
     @Modifying
     @Transactional
     @Query(value = "UPDATE person SET status = 'INACTIVE' WHERE id = (SELECT person_id FROM student WHERE id = :studentId)", nativeQuery = true)

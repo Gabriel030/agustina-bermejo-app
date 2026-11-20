@@ -126,6 +126,21 @@ Canal único y confiable: comentario en el Issue de la tarea. El mensaje directo
 - Ahorro de relecturas: cada mensaje entre sesiones despierta a la receptora, que relee todo su contexto. Sin mensajes de confirmación (solo `TERMINÉ`, `BLOQUEADO`, `NECESITO DECISIÓN`); un mensaje agrupado por hito; sin sondeos ni turnos si no hay nada accionable; auto-merge en lugar de esperar la CI con turnos; una invocación de revisor por PR (dos en plata, contrato y seguridad); sin re-revisión de deltas triviales; sin mockups ni capturas repetidos.
 - Compactación: se pide al 20% con la variable de entorno `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`, que solo se cambia desde los ajustes del entorno. `/compact` solo lo escribe un usuario dentro de la sesión.
 
+## Flujo magro y consumo de cuota (decisión de Gabriel, 20-nov)
+
+Motivo: cada mensaje entre sesiones despierta a la receptora y esta relee todo su contexto; las sesiones largas y la mensajería redundante agotaban la cuota de 5 horas. Reglas obligatorias para todos los roles:
+
+1. **Un solo líder activo.** El segundo líder solo se enciende si Gabriel lo pide; mientras tanto queda archivado.
+2. **Workers descartables.** Una sesión por subtarea: al `TERMINÉ` se archiva y la siguiente tarea va a una sesión nueva con brief autocontenido (rama, archivos permitidos, fuera de alcance, comando de verificación). El estado vive en GitHub (Issues, PRs, comentarios) y en las ramas, no en la memoria de la sesión.
+3. **Coordinador relevable.** Sesión silenciosa; al pasar de ~250k tokens de contexto o de ~4 horas escribe un handoff en `coordinador/` del vault y se reemplaza por una sesión nueva (la que usa Gabriel).
+4. **Mensajes mínimos.** Solo `TERMINÉ`, `BLOQUEADO` y `NECESITO DECISIÓN` (este último solo al Coordinador, con opciones y recomendación). Sin acuses (`RECIBIDO`, `LISTO`), un mensaje agrupado por hito, nada de reportes por cada PR; el líder reporta al cerrar la tanda o ante una decisión o bloqueo.
+5. **Sin sondeos ni esperas activas.** Auto-merge en lugar de turnos esperando la CI; si no hay nada accionable no se ejecutan turnos; no se usa Monitor.
+6. **Revisión barata.** Una invocación del revisor por PR; dos solo en plata, contrato y seguridad; sin re-revisión de deltas triviales (el líder verifica el diff).
+7. **Menos PRs, un poco más grandes** (rebanadas de hasta 100k tokens con valor observable), un solo push por corrección.
+8. **Tandas.** El trabajo se organiza en tandas de una ventana de 5 horas con lista cerrada acordada con Gabriel; al avisar Gabriel que la cuota llega al 70% se cierra la tanda.
+9. **Contexto.** Compactación automática al 20% (variable `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`, solo se cambia en los ajustes del entorno); `/compact` solo lo escribe un usuario.
+10. **Mockups y capturas.** Se generan una vez; no se regeneran sin pedido.
+
 ## Presupuesto y contexto
 
 - Planificación del líder ~120k, corte 150k con handoff. Topes fijos SIN extensiones: worker 90k tokens y 30 minutos, revisor 100k, mecánico 80k (tokens de plataforma; la propia cuenta subestima ~2,2x).

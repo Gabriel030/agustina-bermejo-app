@@ -466,6 +466,48 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void foreignTeacherGetsSame404WithOrWithoutScheme() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000011", institution);
+        Instructor owner = persistInstructor("71000012");
+        Instructor foreign = persistInstructor("71000013");
+        Term term = persistTerm();
+        SubjectSection withScheme = persistSection(persistSubject("MateriaConEsquemaAjena"), term, persistScheme(1, 0, false));
+        SubjectSection withoutScheme = persistSection(persistSubject("MateriaSinEsquemaAjena"), term, null);
+        assignInstructor(withScheme, owner);
+        assignInstructor(withoutScheme, owner);
+        Program program = persistProgram("CarreraEsquemaAjena");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollmentWithScheme = persistEnrollment(student, programEnrollment, withScheme);
+        SubjectSectionEnrollment enrollmentWithoutScheme = persistEnrollment(student, programEnrollment, withoutScheme);
+        entityManager.flush();
+        CreateGradeItemRequest request = new CreateGradeItemRequest(
+                GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null, null);
+
+        assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollmentWithScheme.getId(), foreign.getId(), request))
+                .isInstanceOf(NotOwnSectionException.class);
+        assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollmentWithoutScheme.getId(), foreign.getId(), request))
+                .isInstanceOf(NotOwnSectionException.class);
+    }
+
+    @Test
+    void ownerWithoutSchemeStillGets400() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000014", institution);
+        Instructor owner = persistInstructor("71000015");
+        SubjectSection section = persistSection(persistSubject("MateriaDuenoSinEsquema"), persistTerm(), null);
+        assignInstructor(section, owner);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("CarreraDuenoSinEsquema"));
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        entityManager.flush();
+        CreateGradeItemRequest request = new CreateGradeItemRequest(
+                GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null, null);
+
+        assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), owner.getId(), request))
+                .isInstanceOf(NoEvaluationSchemeException.class);
+    }
+
+    @Test
     void instructorNotInSectionCannotLoadGrade() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000003", institution);

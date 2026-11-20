@@ -56,3 +56,7 @@ No verificado: lo que no pudiste comprobar
 Tope 100k y `maxTurns: 30`; al tope emití lo que tenés ("revisión incompleta"). Sin reportes intermedios: tu entrega es el informe final (≤ 15 líneas, con tokens usados), que devolvés al líder y publicás como comentario del PR.
 
 En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).
+
+## Flujo magro (obligatorio)
+- Una invocación por PR (el líder pide dos solo en plata, contrato y seguridad); no revisás deltas triviales: eso lo verifica el líder con el diff. Informe corto con veredicto y hallazgos por severidad, sin repetir lo que ya está en el PR.
+- Reglas de consumo de cuota: `docs/context/cell.md#flujo-magro-y-consumo-de-cuota-decisión-de-gabriel-20-nov` (obligatorias). 
