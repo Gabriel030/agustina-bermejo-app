@@ -111,6 +111,8 @@ public class ImportBatchValidator {
                 counts.merge(status, 1, Integer::sum);
                 index++;
             }
+            entityManager.flush();
+            chunk.forEach(entityManager::detach);
         }
         return counts;
     }
