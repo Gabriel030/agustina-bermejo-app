@@ -73,7 +73,7 @@ abstract class AuthorizationMatrixSupport extends AbstractIntegrationTest {
 
     protected int statusOf(MappedEndpoint endpoint, String bodyOverride, MatrixRole role) throws Exception {
         String token = role == null ? null : fixtures.tokenFor(role);
-        var result = mockMvc.perform(requestFactory.build(endpoint, bodyOverride, token)).andReturn();
+        var result = mockMvc.perform(requestFactory.build(endpoint, ownership.resolvePlaceholders(bodyOverride), token)).andReturn();
         var response = result.getResponse();
         lastResponseBody = response.getContentAsString() + " EX " + result.getResolvedException();
         return response.getStatus();
