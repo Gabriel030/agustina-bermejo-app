@@ -2521,9 +2521,13 @@
       "CertificateTemplateContent" : {
         "properties" : {
           "approvalText" : {
+            "maxLength" : 160,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "dictationText" : {
+            "maxLength" : 160,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "firstSigner" : {
@@ -2534,12 +2538,18 @@
             } ]
           },
           "footerLegend" : {
+            "maxLength" : 240,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "instituteName" : {
+            "maxLength" : 120,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "introText" : {
+            "maxLength" : 160,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "logoImageId" : {
@@ -2547,6 +2557,8 @@
             "type" : [ "integer", "null" ]
           },
           "qrLabel" : {
+            "maxLength" : 160,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "secondSigner" : {
@@ -2557,6 +2569,8 @@
             } ]
           },
           "title" : {
+            "maxLength" : 80,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           }
         },
@@ -2622,9 +2636,13 @@
       "CertificateTemplateSigner" : {
         "properties" : {
           "name" : {
+            "maxLength" : 80,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "role" : {
+            "maxLength" : 80,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "signatureImageId" : {
@@ -6053,6 +6071,9 @@
             "format" : "date",
             "type" : "string"
           },
+          "holderDocumentType" : {
+            "type" : [ "string", "null" ]
+          },
           "kind" : {
             "enum" : [ "PROGRAM", "COURSE" ],
             "type" : "string"
@@ -7129,7 +7150,7 @@
         "properties" : {
           "certificate" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/GraduationCertificateResponse"
+              "$ref" : "#/components/schemas/GraduationCertificateSummaryResponse"
             }, {
               "type" : "null"
             } ]
@@ -7320,6 +7341,10 @@
           "status" : {
             "enum" : [ "VALID", "REVOKED" ],
             "type" : "string"
+          },
+          "templateVersionNumber" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
           },
           "titleName" : {
             "type" : "string"
@@ -8103,6 +8128,8 @@
             "items" : {
               "$ref" : "#/components/schemas/IssueGraduationCertificateRequest"
             },
+            "maxItems" : 50,
+            "minItems" : 1,
             "type" : "array"
           }
         },
@@ -12633,7 +12660,7 @@
         "properties" : {
           "reason" : {
             "maxLength" : 500,
-            "minLength" : 0,
+            "minLength" : 10,
             "type" : "string"
           }
         },
@@ -13101,7 +13128,7 @@
         "properties" : {
           "reason" : {
             "maxLength" : 500,
-            "minLength" : 0,
+            "minLength" : 10,
             "type" : "string"
           }
         },
@@ -27048,6 +27075,7 @@
     },
     "/certificate-templates/{kind}/images" : {
       "post" : {
+        "description" : "Solo PNG, hasta 2 MB (se valida por magic bytes)",
         "operationId" : "CertificateTemplate_uploadImage",
         "parameters" : [ {
           "in" : "path",
@@ -27220,9 +27248,9 @@
         "responses" : {
           "200" : {
             "content" : {
-              "application/json" : {
+              "image/png" : {
                 "schema" : {
-                  "format" : "byte",
+                  "format" : "binary",
                   "type" : "string"
                 }
               }
@@ -27358,9 +27386,9 @@
         "responses" : {
           "200" : {
             "content" : {
-              "application/json" : {
+              "application/pdf" : {
                 "schema" : {
-                  "format" : "byte",
+                  "format" : "binary",
                   "type" : "string"
                 }
               }
@@ -44517,6 +44545,14 @@
           }
         }, {
           "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "PENDING", "BLOCKED_BY_DEBT" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "query",
           "required" : false,
           "schema" : {
@@ -44677,9 +44713,9 @@
         "responses" : {
           "200" : {
             "content" : {
-              "application/json" : {
+              "application/pdf" : {
                 "schema" : {
-                  "format" : "byte",
+                  "format" : "binary",
                   "type" : "string"
                 }
               }
@@ -51147,9 +51183,9 @@
         "responses" : {
           "200" : {
             "content" : {
-              "application/json" : {
+              "application/pdf" : {
                 "schema" : {
-                  "format" : "byte",
+                  "format" : "binary",
                   "type" : "string"
                 }
               }

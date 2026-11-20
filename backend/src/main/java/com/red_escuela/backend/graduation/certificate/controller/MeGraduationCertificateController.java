@@ -5,6 +5,9 @@ import com.red_escuela.backend.graduation.certificate.dto.OwnGraduationCertifica
 import com.red_escuela.backend.graduation.certificate.dto.PdfDisposition;
 import com.red_escuela.backend.graduation.certificate.usecase.GetOwnGraduationCertificatePdfUseCase;
 import com.red_escuela.backend.graduation.certificate.usecase.ListOwnGraduationCertificatesUseCase;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -36,6 +39,7 @@ public class MeGraduationCertificateController {
     }
 
     @GetMapping("/{id}/pdf")
+    @ApiResponse(responseCode = "200", content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")))
     public ResponseEntity<byte[]> pdf(@PathVariable Long id,
                                       @RequestParam(defaultValue = "ATTACHMENT") PdfDisposition disposition) {
         GraduationCertificatePdf pdf = pdfUseCase.pdfOf(id);

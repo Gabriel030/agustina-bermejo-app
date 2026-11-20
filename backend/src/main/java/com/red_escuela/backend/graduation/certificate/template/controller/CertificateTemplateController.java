@@ -20,6 +20,10 @@ import com.red_escuela.backend.graduation.certificate.template.usecase.PreviewCe
 import com.red_escuela.backend.graduation.certificate.template.usecase.PublishCertificateTemplateUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.SaveCertificateTemplateDraftUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.UploadCertificateTemplateImageUseCase;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -115,6 +119,7 @@ public class CertificateTemplateController {
         return publishUseCase.publish(kind);
     }
 
+    @Operation(description = "Solo PNG, hasta 2 MB (se valida por magic bytes)")
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -126,6 +131,7 @@ public class CertificateTemplateController {
     }
 
     @GetMapping("/images/{id}")
+    @ApiResponse(responseCode = "200", content = @Content(mediaType = "image/png", schema = @Schema(type = "string", format = "binary")))
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
     public ResponseEntity<byte[]> image(@PathVariable GraduationCertificateKind kind, @PathVariable Long id) {
         CertificateTemplateImageContent image = getImageUseCase.get(kind, id);
@@ -135,6 +141,7 @@ public class CertificateTemplateController {
     }
 
     @PostMapping("/preview")
+    @ApiResponse(responseCode = "200", content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")))
     @PreAuthorize("hasRole('DIRECTOR') or (hasRole('ADMINISTRATIVO') and #request.source().name() == 'PUBLISHED')")
     public ResponseEntity<byte[]> preview(@PathVariable GraduationCertificateKind kind,
                                           @Valid @RequestBody PreviewCertificateTemplateRequest request) {

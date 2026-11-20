@@ -17,5 +17,6 @@ public record GraduationCertificateSummaryResponse(
         String holderDocumentNumber,
         String titleName,
         LocalDate graduationDate,
-        LocalDateTime issuedAt) {
+        LocalDateTime issuedAt,
+        @Nullable Integer templateVersionNumber) {
 }

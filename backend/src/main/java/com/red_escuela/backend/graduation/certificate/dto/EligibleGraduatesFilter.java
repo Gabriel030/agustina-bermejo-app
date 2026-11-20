@@ -5,6 +5,7 @@ import java.time.LocalDate;
 
 public record EligibleGraduatesFilter(
         GraduationCertificateKind kind,
+        GraduateEligibilityStatus status,
         String query,
         LocalDate graduatedFrom,
         LocalDate graduatedTo) {

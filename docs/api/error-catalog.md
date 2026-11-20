@@ -61,7 +61,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `APPLICATION_DOCUMENT_TOO_LARGE` | no | `ApplicationDocumentTooLargeException` | enrollment |
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
-| `BATCH_SIZE_INVALID` | no | `BatchSizeInvalidException` | graduation |
 | `BIRTH_DATE_REQUIRED` | no | `BirthDateRequiredException` | identity |
 | `BROADCAST_BODY_REQUIRED` | no | `BroadcastBodyRequiredException` | notification |
 | `BROADCAST_CONTENT_WITH_TEMPLATE` | no | `BroadcastContentWithTemplateException` | notification |
@@ -228,7 +227,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_NOT_REGULAR` | no | `StudentNotRegularException` | evaluation |
 | `SUBJECT_NOT_IN_PROGRAM_PLAN` | no | `SubjectNotInProgramPlanException` | enrollment |
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
-| `TEMPLATE_FIELD_TOO_LONG` | no | `TemplateFieldTooLongException` | graduation |
 | `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_SUBJECT_REQUIRED` | no | `TemplateSubjectRequiredException` | notification |
 | `TEMPLATE_UNKNOWN_MARKER` | no | `TemplateUnknownMarkerException` | graduation |
@@ -619,7 +617,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
-| `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_NOTHING_TO_DISCARD` | no | `TemplateNothingToDiscardException` | graduation |
 | `TEMPLATE_NOTHING_TO_PUBLISH` | no | `TemplateNothingToPublishException` | graduation |
 | `TERM_ENROLLMENT_OVERRIDE_CLOSED` | no | `TermEnrollmentOverrideClosedException` | enrollment |
@@ -643,6 +640,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `GRADUATION_CERTIFICATE_OPERATION_PENDING` | no | `GraduationCertificateOperationPendingException` | graduation |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
+| `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
 | `UNKNOWN_TEMPLATE_VARIABLE` | no | `UnknownTemplateVariableException` | notification |
 

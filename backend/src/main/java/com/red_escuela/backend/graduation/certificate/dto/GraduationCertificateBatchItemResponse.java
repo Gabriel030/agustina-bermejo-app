@@ -8,6 +8,6 @@ public record GraduationCertificateBatchItemResponse(
         Long enrollmentId,
         GraduationCertificateKind kind,
         BatchItemOutcome outcome,
-        @Schema(nullable = true) GraduationCertificateResponse certificate,
+        @Schema(nullable = true) GraduationCertificateSummaryResponse certificate,
         @Nullable String errorCode) {
 }

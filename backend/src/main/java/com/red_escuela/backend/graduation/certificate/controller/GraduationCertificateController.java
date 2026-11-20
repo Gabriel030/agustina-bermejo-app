@@ -2,6 +2,7 @@ package com.red_escuela.backend.graduation.certificate.controller;
 
 import com.red_escuela.backend.graduation.certificate.dto.EligibleGraduateResponse;
 import com.red_escuela.backend.graduation.certificate.dto.EligibleGraduatesFilter;
+import com.red_escuela.backend.graduation.certificate.dto.GraduateEligibilityStatus;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateBatchResponse;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateDetailResponse;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateFilter;
@@ -23,6 +24,9 @@ import com.red_escuela.backend.graduation.certificate.usecase.ListGraduationCert
 import com.red_escuela.backend.graduation.certificate.usecase.PreviewGraduationCertificateUseCase;
 import com.red_escuela.backend.graduation.certificate.usecase.ReissueGraduationCertificateUseCase;
 import com.red_escuela.backend.graduation.certificate.usecase.RevokeGraduationCertificateUseCase;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -83,11 +87,12 @@ public class GraduationCertificateController {
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
     public Page<EligibleGraduateResponse> eligible(
             @RequestParam(required = false) GraduationCertificateKind kind,
+            @RequestParam(required = false) GraduateEligibilityStatus status,
             @RequestParam(required = false) String query,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate graduatedFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate graduatedTo,
             @PageableDefault(size = 25) Pageable pageable) {
-        return eligibleUseCase.list(new EligibleGraduatesFilter(kind, query, graduatedFrom, graduatedTo), pageable);
+        return eligibleUseCase.list(new EligibleGraduatesFilter(kind, status, query, graduatedFrom, graduatedTo), pageable);
     }
 
     @GetMapping
@@ -109,6 +114,7 @@ public class GraduationCertificateController {
     }
 
     @PostMapping("/preview")
+    @ApiResponse(responseCode = "200", content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")))
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
     public ResponseEntity<byte[]> preview(@Valid @RequestBody IssueGraduationCertificateRequest request) {
         GraduationCertificatePdf pdf = previewUseCase.preview(request);
