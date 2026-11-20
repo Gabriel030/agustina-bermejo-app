@@ -63,6 +63,6 @@ class PlatformAdminIsolationTest extends AuthorizationMatrixSupport {
 
     private static boolean isPlatformAdminRoute(String key) {
         String path = key.substring(key.indexOf(' ') + 1);
-        return path.equals("/platform") || path.startsWith("/platform/") || path.equals("/me/modules") || key.equals("GET /me");
+        return path.equals("/platform") || path.startsWith("/platform/") || path.equals("/me/modules") || key.equals("GET /me") || key.equals("GET /backups/status");
     }
 }

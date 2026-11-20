@@ -51,4 +51,8 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     @Modifying(flushAutomatically = true)
     @Query(value = "update password_reset_token set used = true where person_id = :personId and used = false", nativeQuery = true)
     int invalidateActiveCodes(@Param("personId") Long personId);
+
+    @Modifying(flushAutomatically = true)
+    @Query(value = "update password_reset_token set exchange_token_hash = null, exchange_expires_at = null where person_id = :personId", nativeQuery = true)
+    int clearExchangeTokens(@Param("personId") Long personId);
 }

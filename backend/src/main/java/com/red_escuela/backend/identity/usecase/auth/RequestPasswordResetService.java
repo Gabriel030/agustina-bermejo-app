@@ -13,6 +13,6 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
 
     @Override
     public void requestReset(String email) {
-        passwordResetCodeRequester.requestPasswordResetCode(email);
+        passwordResetCodeRequester.requestPublicPasswordResetCode(email);
     }
 }

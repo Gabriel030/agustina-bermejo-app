@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Estado de los backups",
+  "description": "Archivo que escriben los scripts de backup y lee GET /backups/status. El backend calcula state y summary; si el archivo falta o no valida contra este esquema, responde state NOT_CONFIGURED. No contiene datos de alumnos ni de pagos: solo la ruta del disco y los nombres de los archivos de backup, nunca su contenido. Sin texto libre: alertas y fallas de la restauración de prueba se escriben como códigos cerrados.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "targetRpoHours",
+    "destination",
+    "tiers",
+    "lastRestoreTest",
+    "alerts",
+    "consecutiveFailures",
+    "lastCompleteBackupAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "targetRpoHours": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "freeBytes", "totalBytes"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Ruta del disco de destino. Campo técnico: el backend solo la muestra a PLATFORM_ADMIN."
+        },
+        "freeBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalBytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "tiers": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tier",
+          "takenAt",
+          "label",
+          "dumpSizeBytes",
+          "filesSizeBytes",
+          "verification",
+          "kept",
+          "fileNames"
+        ],
+        "properties": {
+          "tier": {
+            "enum": ["INTRADAY", "DAILY", "WEEKLY", "QUARTERLY", "PRE_RELEASE"]
+          },
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "label": {
+            "type": ["string", "null"],
+            "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.]+)?$",
+            "maxLength": 32,
+            "description": "Versión publicada en PRE_RELEASE; null en el resto de los niveles. Sin texto libre (D-484): el lector rechaza el archivo (NOT_CONFIGURED) si no valida."
+          },
+          "dumpSizeBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "filesSizeBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "verification": {
+            "enum": ["VERIFIED", "DAMAGED", "UNVERIFIED"]
+          },
+          "kept": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fileNames": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "maxLength": 128
+            },
+            "description": "Nombres de los archivos de backup del nivel. Campo técnico: el backend solo los muestra a PLATFORM_ADMIN."
+          }
+        },
+        "if": {
+          "properties": {
+            "tier": {
+              "const": "PRE_RELEASE"
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "label": {
+              "const": null
+            }
+          }
+        }
+      }
+    },
+    "lastRestoreTest": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ranAt", "result", "failureCode"],
+          "properties": {
+            "ranAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "result": {
+              "enum": ["PASSED", "FAILED"]
+            },
+            "failureCode": {
+              "enum": ["CHECKSUM_MISMATCH", "RESTORE_FAILED", "COUNTS_MISMATCH", "SCHEMA_VALIDATION_FAILED", null],
+              "description": "Motivo de la falla con un código cerrado, nunca la salida del comando; null si result es PASSED."
+            }
+          },
+          "if": {
+            "properties": {
+              "result": {
+                "const": "PASSED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "failureCode": {
+                "const": null
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "failureCode": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "alerts": {
+      "type": "array",
+      "maxItems": 200,
+      "description": "Alertas: el backend filtra a los últimos 30 días; el script puede escribir más.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "level", "code"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "level": {
+            "enum": ["WARNING", "CRITICAL"]
+          },
+          "code": {
+            "enum": [
+              "BACKUP_FAILED",
+              "BACKUP_STALE",
+              "BACKUP_DAMAGED",
+              "RESTORE_TEST_FAILED",
+              "DISK_LOW",
+              "DISK_CRITICAL",
+              "ENCRYPTION_DISABLED",
+              "DATA_DIR_EMPTY"
+            ],
+            "description": "Código cerrado de la alerta; el script no escribe texto libre (D-484)."
+          }
+        }
+      }
+    },
+    "consecutiveFailures": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "lastCompleteBackupAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}
