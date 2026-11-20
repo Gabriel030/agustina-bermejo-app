@@ -1,6 +1,8 @@
 package com.red_escuela.backend.notification.broadcast.lifecycle.specialist;
 
 import com.red_escuela.backend.notification.broadcast.domain.ChannelAddress;
+import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
+import com.red_escuela.backend.notification.broadcast.domain.ConsentChannel;
 import com.red_escuela.backend.notification.broadcast.audience.domain.ExclusionReason;
 import com.red_escuela.backend.notification.broadcast.domain.DenialReason;
 import com.red_escuela.backend.notification.broadcast.domain.DispatchOutcome;
@@ -17,6 +19,11 @@ import com.red_escuela.backend.notification.broadcast.freezer.repository.Broadca
 import com.red_escuela.backend.notification.broadcast.freezer.specialist.RecipientFreezer;
 import com.red_escuela.backend.notification.broadcast.specialist.ChannelRegistry;
 import com.red_escuela.backend.notification.broadcast.specialist.MessageChannel;
+import com.red_escuela.backend.notification.broadcast.specialist.UnsubscribeLinkFactory;
+import com.red_escuela.backend.notification.broadcast.template.domain.TemplateRenderer;
+import com.red_escuela.backend.notification.broadcast.template.domain.TemplateVariable;
+import com.red_escuela.backend.notification.broadcast.template.exception.MissingRequiredVariableException;
+import com.red_escuela.backend.notification.broadcast.template.specialist.TemplateVariableSource;
 import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditRecord;
@@ -27,7 +34,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -41,16 +51,21 @@ public class BroadcastConfirmer {
     private final RecipientFreezer recipientFreezer;
     private final ChannelRegistry channelRegistry;
     private final BroadcastProgressTracker progressTracker;
+    private final TemplateVariableSource variableSource;
+    private final UnsubscribeLinkFactory unsubscribeLinkFactory;
     private final AuditTrail auditTrail;
     private final Clock clock;
 
     public BroadcastConfirmer(BroadcastRepository broadcastRepository, BroadcastRecipientRepository recipientRepository,
-                              RecipientFreezer recipientFreezer, ChannelRegistry channelRegistry, BroadcastProgressTracker progressTracker, AuditTrail auditTrail, Clock clock) {
+                              RecipientFreezer recipientFreezer, ChannelRegistry channelRegistry, BroadcastProgressTracker progressTracker,
+                              TemplateVariableSource variableSource, UnsubscribeLinkFactory unsubscribeLinkFactory, AuditTrail auditTrail, Clock clock) {
         this.broadcastRepository = broadcastRepository;
         this.recipientRepository = recipientRepository;
         this.recipientFreezer = recipientFreezer;
         this.channelRegistry = channelRegistry;
         this.progressTracker = progressTracker;
+        this.variableSource = variableSource;
+        this.unsubscribeLinkFactory = unsubscribeLinkFactory;
         this.auditTrail = auditTrail;
         this.clock = clock;
     }
@@ -70,22 +85,56 @@ public class BroadcastConfirmer {
             throw new EmptyAudienceException();
         }
         MessageChannel channel = channelRegistry.channel(broadcast.getChannel());
-        RenderedContent content = new RenderedContent(broadcast.getSubjectSnapshot(), broadcast.getBodySnapshot());
-        pending.forEach(recipient -> queueRecipient(channel, broadcast, content, recipient, now));
+        queueRecipients(channel, broadcast, pending, now);
         auditTrail.record(new AuditRecord(AuditAction.BROADCAST_CONFIRMED, AuditEntityType.BROADCAST, broadcastId,
                 before.name(), broadcast.getStatus().name(), null));
         progressTracker.completeWhenNoOpenRecipients(broadcast, now);
         return broadcast.getStatus();
     }
 
-    private void queueRecipient(MessageChannel channel, Broadcast broadcast, RenderedContent content, BroadcastRecipient recipient, Instant now) {
-        Optional<ChannelAddress> address = channel.resolveAddress(recipient.getPersonId());
-        if (address.isEmpty()) {
-            recipient.markSkipped(now, ExclusionReason.NO_CHANNEL_ADDRESS);
-            return;
+    private void queueRecipients(MessageChannel channel, Broadcast broadcast, List<BroadcastRecipient> pending, Instant now) {
+        Map<Long, Map<TemplateVariable, String>> valuesByPerson = variableSource.valuesForAll(pending.stream().map(BroadcastRecipient::getPersonId).toList());
+        List<BroadcastRecipient> dispatchable = new ArrayList<>();
+        List<OutboundMessage> messages = new ArrayList<>();
+        for (BroadcastRecipient recipient : pending) {
+            Optional<ChannelAddress> address = channel.resolveAddress(recipient.getPersonId());
+            if (address.isEmpty()) {
+                recipient.markSkipped(now, ExclusionReason.NO_CHANNEL_ADDRESS);
+                continue;
+            }
+            Optional<RenderedContent> content = renderFor(channel.type(), broadcast, recipient.getPersonId(), valuesByPerson.get(recipient.getPersonId()));
+            if (content.isEmpty()) {
+                recipient.markSkipped(now, ExclusionReason.MISSING_TEMPLATE_VARIABLE);
+                continue;
+            }
+            dispatchable.add(recipient);
+            messages.add(new OutboundMessage(broadcast.getId(), recipient.getPersonId(), address.get(), content.get(), broadcast.getCategory()));
         }
-        DispatchOutcome outcome = channel.dispatch(new OutboundMessage(broadcast.getId(), recipient.getPersonId(), address.get(), content,
-                broadcast.getCategory()));
+        List<DispatchOutcome> outcomes = channel.dispatchAll(messages);
+        for (int index = 0; index < dispatchable.size(); index++) {
+            applyOutcome(dispatchable.get(index), outcomes.get(index), now);
+        }
+    }
+
+    private Optional<RenderedContent> renderFor(ChannelType channelType, Broadcast broadcast, Long personId, Map<TemplateVariable, String> personValues) {
+        if (personValues == null) {
+            return Optional.empty();
+        }
+        Map<TemplateVariable, String> values = new EnumMap<>(TemplateVariable.class);
+        values.putAll(personValues);
+        values.put(TemplateVariable.UNSUBSCRIBE_LINK, unsubscribeLinkFactory.linkFor(personId, consentChannelOf(channelType), broadcast.getCategory()));
+        try {
+            return Optional.of(TemplateRenderer.render(channelType, broadcast.getSubjectSnapshot(), broadcast.getBodySnapshot(), values));
+        } catch (MissingRequiredVariableException missing) {
+            return Optional.empty();
+        }
+    }
+
+    private static ConsentChannel consentChannelOf(ChannelType channelType) {
+        return channelType == ChannelType.EMAIL ? ConsentChannel.EMAIL : ConsentChannel.WHATSAPP;
+    }
+
+    private void applyOutcome(BroadcastRecipient recipient, DispatchOutcome outcome, Instant now) {
         switch (outcome) {
             case DispatchOutcome.Queued queued -> recipient.markQueued(queued.deliveryId(), now);
             case DispatchOutcome.Rejected rejected -> recipient.markSkipped(now, exclusionReasonOf(rejected.reason()));

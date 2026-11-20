@@ -7,7 +7,9 @@ import com.red_escuela.backend.notification.broadcast.template.exception.Templat
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -28,6 +30,17 @@ public class PersonTemplateVariableSource implements TemplateVariableSource {
     public Map<TemplateVariable, String> valuesFor(Long personId) {
         PersonTemplateFacts facts = factsFinder.findTemplateFacts(personId)
                 .orElseThrow(() -> new TemplatePersonNotFoundException(personId));
+        return valuesOf(facts);
+    }
+
+    @Override
+    public Map<Long, Map<TemplateVariable, String>> valuesForAll(Collection<Long> personIds) {
+        Map<Long, Map<TemplateVariable, String>> valuesByPerson = new HashMap<>();
+        factsFinder.findTemplateFactsAll(personIds).forEach((personId, facts) -> valuesByPerson.put(personId, valuesOf(facts)));
+        return valuesByPerson;
+    }
+
+    private Map<TemplateVariable, String> valuesOf(PersonTemplateFacts facts) {
         Map<TemplateVariable, String> values = new EnumMap<>(TemplateVariable.class);
         values.put(TemplateVariable.FIRST_NAME, facts.firstName());
         values.put(TemplateVariable.LAST_NAME, facts.lastName());
