@@ -29,3 +29,7 @@ Subagente del líder (lanzado con la herramienta Agent, uno por tarea, contexto 
 Tope fijo 80k y `maxTurns: 25`, sin extensiones; al tope, handoff y relevo. Sin reportes intermedios: devolvé al líder `TERMINÉ` con rama/PR/archivos tocados (≤ 8 líneas) o `BLOQUEADO` con motivo (formato `cell-report`).
 
 En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).
+
+## Flujo magro (obligatorio)
+- Tarea mecánica acotada, en Haiku, una invocación y fin; sin mensajes de acuse.
+- Reglas de consumo de cuota: `docs/context/cell.md#flujo-magro-y-consumo-de-cuota-decisión-de-gabriel-20-nov` (obligatorias). 

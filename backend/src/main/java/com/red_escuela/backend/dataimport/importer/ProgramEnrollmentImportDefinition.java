@@ -186,6 +186,16 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
     }
 
     @Override
+    public boolean discardsInBatch() {
+        return true;
+    }
+
+    @Override
+    public void discardBatch(List<Long> entityIds) {
+        recorder.discardProgramEnrollments(entityIds);
+    }
+
+    @Override
     public BaseLookups preloadForRecord(List<Map<String, String>> payloads) {
         return lookupsLoader.loadForRecord(payloads, false);
     }

@@ -35,6 +35,20 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
 
     Optional<Person> findByUsername(String username);
 
+    @Query("select count(p) from Person p where p.id in :ids and (p.grantSystemAccess = true or p.password is not null)")
+    long countWithSystemAccessByIdIn(@Param("ids") Collection<Long> ids);
+
+    @Query("select p.address.id from Person p where p.id in :ids and p.address is not null")
+    List<Long> findAddressIdsByIdIn(@Param("ids") Collection<Long> ids);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = "delete from person_role where person_id in :ids", nativeQuery = true)
+    int deleteRolesByPersonIdIn(@Param("ids") Collection<Long> ids);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from Person p where p.id in :ids")
+    int deleteByIdIn(@Param("ids") Collection<Long> ids);
+
     @Query("select new com.red_escuela.backend.identity.repository.AccountAccessState(p.status, p.tokenVersion) from Person p where p.id = :personId")
     Optional<AccountAccessState> findAccessStateById(@Param("personId") Long personId);
 

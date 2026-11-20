@@ -119,14 +119,14 @@ public class GradeItemRecorder {
         sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
-        if (scheme == null) {
-            throw new NoEvaluationSchemeException(enrollment.getSubjectSection().getId());
-        }
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
                 () -> sectionTeachingFinder
                         .teaches(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), instructorId),
                 enrollment.getSubjectSection().getId());
+        if (scheme == null) {
+            throw new NoEvaluationSchemeException(enrollment.getSubjectSection().getId());
+        }
         requireBoardCoversEnrollment(examBoard, request.type(), instructorId,
                 examBoard != null && examBoard.getSubject() != null
                         && examBoard.getSubject().getId().equals(enrollment.getSubjectSection().getSubject().getId()),
@@ -298,14 +298,14 @@ public class GradeItemRecorder {
         sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
-        if (scheme == null) {
-            throw new NoEvaluationSchemeException(enrollment.getCourseSubjectSection().getId());
-        }
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
                 () -> sectionTeachingFinder
                         .teaches(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), instructorId),
                 enrollment.getCourseSubjectSection().getId());
+        if (scheme == null) {
+            throw new NoEvaluationSchemeException(enrollment.getCourseSubjectSection().getId());
+        }
         requireBoardCoversEnrollment(examBoard, request.type(), instructorId,
                 examBoard != null && examBoard.getCourseSubject() != null
                         && examBoard.getCourseSubject().getId()
