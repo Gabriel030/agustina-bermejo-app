@@ -8,6 +8,7 @@ import com.red_escuela.backend.notification.broadcast.specialist.UnsubscribeToke
 import com.red_escuela.backend.notification.broadcast.specialist.UnsubscribeTokenSigner;
 import com.red_escuela.backend.notification.broadcast.specialist.UnsubscribeTokenVerifier;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -65,5 +66,37 @@ class UnsubscribeTokenTest {
                     .as(malformed)
                     .isInstanceOf(InvalidUnsubscribeTokenException.class);
         }
+    }
+
+    private static UnsubscribeTokenSigner signerFor(String ownSecret, String... profiles) {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles(profiles);
+        return new UnsubscribeTokenSigner(ownSecret, "jwt-secret-jwt-secret-jwt-secret-12", environment);
+    }
+
+    @Test
+    void productionWithoutOwnSecretFailsToStart() {
+        assertThatThrownBy(() -> signerFor("", "prod")).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> signerFor("  ", "prod")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void productionUsesOwnSecretNotTheJwtOne() {
+        UnsubscribeTokenSigner production = signerFor("own-secret-own-secret-own-secret-1", "prod");
+        String token = new UnsubscribeTokenIssuer(production, Clock.fixed(ISSUED_AT, ZoneOffset.UTC))
+                .issueToken(5L, ConsentChannel.EMAIL, BroadcastCategory.PROMOTIONAL);
+
+        assertThat(new UnsubscribeTokenVerifier(production).verifyToken(token).personId()).isEqualTo(5L);
+        assertThatThrownBy(() -> new UnsubscribeTokenVerifier(new UnsubscribeTokenSigner("jwt-secret-jwt-secret-jwt-secret-12")).verifyToken(token))
+                .isInstanceOf(InvalidUnsubscribeTokenException.class);
+    }
+
+    @Test
+    void outsideProductionFallsBackToTheJwtSecret() {
+        String token = new UnsubscribeTokenIssuer(signerFor("", "local"), Clock.fixed(ISSUED_AT, ZoneOffset.UTC))
+                .issueToken(5L, ConsentChannel.EMAIL, BroadcastCategory.PROMOTIONAL);
+
+        assertThat(new UnsubscribeTokenVerifier(new UnsubscribeTokenSigner("jwt-secret-jwt-secret-jwt-secret-12")).verifyToken(token).personId())
+                .isEqualTo(5L);
     }
 }
