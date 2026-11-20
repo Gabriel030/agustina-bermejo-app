@@ -636,6 +636,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INTERNAL_ERROR` | no | `EmailDeliveryException` | shared |
 | `INTERNAL_ERROR` | no | `FeatureNotProvisionedException` | platform |
 | `INTERNAL_ERROR` | no | `InstituteSettingNotProvisionedException` | platform |
+| `INTERNAL_ERROR` | no | `InvalidBackupStatusFileException` | platform |
 | `INTERNAL_ERROR` | no | `InvalidInvoiceAmountsException` | billing |
 | `INTERNAL_ERROR` | no | `InvoiceStatusInconsistentWithAmountsException` | billing |
 | `INTERNAL_ERROR` | no | `PaymentSourceIntegrityException` | billing |
