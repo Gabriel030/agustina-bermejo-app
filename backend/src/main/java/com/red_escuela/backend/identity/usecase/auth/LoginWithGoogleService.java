@@ -6,6 +6,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
+import com.red_escuela.backend.identity.policy.GoogleLinkByEmailPolicy;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
 import com.red_escuela.backend.identity.specialist.PublicPasswordResetBlockPolicy;
@@ -45,17 +46,11 @@ public class LoginWithGoogleService implements LoginWithGoogleUseCase {
         Person person = personRepository.findByEmail(EmailAddress.of(profile.email()))
                 .orElseThrow(() -> new GoogleAccountNotLinkedException(profile.email()));
         requireAllowedToLogIn(person);
-        requireAllowedToLinkByEmail(person);
+        GoogleLinkByEmailPolicy.requireAllowed(person, publicPasswordResetBlockPolicy.blocks(person));
 
         person.setGoogleSubjectId(profile.subject());
         personRepository.save(person);
         return authTokenIssuer.issueTokens(person);
-    }
-
-    private void requireAllowedToLinkByEmail(Person person) {
-        if (!Boolean.TRUE.equals(person.getEmailVerified()) || publicPasswordResetBlockPolicy.blocks(person)) {
-            throw new InvalidCredentialsException();
-        }
     }
 
     private void requireAllowedToLogIn(Person person) {
