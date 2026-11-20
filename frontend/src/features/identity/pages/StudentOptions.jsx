@@ -1,8 +1,9 @@
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ContactConsentMatrix } from '@/features/identity/components/ContactConsentMatrix';
 import { NotificationMatrix } from '@/features/identity/components/NotificationMatrix';
 import { TabSeguridad } from '@/features/identity/pages/MiPerfil';
@@ -22,6 +23,7 @@ function OptionsSection({ id, title, children }) {
 
 export function StudentOptions() {
   const { logout } = useAuth();
+  const { tema, alternarTema } = useTheme();
   return (
     <PageContainer>
       <div>
@@ -30,12 +32,12 @@ export function StudentOptions() {
       </div>
 
       <OptionsSection id="opciones-apariencia" title="Apariencia">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex min-h-11 items-center justify-between gap-4">
           <div>
             <p className="text-size-14 font-medium text-ink">Modo oscuro</p>
             <p className="text-size-13 text-ink-faint">Cambia entre el tema claro y el oscuro.</p>
           </div>
-          <ThemeToggle />
+          <Switch checked={tema === 'dark'} onCheckedChange={alternarTema} aria-label="Modo oscuro" />
         </div>
       </OptionsSection>
 

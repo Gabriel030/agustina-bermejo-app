@@ -55,6 +55,7 @@ describe('StudentOptions', () => {
 
   afterEach(() => {
     localStorage.clear();
+    delete document.documentElement.dataset.design;
   });
 
   it('offers exactly the four sections: appearance, notifications, security and session', async () => {
@@ -73,10 +74,25 @@ describe('StudentOptions', () => {
     const user = userEvent.setup();
     renderOptions();
 
-    await user.click(await screen.findByRole('button', { name: 'Cambiar a modo oscuro' }));
+    const themeSwitch = await screen.findByRole('switch', { name: 'Modo oscuro' });
+    expect(themeSwitch).toHaveAttribute('aria-checked', 'false');
+    await user.click(themeSwitch);
 
     expect(localStorage.getItem('tema')).toBe('dark');
-    expect(screen.getByRole('button', { name: 'Cambiar a modo claro' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Modo oscuro' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('offers the theme switch on the mobile design B, where the header toggle is hidden', async () => {
+    document.documentElement.dataset.design = 'b';
+    mockProfileEndpoints();
+    const user = userEvent.setup();
+    renderOptions();
+
+    const themeSwitch = await screen.findByRole('switch', { name: 'Modo oscuro' });
+    await user.click(themeSwitch);
+
+    expect(localStorage.getItem('tema')).toBe('dark');
+    delete document.documentElement.dataset.design;
   });
 
   it('saves the notification matrix changes', async () => {

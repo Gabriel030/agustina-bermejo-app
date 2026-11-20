@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -21,6 +21,20 @@ function mockProfileEndpoints() {
 }
 
 describe('MiPerfil para el alumno', () => {
+  beforeEach(() => {
+    auth.roles = ['ALUMNO'];
+  });
+
+  it('keeps the security and notifications tabs for the other roles', async () => {
+    mockProfileEndpoints();
+    auth.roles = ['DOCENTE'];
+    renderWithProviders(<MiPerfil />, { route: '/perfil' });
+
+    expect(await screen.findByRole('tab', { name: 'Seguridad' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Notificaciones' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Ir a Opciones/ })).not.toBeInTheDocument();
+  });
+
   it('links to the options screen instead of repeating security and notifications tabs', async () => {
     mockProfileEndpoints();
     renderWithProviders(<MiPerfil />, { route: '/perfil' });
