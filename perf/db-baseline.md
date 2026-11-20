@@ -52,6 +52,9 @@ python3 perf/capture-origin.py
 |---|---|---|---|---|---|
 | director | `/financial-dashboard` | 19 | 27 | 71 | 282 |
 | director | `/financial-dashboard/debtors` | 435 | 495 | 6 | 612175 |
+
+> Nota (33.3b, #1042): `GET /financial-dashboard/debtors` se retiró; las filas que lo mencionan son la medición histórica del baseline. El listado vigente es `/financial-dashboard/debtors/page`.
+
 | director | `/financial-dashboard/debtors/page?page=0&size=25` | 28 | 42 | 2 | 5120 |
 | director | `/staff` | 9 | 10 | 6 | 10655 |
 | director | `/students` | 28 | 31 | 3 | 7496 |
