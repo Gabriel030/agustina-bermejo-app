@@ -19,6 +19,7 @@ case "$*" in
   "stop backend") [ "${FAKE_STOP_FAIL:-0}" = "1" ] && exit 1; exit 0 ;;
   "start backend") exit 0 ;;
   *"/opt/backup/backup.sh"*)
+    sleep "${FAKE_BACKUP_SLEEP:-0}"
     [ "${FAKE_BACKUP_FAIL:-0}" = "1" ] && exit 1
     prefix=$(echo "$*" | sed -n 's/.*BACKUP_PREFIX=\([^ ]*\).*/\1/p')
     files_prefix=$(echo "$*" | sed -n 's/.*FILES_PREFIX=\([^ ]*\).*/\1/p')
@@ -28,7 +29,7 @@ case "$*" in
     (cd "$BACKUP_DIR" && sha256sum "${prefix}_$stamp.dump" > "${prefix}_$stamp.dump.sha256" && sha256sum "${files_prefix}_$stamp.tar.zst" > "${files_prefix}_$stamp.tar.zst.sha256")
     exit 0 ;;
   *"sh -c"*) all="$*"; command=${all#*sh -c }; eval "${command//\/backups/$BACKUP_DIR}" ;;
-  *"/opt/backup/status.sh"*) "$SCRIPTS/status.sh" ;;
+  *"/opt/backup/status.sh"*) [ "${FAKE_STATUS_FAIL:-0}" = "1" ] && exit 1; "$SCRIPTS/status.sh" ;;
 esac
 FAKE
 chmod +x "$work/fake-compose"
@@ -54,6 +55,23 @@ check "si el backup falla igual se vuelve a arrancar backend" "1" "$(grep -c '^s
 : > "$COMPOSE_LOG"
 check "si no se puede parar backend no se hace el backup" "1" "$(FAKE_STOP_FAIL=1 run_pre_release v1.2.5)"
 check "si no se puede parar backend no se llama al backup" "0" "$(grep -c 'backup.sh' "$COMPOSE_LOG")"
+check "si no se puede parar backend igual se intenta arrancarlo" "1" "$(grep -c '^start backend$' "$COMPOSE_LOG")"
+
+: > "$COMPOSE_LOG"
+check "si no se puede actualizar el estado final el pre-release falla" "1" "$(FAKE_STATUS_FAIL=1 run_pre_release v1.2.6)"
+check "aunque falle el estado final el backend ya se arranco" "1" "$(grep -c '^start backend$' "$COMPOSE_LOG")"
+check "una version de mas de 32 caracteres se rechaza" "2" "$(run_pre_release v1.2.3-aaaaaaaaaaaaaaaaaaaaaaaaaaaa)"
+
+: > "$COMPOSE_LOG"
+FAKE_BACKUP_SLEEP=30 "$scripts/pre-release.sh" v1.2.7 > "$work/output.log" 2>&1 &
+pre_release_pid=$!
+sleep 2
+kill -TERM "$pre_release_pid"
+wait "$pre_release_pid" 2> /dev/null
+interrupted_status=$?
+pkill -f "$work/fake-compose" 2> /dev/null; pkill -f "sleep 30" 2> /dev/null; sleep 1
+check "si llega SIGTERM durante el backup el backend se vuelve a arrancar" "1" "$(grep -c '^start backend$' "$COMPOSE_LOG")"
+check "tras SIGTERM el pre-release termina con error" "143" "$interrupted_status"
 
 rm -rf "$BACKUP_DIR"
 mkdir -p "$BACKUP_DIR"

@@ -98,7 +98,7 @@ jobs:
         run: bash deploy/backup/tests/dump-stream-test.sh
 
       - name: Install the JSON Schema validator for the backup status tests
-        run: python3 -m pip install --quiet jsonschema
+        run: python3 -m pip install --quiet jsonschema==4.26.0
 
       - name: Test the backup status file, the restore test and the pre-release backup
         run: |

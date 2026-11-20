@@ -54,7 +54,7 @@ archive_name=$(for candidate in "${FILES_PREFIX}_${stamp}.tar.zst" "${FILES_PREF
 [ -n "$archive_name" ] || fail_test RESTORE_FAILED
 
 integrity_only=false
-if [ "${dump_name##*.}" = "age" ] && { [ -z "${AGE_IDENTITY_FILE:-}" ] || [ ! -r "${AGE_IDENTITY_FILE:-}" ]; }; then
+if [ "${dump_name##*.}" = "age" ] || [ "${archive_name##*.}" = "age" ]; then
   integrity_only=true
 fi
 
@@ -78,19 +78,12 @@ fi
 work=$(mktemp -d "$BACKUP_DIR/.restore-test.XXXXXX") || fail_test RESTORE_FAILED
 dump_file="$BACKUP_DIR/$dump_name"
 archive_file="$BACKUP_DIR/$archive_name"
-decrypt() {
-  if [ "${archive_name##*.}" = "age" ]; then
-    age -d -i "$AGE_IDENTITY_FILE" "$1"
-  else
-    cat "$1"
-  fi
-}
-if [ "${dump_name##*.}" = "age" ]; then
-  age -d -i "$AGE_IDENTITY_FILE" -o "$work/dump" "$dump_file" || fail_test RESTORE_FAILED
-  dump_file="$work/dump"
-fi
 
-decrypt "$archive_file" | tar --zstd -tf - > /dev/null 2>&1 || fail_test RESTORE_FAILED
+tar --zstd -tf "$archive_file" > /dev/null 2>&1 || fail_test RESTORE_FAILED
+
+for leftover in $(psql -Atc "SELECT datname FROM pg_database WHERE datname LIKE 'restore\_test\_%'" 2> /dev/null); do
+  psql -Atc "DROP DATABASE IF EXISTS \"$leftover\"" > /dev/null 2>&1
+done
 
 scratch="restore_test_$(date -u +%s)_$$"
 psql -Atc "CREATE DATABASE \"$scratch\"" > /dev/null 2>&1 || fail_test RESTORE_FAILED

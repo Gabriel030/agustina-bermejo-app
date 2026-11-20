@@ -4,6 +4,8 @@ umask 077
 . /opt/backup/lib.sh
 
 DATA_DIR="${BACKUP_DATA_DIR:-/data}"
+scheduled_run=true
+[ "${BACKUP_SKIP_ROTATION:-false}" = "true" ] && scheduled_run=false
 export PGHOST="${PGHOST:-postgres}"
 export PGPORT="${PGPORT:-5432}"
 export PGUSER="${PGUSER:-postgres}"
@@ -24,10 +26,12 @@ verify_rc="${base}.verify-rc.partial"
 fail() {
   remove_files "$dump_tmp" "$files_tmp" "$tar_count" "$verify_rc" "$dump" "${dump}.sha256" "$files_archive" "${files_archive}.sha256" "${base}.meta"
   local previous
-  previous=$(cat "$METRICS_DIR/.last_success" 2> /dev/null || echo 0)
-  write_metrics 0 "$previous" 0
+  if [ "$scheduled_run" = "true" ]; then
+    previous=$(cat "$METRICS_DIR/.last_success" 2> /dev/null || echo 0)
+    write_metrics 0 "$previous" 0
+    bump_consecutive_failures
+  fi
   record_alert CRITICAL BACKUP_FAILED
-  bump_consecutive_failures
   notify "BACKUP FALLIDO: $1"
   refresh_status
   exit 1
@@ -120,16 +124,18 @@ files_size=$(wc -c < "$files_archive" | tr -d ' ')
 log "dump written: $(basename "$dump") ($size bytes); files archive: $(basename "$files_archive") ($files_size bytes, $files_count files)"
 
 now=$(date -u +%s)
-mkdir -p "$METRICS_DIR" 2> /dev/null && echo "$now" > "$METRICS_DIR/.last_success"
-reset_consecutive_failures
-write_metrics 1 "$now" "$size"
-append_files_metric "$files_size"
+if [ "$scheduled_run" = "true" ]; then
+  mkdir -p "$METRICS_DIR" 2> /dev/null && echo "$now" > "$METRICS_DIR/.last_success"
+  reset_consecutive_failures
+  write_metrics 1 "$now" "$size"
+  append_files_metric "$files_size"
+fi
 
 if s3_enabled; then
   upload_pair_to_s3 "$dump" "$files_archive" "${base}.meta" || notify "SUBIDA A S3 FALLIDA: el backup local de $stamp esta bien y se conserva"
 fi
 
-if [ "${BACKUP_SKIP_ROTATION:-false}" != "true" ]; then
+if [ "$scheduled_run" = "true" ]; then
   /opt/backup/rotate.sh || notify "la rotacion de backups fallo (el backup en si se hizo bien)"
 fi
 refresh_status

@@ -54,6 +54,14 @@ check "sin clave privada no se inventa un resultado de restauracion" "null" "$(l
 check "sin clave privada el estado se actualiza igual y cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
 check "sin clave privada el backup sano queda VERIFIED" "VERIFIED" "$(jq -r '.tiers[0].verification' "$status_json")"
 
+mkdir -p "$work/agebin"
+printf '#!/bin/sh\necho invocado >> "%s/age-invoked"\nexit 1\n' "$work" > "$work/agebin/age"
+chmod +x "$work/agebin/age"
+echo "AGE-SECRET-KEY-falsa" > "$work/identity.txt"
+check "aunque haya una clave privada disponible un backup cifrado no se descifra" "0" "$(PATH="$work/agebin:$PATH" AGE_IDENTITY_FILE="$work/identity.txt" run_restore_test)"
+check "con clave privada disponible no se invoca age" "0" "$(ls "$work/age-invoked" 2> /dev/null | wc -l | tr -d ' ')"
+check "con clave privada disponible tampoco se toca lastRestoreTest" "null" "$(last_restore)"
+
 stamp=$(ls "$BACKUP_DIR" | sed -n 's/^abdb_\(.*\)\.dump\.age$/\1/p' | head -1)
 echo extra >> "$BACKUP_DIR/abfiles_$stamp.tar.zst.age"
 check "un checksum roto en un backup cifrado sin clave falla" "1" "$(run_restore_test)"

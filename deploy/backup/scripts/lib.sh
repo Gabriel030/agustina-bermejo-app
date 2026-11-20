@@ -169,7 +169,7 @@ write_cron_env() {
   local target="$1" name
   : > "$target"
   chmod 600 "$target"
-  for name in $(compgen -e | grep -E '^(PG|BACKUP_|AGE_|ALERT_)|^TZ$'); do
+  for name in $(compgen -e | grep -E '^(PG|BACKUP_|AGE_|ALERT_)|^TZ$' | grep -v '^AGE_IDENTITY'); do
     printf 'export %s=%q\n' "$name" "${!name}" >> "$target"
   done
 }
@@ -210,7 +210,7 @@ record_alert() {
   local level="$1" code="$2"
   ensure_status_dir || return 0
   printf '%s %s %s\n' "$(iso_now)" "$level" "$code" >> "$STATUS_DIR/alerts.log"
-  tail -n 200 "$STATUS_DIR/alerts.log" > "$STATUS_DIR/.alerts.log.tmp" 2> /dev/null && mv -f "$STATUS_DIR/.alerts.log.tmp" "$STATUS_DIR/alerts.log"
+  tail -n 200 "$STATUS_DIR/alerts.log" > "$STATUS_DIR/.alerts.log.tmp.$$" 2> /dev/null && mv -f "$STATUS_DIR/.alerts.log.tmp.$$" "$STATUS_DIR/alerts.log"
 }
 
 bump_consecutive_failures() {
@@ -227,5 +227,5 @@ reset_consecutive_failures() {
 }
 
 refresh_status() {
-  /opt/backup/status.sh || log "no se pudo actualizar status.json"
+  env -u BACKUP_PREFIX -u FILES_PREFIX /opt/backup/status.sh || log "no se pudo actualizar status.json"
 }

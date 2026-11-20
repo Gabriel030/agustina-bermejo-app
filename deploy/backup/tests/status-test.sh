@@ -61,11 +61,14 @@ printf 'ran_at=2041-03-09T05:00:00Z\nresult=FAILED\nfailure_code=cualquier texto
 check "un codigo de falla fuera del esquema no se escribe nunca" "null" "$(jq -c '.lastRestoreTest' "$status_json")"
 rm -f "$BACKUP_DIR/status/restore-test" "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
 "$scripts/status.sh" > /dev/null
+"$scripts/status.sh" > /dev/null
+check "sin prueba de restauracion y con backups de mas de 14 dias se avisa" "WARNING RESTORE_TEST_FAILED" "$(jq -r '.alerts[] | select(.code=="RESTORE_TEST_FAILED") | "\(.level) \(.code)"' "$status_json")"
+rm -f "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
 printf 'ran_at=2041-03-09T05:00:00Z\nresult=PASSED\nfailure_code=\n' > "$BACKUP_DIR/status/restore-test"
 "$scripts/status.sh" > /dev/null
 check "la prueba de restauracion que paso se informa sin codigo de falla" "PASSED null" "$(jq -r '.lastRestoreTest | "\(.result) \(.failureCode)"' "$status_json")"
 check "con la prueba reciente el estado cumple el esquema" "" "$(validates)"
-check "el script no inventa alertas por una prueba de restauracion vieja o ausente" "0" "$(jq '[.alerts[] | select(.code=="RESTORE_TEST_FAILED")] | length' "$status_json")"
+check "con una prueba de restauracion reciente no se avisa" "0" "$(jq '[.alerts[] | select(.code=="RESTORE_TEST_FAILED")] | length' "$status_json")"
 rm -f "$BACKUP_DIR/status/restore-test" "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
 
 echo corrupto >> "$BACKUP_DIR/abfiles_20410310T080000Z.tar.zst"
@@ -73,6 +76,27 @@ echo corrupto >> "$BACKUP_DIR/abfiles_20410310T080000Z.tar.zst"
 check "un checksum que no coincide deja el nivel DAMAGED" "DAMAGED" "$(jq -r '.tiers[] | select(.tier=="INTRADAY") | .verification' "$status_json")"
 check "un backup danado genera la alerta BACKUP_DAMAGED" "1" "$(jq '[.alerts[] | select(.code=="BACKUP_DAMAGED")] | length' "$status_json")"
 check "con un backup danado el estado sigue cumpliendo el esquema" "" "$(validates)"
+
+rm -f "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
+echo corrupto >> "$BACKUP_DIR/abpre-v1.2.3_20410308T100000Z.dump"
+"$scripts/status.sh" > /dev/null
+check "un PRE_RELEASE con el checksum roto queda DAMAGED y cumple el esquema" "DAMAGED " "$(jq -r '.tiers[] | select(.tier=="PRE_RELEASE") | "\(.verification) \(.label | if . == "v1.2.3" then "" else . end)"' "$status_json")$(validates)"
+
+fake_df() {
+  mkdir -p "$work/dfbin"
+  printf '#!/bin/sh\nprintf "Filesystem 1024-blocks Used Available Capacity Mounted on\\nfake 1000000 %s %s 90%% /\\n"\n' "$(( 1000000 - $1 ))" "$1" > "$work/dfbin/df"
+  chmod +x "$work/dfbin/df"
+}
+rm -f "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
+fake_df 100000
+PATH="$work/dfbin:$PATH" "$scripts/status.sh" > /dev/null
+check "con menos del 15 por ciento libre se emite DISK_LOW y el estado cumple el esquema" "WARNING DISK_LOW " "$(jq -r '.alerts[] | select(.code=="DISK_LOW") | "\(.level) \(.code)"' "$status_json") $(validates)"
+rm -f "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
+fake_df 30000
+PATH="$work/dfbin:$PATH" "$scripts/status.sh" > /dev/null
+check "con menos del 5 por ciento libre se emite DISK_CRITICAL y el estado cumple el esquema" "CRITICAL DISK_CRITICAL " "$(jq -r '.alerts[] | select(.code=="DISK_CRITICAL") | "\(.level) \(.code)"' "$status_json") $(validates)"
+rm -f "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
+echo 700000 > /dev/null
 
 before=$(sha256sum "$status_json" | cut -d' ' -f1)
 fakebin="$work/fakebin"

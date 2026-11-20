@@ -62,6 +62,20 @@ sed -i 's/^person|150000$/person|1/' "$work"/backups/*.meta
 check "si los conteos del backup no coinciden la prueba falla" "1" "$(restore_env)"
 check "la falla de conteos se informa como COUNTS_MISMATCH" "FAILED COUNTS_MISMATCH" "$(jq -r '.lastRestoreTest | "\(.result) \(.failureCode)"' "$status_json")"
 sed -i 's/^person|1$/person|150000/' "$work"/backups/*.meta
+psql -Atc "CREATE DATABASE restore_test_orfana" > /dev/null
+restore_env > /dev/null
+check "la prueba de restauracion barre las bases descartables huerfanas" "0" "$(psql -Atc "SELECT count(*) FROM pg_database WHERE datname LIKE 'restore_test_%'")"
+
+tiers_before=$(jq -c '[.tiers[] | {tier, takenAt}]' "$status_json")
+last_success_before=$(cat "$work/metrics/.last_success")
+failures_before=$(jq '.consecutiveFailures' "$status_json")
+sleep 1
+BACKUP_PREFIX=abpre-v1.0.0 FILES_PREFIX=abprefiles-v1.0.0 BACKUP_SKIP_ROTATION=true run_backup > /dev/null
+check "un backup pre-release no cambia los niveles reales del estado" "$tiers_before" "$(jq -c '[.tiers[] | select(.tier != "PRE_RELEASE") | {tier, takenAt}]' "$status_json")"
+check "un backup pre-release aparece como PRE_RELEASE con su version" "v1.0.0" "$(jq -r '.tiers[] | select(.tier=="PRE_RELEASE") | .label' "$status_json")"
+check "un backup pre-release no toca .last_success ni las fallas consecutivas" "$last_success_before $failures_before" "$(cat "$work/metrics/.last_success") $(jq '.consecutiveFailures' "$status_json")"
+check "el estado con un pre-release cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
+rm -f "$work"/backups/abpre-* "$work"/backups/abprefiles-*
 check "el directorio de backups queda en 0700" "700" "$(stat -c %a "$work/backups")"
 check "todos los archivos quedan en 0600" "" "$(find "$work/backups" -maxdepth 1 -type f ! -perm 600)"
 check "el .meta marca el backup como best_effort" "consistency=best_effort" "$(grep '^consistency=' "$meta")"

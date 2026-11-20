@@ -9,6 +9,7 @@ KEEP_DAILY="${BACKUP_KEEP_DAILY:-7}"
 KEEP_WEEKLY="${BACKUP_KEEP_WEEKLY:-4}"
 KEEP_QUARTERLY="${BACKUP_KEEP_QUARTERLY:-0}"
 PRE_RELEASE_LIMIT=5
+RESTORE_TEST_MAX_DAYS="${BACKUP_RESTORE_TEST_MAX_DAYS:-14}"
 VERSION_PATTERN='v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?'
 
 tz_offset_seconds() {
@@ -80,6 +81,20 @@ check_disk_space() {
   fi
 }
 
+check_restore_test_age() {
+  local state="$STATUS_DIR/restore-test" oldest_stamp oldest_epoch last_epoch ran_at
+  [ -n "$complete_list" ] || return 0
+  oldest_stamp=$(stamp_of "$(printf '%s\n' "$complete_list" | head -n 1)")
+  oldest_epoch=$(date -u -d "$(iso_of_stamp "$oldest_stamp")" +%s 2> /dev/null) || return 0
+  [ $(( now_epoch - oldest_epoch )) -gt $(( RESTORE_TEST_MAX_DAYS * 86400 )) ] || return 0
+  ran_at=$(sed -n 's/^ran_at=//p' "$state" 2> /dev/null)
+  last_epoch=$(date -u -d "$ran_at" +%s 2> /dev/null) || last_epoch=0
+  if [ $(( now_epoch - last_epoch )) -gt $(( RESTORE_TEST_MAX_DAYS * 86400 )) ]; then
+    warn_once_per_day restore-stale "no hay una prueba de restauracion de los ultimos ${RESTORE_TEST_MAX_DAYS} dias"
+    alert_once_per_day restore-stale WARNING RESTORE_TEST_FAILED
+  fi
+}
+
 restore_test_json() {
   local state="$STATUS_DIR/restore-test" ran_at result code
   [ -f "$state" ] || { printf 'null'; return; }
@@ -100,16 +115,15 @@ restore_test_json() {
 }
 
 alerts_json() {
-  local first=true line
+  local first=true line at level code
   printf '['
   [ -f "$STATUS_DIR/alerts.log" ] || { printf ']'; return; }
   while IFS= read -r line; do
     if printf '%s' "$line" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z (WARNING|CRITICAL) (BACKUP_FAILED|BACKUP_STALE|BACKUP_DAMAGED|RESTORE_TEST_FAILED|DISK_LOW|DISK_CRITICAL|ENCRYPTION_DISABLED|DATA_DIR_EMPTY)$'; then
       $first || printf ','
       first=false
-      # shellcheck disable=SC2086
-      set -- $line
-      printf '{"at":"%s","level":"%s","code":"%s"}' "$1" "$2" "$3"
+      read -r at level code <<< "$line"
+      printf '{"at":"%s","level":"%s","code":"%s"}' "$at" "$level" "$code"
     fi
   done < <(tail -n 200 "$STATUS_DIR/alerts.log")
   printf ']'
@@ -143,6 +157,7 @@ if printf '%s' "$tiers_joined" | grep -q '"verification":"DAMAGED"'; then
   alert_once_per_day damaged CRITICAL BACKUP_DAMAGED
 fi
 check_disk_space
+check_restore_test_age
 
 last_complete=null
 [ -n "$complete_list" ] && last_complete="\"$(iso_of_stamp "$(stamp_of "$(printf '%s\n' "$complete_list" | tail -n 1)")")\""
