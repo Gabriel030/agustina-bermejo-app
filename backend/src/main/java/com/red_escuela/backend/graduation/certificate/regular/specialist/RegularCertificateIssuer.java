@@ -18,6 +18,7 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Concurre
 import com.red_escuela.backend.graduation.certificate.regular.exception.NotRegularException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateAlreadyIssuedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceInvalidException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceRequiredException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingNotConfirmedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StudentDocumentMissingException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StudentHasDebtException;
@@ -32,7 +33,6 @@ import com.red_escuela.backend.graduation.events.RegularCertificateRequestFulfil
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -64,7 +64,7 @@ public class RegularCertificateIssuer {
     private final ApplicationEventPublisher eventPublisher;
     private final MeterRegistry meterRegistry;
     private final Clock clock;
-    private final ValidityDays validityDays;
+    private final RegularCertificateSettingsFinder settingsFinder;
     private final SecureRandom random = new SecureRandom();
 
     public RegularCertificateIssuer(RegularStudentCertificateRepository certificateRepository,
@@ -75,7 +75,7 @@ public class RegularCertificateIssuer {
                                     CertificateVerificationUrl verificationUrl, CertificateDigest digest,
                                     CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher,
                                     MeterRegistry meterRegistry, Clock clock,
-                                    @Value("${app.certificate.regular.validity-days}") int validityDays) {
+                                    RegularCertificateSettingsFinder settingsFinder) {
         this.certificateRepository = certificateRepository;
         this.requestRepository = requestRepository;
         this.regularityEvaluator = regularityEvaluator;
@@ -90,11 +90,12 @@ public class RegularCertificateIssuer {
         this.eventPublisher = eventPublisher;
         this.meterRegistry = meterRegistry;
         this.clock = clock;
-        this.validityDays = new ValidityDays(validityDays);
+        this.settingsFinder = settingsFinder;
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
-            StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class})
+            StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class,
+            StandingEvidenceRequiredException.class})
     public RegularCertificateResponse issue(IssueRegularCertificateCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
         RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
@@ -108,7 +109,8 @@ public class RegularCertificateIssuer {
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
-            StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class})
+            StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class,
+            StandingEvidenceRequiredException.class})
     public RegularCertificateSubmissionResponse submitFromPortal(IssueRegularCertificateCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
         RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
@@ -177,7 +179,8 @@ public class RegularCertificateIssuer {
         try {
             return standingGate.resolve(studentId, command.kind(), command.enrollmentId(),
                     new StandingConfirmation(command.standingConfirmed(), command.standingEvidence()));
-        } catch (StudentHasDebtException | StandingNotConfirmedException | StandingEvidenceInvalidException e) {
+        } catch (StudentHasDebtException | StandingNotConfirmedException | StandingEvidenceInvalidException
+                 | StandingEvidenceRequiredException e) {
             recordRequest(command, studentId, actorId, now, RegularRequestOutcome.REJECTED, List.of(reasonCodeOf(e)));
             throw e;
         }
@@ -198,6 +201,7 @@ public class RegularCertificateIssuer {
         Long studentId = facts.student().getId();
         CertificateCode code = newUniqueCode();
         CertificateSnapshot snapshot = template.snapshotOf(facts, now.toLocalDate());
+        ValidityDays validityDays = settingsFinder.current().validityDays();
         LocalDateTime expiresAt = now.plusDays(validityDays.value());
         String url = verificationUrl.of(code);
         byte[] pdf = renderer.render(template.definitionFor(snapshot, expiresAt.toLocalDate()), snapshot, code, url);

@@ -3,6 +3,7 @@ package com.red_escuela.backend.graduation.certificate.regular.specialist;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.entity.StandingBasis;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceInvalidException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceRequiredException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingNotConfirmedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StudentHasDebtException;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
@@ -22,13 +23,16 @@ public class RegularStandingGate {
     private final OverdueDebtProbe overdueDebtProbe;
     private final CurrentActorFinder currentActorFinder;
     private final Clock clock;
+    private final RegularCertificateSettingsFinder settingsFinder;
 
     public RegularStandingGate(BillingModeGate billingModeGate, OverdueDebtProbe overdueDebtProbe,
-                               CurrentActorFinder currentActorFinder, Clock clock) {
+                               CurrentActorFinder currentActorFinder, Clock clock,
+                               RegularCertificateSettingsFinder settingsFinder) {
         this.billingModeGate = billingModeGate;
         this.overdueDebtProbe = overdueDebtProbe;
         this.currentActorFinder = currentActorFinder;
         this.clock = clock;
+        this.settingsFinder = settingsFinder;
     }
 
     public boolean requiresStaffConfirmation() {
@@ -57,6 +61,9 @@ public class RegularStandingGate {
         String trimmed = confirmation.evidence() == null ? "" : confirmation.evidence().trim();
         if (trimmed.length() > EVIDENCE_MAX_LENGTH) {
             throw new StandingEvidenceInvalidException();
+        }
+        if (trimmed.isEmpty() && settingsFinder.current().evidenceRequired()) {
+            throw new StandingEvidenceRequiredException();
         }
         String evidence = trimmed.isEmpty() ? null : trimmed;
         return new StandingResolution(StandingBasis.MANUALLY_CONFIRMED, mode, currentActorFinder.currentPersonId(),

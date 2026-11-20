@@ -9,6 +9,7 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityReas
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityVerdict;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateChannel;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateRequest;
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateSettings;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequestOutcome;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
@@ -84,10 +85,16 @@ class RegularCertificateIssuerTest {
             ACTOR_ID, NOW, "Recibo 1234 en el sistema contable");
     private final byte[] pdf = {1, 2, 3};
 
+    private RegularCertificateSettingsFinder settingsFinderOf(int validityDays) {
+        RegularCertificateSettingsFinder finder = mock(RegularCertificateSettingsFinder.class);
+        when(finder.current()).thenReturn(RegularCertificateSettings.of(validityDays, 7, false));
+        return finder;
+    }
+
     private RegularCertificateIssuer issuer(int validityDays) {
         return new RegularCertificateIssuer(certificateRepository, requestRepository, regularityEvaluator, standingGate,
                 factsFinder, template, renderer, fileStore, verificationUrl, new CertificateDigest(), currentActorFinder,
-                eventPublisher, new SimpleMeterRegistry(), clock, validityDays);
+                eventPublisher, new SimpleMeterRegistry(), clock, settingsFinderOf(validityDays));
     }
 
     @BeforeEach
@@ -181,9 +188,13 @@ class RegularCertificateIssuerTest {
     }
 
     @Test
-    void validityDaysOutOfRangeIsRejectedAtStartup() {
-        assertThatThrownBy(() -> issuer(0)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> issuer(366)).isInstanceOf(IllegalArgumentException.class);
+    void certificateStoresValidityDaysOfSettingsAtIssue() {
+        issuer(45).issue(command);
+
+        ArgumentCaptor<RegularStudentCertificate> saved = ArgumentCaptor.forClass(RegularStudentCertificate.class);
+        verify(certificateRepository).saveAndFlush(saved.capture());
+        assertThat(saved.getValue().getValidityDays()).isEqualTo(45);
+        assertThat(saved.getValue().getExpiresAt()).isEqualTo(NOW.plusDays(45));
     }
 
     @Test
@@ -276,7 +287,8 @@ class RegularCertificateIssuerTest {
 
         assertThat(transactional.noRollbackFor()).containsExactlyInAnyOrder(NotRegularException.class,
                 RegularCertificateAlreadyIssuedException.class, com.red_escuela.backend.graduation.certificate.regular.exception.StudentHasDebtException.class,
-                StandingNotConfirmedException.class, com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceInvalidException.class);
+                StandingNotConfirmedException.class, com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceInvalidException.class,
+                com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceRequiredException.class);
         assertThat(transactional.noRollbackFor()).doesNotContain(ConcurrentRegularCertificateIssueException.class);
     }
 

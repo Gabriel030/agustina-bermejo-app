@@ -215,6 +215,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SEGMENT_NOT_AVAILABLE_FOR_SECTION` | no | `SegmentNotAvailableForSectionException` | announcement |
 | `SLOT_OUTSIDE_SHIFT` | no | `SlotOutsideShiftException` | academicstructure |
 | `STANDING_EVIDENCE_INVALID` | no | `StandingEvidenceInvalidException` | graduation |
+| `STANDING_EVIDENCE_REQUIRED` | no | `StandingEvidenceRequiredException` | graduation |
 | `STANDING_NOT_CONFIRMED` | no | `StandingNotConfirmedException` | graduation |
 | `STUDENT_CURRENT_ACCOUNT_CURRENCY_MISMATCH` | no | `StudentCurrentAccountCurrencyMismatchException` | billing |
 | `STUDENT_NOT_ACTIVE` | no | `StudentNotActiveException` | identity |
