@@ -8,6 +8,10 @@ import { AudienceCounter } from './AudienceCounter';
 import { ENROLLMENT_STATUS_LABELS, EXCLUSION_REASON_LABELS, STAFF_ROLE_LABELS } from '../lib/broadcastWizard';
 import { useState } from 'react';
 
+function toggled(values, key) {
+  return values.includes(key) ? values.filter((value) => value !== key) : [...values, key];
+}
+
 export function AudienceStep({ state, onCriteria, catalogKeys, preview, previewState }) {
   const { criteria } = state;
   const [reasonFilter, setReasonFilter] = useState(null);
@@ -36,7 +40,7 @@ export function AudienceStep({ state, onCriteria, catalogKeys, preview, previewS
           <span className="text-size-13 font-semibold text-ink">Estado de cursada</span>
           <div role="group" aria-label="Estado de cursada" className="flex flex-wrap gap-2">
             {Object.entries(ENROLLMENT_STATUS_LABELS).map(([key, label]) => (
-              <ChoiceChip key={key} selected={criteria.statuses.includes(key)} onClick={() => onCriteria({ statuses: criteria.statuses.includes(key) ? [] : [key] })}>
+              <ChoiceChip key={key} selected={criteria.statuses.includes(key)} onClick={() => onCriteria({ statuses: toggled(criteria.statuses, key) })}>
                 {label}
               </ChoiceChip>
             ))}
@@ -47,7 +51,7 @@ export function AudienceStep({ state, onCriteria, catalogKeys, preview, previewS
             <span className="text-size-13 font-semibold text-ink">Personal</span>
             <div role="group" aria-label="Personal" className="flex flex-wrap gap-2">
               {Object.entries(STAFF_ROLE_LABELS).map(([key, label]) => (
-                <ChoiceChip key={key} selected={criteria.staffRoles.includes(key)} onClick={() => onCriteria({ staffRoles: criteria.staffRoles.includes(key) ? [] : [key] })}>
+                <ChoiceChip key={key} selected={criteria.staffRoles.includes(key)} onClick={() => onCriteria({ staffRoles: toggled(criteria.staffRoles, key) })}>
                   {label}
                 </ChoiceChip>
               ))}
@@ -60,15 +64,18 @@ export function AudienceStep({ state, onCriteria, catalogKeys, preview, previewS
             Con deuda vencida
           </label>
         )}
+        <p className="text-size-12 text-ink-faint">
+          Podés marcar varias en un mismo grupo (alcanza con una). Si marcás en los dos grupos, llega a quienes cumplan ambos.
+        </p>
       </GlassCard>
       <div className="flex flex-col gap-3">
         <AudienceCounter {...previewState} idle={previewState.idle} preview={preview} reasonFilter={reasonFilter} onReasonFilter={setReasonFilter} />
         {sample.length > 0 && (
           <GlassCard className="flex flex-col gap-2 p-4">
             {sample.map((row) => (
-              <div key={row.personId} className="flex items-center justify-between gap-2 text-size-13">
-                <span className="min-w-0 truncate font-semibold text-ink">{row.fullName}</span>
-                <span className="truncate text-ink-faint">{row.addressMasked}</span>
+              <div key={row.personId} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-size-13">
+                <span className="min-w-0 font-semibold break-words text-ink">{row.fullName}</span>
+                <span className="min-w-0 break-all text-ink-faint">{row.addressMasked}</span>
                 {row.exclusionReason && <StatusPill tone="warning">{EXCLUSION_REASON_LABELS[row.exclusionReason]}</StatusPill>}
               </div>
             ))}
