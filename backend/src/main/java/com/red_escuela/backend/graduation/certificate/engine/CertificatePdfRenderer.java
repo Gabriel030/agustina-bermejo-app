@@ -6,6 +6,8 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -31,6 +33,14 @@ public class CertificatePdfRenderer {
 
     public byte[] render(CertificateTemplateDefinition definition, CertificateSnapshot snapshot, CertificateCode code,
                          String verificationUrl) {
+        return render(definition, snapshot, code, verificationUrl, CertificateAssets.NONE);
+    }
+
+    public byte[] render(CertificateTemplateDefinition definition, CertificateSnapshot snapshot, CertificateCode code,
+                         String verificationUrl, CertificateAssets assets) {
+        if (BuiltInCertificateTemplate.BUILT_IN_V1.equals(definition.templateRef())) {
+            return renderApproval(snapshot, code, verificationUrl, assets);
+        }
         try (PDDocument document = new PDDocument(); InputStream fontStream = CertificatePdfRenderer.class.getResourceAsStream(FONT_RESOURCE)) {
             PDFont font = PDType0Font.load(document, fontStream, true);
             PDRectangle size = definition.pageFormat() == PageFormat.A4_LANDSCAPE
@@ -44,6 +54,28 @@ public class CertificatePdfRenderer {
                 drawSignatories(content, font, definition.signatoryRect(), snapshot);
                 drawQr(content, definition.qrRect(), verificationUrl);
                 drawCode(content, font, definition.codeRect(), code, verificationUrl);
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            document.save(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new UncheckedIOException("No se pudo generar el PDF del certificado", e);
+        }
+    }
+
+    private byte[] renderApproval(CertificateSnapshot snapshot, CertificateCode code, String verificationUrl,
+                                  CertificateAssets assets) {
+        try (PDDocument document = new PDDocument(); InputStream fontStream = CertificatePdfRenderer.class.getResourceAsStream(FONT_RESOURCE)) {
+            ApprovalCertificateDesign.Fonts fonts = new ApprovalCertificateDesign.Fonts(
+                    PDType0Font.load(document, fontStream, true),
+                    new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD),
+                    new PDType1Font(Standard14Fonts.FontName.TIMES_BOLD));
+            PDRectangle size = new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth());
+            PDPage page = new PDPage(size);
+            document.addPage(page);
+            try (PDPageContentStream content = new PDPageContentStream(document, page)) {
+                new ApprovalCertificateDesign().draw(document, content, size, fonts, snapshot, code, assets,
+                        (stream, rect) -> drawQr(stream, rect, verificationUrl));
             }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             document.save(out);
