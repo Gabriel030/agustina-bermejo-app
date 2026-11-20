@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
+scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts" && pwd)"
 . "$(dirname "${BASH_SOURCE[0]}")/lib-test.sh"
 use_scripts_as_opt_backup
 
@@ -21,16 +22,16 @@ head -c 200000 /dev/urandom > "$data/uploads/docs/comprobante.bin"
 echo "hola" > "$data/uploads/a.txt"
 
 run_backup() {
-  BACKUP_DIR="$work/backups" BACKUP_METRICS_DIR="$work/metrics" BACKUP_DATA_DIR="$data" "$scripts/backup.sh" "$@" 2>&1
+  BACKUP_DIR="$work/backups" BACKUP_METRICS_DIR="$work/metrics" BACKUP_DATA_DIR="$data" "$scripts/backup.sh" 2>&1
 }
-newest() { ls "$work/backups" 2> /dev/null | grep -E "$1" | sort | tail -1; }
+newest() { find "$work/backups" -maxdepth 1 -name "$1" -printf '%f\n' 2> /dev/null | sort | tail -1; }
 
 started=$(date +%s)
 output=$(run_backup)
 elapsed=$(( $(date +%s) - started ))
 status=$?
-dump=$(newest '^abdb_.*\.dump$')
-archive=$(newest '^abfiles_.*\.tar\.zst$')
+dump=$(newest 'abdb_*.dump')
+archive=$(newest 'abfiles_*.tar.zst')
 check "corrida sin cifrar: genera dump y archivo de /data con el mismo sello" \
   "$(echo "$dump" | sed -E 's/^abdb_(.*)\.dump$/\1/')" "$(echo "$archive" | sed -E 's/^abfiles_(.*)\.tar\.zst$/\1/')"
 check "corrida sin cifrar: los dos checksums verifican" "OK" "$(cd "$work/backups" && sha256sum -c --status "$dump.sha256" "$archive.sha256" && echo OK)"
@@ -50,10 +51,10 @@ age-keygen -o "$identity" 2> /dev/null
 recipient=$(age-keygen -y "$identity")
 rm -rf "$work/backups"
 AGE_RECIPIENT="$recipient" run_backup > /dev/null
-dump=$(newest '^abdb_.*\.dump\.age$')
-archive=$(newest '^abfiles_.*\.tar\.zst\.age$')
+dump=$(newest 'abdb_*.dump.age')
+archive=$(newest 'abfiles_*.tar.zst.age')
 check "con age: dump y archivo salen cifrados con su checksum" "OK" "$(cd "$work/backups" && sha256sum -c --status "$dump.sha256" "$archive.sha256" && echo OK)"
-check "con age: no quedan copias sin cifrar" "0" "$(ls "$work/backups" | grep -cE '\.(dump|tar\.zst)$')"
+check "con age: no quedan copias sin cifrar" "0" "$(find "$work/backups" -maxdepth 1 \( -name '*.dump' -o -name '*.tar.zst' \) | wc -l | tr -d ' ')"
 check "con age: el archivo descifrado conserva los archivos" "2" "$(age -d -i "$identity" "$work/backups/$archive" | tar --zstd -tf - | grep -cE 'a\.txt|comprobante\.bin')"
 
 rm -rf "$work/backups" "$work/metrics" "$work/empty"

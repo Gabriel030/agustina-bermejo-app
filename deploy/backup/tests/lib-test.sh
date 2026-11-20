@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-scripts="$here/../scripts"
 failures=0
 checks=0
 
@@ -10,7 +8,7 @@ use_scripts_as_opt_backup() {
     exit 2
   fi
   mkdir -p /opt 2> /dev/null || sudo mkdir -p /opt
-  ln -sfn "$scripts" /opt/backup 2> /dev/null || sudo ln -sfn "$scripts" /opt/backup
+  ln -sfn "${scripts:?}" /opt/backup 2> /dev/null || sudo ln -sfn "$scripts" /opt/backup
 }
 
 check() {

@@ -2,6 +2,8 @@
 set -uo pipefail
 . /opt/backup/lib.sh
 
+DATA_DIR="${BACKUP_DATA_DIR:-/data}"
+
 export PGHOST="${PGHOST:-postgres}"
 export PGPORT="${PGPORT:-5432}"
 export PGUSER="${PGUSER:-postgres}"

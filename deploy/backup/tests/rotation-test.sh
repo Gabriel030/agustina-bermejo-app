@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
+scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts" && pwd)"
 . "$(dirname "${BASH_SOURCE[0]}")/lib-test.sh"
 use_scripts_as_opt_backup
 
@@ -66,6 +67,6 @@ BACKUP_DIR="$work" BACKUP_METRICS_DIR="$work/m" BACKUP_NOW_EPOCH="$(epoch_of '20
   BACKUP_KEEP_DAILY=7 BACKUP_KEEP_WEEKLY=0 BACKUP_KEEP_QUARTERLY=0 "$scripts/rotate.sh" > /dev/null
 check "rotate.sh: el par vencido desaparece completo (dump, checksum, meta, archivo de /data y su checksum)" \
   "abdb_20410309T200000Z.dump abdb_20410309T200000Z.dump.sha256 abdb_20410309T200000Z.meta abdb_20410310T040000Z.dump.age abdb_20410310T040000Z.dump.age.sha256 abdb_20410310T040000Z.meta abdb_20410310T080000Z.dump.age abdb_20410310T080000Z.dump.age.sha256 abdb_20410310T080000Z.meta abfiles_20410309T200000Z.tar.zst abfiles_20410309T200000Z.tar.zst.sha256 abfiles_20410310T040000Z.tar.zst.age abfiles_20410310T040000Z.tar.zst.age.sha256 abfiles_20410310T080000Z.tar.zst.age abfiles_20410310T080000Z.tar.zst.age.sha256 " \
-  "$(ls "$work" | grep -v '^m$' | tr '\n' ' ')"
+  "$(find "$work" -maxdepth 1 -type f -printf '%f\n' | sort | tr '\n' ' ')"
 
 finish

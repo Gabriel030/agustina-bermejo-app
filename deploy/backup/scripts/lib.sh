@@ -5,7 +5,6 @@ METRICS_DIR="${BACKUP_METRICS_DIR:-/metrics}"
 ALERT_LABEL="${ALERT_LABEL:-agustina-bermejo}"
 BACKUP_PREFIX="${BACKUP_PREFIX:-abdb}"
 FILES_PREFIX="${FILES_PREFIX:-abfiles}"
-DATA_DIR="${BACKUP_DATA_DIR:-/data}"
 
 log() {
   printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"
