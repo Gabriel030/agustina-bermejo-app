@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
+import { backupStatusForPlatformAdmin } from '@/test/fixtures/backupStatus';
 
 const API = 'http://localhost:8080';
 
@@ -356,4 +357,5 @@ export const handlers = [
   http.post(`${API}/students/:id/refund-requests/preview`, () =>
     HttpResponse.json({ allowed: true, blockedBy: null, parts: [] }),
   ),
+  http.get(`${API}/backups/status`, () => HttpResponse.json(backupStatusForPlatformAdmin())),
 ];
