@@ -27,7 +27,7 @@ public class AuditLogController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @PreAuthorize("@permissionGate.allows(authentication, 'audit.read', 'ROLE_DIRECTOR')")
     public PageResponse<AuditLogView> listAuditLog(@RequestParam(required = false) List<AuditAction> action,
                                                    @RequestParam(required = false) AuditEntityType entityType,
                                                    @RequestParam(required = false) Long entityId,
