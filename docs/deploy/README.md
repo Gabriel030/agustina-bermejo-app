@@ -101,7 +101,7 @@ irreversibles hacia atrás, por eso se hace copia antes.
    ```bash
    dc exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > backup-$(date +%F-%H%M).dump
    ```
-   Guardarla fuera del servidor. (Los backups programados tienen su propio runbook.)
+   Guardarla fuera del servidor. (Los backups programados tienen su propio runbook: [backup-and-restore.md](backup-and-restore.md).)
 2. Anotar la versión actual para poder volver: `git rev-parse --short HEAD`.
 3. Traer y desplegar:
    ```bash
