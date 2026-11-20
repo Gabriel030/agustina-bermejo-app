@@ -8,11 +8,14 @@ import com.red_escuela.backend.notification.broadcast.specialist.UnsubscribeToke
 import com.red_escuela.backend.notification.broadcast.specialist.UnsubscribeTokenSigner;
 import com.red_escuela.backend.notification.broadcast.specialist.UnsubscribeTokenVerifier;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.mock.env.MockEnvironment;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -102,11 +105,11 @@ class UnsubscribeTokenTest {
 
     @Test
     void springUsesTheConstructorThatKnowsTheProfile() {
-        var autowired = java.util.Arrays.stream(UnsubscribeTokenSigner.class.getConstructors())
-                .filter(constructor -> constructor.isAnnotationPresent(org.springframework.beans.factory.annotation.Autowired.class))
+        var autowired = Arrays.stream(UnsubscribeTokenSigner.class.getConstructors())
+                .filter(constructor -> constructor.isAnnotationPresent(Autowired.class))
                 .toList();
 
         assertThat(autowired).hasSize(1);
-        assertThat(autowired.get(0).getParameterTypes()).containsExactly(String.class, String.class, org.springframework.core.env.Environment.class);
+        assertThat(autowired.get(0).getParameterTypes()).containsExactly(String.class, String.class, Environment.class);
     }
 }

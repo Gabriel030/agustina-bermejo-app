@@ -13,7 +13,7 @@ public final class TemplateRenderer {
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{\\{([^{}]*)}}");
 
-    private static final Pattern LINE_BREAKS = Pattern.compile("[\\r\\n]+");
+    private static final Pattern LINE_BREAKS = Pattern.compile("[\\r\\n\\u000B\\f\\u0085\\u2028\\u2029]+");
 
     private TemplateRenderer() {
     }
