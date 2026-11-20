@@ -4,7 +4,6 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertifi
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateSettingsFinder;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateSettingsFinder.RegularCertificateSettingsView;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class GetRegularCertificateSettingsService implements GetRegularCertificateSettingsUseCase {
@@ -16,7 +15,6 @@ public class GetRegularCertificateSettingsService implements GetRegularCertifica
     }
 
     @Override
-    @Transactional(readOnly = true)
     public RegularCertificateSettingsResponse get() {
         return RegularCertificateSettingsResponses.of(finder.currentView());
     }

@@ -4,6 +4,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCert
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateSettingsEntity;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateSettingsRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RegularCertificateSettingsFinder {
@@ -20,6 +21,7 @@ public class RegularCertificateSettingsFinder {
                 .orElse(RegularCertificateSettings.DEFAULT);
     }
 
+    @Transactional(readOnly = true)
     public RegularCertificateSettingsView currentView() {
         return repository.findById(RegularCertificateSettingsEntity.SINGLETON_ID)
                 .map(entity -> new RegularCertificateSettingsView(entity.toSettings(), entity.getVersion()))
