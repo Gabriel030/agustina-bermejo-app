@@ -52,6 +52,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class FrequentReadsQueryCountTest extends AbstractIntegrationTest {
     private static final int MANY = 50;
+    private static final int PAST_BATCH = 120;
+    private static final int MAX_NOTIFICATIONS_PAGE_SIZE = 100;
+    private static final int PROGRAM_ENROLLMENTS_PAST_BATCH_QUERIES = 4;
+    private static final int SECTIONS_PAST_BATCH_QUERIES = 2;
+    private static final int INSTRUCTORS_PAST_BATCH_QUERIES = 7;
+    private static final int NOTIFICATIONS_PAST_BATCH_QUERIES = 2;
     private static final int PROGRAM_ENROLLMENTS_BY_STUDENT_QUERIES = 2;
     private static final int SECTIONS_BY_SUBJECT_QUERIES = 2;
     private static final int SECTION_INSTRUCTORS_QUERIES = 3;
@@ -154,6 +160,84 @@ class FrequentReadsQueryCountTest extends AbstractIntegrationTest {
                 NOTIFICATIONS_QUERIES, () -> listMyNotificationsUseCase.list(recipient.getId(), 0, 100));
 
         assertThat(page.items()).hasSize(MANY);
+    }
+
+    @Test
+    void programEnrollmentsByStudentQueryCountPastTheBatchSizeGrowsOnlyByBatches() {
+        Student student = persistStudent(persistInstitution());
+        for (int i = 0; i < PAST_BATCH; i++) {
+            persistProgramEnrollment(student, persistProgram("Program " + i));
+        }
+        entityManager.flush();
+        entityManager.clear();
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken("director", null, "ROLE_DIRECTOR"));
+
+        List<ProgramEnrollmentResponse> responses = QueryCountAssertions.assertAtMostQueries(entityManagerFactory,
+                PROGRAM_ENROLLMENTS_PAST_BATCH_QUERIES,
+                () -> programEnrollmentController.listByStudent(student.getId()));
+
+        assertThat(responses).hasSize(PAST_BATCH);
+    }
+
+    @Test
+    void sectionsBySubjectQueryCountPastTheBatchSizeGrowsOnlyByBatches() {
+        Subject subject = persistSubject("Subject");
+        for (int i = 0; i < PAST_BATCH; i++) {
+            persistSection(subject, persistTerm(i), "Section " + i);
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        List<SubjectSectionResponse> responses = QueryCountAssertions.assertAtMostQueries(entityManagerFactory,
+                SECTIONS_PAST_BATCH_QUERIES,
+                () -> subjectSectionController.listBySubject(subject.getId(), null));
+
+        assertThat(responses).hasSize(PAST_BATCH);
+    }
+
+    @Test
+    void sectionInstructorsQueryCountPastTheBatchSizeGrowsOnlyByBatches() {
+        SubjectSection section = persistSection(persistSubject("Subject"), persistTerm(0), "Section");
+        for (int i = 0; i < PAST_BATCH; i++) {
+            Instructor instructor = new Instructor();
+            instructor.setPerson(persistPerson());
+            entityManager.persist(instructor);
+            SubjectSectionInstructor assignment = new SubjectSectionInstructor();
+            assignment.setSection(section);
+            assignment.setInstructor(instructor);
+            assignment.setRole(InstructorRole.LEAD);
+            entityManager.persist(assignment);
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        List<SectionInstructorResponse> responses = QueryCountAssertions.assertAtMostQueries(entityManagerFactory,
+                INSTRUCTORS_PAST_BATCH_QUERIES,
+                () -> subjectSectionController.listInstructors(section.getId()));
+
+        assertThat(responses).hasSize(PAST_BATCH);
+    }
+
+    @Test
+    void notificationsQueryCountPastTheBatchSizeGrowsOnlyByBatches() {
+        Person recipient = persistPerson();
+        for (int i = 0; i < PAST_BATCH; i++) {
+            Notification notification = new Notification();
+            notification.setRecipient(recipient);
+            notification.setType(NotificationType.values()[0]);
+            notification.setMessage("Message " + i);
+            notification.setCreatedAt(LocalDateTime.now());
+            entityManager.persist(notification);
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        PageResponse<NotificationResponse> page = QueryCountAssertions.assertAtMostQueries(entityManagerFactory,
+                NOTIFICATIONS_PAST_BATCH_QUERIES,
+                () -> listMyNotificationsUseCase.list(recipient.getId(), 0, 200));
+
+        assertThat(page.items()).hasSize(MAX_NOTIFICATIONS_PAGE_SIZE);
     }
 
     private Program persistProgram(String name) {

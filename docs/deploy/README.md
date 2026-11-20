@@ -59,6 +59,7 @@ Editar `deploy/.env`. Las que no se pueden dejar con el valor de ejemplo:
 | `BACKEND_BASE_URL` | `https://<dominio>/api` |
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32 \| tr -d '/+='` |
 | `JWT_SECRET` | `openssl rand -base64 48 \| tr -d '\n'` |
+| `BROADCAST_UNSUBSCRIBE_SECRET` | `openssl rand -base64 48 \| tr -d '\n'`, distinta de `JWT_SECRET`; sin ella el backend no arranca en prod ni en staging |
 | `BREVO_SMTP_USERNAME`, `BREVO_SMTP_KEY`, `MAIL_FROM_ADDRESS` | Los de Brevo |
 | `GOOGLE_OAUTH_CLIENT_ID` y `VITE_GOOGLE_CLIENT_ID` | El mismo Client ID en las dos |
 

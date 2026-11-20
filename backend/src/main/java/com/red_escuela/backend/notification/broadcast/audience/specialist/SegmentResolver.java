@@ -9,6 +9,7 @@ import com.red_escuela.backend.notification.broadcast.audience.exception.Segment
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,14 +35,10 @@ public class SegmentResolver {
 
     public Set<Long> resolvePersonIds(SegmentSpecRequest spec) {
         Set<Long> result = null;
-        for (SegmentCriterionRequest criterion : spec.criteria()) {
-            SegmentStrategy strategy = strategies.get(criterion.key());
-            if (strategy == null || !strategy.isAvailable()) {
-                throw new SegmentNotAvailableException(criterion.key());
-            }
-            Set<Long> matched = strategy.resolvePersonIds(criterion.value());
+        for (Map.Entry<SegmentKey, List<SegmentCriterionRequest>> group : groupByKey(spec.criteria()).entrySet()) {
+            Set<Long> matched = resolveGroup(group.getKey(), group.getValue());
             if (result == null) {
-                result = new HashSet<>(matched);
+                result = matched;
             } else if (spec.quantifier() == SegmentQuantifier.ALL) {
                 result.retainAll(matched);
             } else {
@@ -49,5 +46,19 @@ public class SegmentResolver {
             }
         }
         return result == null ? Set.of() : result;
+    }
+
+    private Map<SegmentKey, List<SegmentCriterionRequest>> groupByKey(List<SegmentCriterionRequest> criteria) {
+        return criteria.stream().collect(Collectors.groupingBy(SegmentCriterionRequest::key, LinkedHashMap::new, Collectors.toList()));
+    }
+
+    private Set<Long> resolveGroup(SegmentKey key, List<SegmentCriterionRequest> criteria) {
+        SegmentStrategy strategy = strategies.get(key);
+        if (strategy == null || !strategy.isAvailable()) {
+            throw new SegmentNotAvailableException(key);
+        }
+        Set<Long> united = new HashSet<>();
+        criteria.forEach(criterion -> united.addAll(strategy.resolvePersonIds(criterion.value())));
+        return united;
     }
 }

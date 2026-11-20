@@ -61,6 +61,22 @@ class ContactConsentLedgerRulesTest {
     @Test
     void institutionalAllowedWithoutRecord() {
         assertThat(ledger.isAllowed(PERSON_ID, ChannelType.EMAIL, BroadcastCategory.INSTITUTIONAL).allowed()).isTrue();
+    }
+
+    @Test
+    void whatsAppApiDeniedWithoutRecordInEveryCategory() {
+        for (BroadcastCategory category : BroadcastCategory.values()) {
+            var decision = ledger.isAllowed(PERSON_ID, ChannelType.WHATSAPP_API, category);
+
+            assertThat(decision.allowed()).isFalse();
+            assertThat(decision.denialReason()).isEqualTo(DenialReason.NO_CONSENT);
+        }
+    }
+
+    @Test
+    void whatsAppApiAllowedWithGrantedRecordFromAccountCreation() {
+        ledger.recordConsent(PERSON_ID, ConsentChannel.WHATSAPP, BroadcastCategory.INSTITUTIONAL, true, ConsentSource.ACCOUNT_CREATION, null);
+
         assertThat(ledger.isAllowed(PERSON_ID, ChannelType.WHATSAPP_API, BroadcastCategory.INSTITUTIONAL).allowed()).isTrue();
     }
 

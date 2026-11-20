@@ -142,6 +142,10 @@ public class ContactConsentLedger {
 
     private ConsentDecision decide(Long personId, ChannelType channel, BroadcastCategory category, Optional<ConsentStatus> status,
                                    Predicate<Long> newsletterOptedIn) {
+        if (channel == ChannelType.WHATSAPP_API) {
+            return status.map(recorded -> recorded == ConsentStatus.GRANTED ? ConsentDecision.permitted() : ConsentDecision.denied(DenialReason.OPTED_OUT))
+                    .orElseGet(() -> ConsentDecision.denied(DenialReason.NO_CONSENT));
+        }
         if (category == BroadcastCategory.INSTITUTIONAL) {
             return status.filter(ConsentStatus.REVOKED::equals).isPresent()
                     ? ConsentDecision.denied(DenialReason.OPTED_OUT)
