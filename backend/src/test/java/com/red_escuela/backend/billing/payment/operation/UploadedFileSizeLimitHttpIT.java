@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.payment.operation;
 
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
+import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -97,6 +97,7 @@ class UploadedFileSizeLimitHttpIT extends AbstractBankTransferReceiptHttpIT {
     }
 
     private int limitInBytes() {
+        assertThat(maxFileSize).isEqualTo(DataSize.ofMegabytes(5));
         return Math.toIntExact(maxFileSize.toBytes());
     }
 

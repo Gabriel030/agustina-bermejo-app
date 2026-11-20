@@ -154,6 +154,7 @@ class UploadedFileContentHttpIT extends AbstractBankTransferReceiptHttpIT {
                 .andExpect(status().isCreated())
                 .andReturn();
 
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("..").doesNotContain("evil");
         assertThat(filesStoredFor(debtor.studentId())).isEqualTo(1);
         Path studentDirectory = Path.of(uploadsDirectory).resolve("students").resolve(debtor.studentId().toString());
         try (Stream<Path> stored = Files.list(studentDirectory)) {
