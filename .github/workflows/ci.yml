@@ -97,6 +97,16 @@ jobs:
       - name: Test the backup dump streaming
         run: bash deploy/backup/tests/dump-stream-test.sh
 
+      - name: Install the JSON Schema validator for the backup status tests
+        run: python3 -m pip install --quiet jsonschema==4.26.0
+
+      - name: Test the backup status file, the restore test and the pre-release backup
+        run: |
+          bash deploy/backup/tests/status-test.sh
+          bash deploy/backup/tests/restore-test-test.sh
+          bash deploy/backup/tests/pre-release-test.sh
+          bash deploy/backup/tests/verify-restore-test.sh
+
       - name: Validate the compose files
         env:
           POSTGRES_PASSWORD: ci

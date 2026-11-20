@@ -1,6 +1,6 @@
 FROM alpine:3.20
 
-RUN apk add --no-cache postgresql16-client age rclone curl tzdata bash tar zstd
+RUN apk add --no-cache postgresql16-client age rclone curl tzdata bash tar zstd findutils coreutils
 
 COPY scripts/ /opt/backup/
 RUN chmod +x /opt/backup/*.sh

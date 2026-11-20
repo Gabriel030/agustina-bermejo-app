@@ -4,6 +4,8 @@ umask 077
 . /opt/backup/lib.sh
 
 DATA_DIR="${BACKUP_DATA_DIR:-/data}"
+scheduled_run=true
+[ "${BACKUP_SKIP_ROTATION:-false}" = "true" ] && scheduled_run=false
 export PGHOST="${PGHOST:-postgres}"
 export PGPORT="${PGPORT:-5432}"
 export PGUSER="${PGUSER:-postgres}"
@@ -24,11 +26,18 @@ verify_rc="${base}.verify-rc.partial"
 fail() {
   remove_files "$dump_tmp" "$files_tmp" "$tar_count" "$verify_rc" "$dump" "${dump}.sha256" "$files_archive" "${files_archive}.sha256" "${base}.meta"
   local previous
-  previous=$(cat "$METRICS_DIR/.last_success" 2> /dev/null || echo 0)
-  write_metrics 0 "$previous" 0
+  if [ "$scheduled_run" = "true" ]; then
+    previous=$(cat "$METRICS_DIR/.last_success" 2> /dev/null || echo 0)
+    write_metrics 0 "$previous" 0
+    bump_consecutive_failures
+  fi
+  record_alert CRITICAL BACKUP_FAILED
   notify "BACKUP FALLIDO: $1"
+  refresh_status
   exit 1
 }
+
+trap 'fail "interrumpido por una senal"' INT TERM HUP
 
 encrypt_sink() {
   if [ -n "${AGE_RECIPIENT:-}" ]; then
@@ -41,7 +50,13 @@ encrypt_sink() {
 mkdir -p "$BACKUP_DIR" || fail "no se puede escribir en $BACKUP_DIR"
 chmod 700 "$BACKUP_DIR" || fail "no se pueden fijar los permisos de $BACKUP_DIR"
 exec 9> "$BACKUP_DIR/.backup.lock"
-if ! flock -n 9; then
+lock_wait="${BACKUP_LOCK_WAIT_SECONDS:-0}"
+if [ "$lock_wait" -gt 0 ]; then
+  flock -w "$lock_wait" 9 || lock_failed=true
+else
+  flock -n 9 || lock_failed=true
+fi
+if [ "${lock_failed:-false}" = "true" ]; then
   log "otra corrida de backup sigue en curso: se omite esta"
   exit 0
 fi
@@ -59,7 +74,7 @@ wait_for_file "$verify_rc"
 
 migrations=$(psql -Atc "SELECT count(*) FROM flyway_schema_history WHERE success" 2> /dev/null) || fail "no se pudo leer flyway_schema_history"
 max_version=$(psql -Atc "SELECT coalesce(max(version::int), 0) FROM flyway_schema_history WHERE success AND version ~ '^[0-9]+\$'" 2> /dev/null || echo 0)
-counts=$(psql -At -F '|' -c "SELECT table_name, (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text::bigint FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1" 2> /dev/null) || fail "no se pudieron contar las tablas"
+counts=$(psql -At -F '|' -c "$TABLE_COUNTS_SQL" 2> /dev/null) || fail "no se pudieron contar las tablas"
 
 tar --zstd -C "$DATA_DIR" -cvf - . 2> >(count_files_in_tar_listing "$tar_count") | encrypt_sink "$files_tmp"
 tar_statuses=("${PIPESTATUS[@]}")
@@ -79,6 +94,7 @@ if [ "$files_count" -eq 0 ]; then
   if [ "${BACKUP_ALLOW_EMPTY_DATA:-false}" = "true" ]; then
     log "WARNING: $DATA_DIR esta vacio (BACKUP_ALLOW_EMPTY_DATA=true)"
   else
+    record_alert CRITICAL DATA_DIR_EMPTY
     fail "$DATA_DIR esta vacio: verificar que el volumen app_data este montado (BACKUP_ALLOW_EMPTY_DATA=true en una instalacion nueva)"
   fi
 fi
@@ -110,14 +126,20 @@ files_size=$(wc -c < "$files_archive" | tr -d ' ')
 log "dump written: $(basename "$dump") ($size bytes); files archive: $(basename "$files_archive") ($files_size bytes, $files_count files)"
 
 now=$(date -u +%s)
-mkdir -p "$METRICS_DIR" 2> /dev/null && echo "$now" > "$METRICS_DIR/.last_success"
-write_metrics 1 "$now" "$size"
-append_files_metric "$files_size"
+if [ "$scheduled_run" = "true" ]; then
+  mkdir -p "$METRICS_DIR" 2> /dev/null && echo "$now" > "$METRICS_DIR/.last_success"
+  reset_consecutive_failures
+  write_metrics 1 "$now" "$size"
+  append_files_metric "$files_size"
+fi
 
 if s3_enabled; then
   upload_pair_to_s3 "$dump" "$files_archive" "${base}.meta" || notify "SUBIDA A S3 FALLIDA: el backup local de $stamp esta bien y se conserva"
 fi
 
-/opt/backup/rotate.sh || notify "la rotacion de backups fallo (el backup en si se hizo bien)"
+if [ "$scheduled_run" = "true" ]; then
+  /opt/backup/rotate.sh || notify "la rotacion de backups fallo (el backup en si se hizo bien)"
+fi
+refresh_status
 ping_heartbeat
 log "backup finished"
