@@ -2,6 +2,13 @@ package com.red_escuela.backend.graduation.certificate.controller;
 
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.CourseSubject;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
@@ -124,6 +131,46 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
         return enrollment;
     }
 
+    private CourseEnrollment courseEnrollment(EnrollmentStatus moduleStatus) {
+        Institution institution = new Institution();
+        institution.setName("Instituto de prueba");
+        entityManager.persist(institution);
+        Student attendee = new Student();
+        attendee.setPerson(fixtures.person());
+        attendee.setInstitution(institution);
+        attendee.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
+        entityManager.persist(attendee);
+        Term term = fixtures.term(2020);
+        Course course = new Course();
+        course.setName("Curso de egreso");
+        course.setTerm(term);
+        entityManager.persist(course);
+        CourseSubject module = new CourseSubject();
+        module.setCourse(course);
+        module.setName("Modulo");
+        entityManager.persist(module);
+        CourseSubjectSection section = new CourseSubjectSection();
+        section.setName("Comision");
+        section.setCourseSubject(module);
+        section.setTerm(term);
+        section.setStatus(StatusType.ACTIVE);
+        entityManager.persist(section);
+        CourseEnrollment enrollment = new CourseEnrollment();
+        enrollment.setStudent(attendee);
+        enrollment.setCourse(course);
+        enrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
+        enrollment.setEnrollmentDate(LocalDateTime.now().minusYears(7));
+        entityManager.persist(enrollment);
+        CourseSubjectSectionEnrollment moduleEnrollment = new CourseSubjectSectionEnrollment();
+        moduleEnrollment.setStudent(attendee);
+        moduleEnrollment.setCourseEnrollment(enrollment);
+        moduleEnrollment.setCourseSubjectSection(section);
+        moduleEnrollment.setStatus(moduleStatus);
+        entityManager.persist(moduleEnrollment);
+        entityManager.flush();
+        return enrollment;
+    }
+
     private ResultActions send(MockHttpServletRequestBuilder request, String token) throws Exception {
         return mockMvc.perform(request.header("Authorization", "Bearer " + token));
     }
@@ -191,7 +238,7 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.results[0].certificate.status").value("VALID"))
                 .andExpect(jsonPath("$.results[0].certificate.holderDocumentNumber").isNotEmpty())
                 .andExpect(jsonPath("$.results[1].outcome").value("FAILED"))
-                .andExpect(jsonPath("$.results[1].errorCode").value("GRADUATION_CERTIFICATE_NOT_ELIGIBLE"))
+                .andExpect(jsonPath("$.results[1].errorCode").value("GRADUATION_CERTIFICATE_BLOCKED_BY_DEBT"))
                 .andExpect(jsonPath("$.results[1].certificate").doesNotExist())
                 .andExpect(jsonPath("$.results[2].outcome").value("ISSUED"));
         assertThat(repository.count()).isEqualTo(2);
@@ -253,5 +300,77 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
             postJson(BASE + "/preview", token, itemJson(1L)).andExpect(status().isForbidden());
             postJson(BASE + "/batch", token, batchJson(1L)).andExpect(status().isForbidden());
         }
+    }
+
+    @Test
+    void eligibleListsDebtorAsBlockedAndExcludesAlreadyIssued() throws Exception {
+        ProgramEnrollment pending = completedEnrollment();
+        ProgramEnrollment indebted = completedEnrollment();
+        ProgramEnrollment issued = completedEnrollment();
+        when(debtCheck.hasDebt(anyLong())).thenReturn(false);
+        when(debtCheck.hasDebt(indebted.getStudent().getId())).thenReturn(true);
+        issueAndReadCode(issued);
+        Long studentOfPending = pending.getStudent().getId();
+
+        MvcResult result = send(get(BASE + "/eligible").param("kind", "PROGRAM").param("size", "100"), administrative)
+                .andExpect(status().isOk()).andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        assertThat(JsonPath.<java.util.List<Integer>>read(body, "$.content[?(@.enrollmentId==" + issued.getId() + ")].enrollmentId")).isEmpty();
+        assertThat(JsonPath.<java.util.List<String>>read(body, "$.content[?(@.enrollmentId==" + indebted.getId() + ")].status"))
+                .containsExactly("BLOCKED_BY_DEBT");
+        assertThat(JsonPath.<java.util.List<String>>read(body, "$.content[?(@.studentId==" + studentOfPending + ")].status"))
+                .containsExactly("PENDING");
+        assertThat(JsonPath.<java.util.List<String>>read(body, "$.content[?(@.studentId==" + studentOfPending + ")].holderDocumentType"))
+                .containsExactly("DNI");
+    }
+
+    @Test
+    void eligibleFiltersByStatusAndQuery() throws Exception {
+        ProgramEnrollment pending = completedEnrollment();
+        ProgramEnrollment indebted = completedEnrollment();
+        when(debtCheck.hasDebt(anyLong())).thenReturn(false);
+        when(debtCheck.hasDebt(indebted.getStudent().getId())).thenReturn(true);
+
+        send(get(BASE + "/eligible").param("status", "BLOCKED_BY_DEBT").param("query", indebted.getStudent().getPerson().getDni()), director)
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].enrollmentId").value(indebted.getId()));
+        send(get(BASE + "/eligible").param("status", "PENDING").param("query", indebted.getStudent().getPerson().getDni()), director)
+                .andExpect(jsonPath("$.content.length()").value(0));
+        send(get(BASE + "/eligible").param("status", "PENDING").param("query", pending.getStudent().getPerson().getDni().toLowerCase()), director)
+                .andExpect(jsonPath("$.content.length()").value(1));
+    }
+
+    @Test
+    void eligibleExcludesCourseWithUnapprovedModuleAndListsApprovedOne() throws Exception {
+        CourseEnrollment approved = courseEnrollment(EnrollmentStatus.APPROVED);
+        CourseEnrollment failed = courseEnrollment(EnrollmentStatus.FAILED);
+        when(debtCheck.hasDebt(anyLong())).thenReturn(false);
+
+        MvcResult result = send(get(BASE + "/eligible").param("kind", "COURSE").param("size", "100"), director)
+                .andExpect(status().isOk()).andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        assertThat(JsonPath.<java.util.List<Integer>>read(body, "$.content[*].enrollmentId"))
+                .contains(approved.getId().intValue()).doesNotContain(failed.getId().intValue());
+        assertThat(JsonPath.<java.util.List<String>>read(body, "$.content[?(@.enrollmentId==" + approved.getId() + ")].kind"))
+                .containsExactly("COURSE");
+    }
+
+    @Test
+    void eligiblePaginationIsStableOverSixtyOneCandidates() throws Exception {
+        when(debtCheck.hasDebt(anyLong())).thenReturn(false);
+        java.util.Set<Integer> expected = new java.util.HashSet<>();
+        for (int i = 0; i < 61; i++) {
+            expected.add(completedEnrollment().getId().intValue());
+        }
+        java.util.List<Integer> collected = new java.util.ArrayList<>();
+        for (int page = 0; page < 3; page++) {
+            MvcResult result = send(get(BASE + "/eligible").param("kind", "PROGRAM").param("size", "25").param("page", String.valueOf(page)), director)
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(61)).andReturn();
+            collected.addAll(JsonPath.read(result.getResponse().getContentAsString(), "$.content[*].enrollmentId"));
+        }
+
+        assertThat(collected).hasSize(61).doesNotHaveDuplicates().containsExactlyInAnyOrderElementsOf(expected);
     }
 }

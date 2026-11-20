@@ -21,6 +21,35 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
         Long getProgramId();
     }
 
+    interface GraduationCandidateRow {
+        Long getEnrollmentId();
+
+        Long getStudentId();
+
+        String getLastname();
+
+        String getName();
+
+        com.red_escuela.backend.shared.domain.DocumentType getDocumentType();
+
+        String getDocumentNumber();
+
+        String getTitleName();
+    }
+
+    @Query("""
+            select e.id as enrollmentId, e.student.id as studentId, p.lastname as lastname, p.name as name,
+                   p.documentType as documentType, p.dni as documentNumber, e.program.name as titleName
+            from ProgramEnrollment e join e.student s join s.person p
+            where e.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.COMPLETED
+              and e.completionDate is not null
+              and (:pattern is null or lower(p.lastname) like :pattern or lower(p.name) like :pattern
+                   or lower(concat(p.lastname, ' ', p.name)) like :pattern or lower(concat(p.name, ' ', p.lastname)) like :pattern
+                   or p.dni like :pattern)
+            order by p.lastname, p.name, e.id
+            """)
+    List<GraduationCandidateRow> findGraduationCandidates(@Param("pattern") String pattern);
+
     @Query("select e.id as enrollmentId, e.program.id as programId from ProgramEnrollment e where e.id in :ids")
     List<ProgramIdOfEnrollment> findProgramIdsByIdIn(@Param("ids") Collection<Long> ids);
 

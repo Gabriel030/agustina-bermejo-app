@@ -17,6 +17,35 @@ import java.util.Optional;
 public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollment, Long> {
     boolean existsByStudentIdAndStatusIn(Long studentId, Collection<EnrollmentStatus> statuses);
 
+    interface GraduationCandidateRow {
+        Long getEnrollmentId();
+
+        Long getStudentId();
+
+        String getLastname();
+
+        String getName();
+
+        com.red_escuela.backend.shared.domain.DocumentType getDocumentType();
+
+        String getDocumentNumber();
+
+        String getTitleName();
+    }
+
+    @Query("""
+            select e.id as enrollmentId, e.student.id as studentId, p.lastname as lastname, p.name as name,
+                   p.documentType as documentType, p.dni as documentNumber, e.course.name as titleName
+            from CourseEnrollment e join e.student s join s.person p
+            where e.status not in :rejected
+              and (:pattern is null or lower(p.lastname) like :pattern or lower(p.name) like :pattern
+                   or lower(concat(p.lastname, ' ', p.name)) like :pattern or lower(concat(p.name, ' ', p.lastname)) like :pattern
+                   or p.dni like :pattern)
+            order by p.lastname, p.name, e.id
+            """)
+    List<GraduationCandidateRow> findGraduationCandidates(@Param("rejected") Collection<EnrollmentStatus> rejected,
+                                                          @Param("pattern") String pattern);
+
     List<CourseEnrollment> findByStudentId(Long studentId);
 
     @EntityGraph(attributePaths = {"student", "student.person", "course"})

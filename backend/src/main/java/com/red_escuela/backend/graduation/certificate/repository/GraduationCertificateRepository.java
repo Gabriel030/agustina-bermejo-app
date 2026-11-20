@@ -49,4 +49,10 @@ public interface GraduationCertificateRepository extends JpaRepository<Graduatio
     Page<GraduationCertificate> search(@Param("kind") String kind, @Param("status") String status,
                                        @Param("pattern") String pattern, @Param("issuedFrom") LocalDateTime issuedFrom,
                                        @Param("issuedBefore") LocalDateTime issuedBefore, Pageable pageable);
+
+    @Query("select c.programEnrollmentId from GraduationCertificate c where c.programEnrollmentId is not null and c.status = :status")
+    java.util.Set<Long> findProgramEnrollmentIdsByStatus(@Param("status") GraduationCertificateStatus status);
+
+    @Query("select c.courseEnrollmentId from GraduationCertificate c where c.courseEnrollmentId is not null and c.status = :status")
+    java.util.Set<Long> findCourseEnrollmentIdsByStatus(@Param("status") GraduationCertificateStatus status);
 }
