@@ -9,12 +9,17 @@ import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.billing.payment.domain.GatewayCheckout;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.repository.GatewayCheckoutRepository;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.math.BigDecimal;
@@ -44,8 +49,9 @@ class MercadoPagoCheckoutResolutionTest {
     private final MpWebhookSignatureVerifier verifier = Mockito.mock(MpWebhookSignatureVerifier.class);
     private final MercadoPagoWebhookRegistration registration = new MercadoPagoWebhookRegistration(port, fetcher, verifier);
     private final GatewayCheckoutRepository checkouts = Mockito.mock(GatewayCheckoutRepository.class);
+    private final AuditTrail auditTrail = Mockito.mock(AuditTrail.class);
     private final ApprovedPaymentRegistrationAdapter adapter =
-            new ApprovedPaymentRegistrationAdapter(null, null, null, null, null, checkouts);
+            new ApprovedPaymentRegistrationAdapter(null, null, null, null, null, checkouts, auditTrail);
 
     private void approvedPaymentWithReference() {
         when(fetcher.fetchApproved(MP_PAYMENT_ID)).thenReturn(Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(REFERENCE, PAID), 1)));
@@ -117,5 +123,72 @@ class MercadoPagoCheckoutResolutionTest {
                 checkout(PaymentGatewayCode.MERCADO_PAGO, ApplicationTime.now().plusHours(1))));
 
         assertThat(adapter.findMercadoPagoCheckout(REFERENCE).orElseThrow().expired()).isFalse();
+    }
+
+    @Test
+    void amountMismatchIsCreditedAndAudited() {
+        approvedPaymentWithReference();
+        Money expected = Money.of(new BigDecimal("1500.00"), Currency.ARS);
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, expected, false)));
+
+        registration.register("", "request", MP_PAYMENT_ID);
+
+        verify(port).registerApprovedMercadoPagoPayment(eq(77L), eq(PAID), eq(1), eq(null), eq(MP_PAYMENT_ID));
+        verify(port).recordMercadoPagoAmountMismatch(77L, expected, PAID, MP_PAYMENT_ID);
+        verify(port, never()).recordMercadoPagoExpiredCheckout(any(), anyString());
+    }
+
+    @Test
+    void matchingAmountOnALiveCheckoutIsNotAudited() {
+        approvedPaymentWithReference();
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, PAID, false)));
+
+        registration.register("", "request", MP_PAYMENT_ID);
+
+        verify(port, never()).recordMercadoPagoAmountMismatch(any(), any(), any(), anyString());
+        verify(port, never()).recordMercadoPagoExpiredCheckout(any(), anyString());
+    }
+
+    @Test
+    void expiredCheckoutIsCreditedAndAudited() {
+        approvedPaymentWithReference();
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(new MercadoPagoCheckoutMatch(77L, PAID, true)));
+
+        registration.register("", "request", MP_PAYMENT_ID);
+
+        verify(port).registerApprovedMercadoPagoPayment(eq(77L), eq(PAID), eq(1), eq(null), eq(MP_PAYMENT_ID));
+        verify(port).recordMercadoPagoExpiredCheckout(77L, MP_PAYMENT_ID);
+    }
+
+    @Test
+    void unmatchedPaymentIsAuditedAndNotCredited() {
+        approvedPaymentWithReference();
+        when(port.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.empty());
+
+        registration.register("", "request", MP_PAYMENT_ID);
+
+        verify(port).recordMercadoPagoUnmatchedPayment(MP_PAYMENT_ID, REFERENCE);
+        verify(port, never()).registerApprovedMercadoPagoPayment(any(), any(), any(), any(), anyString());
+    }
+
+    @Test
+    void auditRowsCarryTheInvoiceAndBothAmounts() {
+        adapter.recordMercadoPagoAmountMismatch(77L, Money.of(new BigDecimal("1500.00"), Currency.ARS), PAID, "123");
+
+        ArgumentCaptor<AuditRecord> captor = ArgumentCaptor.forClass(AuditRecord.class);
+        verify(auditTrail).record(captor.capture());
+        AuditRecord record = captor.getValue();
+        assertThat(record.action()).isEqualTo(AuditAction.GATEWAY_PAYMENT_AMOUNT_MISMATCH);
+        assertThat(record.entityType()).isEqualTo(AuditEntityType.INVOICE);
+        assertThat(record.entityId()).isEqualTo(77L);
+        assertThat(record.beforeValue()).isEqualTo("1500.00 ARS");
+        assertThat(record.afterValue()).isEqualTo("1200.00 ARS");
+    }
+
+    @Test
+    void unmatchedPaymentWithANonNumericGatewayIdWritesNoAuditRow() {
+        adapter.recordMercadoPagoUnmatchedPayment("mp-abc", REFERENCE);
+
+        Mockito.verifyNoInteractions(auditTrail);
     }
 }

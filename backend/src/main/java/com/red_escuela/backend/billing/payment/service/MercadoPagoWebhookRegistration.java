@@ -56,11 +56,22 @@ public class MercadoPagoWebhookRegistration {
         if (checkout.isEmpty()) {
             log.warn("Webhook de Mercado Pago sin checkout emitido, no se acredita: pagoMp={}, referencia={}",
                     LogSanitizer.sanitize(mpPaymentId), reportedAllocation.publicReference());
+            log.error("ALERTA_PASARELA tipo=PAGO_SIN_CHECKOUT pagoMp={} referencia={}", LogSanitizer.sanitize(mpPaymentId), reportedAllocation.publicReference());
+            registrationPort.recordMercadoPagoUnmatchedPayment(mpPaymentId, reportedAllocation.publicReference());
             return;
         }
         Long invoiceId = checkout.get().invoiceId();
         registrationPort.registerApprovedMercadoPagoPayment(invoiceId, reportedAllocation.amountApplied(),
                 approved.get().installments(), approved.get().cardType(), mpPaymentId);
+        if (!checkout.get().expectedAmount().equals(reportedAllocation.amountApplied())) {
+            log.error("ALERTA_PASARELA tipo=MONTO_DISTINTO pagoMp={} factura={} esperado={} cobrado={}", LogSanitizer.sanitize(mpPaymentId), invoiceId,
+                    checkout.get().expectedAmount(), reportedAllocation.amountApplied());
+            registrationPort.recordMercadoPagoAmountMismatch(invoiceId, checkout.get().expectedAmount(), reportedAllocation.amountApplied(), mpPaymentId);
+        }
+        if (checkout.get().expired()) {
+            log.error("ALERTA_PASARELA tipo=CHECKOUT_VENCIDO pagoMp={} factura={}", LogSanitizer.sanitize(mpPaymentId), invoiceId);
+            registrationPort.recordMercadoPagoExpiredCheckout(invoiceId, mpPaymentId);
+        }
         log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, invoiceId, reportedAllocation.amountApplied());
     }
 }
