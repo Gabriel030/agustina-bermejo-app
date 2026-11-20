@@ -28,7 +28,7 @@ export function AudienceCounter({ preview, isError, error, onRetry, recalculatin
   if (preview.total === 0) {
     return (
       <GlassCard className="p-5">
-        <EmptyState icon="👥" title="Sin destinatarios" description="Ningún alumno coincide con estos criterios." />
+        <EmptyState icon="👥" title="Sin destinatarios" description="Nadie coincide con estos criterios." />
       </GlassCard>
     );
   }
