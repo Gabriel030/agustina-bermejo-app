@@ -127,7 +127,7 @@ describe('StaffHome', () => {
   it.each(['FULL', 'OFF'])('administrativo does not request director-only endpoints with billing %s', async (billing) => {
     serve({ billing });
     const forbidden = [];
-    ['/financial-dashboard/debtors/page', '/financial-dashboard/debtors', '/financial-dashboard', '/director-approval-requests', '/authorization-requests'].forEach((path) =>
+    ['/financial-dashboard/debtors/page', '/financial-dashboard', '/director-approval-requests', '/authorization-requests'].forEach((path) =>
       server.use(
         http.get(`${API}${path}`, () => {
           forbidden.push(path);

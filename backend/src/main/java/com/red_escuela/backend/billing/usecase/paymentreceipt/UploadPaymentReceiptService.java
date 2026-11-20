@@ -18,6 +18,7 @@ public class UploadPaymentReceiptService implements UploadPaymentReceiptUseCase 
 
     @Override
     public BankTransferReceipt upload(Long invoiceId, Long studentId, MultipartFile comprobante) {
+        paymentReceiptPersister.assertUploadable(invoiceId, studentId);
         String filePath = fileStorageService.store(studentId, "comprobantes", comprobante);
         try {
             return paymentReceiptPersister.persist(invoiceId, studentId, filePath);

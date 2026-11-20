@@ -4,12 +4,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
 class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
@@ -132,6 +135,47 @@ class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
                 ownership.ownerTokenFor(OwnershipKind.SECTION_INSTRUCTOR));
 
         assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void owningTeacherConfirmsRealClosureWith204() throws Exception {
+        int status = mockMvc.perform(post("/program-sections/{id}/closure/confirm", ownership.closureConfirmSectionId())
+                .header("Authorization", "Bearer " + ownership.ownerTokenFor(OwnershipKind.SECTION_INSTRUCTOR)))
+                .andReturn().getResponse().getStatus();
+
+        assertThat(status).isEqualTo(204);
+    }
+
+    @Test
+    void strangerTeacherCannotConfirmRealClosure() throws Exception {
+        int status = mockMvc.perform(post("/program-sections/{id}/closure/confirm", ownership.closureConfirmSectionId())
+                .header("Authorization", "Bearer " + strangerTeacherToken()))
+                .andReturn().getResponse().getStatus();
+
+        assertThat(status).isEqualTo(404);
+    }
+
+    @Test
+    void owningTeacherRecordsObservationOnRealClosureWith204() throws Exception {
+        int status = observationStatus(ownership.ownerTokenFor(OwnershipKind.SECTION_INSTRUCTOR));
+
+        assertThat(status).isEqualTo(204);
+    }
+
+    @Test
+    void strangerTeacherCannotRecordObservationOnRealClosure() throws Exception {
+        int status = observationStatus(strangerTeacherToken());
+
+        assertThat(status).isEqualTo(404);
+    }
+
+    private int observationStatus(String token) throws Exception {
+        return mockMvc.perform(put("/program-sections/{id}/closure/students/{enrollmentId}/observation",
+                        ownership.closureObservationSectionId(), ownership.closureObservationEnrollmentId())
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"observation\":\"Observacion de prueba\"}"))
+                .andReturn().getResponse().getStatus();
     }
 
     @Test

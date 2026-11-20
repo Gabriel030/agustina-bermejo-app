@@ -52,6 +52,6 @@ function expectOk(response, label) {
 export function directorReads(data) {
   expectOk(http.get(`${baseUrl}/financial-dashboard`, authorized(data.token, 'financial_dashboard')), 'financial dashboard');
   expectOk(http.get(`${baseUrl}/students?page=0&size=50`, authorized(data.token, 'students')), 'students');
-  expectOk(http.get(`${baseUrl}/financial-dashboard/debtors?page=0&size=25`, authorized(data.token, 'debtors')), 'debtors');
+  expectOk(http.get(`${baseUrl}/financial-dashboard/debtors/page?page=0&size=25`, authorized(data.token, 'debtors')), 'debtors');
   sleep(thinkTimeSeconds * (0.5 + Math.random()));
 }

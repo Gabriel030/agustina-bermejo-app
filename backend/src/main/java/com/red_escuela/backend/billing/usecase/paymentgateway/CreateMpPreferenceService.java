@@ -14,6 +14,8 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
+import com.red_escuela.backend.billing.operation.GatewayCheckoutRecording;
+import com.red_escuela.backend.billing.operation.NewGatewayCheckout;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.gateway.PaymentGatewayRegistry;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -25,9 +27,11 @@ import org.springframework.beans.factory.annotation.Value;
 
 import com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @UseCase
 public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
@@ -35,6 +39,7 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
 
     private final InvoiceRepository invoiceRepository;
     private final PaymentGatewayRegistry gatewayRegistry;
+    private final GatewayCheckoutRecording gatewayCheckoutRecording;
     private final String accessToken;
     private final String frontendBaseUrl;
     private final String backendBaseUrl;
@@ -42,11 +47,13 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
     public CreateMpPreferenceService(
             InvoiceRepository invoiceRepository,
             PaymentGatewayRegistry gatewayRegistry,
+            GatewayCheckoutRecording gatewayCheckoutRecording,
             @Value("${mercadopago.access-token:}") String accessToken,
             @Value("${app.frontend.base-url:http://localhost:5173}") String frontendBaseUrl,
             @Value("${app.backend.base-url:http://localhost:8080}") String backendBaseUrl) {
         this.invoiceRepository = invoiceRepository;
         this.gatewayRegistry = gatewayRegistry;
+        this.gatewayCheckoutRecording = gatewayCheckoutRecording;
         this.accessToken = accessToken;
         this.frontendBaseUrl = frontendBaseUrl;
         this.backendBaseUrl = backendBaseUrl;
@@ -75,7 +82,9 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
             throw new GatewayCurrencyNotSupportedException(invoiceId, invoice.currency());
         }
         gatewayRegistry.findGatewayByCode(PaymentGatewayCode.MERCADO_PAGO);
-        BigDecimal amount = invoice.getAmounts().outstandingAmount().value().amount();
+        NonNegativeMoney outstanding = invoice.getAmounts().outstandingAmount();
+        BigDecimal amount = outstanding.value().amount();
+        UUID publicReference = UUID.randomUUID();
         String title = invoice.getFeeType().name() + " " + invoice.getPeriod();
 
         PreferenceRequest request = PreferenceRequest.builder()
@@ -85,7 +94,7 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
                         .unitPrice(amount)
                         .currencyId("ARS")
                         .build()))
-                .externalReference(String.valueOf(invoiceId))
+                .externalReference(publicReference.toString())
                 .backUrls(PreferenceBackUrlsRequest.builder()
                         .success(frontendBaseUrl + "/alumno/pagos/estado?status=success&invoiceId=" + invoiceId)
                         .failure(frontendBaseUrl + "/alumno/pagos/estado?status=failure&invoiceId=" + invoiceId)
@@ -96,9 +105,12 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
 
         try {
             Preference preference = new PreferenceClient().create(request);
-            log.info("Preferencia de Mercado Pago creada: preferencia={}, factura={}, monto={}", preference.getId(), invoiceId, amount);
-            return new MpPreferenceResponse(preference.getId(), preference.getInitPoint());
-        } catch (MPException | MPApiException e) {
+            String preferenceId = preference.getId();
+            gatewayCheckoutRecording.recordMercadoPagoCheckout(new NewGatewayCheckout(
+                    publicReference, invoiceId, outstanding, preferenceId));
+            log.info("Preferencia de Mercado Pago creada: preferencia={}, factura={}, monto={}", preferenceId, invoiceId, amount);
+            return new MpPreferenceResponse(preferenceId, preference.getInitPoint());
+        } catch (MPException | MPApiException | RuntimeException e) {
             log.error("Falló la creación de la preferencia de Mercado Pago: factura={}", invoiceId, e);
             throw new MercadoPagoGatewayException("Error al crear preferencia de pago", e);
         }

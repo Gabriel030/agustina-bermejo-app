@@ -14,7 +14,11 @@ enum OwnershipKind {
     EXAM_BOARD_TRIBUNAL("exam-board-tribunal", MatrixRole.DOCENTE, 404),
     INVOICE("invoice", MatrixRole.ALUMNO, 404),
     NOTIFICATION("notification", MatrixRole.ALUMNO, 404),
-    SESSION("session", MatrixRole.ALUMNO, 404);
+    SESSION("session", MatrixRole.ALUMNO, 404),
+    SECTION_ENROLLMENT_INSTRUCTOR("section-enrollment-instructor", MatrixRole.DOCENTE, 404),
+    COURSE_SECTION_ENROLLMENT_INSTRUCTOR("course-section-enrollment-instructor", MatrixRole.DOCENTE, 404),
+    COURSE_SECTION_INSTRUCTOR("course-section-instructor", MatrixRole.DOCENTE, 404),
+    AUTHORIZATION_REQUEST("authorization-request", MatrixRole.ADMINISTRATIVO, 404);
 
     private final String label;
     private final MatrixRole ownerRole;

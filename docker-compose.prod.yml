@@ -43,6 +43,7 @@ services:
       JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
     volumes:
       - app_data:/data
+      - ${BACKUP_STATUS_DIR:-./deploy/backup/status}:/backup-status:ro
     depends_on:
       postgres:
         condition: service_healthy

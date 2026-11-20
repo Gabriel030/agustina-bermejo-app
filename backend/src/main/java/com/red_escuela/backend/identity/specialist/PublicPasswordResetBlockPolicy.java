@@ -17,10 +17,13 @@ public class PublicPasswordResetBlockPolicy {
         this.contactChangeRecorder = contactChangeRecorder;
     }
 
-    public boolean blocks(Person person) {
-        boolean changeInFlight = tokenRepository.existsByPersonAndNewEmailIsNotNull(person)
+    public boolean emailChangeInFlight(Person person) {
+        return tokenRepository.existsByPersonAndNewEmailIsNotNull(person)
                 || contactChangeRecorder.hasRecentEmailChange(person.getId());
-        return changeInFlight && !changeStartedByOwner(person);
+    }
+
+    public boolean blocks(Person person) {
+        return emailChangeInFlight(person) && !changeStartedByOwner(person);
     }
 
     public void requireNotBlocked(Person person) {
