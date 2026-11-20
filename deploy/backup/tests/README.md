@@ -5,7 +5,16 @@
 ```
 deploy/backup/tests/rotation-test.sh
 deploy/backup/tests/dump-stream-test.sh
+deploy/backup/tests/status-test.sh
+deploy/backup/tests/restore-test-test.sh
+deploy/backup/tests/pre-release-test.sh
 ```
+
+Los tres últimos necesitan `jq` y `python3` con `jsonschema` (`python3 -m pip install jsonschema`).
+
+- `status-test.sh`: `status.json` contra `docs/deploy/backup-status.schema.json`, niveles, etiquetas, alertas con códigos cerrados, escritura atómica y lector concurrente.
+- `restore-test-test.sh`: la prueba de restauración falla con código cerrado (`CHECKSUM_MISMATCH`, `RESTORE_FAILED`) y deja el estado y la alerta; un backup cifrado sin clave privada no inventa un resultado.
+- `pre-release-test.sh`: `pre-release.sh` con un `docker compose` falso: orden (parar backend, backup, comprobar, arrancar backend, estado), backend siempre reiniciado y un pre-release que la rotación nunca borra.
 
 `dump-stream-test.sh` fija que el verificador de `pg_restore --list` drena todo el stream (un verificador que sale
 temprano no puede matar a `pg_dump` con SIGPIPE) y cubre el conteo de archivos del tar.
@@ -64,3 +73,17 @@ for dump in abdb_*.dump abdb_*.dump.age; do
   rm -v -- "$dump" "$dump.sha256" "abdb_$stamp.meta"
 done
 ```
+
+## Backup pre-release y prueba de restauración
+
+```
+deploy/backup/scripts/pre-release.sh v1.2.3
+```
+
+Desde la raíz del repo: para el backend, hace un backup etiquetado (`abpre-v1.2.3_<TS>.dump` y `abprefiles-v1.2.3_<TS>.tar.zst`, fuera de la rotación; la versión solo puede ser
+`vX.Y.Z` o `X.Y.Z[-sufijo]`, nunca texto libre), vuelve a arrancar el backend (aunque el backup falle) y actualiza `status.json`.
+`COMPOSE_CMD` cambia el comando de compose.
+
+La prueba de restauración semanal (`restore-test.sh`, domingo 05:00, `BACKUP_RESTORE_TEST_SCHEDULE`) restaura el último par completo en una base
+descartable del mismo servidor y compara migraciones y conteos con el `.meta`. Con backups cifrados necesita `AGE_IDENTITY_FILE`; sin él solo verifica los
+checksums y no actualiza el resultado (el simulacro completo con la clave privada se hace con `deploy/backup/verify-restore.sh` en otra máquina).

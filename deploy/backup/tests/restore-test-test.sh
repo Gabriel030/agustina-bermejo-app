@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -uo pipefail
+scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+schema="$here/../../../docs/deploy/backup-status.schema.json"
+. "$here/lib-test.sh"
+use_scripts_as_opt_backup
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+export BACKUP_DIR="$work/backups" BACKUP_METRICS_DIR="$work/metrics" PGHOST=127.0.0.1 PGPORT=1 PGUSER=postgres PGPASSWORD=x PGDATABASE=postgres
+status_json="$BACKUP_DIR/status/status.json"
+
+fresh_dir() {
+  rm -rf "$BACKUP_DIR" "$BACKUP_METRICS_DIR"
+  mkdir -p "$BACKUP_DIR"
+}
+add_pair() {
+  local stamp="$1" suffix="${2:-}" source_dir="$work/source"
+  mkdir -p "$source_dir"
+  echo "contenido" > "$source_dir/a.txt"
+  head -c 3000 /dev/urandom > "$BACKUP_DIR/abdb_$stamp.dump$suffix"
+  tar --zstd -C "$source_dir" -cf "$BACKUP_DIR/abfiles_$stamp.tar.zst$suffix" .
+  (cd "$BACKUP_DIR" && sha256sum "abdb_$stamp.dump$suffix" > "abdb_$stamp.dump$suffix.sha256" && sha256sum "abfiles_$stamp.tar.zst$suffix" > "abfiles_$stamp.tar.zst$suffix.sha256")
+  printf 'created_at=%s\nmigrations_count=1\n[tables]\n' "$stamp" > "$BACKUP_DIR/abdb_$stamp.meta"
+}
+run_restore_test() { "$scripts/restore-test.sh" > "$work/output.log" 2>&1; echo $?; }
+last_restore() { jq -r '.lastRestoreTest | if . == null then "null" else "\(.result) \(.failureCode)" end' "$status_json"; }
+
+fresh_dir
+add_pair "$(date -u +%Y%m%dT%H%M%SZ)"
+echo extra >> "$BACKUP_DIR/abfiles_$(ls "$BACKUP_DIR" | sed -n 's/^abfiles_\(.*\)\.tar\.zst$/\1/p' | head -1).tar.zst"
+check "con el archivo de /data alterado la prueba falla" "1" "$(run_restore_test)"
+check "la falla por checksum se informa con su codigo cerrado" "FAILED CHECKSUM_MISMATCH" "$(last_restore)"
+check "la falla de la prueba genera la alerta RESTORE_TEST_FAILED" "CRITICAL" "$(jq -r '.alerts[] | select(.code=="RESTORE_TEST_FAILED") | .level' "$status_json")"
+check "la falla se avisa por los canales de alerta" "1" "$(grep -c 'PRUEBA DE RESTAURACION FALLIDA (CHECKSUM_MISMATCH)' "$work/output.log")"
+check "el estado tras la falla cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
+
+fresh_dir
+add_pair "$(date -u +%Y%m%dT%H%M%SZ)"
+check "con checksums sanos pero sin base alcanzable la prueba falla" "1" "$(run_restore_test)"
+check "la falla de restauracion se informa como RESTORE_FAILED" "FAILED RESTORE_FAILED" "$(last_restore)"
+check "no queda ninguna carpeta temporal de la prueba" "0" "$(find "$BACKUP_DIR" -maxdepth 1 -name '.restore-test.*' | wc -l | tr -d ' ')"
+
+fresh_dir
+check "sin ningun backup la prueba falla" "1" "$(run_restore_test)"
+check "sin backups se informa RESTORE_FAILED" "FAILED RESTORE_FAILED" "$(last_restore)"
+
+fresh_dir
+add_pair "$(date -u +%Y%m%dT%H%M%SZ)" .age
+check "un backup cifrado sin clave privada no es un error" "0" "$(run_restore_test)"
+check "sin clave privada se avisa que solo se verificaron los checksums" "1" "$(grep -c 'solo se verificaron los checksums' "$work/output.log")"
+check "sin clave privada no se inventa un resultado de restauracion" "0" "$(ls "$BACKUP_DIR/status/restore-test" 2> /dev/null | wc -l | tr -d ' ')"
+
+finish

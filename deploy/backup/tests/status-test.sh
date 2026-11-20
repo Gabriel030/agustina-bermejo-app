@@ -59,7 +59,16 @@ check "las fallas consecutivas salen del contador" "3" "$(jq '.consecutiveFailur
 printf 'ran_at=2041-03-09T05:00:00Z\nresult=FAILED\nfailure_code=cualquier texto libre\n' > "$BACKUP_DIR/status/restore-test"
 "$scripts/status.sh" > /dev/null
 check "un codigo de falla fuera del esquema no se escribe nunca" "null" "$(jq -c '.lastRestoreTest' "$status_json")"
-rm -f "$BACKUP_DIR/status/restore-test"
+rm -f "$BACKUP_DIR/status/restore-test" "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
+"$scripts/status.sh" > /dev/null
+check "sin prueba de restauracion y con backups de mas de 14 dias se avisa" "WARNING RESTORE_TEST_FAILED" "$(jq -r '.alerts[] | select(.code=="RESTORE_TEST_FAILED") | "\(.level) \(.code)"' "$status_json")"
+printf 'ran_at=2041-03-09T05:00:00Z\nresult=PASSED\nfailure_code=\n' > "$BACKUP_DIR/status/restore-test"
+rm -f "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
+"$scripts/status.sh" > /dev/null
+check "con una prueba de restauracion reciente no se avisa" "0" "$(jq '[.alerts[] | select(.code=="RESTORE_TEST_FAILED")] | length' "$status_json")"
+check "la prueba de restauracion que paso se informa sin codigo de falla" "PASSED null" "$(jq -r '.lastRestoreTest | "\(.result) \(.failureCode)"' "$status_json")"
+check "con la prueba reciente el estado cumple el esquema" "" "$(validates)"
+rm -f "$BACKUP_DIR/status/restore-test" "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
 
 echo corrupto >> "$BACKUP_DIR/abfiles_20410310T080000Z.tar.zst"
 "$scripts/status.sh" > /dev/null
