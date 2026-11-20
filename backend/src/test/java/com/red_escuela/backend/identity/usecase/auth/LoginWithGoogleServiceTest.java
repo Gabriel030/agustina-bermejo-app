@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -147,19 +148,20 @@ class LoginWithGoogleServiceTest {
         when(authTokenIssuer.issueTokens(person)).thenReturn(tokens);
 
         assertThat(service.login(ID_TOKEN)).isSameAs(tokens);
+        verify(blockPolicy, never()).blocks(any());
     }
 
     @Test
     void rejectionLooksLikeInvalidCredentials() {
         Person unverified = personFoundByEmail(false);
-        Throwable unverifiedRejection = org.assertj.core.api.Assertions.catchThrowable(() -> service.login(ID_TOKEN));
+        Throwable unverifiedRejection = catchThrowable(() -> service.login(ID_TOKEN));
         Person blocked = personFoundByEmail(true);
         when(blockPolicy.blocks(blocked)).thenReturn(true);
-        Throwable blockedRejection = org.assertj.core.api.Assertions.catchThrowable(() -> service.login(ID_TOKEN));
+        Throwable blockedRejection = catchThrowable(() -> service.login(ID_TOKEN));
 
         assertThat(unverifiedRejection).isExactlyInstanceOf(InvalidCredentialsException.class);
-        assertThat(blockedRejection).isExactlyInstanceOf(InvalidCredentialsException.class)
-                .hasMessage(unverifiedRejection.getMessage());
+        assertThat(blockedRejection).isExactlyInstanceOf(InvalidCredentialsException.class);
+        assertThat(blockedRejection.getClass()).isEqualTo(unverifiedRejection.getClass());
         assertThat(unverified.getGoogleSubjectId()).isNull();
     }
 }
