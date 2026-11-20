@@ -18,7 +18,7 @@ import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreference
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardUseCase;
-import com.red_escuela.backend.billing.usecase.dashboard.ListDebtorsUseCase;
+import com.red_escuela.backend.billing.reporting.service.DebtorListingReader;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -67,7 +67,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     private GetFinancialDashboardUseCase getFinancialDashboardUseCase;
 
     @Autowired
-    private ListDebtorsUseCase listDebtorsUseCase;
+    private DebtorListingReader debtorListingReader;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -221,7 +221,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
 
         assertThat(totalsOf(after, Currency.ARS).totalDebt().minus(totalsOf(before, Currency.ARS).totalDebt())).isEqualTo(ars(10000));
         assertThat(totalsOf(after, Currency.USD).totalDebt().minus(totalsOf(before, Currency.USD).totalDebt())).isEqualTo(usd(100));
-        List<DebtorSummaryResponse> debtRows = listDebtorsUseCase.list("DEBT_AMOUNT").stream()
+        List<DebtorSummaryResponse> debtRows = debtorListingReader.listDebtors("DEBT_AMOUNT").stream()
                 .filter(row -> row.studentId().equals(student.getId()))
                 .toList();
         assertThat(debtRows).extracting(DebtorSummaryResponse::totalDebt).containsExactlyInAnyOrder(ars(10000), usd(100));
