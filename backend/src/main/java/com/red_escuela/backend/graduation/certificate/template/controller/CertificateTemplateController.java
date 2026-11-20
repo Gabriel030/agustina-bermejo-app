@@ -11,6 +11,7 @@ import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTe
 import com.red_escuela.backend.graduation.certificate.template.dto.PreviewCertificateTemplateRequest;
 import com.red_escuela.backend.graduation.certificate.template.dto.SaveCertificateTemplateDraftRequest;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplateImagePurpose;
+import com.red_escuela.backend.graduation.certificate.template.usecase.DiscardCertificateTemplateDraftUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.GetCertificateTemplateImageUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.GetCertificateTemplateUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.GetCertificateTemplateVersionUseCase;
@@ -26,6 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,6 +55,7 @@ public class CertificateTemplateController {
     private final UploadCertificateTemplateImageUseCase uploadImageUseCase;
     private final GetCertificateTemplateImageUseCase getImageUseCase;
     private final PreviewCertificateTemplateUseCase previewUseCase;
+    private final DiscardCertificateTemplateDraftUseCase discardDraftUseCase;
 
     public CertificateTemplateController(GetCertificateTemplateUseCase getUseCase,
                                          ListCertificateTemplateVersionsUseCase listVersionsUseCase,
@@ -61,7 +64,8 @@ public class CertificateTemplateController {
                                          PublishCertificateTemplateUseCase publishUseCase,
                                          UploadCertificateTemplateImageUseCase uploadImageUseCase,
                                          GetCertificateTemplateImageUseCase getImageUseCase,
-                                         PreviewCertificateTemplateUseCase previewUseCase) {
+                                         PreviewCertificateTemplateUseCase previewUseCase,
+                                         DiscardCertificateTemplateDraftUseCase discardDraftUseCase) {
         this.getUseCase = getUseCase;
         this.listVersionsUseCase = listVersionsUseCase;
         this.getVersionUseCase = getVersionUseCase;
@@ -70,6 +74,7 @@ public class CertificateTemplateController {
         this.uploadImageUseCase = uploadImageUseCase;
         this.getImageUseCase = getImageUseCase;
         this.previewUseCase = previewUseCase;
+        this.discardDraftUseCase = discardDraftUseCase;
     }
 
     @GetMapping
@@ -95,6 +100,13 @@ public class CertificateTemplateController {
     public CertificateTemplateVersionResponse saveDraft(@PathVariable GraduationCertificateKind kind,
                                                         @Valid @RequestBody SaveCertificateTemplateDraftRequest request) {
         return saveDraftUseCase.save(kind, request.content());
+    }
+
+    @DeleteMapping("/draft")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public void discardDraft(@PathVariable GraduationCertificateKind kind) {
+        discardDraftUseCase.discard(kind);
     }
 
     @PostMapping("/publish")

@@ -83,6 +83,7 @@ export const handlers = [
     HttpResponse.json(certificateTemplateVersion({ versionNumber: Number(params.number) })),
   ),
   http.put(`${API}/certificate-templates/:kind/draft`, () => HttpResponse.json(draftVersion())),
+  http.delete(`${API}/certificate-templates/:kind/draft`, () => new HttpResponse(null, { status: 204 })),
   http.post(`${API}/certificate-templates/:kind/publish`, () =>
     HttpResponse.json(certificateTemplateVersion({ id: 2, versionNumber: 4, basedOnVersionNumber: 3 })),
   ),
