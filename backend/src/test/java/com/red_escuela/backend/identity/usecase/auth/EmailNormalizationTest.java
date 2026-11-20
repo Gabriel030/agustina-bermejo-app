@@ -112,6 +112,8 @@ class EmailNormalizationTest extends AbstractIntegrationTest {
     @Test
     void googleLoginFindsAccountStoredWithUppercase() {
         Person person = persistPerson("norm4", "Ana.Perez4@Mail.com");
+        person.setEmailVerified(true);
+        entityManager.flush();
         when(googleIdTokenService.verify("token")).thenReturn(
                 new GoogleIdTokenService.GoogleProfile("sub-norm4", "ana.perez4@mail.com", "Ana", "Perez"));
 
