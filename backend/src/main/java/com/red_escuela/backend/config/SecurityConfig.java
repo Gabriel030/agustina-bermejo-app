@@ -106,6 +106,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/payments/mp-webhook").permitAll()
                 .requestMatchers(HttpMethod.GET, "/verify-email").permitAll()
                 .requestMatchers(HttpMethod.POST, "/cancel-email-change").permitAll()
+                .requestMatchers(HttpMethod.POST, "/email-change-preview").permitAll()
+                .requestMatchers(HttpMethod.POST, "/approve-email-change").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/modules").permitAll()
                 .requestMatchers(HttpMethod.GET, "/legal/documents/current").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/certificates/*").permitAll()
