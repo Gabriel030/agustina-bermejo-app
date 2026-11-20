@@ -71,6 +71,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CASH_PAYMENT_BACKDATE_REASON_REQUIRED` | no | `CashPaymentBackdateReasonRequiredException` | billing |
 | `CASH_PAYMENT_DATE_TOO_OLD` | no | `CashPaymentDateTooOldException` | billing |
 | `CASH_PAYMENT_RECEIPT_NUMBER_INVALID` | no | `CashPaymentReceiptNumberInvalidException` | billing |
+| `CERTIFICATE_EXCEPTION_DECISION_REASON_INVALID` | no | `CertificateExceptionDecisionReasonInvalidException` | graduation |
+| `CERTIFICATE_EXCEPTION_REASON_INVALID` | no | `CertificateExceptionReasonInvalidException` | graduation |
 | `CHANGE_REASON_REQUIRED` | no | `ChangeReasonRequiredException` | billing |
 | `CHARGEBACK_DATE_INVALID` | no | `ChargebackDateInvalidException` | billing |
 | `CHARGEBACK_REFERENCE_INVALID` | no | `ChargebackReferenceInvalidException` | billing |
@@ -185,6 +187,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NOT_ELIGIBLE_FOR_GRADUATION` | no | `NotEligibleForGraduationException` | graduation |
 | `NO_EVALUATION_SCHEME` | no | `NoEvaluationSchemeException` | evaluation |
 | `OFFERING_LIST_PRICE_NOT_POSITIVE` | no | `OfferingListPriceNotPositiveException` | academicstructure |
+| `ORGANISM_KIND_REQUIRED` | no | `OrganismKindRequiredException` | graduation |
+| `ORGANISM_REFERENCE_INVALID` | no | `OrganismReferenceInvalidException` | graduation |
 | `PAYMENT_DATE_IN_FUTURE` | no | `PaymentDateInFutureException` | billing |
 | `PAYMENT_REJECTION_REASON_REQUIRED` | no | `PaymentRejectionReasonRequiredException` | billing |
 | `PAYMENT_REJECTION_REASON_TOO_LONG` | no | `PaymentRejectionReasonTooLongException` | billing |
@@ -269,6 +273,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `AUTHORIZATION_REQUEST_NOT_FOUND` | no | `AuthorizationRequestNotFoundException` | billing |
 | `BILLING_RUN_STEP_NOT_FOUND` | no | `BillingRunStepNotFoundException` | billing |
 | `BROADCAST_NOT_FOUND` | no | `BroadcastNotFoundException` | notification |
+| `CERTIFICATE_EXCEPTION_NOT_FOUND` | no | `CertificateExceptionNotFoundException` | graduation |
 | `CERTIFICATE_NOT_FOUND` | no | `CertificateNotFoundException` | graduation |
 | `CHARGEBACK_NOT_FOUND` | no | `ChargebackNotFoundException` | billing |
 | `CLASSROOM_NOT_FOUND` | no | `ClassroomNotFoundException` | academicstructure |
@@ -445,6 +450,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_NOT_YET_TAKEN` | no | `ExamBoardNotYetTakenException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_WITHDRAWN` | no | `ExamBoardRegistrationWithdrawnException` | evaluation |
+| `EXCEPTION_ALREADY_CONSUMED` | no | `ExceptionAlreadyConsumedException` | graduation |
+| `EXCEPTION_NOT_APPROVED` | no | `ExceptionNotApprovedException` | graduation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
 | `FINAL_EXAM_BLOCKED_BY_ABSENCES` | no | `FinalExamBlockedByAbsencesException` | evaluation |
 | `FINAL_EXAM_PREREQUISITES_NOT_APPROVED` | no | `FinalExamPrerequisitesNotApprovedException` | evaluation |
@@ -478,6 +485,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ILLEGAL_AUTHORIZATION_REQUEST_TRANSITION` | no | `IllegalAuthorizationRequestTransitionException` | billing |
 | `ILLEGAL_BILLING_RUN_TRANSITION` | no | `IllegalBillingRunTransitionException` | billing |
 | `ILLEGAL_BROADCAST_STATUS_TRANSITION` | no | `IllegalBroadcastStatusTransitionException` | notification |
+| `ILLEGAL_CERTIFICATE_EXCEPTION_TRANSITION` | no | `IllegalCertificateExceptionTransitionException` | graduation |
 | `ILLEGAL_CONFIGURATION_VERSION_STATUS_TRANSITION` | no | `IllegalConfigurationVersionStatusTransitionException` | billing |
 | `ILLEGAL_DISCOUNT_DEFINITION_TRANSITION` | no | `IllegalDiscountDefinitionTransitionException` | billing |
 | `ILLEGAL_ENROLLMENT_PAYMENT_STATUS_TRANSITION` | no | `IllegalEnrollmentPaymentStatusTransitionException` | billing |
@@ -530,6 +538,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `OUTSTANDING_DEBT_BLOCKS_REENROLLMENT` | no | `OutstandingDebtBlocksReenrollmentException` | billing |
 | `OVERDUE_DEBT_BLOCKS_EXAM_FEE` | no | `OverdueDebtBlocksExamFeeException` | billing |
 | `OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT` | no | `OverdueDebtBlocksNewEnrollmentException` | billing |
+| `OWN_EXCEPTION_DECISION` | no | `OwnExceptionDecisionException` | graduation |
 | `PARTIAL_PAYMENT_NOT_ALLOWED` | no | `PartialPaymentNotAllowedException` | billing |
 | `PAYMENT_ALLOCATION_REJECTED` | no | `PaymentAllocationRejectedException` | billing |
 | `PAYMENT_ALREADY_APPROVED` | no | `PaymentAlreadyApprovedException` | billing |
