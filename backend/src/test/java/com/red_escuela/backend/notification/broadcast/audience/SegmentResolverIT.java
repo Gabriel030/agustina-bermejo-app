@@ -59,12 +59,13 @@ class SegmentResolverIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void allQuantifierIntersectsCriteria() {
-        Person both = AudienceTestPersons.create(entityManager, roleRepository, "seg-inter-both", true, null, "DOCENTE", "PRECEPTOR");
-        Person onlyTeacher = AudienceTestPersons.create(entityManager, roleRepository, "seg-inter-teacher", true, null, "DOCENTE");
+    void sameKeyValuesAreUnited() {
+        Person teacher = AudienceTestPersons.create(entityManager, roleRepository, "seg-union-teacher", true, null, "DOCENTE");
+        Person coordinator = AudienceTestPersons.create(entityManager, roleRepository, "seg-union-preceptor", true, null, "PRECEPTOR");
+        Person student = AudienceTestPersons.create(entityManager, roleRepository, "seg-union-student", true, null, "ALUMNO");
 
         Set<Long> result = segmentResolver.resolvePersonIds(spec(SegmentQuantifier.ALL, "DOCENTE", "PRECEPTOR"));
 
-        assertThat(result).contains(both.getId()).doesNotContain(onlyTeacher.getId());
+        assertThat(result).contains(teacher.getId(), coordinator.getId()).doesNotContain(student.getId());
     }
 }

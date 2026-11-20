@@ -1240,6 +1240,9 @@
       },
       "AudiencePreviewRequest" : {
         "properties" : {
+          "bodyText" : {
+            "type" : [ "string", "null" ]
+          },
           "category" : {
             "enum" : [ "INSTITUTIONAL", "PROMOTIONAL" ],
             "type" : "string"
@@ -1264,6 +1267,15 @@
             "maximum" : 100,
             "minimum" : 1,
             "type" : "integer"
+          },
+          "subject" : {
+            "maxLength" : 300,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "templateId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           }
         },
         "required" : [ "category", "channel", "excludeMissingVariables", "page", "segmentSpec", "size" ],
@@ -1293,6 +1305,29 @@
           }
         },
         "required" : [ "count", "hasUngradedInstances", "label", "students", "totalInSection" ],
+        "type" : "object"
+      },
+      "AudienceSampleEntry" : {
+        "properties" : {
+          "addressMasked" : {
+            "type" : [ "string", "null" ]
+          },
+          "exclusionReason" : {
+            "enum" : [ "NO_VERIFIED_EMAIL", "OPTED_OUT", "NO_CONSENT", "NO_VALID_PHONE", "NO_CHANNEL_ADDRESS", "MISSING_TEMPLATE_VARIABLE", null ],
+            "type" : [ "string", "null" ]
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "fullName", "personId", "status" ],
         "type" : "object"
       },
       "AudienceSegmentResponse" : {
@@ -1969,6 +2004,33 @@
           }
         },
         "required" : [ "entityType", "naturalKey", "reason" ],
+        "type" : "object"
+      },
+      "BroadcastAudiencePreviewResponse" : {
+        "properties" : {
+          "excludedByReason" : {
+            "additionalProperties" : {
+              "format" : "int32",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "included" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sample" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AudienceSampleEntry"
+            },
+            "type" : "array"
+          },
+          "total" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "excludedByReason", "included", "sample", "total" ],
         "type" : "object"
       },
       "BroadcastChannelEntry" : {
@@ -24288,7 +24350,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/AudiencePreviewResponse"
+                  "$ref" : "#/components/schemas/BroadcastAudiencePreviewResponse"
                 }
               }
             },

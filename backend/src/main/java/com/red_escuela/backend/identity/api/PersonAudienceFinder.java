@@ -1,6 +1,8 @@
 package com.red_escuela.backend.identity.api;
 
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -18,10 +20,18 @@ public class PersonAudienceFinder {
 
     private final PersonRepository personRepository;
     private final StudentRepository studentRepository;
+    private final InstitutionRepository institutionRepository;
 
-    public PersonAudienceFinder(PersonRepository personRepository, StudentRepository studentRepository) {
+    public PersonAudienceFinder(PersonRepository personRepository, StudentRepository studentRepository,
+                                InstitutionRepository institutionRepository) {
         this.personRepository = personRepository;
         this.studentRepository = studentRepository;
+        this.institutionRepository = institutionRepository;
+    }
+
+    public boolean institutionNameConfigured() {
+        return institutionRepository.findAll().stream().findFirst().map(Institution::getName)
+                .filter(name -> !name.isBlank()).isPresent();
     }
 
     public Set<Long> personIdsByRoleName(String roleName) {
@@ -35,6 +45,7 @@ public class PersonAudienceFinder {
     public List<PersonAudienceView> findByIds(Collection<Long> personIds) {
         return personRepository.findAllById(personIds).stream()
                 .map(person -> new PersonAudienceView(person.getId(), person.getName() + " " + person.getLastname(),
+                        person.getName(), person.getLastname(),
                         person.getEmail() == null ? null : person.getEmail().value(),
                         Boolean.TRUE.equals(person.getEmailVerified()), person.getPhoneNumber()))
                 .toList();

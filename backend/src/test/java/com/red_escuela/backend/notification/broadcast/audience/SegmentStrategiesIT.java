@@ -190,4 +190,23 @@ class SegmentStrategiesIT extends AbstractIntegrationTest {
         assertThat(personAudienceFinder.personIdsOfStudents(List.of(inCourse.getId(), inactivePerson.getId())))
                 .containsExactly(inCourse.getPerson().getId());
     }
+
+    @Test
+    void differentKeysIntersect() {
+        Set<Long> result = segmentResolver.resolvePersonIds(new SegmentSpecRequest(1, SegmentQuantifier.ALL, List.of(
+                new SegmentCriterionRequest(SegmentKey.PROGRAM, program.getId().toString()),
+                new SegmentCriterionRequest(SegmentKey.ENROLLMENT_STATUS, "REGULAR"))));
+
+        assertThat(mine(result)).containsExactly(regular.getPerson().getId());
+    }
+
+    @Test
+    void sameKeyValuesInsideDifferentKeysAreUnitedBeforeIntersecting() {
+        Set<Long> result = segmentResolver.resolvePersonIds(new SegmentSpecRequest(1, SegmentQuantifier.ALL, List.of(
+                new SegmentCriterionRequest(SegmentKey.PROGRAM, program.getId().toString()),
+                new SegmentCriterionRequest(SegmentKey.ENROLLMENT_STATUS, "REGULAR"),
+                new SegmentCriterionRequest(SegmentKey.ENROLLMENT_STATUS, "IN_COURSE"))));
+
+        assertThat(mine(result)).containsExactlyInAnyOrder(inCourse.getPerson().getId(), regular.getPerson().getId());
+    }
 }
