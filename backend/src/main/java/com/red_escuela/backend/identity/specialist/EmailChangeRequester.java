@@ -4,6 +4,7 @@ import com.red_escuela.backend.identity.entity.ContactChangeType;
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.EmailAlreadyExistsException;
+import com.red_escuela.backend.identity.exception.EmailChangeNeedsOwnerEmailException;
 import com.red_escuela.backend.identity.exception.EmailChangePendingByOwnerException;
 import com.red_escuela.backend.identity.exception.StaffPasswordResetBlockedException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
@@ -29,12 +30,14 @@ public class EmailChangeRequester {
     private final ApplicationEventPublisher eventPublisher;
     private final CurrentPasswordVerifier currentPasswordVerifier;
     private final CurrentPersonService currentPersonService;
+    private final PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy;
     private final String frontendBaseUrl;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public EmailChangeRequester(PersonRepository personRepository, EmailVerificationTokenRepository tokenRepository,
                                 ContactChangeRecorder contactChangeRecorder, ApplicationEventPublisher eventPublisher,
                                 CurrentPasswordVerifier currentPasswordVerifier, CurrentPersonService currentPersonService,
+                                PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy,
                                 @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.personRepository = personRepository;
         this.tokenRepository = tokenRepository;
@@ -42,6 +45,7 @@ public class EmailChangeRequester {
         this.eventPublisher = eventPublisher;
         this.currentPasswordVerifier = currentPasswordVerifier;
         this.currentPersonService = currentPersonService;
+        this.publicPasswordResetBlockPolicy = publicPasswordResetBlockPolicy;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -55,14 +59,20 @@ public class EmailChangeRequester {
     public void requestStaffChange(Person target, String requestedEmail) {
         if (isDifferentFromCurrent(target, requestedEmail)) {
             requireNoPendingChangeStartedByOwner(target);
-            requestChange(target, currentPersonService.resolveCurrentPerson().getId(), requestedEmail);
+            requireOwnerHasCurrentEmail(target);
+            requestChange(target, currentPersonService.resolveCurrentPerson().getId(), requestedEmail, true);
         }
     }
 
     public void requireNoEmailChangeInFlight(Person person) {
-        if (tokenRepository.existsByPersonAndNewEmailIsNotNull(person)
-                || contactChangeRecorder.hasRecentEmailChange(person.getId())) {
+        if (publicPasswordResetBlockPolicy.emailChangeInFlight(person)) {
             throw new StaffPasswordResetBlockedException(person.getId());
+        }
+    }
+
+    private void requireOwnerHasCurrentEmail(Person target) {
+        if (target.getEmail() == null) {
+            throw new EmailChangeNeedsOwnerEmailException(target.getId());
         }
     }
 
@@ -80,6 +90,10 @@ public class EmailChangeRequester {
     }
 
     void requestChange(Person person, Long actorPersonId, String requestedEmail) {
+        requestChange(person, actorPersonId, requestedEmail, false);
+    }
+
+    private void requestChange(Person person, Long actorPersonId, String requestedEmail, boolean awaitingOwnerApproval) {
         EmailAddress newEmail = EmailAddress.of(requestedEmail);
         personRepository.findByEmail(newEmail)
                 .filter(owner -> !owner.getId().equals(person.getId()))
@@ -99,11 +113,17 @@ public class EmailChangeRequester {
         token.setTokenHash(TokenHashUtil.sha256Hex(clearToken));
         token.setCancelTokenHash(TokenHashUtil.sha256Hex(clearCancelToken));
         token.setExpiresAt(ApplicationTime.now().plusHours(EXPIRATION_HOURS));
+        token.setAwaitingOwnerApproval(awaitingOwnerApproval);
         tokenRepository.save(token);
 
         String previousEmail = person.emailValue();
         contactChangeRecorder.recordChange(person.getId(), actorPersonId, ContactChangeType.EMAIL_CHANGE_REQUESTED,
                 previousEmail, newEmail.value());
+        if (awaitingOwnerApproval) {
+            eventPublisher.publishEvent(EmailChangeOwnerApprovalRequestedEvent.requestedFor(person.getId(), previousEmail,
+                    newEmail.value(), frontendBaseUrl + "/cancelar-cambio-email?token=" + clearCancelToken));
+            return;
+        }
         eventPublisher.publishEvent(EmailChangeRequestedEvent.requestedFor(person.getId(), previousEmail,
                 newEmail.value(), frontendBaseUrl + "/verificar-email?token=" + clearToken,
                 frontendBaseUrl + "/cancelar-cambio-email?token=" + clearCancelToken));
