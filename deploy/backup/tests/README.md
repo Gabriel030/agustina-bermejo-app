@@ -8,12 +8,14 @@ deploy/backup/tests/dump-stream-test.sh
 deploy/backup/tests/status-test.sh
 deploy/backup/tests/restore-test-test.sh
 deploy/backup/tests/pre-release-test.sh
+deploy/backup/tests/verify-restore-test.sh
 ```
 
-Los tres últimos necesitan `jq` y `python3` con `jsonschema` (`python3 -m pip install jsonschema`).
+Los últimos necesitan `jq` y `python3` con `jsonschema` (`python3 -m pip install jsonschema`).
 
 - `status-test.sh`: `status.json` contra `docs/deploy/backup-status.schema.json`, niveles, etiquetas, alertas con códigos cerrados, escritura atómica y lector concurrente.
-- `restore-test-test.sh`: la prueba de restauración falla con código cerrado (`CHECKSUM_MISMATCH`, `RESTORE_FAILED`) y deja el estado y la alerta; un backup cifrado sin clave privada no inventa un resultado.
+- `restore-test-test.sh`: la prueba falla con código cerrado (`CHECKSUM_MISMATCH`, `RESTORE_FAILED`) y deja el estado y la alerta; un backup cifrado sin clave verifica solo la integridad (checksum roto ⇒ `BACKUP_DAMAGED`) y no inventa un resultado; `--record` del simulacro manual.
+- `verify-restore-test.sh`: `verify-restore.sh --status-dir` con un `docker` falso: registra `PASSED` o `FAILED` con el código que corresponde.
 - `pre-release-test.sh`: `pre-release.sh` con un `docker compose` falso: orden (parar backend, backup, comprobar, arrancar backend, estado), backend siempre reiniciado y un pre-release que la rotación nunca borra.
 
 `dump-stream-test.sh` fija que el verificador de `pg_restore --list` drena todo el stream (un verificador que sale
@@ -84,6 +86,24 @@ Desde la raíz del repo: para el backend, hace un backup etiquetado (`abpre-v1.2
 `vX.Y.Z` o `X.Y.Z[-sufijo]`, nunca texto libre), vuelve a arrancar el backend (aunque el backup falle) y actualiza `status.json`.
 `COMPOSE_CMD` cambia el comando de compose.
 
-La prueba de restauración semanal (`restore-test.sh`, domingo 05:00, `BACKUP_RESTORE_TEST_SCHEDULE`) restaura el último par completo en una base
-descartable del mismo servidor y compara migraciones y conteos con el `.meta`. Con backups cifrados necesita `AGE_IDENTITY_FILE`; sin él solo verifica los
-checksums y no actualiza el resultado (el simulacro completo con la clave privada se hace con `deploy/backup/verify-restore.sh` en otra máquina).
+La prueba semanal (`restore-test.sh`, domingo 05:00, `BACKUP_RESTORE_TEST_SCHEDULE`):
+- **Backups sin cifrar:** restaura el último par completo en una base descartable del mismo servidor y compara migraciones y conteos con el `.meta`;
+  actualiza `lastRestoreTest` (`PASSED`/`FAILED` con código cerrado).
+- **Backups cifrados (lo normal):** la clave privada de age **no está en el servidor**, así que solo verifica la integridad (checksums del dump y del archivo
+  de `/data`) y refresca el estado; un checksum roto genera la alerta `BACKUP_DAMAGED`. **No toca `lastRestoreTest`.**
+
+`lastRestoreTest` lo actualiza el simulacro manual completo, en una máquina que tenga la clave privada:
+
+```
+AGE_IDENTITY_FILE=/ruta/a/la/clave.txt deploy/backup/verify-restore.sh --dir <copia de los backups> --status-dir <BACKUP_DIR>/status
+```
+
+`--status-dir` registra el resultado (`PASSED`, o `FAILED` con `RESTORE_FAILED`, `COUNTS_MISMATCH` o `SCHEMA_VALIDATION_FAILED`) en la carpeta `status/`. Si el
+simulacro se hizo en otra máquina, se registra después en el servidor:
+
+```
+docker compose -f docker-compose.prod.yml -f deploy/backup/docker-compose.backup.yml exec backup restore-test.sh --record PASSED
+docker compose -f docker-compose.prod.yml -f deploy/backup/docker-compose.backup.yml exec backup restore-test.sh --record FAILED COUNTS_MISMATCH
+```
+
+La pantalla avisa si pasaron más de 14 días sin una prueba completa a partir de `lastRestoreTest.ranAt`; el script no emite una alerta por eso.

@@ -105,6 +105,7 @@ jobs:
           bash deploy/backup/tests/status-test.sh
           bash deploy/backup/tests/restore-test-test.sh
           bash deploy/backup/tests/pre-release-test.sh
+          bash deploy/backup/tests/verify-restore-test.sh
 
       - name: Validate the compose files
         env:

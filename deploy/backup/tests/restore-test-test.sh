@@ -48,8 +48,26 @@ check "sin backups se informa RESTORE_FAILED" "FAILED RESTORE_FAILED" "$(last_re
 
 fresh_dir
 add_pair "$(date -u +%Y%m%dT%H%M%SZ)" .age
-check "un backup cifrado sin clave privada no es un error" "0" "$(run_restore_test)"
-check "sin clave privada se avisa que solo se verificaron los checksums" "1" "$(grep -c 'solo se verificaron los checksums' "$work/output.log")"
-check "sin clave privada no se inventa un resultado de restauracion" "0" "$(ls "$BACKUP_DIR/status/restore-test" 2> /dev/null | wc -l | tr -d ' ')"
+check "un backup cifrado sin clave privada verifica la integridad y termina bien" "0" "$(run_restore_test)"
+check "sin clave privada se avisa que solo se verifico la integridad" "1" "$(grep -c 'integridad verificada' "$work/output.log")"
+check "sin clave privada no se inventa un resultado de restauracion" "null" "$(last_restore)"
+check "sin clave privada el estado se actualiza igual y cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
+check "sin clave privada el backup sano queda VERIFIED" "VERIFIED" "$(jq -r '.tiers[0].verification' "$status_json")"
+
+stamp=$(ls "$BACKUP_DIR" | sed -n 's/^abdb_\(.*\)\.dump\.age$/\1/p' | head -1)
+echo extra >> "$BACKUP_DIR/abfiles_$stamp.tar.zst.age"
+check "un checksum roto en un backup cifrado sin clave falla" "1" "$(run_restore_test)"
+check "un checksum roto se informa como BACKUP_DAMAGED y no como falla de restauracion" "CRITICAL BACKUP_DAMAGED null" "$(jq -r '[(.alerts[] | select(.code=="BACKUP_DAMAGED") | "\(.level) \(.code)"), (.lastRestoreTest | tostring)] | join(" ")' "$status_json")"
+check "un checksum roto deja el nivel DAMAGED" "DAMAGED" "$(jq -r '.tiers[0].verification' "$status_json")"
+
+fresh_dir
+add_pair "$(date -u +%Y%m%dT%H%M%SZ)"
+check "el simulacro manual puede registrar un resultado PASSED" "0" "$("$scripts/restore-test.sh" --record PASSED > /dev/null 2>&1; echo $?)"
+check "el resultado registrado aparece en el estado" "PASSED null" "$(last_restore)"
+check "el simulacro manual puede registrar una falla con codigo cerrado" "0" "$("$scripts/restore-test.sh" --record FAILED COUNTS_MISMATCH > /dev/null 2>&1; echo $?)"
+check "la falla registrada aparece en el estado y genera la alerta" "FAILED COUNTS_MISMATCH 1" "$(echo "$(last_restore) $(jq '[.alerts[] | select(.code=="RESTORE_TEST_FAILED")] | length' "$status_json")")"
+check "un codigo fuera de la lista se rechaza" "2" "$("$scripts/restore-test.sh" --record FAILED texto-libre > /dev/null 2>&1; echo $?)"
+check "un PASSED con codigo se rechaza" "2" "$("$scripts/restore-test.sh" --record PASSED COUNTS_MISMATCH > /dev/null 2>&1; echo $?)"
+check "el estado tras registrar cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
 
 finish
