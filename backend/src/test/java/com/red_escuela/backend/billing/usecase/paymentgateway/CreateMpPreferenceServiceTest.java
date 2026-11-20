@@ -8,10 +8,9 @@ import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.payment.domain.GatewayCheckout;
-import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
+import com.red_escuela.backend.billing.operation.GatewayCheckoutRecording;
+import com.red_escuela.backend.billing.operation.NewGatewayCheckout;
 import com.red_escuela.backend.billing.payment.gateway.PaymentGatewayRegistry;
-import com.red_escuela.backend.billing.payment.repository.GatewayCheckoutRepository;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,6 @@ import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.YearMonth;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,9 +34,9 @@ class CreateMpPreferenceServiceTest {
 
     private final InvoiceRepository invoiceRepository = Mockito.mock(InvoiceRepository.class);
     private final PaymentGatewayRegistry gatewayRegistry = Mockito.mock(PaymentGatewayRegistry.class);
-    private final GatewayCheckoutRepository checkoutRepository = Mockito.mock(GatewayCheckoutRepository.class);
+    private final GatewayCheckoutRecording checkoutRecording = Mockito.mock(GatewayCheckoutRecording.class);
     private final CreateMpPreferenceService service = new CreateMpPreferenceService(
-            invoiceRepository, gatewayRegistry, checkoutRepository, 48, "token", "http://front", "http://back");
+            invoiceRepository, gatewayRegistry, checkoutRecording, "token", "http://front", "http://back");
 
     private Invoice payableArsInvoice() {
         Invoice invoice = Mockito.mock(Invoice.class, Answers.RETURNS_DEEP_STUBS);
@@ -75,9 +73,9 @@ class CreateMpPreferenceServiceTest {
         }
     }
 
-    private GatewayCheckout savedCheckout() {
-        ArgumentCaptor<GatewayCheckout> captor = ArgumentCaptor.forClass(GatewayCheckout.class);
-        Mockito.verify(checkoutRepository).save(captor.capture());
+    private NewGatewayCheckout recordedCheckout() {
+        ArgumentCaptor<NewGatewayCheckout> captor = ArgumentCaptor.forClass(NewGatewayCheckout.class);
+        Mockito.verify(checkoutRecording).recordMercadoPagoCheckout(captor.capture());
         return captor.getValue();
     }
 
@@ -87,19 +85,18 @@ class CreateMpPreferenceServiceTest {
 
         String reference = request.getExternalReference();
         assertThat(reference).isNotEqualTo(String.valueOf(INVOICE_ID));
-        assertThat(UUID.fromString(reference)).isEqualTo(savedCheckout().getPublicReference());
+        assertThat(UUID.fromString(reference)).isEqualTo(recordedCheckout().publicReference());
     }
 
     @Test
     void checkoutStoresAmountCurrencyAndPreferenceId() {
         createdWith(preference("pref-2"));
 
-        GatewayCheckout checkout = savedCheckout();
-        assertThat(checkout.getInvoiceId()).isEqualTo(INVOICE_ID);
-        assertThat(checkout.getGateway()).isEqualTo(PaymentGatewayCode.MERCADO_PAGO);
-        assertThat(checkout.getAmount().value().amount()).isEqualByComparingTo("1500.50");
-        assertThat(checkout.getAmount().value().currency()).isEqualTo(Currency.ARS);
-        assertThat(checkout.getGatewayPreferenceId()).isEqualTo("pref-2");
+        NewGatewayCheckout checkout = recordedCheckout();
+        assertThat(checkout.invoiceId()).isEqualTo(INVOICE_ID);
+        assertThat(checkout.amount().value().amount()).isEqualByComparingTo("1500.50");
+        assertThat(checkout.amount().value().currency()).isEqualTo(Currency.ARS);
+        assertThat(checkout.gatewayPreferenceId()).isEqualTo("pref-2");
     }
 
     @Test
@@ -110,15 +107,6 @@ class CreateMpPreferenceServiceTest {
             assertThatThrownBy(() -> service.create(INVOICE_ID, STUDENT_ID)).isInstanceOf(MercadoPagoGatewayException.class);
         }
 
-        Mockito.verifyNoInteractions(checkoutRepository);
-    }
-
-    @Test
-    void checkoutExpiresFortyEightHoursAfterCreation() {
-        createdWith(preference("pref-3"));
-
-        GatewayCheckout checkout = savedCheckout();
-        assertThat(checkout.getCreatedAt()).isNotNull();
-        assertThat(Duration.between(checkout.getCreatedAt(), checkout.getExpiresAt())).isEqualTo(Duration.ofHours(48));
+        Mockito.verifyNoInteractions(checkoutRecording);
     }
 }

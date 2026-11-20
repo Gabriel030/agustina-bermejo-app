@@ -14,9 +14,9 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
-import com.red_escuela.backend.billing.payment.domain.GatewayCheckout;
+import com.red_escuela.backend.billing.operation.GatewayCheckoutRecording;
+import com.red_escuela.backend.billing.operation.NewGatewayCheckout;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
-import com.red_escuela.backend.billing.payment.repository.GatewayCheckoutRepository;
 import com.red_escuela.backend.billing.payment.gateway.PaymentGatewayRegistry;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.shared.UseCase;
@@ -28,11 +28,8 @@ import org.springframework.beans.factory.annotation.Value;
 import com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
-import com.red_escuela.backend.shared.time.ApplicationTime;
 
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,8 +39,7 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
 
     private final InvoiceRepository invoiceRepository;
     private final PaymentGatewayRegistry gatewayRegistry;
-    private final GatewayCheckoutRepository gatewayCheckoutRepository;
-    private final Duration checkoutExpiration;
+    private final GatewayCheckoutRecording gatewayCheckoutRecording;
     private final String accessToken;
     private final String frontendBaseUrl;
     private final String backendBaseUrl;
@@ -51,15 +47,13 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
     public CreateMpPreferenceService(
             InvoiceRepository invoiceRepository,
             PaymentGatewayRegistry gatewayRegistry,
-            GatewayCheckoutRepository gatewayCheckoutRepository,
-            @Value("${mercadopago.checkout-expiration-hours:48}") long checkoutExpirationHours,
+            GatewayCheckoutRecording gatewayCheckoutRecording,
             @Value("${mercadopago.access-token:}") String accessToken,
             @Value("${app.frontend.base-url:http://localhost:5173}") String frontendBaseUrl,
             @Value("${app.backend.base-url:http://localhost:8080}") String backendBaseUrl) {
         this.invoiceRepository = invoiceRepository;
         this.gatewayRegistry = gatewayRegistry;
-        this.gatewayCheckoutRepository = gatewayCheckoutRepository;
-        this.checkoutExpiration = Duration.ofHours(checkoutExpirationHours);
+        this.gatewayCheckoutRecording = gatewayCheckoutRecording;
         this.accessToken = accessToken;
         this.frontendBaseUrl = frontendBaseUrl;
         this.backendBaseUrl = backendBaseUrl;
@@ -112,16 +106,8 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
         try {
             Preference preference = new PreferenceClient().create(request);
             String preferenceId = preference.getId();
-            LocalDateTime createdAt = ApplicationTime.now();
-            gatewayCheckoutRepository.save(GatewayCheckout.builder()
-                    .publicReference(publicReference)
-                    .invoiceId(invoiceId)
-                    .gateway(PaymentGatewayCode.MERCADO_PAGO)
-                    .amount(outstanding)
-                    .gatewayPreferenceId(preferenceId)
-                    .createdAt(createdAt)
-                    .expiresAt(createdAt.plus(checkoutExpiration))
-                    .build());
+            gatewayCheckoutRecording.recordMercadoPagoCheckout(new NewGatewayCheckout(
+                    publicReference, invoiceId, outstanding, preferenceId));
             log.info("Preferencia de Mercado Pago creada: preferencia={}, factura={}, monto={}", preferenceId, invoiceId, amount);
             return new MpPreferenceResponse(preferenceId, preference.getInitPoint());
         } catch (MPException | MPApiException e) {
