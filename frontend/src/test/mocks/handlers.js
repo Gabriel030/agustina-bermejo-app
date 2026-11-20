@@ -1,8 +1,26 @@
 import { http, HttpResponse } from 'msw';
 import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
 import { backupStatusForPlatformAdmin } from '@/test/fixtures/backupStatus';
+import {
+  certificateTemplate,
+  certificateTemplateImage,
+  certificateTemplateVersion,
+  eligibleGraduate,
+  graduationCertificateBatch,
+  graduationCertificateDetail,
+  graduationCertificateSummary,
+  ownGraduationCertificate,
+  springPage,
+} from '@/test/fixtures/certificates';
 
 const API = 'http://localhost:8080';
+
+const pdfResponse = () =>
+  new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } });
+const pngResponse = () =>
+  new HttpResponse(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { headers: { 'Content-Type': 'image/png' } });
+const draftVersion = () =>
+  certificateTemplateVersion({ id: 2, versionNumber: 4, status: 'DRAFT', basedOnVersionNumber: 3, publishedAt: null, publishedBy: null });
 
 const personResponse = (overrides = {}) => ({
   id: 1,
@@ -35,6 +53,44 @@ const personResponse = (overrides = {}) => ({
 export const handlers = [
   http.get(`${API}/regular-certificate-requests`, () => HttpResponse.json([])),
   http.get(`${API}/graduation-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/graduation-certificates/eligible`, () => HttpResponse.json(springPage([eligibleGraduate()]))),
+  http.get(`${API}/graduation-certificates`, () => HttpResponse.json(springPage([graduationCertificateSummary()]))),
+  http.get(`${API}/graduation-certificates/:id`, ({ params }) =>
+    HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) })),
+  ),
+  http.post(`${API}/graduation-certificates/preview`, () => pdfResponse()),
+  http.post(`${API}/graduation-certificates/batch`, () => HttpResponse.json(graduationCertificateBatch())),
+  http.post(`${API}/graduation-certificates/:id/revoke`, ({ params }) =>
+    HttpResponse.json(
+      graduationCertificateDetail({
+        id: Number(params.id),
+        status: 'REVOKED',
+        revokedAt: '2026-11-21T09:00:00',
+        revocationReason: 'Error en los datos del alumno',
+      }),
+    ),
+  ),
+  http.post(`${API}/graduation-certificates/:id/reissue`, ({ params }) =>
+    HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) + 1, replacesCertificateId: Number(params.id) })),
+  ),
+  http.get(`${API}/me/certificates`, () => HttpResponse.json([ownGraduationCertificate()])),
+  http.get(`${API}/me/certificates/:id/pdf`, () => pdfResponse()),
+  http.get(`${API}/certificate-templates/:kind`, () => HttpResponse.json(certificateTemplate())),
+  http.get(`${API}/certificate-templates/:kind/versions`, () =>
+    HttpResponse.json([{ versionNumber: 3, publishedAt: '2026-11-18T09:05:00', publishedBy: 'Director Prueba' }]),
+  ),
+  http.get(`${API}/certificate-templates/:kind/versions/:number`, ({ params }) =>
+    HttpResponse.json(certificateTemplateVersion({ versionNumber: Number(params.number) })),
+  ),
+  http.put(`${API}/certificate-templates/:kind/draft`, () => HttpResponse.json(draftVersion())),
+  http.post(`${API}/certificate-templates/:kind/publish`, () =>
+    HttpResponse.json(certificateTemplateVersion({ id: 2, versionNumber: 4, basedOnVersionNumber: 3 })),
+  ),
+  http.post(`${API}/certificate-templates/:kind/images`, () =>
+    HttpResponse.json(certificateTemplateImage(), { status: 201 }),
+  ),
+  http.get(`${API}/certificate-templates/:kind/images/:id`, () => pngResponse()),
+  http.post(`${API}/certificate-templates/:kind/preview`, () => pdfResponse()),
   http.get(`${API}/regular-certificates`, () => HttpResponse.json([])),
   http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
   http.get(`${API}/institution/academic-settings`, () =>

@@ -562,3 +562,20 @@ GET,/institute-settings/notifications/whatsapp/templates,DENY,DENY,DENY,DENY,DEN
 POST,/institute-settings/notifications/whatsapp/templates,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""messageTemplateId"":1,""providerTemplateName"":""aviso_general"",""languageCode"":""es_AR"",""status"":""PENDING"",""variableOrder"":[""desconocida""]}"
 PUT,/institute-settings/notifications/whatsapp/templates/{id},DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""messageTemplateId"":1,""providerTemplateName"":""aviso_general"",""languageCode"":""es_AR"",""status"":""PENDING"",""variableOrder"":[]}"
 GET,/backups/status,DENY,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
+GET,/graduation-certificates/eligible,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/graduation-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/graduation-certificates/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/graduation-certificates/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1}"
+POST,/graduation-certificates/batch,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""items"":[{""kind"":""PROGRAM"",""enrollmentId"":1}]}"
+POST,/graduation-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/graduation-certificates/{id}/reissue,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+GET,/certificate-templates/{kind},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/certificate-templates/{kind}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/certificate-templates/{kind}/versions/{number},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+PUT,/certificate-templates/{kind}/draft,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""content"":{""instituteName"":""Instituto""}}"
+POST,/certificate-templates/{kind}/publish,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+POST,/certificate-templates/{kind}/images,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+GET,/certificate-templates/{kind}/images/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/certificate-templates/{kind}/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""source"":""PUBLISHED""}"
+GET,/me/certificates,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/me/certificates/{id}/pdf,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
