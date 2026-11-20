@@ -100,6 +100,20 @@ class WaitlistSectionExpiryIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void closedOverrideStillShowsEnrollmentClose() {
+        SubjectSectionEnrollment program = programWaiting(2075, NOW.plusDays(5));
+        program.getSubjectSection().getTerm().setEnrollmentOverride(TermEnrollmentOverride.CLOSED);
+        CourseSubjectSection module = courseSectionQueue(2076, NOW.plusDays(6));
+        module.getTerm().setEnrollmentOverride(TermEnrollmentOverride.CLOSED);
+        entityManager.flush();
+
+        assertThat(nextExpiryOf(WaitlistKind.PROGRAM_SECTION, program.getSubjectSection().getId(), null))
+                .isEqualTo(LocalDate.of(2063, 4, 15));
+        assertThat(nextExpiryOf(WaitlistKind.COURSE_SECTION, module.getId(), null)).isEqualTo(LocalDate.of(2063, 4, 16));
+        assertThat(idsExpiringWithin(WaitlistKind.PROGRAM_SECTION, 7)).contains(program.getSubjectSection().getId());
+    }
+
+    @Test
     void expiringFilterIncludesSectionQueues() {
         SubjectSectionEnrollment programSoon = programWaiting(2067, NOW.plusDays(5));
         SubjectSectionEnrollment programLater = programWaiting(2068, NOW.plusDays(20));

@@ -32,6 +32,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,11 +102,19 @@ class WaitlistAutomaticPromotionAuditIT extends AbstractIntegrationTest {
                 EnrollmentStatus.WAITLISTED);
         entityManager.flush();
 
-        courseSectionEnrollmentService.withdraw(seated.getId(), EnrollmentChange.byStudent());
-        entityManager.flush();
+        Long withdrawingPersonId = seated.getStudent().getPerson().getId();
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(withdrawingPersonId.toString(), null, "ROLE_ESTUDIANTE"));
+        try {
+            courseSectionEnrollmentService.withdraw(seated.getId(), EnrollmentChange.byStudent());
+            entityManager.flush();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
 
         assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
         assertThat(actionsOf(waiting.getId())).containsExactly(AuditAction.WAITLIST_PROMOTED_AUTOMATICALLY);
+        assertThat(entriesOf(waiting.getId()).get(0).getActorPersonId()).isEqualTo(withdrawingPersonId);
     }
 
     @Test
