@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agustina-bermejo-app/docs/deploy/backup-status.schema.json",
+  "title": "Estado de los backups",
+  "description": "Archivo que escriben los scripts de backup y lee GET /backups/status. El backend calcula state y summary; si el archivo falta o no valida contra este esquema, responde state NOT_CONFIGURED. No contiene datos de alumnos ni de pagos: solo la ruta del disco y los nombres de los archivos de backup, nunca su contenido.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "targetRpoHours",
+    "destination",
+    "tiers",
+    "lastRestoreTest",
+    "alerts",
+    "consecutiveFailures",
+    "lastCompleteBackupAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "targetRpoHours": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "freeBytes", "totalBytes"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Ruta del disco de destino. Campo técnico: el backend solo la muestra a PLATFORM_ADMIN."
+        },
+        "freeBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalBytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "tiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tier",
+          "takenAt",
+          "label",
+          "dumpSizeBytes",
+          "filesSizeBytes",
+          "verification",
+          "kept",
+          "fileNames"
+        ],
+        "properties": {
+          "tier": {
+            "enum": ["INTRADAY", "DAILY", "WEEKLY", "QUARTERLY", "PRE_RELEASE"]
+          },
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "label": {
+            "type": ["string", "null"],
+            "description": "Versión publicada en PRE_RELEASE; null en el resto de los niveles."
+          },
+          "dumpSizeBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "filesSizeBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "verification": {
+            "enum": ["VERIFIED", "DAMAGED", "UNVERIFIED"]
+          },
+          "kept": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fileNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Nombres de los archivos de backup del nivel. Campo técnico: el backend solo los muestra a PLATFORM_ADMIN."
+          }
+        }
+      }
+    },
+    "lastRestoreTest": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ranAt", "result", "detail"],
+          "properties": {
+            "ranAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "result": {
+              "enum": ["PASSED", "FAILED"]
+            },
+            "detail": {
+              "type": ["string", "null"]
+            }
+          }
+        }
+      ]
+    },
+    "alerts": {
+      "type": "array",
+      "description": "Alertas de los últimos 30 días.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "level", "message"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "level": {
+            "enum": ["WARNING", "CRITICAL"]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "consecutiveFailures": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "lastCompleteBackupAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}

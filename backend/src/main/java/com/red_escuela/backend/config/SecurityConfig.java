@@ -113,6 +113,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/public/unsubscribe/*").permitAll()
                 .requestMatchers("/platform/**").hasRole(PLATFORM_ADMIN_ROLE)
                 .requestMatchers("/me/modules").authenticated()
+                .requestMatchers(HttpMethod.GET, "/backups/status").authenticated()
                 .requestMatchers(HttpMethod.GET, "/me").authenticated()
                 .anyRequest().access(SecurityConfig::authenticatedExceptPlatformAdmin))
             .addFilterBefore(noStoreResponseFilter, UsernamePasswordAuthenticationFilter.class)
