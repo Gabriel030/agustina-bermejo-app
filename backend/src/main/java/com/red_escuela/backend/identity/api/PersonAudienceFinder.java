@@ -9,6 +9,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +18,8 @@ import java.util.stream.Collectors;
 @Component
 @Transactional(readOnly = true)
 public class PersonAudienceFinder {
+
+    private static final int FIND_BATCH_SIZE = 1000;
 
     private final PersonRepository personRepository;
     private final StudentRepository studentRepository;
@@ -43,11 +46,16 @@ public class PersonAudienceFinder {
     }
 
     public List<PersonAudienceView> findByIds(Collection<Long> personIds) {
-        return personRepository.findAllById(personIds).stream()
-                .map(person -> new PersonAudienceView(person.getId(), person.getName() + " " + person.getLastname(),
-                        person.getName(), person.getLastname(),
-                        person.getEmail() == null ? null : person.getEmail().value(),
-                        Boolean.TRUE.equals(person.getEmailVerified()), person.getPhoneNumber()))
-                .toList();
+        List<Long> ids = List.copyOf(personIds);
+        List<PersonAudienceView> views = new ArrayList<>(ids.size());
+        for (int from = 0; from < ids.size(); from += FIND_BATCH_SIZE) {
+            personRepository.findAllById(ids.subList(from, Math.min(from + FIND_BATCH_SIZE, ids.size()))).stream()
+                    .map(person -> new PersonAudienceView(person.getId(), person.getName() + " " + person.getLastname(),
+                            person.getName(), person.getLastname(),
+                            person.getEmail() == null ? null : person.getEmail().value(),
+                            Boolean.TRUE.equals(person.getEmailVerified()), person.getPhoneNumber()))
+                    .forEach(views::add);
+        }
+        return views;
     }
 }

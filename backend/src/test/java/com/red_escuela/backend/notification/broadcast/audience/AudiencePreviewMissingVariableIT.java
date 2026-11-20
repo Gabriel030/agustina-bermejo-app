@@ -122,4 +122,47 @@ class AudiencePreviewMissingVariableIT extends AbstractIntegrationTest {
     void unknownVariableInTheMessageIsRejected() throws Exception {
         preview("\"subject\":\"Hola\",\"bodyText\":\"Hola {{inexistente}}\"", true).andExpect(status().is4xxClientError());
     }
+
+    @Test
+    void hardExclusionTakesPrecedenceOverMissingVariable() throws Exception {
+        Person unverifiedWithoutName = AudienceTestPersons.create(entityManager, roleRepository, "mv-unverified-blank", false, null, "PRECEPTOR");
+        unverifiedWithoutName.setName("");
+        entityManager.flush();
+
+        preview("\"subject\":\"Hola\",\"bodyText\":\"Hola {{nombre}}\"", true)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.excludedByReason.MISSING_TEMPLATE_VARIABLE").value(1))
+                .andExpect(jsonPath("$.excludedByReason.NO_VERIFIED_EMAIL").value(1))
+                .andExpect(jsonPath("$.sample[?(@.personId==" + unverifiedWithoutName.getId() + ")].exclusionReason")
+                        .value("NO_VERIFIED_EMAIL"));
+    }
+
+    @Test
+    void blankBodyTextFallsBackToTheTemplate() throws Exception {
+        MessageTemplate template = MessageTemplate.builder().name("mv-blank-body").category(BroadcastCategory.INSTITUTIONAL)
+                .channel(ChannelType.EMAIL).subject("Hola").bodyText("Hola {{nombre}}").createdByPersonId(director.getId())
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        entityManager.persist(template);
+        entityManager.flush();
+
+        preview("\"templateId\":" + template.getId() + ",\"bodyText\":\"   \"", true)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.excludedByReason.MISSING_TEMPLATE_VARIABLE").value(1));
+    }
+
+    @Test
+    void bodyTextLongerThanTheTemplateLimitIsRejected() throws Exception {
+        preview("\"bodyText\":\"" + "a".repeat(5001) + "\"", true).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void institutionWithoutNameMakesEveryoneMissing() throws Exception {
+        entityManager.createQuery("update Institution set name = null").executeUpdate();
+        entityManager.clear();
+
+        preview("\"subject\":\"Hola\",\"bodyText\":\"Somos {{institucion}}\"", true)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.excludedByReason.MISSING_TEMPLATE_VARIABLE").value(2))
+                .andExpect(jsonPath("$.included").value(0));
+    }
 }

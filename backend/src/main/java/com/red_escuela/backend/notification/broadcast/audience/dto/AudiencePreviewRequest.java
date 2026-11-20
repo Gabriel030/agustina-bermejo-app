@@ -16,7 +16,7 @@ public record AudiencePreviewRequest(
         Boolean excludeMissingVariables,
         @Nullable Long templateId,
         @Nullable @Size(max = 300) String subject,
-        @Nullable String bodyText,
+        @Nullable @Size(max = 5000) String bodyText,
         @NotNull @Min(0) Integer page,
         @NotNull @Min(1) @Max(100) Integer size) {
 }

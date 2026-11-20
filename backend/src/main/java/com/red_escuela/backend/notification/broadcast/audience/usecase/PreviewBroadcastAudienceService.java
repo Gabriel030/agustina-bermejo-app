@@ -86,7 +86,7 @@ public class PreviewBroadcastAudienceService implements PreviewBroadcastAudience
     }
 
     private Set<TemplateVariable> referencedVariables(AudiencePreviewRequest request) {
-        if (request.bodyText() != null) {
+        if (request.bodyText() != null && !request.bodyText().isBlank()) {
             return TemplateRenderer.referencedVariables(request.subject(), request.bodyText());
         }
         if (request.templateId() != null) {

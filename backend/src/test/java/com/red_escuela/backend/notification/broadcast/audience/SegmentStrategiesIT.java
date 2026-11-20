@@ -209,4 +209,14 @@ class SegmentStrategiesIT extends AbstractIntegrationTest {
 
         assertThat(mine(result)).containsExactlyInAnyOrder(inCourse.getPerson().getId(), regular.getPerson().getId());
     }
+
+    @Test
+    void anyQuantifierUnitesCriteriaOfDifferentKeys() {
+        Set<Long> result = segmentResolver.resolvePersonIds(new SegmentSpecRequest(1, SegmentQuantifier.ANY, List.of(
+                new SegmentCriterionRequest(SegmentKey.PROGRAM, program.getId().toString()),
+                new SegmentCriterionRequest(SegmentKey.ENROLLMENT_STATUS, "GRADUATED"))));
+
+        assertThat(mine(result)).containsExactlyInAnyOrder(inCourse.getPerson().getId(), regular.getPerson().getId(),
+                graduated.getPerson().getId());
+    }
 }

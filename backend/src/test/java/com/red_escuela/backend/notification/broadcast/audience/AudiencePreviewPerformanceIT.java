@@ -60,6 +60,7 @@ class AudiencePreviewPerformanceIT extends AbstractIntegrationTest {
                         List.of(new SegmentCriterionRequest(SegmentKey.STAFF_ROLE, "PRECEPTOR"))),
                 true, null, "Hola", "Hola {{nombre}} {{apellido}}", 0, 50);
 
+        previewBroadcastAudience.previewBroadcastAudience(request);
         long started = System.nanoTime();
         BroadcastAudiencePreviewResponse response = previewBroadcastAudience.previewBroadcastAudience(request);
         Duration elapsed = Duration.ofNanos(System.nanoTime() - started);

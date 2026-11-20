@@ -1241,6 +1241,8 @@
       "AudiencePreviewRequest" : {
         "properties" : {
           "bodyText" : {
+            "maxLength" : 5000,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "category" : {
