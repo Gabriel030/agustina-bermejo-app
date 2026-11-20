@@ -115,6 +115,19 @@ class DataRetentionIT extends AbstractIntegrationTest {
                 status.equals("SENT") ? java.sql.Timestamp.valueOf(scheduledFor.atStartOfDay()) : null);
     }
 
+    private long insertBroadcastRecipientReferencing(long deliveryId) {
+        long broadcastId = jdbc.queryForObject("insert into broadcast (name, category, channel, status, segment_spec, body_snapshot, created_by_person_id, created_at) "
+                + "values ('Aviso', 'PROMOTIONAL', 'EMAIL', 'COMPLETED', '{}'::jsonb, 'b', ?, now()) returning id", Long.class, personId);
+        return jdbc.queryForObject("insert into broadcast_recipient (broadcast_id, person_id, status, delivery_id, updated_at) values (?, ?, 'SENT', ?, now()) returning id",
+                Long.class, broadcastId, personId, deliveryId);
+    }
+
+    private void deleteBroadcastRecipient(long recipientId) {
+        Long broadcastId = jdbc.queryForObject("select broadcast_id from broadcast_recipient where id = ?", Long.class, recipientId);
+        jdbc.update("delete from broadcast_recipient where id = ?", recipientId);
+        jdbc.update("delete from broadcast where id = ?", broadcastId);
+    }
+
     private boolean exists(String table, long id) {
         return jdbc.queryForObject("select count(*) from " + table + " where id = ?", Integer.class, id) == 1;
     }
@@ -214,6 +227,33 @@ class DataRetentionIT extends AbstractIntegrationTest {
         assertThat(exists("notification_delivery", oldQueued)).isTrue();
         assertThat(exists("notification_delivery", oldDeferred)).isTrue();
         assertThat(exists("notification_delivery", recentSent)).isTrue();
+    }
+
+    @Test
+    void deliveryReferencedByALiveRecipientIsKeptAndTheJobDoesNotFail() {
+        LocalDate old = TODAY.minusMonths(12).minusDays(1);
+        long referenced = insertDelivery("BROADCAST", "SENT", old);
+        long unreferenced = insertDelivery("BROADCAST", "SENT", old);
+        long recipientId = insertBroadcastRecipientReferencing(referenced);
+
+        notificationJob.deleteExpiredNotificationData();
+
+        assertThat(exists("notification_delivery", referenced)).isTrue();
+        assertThat(exists("notification_delivery", unreferenced)).isFalse();
+        deleteBroadcastRecipient(recipientId);
+    }
+
+    @Test
+    void deliveryIsDeletedOnceItsRecipientIsGone() {
+        long delivery = insertDelivery("BROADCAST", "SENT", TODAY.minusMonths(12).minusDays(1));
+        long recipientId = insertBroadcastRecipientReferencing(delivery);
+        notificationJob.deleteExpiredNotificationData();
+        assertThat(exists("notification_delivery", delivery)).isTrue();
+
+        deleteBroadcastRecipient(recipientId);
+        notificationJob.deleteExpiredNotificationData();
+
+        assertThat(exists("notification_delivery", delivery)).isFalse();
     }
 
     @Test
