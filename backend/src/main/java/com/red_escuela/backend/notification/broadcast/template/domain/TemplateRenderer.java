@@ -15,6 +15,8 @@ public final class TemplateRenderer {
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{\\{([^{}]*)}}");
 
+    private static final Pattern LINE_BREAKS = Pattern.compile("[\\r\\n\\u000B\\f\\u0085\\u2028\\u2029]+");
+
     private TemplateRenderer() {
     }
 
@@ -40,7 +42,7 @@ public final class TemplateRenderer {
 
     public static RenderedContent render(ChannelType channel, String subject, String bodyText,
                                          Map<TemplateVariable, String> values) {
-        String renderedSubject = subject == null ? null : replacePlaceholders(subject, values, false);
+        String renderedSubject = subject == null ? null : LINE_BREAKS.matcher(replacePlaceholders(subject, values, false)).replaceAll(" ");
         String renderedBody = replacePlaceholders(bodyText, values, false);
         return new RenderedContent(renderedSubject, renderedBody);
     }
