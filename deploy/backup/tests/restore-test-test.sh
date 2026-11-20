@@ -40,7 +40,7 @@ fresh_dir
 add_pair "$(date -u +%Y%m%dT%H%M%SZ)"
 check "con checksums sanos pero sin base alcanzable la prueba falla" "1" "$(run_restore_test)"
 check "la falla de restauracion se informa como RESTORE_FAILED" "FAILED RESTORE_FAILED" "$(last_restore)"
-check "no queda ninguna carpeta temporal de la prueba" "0" "$(find "$BACKUP_DIR" -maxdepth 1 -name '.restore-test.*' | wc -l | tr -d ' ')"
+check "no queda ninguna carpeta temporal de la prueba" "0" "$(find "$BACKUP_DIR" -maxdepth 1 -type d -name '.restore-test.??????' | wc -l | tr -d ' ')"
 
 fresh_dir
 check "sin ningun backup la prueba falla" "1" "$(run_restore_test)"
@@ -80,5 +80,14 @@ check "una fecha pasada como argumento se rechaza" "2" "$("$scripts/restore-test
 "$scripts/restore-test.sh" --record PASSED > /dev/null 2>&1
 check "la fecha del resultado registrado es la hora del servidor" "1" "$(jq -r --argjson now "$(date -u +%s)" '(.lastRestoreTest.ranAt | fromdateiso8601) as $ran | if ($now - $ran) < 60 and ($now - $ran) >= 0 then 1 else 0 end' "$status_json")"
 check "el estado tras registrar cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
+
+fresh_dir
+add_pair "$(date -u +%Y%m%dT%H%M%SZ)"
+( exec 7> "$BACKUP_DIR/.restore-test.lock"; flock -n 7; sleep 8 ) &
+lock_holder=$!
+sleep 1
+check "con otra prueba en curso esta sale sin fallar" "0" "$(run_restore_test)"
+check "con otra prueba en curso se avisa y no se escribe ningun resultado" "1 0" "$(grep -c 'otra prueba de restauracion sigue en curso' "$work/output.log") $(ls "$BACKUP_DIR/status/restore-test" 2> /dev/null | wc -l | tr -d ' ')"
+kill "$lock_holder" 2> /dev/null
 
 finish

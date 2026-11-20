@@ -28,6 +28,7 @@ case "$*" in
     echo files > "$BACKUP_DIR/${files_prefix}_$stamp.tar.zst"
     (cd "$BACKUP_DIR" && sha256sum "${prefix}_$stamp.dump" > "${prefix}_$stamp.dump.sha256" && sha256sum "${files_prefix}_$stamp.tar.zst" > "${files_prefix}_$stamp.tar.zst.sha256")
     exit 0 ;;
+  *"pkill -TERM -f /opt/backup/backup.sh"*) exit 0 ;;
   *"sh -c"*) all="$*"; command=${all#*sh -c }; eval "${command//\/backups/$BACKUP_DIR}" ;;
   *"/opt/backup/status.sh"*) [ "${FAKE_STATUS_FAIL:-0}" = "1" ] && exit 1; "$SCRIPTS/status.sh" ;;
 esac
@@ -72,6 +73,8 @@ interrupted_status=$?
 pkill -f "$work/fake-compose" 2> /dev/null; pkill -f "sleep 30" 2> /dev/null; sleep 1
 check "si llega SIGTERM durante el backup el backend se vuelve a arrancar" "1" "$(grep -c '^start backend$' "$COMPOSE_LOG")"
 check "tras SIGTERM el pre-release termina con error" "143" "$interrupted_status"
+check "tras SIGTERM se cancela el backup que corre en el contenedor antes de reiniciar el backend" "pkill start" "$(grep -nE 'pkill|^start backend$' "$COMPOSE_LOG" | sed -E 's/^[0-9]+://; s/.*(pkill).*/\1/; s/^start backend$/start/' | paste -sd' ')"
+check "el cliente local del backup tambien se mata" "0" "$(pgrep -f "$work/fake-compose" | wc -l | tr -d ' ')"
 
 rm -rf "$BACKUP_DIR"
 mkdir -p "$BACKUP_DIR"

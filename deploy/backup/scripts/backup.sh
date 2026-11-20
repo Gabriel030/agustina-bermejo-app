@@ -37,6 +37,8 @@ fail() {
   exit 1
 }
 
+trap 'fail "interrumpido por una senal"' INT TERM HUP
+
 encrypt_sink() {
   if [ -n "${AGE_RECIPIENT:-}" ]; then
     age -r "$AGE_RECIPIENT" -o "$1"

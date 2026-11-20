@@ -76,6 +76,14 @@ check "un backup pre-release aparece como PRE_RELEASE con su version" "v1.0.0" "
 check "un backup pre-release no toca .last_success ni las fallas consecutivas" "$last_success_before $failures_before" "$(cat "$work/metrics/.last_success") $(jq '.consecutiveFailures' "$status_json")"
 check "el estado con un pre-release cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
 rm -f "$work"/backups/abpre-* "$work"/backups/abprefiles-*
+BACKUP_DIR="$work/backups" BACKUP_METRICS_DIR="$work/metrics" BACKUP_DATA_DIR="$data" BACKUP_PREFIX=abpre-v1.0.1 FILES_PREFIX=abprefiles-v1.0.1 BACKUP_SKIP_ROTATION=true "$scripts/backup.sh" > "$work/interrupted.log" 2>&1 &
+interrupted_pid=$!
+sleep 0.6
+kill -TERM "$interrupted_pid" 2> /dev/null
+wait "$interrupted_pid"
+interrupted_status=$?
+check "un backup interrumpido por una senal falla" "1" "$interrupted_status"
+check "un backup interrumpido no deja ningun abpre-* ni abprefiles-* (ni parciales)" "0" "$(find "$work/backups" -maxdepth 1 \( -name 'abpre-*' -o -name 'abprefiles-*' \) | wc -l | tr -d ' ')"
 check "el directorio de backups queda en 0700" "700" "$(stat -c %a "$work/backups")"
 check "todos los archivos quedan en 0600" "" "$(find "$work/backups" -maxdepth 1 -type f ! -perm 600)"
 check "el .meta marca el backup como best_effort" "consistency=best_effort" "$(grep '^consistency=' "$meta")"

@@ -47,6 +47,12 @@ if [ "${1:-}" = "--record" ]; then
   exit 0
 fi
 
+exec 8> "$BACKUP_DIR/.restore-test.lock"
+if ! flock -n 8; then
+  log "otra prueba de restauracion sigue en curso: se omite esta"
+  exit 0
+fi
+
 dump_name=$(latest_complete_dump)
 [ -n "$dump_name" ] || fail_test RESTORE_FAILED
 stamp=$(stamp_of "$dump_name")

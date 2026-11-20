@@ -12,6 +12,13 @@ read -r -a compose_cmd <<< "$compose"
 
 result=0
 stop_attempted=false
+backup_pid=""
+
+abort_backup() {
+  [ -n "$backup_pid" ] && kill "$backup_pid" 2> /dev/null
+  "${compose_cmd[@]}" exec -T backup sh -c "pkill -TERM -f /opt/backup/backup.sh" > /dev/null 2>&1
+  backup_pid=""
+}
 
 start_backend_once() {
   [ "$stop_attempted" = "true" ] || return 0
@@ -26,15 +33,17 @@ restart_backend() {
   exit "$status"
 }
 trap restart_backend EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM HUP
+trap 'abort_backup; exit 130' INT
+trap 'abort_backup; exit 143' TERM HUP
 
 stop_attempted=true
 "${compose_cmd[@]}" stop backend || { echo "no se pudo parar backend: no se hace el backup" >&2; exit 1; }
 
 "${compose_cmd[@]}" exec -T -e "BACKUP_PREFIX=abpre-$version" -e "FILES_PREFIX=abprefiles-$version" -e BACKUP_SKIP_ROTATION=true \
   -e BACKUP_LOCK_WAIT_SECONDS=600 backup /opt/backup/backup.sh &
-wait $! || result=$?
+backup_pid=$!
+wait "$backup_pid" || result=$?
+backup_pid=""
 if [ "$result" -eq 0 ]; then
   "${compose_cmd[@]}" exec -T backup sh -c "ls /backups/abpre-${version}_*.dump* > /dev/null 2>&1" || result=1
 fi
