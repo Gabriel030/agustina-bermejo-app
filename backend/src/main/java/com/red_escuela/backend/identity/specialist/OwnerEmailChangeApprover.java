@@ -43,6 +43,7 @@ public class OwnerEmailChangeApprover {
         approve(token);
         String clearToken = newClearToken();
         token.setTokenHash(TokenHashUtil.sha256Hex(clearToken));
+        token.setExpiresAt(ApplicationTime.now().plusHours(EmailChangeRequester.EXPIRATION_HOURS));
         tokenRepository.save(token);
         eventPublisher.publishEvent(EmailChangeRequestedEvent.requestedFor(token.getPerson().getId(), null, token.getNewEmail(),
                 frontendBaseUrl + "/verificar-email?token=" + clearToken, null));

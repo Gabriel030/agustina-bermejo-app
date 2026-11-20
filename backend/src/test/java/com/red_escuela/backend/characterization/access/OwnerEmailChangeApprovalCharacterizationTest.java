@@ -49,11 +49,11 @@ class OwnerEmailChangeApprovalCharacterizationTest extends AccessCharacterizatio
                 .filter(candidate -> candidate.personId().equals(target.getId()))
                 .reduce((first, second) -> second)
                 .orElseThrow();
-        assertThat(tokenAfterTokenEquals(event.approvalLink())).isEqualTo(tokenAfterTokenEquals(event.cancellationLink()));
-        return tokenAfterTokenEquals(event.cancellationLink());
+        assertThat(tokenFromLink(event.approvalLink())).isEqualTo(tokenFromLink(event.cancellationLink()));
+        return tokenFromLink(event.cancellationLink());
     }
 
-    private String tokenAfterTokenEquals(String link) {
+    private String tokenFromLink(String link) {
         return link.substring(link.indexOf("token=") + 6);
     }
 
@@ -110,7 +110,7 @@ class OwnerEmailChangeApprovalCharacterizationTest extends AccessCharacterizatio
                 .filter(candidate -> candidate.personId().equals(teacher.getId())).findFirst().orElseThrow();
 
         mockMvc.perform(get("/verify-email")
-                .param("token", tokenAfterTokenEquals(event.verificationLink()))).andExpect(status().isOk());
+                .param("token", tokenFromLink(event.verificationLink()))).andExpect(status().isOk());
 
         assertThat(reload(teacher).emailValue()).isEqualTo("docente.owner2@example.com");
     }
@@ -190,7 +190,7 @@ class OwnerEmailChangeApprovalCharacterizationTest extends AccessCharacterizatio
         EmailChangeRequestedEvent event = applicationEvents.stream(EmailChangeRequestedEvent.class)
                 .filter(candidate -> candidate.personId().equals(teacher.getId())).findFirst().orElseThrow();
 
-        postToken("/cancel-email-change", tokenAfterTokenEquals(event.cancellationLink())).andExpect(status().isOk());
+        postToken("/cancel-email-change", tokenFromLink(event.cancellationLink())).andExpect(status().isOk());
 
         entityManager.flush();
         assertThat(tokenRepository.findAll().stream().filter(token -> token.getPerson().getId().equals(teacher.getId()))).isEmpty();
@@ -201,5 +201,51 @@ class OwnerEmailChangeApprovalCharacterizationTest extends AccessCharacterizatio
                 email, null, null, null, null, null, null, null, null, null, null, null, PASSWORD);
         mockMvc.perform(put("/me").header("Authorization", bearer(person)).contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))).andExpect(status().isOk());
+    }
+
+    @Test
+    void cancelAfterApprovalStillDiscardsTheRequest() throws Exception {
+        Person admin = persistPerson("access.owner8a", "70000315", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.owner8b", "70000316", "DOCENTE");
+        staffRequestsChange(admin, teacher, "docente.owner8@example.com");
+        String ownerToken = ownerTokenOf(teacher);
+        postToken("/approve-email-change", ownerToken).andExpect(status().isOk());
+
+        postToken("/cancel-email-change", ownerToken).andExpect(status().isOk());
+
+        entityManager.flush();
+        assertThat(tokenRepository.findAll().stream().filter(token -> token.getPerson().getId().equals(teacher.getId()))).isEmpty();
+        postToken("/cancel-email-change", ownerToken).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void previewOfAnAlreadyApprovedOrOwnChangeIsRejected() throws Exception {
+        Person admin = persistPerson("access.owner9a", "70000317", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.owner9b", "70000318", "DOCENTE");
+        Person other = persistPerson("access.owner9c", "70000319", "DOCENTE");
+        staffRequestsChange(admin, teacher, "docente.owner9@example.com");
+        String ownerToken = ownerTokenOf(teacher);
+        postToken("/approve-email-change", ownerToken).andExpect(status().isOk());
+        updateOwnEmail(other, "docente.owner9c@example.com");
+        EmailChangeRequestedEvent ownChange = applicationEvents.stream(EmailChangeRequestedEvent.class)
+                .filter(candidate -> candidate.personId().equals(other.getId())).findFirst().orElseThrow();
+
+        postToken("/email-change-preview", ownerToken).andExpect(status().isBadRequest());
+        postToken("/email-change-preview", tokenFromLink(ownChange.cancellationLink())).andExpect(status().isBadRequest());
+        postToken("/approve-email-change", tokenFromLink(ownChange.cancellationLink())).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void approvalGivesTheNewAddressAFullVerificationWindow() throws Exception {
+        Person admin = persistPerson("access.owner10a", "70000320", "ADMINISTRATIVO");
+        Person teacher = persistPerson("access.owner10b", "70000321", "DOCENTE");
+        staffRequestsChange(admin, teacher, "docente.owner10@example.com");
+        String ownerToken = ownerTokenOf(teacher);
+        pendingTokenOf(teacher).setExpiresAt(ApplicationTime.now().plusMinutes(5));
+        entityManager.flush();
+
+        postToken("/approve-email-change", ownerToken).andExpect(status().isOk());
+
+        assertThat(pendingTokenOf(teacher).getExpiresAt()).isAfter(ApplicationTime.now().plusHours(47));
     }
 }

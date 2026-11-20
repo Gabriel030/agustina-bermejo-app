@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.Optional;
 
 @Service
 public class EmailChangeReviewer {
@@ -41,7 +42,7 @@ public class EmailChangeReviewer {
 
     @Transactional(readOnly = true)
     public EmailChangePreviewResponse preview(String clearToken) {
-        EmailVerificationToken token = findPending(clearToken);
+        EmailVerificationToken token = awaitingApproval(tokenRepository.findByCancelTokenHash(TokenHashUtil.sha256Hex(clearToken)));
         Person person = token.getPerson();
         ContactChangeLog request = contactChangeRecorder.lastEmailChangeRequest(person.getId())
                 .orElseThrow(InvalidEmailVerificationTokenException::new);
@@ -52,13 +53,14 @@ public class EmailChangeReviewer {
 
     @Transactional
     public void approve(String clearToken) {
-        EmailVerificationToken token = findPending(clearToken);
+        EmailVerificationToken token = awaitingApproval(tokenRepository.findLockedByCancelTokenHash(TokenHashUtil.sha256Hex(clearToken)));
         ownerEmailChangeApprover.approveAndSendVerification(token);
         log.info("Cambio de email aprobado por el dueño para person {}", token.getPerson().getId());
     }
 
-    private EmailVerificationToken findPending(String clearToken) {
-        return tokenRepository.findByCancelTokenHash(TokenHashUtil.sha256Hex(clearToken))
+    private EmailVerificationToken awaitingApproval(Optional<EmailVerificationToken> found) {
+        return found
+                .filter(EmailVerificationToken::isAwaitingOwnerApproval)
                 .filter(candidate -> candidate.getNewEmail() != null && candidate.getPerson().getEmail() != null)
                 .filter(candidate -> !candidate.getExpiresAt().isBefore(ApplicationTime.now()))
                 .orElseThrow(InvalidEmailVerificationTokenException::new);
