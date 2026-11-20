@@ -76,6 +76,9 @@ check "el simulacro manual puede registrar una falla con codigo cerrado" "0" "$(
 check "la falla registrada aparece en el estado y genera la alerta" "FAILED COUNTS_MISMATCH 1" "$(echo "$(last_restore) $(jq '[.alerts[] | select(.code=="RESTORE_TEST_FAILED")] | length' "$status_json")")"
 check "un codigo fuera de la lista se rechaza" "2" "$("$scripts/restore-test.sh" --record FAILED texto-libre > /dev/null 2>&1; echo $?)"
 check "un PASSED con codigo se rechaza" "2" "$("$scripts/restore-test.sh" --record PASSED COUNTS_MISMATCH > /dev/null 2>&1; echo $?)"
+check "una fecha pasada como argumento se rechaza" "2" "$("$scripts/restore-test.sh" --record PASSED 2020-01-01T00:00:00Z > /dev/null 2>&1; echo $?)"
+"$scripts/restore-test.sh" --record PASSED > /dev/null 2>&1
+check "la fecha del resultado registrado es la hora del servidor" "1" "$(jq -r --argjson now "$(date -u +%s)" '(.lastRestoreTest.ranAt | fromdateiso8601) as $ran | if ($now - $ran) < 60 and ($now - $ran) >= 0 then 1 else 0 end' "$status_json")"
 check "el estado tras registrar cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
 
 finish

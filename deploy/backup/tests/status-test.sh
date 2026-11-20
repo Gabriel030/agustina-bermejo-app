@@ -62,13 +62,13 @@ check "un codigo de falla fuera del esquema no se escribe nunca" "null" "$(jq -c
 rm -f "$BACKUP_DIR/status/restore-test" "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
 "$scripts/status.sh" > /dev/null
 "$scripts/status.sh" > /dev/null
-check "sin prueba de restauracion y con backups de mas de 14 dias se avisa" "WARNING RESTORE_TEST_FAILED" "$(jq -r '.alerts[] | select(.code=="RESTORE_TEST_FAILED") | "\(.level) \(.code)"' "$status_json")"
+check "sin prueba de restauracion el script no emite alertas: la pantalla lo deriva de lastRestoreTest" "0 null" "$(jq -r '[([.alerts[] | select(.code=="RESTORE_TEST_FAILED")] | length), (.lastRestoreTest | tostring)] | join(" ")' "$status_json")"
 rm -f "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
 printf 'ran_at=2041-03-09T05:00:00Z\nresult=PASSED\nfailure_code=\n' > "$BACKUP_DIR/status/restore-test"
 "$scripts/status.sh" > /dev/null
 check "la prueba de restauracion que paso se informa sin codigo de falla" "PASSED null" "$(jq -r '.lastRestoreTest | "\(.result) \(.failureCode)"' "$status_json")"
 check "con la prueba reciente el estado cumple el esquema" "" "$(validates)"
-check "con una prueba de restauracion reciente no se avisa" "0" "$(jq '[.alerts[] | select(.code=="RESTORE_TEST_FAILED")] | length' "$status_json")"
+check "con una prueba de restauracion reciente tampoco se emiten alertas" "0" "$(jq '[.alerts[] | select(.code=="RESTORE_TEST_FAILED")] | length' "$status_json")"
 rm -f "$BACKUP_DIR/status/restore-test" "$BACKUP_METRICS_DIR"/.recorded_* "$BACKUP_DIR/status/alerts.log"
 
 echo corrupto >> "$BACKUP_DIR/abfiles_20410310T080000Z.tar.zst"
