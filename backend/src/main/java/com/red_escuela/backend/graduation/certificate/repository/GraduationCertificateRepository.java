@@ -9,8 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
-
 import java.util.Optional;
+import java.util.Set;
 
 public interface GraduationCertificateRepository extends JpaRepository<GraduationCertificate, Long> {
 
@@ -51,8 +51,8 @@ public interface GraduationCertificateRepository extends JpaRepository<Graduatio
                                        @Param("issuedBefore") LocalDateTime issuedBefore, Pageable pageable);
 
     @Query("select c.programEnrollmentId from GraduationCertificate c where c.programEnrollmentId is not null and c.status = :status")
-    java.util.Set<Long> findProgramEnrollmentIdsByStatus(@Param("status") GraduationCertificateStatus status);
+    Set<Long> findProgramEnrollmentIdsByStatus(@Param("status") GraduationCertificateStatus status);
 
     @Query("select c.courseEnrollmentId from GraduationCertificate c where c.courseEnrollmentId is not null and c.status = :status")
-    java.util.Set<Long> findCourseEnrollmentIdsByStatus(@Param("status") GraduationCertificateStatus status);
+    Set<Long> findCourseEnrollmentIdsByStatus(@Param("status") GraduationCertificateStatus status);
 }

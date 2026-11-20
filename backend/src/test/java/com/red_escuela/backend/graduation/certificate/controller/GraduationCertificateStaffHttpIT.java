@@ -43,15 +43,24 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -73,6 +82,8 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
     private JwtService jwtService;
     @Autowired
     private GraduationCertificateRepository repository;
+    @Autowired
+    private Clock clock;
     @MockitoBean
     private GraduationDebtCheck debtCheck;
 
@@ -184,7 +195,7 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
     }
 
     private String batchJson(Long... enrollmentIds) {
-        return "{\"items\":[" + java.util.Arrays.stream(enrollmentIds).map(this::itemJson).collect(Collectors.joining(",")) + "]}";
+        return "{\"items\":[" + Arrays.stream(enrollmentIds).map(this::itemJson).collect(Collectors.joining(",")) + "]}";
     }
 
     private String issueAndReadCode(ProgramEnrollment enrollment) throws Exception {
@@ -205,7 +216,7 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
 
         MvcResult result = postJson(BASE + "/preview", administrative, itemJson(enrollment.getId()))
                 .andExpect(status().isOk())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andReturn();
 
         assertThat(textOf(result.getResponse().getContentAsByteArray())).contains("VISTA");
@@ -284,7 +295,7 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
         send(get(BASE + "/" + id), director)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(code))
-                .andExpect(jsonPath("$.verificationUrl").value(org.hamcrest.Matchers.endsWith("/verificar/" + code)))
+                .andExpect(jsonPath("$.verificationUrl").value(endsWith("/verificar/" + code)))
                 .andExpect(jsonPath("$.status").value("VALID"));
         send(get(BASE + "/999999999"), director)
                 .andExpect(status().isNotFound())
@@ -316,12 +327,12 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk()).andReturn();
 
         String body = result.getResponse().getContentAsString();
-        assertThat(JsonPath.<java.util.List<Integer>>read(body, "$.content[?(@.enrollmentId==" + issued.getId() + ")].enrollmentId")).isEmpty();
-        assertThat(JsonPath.<java.util.List<String>>read(body, "$.content[?(@.enrollmentId==" + indebted.getId() + ")].status"))
+        assertThat(JsonPath.<List<Integer>>read(body, "$.content[?(@.enrollmentId==" + issued.getId() + ")].enrollmentId")).isEmpty();
+        assertThat(JsonPath.<List<String>>read(body, "$.content[?(@.enrollmentId==" + indebted.getId() + ")].status"))
                 .containsExactly("BLOCKED_BY_DEBT");
-        assertThat(JsonPath.<java.util.List<String>>read(body, "$.content[?(@.studentId==" + studentOfPending + ")].status"))
+        assertThat(JsonPath.<List<String>>read(body, "$.content[?(@.studentId==" + studentOfPending + ")].status"))
                 .containsExactly("PENDING");
-        assertThat(JsonPath.<java.util.List<String>>read(body, "$.content[?(@.studentId==" + studentOfPending + ")].holderDocumentType"))
+        assertThat(JsonPath.<List<String>>read(body, "$.content[?(@.studentId==" + studentOfPending + ")].holderDocumentType"))
                 .containsExactly("DNI");
     }
 
@@ -351,20 +362,20 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk()).andReturn();
 
         String body = result.getResponse().getContentAsString();
-        assertThat(JsonPath.<java.util.List<Integer>>read(body, "$.content[*].enrollmentId"))
+        assertThat(JsonPath.<List<Integer>>read(body, "$.content[*].enrollmentId"))
                 .contains(approved.getId().intValue()).doesNotContain(failed.getId().intValue());
-        assertThat(JsonPath.<java.util.List<String>>read(body, "$.content[?(@.enrollmentId==" + approved.getId() + ")].kind"))
+        assertThat(JsonPath.<List<String>>read(body, "$.content[?(@.enrollmentId==" + approved.getId() + ")].kind"))
                 .containsExactly("COURSE");
     }
 
     @Test
     void eligiblePaginationIsStableOverSixtyOneCandidates() throws Exception {
         when(debtCheck.hasDebt(anyLong())).thenReturn(false);
-        java.util.Set<Integer> expected = new java.util.HashSet<>();
+        Set<Integer> expected = new HashSet<>();
         for (int i = 0; i < 61; i++) {
             expected.add(completedEnrollment().getId().intValue());
         }
-        java.util.List<Integer> collected = new java.util.ArrayList<>();
+        List<Integer> collected = new ArrayList<>();
         for (int page = 0; page < 3; page++) {
             MvcResult result = send(get(BASE + "/eligible").param("kind", "PROGRAM").param("size", "25").param("page", String.valueOf(page)), director)
                     .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(61)).andReturn();
@@ -372,5 +383,94 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
         }
 
         assertThat(collected).hasSize(61).doesNotHaveDuplicates().containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void eligibleFiltersByGraduationDateRange() throws Exception {
+        ProgramEnrollment enrollment = completedEnrollment();
+        when(debtCheck.hasDebt(anyLong())).thenReturn(false);
+        String dni = enrollment.getStudent().getPerson().getDni();
+
+        send(get(BASE + "/eligible").param("query", dni).param("graduatedFrom", "2026-07-15").param("graduatedTo", "2026-07-15"), director)
+                .andExpect(jsonPath("$.content.length()").value(1));
+        send(get(BASE + "/eligible").param("query", dni).param("graduatedFrom", "2026-07-16"), director)
+                .andExpect(jsonPath("$.content.length()").value(0));
+        send(get(BASE + "/eligible").param("query", dni).param("graduatedTo", "2026-07-14"), director)
+                .andExpect(jsonPath("$.content.length()").value(0));
+    }
+
+    @Test
+    void eligiblePaginationIsStableOverSixtyOneCourseCandidates() throws Exception {
+        when(debtCheck.hasDebt(anyLong())).thenReturn(false);
+        Set<Integer> expected = new HashSet<>();
+        for (int i = 0; i < 61; i++) {
+            expected.add(courseEnrollment(EnrollmentStatus.APPROVED).getId().intValue());
+        }
+        List<Integer> collected = new ArrayList<>();
+        for (int page = 0; page < 3; page++) {
+            MvcResult result = send(get(BASE + "/eligible").param("kind", "COURSE").param("size", "25").param("page", String.valueOf(page)), director)
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(61)).andReturn();
+            collected.addAll(JsonPath.read(result.getResponse().getContentAsString(), "$.content[*].enrollmentId"));
+        }
+
+        assertThat(collected).hasSize(61).doesNotHaveDuplicates().containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void listFiltersByIssuedDateRangeInclusively() throws Exception {
+        ProgramEnrollment enrollment = completedEnrollment();
+        issueAndReadCode(enrollment);
+        String dni = enrollment.getStudent().getPerson().getDni();
+        LocalDate today = LocalDate.now(clock);
+
+        send(get(BASE).param("query", dni).param("issuedFrom", today.toString()).param("issuedTo", today.toString()), director)
+                .andExpect(jsonPath("$.content.length()").value(1));
+        send(get(BASE).param("query", dni).param("issuedTo", today.minusDays(1).toString()), director)
+                .andExpect(jsonPath("$.content.length()").value(0));
+        send(get(BASE).param("query", dni).param("issuedFrom", today.plusDays(1).toString()), director)
+                .andExpect(jsonPath("$.content.length()").value(0));
+    }
+
+    @Test
+    void listPaginatesIssuedCertificates() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            issueAndReadCode(completedEnrollment());
+        }
+
+        MvcResult first = send(get(BASE).param("size", "2").param("page", "0"), director)
+                .andExpect(jsonPath("$.totalElements").value(3)).andExpect(jsonPath("$.content.length()").value(2)).andReturn();
+        MvcResult second = send(get(BASE).param("size", "2").param("page", "1"), director)
+                .andExpect(jsonPath("$.content.length()").value(1)).andReturn();
+
+        List<String> codes = new ArrayList<>(JsonPath.<List<String>>read(first.getResponse().getContentAsString(), "$.content[*].code"));
+        codes.addAll(JsonPath.<List<String>>read(second.getResponse().getContentAsString(), "$.content[*].code"));
+        assertThat(codes).hasSize(3).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void individualIssueWithDebtIsRejectedWithBlockedByDebtCode() throws Exception {
+        ProgramEnrollment enrollment = completedEnrollment();
+        when(debtCheck.hasDebt(enrollment.getStudent().getId())).thenReturn(true);
+
+        postJson(BASE, administrative, itemJson(enrollment.getId()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GRADUATION_CERTIFICATE_BLOCKED_BY_DEBT"));
+        assertThat(repository.count()).isZero();
+    }
+
+    @Test
+    void batchReportsUnexpectedFailureWithGenericCodeAndKeepsGoing() throws Exception {
+        ProgramEnrollment broken = completedEnrollment();
+        ProgramEnrollment healthy = completedEnrollment();
+        when(debtCheck.hasDebt(anyLong())).thenReturn(false);
+        when(debtCheck.hasDebt(broken.getStudent().getId())).thenThrow(new IllegalStateException("boom"));
+
+        postJson(BASE + "/batch", director, batchJson(broken.getId(), healthy.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.issued").value(1))
+                .andExpect(jsonPath("$.failed").value(1))
+                .andExpect(jsonPath("$.results[0].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[0].errorCode").value("INTERNAL_ERROR"))
+                .andExpect(jsonPath("$.results[1].outcome").value("ISSUED"));
     }
 }

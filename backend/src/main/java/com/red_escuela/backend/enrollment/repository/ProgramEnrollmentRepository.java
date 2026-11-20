@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.repository;
 
+import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +31,7 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
         String getName();
 
-        com.red_escuela.backend.shared.domain.DocumentType getDocumentType();
+        DocumentType getDocumentType();
 
         String getDocumentNumber();
 
