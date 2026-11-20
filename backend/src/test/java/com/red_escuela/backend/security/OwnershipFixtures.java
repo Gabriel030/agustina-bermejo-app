@@ -5,6 +5,7 @@ import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -15,6 +16,8 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
@@ -74,6 +77,9 @@ final class OwnershipFixtures {
     private Long invoiceId;
     private Long notificationId;
     private Long sessionId;
+    private Long courseSectionId;
+    private Long programPlanOptionId;
+    private Long coursePlanOptionId;
     private Long closureId;
     private Long closureSectionId;
     private String teacherDirectorToken;
@@ -101,6 +107,9 @@ final class OwnershipFixtures {
             case INVOICE -> invoiceId;
             case NOTIFICATION -> notificationId;
             case SESSION -> sessionId;
+            case SECTION_ENROLLMENT_INSTRUCTOR -> sectionEnrollmentId;
+            case COURSE_SECTION_ENROLLMENT_INSTRUCTOR -> courseSectionEnrollmentId;
+            case COURSE_SECTION_INSTRUCTOR -> courseSectionId;
         };
     }
 
@@ -218,8 +227,10 @@ final class OwnershipFixtures {
         examBoardId = persistExamBoard(subject, term, instructor);
         closureSectionId = persistClosureSection(subject, term, scheme, instructor);
         closureId = persistClosure(closureSectionId);
-        courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term);
+        courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term, instructor);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
+        programPlanOptionId = persistPlanOption(ownerPerson, program, null);
+        coursePlanOptionId = persistPlanOption(ownerPerson, null, courseOfEnrollment());
         notificationId = persistNotification(ownerPerson);
         sessionId = persistRefreshToken(ownerPerson);
 
@@ -280,7 +291,7 @@ final class OwnershipFixtures {
         return closure.getId();
     }
 
-    private Long persistCourseSectionEnrollment(Student student, Term term) {
+    private Long persistCourseSectionEnrollment(Student student, Term term, Instructor instructor) {
         Course course = new Course();
         course.setName("Curso matriz");
         course.setTerm(term);
@@ -295,6 +306,12 @@ final class OwnershipFixtures {
         courseSection.setTerm(term);
         courseSection.setStatus(StatusType.ACTIVE);
         entityManager.persist(courseSection);
+        CourseSubjectSectionInstructor courseAssignment = new CourseSubjectSectionInstructor();
+        courseAssignment.setSection(courseSection);
+        courseAssignment.setInstructor(instructor);
+        courseAssignment.setRole(InstructorRole.LEAD);
+        entityManager.persist(courseAssignment);
+        courseSectionId = courseSection.getId();
         CourseEnrollment courseEnrollment = new CourseEnrollment();
         courseEnrollment.setStudent(student);
         courseEnrollment.setCourse(course);
@@ -336,6 +353,27 @@ final class OwnershipFixtures {
                 returning id
                 """).setParameter("programEnrollmentId", programEnrollment.getId()).setParameter("termId", term.getId()).setParameter("invoiceId", invoiceId)
                 .setParameter("personId", person.getId()).getSingleResult()).longValue();
+    }
+
+    String resolvePlaceholders(String body) {
+        return body.replace("111111", String.valueOf(programPlanOptionId))
+                .replace("222222", String.valueOf(coursePlanOptionId));
+    }
+
+    private Course courseOfEnrollment() {
+        return entityManager.find(CourseEnrollment.class, courseEnrollmentId).getCourse();
+    }
+
+    private Long persistPlanOption(Person creator, Program program, Course course) {
+        PaymentPlanOption option = new PaymentPlanOption();
+        option.setProgram(program);
+        option.setCourse(course);
+        option.setDescription("Opcion matriz");
+        option.setCadence(PaymentPlanCadence.MONTHLY);
+        option.setCreatedBy(creator);
+        entityManager.persist(option);
+        entityManager.flush();
+        return option.getId();
     }
 
     private Long persistNotification(Person recipient) {
