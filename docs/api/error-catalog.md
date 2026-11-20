@@ -468,6 +468,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADE_ITEM_NOT_RECOVERABLE` | no | `GradeItemNotRecoverableException` | evaluation |
 | `GRADE_ITEM_PUBLISHED_LOCKED` | no | `GradeItemPublishedLockedException` | evaluation |
 | `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
+| `GRADUATION_CERTIFICATE_BLOCKED_BY_DEBT` | no | `GraduationCertificateBlockedByDebtException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_AVAILABLE` | no | `GraduationCertificateNotAvailableException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_REVOCABLE` | no | `GraduationCertificateNotRevocableException` | graduation |
