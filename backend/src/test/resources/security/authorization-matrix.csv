@@ -81,7 +81,7 @@ POST,/course-enrollments/{id}/withdraw,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/course-section-enrollments/{id}/attendance,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/course-section-enrollments/{id}/attendance/risk,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/course-section-enrollments/{id}/grade-items,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
-POST,/course-section-enrollments/{id}/grade-items,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,
+POST,/course-section-enrollments/{id}/grade-items,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,course-section-enrollment-instructor,"{""type"":""EXAM"",""date"":""2026-06-01T10:00:00"",""score"":7}"
 POST,/course-section-enrollments/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/course-sections/{id},DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 PUT,/course-sections/{id},DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
