@@ -1,92 +1,199 @@
 # Backups y restauración de Postgres
 
-Todo vive en `deploy/backup/` y es solo Docker (sin depender del hosting). Se suma al compose de producción con `-f`:
+Runbook de las copias de la base y de los archivos subidos. Todo corre en Docker desde `deploy/backup/`; no depende del hosting.
 
-```
-docker compose -f docker-compose.prod.yml -f deploy/backup/docker-compose.backup.yml up -d backup
-```
+Los comandos de este documento son los de `deploy/backup/scripts/`. Si cambian los scripts, cambia este documento en el mismo PR.
 
-El servicio `backup` se une a la red `internal` del compose de producción para llegar a `postgres` (variable `BACKUP_PGHOST` si se llama distinto) y a la red por defecto para poder salir a S3. Usa `POSTGRES_USER` (default `agustina`), `POSTGRES_PASSWORD` y `POSTGRES_DB` del mismo `.env`: cargarlo con `--env-file deploy/.env`.
+## Política
 
-## Qué hace
+| Concepto | Valor |
+|---|---|
+| Frecuencia | Cada 4 h (`BACKUP_SCHEDULE=0 */4 * * *`) |
+| RPO | Hasta 4 h (`BACKUP_TARGET_RPO_HOURS=4`) |
+| Retención diaria | Último backup de cada día, últimos 7 días (`BACKUP_KEEP_DAILY=7`) |
+| Retención semanal | Último backup de cada semana, últimas 4 semanas (`BACKUP_KEEP_WEEKLY=4`) |
+| Retención trimestral | Último backup de cada trimestre, sin vencimiento (`BACKUP_KEEP_QUARTERLY=0`) |
+| Pre-release | Copia manual antes de cada release con migraciones (`pre-release.sh`, ver más abajo) |
+| Destino | Segundo disco local del servidor (`BACKUP_DIR=/ruta/absoluta`), distinto del disco de Postgres |
+| Cifrado | `age`. La clave privada no se guarda en el servidor (ver "Custodia de la clave") |
+| Prueba de integridad | Semanal, automática (`BACKUP_RESTORE_TEST_SCHEDULE=0 5 * * 0`) |
+| Simulacro de restauración | Manual, al menos una vez por trimestre (ver "Simulacro") |
+| Estado | Pantalla solo lectura `GET /backups/status` (roles `DIRECTOR` y `PLATFORM_ADMIN`) |
 
-- **Cada 6 horas** (`BACKUP_SCHEDULE`, cron, zona `BACKUP_TZ`) corre `pg_dump -Fc`. Escribe primero un `.partial` y recién al terminar bien lo renombra: nunca queda un dump a medias con nombre válido.
-- Por cada dump genera un `.sha256` (checksum) y un `.meta` con la cantidad de migraciones Flyway y el conteo de filas de cada tabla al momento del backup (lo usa la prueba de restauración).
-- **Un backup diario no es un proceso aparte**: la rotación se queda con el último backup de cada día.
-- **Rotación** (`BACKUP_KEEP_*`): se conservan, sumados sin repetir, los últimos 4 backups (`KEEP_RECENT`), el último de cada uno de los 7 días (`KEEP_DAILY`), de cada una de las 4 semanas (`KEEP_WEEKLY`) y de cada uno de los 6 meses (`KEEP_MONTHLY`). Se probó con 664 backups simulados: quedan 17.
-- **Destino**: volumen Docker `backup_data` por defecto, o una carpeta del host con `BACKUP_DIR=/ruta/absoluta`. Opcional: copia a S3 compatible (AWS, Backblaze B2, Cloudflare R2, MinIO) si se define `BACKUP_S3_BUCKET`; la rotación también se aplica allá. Las credenciales entran solo por variables de entorno, nunca al repo.
-- **Cifrado opcional** con `age`: definir `BACKUP_AGE_RECIPIENT` con la clave pública (`age1...`). El dump queda como `.dump.age`. Generar el par con `age-keygen -o clave.txt`; **la clave privada se guarda fuera del servidor** (gestor de contraseñas y copia en papel). Sin ella los backups cifrados no se pueden restaurar.
-- **Avisos**: si el backup, el cifrado, la subida a S3 o el checksum fallan, avisa por webhook y/o Telegram (`ALERT_WEBHOOK_URL`, `ALERT_TELEGRAM_BOT_TOKEN` + `ALERT_TELEGRAM_CHAT_ID`). Una vez por día (`BACKUP_FRESHNESS_SCHEDULE`) revisa además que el último backup tenga menos de `BACKUP_MAX_AGE_HOURS` (13) horas, para detectar que el cron mismo dejó de correr. Si se define `BACKUP_HEARTBEAT_URL` (por ejemplo un check de healthchecks.io), se le hace un ping después de cada backup exitoso: si el servidor entero muere, el servicio externo avisa por ausencia.
-- Escribe métricas en el volumen `backup_metrics` (`backup_last_success_timestamp_seconds`, etc.) que lee el perfil `monitoring` (ver `monitoring.md`).
+Un backup que nunca se restauró no es un backup: por eso existen la prueba semanal y el simulacro.
+
+## Qué se guarda
+
+Cada ejecución de `backup.sh` produce, con el mismo sello de tiempo:
+
+- `abdb_<fecha>.dump` (o `.dump.age`): `pg_dump -Fc` de la base. Se escribe primero como `.partial` y se renombra solo si terminó bien.
+- `abfiles_<fecha>.tar.zst` (o `.tar.zst.age`): archivos subidos y certificados del volumen `app_data`.
+- `.sha256` de cada archivo y `.meta` con las migraciones Flyway y el conteo de filas por tabla (lo usa la prueba de restauración).
+
+Antes de rotar se elige cada tier con `select-expired.awk`. Lo que no entra en ningún tier se borra.
+
+## Custodia de la clave `age`
+
+- **Quién**: Gabriel y una segunda persona de confianza. Las dos tienen una copia.
+- **Dónde**: la clave privada (`clave.txt`, generada con `age-keygen -o clave.txt`) vive en un gestor de contraseñas y en una copia en papel guardada en un lugar físico distinto de la oficina. **Nunca** en el servidor, ni en el repositorio, ni en un chat.
+- **Qué se guarda en el servidor**: solo la clave pública en `BACKUP_AGE_RECIPIENT`.
+- **Cómo se prueba la custodia**: cada trimestre, en el simulacro, cada custodio abre su copia y confirma que puede leerla. Si uno no puede, se genera un par nuevo y se cambia `BACKUP_AGE_RECIPIENT`; los dumps anteriores siguen necesitando la clave vieja, así que esta se conserva mientras existan.
+- **Si se pierde la clave**: los dumps `.age` no se pueden restaurar. Hay que usar la copia del custodio. Si se pierden las dos, no hay recuperación de esos backups. Por eso hay dos custodios.
 
 ## Backup manual
 
-```
+```bash
 docker compose -f docker-compose.prod.yml -f deploy/backup/docker-compose.backup.yml exec backup backup.sh
-docker compose ... exec backup ls -la /backups
+docker compose -f docker-compose.prod.yml -f deploy/backup/docker-compose.backup.yml exec backup ls -la /backups
 ```
 
-## Runbook: restaurar paso a paso
+## Copia previa a cada release con migraciones
+
+Flyway no revierte migraciones. Antes de desplegar un release con migraciones nuevas:
+
+```bash
+deploy/backup/scripts/pre-release.sh v1.2.3
+```
+
+El script:
+
+1. Para `backend` (el resto sigue andando).
+2. Toma un backup con prefijo `abpre-<versión>` y archivos `abprefiles-<versión>`, sin rotación.
+3. Verifica que el dump exista y vuelve a arrancar `backend`, aunque el backup haya fallado.
+4. Actualiza `status.json`.
+
+La pantalla de estado lista las últimas 5 copias pre-release. Los scripts no tienen una limpieza automática para estas copias: se borran a mano cuando ya no hacen falta. Si el script falla, `backend` queda levantado y el release no sale.
+
+Como alternativa sin el servicio de backup, `docs/deploy/README.md` (sección "Actualizar a una versión nueva") describe el `pg_dump` manual.
+
+Checklist previo a release (verificar antes de `dc up -d --build`):
+
+- [ ] Copia previa hecha con `pre-release.sh <versión>` o con el `pg_dump` manual, y guardada fuera del servidor.
+- [ ] `BROADCAST_UNSUBSCRIBE_SECRET` definido en `deploy/.env` y distinto de `JWT_SECRET`. Sin él el backend no arranca en prod ni en staging.
+- [ ] `POSTGRES_PASSWORD`, `JWT_SECRET` y `BACKUP_S3_*` (si aplica) no cambiaron sin querer.
+- [ ] El PR del release dice qué migraciones trae y si alguna es destructiva.
+- [ ] `GET /backups/status` muestra el último backup de menos de 4 h y `consecutiveFailures` en 0.
+- [ ] Último resultado de la prueba semanal `PASSED`.
+
+## Restaurar paso a paso
 
 Cuándo: pérdida o corrupción de datos, o migración a otro servidor.
 
-1. **Frenar el backend** para que no escriba durante la restauración: `docker compose -f docker-compose.prod.yml stop backend`.
-2. **Elegir el dump**: `docker compose ... exec backup ls -la /backups`. Si es de S3, bajarlo primero con `rclone` o la consola del proveedor y dejarlo en `/backups` junto con su `.sha256`.
-3. **(Recomendado) Guardar el estado actual** antes de pisarlo: `exec backup backup.sh`.
-4. **Restaurar**:
+Hay dos caminos. Elegir según el caso.
+
+### A. Recuperar datos puntuales (la app sigue andando)
+
+1. Elegir el backup anterior a la pérdida: `docker compose ... exec backup ls -la /backups`.
+2. Restaurar en una base aparte, sin tocar la base en uso:
+   ```bash
+   docker compose ... exec backup restore.sh /backups/abdb_AAAAMMDDTHHMMSSZ.dump --db agustina_bermejo_recuperada
+   # cifrado:
+   docker compose run --rm -v $PWD/clave.txt:/clave.txt:ro -e AGE_IDENTITY_FILE=/clave.txt backup restore.sh /backups/abdb_AAAAMMDDTHHMMSSZ.dump.age --db agustina_bermejo_recuperada
    ```
-   docker compose ... exec backup restore.sh /backups/abdb_YYYYMMDDTHHMMSSZ.dump
+3. Consultar la base aparte y pasar a la base en uso solo lo que falta:
+   ```bash
+   docker compose exec postgres psql -U "$POSTGRES_USER" -d agustina_bermejo_recuperada
    ```
-   Pide escribir el nombre de la base para confirmar y **borra y recrea** la base destino (`--db NOMBRE` para otra; `--yes` saltea la confirmación). Verifica el checksum antes de tocar nada: si no coincide, aborta. Para un dump `.age`, montar la clave privada y definir `AGE_IDENTITY_FILE` (por ejemplo `docker compose run --rm -v $PWD/clave.txt:/clave.txt:ro -e AGE_IDENTITY_FILE=/clave.txt backup restore.sh /backups/....dump.age`).
-5. **Levantar el backend**: `docker compose ... start backend`. Flyway valida el historial al arrancar; si el dump es de una versión anterior, aplica las migraciones pendientes.
-6. **Comprobar**: `curl -f http://localhost:8080/actuator/health`, login con un usuario real y revisar que los datos recientes estén.
+4. Borrar la base aparte:
+   ```bash
+   docker compose exec -T postgres dropdb -U "$POSTGRES_USER" agustina_bermejo_recuperada
+   ```
 
-El restore funciona desde cualquier máquina con Docker usando la imagen del servicio `backup` (`docker build deploy/backup`), no hace falta el servidor original.
+### B. Reemplazar la base completa (la app se para)
 
-## Prueba automática de restauración
+1. Avisar a los usuarios: la app va a estar parada unos minutos.
+2. Parar el backend: `docker compose -f docker-compose.prod.yml stop backend`.
+3. Guardar el estado actual: `docker compose ... exec backup backup.sh`.
+4. Restaurar en una base nueva:
+   ```bash
+   docker compose ... exec backup restore.sh /backups/abdb_AAAAMMDDTHHMMSSZ.dump --db agustina_bermejo_nueva
+   ```
+   Pide escribir el nombre de la base para confirmar. Verifica el checksum antes de tocar nada: si no coincide, aborta. Para un `.age`, usar el comando con `AGE_IDENTITY_FILE` del paso A.
+5. Cambiar de base: renombrar la dañada y poner la restaurada con el nombre original.
+   ```bash
+   docker compose exec -T postgres psql -U "$POSTGRES_USER" -d postgres \
+     -c "ALTER DATABASE agustina_bermejo RENAME TO agustina_bermejo_danada_<fecha>;" \
+     -c "ALTER DATABASE agustina_bermejo_nueva RENAME TO agustina_bermejo;"
+   ```
+   Para volver atrás, renombrar al revés. No hace falta cambiar `DB_URL` ni `POSTGRES_DB`.
+6. Restaurar los archivos subidos y los certificados del mismo momento:
+   ```bash
+   age -d -i <clave privada> /backups/abfiles_AAAAMMDDTHHMMSSZ.tar.zst.age \
+     | zstd -d | docker run --rm -i -v app_data:/data alpine tar -x -C /data
+   ```
+   Si el archivo no está cifrado, omitir `age -d -i ...` y pasar el `.tar.zst` directo a `zstd -d`.
+7. Levantar el backend: `docker compose -f docker-compose.prod.yml start backend`. Flyway valida el historial al arrancar y aplica las migraciones pendientes si el dump es de una versión anterior.
+8. Verificar antes de abrir a los usuarios. Todo tiene que pasar:
+   - La app arranca: `curl -fsS https://<dominio>/api/actuator/health`.
+   - La versión de la base coincide con la del código:
+     ```bash
+     docker compose exec -T postgres psql -U "$POSTGRES_USER" -d agustina_bermejo \
+       -tc "select max(version) from flyway_schema_history where success"
+     ```
+   - Las cantidades coinciden con las del `.meta` del backup.
+   - Se entra con un usuario de prueba.
+   - Se abre un certificado y un archivo subido.
+9. Reabrir y avisar a los usuarios hasta qué fecha y hora quedaron los datos.
 
-```
+El restore funciona desde cualquier máquina con Docker usando la imagen del servicio `backup` (`docker build deploy/backup`). No hace falta el servidor original.
+
+## Prueba semanal de integridad
+
+Corre sola cada domingo a las 05:00 (`restore-test.sh`). Toma el último dump, valida checksum, lo restaura en una base descartable y compara conteos y migraciones. El resultado queda en `status.json` y en `GET /backups/status`. Si falla, se emite alerta `RESTORE_TEST_FAILED`.
+
+Limitación conocida: la prueba automática no descifra con `AGE_IDENTITY_FILE` (la clave no está en el servidor). Con dumps `.age` no puede restaurar; por eso el simulacro trimestral es manual y es la prueba real del cifrado.
+
+Para correr la verificación completa a mano, con un Postgres 16 descartable:
+
+```bash
 deploy/backup/verify-restore.sh --volume <volumen_backup_data>      # o --dir /ruta/a/los/dumps
 ```
 
-Hace, con un Postgres 16 descartable que se destruye al terminar: construye la imagen de herramientas, toma el **último** dump, lo restaura con el mismo `restore.sh` del runbook (incluye checksum y descifrado), compara la cantidad de migraciones restauradas contra el `.meta` y contra los `V*.sql` del repositorio, compara el conteo de filas de **todas** las tablas contra el `.meta` (tolerancia `VERIFY_TOLERANCE_PCT`, 5 %), y corre `flyway validate`. Devuelve código distinto de cero si algo falla. `--skip-flyway` omite el último paso (evita bajar la imagen de Flyway), `--migrations` cambia la carpeta de migraciones. Si los dumps están cifrados, exportar `AGE_IDENTITY_FILE`.
+Cuando cambia la versión de Postgres, cuando se tocan los scripts de backup, o antes de un release con migraciones, correrla también a mano.
 
-**Cada cuánto probarlo**: una vez por semana (cron del host o tarea programada) y siempre después de (a) cambiar versión de Postgres, (b) tocar los scripts de backup, (c) un release con migraciones. Un backup que nunca se restauró no es un backup.
+## Simulacro trimestral
 
-## RPO / RTO esperados
+Hacerlo en una fecha fija de cada trimestre, en un servidor de prueba o en staging, nunca sobre producción.
 
-| | Valor | Por qué |
-|---|---|---|
-| RPO (datos que se pueden perder) | hasta 6 h | Frecuencia del backup. Bajarlo es cambiar `BACKUP_SCHEDULE`; por debajo de 1 h conviene archivado WAL (no incluido). |
-| RTO (tiempo hasta volver) | 30 a 60 min | Restaurar un dump de ~700 KB tomó 10 s; con datos reales escala con el tamaño. El resto es detectar la falla, bajar el dump y levantar los servicios. No incluye reprovisionar un servidor nuevo. |
-| Pérdida del servidor entero | RPO 6 h solo si hay copia en S3 | Sin `BACKUP_S3_BUCKET` los backups viven en el mismo disco que la base: **configurar S3 en producción**. |
+1. Elegir el último backup `.dump.age` y verificar su `.sha256`.
+2. Descifrar con la clave privada que trae el custodio (no la del servidor). Confirmar que la clave abre el archivo.
+3. Restaurar con el paso A.2 del runbook, a una base de prueba.
+4. Comparar conteos contra el `.meta`.
+5. Restaurar el tar de archivos y comparar un certificado y un archivo subido.
+6. Confirmar con el segundo custodio que puede leer su copia de la clave.
+7. Registrar fecha, backup usado, resultado y custodios presentes en el PR o issue de operaciones.
 
-## Variables nuevas (ya incorporadas a `deploy/.env.example`)
+## Dónde se ve el estado
+
+- `GET /backups/status`: pantalla de solo lectura para `DIRECTOR` y `PLATFORM_ADMIN`. Lee `status.json`.
+- `deploy/backup/scripts/status.sh` regenera `status.json` (lo corre `pre-release.sh`).
+- Alertas por webhook y/o Telegram (`ALERT_WEBHOOK_URL`, `ALERT_TELEGRAM_BOT_TOKEN` + `ALERT_TELEGRAM_CHAT_ID`) para fallas de backup, dump dañado, prueba de restauración fallida y disco bajo.
+- Revisión diaria de antigüedad (`BACKUP_FRESHNESS_SCHEDULE`, `30 9 * * *`): alerta si el último backup supera `BACKUP_MAX_AGE_HOURS`.
+- `BACKUP_HEARTBEAT_URL` (opcional, por ejemplo healthchecks.io): ping tras cada backup exitoso. Avisa si el servidor entero deja de responder.
+
+## Variables
+
+Las que usan los scripts. Están en `deploy/.env.example`.
 
 | Variable | Default | Descripción |
 |---|---|---|
-| `BACKUP_SCHEDULE` | `0 */6 * * *` | Cron del backup |
-| `BACKUP_TZ` | `America/Argentina/Buenos_Aires` | Zona horaria del cron |
-| `BACKUP_DIR` | `backup_data` (volumen) | Ruta absoluta del host para usar una carpeta en vez de volumen |
-| `BACKUP_PGHOST` / `BACKUP_PGPORT` | `postgres` / `5432` | Dónde está Postgres |
-| `BACKUP_RUN_ON_START` | `false` | Hacer un backup al arrancar el contenedor |
-| `BACKUP_KEEP_RECENT` / `_DAILY` / `_WEEKLY` / `_MONTHLY` | `4` / `7` / `4` / `6` | Retención |
-| `BACKUP_FRESHNESS_SCHEDULE` | `30 9 * * *` | Cuándo revisar que haya un backup reciente |
+| `BACKUP_SCHEDULE` | `0 */4 * * *` | Cron del backup |
+| `BACKUP_RESTORE_TEST_SCHEDULE` | `0 5 * * 0` | Cron de la prueba semanal |
+| `BACKUP_FRESHNESS_SCHEDULE` | `30 9 * * *` | Cron de la revisión de antigüedad |
+| `BACKUP_TZ` | `America/Argentina/Buenos_Aires` | Zona horaria de los crons |
+| `BACKUP_DIR` | `backup_data` (volumen) | Ruta absoluta del segundo disco del host |
+| `BACKUP_TARGET_RPO_HOURS` | `4` | RPO objetivo que muestra el estado |
 | `BACKUP_MAX_AGE_HOURS` | `13` | Antigüedad máxima aceptable |
-| `BACKUP_HEARTBEAT_URL` | vacío | URL a la que se hace ping tras cada backup OK (dead man's switch externo) |
-| `BACKUP_AGE_RECIPIENT` | vacío | Clave pública `age` para cifrar |
-| `BACKUP_S3_BUCKET` | vacío | Activa la copia a S3 |
-| `BACKUP_S3_PREFIX` | `agustina-bermejo` | Carpeta dentro del bucket |
-| `BACKUP_S3_ENDPOINT` | vacío | Endpoint del proveedor (vacío en AWS) |
-| `BACKUP_S3_REGION` | vacío | Región |
-| `BACKUP_S3_PROVIDER` | `Other` | `AWS`, `Backblaze`, `Cloudflare`, `Minio`, `Other` |
-| `BACKUP_S3_ACCESS_KEY_ID` / `BACKUP_S3_SECRET_ACCESS_KEY` | vacío | Credenciales (secretas) |
-| `ALERT_LABEL` | `agustina-bermejo` | Prefijo de los avisos |
-| `ALERT_WEBHOOK_URL` | vacío | Webhook que recibe `{"text":..., "content":...}` (Slack, Discord, ntfy, etc.) |
+| `BACKUP_KEEP_DAILY` / `_WEEKLY` / `_QUARTERLY` | `7` / `4` / `0` | Retención (`0` en trimestral = sin vencimiento) |
+| `BACKUP_AGE_RECIPIENT` | vacío | Clave pública `age1...` para cifrar |
+| `BACKUP_HEARTBEAT_URL` | vacío | Ping tras cada backup exitoso |
+| `BACKUP_S3_BUCKET` y `BACKUP_S3_*` | vacío | Copia a S3 compatible. Credenciales solo por variables de entorno |
+| `ALERT_WEBHOOK_URL` | vacío | Webhook de avisos |
 | `ALERT_TELEGRAM_BOT_TOKEN` / `ALERT_TELEGRAM_CHAT_ID` | vacío | Aviso por Telegram |
 
-`POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB` se reutilizan de las variables que ya existen. Aviso por email: no incluido; se resuelve con un webhook (por ejemplo ntfy o un puente a email).
+Los avisos por email no están incluidos: se resuelven con un webhook.
 
-## Qué se probó y qué no
+## Pendientes conocidos
 
-Ver el cuerpo del PR: restauración real contra un Postgres 16 con las 207 migraciones del repo, caso de dump corrupto, rotación y alerta de caída. No probados contra servicios reales: subida a S3, cifrado `age` de punta a punta, entrega a Telegram/webhook.
+- La prueba automática no descifra dumps `.age` (ver "Prueba semanal de integridad").
+- La copia en S3 no se probó contra un proveedor real. Sin S3, el backup vive en el mismo servidor: configurar copia externa en producción.
