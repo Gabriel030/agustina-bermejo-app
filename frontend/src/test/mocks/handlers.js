@@ -45,6 +45,16 @@ export const handlers = [
     }),
   ),
   http.post(`${API}/cancel-email-change`, () => new HttpResponse(null, { status: 200 })),
+  http.post(`${API}/email-change-preview`, () =>
+    HttpResponse.json({
+      currentEmailMasked: 'm•••a@gmail.com',
+      newEmailMasked: 'm•••z@alumnos.instituto.edu.ar',
+      requestedByRole: 'ADMINISTRATIVO',
+      requestedAt: '2026-11-19T20:41:00',
+      expiresAt: '2026-11-21T20:41:00',
+    }),
+  ),
+  http.post(`${API}/approve-email-change`, () => new HttpResponse(null, { status: 200 })),
   http.post(`${API}/auth/login`, () =>
     HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
   ),
