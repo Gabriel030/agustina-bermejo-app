@@ -1,6 +1,7 @@
 package com.red_escuela.backend.notification.broadcast;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.notification.broadcast.domain.ConsentSource;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -8,6 +9,8 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -170,13 +173,14 @@ class AccountCreationConsentIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from contact_consent where person_id = ?", Integer.class, person.getId())).isZero();
     }
 
-    @Test
-    void foreignSourcesAreRejectedOnUpdate() throws Exception {
-        Person person = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "first-login-rejects");
+    @ParameterizedTest
+    @EnumSource(value = ConsentSource.class, names = {"EMAIL_LINK", "STAFF_ON_BEHALF", "IMPORT"})
+    void foreignSourcesAreRejectedOnUpdate(ConsentSource source) throws Exception {
+        Person person = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "first-login-rejects-" + source.name().toLowerCase().replace('_', '-'));
 
         mockMvc.perform(put("/me/contact-consents").header("Authorization", bearer(person))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"channel\":\"EMAIL\",\"category\":\"INSTITUTIONAL\",\"granted\":true,\"source\":\"STAFF_ON_BEHALF\"}"))
+                        .content("{\"channel\":\"EMAIL\",\"category\":\"INSTITUTIONAL\",\"granted\":true,\"source\":\"" + source.name() + "\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("CONSENT_SOURCE_NOT_ACCEPTED"));
         assertThat(jdbc.queryForObject("select count(*) from contact_consent where person_id = ?", Integer.class, person.getId())).isZero();

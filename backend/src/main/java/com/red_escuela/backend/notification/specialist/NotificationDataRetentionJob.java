@@ -24,8 +24,10 @@ public class NotificationDataRetentionJob {
             .map(status -> "'" + status.name() + "'")
             .collect(Collectors.joining(", "));
     private static final String COLLECTION_REMINDER = "'" + DeliveryCategory.COLLECTION_REMINDER.name() + "'";
+    private static final String NOT_REFERENCED_BY_A_BROADCAST_RECIPIENT =
+            "not exists (select 1 from broadcast_recipient where broadcast_recipient.delivery_id = notification_delivery.id)";
     private static final String OTHER_DELIVERIES = "scheduled_for < :cutoff and category <> " + COLLECTION_REMINDER
-            + " and status in (" + TERMINAL_DELIVERY_STATUSES + ")";
+            + " and status in (" + TERMINAL_DELIVERY_STATUSES + ") and " + NOT_REFERENCED_BY_A_BROADCAST_RECIPIENT;
     private static final String COLLECTION_REMINDER_DELIVERIES = "scheduled_for < :cutoff and category = " + COLLECTION_REMINDER
             + " and status in (" + TERMINAL_DELIVERY_STATUSES + ")";
     private static final String NOTIFICATIONS_WITHOUT_PENDING_PROCEDURE = "created_at < :cutoff and (read = true or related_entity_id is null)";

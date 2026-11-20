@@ -7,6 +7,7 @@ import com.red_escuela.backend.notification.broadcast.domain.DeliveryMode;
 import com.red_escuela.backend.notification.broadcast.domain.DispatchOutcome;
 import com.red_escuela.backend.notification.broadcast.domain.OutboundMessage;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MessageChannel {
@@ -20,4 +21,8 @@ public interface MessageChannel {
     Optional<ChannelAddress> resolveAddress(Long personId);
 
     DispatchOutcome dispatch(OutboundMessage message);
+
+    default List<DispatchOutcome> dispatchAll(List<OutboundMessage> messages) {
+        return messages.stream().map(this::dispatch).toList();
+    }
 }

@@ -1240,6 +1240,11 @@
       },
       "AudiencePreviewRequest" : {
         "properties" : {
+          "bodyText" : {
+            "maxLength" : 5000,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
           "category" : {
             "enum" : [ "INSTITUTIONAL", "PROMOTIONAL" ],
             "type" : "string"
@@ -1264,6 +1269,15 @@
             "maximum" : 100,
             "minimum" : 1,
             "type" : "integer"
+          },
+          "subject" : {
+            "maxLength" : 300,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "templateId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           }
         },
         "required" : [ "category", "channel", "excludeMissingVariables", "page", "segmentSpec", "size" ],
@@ -1293,6 +1307,29 @@
           }
         },
         "required" : [ "count", "hasUngradedInstances", "label", "students", "totalInSection" ],
+        "type" : "object"
+      },
+      "AudienceSampleEntry" : {
+        "properties" : {
+          "addressMasked" : {
+            "type" : [ "string", "null" ]
+          },
+          "exclusionReason" : {
+            "enum" : [ "NO_VERIFIED_EMAIL", "OPTED_OUT", "NO_CONSENT", "NO_VALID_PHONE", "NO_CHANNEL_ADDRESS", "MISSING_TEMPLATE_VARIABLE", null ],
+            "type" : [ "string", "null" ]
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "fullName", "personId", "status" ],
         "type" : "object"
       },
       "AudienceSegmentResponse" : {
@@ -1653,6 +1690,162 @@
         "required" : [ "id", "operationType", "resumeOutcome", "status" ],
         "type" : "object"
       },
+      "BackupAlertResponse" : {
+        "properties" : {
+          "at" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "code" : {
+            "enum" : [ "BACKUP_FAILED", "BACKUP_STALE", "BACKUP_DAMAGED", "RESTORE_TEST_FAILED", "DISK_LOW", "DISK_CRITICAL", "ENCRYPTION_DISABLED", "DATA_DIR_EMPTY" ],
+            "type" : "string"
+          },
+          "level" : {
+            "enum" : [ "WARNING", "CRITICAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "at", "code", "level" ],
+        "type" : "object"
+      },
+      "BackupDiskResponse" : {
+        "properties" : {
+          "freeBytes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "path" : {
+            "description" : "Campo técnico: solo PLATFORM_ADMIN; null para DIRECTOR",
+            "maxLength" : 256,
+            "type" : [ "string", "null" ]
+          },
+          "totalBytes" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "freeBytes", "path", "totalBytes" ],
+        "type" : "object"
+      },
+      "BackupStatusResponse" : {
+        "description" : "Estado de los backups. Archivo de estado ausente o corrupto: state NOT_CONFIGURED. Campos técnicos solo para PLATFORM_ADMIN (null para DIRECTOR): disk.path y tiers[].fileNames, que son solo la ruta del disco y los nombres de los archivos de backup, nunca su contenido. Sin texto libre de los scripts: alertas y fallas de restauración llegan como códigos cerrados. La respuesta no contiene datos de alumnos ni de pagos (D-484)",
+        "properties" : {
+          "alerts" : {
+            "description" : "Alertas: el backend filtra a los últimos 30 días; el script puede escribir más",
+            "items" : {
+              "$ref" : "#/components/schemas/BackupAlertResponse"
+            },
+            "maxItems" : 200,
+            "type" : "array"
+          },
+          "disk" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BackupDiskResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "generatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "lastRestoreTest" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RestoreTestResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "state" : {
+            "enum" : [ "OK", "ATTENTION", "STALE", "NOT_CONFIGURED" ],
+            "type" : "string"
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/BackupSummaryResponse"
+          },
+          "tiers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BackupTierResponse"
+            },
+            "maxItems" : 20,
+            "type" : "array"
+          }
+        },
+        "required" : [ "alerts", "disk", "generatedAt", "lastRestoreTest", "state", "summary", "tiers" ],
+        "type" : "object"
+      },
+      "BackupSummaryResponse" : {
+        "properties" : {
+          "consecutiveFailures" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "hoursSinceLastCompleteBackup" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "lastCompleteBackupAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "potentialLossHours" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "targetRpoHours" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "consecutiveFailures", "hoursSinceLastCompleteBackup", "lastCompleteBackupAt", "potentialLossHours", "targetRpoHours" ],
+        "type" : "object"
+      },
+      "BackupTierResponse" : {
+        "properties" : {
+          "dumpSizeBytes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "fileNames" : {
+            "description" : "Campo técnico: solo PLATFORM_ADMIN; null para DIRECTOR",
+            "items" : {
+              "maxLength" : 128,
+              "pattern" : "^[A-Za-z0-9._-]+$",
+              "type" : "string"
+            },
+            "maxItems" : 100,
+            "type" : [ "array", "null" ]
+          },
+          "filesSizeBytes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kept" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "label" : {
+            "description" : "Versión publicada en PRE_RELEASE; null en el resto de los niveles. Sin texto libre (D-484): el lector rechaza el archivo (NOT_CONFIGURED) si no valida",
+            "maxLength" : 32,
+            "pattern" : "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.]+)?$",
+            "type" : [ "string", "null" ]
+          },
+          "takenAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "tier" : {
+            "enum" : [ "INTRADAY", "DAILY", "WEEKLY", "QUARTERLY", "PRE_RELEASE" ],
+            "type" : "string"
+          },
+          "verification" : {
+            "enum" : [ "VERIFIED", "DAMAGED", "UNVERIFIED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "dumpSizeBytes", "fileNames", "filesSizeBytes", "kept", "label", "takenAt", "tier", "verification" ],
+        "type" : "object"
+      },
       "BankTransferReceiptResponse" : {
         "properties" : {
           "declaredAmount" : {
@@ -1969,6 +2162,33 @@
           }
         },
         "required" : [ "entityType", "naturalKey", "reason" ],
+        "type" : "object"
+      },
+      "BroadcastAudiencePreviewResponse" : {
+        "properties" : {
+          "excludedByReason" : {
+            "additionalProperties" : {
+              "format" : "int32",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "included" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sample" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AudienceSampleEntry"
+            },
+            "type" : "array"
+          },
+          "total" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "excludedByReason", "included", "sample", "total" ],
         "type" : "object"
       },
       "BroadcastChannelEntry" : {
@@ -3464,7 +3684,7 @@
           },
           "recordedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "category", "channel", "granted", "hasRecord", "recordedAt" ],
@@ -5649,6 +5869,40 @@
           }
         },
         "required" : [ "description", "id", "name" ],
+        "type" : "object"
+      },
+      "EmailChangePreviewResponse" : {
+        "properties" : {
+          "currentEmailMasked" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "newEmailMasked" : {
+            "type" : "string"
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requestedByRole" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "currentEmailMasked", "expiresAt", "newEmailMasked", "requestedAt", "requestedByRole" ],
+        "type" : "object"
+      },
+      "EmailChangeTokenRequest" : {
+        "properties" : {
+          "token" : {
+            "maxLength" : 128,
+            "minLength" : 32,
+            "type" : "string"
+          }
+        },
+        "required" : [ "token" ],
         "type" : "object"
       },
       "EmergencyContactDraftRequest" : {
@@ -12247,6 +12501,25 @@
         "required" : [ "newPassword", "resetToken" ],
         "type" : "object"
       },
+      "RestoreTestResponse" : {
+        "properties" : {
+          "failureCode" : {
+            "description" : "Motivo de la falla; null si result es PASSED",
+            "enum" : [ "CHECKSUM_MISMATCH", "RESTORE_FAILED", "COUNTS_MISMATCH", "SCHEMA_VALIDATION_FAILED", null ],
+            "type" : [ "string", "null" ]
+          },
+          "ranAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "result" : {
+            "enum" : [ "PASSED", "FAILED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "failureCode", "ranAt", "result" ],
+        "type" : "object"
+      },
       "RevokeBankTransferApprovalRequest" : {
         "properties" : {
           "reason" : {
@@ -14057,7 +14330,7 @@
             "type" : "boolean"
           },
           "source" : {
-            "enum" : [ "PROFILE", "EMAIL_LINK", "STAFF_ON_BEHALF", "IMPORT", "ACCOUNT_CREATION" ],
+            "enum" : [ "PROFILE" ],
             "type" : "string"
           }
         },
@@ -17407,6 +17680,127 @@
         "tags" : [ "annual-upfront-terms-controller" ]
       }
     },
+    "/approve-email-change" : {
+      "post" : {
+        "operationId" : "OwnerEmailChangeApproval_approveEmailChange",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmailChangeTokenRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "owner-email-change-approval-controller" ]
+      }
+    },
     "/attendance/change-requests" : {
       "get" : {
         "operationId" : "AttendanceChangeRequest_listByStatus",
@@ -18773,7 +19167,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
               "type" : "string"
             },
             "type" : "array"
@@ -20934,6 +21328,124 @@
           }
         },
         "tags" : [ "authorization-request-controller" ]
+      }
+    },
+    "/backups/status" : {
+      "get" : {
+        "operationId" : "BackupStatus_getStatus",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BackupStatusResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "backup-status-controller" ]
       }
     },
     "/bank-transfer-receipts" : {
@@ -24288,7 +24800,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/AudiencePreviewResponse"
+                  "$ref" : "#/components/schemas/BroadcastAudiencePreviewResponse"
                 }
               }
             },
@@ -38789,6 +39301,134 @@
         "tags" : [ "elective-group-controller" ]
       }
     },
+    "/email-change-preview" : {
+      "post" : {
+        "operationId" : "OwnerEmailChangeApproval_previewEmailChange",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmailChangeTokenRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EmailChangePreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "owner-email-change-approval-controller" ]
+      }
+    },
     "/enrollment-fee-exemptions/{id}/revoke" : {
       "post" : {
         "operationId" : "EnrollmentFee_revoke",
@@ -40741,137 +41381,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/FinancialDashboardResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "422" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Unprocessable Content"
-          },
-          "429" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Too Many Requests"
-          },
-          "500" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Internal Server Error"
-          },
-          "502" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Gateway"
-          },
-          "503" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Service Unavailable"
-          }
-        },
-        "tags" : [ "financial-dashboard-controller" ]
-      }
-    },
-    "/financial-dashboard/debtors" : {
-      "get" : {
-        "deprecated" : true,
-        "operationId" : "FinancialDashboard_getDebtors",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "sortBy",
-          "required" : false,
-          "schema" : {
-            "default" : "DEBT_AGE",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "items" : {
-                    "$ref" : "#/components/schemas/DebtorSummaryResponse"
-                  },
-                  "type" : "array"
                 }
               }
             },
@@ -60869,7 +61378,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED" ],
               "type" : "string"
             },
             "type" : "array"

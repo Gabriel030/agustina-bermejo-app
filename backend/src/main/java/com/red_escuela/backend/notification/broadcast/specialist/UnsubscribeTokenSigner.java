@@ -1,6 +1,9 @@
 package com.red_escuela.backend.notification.broadcast.specialist;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
@@ -17,8 +20,24 @@ public class UnsubscribeTokenSigner {
 
     private final SecretKeySpec key;
 
-    public UnsubscribeTokenSigner(@Value("${broadcast.unsubscribe.secret:${jwt.secret}}") String secret) {
+    @Autowired
+    public UnsubscribeTokenSigner(@Value("${broadcast.unsubscribe.secret:}") String ownSecret,
+                                  @Value("${jwt.secret}") String jwtSecret, Environment environment) {
+        this(resolveSecret(ownSecret, jwtSecret, environment.acceptsProfiles(Profiles.of("prod"))));
+    }
+
+    public UnsubscribeTokenSigner(String secret) {
         this.key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), ALGORITHM);
+    }
+
+    private static String resolveSecret(String ownSecret, String jwtSecret, boolean production) {
+        if (ownSecret != null && !ownSecret.isBlank()) {
+            return ownSecret;
+        }
+        if (production) {
+            throw new IllegalStateException("broadcast.unsubscribe.secret es obligatorio en el perfil prod");
+        }
+        return jwtSecret;
     }
 
     String sign(String payload) {

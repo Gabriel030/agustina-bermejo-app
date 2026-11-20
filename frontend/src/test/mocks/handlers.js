@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
+import { backupStatusForPlatformAdmin } from '@/test/fixtures/backupStatus';
 
 const API = 'http://localhost:8080';
 
@@ -44,6 +45,16 @@ export const handlers = [
     }),
   ),
   http.post(`${API}/cancel-email-change`, () => new HttpResponse(null, { status: 200 })),
+  http.post(`${API}/email-change-preview`, () =>
+    HttpResponse.json({
+      currentEmailMasked: 'm•••a@gmail.com',
+      newEmailMasked: 'm•••z@alumnos.instituto.edu.ar',
+      requestedByRole: 'ADMINISTRATIVO',
+      requestedAt: '2026-11-19T20:41:00',
+      expiresAt: '2026-11-21T20:41:00',
+    }),
+  ),
+  http.post(`${API}/approve-email-change`, () => new HttpResponse(null, { status: 200 })),
   http.post(`${API}/auth/login`, () =>
     HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
   ),
@@ -67,15 +78,22 @@ export const handlers = [
       ),
     ),
   ),
-  http.put(`${API}/me/contact-consents`, () =>
-    HttpResponse.json({
+  http.put(`${API}/me/contact-consents`, async ({ request }) => {
+    const body = await request.json().catch(() => ({}));
+    if (body.source !== undefined && body.source !== null && body.source !== 'PROFILE') {
+      return HttpResponse.json(
+        { code: 'CONSENT_SOURCE_NOT_ACCEPTED', requestId: 'req-test-0001', retryable: false, violations: [] },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json({
       channel: 'EMAIL',
       category: 'INSTITUTIONAL',
       granted: true,
       recordedAt: '2026-11-17T10:00:00Z',
       hasRecord: true,
-    }),
-  ),
+    });
+  }),
   http.get(`${API}/public/unsubscribe/:token`, () =>
     HttpResponse.json({ channel: 'EMAIL', category: 'PROMOTIONAL' }),
   ),
@@ -349,4 +367,5 @@ export const handlers = [
   http.post(`${API}/students/:id/refund-requests/preview`, () =>
     HttpResponse.json({ allowed: true, blockedBy: null, parts: [] }),
   ),
+  http.get(`${API}/backups/status`, () => HttpResponse.json(backupStatusForPlatformAdmin())),
 ];
