@@ -51,7 +51,8 @@ public class ProgramSectionWaitlistQueue implements WaitlistQueue {
         return repository.findWaitlistQueueRows(queueId, termId, OCCUPYING, EnrollmentStatus.WAITLISTED).stream()
                 .map(row -> new WaitlistQueueSnapshot(row.getId(), row.getName(),
                         WaitlistQueueTermName.of(row.getTermDescription(), row.getTermYear()),
-                        row.getCapacity(), row.getOccupied(), row.getWaiting(), null))
+                        row.getCapacity(), row.getOccupied(), row.getWaiting(),
+                        WaitlistSectionExpiry.of(row.getNextExpiry())))
                 .toList();
     }
 
