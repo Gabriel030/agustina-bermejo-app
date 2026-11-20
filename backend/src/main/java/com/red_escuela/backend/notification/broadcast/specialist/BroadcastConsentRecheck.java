@@ -42,7 +42,11 @@ public class BroadcastConsentRecheck {
             return false;
         }
         ChannelType channel = delivery.getChannel() == DeliveryChannel.WHATSAPP_API ? ChannelType.WHATSAPP_API : ChannelType.EMAIL;
-        BroadcastCategory category = BroadcastDeliveryKind.categoryOf(delivery.getKind());
+        Optional<BroadcastCategory> broadcastCategory = BroadcastDeliveryKind.categoryOf(delivery.getKind());
+        if (broadcastCategory.isEmpty()) {
+            return false;
+        }
+        BroadcastCategory category = broadcastCategory.get();
         Long personId = delivery.getRecipientPersonId();
         BroadcastDeliveryContext context = new BroadcastDeliveryContext(personId, channel, category,
                 contactConsentLedger.isAllowed(personId, channel, category));

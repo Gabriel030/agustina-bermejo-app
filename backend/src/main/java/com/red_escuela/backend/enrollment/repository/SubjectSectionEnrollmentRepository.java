@@ -121,11 +121,12 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
             select s.id as id, concat(sub.name, ', ', s.name) as name, t.description as termDescription, t.year as termYear,
                    s.capacity as capacity,
                    count(case when e.status in :occupying then 1 end) as occupied,
-                   count(case when e.status = :waiting then 1 end) as waiting
+                   count(case when e.status = :waiting then 1 end) as waiting,
+                   case when t.enrollmentOverride = com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.OPEN then null else t.enrollmentEnd end as nextExpiry
             from SubjectSection s join s.subject sub join s.term t
             left join SubjectSectionEnrollment e on e.subjectSection = s
             where (:sectionId is null or s.id = :sectionId) and (:termId is null or t.id = :termId)
-            group by s.id, sub.name, s.name, t.description, t.year, s.capacity
+            group by s.id, sub.name, s.name, t.description, t.year, s.capacity, t.enrollmentEnd, t.enrollmentOverride
             having (:sectionId is not null or count(case when e.status = :waiting then 1 end) > 0)
             """)
     List<WaitlistQueueRow> findWaitlistQueueRows(@Param("sectionId") Long sectionId, @Param("termId") Long termId,

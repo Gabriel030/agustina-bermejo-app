@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -59,6 +60,16 @@ class MeContactConsentControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[?(@.channel=='EMAIL' && @.category=='PROMOTIONAL')].granted").value(false))
                 .andExpect(jsonPath("$[?(@.channel=='WHATSAPP' && @.category=='INSTITUTIONAL')].granted").value(false))
                 .andExpect(jsonPath("$[?(@.channel=='WHATSAPP' && @.category=='PROMOTIONAL')].granted").value(false));
+    }
+
+    @Test
+    void entryWithoutRecordExposesNullRecordedAt() throws Exception {
+        Person person = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "me-consent-no-record");
+
+        mockMvc.perform(get("/me/contact-consents").header("Authorization", bearer(person)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.channel=='EMAIL' && @.category=='INSTITUTIONAL')].hasRecord").value(false))
+                .andExpect(jsonPath("$[?(@.channel=='EMAIL' && @.category=='INSTITUTIONAL')].recordedAt").value(contains((Object) null)));
     }
 
     @Test
