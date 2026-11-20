@@ -17,9 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -131,9 +129,9 @@ class ApprovalCertificateDesignTest {
                 .filter(word -> {
                     float centerX = (word.left() + word.right()) / 2;
                     float centerY = (word.top() + word.bottom()) / 2;
-                    boolean near = centerX >= box.x() - 40 && centerX <= box.x() + box.width() + 40
-                            && centerY >= box.y() - 40 && centerY <= box.y() + box.height() + 40;
-                    return near && expected.contains(squashed(word.text()));
+                    boolean near = centerX >= box.x() - 2 && centerX <= box.x() + box.width() + 2
+                            && centerY >= box.y() - 2 && centerY <= box.y() + box.height() + 2;
+                    return near && !squashed(word.text()).isEmpty() && expected.contains(squashed(word.text()));
                 })
                 .toList();
     }
@@ -316,15 +314,15 @@ class ApprovalCertificateDesignTest {
     }
 
     @Test
-    void renderSamplePreviewWhenRequested() throws Exception {
-        String target = System.getProperty("certificate.sample.png");
-        if (target == null) {
-            return;
-        }
-        byte[] pdf = pdfOf(snapshot("PÉREZ GARCÍA, ANA MARÍA", "Tecnicatura Superior en Enfermería", "Instituto Agustina Bermejo",
-                "Dra. Laura Pérez", "Rectora"));
-        try (PDDocument document = Loader.loadPDF(pdf)) {
-            ImageIO.write(new PDFRenderer(document).renderImageWithDPI(0, 110), "png", new File(target));
+    void textFitterKeepsEveryLineInsideWidthWhenSeveralWordsAreOverlong() throws Exception {
+        PDType1Font font = new PDType1Font(Standard14Fonts.FontName.TIMES_BOLD);
+
+        FittedText fitted = TextFitter.fit(font, "A".repeat(60) + " " + "B".repeat(60), 20, 10, 100, 60);
+
+        assertThat(fitted.lines()).hasSizeGreaterThan(1);
+        assertThat(fitted.height()).isLessThanOrEqualTo(60);
+        for (String line : fitted.lines()) {
+            assertThat(TextFitter.width(font, fitted.fontSize(), line)).isLessThanOrEqualTo(100);
         }
     }
 }

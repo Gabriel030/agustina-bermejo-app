@@ -73,7 +73,7 @@ public final class TextFitter {
     private static List<String> wrap(PDFont font, float fontSize, float maxWidth, String value) throws IOException {
         List<String> lines = new ArrayList<>();
         StringBuilder current = new StringBuilder();
-        for (String word : value.split("\\s+")) {
+        for (String word : splitOverlong(font, fontSize, maxWidth, value.split("\\s+"))) {
             String candidate = current.isEmpty() ? word : current + " " + word;
             if (!current.isEmpty() && width(font, fontSize, candidate) > maxWidth) {
                 lines.add(current.toString());
@@ -86,6 +86,22 @@ public final class TextFitter {
             lines.add(current.toString());
         }
         return lines;
+    }
+
+    private static List<String> splitOverlong(PDFont font, float fontSize, float maxWidth, String[] words) throws IOException {
+        List<String> pieces = new ArrayList<>();
+        for (String word : words) {
+            StringBuilder piece = new StringBuilder();
+            for (int i = 0; i < word.length(); i++) {
+                if (piece.length() > 0 && width(font, fontSize, piece.toString() + word.charAt(i)) > maxWidth) {
+                    pieces.add(piece.toString());
+                    piece = new StringBuilder();
+                }
+                piece.append(word.charAt(i));
+            }
+            pieces.add(piece.toString());
+        }
+        return pieces;
     }
 
     private static float widest(PDFont font, float fontSize, List<String> lines) throws IOException {
