@@ -21,6 +21,8 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.shared.time.MutableClock;
+
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -33,6 +35,7 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -53,6 +56,16 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 @SlowTest(reason = "Sweeps hundreds of overdue installments and re-runs the daily job to prove it is idempotent")
 class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
+    private static final LocalDateTime FIXED_NOW = LocalDateTime.of(2026, 6, 15, 12, 0);
+
+    private LocalDate today;
+
+    @BeforeEach
+    void fixTheApplicationClock() {
+        MutableClock.INSTANCE.setDateTime(FIXED_NOW);
+        today = LocalDate.now(MutableClock.INSTANCE);
+    }
+
     @Autowired
     private InvoiceOverdueSweepService sweepService;
 
@@ -131,7 +144,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setCourse(course);
         enrollment.setStatus(EnrollmentStatus.ENROLLED);
-        enrollment.setEnrollmentDate(LocalDateTime.now());
+        enrollment.setEnrollmentDate(LocalDateTime.now(MutableClock.INSTANCE));
         return courseEnrollmentRepository.save(enrollment);
     }
 
@@ -144,7 +157,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     private ConfigurationVersion persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
-        return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, gracePeriodDays, surchargePercentage, 30, 2, LocalDate.now().minusYears(50));
+        return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, gracePeriodDays, surchargePercentage, 30, 2, today.minusYears(50));
     }
 
     @Test
@@ -152,9 +165,9 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep1." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000001");
-        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(11));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), today.minusDays(11));
 
-        sweepService.run(LocalDate.now());
+        sweepService.run(today);
 
         Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isOverdue();
@@ -167,9 +180,9 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep2." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000002");
-        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), today.minusDays(10));
 
-        sweepService.run(LocalDate.now());
+        sweepService.run(today);
 
         Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isPending();
@@ -181,7 +194,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep3." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000003");
-        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(11));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), today.minusDays(11));
         jdbcTemplate.execute("""
                 create or replace function fail_invoice_overdue_update() returns trigger as $$
                 begin
@@ -192,7 +205,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         jdbcTemplate.execute("create trigger fail_invoice_overdue_update before update on invoice "
                 + "for each row execute function fail_invoice_overdue_update()");
         try {
-            sweepService.run(LocalDate.now());
+            sweepService.run(today);
         } finally {
             jdbcTemplate.execute("drop trigger fail_invoice_overdue_update on invoice");
             jdbcTemplate.execute("drop function fail_invoice_overdue_update()");
@@ -218,10 +231,10 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
 
         int total = 400;
         for (int i = 0; i < total; i++) {
-            persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(i).minusDays(11), YearMonth.now().minusMonths(i));
+            persistInvoice(enrollment, ars(1000), today.minusMonths(i).minusDays(11), YearMonth.from(today).minusMonths(i));
         }
 
-        sweepService.run(LocalDate.now());
+        sweepService.run(today);
 
         long overdueCount = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
                 .filter(i -> i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE)
@@ -234,10 +247,10 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep.twice." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000901");
-        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), today.minusDays(15));
 
-        transitionService.markAsOverdueWhenPastDueDate(invoice.getId(), LocalDate.now());
-        transitionService.markAsOverdueWhenPastDueDate(invoice.getId(), LocalDate.now());
+        transitionService.markAsOverdueWhenPastDueDate(invoice.getId(), today);
+        transitionService.markAsOverdueWhenPastDueDate(invoice.getId(), today);
 
         Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isOverdue();
@@ -249,10 +262,10 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep.rerun." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000902");
-        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), today.minusDays(15));
 
-        sweepService.run(LocalDate.now());
-        sweepService.run(LocalDate.now());
+        sweepService.run(today);
+        sweepService.run(today);
 
         assertThat(invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow().getAmounts().total().value()).isEqualTo(ars(1000));
     }

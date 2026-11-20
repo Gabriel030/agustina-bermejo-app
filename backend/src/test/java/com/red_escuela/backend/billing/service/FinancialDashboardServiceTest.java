@@ -19,7 +19,7 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardUseCase;
-import com.red_escuela.backend.billing.usecase.dashboard.ListDebtorsUseCase;
+import com.red_escuela.backend.billing.reporting.service.DebtorListingReader;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -52,7 +52,7 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
     private GetFinancialDashboardUseCase getFinancialDashboardUseCase;
 
     @Autowired
-    private ListDebtorsUseCase listDebtorsUseCase;
+    private DebtorListingReader debtorListingReader;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -140,7 +140,7 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.OVERDUE, YearMonth.now().minusMonths(2));
         persistInvoice(enrollment, ars(8000), InvoicePaymentStatus.PAID, YearMonth.now().minusMonths(3));
 
-        DebtorSummaryResponse debtor = listDebtorsUseCase.list("DEBT_AMOUNT").stream()
+        DebtorSummaryResponse debtor = debtorListingReader.listDebtors("DEBT_AMOUNT").stream()
                 .filter(summary -> summary.studentId().equals(student.getId()))
                 .findFirst().orElseThrow();
 

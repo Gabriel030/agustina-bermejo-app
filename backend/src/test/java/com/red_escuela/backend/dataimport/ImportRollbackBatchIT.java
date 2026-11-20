@@ -1,17 +1,22 @@
 package com.red_escuela.backend.dataimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.persistence.EntityManagerFactory;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
+import com.red_escuela.backend.identity.api.HistoricalPersonRecorder;
+import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -24,6 +29,9 @@ class ImportRollbackBatchIT extends AbstractDataImportIT {
 
     @Autowired
     private EntityManagerFactory entityManagerFactory;
+
+    @Autowired
+    private HistoricalPersonRecorder personRecorder;
 
     @Test
     void rollbackRestoresEnrollmentsAndClosureResultsToTheirStateBeforeTheImport() throws Exception {
@@ -177,6 +185,107 @@ class ImportRollbackBatchIT extends AbstractDataImportIT {
         rollback(baseBatch);
         assertThat(manyStatements).isEqualTo(fewStatements);
         assertThat(manyStatements).isEqualTo(STATEMENTS_TO_ROLL_BACK);
+    }
+
+    @Test
+    void rollbackOfMoreThanOneChunkOfPeopleAndProgramEnrollmentsRestoresEveryPersonTable() throws Exception {
+        HistoricalDatasetCsv csv = newDataset("ZH", 2011, BEYOND_ONE_CHUNK);
+        Map<String, Long> before = personTableCounts();
+        long baseBatch = createBatch();
+        importBaseStructure(baseBatch, csv);
+        Map<String, Long> afterImport = personTableCounts();
+        assertThat(afterImport.get("person")).isGreaterThanOrEqualTo(before.get("person") + BEYOND_ONE_CHUNK);
+        assertThat(afterImport.get("program_enrollment")).isEqualTo(before.get("program_enrollment") + BEYOND_ONE_CHUNK);
+
+        rollback(baseBatch).andExpect(status().isOk());
+
+        assertThat(personTableCounts()).isEqualTo(before);
+        assertThat(jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ?", Integer.class, baseBatch))
+                .isEqualTo(retainedEntityCount(baseBatch));
+    }
+
+    @Test
+    void rollbackBlockedByAccessGrantedToOneOfManyPeopleReportsThatPersonAndChangesNothing() throws Exception {
+        HistoricalDatasetCsv csv = newDataset("ZI", 2011, MANY);
+        Map<String, Long> before = personTableCounts();
+        long baseBatch = createBatch();
+        importBaseStructure(baseBatch, csv);
+        Map<String, Long> afterImport = personTableCounts();
+        String blockedDni = csv.studentDni(BLOCKING_POSITION - 1);
+        jdbc.update("update person set grant_system_access = true where dni = ?", blockedDni);
+
+        rollback(baseBatch).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IMPORT_ROLLBACK_BLOCKED"))
+                .andExpect(jsonPath("$.details.blockers[0].entityType").value("PERSONS"));
+
+        assertThat(personTableCounts()).isEqualTo(afterImport);
+        assertThat(jdbc.queryForObject("select status from import_batch where id = ?", String.class, baseBatch)).isEqualTo("COMMITTED");
+        jdbc.update("update person set grant_system_access = false where dni = ?", blockedDni);
+        rollback(baseBatch).andExpect(status().isOk());
+        assertThat(personTableCounts()).isEqualTo(before);
+    }
+
+    @Test
+    void rollbackBlockedByLaterDataOnAPersonInTheSecondChunkFallsBackAndReportsThatPerson() throws Exception {
+        HistoricalDatasetCsv csv = newDataset("ZJ", 2011, BEYOND_ONE_CHUNK);
+        Map<String, Long> before = personTableCounts();
+        long baseBatch = createBatch();
+        importBaseStructure(baseBatch, csv);
+        Map<String, Long> afterImport = personTableCounts();
+        String blockedDni = csv.studentDni(2);
+        String blockedKey = jdbc.queryForObject(
+                "select c.natural_key from import_created_entity c join person p on p.id = c.entity_id where c.batch_id = ? and c.entity_type = 'PERSONS' and p.dni = ?",
+                String.class, baseBatch, blockedDni);
+        Long actorId = jdbc.queryForObject("select created_by_person_id from import_batch where id = ?", Long.class, baseBatch);
+        jdbc.update("insert into student_status_change (student_id, change_type, reason, actor_person_id, occurred_at) select s.id, 'WITHDRAWN', 'later-chunk', ?, now() from student s join person p on p.id = s.person_id where p.dni = ?",
+                actorId, blockedDni);
+
+        rollback(baseBatch).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IMPORT_ROLLBACK_BLOCKED"))
+                .andExpect(jsonPath("$.details.blockers[0].entityType").value("PERSONS"))
+                .andExpect(jsonPath("$.details.blockers[0].naturalKey").value(blockedKey));
+
+        assertThat(personTableCounts()).isEqualTo(afterImport);
+        assertThat(jdbc.queryForObject("select status from import_batch where id = ?", String.class, baseBatch)).isEqualTo("COMMITTED");
+        jdbc.update("delete from student_status_change where reason = 'later-chunk'");
+        rollback(baseBatch).andExpect(status().isOk());
+        assertThat(personTableCounts()).isEqualTo(before);
+    }
+
+    @Test
+    void personWithAccessInALaterChunkBlocksTheWholeBatchBeforeAnyPersonIsDeleted() throws Exception {
+        HistoricalDatasetCsv csv = newDataset("ZK", 2011, BEYOND_ONE_CHUNK);
+        long baseBatch = createBatch();
+        importBaseStructure(baseBatch, csv);
+        List<Long> personIds = jdbc.queryForList(
+                "select entity_id from import_created_entity where batch_id = ? and entity_type = 'PERSONS' order by id desc", Long.class,
+                baseBatch);
+        assertThat(personIds.size()).isGreaterThan(BEYOND_ONE_CHUNK);
+        Long accessPersonId = personIds.get(personIds.size() - 3);
+        jdbc.update("update person set grant_system_access = true where id = ?", accessPersonId);
+
+        Long remaining = transactions.execute(status -> {
+            assertThatThrownBy(() -> personRecorder.discardPersons(personIds)).isInstanceOf(HistoricalDiscardBlockedException.class);
+            Long found = ((Number) entityManager.createNativeQuery("select count(*) from person where id in (:ids)")
+                    .setParameter("ids", personIds).getSingleResult()).longValue();
+            status.setRollbackOnly();
+            return found;
+        });
+
+        assertThat(remaining).isEqualTo(personIds.size());
+        jdbc.update("update person set grant_system_access = false where id = ?", accessPersonId);
+        rollback(baseBatch).andExpect(status().isOk());
+    }
+
+    private Map<String, Long> personTableCounts() {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (String table : List.of("person", "student", "address", "person_role", "instructor", "program_enrollment")) {
+            counts.put(table, count(table));
+        }
+        return counts;
+    }
+
+    private long retainedEntityCount(long batchId) {
+        return jdbc.queryForObject("select count(*) from import_created_entity where batch_id = ? and entity_type in ('PROGRAMS', 'SUBJECTS', 'CURRICULUM', 'PREREQUISITES')",
+                Long.class, batchId);
     }
 
     private long statementsToRollBack(HistoricalDatasetCsv csv, int students) throws Exception {

@@ -12,7 +12,8 @@ create table gateway_checkout (
     constraint uk_gateway_checkout_public_reference unique (public_reference),
     constraint fk_gateway_checkout_invoice foreign key (invoice_id) references invoice (id),
     constraint gateway_checkout_gateway_enum check (gateway in ('MANUAL', 'MERCADO_PAGO', 'DLOCAL')),
-    constraint ck_gateway_checkout_amount check (amount > 0 and currency in ('ARS', 'USD')),
+    constraint gateway_checkout_currency_enum check (currency in ('ARS', 'USD')),
+    constraint ck_gateway_checkout_amount check (amount > 0),
     constraint ck_gateway_checkout_expiry check (expires_at > created_at)
 );
 

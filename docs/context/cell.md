@@ -6,10 +6,10 @@ Equipo fijo de agentes que ejecuta tickets de punta a punta. El rol vive en arch
 
 | Rol | Ficha | Modelo | Qué hace |
 |---|---|---|---|
-| Coordinador | `.claude/agents/coordinator.md` | Opus, local | Backlog en Obsidian, prioridades, Issues `cell` para el líder, reporte de épicas a Gabriel; único que escribe en Obsidian |
-| Líder técnico | `.claude/agents/tech-lead.md` | Opus | Issue => plan, contratos, asignación, orden de merge, preguntas al usuario |
-| Backend (backend-1, backend-2) | `.claude/agents/backend.md` | Sonnet | Una subtarea de backend en el módulo que indique el ticket |
-| Frontend (frontend-1) | `.claude/agents/frontend.md` | Sonnet | Una subtarea de front, con diseño aprobado |
+| Coordinador | `.claude/agents/coordinator.md` | Sonnet, local | Backlog en Obsidian, prioridades, Issues `cell` para el líder, reporte de épicas a Gabriel; único que escribe en Obsidian |
+| Líder técnico | `.claude/agents/tech-lead.md` | Sonnet | Issue => plan, contratos, asignación, orden de merge, preguntas al usuario |
+| Backend (backend-1 a backend-5) | `.claude/agents/backend.md` | Haiku (1 a 3), Sonnet (4 y 5) | Una subtarea de backend en el módulo que indique el ticket |
+| Frontend (frontend-1) | `.claude/agents/frontend.md` | Haiku | Una subtarea de front, con diseño aprobado |
 | Revisor (subagente) | `.claude/agents/reviewer.md` | Sonnet, `maxTurns` 30 | Revisión independiente del diff; lo lanza el líder por PR con contexto limpio |
 | Mecánico (subagente) | `.claude/agents/mechanic.md` | Haiku, `maxTurns` 25 | Traer develop, conflictos de docs/logs; lo lanza el líder por tarea |
 
@@ -118,6 +118,28 @@ Canal único y confiable: comentario en el Issue de la tarea. El mensaje directo
 - Reporte del líder al usuario: al pedido y en cada hito (merge, bloqueo, decisión), con la tabla fija y debajo "Necesito de vos" (preguntas agrupadas, opciones y recomendación):
 
 `| Puesto | Subtarea | PR | Estado | Avance | Tokens | Bloqueo |`
+
+## Presupuesto de cuota y modelos (decisión de Gabriel, 20-nov)
+
+- Prohibido Opus o superior en cualquier sesión o subagente de la célula. Modelos: Coordinador y líderes en Sonnet; backend-1 a backend-3 y frontend-1 en Haiku (tareas mecánicas: tests, docs, fixtures, ajustes de pantalla); backend-4 y backend-5 en Sonnet (migraciones, plata, seguridad y contrato); revisor en Sonnet; mecánico en Haiku. Esfuerzo medio en todos.
+- Tareas chicas: cada subtarea para un worker en Haiku es de un solo objetivo, pocos archivos y ≤60k tokens, con brief autocontenido (rama, archivos permitidos, fuera de alcance, comando de verificación). Lo que exige criterio (migraciones, dinero, seguridad, contratos) va a Sonnet.
+- Ahorro de relecturas: cada mensaje entre sesiones despierta a la receptora, que relee todo su contexto. Sin mensajes de confirmación (solo `TERMINÉ`, `BLOQUEADO`, `NECESITO DECISIÓN`); un mensaje agrupado por hito; sin sondeos ni turnos si no hay nada accionable; auto-merge en lugar de esperar la CI con turnos; una invocación de revisor por PR (dos en plata, contrato y seguridad); sin re-revisión de deltas triviales; sin mockups ni capturas repetidos.
+- Compactación: se pide al 20% con la variable de entorno `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`, que solo se cambia desde los ajustes del entorno. `/compact` solo lo escribe un usuario dentro de la sesión.
+
+## Flujo magro y consumo de cuota (decisión de Gabriel, 20-nov)
+
+Motivo: cada mensaje entre sesiones despierta a la receptora y esta relee todo su contexto; las sesiones largas y la mensajería redundante agotaban la cuota de 5 horas. Reglas obligatorias para todos los roles:
+
+1. **Un solo líder activo.** El segundo líder solo se enciende si Gabriel lo pide; mientras tanto queda archivado.
+2. **Workers descartables.** Una sesión por subtarea: al `TERMINÉ` se archiva y la siguiente tarea va a una sesión nueva con brief autocontenido (rama, archivos permitidos, fuera de alcance, comando de verificación). El estado vive en GitHub (Issues, PRs, comentarios) y en las ramas, no en la memoria de la sesión.
+3. **Coordinador relevable.** Sesión silenciosa; al pasar de ~250k tokens de contexto o de ~4 horas escribe un handoff en `coordinador/` del vault y se reemplaza por una sesión nueva (la que usa Gabriel).
+4. **Mensajes mínimos.** Solo `TERMINÉ`, `BLOQUEADO` y `NECESITO DECISIÓN` (este último solo al Coordinador, con opciones y recomendación). Sin acuses (`RECIBIDO`, `LISTO`), un mensaje agrupado por hito, nada de reportes por cada PR; el líder reporta al cerrar la tanda o ante una decisión o bloqueo.
+5. **Sin sondeos ni esperas activas.** Auto-merge en lugar de turnos esperando la CI; si no hay nada accionable no se ejecutan turnos; no se usa Monitor.
+6. **Revisión barata.** Una invocación del revisor por PR; dos solo en plata, contrato y seguridad; sin re-revisión de deltas triviales (el líder verifica el diff).
+7. **Menos PRs, un poco más grandes** (rebanadas de hasta 100k tokens con valor observable), un solo push por corrección.
+8. **Tandas.** El trabajo se organiza en tandas de una ventana de 5 horas con lista cerrada acordada con Gabriel; al avisar Gabriel que la cuota llega al 70% se cierra la tanda.
+9. **Contexto.** Compactación automática al 20% (variable `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`, solo se cambia en los ajustes del entorno); `/compact` solo lo escribe un usuario.
+10. **Mockups y capturas.** Se generan una vez; no se regeneran sin pedido.
 
 ## Presupuesto y contexto
 

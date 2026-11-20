@@ -8,6 +8,7 @@ import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
+import com.red_escuela.backend.identity.specialist.PublicPasswordResetBlockPolicy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -17,6 +18,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -31,8 +33,9 @@ class LoginWithGoogleServiceTest {
     private final GoogleIdTokenService googleIdTokenService = mock(GoogleIdTokenService.class);
     private final PersonRepository personRepository = mock(PersonRepository.class);
     private final AuthTokenIssuer authTokenIssuer = mock(AuthTokenIssuer.class);
+    private final PublicPasswordResetBlockPolicy blockPolicy = mock(PublicPasswordResetBlockPolicy.class);
     private final LoginWithGoogleService service =
-            new LoginWithGoogleService(googleIdTokenService, personRepository, authTokenIssuer);
+            new LoginWithGoogleService(googleIdTokenService, personRepository, authTokenIssuer, blockPolicy);
 
     private Person personWithStatus(StatusType status) {
         Person person = new Person();
@@ -82,5 +85,83 @@ class LoginWithGoogleServiceTest {
         assertThatThrownBy(() -> service.login(ID_TOKEN)).isInstanceOf(InvalidCredentialsException.class);
         assertThat(person.getGoogleSubjectId()).isNull();
         verify(personRepository, never()).save(any());
+    }
+
+    private Person personFoundByEmail(boolean emailVerified) {
+        Person person = new Person();
+        person.setEmail(PROFILE.email());
+        person.setStatus(StatusType.ACTIVE);
+        person.setEmailVerified(emailVerified);
+        when(googleIdTokenService.verify(ID_TOKEN)).thenReturn(PROFILE);
+        when(personRepository.findByGoogleSubjectId(PROFILE.subject())).thenReturn(Optional.empty());
+        when(personRepository.findByEmail(EmailAddress.of(PROFILE.email()))).thenReturn(Optional.of(person));
+        return person;
+    }
+
+    @Test
+    void googleLinkByEmailIsRejectedWhileStaffChangeBlocks() {
+        Person person = personFoundByEmail(true);
+        when(blockPolicy.blocks(person)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.login(ID_TOKEN)).isInstanceOf(InvalidCredentialsException.class);
+        assertThat(person.getGoogleSubjectId()).isNull();
+        verify(personRepository, never()).save(any());
+        verify(authTokenIssuer, never()).issueTokens(any());
+    }
+
+    @Test
+    void googleLinkByEmailIsRejectedForUnverifiedEmail() {
+        Person person = personFoundByEmail(false);
+
+        assertThatThrownBy(() -> service.login(ID_TOKEN)).isInstanceOf(InvalidCredentialsException.class);
+        assertThat(person.getGoogleSubjectId()).isNull();
+        verify(personRepository, never()).save(any());
+    }
+
+    @Test
+    void googleLinkByEmailIsRejectedWhenVerificationIsUnknown() {
+        Person person = personFoundByEmail(true);
+        person.setEmailVerified(null);
+
+        assertThatThrownBy(() -> service.login(ID_TOKEN)).isInstanceOf(InvalidCredentialsException.class);
+        verify(personRepository, never()).save(any());
+    }
+
+    @Test
+    void googleLinkByEmailWorksForVerifiedUnblockedPerson() {
+        Person person = personFoundByEmail(true);
+        when(blockPolicy.blocks(person)).thenReturn(false);
+        AuthTokens tokens = mock(AuthTokens.class);
+        when(authTokenIssuer.issueTokens(person)).thenReturn(tokens);
+
+        assertThat(service.login(ID_TOKEN)).isSameAs(tokens);
+        assertThat(person.getGoogleSubjectId()).isEqualTo(PROFILE.subject());
+        verify(personRepository).save(person);
+    }
+
+    @Test
+    void alreadyLinkedGoogleLoginIsUnaffected() {
+        Person person = personWithStatus(StatusType.ACTIVE);
+        person.setEmailVerified(false);
+        when(blockPolicy.blocks(person)).thenReturn(true);
+        AuthTokens tokens = mock(AuthTokens.class);
+        when(authTokenIssuer.issueTokens(person)).thenReturn(tokens);
+
+        assertThat(service.login(ID_TOKEN)).isSameAs(tokens);
+        verify(blockPolicy, never()).blocks(any());
+    }
+
+    @Test
+    void rejectionLooksLikeInvalidCredentials() {
+        Person unverified = personFoundByEmail(false);
+        Throwable unverifiedRejection = catchThrowable(() -> service.login(ID_TOKEN));
+        Person blocked = personFoundByEmail(true);
+        when(blockPolicy.blocks(blocked)).thenReturn(true);
+        Throwable blockedRejection = catchThrowable(() -> service.login(ID_TOKEN));
+
+        assertThat(unverifiedRejection).isExactlyInstanceOf(InvalidCredentialsException.class);
+        assertThat(blockedRejection).isExactlyInstanceOf(InvalidCredentialsException.class);
+        assertThat(blockedRejection.getClass()).isEqualTo(unverifiedRejection.getClass());
+        assertThat(unverified.getGoogleSubjectId()).isNull();
     }
 }

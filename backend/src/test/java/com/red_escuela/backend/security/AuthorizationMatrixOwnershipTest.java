@@ -53,9 +53,10 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
         MappedEndpoint endpoint = endpointsByKey.get(ownershipCase.row().key());
         assertThat(endpoint).as("mapping para %s", ownershipCase.row().key()).isNotNull();
         Long resourceId = ownership.resourceIdFor(kind);
+        String body = ownership.resolvePlaceholders(ownershipCase.row().body());
 
-        int ownerStatus = statusWithToken(endpoint, ownershipCase.row().body(), ownership.ownerTokenFor(kind), resourceId);
-        int strangerStatus = statusWithToken(endpoint, ownershipCase.row().body(), ownership.strangerTokenFor(kind), resourceId);
+        int ownerStatus = statusWithToken(endpoint, body, ownership.ownerTokenFor(kind), resourceId);
+        int strangerStatus = statusWithToken(endpoint, body, ownership.strangerTokenFor(kind), resourceId);
 
         assertThat(ownerStatus).as("dueno en %s", ownershipCase).isNotIn(403, 404);
         assertThat(strangerStatus).as("no dueno en %s", ownershipCase).isEqualTo(kind.strangerStatus());
