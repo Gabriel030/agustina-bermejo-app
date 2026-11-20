@@ -34,6 +34,7 @@
       "properties": {
         "path": {
           "type": "string",
+          "maxLength": 256,
           "description": "Ruta del disco de destino. Campo técnico: el backend solo la muestra a PLATFORM_ADMIN."
         },
         "freeBytes": {
@@ -48,6 +49,7 @@
     },
     "tiers": {
       "type": "array",
+      "maxItems": 20,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -71,7 +73,9 @@
           },
           "label": {
             "type": ["string", "null"],
-            "description": "Versión publicada en PRE_RELEASE; null en el resto de los niveles."
+            "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.]+)?$",
+            "maxLength": 32,
+            "description": "Versión publicada en PRE_RELEASE; null en el resto de los niveles. Sin texto libre (D-484): el lector rechaza el archivo (NOT_CONFIGURED) si no valida."
           },
           "dumpSizeBytes": {
             "type": "integer",
@@ -90,10 +94,27 @@
           },
           "fileNames": {
             "type": "array",
+            "maxItems": 100,
             "items": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "maxLength": 128
             },
             "description": "Nombres de los archivos de backup del nivel. Campo técnico: el backend solo los muestra a PLATFORM_ADMIN."
+          }
+        },
+        "if": {
+          "properties": {
+            "tier": {
+              "const": "PRE_RELEASE"
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "label": {
+              "const": null
+            }
           }
         }
       }
@@ -146,6 +167,7 @@
     },
     "alerts": {
       "type": "array",
+      "maxItems": 200,
       "description": "Alertas: el backend filtra a los últimos 30 días; el script puede escribir más.",
       "items": {
         "type": "object",

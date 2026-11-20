@@ -3,6 +3,7 @@ package com.red_escuela.backend.platform.dto;
 import com.red_escuela.backend.platform.domain.BackupState;
 import com.red_escuela.backend.platform.domain.BackupStatus;
 import com.red_escuela.backend.platform.domain.BackupStatusViewer;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
@@ -17,11 +18,11 @@ public record BackupStatusResponse(
         BackupState state,
         BackupSummaryResponse summary,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = true) Instant generatedAt,
-        List<BackupTierResponse> tiers,
+        @ArraySchema(maxItems = 20) List<BackupTierResponse> tiers,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = true) RestoreTestResponse lastRestoreTest,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = true) BackupDiskResponse disk,
-        @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
-                description = "Alertas: el backend filtra a los últimos 30 días; el script puede escribir más")
+        @ArraySchema(arraySchema = @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "Alertas: el backend filtra a los últimos 30 días; el script puede escribir más"), maxItems = 200)
         List<BackupAlertResponse> alerts) {
 
     public static BackupStatusResponse of(BackupStatus status, BackupStatusViewer viewer) {

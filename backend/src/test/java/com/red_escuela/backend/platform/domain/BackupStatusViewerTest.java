@@ -26,6 +26,21 @@ class BackupStatusViewerTest {
     }
 
     @Test
+    void emptyAuthoritiesResolveToDirector() {
+        assertThat(BackupStatusViewer.fromAuthorities(List.of())).isEqualTo(BackupStatusViewer.DIRECTOR);
+    }
+
+    @Test
+    void platformAdminWithoutRolePrefixResolvesToDirector() {
+        assertThat(BackupStatusViewer.fromAuthorities(List.of("PLATFORM_ADMIN"))).isEqualTo(BackupStatusViewer.DIRECTOR);
+    }
+
+    @Test
+    void unknownAuthorityResolvesToDirector() {
+        assertThat(BackupStatusViewer.fromAuthorities(List.of("ROLE_UNKNOWN"))).isEqualTo(BackupStatusViewer.DIRECTOR);
+    }
+
+    @Test
     void onlyPlatformAdminSeesTechnicalFields() {
         assertThat(BackupStatusViewer.PLATFORM_ADMIN.seesTechnicalFields()).isTrue();
         assertThat(BackupStatusViewer.DIRECTOR.seesTechnicalFields()).isFalse();

@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record BackupDiskResponse(
         long freeBytes,
         long totalBytes,
-        @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = true,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = true, maxLength = 256,
                 description = "Campo técnico: solo PLATFORM_ADMIN; null para DIRECTOR") String path) {
 
     public static BackupDiskResponse of(BackupDisk disk, BackupStatusViewer viewer) {

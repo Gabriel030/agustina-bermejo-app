@@ -1716,6 +1716,7 @@
           },
           "path" : {
             "description" : "Campo técnico: solo PLATFORM_ADMIN; null para DIRECTOR",
+            "maxLength" : 256,
             "type" : [ "string", "null" ]
           },
           "totalBytes" : {
@@ -1734,6 +1735,7 @@
             "items" : {
               "$ref" : "#/components/schemas/BackupAlertResponse"
             },
+            "maxItems" : 200,
             "type" : "array"
           },
           "disk" : {
@@ -1765,6 +1767,7 @@
             "items" : {
               "$ref" : "#/components/schemas/BackupTierResponse"
             },
+            "maxItems" : 20,
             "type" : "array"
           }
         },
@@ -1806,8 +1809,11 @@
           "fileNames" : {
             "description" : "Campo técnico: solo PLATFORM_ADMIN; null para DIRECTOR",
             "items" : {
+              "maxLength" : 128,
+              "pattern" : "^[A-Za-z0-9._-]+$",
               "type" : "string"
             },
+            "maxItems" : 100,
             "type" : [ "array", "null" ]
           },
           "filesSizeBytes" : {
@@ -1819,7 +1825,9 @@
             "type" : "integer"
           },
           "label" : {
-            "description" : "Versión publicada en PRE_RELEASE; null en el resto de los niveles",
+            "description" : "Versión publicada en PRE_RELEASE; null en el resto de los niveles. Sin texto libre (D-484): el lector rechaza el archivo (NOT_CONFIGURED) si no valida",
+            "maxLength" : 32,
+            "pattern" : "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.]+)?$",
             "type" : [ "string", "null" ]
           },
           "takenAt" : {
