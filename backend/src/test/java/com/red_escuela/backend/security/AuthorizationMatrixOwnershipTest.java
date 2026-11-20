@@ -28,6 +28,10 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
         return ownershipCases().filter(ownershipCase -> ownershipCase.kind().ownerRole() == MatrixRole.DOCENTE);
     }
 
+    static Stream<OwnershipCase> administrativeOwnedRows() {
+        return ownershipCases().filter(ownershipCase -> ownershipCase.kind().ownerRole() == MatrixRole.ADMINISTRATIVO);
+    }
+
     private static Stream<OwnershipCase> ownershipCases() {
         return AuthorizationMatrixFile.read().stream()
                 .filter(row -> !row.ownership().isEmpty())
@@ -46,6 +50,12 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
         assertOwnerPassesAndStrangerGetsExpectedStatus(ownershipCase);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("administrativeOwnedRows")
+    void administrativeWhoDidNotOpenTheRequestGets404(OwnershipCase ownershipCase) throws Exception {
+        assertOwnerPassesAndStrangerGetsExpectedStatus(ownershipCase);
+    }
+
     private void assertOwnerPassesAndStrangerGetsExpectedStatus(OwnershipCase ownershipCase) throws Exception {
         OwnershipKind kind = ownershipCase.kind();
         Map<String, MappedEndpoint> endpointsByKey = mappedEndpoints().stream()
@@ -53,9 +63,10 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
         MappedEndpoint endpoint = endpointsByKey.get(ownershipCase.row().key());
         assertThat(endpoint).as("mapping para %s", ownershipCase.row().key()).isNotNull();
         Long resourceId = ownership.resourceIdFor(kind);
+        String body = ownership.resolvePlaceholders(ownershipCase.row().body());
 
-        int ownerStatus = statusWithToken(endpoint, ownershipCase.row().body(), ownership.ownerTokenFor(kind), resourceId);
-        int strangerStatus = statusWithToken(endpoint, ownershipCase.row().body(), ownership.strangerTokenFor(kind), resourceId);
+        int ownerStatus = statusWithToken(endpoint, body, ownership.ownerTokenFor(kind), resourceId);
+        int strangerStatus = statusWithToken(endpoint, body, ownership.strangerTokenFor(kind), resourceId);
 
         assertThat(ownerStatus).as("dueno en %s", ownershipCase).isNotIn(403, 404);
         assertThat(strangerStatus).as("no dueno en %s", ownershipCase).isEqualTo(kind.strangerStatus());

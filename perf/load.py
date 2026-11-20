@@ -35,10 +35,10 @@ if __name__ == "__main__":
     time.sleep(8)
     t, _ = m.login(os.environ.get("PERF_TEACHER", "perf662"))
     m.psql("select pg_stat_statements_reset()")
-    cases = [(d, "/financial-dashboard"), (d, "/financial-dashboard/debtors"), (d, "/students"), (a, "/me/section-enrollments"), (t, "/program-sections/14011/grade-grid"), (t, "/program-sections/14011/attendance/absence-report"), (a, "/me/program-enrollments/20001/invoices")]
+    cases = [(d, "/financial-dashboard"), (d, "/financial-dashboard/debtors/page?page=0&size=25"), (d, "/students"), (a, "/me/section-enrollments"), (t, "/program-sections/14011/grade-grid"), (t, "/program-sections/14011/attendance/absence-report"), (a, "/me/program-enrollments/20001/invoices")]
     out = []
     for token, path in cases:
-        threads, per = (4, 5) if path in ("/financial-dashboard/debtors", "/students") else (20, 10)
+        threads, per = (4, 5) if path in ("/financial-dashboard/debtors/page?page=0&size=25", "/students") else (20, 10)
         out.append(run(token, path, threads, per))
         print(json.dumps(out[-1]), flush=True)
     json.dump(out, open("perf/out/load.json", "w"), indent=1)

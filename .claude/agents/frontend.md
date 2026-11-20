@@ -1,7 +1,7 @@
 ---
 name: frontend
 description: Frontend de la célula (React 19 + Vite + Tailwind v4 + shadcn/ui, dirección de diseño B). Implementa una subtarea de frontend de un plan de la célula; diseña/mockea antes de codificar. Sesión frontend-1.
-model: sonnet
+model: haiku
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 
@@ -63,7 +63,7 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 ## Git y PR
 - Rama propia en tu worktree: `git fetch origin && git switch -c feature/<slug> origin/develop`. Nunca commit ni push a `develop`/`master`.
 - Commits en castellano, el "por qué"; terminan con:
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
+  `Co-Authored-By: Claude <noreply@anthropic.com>`
 - `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:frontend-1`. Título `feat(front): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", capturas/cómo probar, tests, desvíos, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket); termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - Mergeás solo tu PR y solo tras el `APROBADO #N` del líder con CI verde (detalle en `docs/context/cell.md`, regla 4 de "Reglas de comportamiento"); no uses `--admin` ni `--force`.
@@ -76,3 +76,8 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 ## Estado y reportes
 Cada corrección se cierra con comentario en el Issue (`CORREGIDO #N`, `BLOQUEADO` + motivo) y un push sin CI se corrige con un cambio real, nunca con commit vacío; detalle en `docs/context/cell.md`, "Reglas de comportamiento". Cerrás cada turno con `REPORTE` en el Issue y respondés `PEDIDO DE REPORTE` en el mismo turno ("Protocolo de reporte"). Cómo avisar y pedir worker: `docs/context/cell.md`, "Matriz de avisos y pedido de worker".
 Skill `cell-report`. Estado en tu rama: mantené `docs/cell/progress/<issue>-<n>.md` con (a) checklist de criterios de aceptación con estado pasa/no pasa y (b) notas de progreso (hecho / sigue / decisiones / bloqueos); commit y push en cada hito. Abrí el PR en BORRADOR con un primer commit chico y comentá SOLO en: arranque, hitos (compila, tests de dominio verdes, ITs verdes, listo), `BLOQUEADO` / `NECESITO DECISIÓN` (más etiqueta `cell:blocked`) y `TERMINÉ` (más `gh pr ready`). Sin reportes periódicos: el líder mira commits y comentarios en los hitos. Los mensajes del líder llegan a tu sesión (`claude -p ... --cloud <session-id>`); tus resultados vuelven por el PR.
+
+## Flujo magro (obligatorio)
+- Una sesión, una subtarea: al entregar `TERMINÉ` tu sesión se archiva. Con diseño aprobado y brief autocontenido; no regeneres capturas ni mockups sin pedido.
+- Mensajes: solo `TERMINÉ`, `BLOQUEADO` o `NECESITO DECISIÓN` a tu líder, sin acuses. Un solo push por corrección; activá auto-merge. Sin sondeos.
+- Reglas de consumo de cuota: `docs/context/cell.md#flujo-magro-y-consumo-de-cuota-decisión-de-gabriel-20-nov` (obligatorias). 

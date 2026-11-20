@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.Optional;
 
 @Repository
@@ -16,6 +17,10 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
     Optional<Instructor> findByIdAndPerson_Status(Long id, StatusType status);
 
     Optional<Instructor> findByPerson_Id(Long personId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from Instructor i where i.person.id in :personIds")
+    int deleteByPersonIdIn(@Param("personIds") Collection<Long> personIds);
 
     Optional<Instructor> findByPerson_DniAndPerson_Status(String dni, StatusType status);
 

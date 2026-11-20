@@ -7,6 +7,11 @@ import com.red_escuela.backend.identity.dto.UpdateStaffRequest;
 import com.red_escuela.backend.identity.entity.ContactChangeLog;
 import com.red_escuela.backend.identity.entity.ContactChangeType;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.EmailVerificationToken;
+import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
+import com.red_escuela.backend.identity.specialist.EmailChangeOwnerApprovalRequestedEvent;
+import com.red_escuela.backend.identity.specialist.OwnerEmailChangeApprover;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.identity.specialist.EmailChangeRequestedEvent;
@@ -35,6 +40,10 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
 
     @Autowired
     private ApplicationEvents applicationEvents;
+    @Autowired
+    private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    @Autowired
+    private OwnerEmailChangeApprover ownerEmailChangeApprover;
 
     private ResultActions updateOwnProfile(Person person, String email, String dni, String currentPassword)
             throws Exception {
@@ -64,6 +73,25 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
                 .filter(event -> event.personId().equals(person.getId()))
                 .reduce((first, second) -> second)
                 .orElseThrow();
+    }
+
+    private EmailChangeOwnerApprovalRequestedEvent lastOwnerApprovalEvent(Person person) {
+        return applicationEvents.stream(EmailChangeOwnerApprovalRequestedEvent.class)
+                .filter(event -> event.personId().equals(person.getId()))
+                .reduce((first, second) -> second)
+                .orElseThrow();
+    }
+
+    private String approvedVerificationTokenOf(Person target) {
+        entityManager.flush();
+        EmailVerificationToken token = emailVerificationTokenRepository.findAll().stream()
+                .filter(candidate -> candidate.getPerson().getId().equals(target.getId()))
+                .findFirst().orElseThrow();
+        ownerEmailChangeApprover.approve(token);
+        String clearToken = "approved-" + token.getId();
+        token.setTokenHash(TokenHashUtil.sha256Hex(clearToken));
+        entityManager.flush();
+        return clearToken;
     }
 
     private String tokenOf(EmailChangeRequestedEvent event) {
@@ -343,9 +371,9 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("access.emailchg8b@example.com"));
 
-        EmailChangeRequestedEvent event = lastEmailChangeEvent(teacher);
-        assertThat(event.previousEmail()).isEqualTo("access.emailchg8b@example.com");
-        assertThat(event.newEmail()).isEqualTo("docente.nuevo@example.com");
+        EmailChangeOwnerApprovalRequestedEvent event = lastOwnerApprovalEvent(teacher);
+        assertThat(event.currentEmail()).isEqualTo("access.emailchg8b@example.com");
+        assertThat(event.requestedEmail()).isEqualTo("docente.nuevo@example.com");
         List<ContactChangeLog> log = logOf(teacher);
         assertThat(log).hasSize(1);
         assertThat(log.get(0).getActorPersonId()).isEqualTo(admin.getId());
@@ -359,7 +387,7 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         Person admin = persistPerson("access.emailchg9a", "70000210", "ADMINISTRATIVO");
         Person teacher = persistPerson("access.emailchg9b", "70000211", "DOCENTE");
         updateStaffEmail(admin, teacher, "docente9.nuevo@example.com").andExpect(status().isOk());
-        mockMvc.perform(get("/verify-email").param("token", tokenOf(lastEmailChangeEvent(teacher))))
+        mockMvc.perform(get("/verify-email").param("token", approvedVerificationTokenOf(teacher)))
                 .andExpect(status().isOk());
 
         resetStaffPassword(admin, teacher).andExpect(status().isConflict());
@@ -406,7 +434,7 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         Person teacher = persistPerson("access.emailchg13b", "70000219", "DOCENTE");
         updateStaffEmail(admin, teacher, "docente13.nuevo@example.com").andExpect(status().isOk());
 
-        mockMvc.perform(get("/verify-email").param("token", tokenOf(lastEmailChangeEvent(teacher))))
+        mockMvc.perform(get("/verify-email").param("token", approvedVerificationTokenOf(teacher)))
                 .andExpect(status().isOk());
 
         Person confirmed = reload(teacher);
@@ -425,7 +453,7 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         updateStaffEmail(admin, teacher, "docente17.nuevo@example.com").andExpect(status().isOk());
         assertThat(isRevoked(teacherToken)).isFalse();
 
-        mockMvc.perform(get("/verify-email").param("token", tokenOf(lastEmailChangeEvent(teacher))))
+        mockMvc.perform(get("/verify-email").param("token", approvedVerificationTokenOf(teacher)))
                 .andExpect(status().isOk());
 
         assertThat(reload(teacher).getTokenVersion()).isGreaterThan(versionBefore);
@@ -452,9 +480,9 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         Person admin = persistPerson("access.emailchg19a", "70000230", "ADMINISTRATIVO");
         Person teacher = persistPerson("access.emailchg19b", "70000231", "DOCENTE");
         updateStaffEmail(admin, teacher, "docente19.primero@example.com").andExpect(status().isOk());
-        String firstToken = tokenOf(lastEmailChangeEvent(teacher));
+        String firstToken = approvedVerificationTokenOf(teacher);
         updateStaffEmail(admin, teacher, "docente19.segundo@example.com").andExpect(status().isOk());
-        String secondToken = tokenOf(lastEmailChangeEvent(teacher));
+        String secondToken = approvedVerificationTokenOf(teacher);
 
         mockMvc.perform(get("/verify-email").param("token", firstToken)).andExpect(status().isBadRequest());
         mockMvc.perform(get("/verify-email").param("token", secondToken)).andExpect(status().isOk());
@@ -503,9 +531,9 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
 
         updateStaffEmail(admin, teacher, "docente14.nuevo@example.com").andExpect(status().isOk());
 
-        EmailChangeRequestedEvent event = lastEmailChangeEvent(teacher);
-        assertThat(event.previousEmail()).isEqualTo("access.emailchg14b@example.com");
-        assertThat(event.newEmail()).isEqualTo("docente14.nuevo@example.com");
+        EmailChangeOwnerApprovalRequestedEvent event = lastOwnerApprovalEvent(teacher);
+        assertThat(event.currentEmail()).isEqualTo("access.emailchg14b@example.com");
+        assertThat(event.requestedEmail()).isEqualTo("docente14.nuevo@example.com");
     }
 
     @Test
@@ -513,7 +541,7 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
         Person admin = persistPerson("access.emailchg15a", "70000222", "ADMINISTRATIVO");
         Person teacher = persistPerson("access.emailchg15b", "70000223", "DOCENTE");
         updateStaffEmail(admin, teacher, "docente15.nuevo@example.com").andExpect(status().isOk());
-        String token = tokenOf(lastEmailChangeEvent(teacher));
+        String token = approvedVerificationTokenOf(teacher);
 
         ApplicationTime.useClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofHours(49)));
         try {

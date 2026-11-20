@@ -144,6 +144,20 @@ public class HistoricalPersonRecorder {
         basePersonCreator.deleteBasePerson(person);
     }
 
+    @Transactional
+    public void discardPersons(Collection<Long> personIds) {
+        for (List<Long> chunk : InClauseChunks.of(personIds)) {
+            if (personRepository.countWithSystemAccessByIdIn(chunk) > 0) {
+                throw new HistoricalDiscardBlockedException("La persona ya tiene acceso al sistema");
+            }
+        }
+        for (List<Long> chunk : InClauseChunks.of(personIds)) {
+            studentRepository.deleteByPersonIdIn(chunk);
+            instructorProfileCreationPort.removeInstructorProfiles(chunk);
+        }
+        basePersonCreator.deleteBasePersons(personIds);
+    }
+
     private static Student newStudent(Person person, Institution institution, HistoricalPerson historical) {
         Student student = new Student();
         student.setPerson(person);

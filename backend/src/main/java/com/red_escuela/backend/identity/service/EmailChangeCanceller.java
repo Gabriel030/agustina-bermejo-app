@@ -23,7 +23,7 @@ public class EmailChangeCanceller {
 
     @Transactional
     public void cancelByClearToken(String clearToken) {
-        EmailVerificationToken pending = tokenRepository.findByCancelTokenHash(TokenHashUtil.sha256Hex(clearToken))
+        EmailVerificationToken pending = tokenRepository.findLockedByCancelTokenHash(TokenHashUtil.sha256Hex(clearToken))
                 .filter(candidate -> !candidate.getExpiresAt().isBefore(ApplicationTime.now()))
                 .orElseThrow(InvalidEmailVerificationTokenException::new);
         tokenRepository.delete(pending);

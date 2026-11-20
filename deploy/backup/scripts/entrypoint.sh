@@ -10,12 +10,14 @@ fi
 : "${PGPASSWORD:?PGPASSWORD es obligatorio}"
 schedule="${BACKUP_SCHEDULE:-0 */4 * * *}"
 freshness="${BACKUP_FRESHNESS_SCHEDULE:-30 9 * * *}"
+restore_test="${BACKUP_RESTORE_TEST_SCHEDULE:-0 5 * * 0}"
 
 write_cron_env /opt/backup/cron.env
 
 cat > /etc/crontabs/root <<CRON
 $schedule /bin/bash -c ". /opt/backup/cron.env; /opt/backup/backup.sh" > /proc/1/fd/1 2>&1
 $freshness /bin/bash -c ". /opt/backup/cron.env; /opt/backup/check-freshness.sh" > /proc/1/fd/1 2>&1
+$restore_test /bin/bash -c ". /opt/backup/cron.env; /opt/backup/restore-test.sh" > /proc/1/fd/1 2>&1
 CRON
 
 log "backup scheduler ready: '$schedule' (TZ=${TZ:-UTC})"

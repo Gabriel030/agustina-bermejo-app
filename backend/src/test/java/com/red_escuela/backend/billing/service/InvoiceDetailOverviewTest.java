@@ -63,6 +63,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -319,8 +320,9 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
     private Long mercadoPagoPays(Long invoiceId, long amount) {
         String mpPaymentId = "mp-" + System.nanoTime();
+        UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoiceId, ars(amount));
         ProcessMpWebhookService service = new ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort,
-                id -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(invoiceId, ars(amount)), 1)),
+                id -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(publicReference, ars(amount)), 1)),
                 new MpWebhookSignatureVerifier("", true)));
         service.process("", "request-" + System.nanoTime(), mpPaymentId);
         return jdbc.queryForObject("select id from payment where gateway_payment_id = ?", Long.class, mpPaymentId);

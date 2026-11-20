@@ -247,6 +247,32 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void foreignTeacherGetsSame404WithOrWithoutScheme() {
+        Setup withoutScheme = setup(null, EnrollmentStatus.IN_PROGRESS, null);
+        Setup withScheme = setup(persistScheme(1, false, GradeAggregationMethod.SIMPLE_AVERAGE, null),
+                EnrollmentStatus.IN_PROGRESS, null);
+        Instructor foreign = persistInstructor();
+        entityManager.flush();
+        CreateGradeItemRequest request = request(GradeItemType.EXAM, 1, 7);
+
+        assertThatThrownBy(() -> gradeItemService.loadCourseEnrollmentGrade(
+                withScheme.enrollment().getId(), foreign.getId(), request))
+                .isInstanceOf(NotOwnSectionException.class);
+        assertThatThrownBy(() -> gradeItemService.loadCourseEnrollmentGrade(
+                withoutScheme.enrollment().getId(), foreign.getId(), request))
+                .isInstanceOf(NotOwnSectionException.class);
+    }
+
+    @Test
+    void ownerWithoutSchemeStillGets400() {
+        Setup s = setup(null, EnrollmentStatus.IN_PROGRESS, null);
+
+        assertThatThrownBy(() -> gradeItemService.loadCourseEnrollmentGrade(
+                s.enrollment().getId(), s.instructor().getId(), request(GradeItemType.EXAM, 1, 7)))
+                .isInstanceOf(NoEvaluationSchemeException.class);
+    }
+
+    @Test
     void loadingACourseGradeWithoutAnAssignedSchemeFails() {
         Setup s = setup(null, EnrollmentStatus.IN_PROGRESS, null);
 

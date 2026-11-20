@@ -12,17 +12,24 @@ import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(OutputCaptureExtension.class)
 class SdkMercadoPagoPaymentFetcherTest {
+
+    private static final String REFERENCE = "6f1c2f0a-3b1e-4c1b-9a3e-2d5b8f7a1c90";
 
     private String previousAccessToken;
 
@@ -78,10 +85,10 @@ class SdkMercadoPagoPaymentFetcherTest {
 
     @Test
     void anApprovedCreditCardPaymentIsMappedWithTheReportedInvoiceAmountInstallmentsAndCardType() {
-        Optional<MercadoPagoApprovedPayment> fetched = fetchWith(payment("approved", "ARS", "credit_card", "45", "1500.50", 3), "999");
+        Optional<MercadoPagoApprovedPayment> fetched = fetchWith(payment("approved", "ARS", "credit_card", REFERENCE, "1500.50", 3), "999");
 
         assertThat(fetched).isPresent();
-        assertThat(fetched.get().reportedAllocation().invoiceId()).isEqualTo(45L);
+        assertThat(fetched.get().reportedAllocation().publicReference()).isEqualTo(UUID.fromString(REFERENCE));
         assertThat(fetched.get().reportedAllocation().amountApplied()).isEqualTo(Money.of(new BigDecimal("1500.50"), Currency.ARS));
         assertThat(fetched.get().installments()).isEqualTo(3);
         assertThat(fetched.get().cardType()).isEqualTo(CardPaymentType.CREDIT);
@@ -89,7 +96,7 @@ class SdkMercadoPagoPaymentFetcherTest {
 
     @Test
     void thePaymentIsRequestedByItsNumericGatewayId() throws Exception {
-        Payment approved = payment("approved", "USD", "debit_card", "7", "10.00", 1);
+        Payment approved = payment("approved", "USD", "debit_card", REFERENCE, "10.00", 1);
         try (MockedConstruction<PaymentClient> construction = Mockito.mockConstruction(PaymentClient.class, (client, context) -> {
             Mockito.when(client.get(Mockito.anyLong())).thenReturn(approved);
         })) {
@@ -103,19 +110,19 @@ class SdkMercadoPagoPaymentFetcherTest {
 
     @Test
     void aPaymentThatIsNotApprovedIsMappedToEmpty() {
-        assertThat(fetchWith(payment("pending", "ARS", "credit_card", "45", "10.00", 1), "999")).isEmpty();
-        assertThat(fetchWith(payment(null, "ARS", "credit_card", "45", "10.00", 1), "999")).isEmpty();
-        assertThat(fetchWith(payment("rejected", "ARS", "credit_card", "45", "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment("pending", "ARS", "credit_card", REFERENCE, "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment(null, "ARS", "credit_card", REFERENCE, "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment("rejected", "ARS", "credit_card", REFERENCE, "10.00", 1), "999")).isEmpty();
     }
 
     @Test
     void anApprovedPaymentInAnUnsupportedCurrencyIsIgnored() {
-        assertThat(fetchWith(payment("approved", "BRL", "credit_card", "45", "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment("approved", "BRL", "credit_card", REFERENCE, "10.00", 1), "999")).isEmpty();
     }
 
     @Test
     void anApprovedPaymentWithoutCurrencyIsTakenAsArs() {
-        Optional<MercadoPagoApprovedPayment> fetched = fetchWith(payment("approved", null, "account_money", "45", "10.00", 1), "999");
+        Optional<MercadoPagoApprovedPayment> fetched = fetchWith(payment("approved", null, "account_money", REFERENCE, "10.00", 1), "999");
 
         assertThat(fetched.orElseThrow().reportedAllocation().amountApplied().currency()).isEqualTo(Currency.ARS);
         assertThat(fetched.get().cardType()).isNull();
@@ -141,10 +148,17 @@ class SdkMercadoPagoPaymentFetcherTest {
     }
 
     @Test
-    void nonNumericExternalReferenceYieldsEmptyInsteadOfThrowing() {
-        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "abc", "10.00", 1), "999")).isEmpty();
-        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "12 3", "10.00", 1), "999")).isEmpty();
+    void paymentWithLegacyNumericReferenceIsNotCredited(CapturedOutput output) {
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "45", "10.00", 1), "999")).isEmpty();
+        assertThat(output.getOut()).contains("ALERTA_PASARELA tipo=PAGO_SIN_CHECKOUT").contains("pagoMp=999");
         assertThat(fetchWith(payment("approved", "ARS", "credit_card", "99999999999999999999", "10.00", 1), "999")).isEmpty();
+    }
+
+    @Test
+    void aReferenceThatIsNotAUuidYieldsEmptyInsteadOfThrowing() {
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "abc", "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", REFERENCE + "0", "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "12 3", "10.00", 1), "999")).isEmpty();
     }
 
     @Test

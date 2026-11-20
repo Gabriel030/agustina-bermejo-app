@@ -25,11 +25,14 @@ import com.red_escuela.backend.shared.logging.LogSanitizer;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
     private static final String APPROVED = "approved";
+    private static final Pattern UUID_FORMAT = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
     private final String accessToken;
     private final CircuitBreaker breaker;
@@ -67,22 +70,25 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
             log.warn("Pago de Mercado Pago ignorado, moneda no soportada: pagoMp={}, moneda={}", mpPaymentId, payment.getCurrencyId());
             return Optional.empty();
         }
-        Optional<Long> invoiceId = parseInvoiceReference(payment.getExternalReference());
-        if (invoiceId.isEmpty()) {
-            log.warn("Pago de Mercado Pago sin referencia externa válida: pagoMp={}", LogSanitizer.sanitize(mpPaymentId));
+        Optional<UUID> publicReference = parsePublicReference(payment.getExternalReference());
+        if (publicReference.isEmpty()) {
+            log.warn("Pago de Mercado Pago sin referencia de checkout válida, no se acredita: pagoMp={}, referencia={}",
+                    LogSanitizer.sanitize(mpPaymentId), LogSanitizer.sanitize(String.valueOf(payment.getExternalReference())));
+            log.error("ALERTA_PASARELA tipo=PAGO_SIN_CHECKOUT pagoMp={} referencia={}", LogSanitizer.sanitize(mpPaymentId),
+                    LogSanitizer.sanitize(String.valueOf(payment.getExternalReference())));
             return Optional.empty();
         }
         ReportedGatewayAllocation reported = new ReportedGatewayAllocation(
-                invoiceId.get(),
+                publicReference.get(),
                 Money.of(payment.getTransactionAmount(), currency.get()));
         return Optional.of(new MercadoPagoApprovedPayment(reported, payment.getInstallments(), toCardType(payment.getPaymentTypeId())));
     }
 
-    static Optional<Long> parseInvoiceReference(String externalReference) {
-        if (externalReference == null || !externalReference.matches("\\d{1,18}")) {
+    static Optional<UUID> parsePublicReference(String externalReference) {
+        if (externalReference == null || !UUID_FORMAT.matcher(externalReference).matches()) {
             return Optional.empty();
         }
-        return Optional.of(Long.parseLong(externalReference));
+        return Optional.of(UUID.fromString(externalReference));
     }
 
     static CardPaymentType toCardType(String paymentTypeId) {
