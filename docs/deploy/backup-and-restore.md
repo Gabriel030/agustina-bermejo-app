@@ -139,9 +139,12 @@ El restore funciona desde cualquier máquina con Docker usando la imagen del ser
 
 ## Prueba semanal de integridad
 
-Corre sola cada domingo a las 05:00 (`restore-test.sh`). Toma el último dump, valida checksum, lo restaura en una base descartable y compara conteos y migraciones. El resultado queda en `status.json` y en `GET /backups/status`. Si falla, se emite alerta `RESTORE_TEST_FAILED`.
+Corre sola cada domingo a las 05:00 (`restore-test.sh`). Toma el último dump completo y verifica su checksum y el del archivo de archivos. Hay dos caminos, según el cifrado:
 
-Limitación conocida: la prueba automática no descifra con `AGE_IDENTITY_FILE` (la clave no está en el servidor). Con dumps `.age` no puede restaurar; por eso el simulacro trimestral es manual y es la prueba real del cifrado.
+- **Dumps sin cifrar**: valida checksum, restaura en una base descartable y compara conteos y migraciones. Escribe `PASSED` o `FAILED` en `status.json` y en `GET /backups/status`. Si falla, emite la alerta `RESTORE_TEST_FAILED` (CRITICAL) y avisa por webhook/Telegram.
+- **Dumps cifrados (`.age`)**: la clave privada no está en el servidor, así que la prueba solo hace **chequeo de integridad** (checksums). No restaura nada y no escribe `PASSED` ni `FAILED`: `lastRestoreTest` queda con el último resultado de una prueba completa. Si el checksum no coincide, avisa con "CHEQUEO DE INTEGRIDAD FALLIDO" por webhook/Telegram; esa falla **no** genera la alerta `RESTORE_TEST_FAILED`, así que la pantalla no la muestra como prueba fallida. Revisar el aviso a mano.
+
+La restauración real de un dump cifrado se prueba solo en el simulacro trimestral, con la clave de los dos custodios.
 
 Para correr la verificación completa a mano, con un Postgres 16 descartable:
 
@@ -195,5 +198,5 @@ Los avisos por email no están incluidos: se resuelven con un webhook.
 
 ## Pendientes conocidos
 
-- La prueba automática no descifra dumps `.age` (ver "Prueba semanal de integridad").
+- Con dumps `.age`, la prueba semanal solo verifica integridad; la restauración completa depende del simulacro manual (ver "Prueba semanal de integridad").
 - La copia en S3 no se probó contra un proveedor real. Sin S3, el backup vive en el mismo servidor: configurar copia externa en producción.
