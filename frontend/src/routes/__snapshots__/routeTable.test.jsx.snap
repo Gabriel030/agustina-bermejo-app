@@ -3,7 +3,7 @@
 exports[`route table > keeps every path, role and page unchanged 1`] = `
 [
   "public|-|/baja|BajaComunicaciones",
-  "public|-|/cancelar-cambio-email|CancelEmailChangePage",
+  "public|-|/cancelar-cambio-email|ReviewEmailChangePage",
   "public|-|/confirmar-responsable|ConfirmarResponsable",
   "public|-|/legal/privacidad|PrivacyPage",
   "public|-|/legal/terminos|TermsPage",
@@ -11,6 +11,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "public|-|/no-autorizado|NoAutorizado",
   "public|-|/olvide-mi-contrasena|ForgotPassword",
   "public|-|/registrarse|Registrarse",
+  "public|-|/revisar-cambio-email|ReviewEmailChangePage",
   "public|-|/verificar-email|VerificacionEmail",
   "public|-|/verificar/:code|VerifyCertificate",
   "role|administrativo,director|alumnos/:id/descuentos/nuevo|GrantDiscountPage",

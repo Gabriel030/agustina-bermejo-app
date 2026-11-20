@@ -2,7 +2,7 @@ import { Login } from '@/features/identity/pages/Login';
 import { Registrarse } from '@/features/identity/pages/Registrarse';
 import { ForgotPassword } from '@/features/identity/pages/ForgotPassword';
 import { VerificacionEmail } from '@/features/identity/pages/VerificacionEmail';
-import { CancelEmailChangePage } from '@/features/identity/pages/CancelEmailChangePage';
+import { ReviewEmailChangePage } from '@/features/identity/pages/ReviewEmailChangePage';
 import { BajaComunicaciones } from '@/features/identity/pages/BajaComunicaciones';
 import { ConfirmarResponsable } from '@/features/identity/pages/ConfirmarResponsable';
 import { PrivacyPage, TermsPage } from '@/features/identity/legal/LegalDocumentPage';
@@ -20,7 +20,8 @@ export const routes = {
     { path: '/registrarse', element: <Registrarse /> },
     { path: '/olvide-mi-contrasena', element: <ForgotPassword /> },
     { path: '/verificar-email', element: <VerificacionEmail /> },
-    { path: '/cancelar-cambio-email', element: <CancelEmailChangePage /> },
+    { path: '/revisar-cambio-email', element: <ReviewEmailChangePage path="/revisar-cambio-email" /> },
+    { path: '/cancelar-cambio-email', element: <ReviewEmailChangePage path="/cancelar-cambio-email" /> },
     { path: '/baja', element: <BajaComunicaciones /> },
     { path: '/no-autorizado', element: <NoAutorizado /> },
     { path: '/legal/terminos', element: <TermsPage /> },
