@@ -123,7 +123,7 @@ export function graduationCertificateBatch(overrides = {}) {
         certificate: graduationCertificateSummary({ holderFullName: 'Gómez, Tomás' }),
         errorCode: null,
       },
-      { enrollmentId: 12, kind: 'PROGRAM', outcome: 'FAILED', certificate: null, errorCode: 'GRADUATION_CERTIFICATE_NOT_ELIGIBLE' },
+      { enrollmentId: 12, kind: 'PROGRAM', outcome: 'FAILED', certificate: null, errorCode: 'GRADUATION_CERTIFICATE_BLOCKED_BY_DEBT' },
     ],
     ...overrides,
   };

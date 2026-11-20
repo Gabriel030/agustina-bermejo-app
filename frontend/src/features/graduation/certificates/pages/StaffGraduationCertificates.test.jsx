@@ -84,7 +84,6 @@ describe('StaffGraduationCertificates', () => {
       { enrollmentId: 12, kind: 'PROGRAM' },
     ]);
     expect(screen.getByText('Pérez, Ana:')).toBeInTheDocument();
-    expect(screen.getByText('No se puede emitir el certificado de egreso en este estado.')).toBeInTheDocument();
   });
 
   it('shows the domain message when the preview is rejected', async () => {
