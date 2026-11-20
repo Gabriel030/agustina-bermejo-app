@@ -37,6 +37,8 @@ class PasswordResetFailureConcurrencyIT extends AbstractIntegrationTest {
     @Autowired
     private VerifyResetCodeUseCase verifyResetCodeUseCase;
     @Autowired
+    private ResetPasswordUseCase resetPasswordUseCase;
+    @Autowired
     private PersonRepository personRepository;
     @Autowired
     private AddressRepository addressRepository;
@@ -69,6 +71,43 @@ class PasswordResetFailureConcurrencyIT extends AbstractIntegrationTest {
             token.setCreatedAt(ApplicationTime.now());
             passwordResetTokenRepository.save(token);
         });
+    }
+
+    @Test
+    void concurrentResetCodeUseRemainsSingleUse() throws Exception {
+        Person person = persistPerson("reset-once-" + System.nanoTime());
+        persistCode(person);
+        List<Callable<String>> calls = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            calls.add(() -> verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(person.getEmail().value(), "123456", IP)));
+        }
+
+        List<Outcome<String>> outcomes = ConcurrentRace.run(calls);
+
+        assertThat(outcomes.stream().filter(Outcome::succeeded)).hasSize(1);
+        assertThat(outcomes.stream().filter(outcome -> !outcome.succeeded()).map(Outcome::failure))
+                .allMatch(InvalidPasswordResetTokenException.class::isInstance);
+    }
+
+    @Test
+    void concurrentPasswordResetWithTheSameExchangeTokenSucceedsOnlyOnce() throws Exception {
+        Person person = persistPerson("exchange-once-" + System.nanoTime());
+        persistCode(person);
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(person.getEmail().value(), "123456", IP));
+        List<Callable<Boolean>> calls = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            calls.add(() -> {
+                resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Str0ng-Passw0rd!x"));
+                return true;
+            });
+        }
+
+        List<Outcome<Boolean>> outcomes = ConcurrentRace.run(calls);
+
+        assertThat(outcomes.stream().filter(Outcome::succeeded)).hasSize(1);
+        assertThat(outcomes.stream().filter(outcome -> !outcome.succeeded()).map(Outcome::failure))
+                .allMatch(InvalidPasswordResetTokenException.class::isInstance);
+        assertThat(personRepository.findTokenVersionById(person.getId())).isEqualTo(1);
     }
 
     @Test

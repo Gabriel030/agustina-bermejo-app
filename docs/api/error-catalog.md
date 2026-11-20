@@ -227,7 +227,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_NOT_REGULAR` | no | `StudentNotRegularException` | evaluation |
 | `SUBJECT_NOT_IN_PROGRAM_PLAN` | no | `SubjectNotInProgramPlanException` | enrollment |
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
+| `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_SUBJECT_REQUIRED` | no | `TemplateSubjectRequiredException` | notification |
+| `TEMPLATE_UNKNOWN_MARKER` | no | `TemplateUnknownMarkerException` | graduation |
 | `TERM_DATES_REQUIRED` | no | `TermDatesRequiredException` | shared |
 | `TERM_ENROLLMENT_WINDOW_REQUIRED` | no | `TermEnrollmentWindowRequiredException` | shared |
 | `UNKNOWN_AUDIENCE_SEGMENT` | no | `UnknownAudienceSegmentException` | announcement |
@@ -352,6 +354,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_DISCOUNT_NOT_FOUND` | no | `StudentDiscountNotFoundException` | billing |
 | `STUDENT_NOT_FOUND` | no | `StudentNotFoundException` | identity |
 | `SUBJECT_NOT_FOUND` | no | `SubjectNotFoundException` | academicstructure |
+| `TEMPLATE_IMAGE_NOT_FOUND` | no | `TemplateImageNotFoundException` | graduation |
+| `TEMPLATE_VERSION_NOT_FOUND` | no | `TemplateVersionNotFoundException` | graduation |
 | `TERM_NOT_FOUND` | no | `TermNotFoundException` | academicstructure |
 | `UNKNOWN_METRIC_PANEL` | no | `UnknownMetricPanelException` | billing |
 | `WAITLIST_QUEUE_NOT_FOUND` | no | `WaitlistQueueNotFoundException` | enrollment |
@@ -466,7 +470,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADE_ITEM_NOT_RECOVERABLE` | no | `GradeItemNotRecoverableException` | evaluation |
 | `GRADE_ITEM_PUBLISHED_LOCKED` | no | `GradeItemPublishedLockedException` | evaluation |
 | `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
+| `GRADUATION_CERTIFICATE_NOT_AVAILABLE` | no | `GraduationCertificateNotAvailableException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
+| `GRADUATION_CERTIFICATE_NOT_REVOCABLE` | no | `GraduationCertificateNotRevocableException` | graduation |
+| `GRADUATION_CERTIFICATE_REVOKED` | no | `GraduationCertificateRevokedException` | graduation |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
 | `GUARDIAN_ACCEPTANCE_REQUIRED` | no | `GuardianAcceptanceRequiredException` | identity |
@@ -611,6 +618,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
+| `TEMPLATE_NOTHING_TO_DISCARD` | no | `TemplateNothingToDiscardException` | graduation |
+| `TEMPLATE_NOTHING_TO_PUBLISH` | no | `TemplateNothingToPublishException` | graduation |
 | `TERM_ENROLLMENT_OVERRIDE_CLOSED` | no | `TermEnrollmentOverrideClosedException` | enrollment |
 | `TERM_HAS_ACTIVE_ENROLLMENTS` | no | `TermHasActiveEnrollmentsException` | academicstructure |
 | `UNKNOWN_GUARDED_MODULE` | no | `UnknownGuardedModuleException` | platform |
@@ -630,7 +639,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `GRADUATION_CERTIFICATE_OPERATION_PENDING` | no | `GraduationCertificateOperationPendingException` | graduation |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
+| `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
 | `UNKNOWN_TEMPLATE_VARIABLE` | no | `UnknownTemplateVariableException` | notification |
 
@@ -752,6 +763,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/certificate-exceptions/{id}/approve` | `CertificateExceptionController#approve` |
 | POST | `/certificate-exceptions/{id}/reject` | `CertificateExceptionController#reject` |
 | POST | `/certificate-exceptions/{id}/withdraw` | `CertificateExceptionController#withdraw` |
+| POST | `/certificate-templates/{kind}/images` | `CertificateTemplateController#uploadImage` |
+| POST | `/certificate-templates/{kind}/preview` | `CertificateTemplateController#preview` |
+| POST | `/certificate-templates/{kind}/publish` | `CertificateTemplateController#publish` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
 | POST | `/classrooms` | `ClassroomController#create` |
@@ -811,6 +825,10 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/grade-items/{id}/corrections` | `GradeCorrectionController#correctPublishedGrade` |
 | POST | `/grade-items/{id}/recovery` | `ExamRecoveryController#recordExamRecovery` |
 | POST | `/graduation-certificates` | `GraduationCertificateController#issue` |
+| POST | `/graduation-certificates/batch` | `GraduationCertificateController#issueBatch` |
+| POST | `/graduation-certificates/preview` | `GraduationCertificateController#preview` |
+| POST | `/graduation-certificates/{id}/reissue` | `GraduationCertificateController#reissue` |
+| POST | `/graduation-certificates/{id}/revoke` | `GraduationCertificateController#revoke` |
 | POST | `/graduation-requests/{id}/approve` | `GraduationRequestController#approve` |
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |
 | POST | `/graduation-requests/{id}/verify-debt` | `GraduationRequestController#verifyDebt` |

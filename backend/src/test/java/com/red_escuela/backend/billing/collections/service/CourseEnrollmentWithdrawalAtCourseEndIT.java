@@ -214,7 +214,7 @@ class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT 
     void withdrawingForNonpaymentAfterTheCourseEndedDoesNotPromoteTheWaitlist() {
         arrangeCourseEndingOn(2130, d(2130, 6, 30), "SUSPENDED");
         Long waitlistedId = jdbc.queryForObject("insert into course_enrollment (student_id, course_id, status, enrollment_date) "
-                + "select ?, course_id, 'WAITLISTED', now() from course_enrollment where id = ? returning id", Long.class, student.getId(), enrollment.getId());
+                + "select ?, course_id, 'WAITLISTED', now() from course_enrollment where id = ? returning id", Long.class, persistAnotherStudent().getId(), enrollment.getId());
 
         runTermEndStepOn(d(2130, 7, 1));
 

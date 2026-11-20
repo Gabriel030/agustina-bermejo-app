@@ -15,6 +15,8 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 
 @UseCase
 public class ResetPasswordService implements ResetPasswordUseCase {
@@ -45,8 +47,10 @@ public class ResetPasswordService implements ResetPasswordUseCase {
         passwordPolicyValidator.validate(command.newPassword());
 
         String hash = TokenHashUtil.sha256Hex(command.exchangeToken());
+        LocalDateTime now = ApplicationTime.now();
         PasswordResetToken resetToken = passwordResetTokenRepository
-                .findByExchangeTokenHashAndExchangeExpiresAtAfter(hash, ApplicationTime.now())
+                .findByExchangeTokenHashAndExchangeExpiresAtAfter(hash, now)
+                .filter(found -> passwordResetTokenRepository.consumeExchangeToken(hash, now) == 1)
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
         Person person = resetToken.getPerson();

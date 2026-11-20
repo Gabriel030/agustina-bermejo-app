@@ -5,7 +5,7 @@ import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
 const LEGACY_REDIRECT_PATHS = ['listas-de-espera'];
-const PENDING_SCREENS = { alumno: ['opciones'], administrativo: [], director: [] };
+const PENDING_SCREENS = { alumno: [], administrativo: [], director: [] };
 
 describe('role menu manifest', () => {
   it('defines a manifest entry for every configured role', () => {

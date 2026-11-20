@@ -304,5 +304,13 @@ from broadcast_recipient r join broadcast b on b.id = r.broadcast_id
 where (b.status = 'CANCELLED' and b.cancelled_at < now() - interval '12 months')
    or (b.status = 'COMPLETED' and b.completed_at < now() - interval '12 months');
 
+\echo
+\echo [V272] Alumnos con mas de una matriculacion activa (ENROLLED, IN_PROGRESS, WAITLISTED) al mismo curso; V272 crea un indice unico parcial y ABORTA si hay filas (resolver antes: retirar o fusionar las duplicadas):
+select student_id, course_id, count(*) as active_enrollments, array_agg(id order by id) as enrollment_ids
+from course_enrollment
+where status in ('ENROLLED', 'IN_PROGRESS', 'WAITLISTED')
+group by student_id, course_id
+having count(*) > 1;
+
 rollback;
 \echo ===== fin =====

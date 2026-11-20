@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__claude-code-remote__get_session",
+      "mcp__claude-code-remote__list_sessions"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
