@@ -5,6 +5,7 @@ METRICS_DIR="${BACKUP_METRICS_DIR:-/metrics}"
 ALERT_LABEL="${ALERT_LABEL:-agustina-bermejo}"
 BACKUP_PREFIX="${BACKUP_PREFIX:-abdb}"
 FILES_PREFIX="${FILES_PREFIX:-abfiles}"
+STATUS_DIR="${BACKUP_STATUS_DIR:-$BACKUP_DIR/status}"
 
 log() {
   printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"
@@ -109,6 +110,16 @@ warn_once_per_day() {
 
 warn_unencrypted_once() {
   warn_once_per_day unencrypted "BACKUP SIN CIFRAR: falta AGE_RECIPIENT, los backups quedan legibles en el disco"
+  alert_once_per_day unencrypted WARNING ENCRYPTION_DISABLED
+}
+
+alert_once_per_day() {
+  local name="$1" level="$2" code="$3" marker today
+  marker="$METRICS_DIR/.recorded_$name"
+  today=$(date -u +%Y%m%d)
+  [ "$(cat "$marker" 2> /dev/null)" = "$today" ] && return 0
+  record_alert "$level" "$code"
+  mkdir -p "$METRICS_DIR" 2> /dev/null && echo "$today" > "$marker"
 }
 
 verify_while_streaming() {
@@ -158,7 +169,7 @@ write_cron_env() {
   local target="$1" name
   : > "$target"
   chmod 600 "$target"
-  for name in $(compgen -e | grep -E '^(PG|BACKUP_|AGE_|ALERT_)|^TZ$'); do
+  for name in $(compgen -e | grep -E '^(PG|BACKUP_|AGE_|ALERT_)|^TZ$' | grep -v '^AGE_IDENTITY'); do
     printf 'export %s=%q\n' "$name" "${!name}" >> "$target"
   done
 }
@@ -179,4 +190,42 @@ upload_pair_to_s3() {
     fi
   done
   log "uploaded to $remote"
+}
+
+export TABLE_COUNTS_SQL="SELECT table_name, (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text::bigint FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1"
+
+iso_now() {
+  date -u +%Y-%m-%dT%H:%M:%SZ
+}
+
+iso_of_stamp() {
+  printf '%s' "$1" | sed -E 's/^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})([0-9]{2})Z$/\1-\2-\3T\4:\5:\6Z/'
+}
+
+ensure_status_dir() {
+  mkdir -p "$STATUS_DIR" 2> /dev/null && chmod 755 "$STATUS_DIR" 2> /dev/null
+}
+
+record_alert() {
+  local level="$1" code="$2"
+  ensure_status_dir || return 0
+  printf '%s %s %s\n' "$(iso_now)" "$level" "$code" >> "$STATUS_DIR/alerts.log"
+  tail -n 200 "$STATUS_DIR/alerts.log" > "$STATUS_DIR/.alerts.log.tmp.$$" 2> /dev/null && mv -f "$STATUS_DIR/.alerts.log.tmp.$$" "$STATUS_DIR/alerts.log"
+}
+
+bump_consecutive_failures() {
+  local current
+  ensure_status_dir || return 0
+  current=$(cat "$STATUS_DIR/consecutive-failures" 2> /dev/null || echo 0)
+  case "$current" in '' | *[!0-9]*) current=0 ;; esac
+  echo $(( current + 1 )) > "$STATUS_DIR/consecutive-failures"
+}
+
+reset_consecutive_failures() {
+  ensure_status_dir || return 0
+  echo 0 > "$STATUS_DIR/consecutive-failures"
+}
+
+refresh_status() {
+  env -u BACKUP_PREFIX -u FILES_PREFIX /opt/backup/status.sh || log "no se pudo actualizar status.json"
 }

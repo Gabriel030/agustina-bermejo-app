@@ -34,10 +34,17 @@ function civil_from_days(z,    era, doe, yoe, doy, mp) {
 END {
   today = int((now_epoch + tz_offset) / 86400)
   for (i = NR; i >= 1; i--) {
-    if (day[i] == today) keep[i] = 1
-    if (!(day[i] in seenday) && ndays < keep_daily) { seenday[day[i]] = 1; ndays++; keep[i] = 1 }
-    if (!(week[i] in seenweek) && nweeks < keep_weekly) { seenweek[week[i]] = 1; nweeks++; keep[i] = 1 }
-    if (!(quarter[i] in seenquarter) && (keep_quarterly == 0 || nquarters < keep_quarterly)) { seenquarter[quarter[i]] = 1; nquarters++; keep[i] = 1 }
+    if (day[i] == today) { keep[i] = 1; nintraday++; if (!intraday_latest) intraday_latest = i }
+    if (!(day[i] in seenday) && ndays < keep_daily) { seenday[day[i]] = 1; ndays++; keep[i] = 1; if (!daily_latest) daily_latest = i }
+    if (!(week[i] in seenweek) && nweeks < keep_weekly) { seenweek[week[i]] = 1; nweeks++; keep[i] = 1; if (!weekly_latest) weekly_latest = i }
+    if (!(quarter[i] in seenquarter) && (keep_quarterly == 0 || nquarters < keep_quarterly)) { seenquarter[quarter[i]] = 1; nquarters++; keep[i] = 1; if (!quarterly_latest) quarterly_latest = i }
+  }
+  if (print_tiers) {
+    if (intraday_latest) print "INTRADAY\t" files[intraday_latest] "\t" nintraday
+    if (daily_latest) print "DAILY\t" files[daily_latest] "\t" ndays
+    if (weekly_latest) print "WEEKLY\t" files[weekly_latest] "\t" nweeks
+    if (quarterly_latest) print "QUARTERLY\t" files[quarterly_latest] "\t" nquarters
+    exit
   }
   for (i = 1; i <= NR; i++) if (!(i in keep)) print files[i]
 }
