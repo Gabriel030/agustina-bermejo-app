@@ -34,4 +34,10 @@ public class EmailVerificationToken {
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
+
+    @Column(name = "awaiting_owner_approval", nullable = false)
+    private boolean awaitingOwnerApproval;
+
+    @Column(name = "owner_approved_at")
+    private LocalDateTime ownerApprovedAt;
 }

@@ -28,6 +28,10 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
         return ownershipCases().filter(ownershipCase -> ownershipCase.kind().ownerRole() == MatrixRole.DOCENTE);
     }
 
+    static Stream<OwnershipCase> administrativeOwnedRows() {
+        return ownershipCases().filter(ownershipCase -> ownershipCase.kind().ownerRole() == MatrixRole.ADMINISTRATIVO);
+    }
+
     private static Stream<OwnershipCase> ownershipCases() {
         return AuthorizationMatrixFile.read().stream()
                 .filter(row -> !row.ownership().isEmpty())
@@ -43,6 +47,12 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
     @ParameterizedTest(name = "{0}")
     @MethodSource("instructorOwnedRows")
     void instructorOfAnotherSectionGets404(OwnershipCase ownershipCase) throws Exception {
+        assertOwnerPassesAndStrangerGetsExpectedStatus(ownershipCase);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("administrativeOwnedRows")
+    void administrativeWhoDidNotOpenTheRequestGets404(OwnershipCase ownershipCase) throws Exception {
         assertOwnerPassesAndStrangerGetsExpectedStatus(ownershipCase);
     }
 

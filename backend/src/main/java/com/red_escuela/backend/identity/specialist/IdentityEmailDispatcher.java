@@ -92,6 +92,15 @@ public class IdentityEmailDispatcher {
                 }, () -> log.warn("Email change mail skipped, person not found: personId={}", event.personId())));
     }
 
+    @ApplicationModuleListener
+    public void onEmailChangeOwnerApprovalRequested(EmailChangeOwnerApprovalRequestedEvent event) {
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onEmailChangeOwnerApprovalRequested", () ->
+                personRepository.findById(event.personId()).ifPresentOrElse(person ->
+                        emailService.sendEmailChangeOwnerApproval(displayNameOf(person, event.currentEmail()), event.currentEmail(),
+                                event.requestedEmail(), event.approvalLink(), event.cancellationLink()),
+                        () -> log.warn("Owner approval mail skipped, person not found: personId={}", event.personId())));
+    }
+
     private boolean hasNoEmail(Person person) {
         String email = person.emailValue();
         return email == null || email.isBlank();

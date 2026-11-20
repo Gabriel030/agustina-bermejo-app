@@ -3,7 +3,7 @@
  *
  * <p><b>Expone</b>: interfaces {@code XxxUseCase} con su implementación {@code XxxService}.
  *
- * <p><b>No hacer</b>: llamar a otro caso de uso; leer el archivo de estado directo sin un especialista.
+ * <p><b>No hacer</b>: llamar a otro caso de uso; leer el archivo de estado sin pasar por {@code BackupStatusSource}.
  *
  * <p><b>Ejemplo</b>: {@code GetBackupStatusService} devuelve el estado para el Director o la plataforma.
  */

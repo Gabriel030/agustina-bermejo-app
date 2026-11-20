@@ -1,14 +1,20 @@
 package com.red_escuela.backend.identity.usecase.emailverification;
 
 import com.red_escuela.backend.identity.dto.EmailChangePreviewResponse;
+import com.red_escuela.backend.identity.service.EmailChangeReviewer;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.shared.exception.InvalidEmailVerificationTokenException;
 
 @UseCase
 public class PreviewEmailChangeService implements PreviewEmailChangeUseCase {
 
+    private final EmailChangeReviewer emailChangeReviewer;
+
+    public PreviewEmailChangeService(EmailChangeReviewer emailChangeReviewer) {
+        this.emailChangeReviewer = emailChangeReviewer;
+    }
+
     @Override
     public EmailChangePreviewResponse previewForOwner(String token) {
-        throw new InvalidEmailVerificationTokenException();
+        return emailChangeReviewer.preview(token);
     }
 }

@@ -216,6 +216,14 @@ public class HistoricalEnrollmentRecorder {
     }
 
     @Transactional
+    public void discardProgramEnrollments(Collection<Long> enrollmentIds) {
+        for (List<Long> chunk : InClauseChunks.of(enrollmentIds)) {
+            programEnrollmentRepository.deleteByIdIn(chunk);
+        }
+        programEnrollmentRepository.flush();
+    }
+
+    @Transactional
     public void discardSectionEnrollment(Long enrollmentId) {
         sectionEnrollmentRepository.deleteById(enrollmentId);
         sectionEnrollmentRepository.flush();

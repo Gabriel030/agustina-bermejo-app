@@ -127,6 +127,7 @@ public class ImportRollbackTransaction {
             definition.discardBatch(pending.stream().map(ImportCreatedEntity::getEntityId).toList());
             session.doWork(connection -> connection.releaseSavepoint(savepoint));
             discarded.merge(first.getEntityType(), (long) pending.size(), Long::sum);
+            entityManager.clear();
         } catch (HistoricalDiscardBlockedException | DataIntegrityViolationException e) {
             session.doWork(connection -> connection.rollback(savepoint));
             entityManager.clear();

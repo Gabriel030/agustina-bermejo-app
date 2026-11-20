@@ -15,6 +15,8 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
+import com.red_escuela.backend.billing.operation.GatewayCheckoutRecording;
+import com.red_escuela.backend.billing.operation.NewGatewayCheckout;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
@@ -22,6 +24,8 @@ import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
@@ -84,6 +88,15 @@ public final class BillingTestFixtures {
     public static Long registerApprovedGatewayPayment(Long invoiceId, Money amount) {
         return bean(com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort.class).registerApprovedMercadoPagoPayment(
                 invoiceId, amount, 1, null, "mp-fixture-" + UUID.randomUUID());
+    }
+
+    public static UUID persistMercadoPagoCheckout(Long invoiceId, Money amount) {
+        UUID publicReference = UUID.randomUUID();
+        TransactionTemplate independentTransaction = new TransactionTemplate(bean(PlatformTransactionManager.class));
+        independentTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        independentTransaction.executeWithoutResult(status -> bean(GatewayCheckoutRecording.class).recordMercadoPagoCheckout(
+                new NewGatewayCheckout(publicReference, invoiceId, NonNegativeMoney.of(amount), "pref-" + publicReference)));
+        return publicReference;
     }
 
     public static Long registerApprovedBankTransferPayment(Long invoiceId, Long reviewerPersonId) {

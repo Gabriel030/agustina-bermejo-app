@@ -3,7 +3,7 @@ set -uo pipefail
 
 usage() {
   cat <<USAGE
-Uso: verify-restore.sh [--dir CARPETA | --volume VOLUMEN_DOCKER] [--migrations CARPETA] [--skip-flyway]
+Uso: verify-restore.sh [--dir CARPETA | --volume VOLUMEN_DOCKER] [--migrations CARPETA] [--skip-flyway] [--status-dir CARPETA]
 
 Prueba automatica de restauracion: levanta un Postgres 16 descartable, restaura el ultimo dump,
 compara migraciones y conteos de tablas contra el .meta y corre flyway validate.
@@ -11,6 +11,8 @@ Sale con codigo distinto de cero si algo no coincide. Requiere Docker.
   --dir         carpeta con los dumps (por defecto ./backups)
   --volume      volumen Docker con los dumps (por ejemplo el volumen backup_data del compose)
   --migrations  carpeta con los V*.sql (por defecto backend/src/main/resources/db/migration)
+  --status-dir  carpeta status/ de los backups: registra el resultado (PASSED/FAILED con codigo cerrado) para la pantalla de Backups.
+                Si se corre en otra maquina, registrarlo despues en el servidor con: restore-test.sh --record PASSED
   Variables: AGE_IDENTITY_FILE (clave privada si los dumps estan cifrados), FLYWAY_IMAGE, PG_IMAGE
 USAGE
   exit 2
@@ -20,6 +22,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_mount=""
 migrations="$here/../../backend/src/main/resources/db/migration"
 skip_flyway=false
+status_dir=""
 dir="$PWD/backups"
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -27,6 +30,7 @@ while [ $# -gt 0 ]; do
     --volume) shift; source_mount="${1:-}" ;;
     --migrations) shift; migrations="${1:-}" ;;
     --skip-flyway) skip_flyway=true ;;
+    --status-dir) shift; status_dir="${1:-}" ;;
     *) usage ;;
   esac
   shift
@@ -49,7 +53,16 @@ cleanup() {
 trap cleanup EXIT
 
 step() { printf '\n== %s\n' "$1"; }
-die() { printf 'VERIFICACION FALLIDA: %s\n' "$1" >&2; exit 1; }
+record_result() {
+  [ -n "$status_dir" ] || return 0
+  mkdir -p "$status_dir" || return 0
+  printf 'ran_at=%s\nresult=%s\nfailure_code=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "${2:-}" > "$status_dir/.restore-test.tmp" && mv -f "$status_dir/.restore-test.tmp" "$status_dir/restore-test"
+}
+die() {
+  printf 'VERIFICACION FALLIDA: %s\n' "$1" >&2
+  [ -n "${2:-}" ] && record_result FAILED "$2"
+  exit 1
+}
 
 step "Construyendo la imagen de herramientas"
 docker build -q -t "$TOOLS_IMAGE" "$here" > /dev/null || die "no se pudo construir la imagen de backup"
@@ -84,19 +97,20 @@ if [ -d "$migrations" ]; then
 fi
 
 step "Restaurando con restore.sh"
-docker run --rm --network "$network" "${tools_env[@]}" ${age_args[@]+"${age_args[@]}"} "${tools_mounts[@]}" --entrypoint restore.sh "$TOOLS_IMAGE" --yes --db "$database" "/in/$latest" || die "restore.sh fallo"
+docker run --rm --network "$network" "${tools_env[@]}" ${age_args[@]+"${age_args[@]}"} "${tools_mounts[@]}" --entrypoint restore.sh "$TOOLS_IMAGE" --yes --db "$database" "/in/$latest" || die "restore.sh fallo" RESTORE_FAILED
 
 step "Comparando migraciones y conteos"
 meta="/in/$stem.meta"
-docker run --rm --network "$network" "${tools_env[@]}" "${tools_mounts[@]}" --entrypoint sh "$TOOLS_IMAGE" -c "m=''; [ -f '$meta' ] && m='$meta'; g=''; [ -d /migrations ] && g=/migrations; verify-counts.sh \"\$m\" \"\$g\"" || die "los conteos no coinciden"
+docker run --rm --network "$network" "${tools_env[@]}" "${tools_mounts[@]}" --entrypoint sh "$TOOLS_IMAGE" -c "m=''; [ -f '$meta' ] && m='$meta'; g=''; [ -d /migrations ] && g=/migrations; verify-counts.sh \"\$m\" \"\$g\"" || die "los conteos no coinciden" COUNTS_MISMATCH
 
 if [ "$skip_flyway" = false ] && [ -d "$migrations" ]; then
   step "flyway validate"
   docker run --rm --network "$network" -v "$migrations:/flyway/sql:ro" "$FLYWAY_IMAGE" \
     -url="jdbc:postgresql://$pg:5432/$database" -user=postgres -password="$password" \
-    -locations=filesystem:/flyway/sql -validateMigrationNaming=true validate || die "flyway validate fallo"
+    -locations=filesystem:/flyway/sql -validateMigrationNaming=true validate || die "flyway validate fallo" SCHEMA_VALIDATION_FAILED
 else
   echo "flyway validate omitido"
 fi
 
 step "RESTAURACION VERIFICADA: $latest"
+record_result PASSED
