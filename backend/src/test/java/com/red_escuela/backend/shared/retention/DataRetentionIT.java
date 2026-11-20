@@ -12,6 +12,7 @@ import jakarta.persistence.EntityManager;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.core.SimpleLock;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,6 +63,7 @@ class DataRetentionIT extends AbstractIntegrationTest {
     private IdentityDataRetentionJob identityJob;
     private NotificationDataRetentionJob notificationJob;
     private Long personId;
+    private final List<Long> createdBroadcastIds = new ArrayList<>();
 
     @BeforeEach
     void freezeClockAndBuildJobsWithTinyBatches() {
@@ -113,6 +117,27 @@ class DataRetentionIT extends AbstractIntegrationTest {
                         + "scheduled_for, body_text, sent_at, created_at) values (?, 'IN_APP', ?, 'K', 1, ?, ?, ?, ?, 'b', ?, now()) returning id",
                 Long.class, "r:" + System.nanoTime(), category, personId, status, reason, scheduledFor,
                 status.equals("SENT") ? java.sql.Timestamp.valueOf(scheduledFor.atStartOfDay()) : null);
+    }
+
+    private long insertBroadcastRecipientReferencing(long deliveryId) {
+        long broadcastId = jdbc.queryForObject("insert into broadcast (name, category, channel, status, segment_spec, body_snapshot, created_by_person_id, created_at) "
+                + "values ('Aviso', 'PROMOTIONAL', 'EMAIL', 'COMPLETED', '{}'::jsonb, 'b', ?, now()) returning id", Long.class, personId);
+        createdBroadcastIds.add(broadcastId);
+        return jdbc.queryForObject("insert into broadcast_recipient (broadcast_id, person_id, status, delivery_id, updated_at) values (?, ?, 'SENT', ?, now()) returning id",
+                Long.class, broadcastId, personId, deliveryId);
+    }
+
+    private void deleteBroadcastRecipient(long recipientId) {
+        jdbc.update("delete from broadcast_recipient where id = ?", recipientId);
+    }
+
+    @AfterEach
+    void removeBroadcastRows() {
+        createdBroadcastIds.forEach(broadcastId -> {
+            jdbc.update("delete from broadcast_recipient where broadcast_id = ?", broadcastId);
+            jdbc.update("delete from broadcast where id = ?", broadcastId);
+        });
+        createdBroadcastIds.clear();
     }
 
     private boolean exists(String table, long id) {
@@ -214,6 +239,32 @@ class DataRetentionIT extends AbstractIntegrationTest {
         assertThat(exists("notification_delivery", oldQueued)).isTrue();
         assertThat(exists("notification_delivery", oldDeferred)).isTrue();
         assertThat(exists("notification_delivery", recentSent)).isTrue();
+    }
+
+    @Test
+    void deliveryReferencedByALiveRecipientIsKeptAndTheJobDoesNotFail() {
+        LocalDate old = TODAY.minusMonths(12).minusDays(1);
+        long referenced = insertDelivery("BROADCAST", "SENT", old);
+        long unreferenced = insertDelivery("BROADCAST", "SENT", old);
+        insertBroadcastRecipientReferencing(referenced);
+
+        notificationJob.deleteExpiredNotificationData();
+
+        assertThat(exists("notification_delivery", referenced)).isTrue();
+        assertThat(exists("notification_delivery", unreferenced)).isFalse();
+    }
+
+    @Test
+    void deliveryIsDeletedOnceItsRecipientIsGone() {
+        long delivery = insertDelivery("BROADCAST", "SENT", TODAY.minusMonths(12).minusDays(1));
+        long recipientId = insertBroadcastRecipientReferencing(delivery);
+        notificationJob.deleteExpiredNotificationData();
+        assertThat(exists("notification_delivery", delivery)).isTrue();
+
+        deleteBroadcastRecipient(recipientId);
+        notificationJob.deleteExpiredNotificationData();
+
+        assertThat(exists("notification_delivery", delivery)).isFalse();
     }
 
     @Test
