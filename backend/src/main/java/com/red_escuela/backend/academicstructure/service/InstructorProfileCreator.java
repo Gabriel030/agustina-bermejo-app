@@ -6,6 +6,7 @@ import com.red_escuela.backend.identity.api.InstructorProfileCreationPort;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.persistence.InClauseChunks;
 import java.util.Collection;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +31,7 @@ public class InstructorProfileCreator implements InstructorProfileCreationPort {
     @Override
     @Transactional
     public void removeInstructorProfiles(Collection<Long> personIds) {
-        for (java.util.List<Long> chunk : InClauseChunks.of(personIds)) {
+        for (List<Long> chunk : InClauseChunks.of(personIds)) {
             instructorRepository.deleteByPersonIdIn(chunk);
         }
     }
