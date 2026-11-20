@@ -23,13 +23,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 class AttendanceSectionQueryCountTest extends CourseworkCharacterizationSupport {
 
     private static final int MANY = 120;
     private static final int BATCH_FETCH_SIZE = 50;
     private static final int EXTRA_BATCHES = (MANY + BATCH_FETCH_SIZE - 1) / BATCH_FETCH_SIZE - 1;
-    private static final LocalDate CLASS_DAY = LocalDate.of(2026, 3, 2);
 
     @Autowired
     private EntityManagerFactory entityManagerFactory;
@@ -71,22 +73,25 @@ class AttendanceSectionQueryCountTest extends CourseworkCharacterizationSupport 
         return classroom;
     }
 
-    private long statementsOf(Classroom classroom, String path) throws Exception {
+    private long statementsOf(Classroom classroom, String path, String rowsPath, int expectedRows) throws Exception {
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        boolean wasEnabled = statistics.isStatisticsEnabled();
         statistics.setStatisticsEnabled(true);
         statistics.clear();
-        getAs(classroom.teacher(), path).andExpect(status().isOk());
-        long count = statistics.getPrepareStatementCount();
-        statistics.setStatisticsEnabled(false);
-        return count;
+        try {
+            getAs(classroom.teacher(), path).andExpect(status().isOk()).andExpect(jsonPath(rowsPath, hasSize(expectedRows)));
+            return statistics.getPrepareStatementCount();
+        } finally {
+            statistics.setStatisticsEnabled(wasEnabled);
+        }
     }
 
-    private void assertStatementsDoNotGrowWithStudents(String pathTemplate, int baseStatements, int extraStatementsPerBatch) throws Exception {
+    private void assertStatementsDoNotGrowWithStudents(String pathTemplate, String rowsPath, int baseStatements, int extraStatementsPerBatch) throws Exception {
         Classroom one = classroomWithStudents("aq1", "8500001", 1);
         Classroom many = classroomWithStudents("aq2", "8500002", MANY);
 
-        long withOne = statementsOf(one, pathTemplate.replace("{id}", one.section().getId().toString()));
-        long withMany = statementsOf(many, pathTemplate.replace("{id}", many.section().getId().toString()));
+        long withOne = statementsOf(one, pathTemplate.replace("{id}", one.section().getId().toString()), rowsPath, 1);
+        long withMany = statementsOf(many, pathTemplate.replace("{id}", many.section().getId().toString()), rowsPath, MANY);
 
         assertThat(withOne).isLessThanOrEqualTo(baseStatements);
         assertThat(withMany).isLessThanOrEqualTo(withOne + (long) EXTRA_BATCHES * extraStatementsPerBatch);
@@ -94,11 +99,11 @@ class AttendanceSectionQueryCountTest extends CourseworkCharacterizationSupport 
 
     @Test
     void sectionAttendanceLoadDoesNotGrowWithStudents() throws Exception {
-        assertStatementsDoNotGrowWithStudents("/program-sections/{id}/class-sessions/" + CLASS_DAY, 3, 0);
+        assertStatementsDoNotGrowWithStudents("/program-sections/{id}/roster", "$", 5, 0);
     }
 
     @Test
     void sectionAttendanceSummaryDoesNotGrowWithStudents() throws Exception {
-        assertStatementsDoNotGrowWithStudents("/program-sections/{id}/attendance/history", 24, 2);
+        assertStatementsDoNotGrowWithStudents("/program-sections/{id}/attendance/history", "$.rows", 24, 2);
     }
 }

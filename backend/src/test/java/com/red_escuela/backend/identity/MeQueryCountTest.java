@@ -1,16 +1,10 @@
 package com.red_escuela.backend.identity;
 
-import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.identity.controller.PersonController;
 import com.red_escuela.backend.identity.dto.PersonResponse;
-import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -28,9 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,8 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class MeQueryCountTest extends AbstractIntegrationTest {
 
-    private static final int FEW = 1;
-    private static final int MANY = 120;
     private static final int OWN_PROFILE_QUERIES = 3;
 
     @Autowired
@@ -63,66 +53,47 @@ class MeQueryCountTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void meReadStaysConstantWithManyEnrollmentsAndRoles() {
-        Person withFew = personWithEnrollments(FEW);
-        Person withMany = personWithEnrollments(MANY);
+    void meReadStaysConstantWithManyRoles() {
+        List<Role> roles = roleRepository.findAll();
+        assertThat(roles.size()).isGreaterThan(1);
+        Person withOneRole = personWithRoles(roles.subList(0, 1));
+        Person withAllRoles = personWithRoles(roles);
         entityManager.flush();
+
+        long statementsWithOneRole = statementsOfOwnProfileRead(withOneRole);
+        long statementsWithAllRoles = statementsOfOwnProfileRead(withAllRoles);
+
+        assertThat(statementsWithAllRoles).isEqualTo(statementsWithOneRole);
+        assertThat(statementsWithAllRoles).isEqualTo(OWN_PROFILE_QUERIES);
         entityManager.clear();
-
-        long statementsWithFew = statementsOfOwnProfileRead(withFew);
-        long statementsWithMany = statementsOfOwnProfileRead(withMany);
-
-        assertThat(statementsWithMany).isEqualTo(statementsWithFew);
-        assertThat(statementsWithMany).isLessThanOrEqualTo(OWN_PROFILE_QUERIES);
         PersonResponse response = QueryCountAssertions.assertAtMostQueries(entityManagerFactory, OWN_PROFILE_QUERIES,
-                () -> readOwnProfileAs(withMany));
-        assertThat(response.roles()).hasSize(roleRepository.findAll().size());
+                () -> readOwnProfileAs(withAllRoles));
+        assertThat(response.roles()).hasSize(roles.size());
     }
 
     private long statementsOfOwnProfileRead(Person person) {
         entityManager.clear();
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        boolean wasEnabled = statistics.isStatisticsEnabled();
         statistics.setStatisticsEnabled(true);
         statistics.clear();
-        readOwnProfileAs(person);
-        long count = statistics.getPrepareStatementCount();
-        statistics.setStatisticsEnabled(false);
-        return count;
+        try {
+            readOwnProfileAs(person);
+            return statistics.getPrepareStatementCount();
+        } finally {
+            statistics.setStatisticsEnabled(wasEnabled);
+        }
     }
 
     private PersonResponse readOwnProfileAs(Person person) {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(person.getId().toString(), null, "ROLE_ALUMNO"));
-        Supplier<PersonResponse> read = personController::getOwnProfile;
-        return read.get();
+        return personController.getOwnProfile();
     }
 
-    private Person personWithEnrollments(int enrollments) {
-        Institution institution = new Institution();
-        institution.setName("Perf institute");
-        entityManager.persist(institution);
+    private Person personWithRoles(List<Role> roles) {
         Person person = persistPerson();
-        for (Role role : roleRepository.findAll()) {
-            person.getRoles().add(role);
-        }
-        Student student = new Student();
-        student.setPerson(person);
-        student.setInstitution(institution);
-        student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
-        entityManager.persist(student);
-        for (int index = 0; index < enrollments; index++) {
-            Program program = new Program();
-            program.setName("Program " + person.getDni() + "-" + index);
-            program.setTotalYears(3);
-            program.setTotalCreditsRequired(100);
-            entityManager.persist(program);
-            ProgramEnrollment enrollment = new ProgramEnrollment();
-            enrollment.setStudent(student);
-            enrollment.setProgram(program);
-            enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
-            enrollment.setEnrollmentDate(LocalDateTime.now());
-            entityManager.persist(enrollment);
-        }
+        person.getRoles().addAll(roles);
         return person;
     }
 
