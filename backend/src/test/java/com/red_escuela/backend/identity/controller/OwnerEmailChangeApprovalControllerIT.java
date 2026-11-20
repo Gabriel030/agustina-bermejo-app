@@ -34,13 +34,15 @@ class OwnerEmailChangeApprovalControllerIT extends AbstractIntegrationTest {
     @ValueSource(strings = {"/email-change-preview", "/approve-email-change"})
     void tooShortTokenFailsValidation(String path) throws Exception {
         mockMvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"" + "a".repeat(31) + "\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"/email-change-preview", "/approve-email-change"})
-    void missingBodyFailsValidation(String path) throws Exception {
+    void emptyTokenFailsValidation(String path) throws Exception {
         mockMvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }
 }
