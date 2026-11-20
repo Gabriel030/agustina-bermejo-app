@@ -6,7 +6,6 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Exceptio
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionNotApprovedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionTargetMismatchException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionWithdrawNotAllowedException;
-import com.red_escuela.backend.graduation.certificate.regular.exception.IllegalCertificateExceptionTransitionException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OrganismKindRequiredException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OrganismReferenceInvalidException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OwnExceptionDecisionException;
@@ -200,8 +199,7 @@ public class CertificateExceptionApproval {
     }
 
     private void moveTo(CertificateExceptionEvent event, StatusChangeActor actor, LocalDateTime now, String changeReason) {
-        CertificateExceptionStatus target = CertificateExceptionStateMachine.findTargetStateFor(status, event)
-                .orElseThrow(() -> new IllegalCertificateExceptionTransitionException(status, event));
+        CertificateExceptionStatus target = CertificateExceptionStateMachine.requireTargetFor(status, event);
         statusChanges.add(new CertificateExceptionStatusChange(this, status, target, event, actor, now, changeReason));
         this.status = target;
     }

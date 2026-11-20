@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.regular.entity;
 
+import com.red_escuela.backend.graduation.certificate.regular.exception.IllegalCertificateExceptionTransitionException;
 import com.red_escuela.backend.shared.domain.statemachine.StateTransitionTable;
 
 import java.util.Optional;
@@ -24,5 +25,9 @@ public final class CertificateExceptionStateMachine {
 
     public static Optional<CertificateExceptionStatus> findTargetStateFor(CertificateExceptionStatus from, CertificateExceptionEvent event) {
         return TRANSITIONS.findTargetStateFor(from, event);
+    }
+
+    public static CertificateExceptionStatus requireTargetFor(CertificateExceptionStatus from, CertificateExceptionEvent event) {
+        return findTargetStateFor(from, event).orElseThrow(() -> new IllegalCertificateExceptionTransitionException(from, event));
     }
 }

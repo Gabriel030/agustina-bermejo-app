@@ -1,52 +1,63 @@
 package com.red_escuela.backend.graduation.certificate.regular.entity;
 
+import com.red_escuela.backend.graduation.certificate.regular.exception.IllegalCertificateExceptionTransitionException;
+import com.red_escuela.backend.shared.domain.statemachine.ExhaustiveTransitionExpectations;
+import com.red_escuela.backend.shared.domain.statemachine.TransitionExpectation;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionEvent.*;
 import static com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionStatus.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@ExhaustiveTransitionExpectations(machine = CertificateExceptionStateMachine.class)
 class CertificateExceptionStateMachineTest {
 
-    private static final Map<CertificateExceptionStatus, Map<CertificateExceptionEvent, CertificateExceptionStatus>> VALID = Map.of(
+    private static final Class<IllegalCertificateExceptionTransitionException> ILLEGAL = IllegalCertificateExceptionTransitionException.class;
+
+    private static final Map<CertificateExceptionStatus, Map<CertificateExceptionEvent, CertificateExceptionStatus>> ALLOWED = Map.of(
             PENDING, Map.of(APPROVE, APPROVED, REJECT, REJECTED, WITHDRAW, WITHDRAWN),
             APPROVED, Map.of(CONSUME, CONSUMED, EXPIRE, EXPIRED));
 
-    @Test
-    void everyValidTransitionLandsOnTheExpectedState() {
-        VALID.forEach((from, byEvent) -> byEvent.forEach((event, target) ->
-                assertThat(CertificateExceptionStateMachine.findTargetStateFor(from, event)).as(from + " + " + event).contains(target)));
-    }
-
-    @Test
-    void everyOtherStateAndEventPairIsRejected() {
+    static List<TransitionExpectation> expectedTransitions() {
+        List<TransitionExpectation> expectations = new ArrayList<>();
+        for (CertificateExceptionEvent event : CertificateExceptionEvent.values()) {
+            expectations.add(event == REQUEST ? TransitionExpectation.allows(null, event, PENDING) : TransitionExpectation.rejects(null, event, ILLEGAL));
+        }
         for (CertificateExceptionStatus from : CertificateExceptionStatus.values()) {
             for (CertificateExceptionEvent event : CertificateExceptionEvent.values()) {
-                if (!VALID.getOrDefault(from, Map.of()).containsKey(event)) {
-                    assertThat(CertificateExceptionStateMachine.findTargetStateFor(from, event)).as(from + " + " + event).isEmpty();
-                }
+                CertificateExceptionStatus target = ALLOWED.getOrDefault(from, Map.of()).get(event);
+                expectations.add(target != null ? TransitionExpectation.allows(from, event, target) : TransitionExpectation.rejects(from, event, ILLEGAL));
             }
+        }
+        return expectations;
+    }
+
+    static Stream<TransitionExpectation> everyPair() {
+        return expectedTransitions().stream();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("everyPair")
+    void everyStateAndEventPairBehavesAsTheTableSays(TransitionExpectation expectation) {
+        CertificateExceptionStatus from = (CertificateExceptionStatus) expectation.fromState();
+        CertificateExceptionEvent event = (CertificateExceptionEvent) expectation.event();
+        if (expectation.isAllowed()) {
+            assertThat(CertificateExceptionStateMachine.requireTargetFor(from, event)).isEqualTo(expectation.toState());
+        } else {
+            assertThatThrownBy(() -> CertificateExceptionStateMachine.requireTargetFor(from, event)).isInstanceOf(expectation.rejection());
         }
     }
 
     @Test
-    void onlyRequestCanStartTheLifecycle() {
-        for (CertificateExceptionEvent event : CertificateExceptionEvent.values()) {
-            Optional<CertificateExceptionStatus> target = CertificateExceptionStateMachine.findTargetStateFor(null, event);
-            assertThat(target).as("initial + " + event).isEqualTo(event == REQUEST ? Optional.of(PENDING) : Optional.empty());
-        }
-    }
-
-    @Test
-    void terminalStatesAllowNoTransitions() {
-        for (CertificateExceptionStatus terminal : Set.of(REJECTED, WITHDRAWN, CONSUMED, EXPIRED)) {
-            for (CertificateExceptionEvent event : CertificateExceptionEvent.values()) {
-                assertThat(CertificateExceptionStateMachine.findTargetStateFor(terminal, event)).as(terminal + " + " + event).isEmpty();
-            }
-        }
+    void theTableListsOnlyTheSixAllowedTransitions() {
+        assertThat(CertificateExceptionStateMachine.TRANSITIONS.listAllowedTransitions()).hasSize(6);
     }
 }
