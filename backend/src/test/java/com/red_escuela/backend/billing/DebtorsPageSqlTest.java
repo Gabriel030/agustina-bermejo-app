@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.billing.reporting.service.DebtorListingReader;
 import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.reporting.service.DebtorPageReader;
@@ -73,6 +74,9 @@ class DebtorsPageSqlTest extends AbstractIntegrationTest {
 
     @Autowired
     private ListDebtorsUseCase listDebtors;
+
+    @Autowired
+    private DebtorListingReader debtorListingReader;
     @Autowired
     private DebtorPageReader pageReader;
     @Autowired
@@ -264,7 +268,7 @@ class DebtorsPageSqlTest extends AbstractIntegrationTest {
 
     @Test
     void legacyListKeepsTheCharacterizedSemantics() {
-        List<DebtorSummaryResponse> rows = scenarioOnly(listDebtors.list("DEBT_AGE"));
+        List<DebtorSummaryResponse> rows = scenarioOnly(debtorListingReader.listDebtors("DEBT_AGE"));
 
         assertThat(rows).hasSize(5);
         assertScenarioRows(rows);
@@ -287,7 +291,7 @@ class DebtorsPageSqlTest extends AbstractIntegrationTest {
                     : Comparator.comparing(DebtorSummaryResponse::debtAgeDays, Comparator.reverseOrder()))
                     .thenComparing(DebtorSummaryResponse::studentId).thenComparing(row -> row.totalDebt().currency());
 
-            List<DebtorSummaryResponse> legacy = listDebtors.list(sortBy).stream().sorted(normalized).toList();
+            List<DebtorSummaryResponse> legacy = debtorListingReader.listDebtors(sortBy).stream().sorted(normalized).toList();
 
             assertThat(allPaged(sortBy, 7)).as(sortBy).containsExactlyElementsOf(legacy);
         }

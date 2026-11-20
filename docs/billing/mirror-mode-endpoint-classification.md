@@ -82,7 +82,6 @@ Billing tiene tres modos (`BillingMode`): `OFF`, `MIRROR` y `FULL`. Con `OFF` to
 | EnrollmentPaymentStandingController | getProgramEnrollmentStanding | GET | `/program-enrollments/{id}/payment-standing` | READ | Lectura |
 | EnrollmentPaymentStandingController | listProgramEnrollmentStandingHistory | GET | `/program-enrollments/{id}/payment-standing/history` | READ | Lectura |
 | FinancialDashboardController | getDashboard | GET | `/financial-dashboard` | READ | Lectura |
-| FinancialDashboardController | getDebtors | GET | `/financial-dashboard/debtors` | READ | Lectura |
 | FinancialDashboardController | getDebtorsPage | GET | `/financial-dashboard/debtors/page` | READ | Lectura |
 | InvoiceCancellationController | cancelOrRequestInvoiceCancellation | POST | `/invoices/{invoiceId}/cancellations` | WRITE | Anula o solicita anular una factura |
 | InvoiceCancellationController | previewInvoiceCancellation | POST | `/invoices/{invoiceId}/cancellations/preview` | READ | Vista previa de una anulación: PreviewInvoiceCancellationService es de solo lectura |
