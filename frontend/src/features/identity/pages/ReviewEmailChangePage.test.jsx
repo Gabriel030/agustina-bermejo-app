@@ -22,10 +22,10 @@ function LocationProbe() {
   return <span data-testid="location">{`${location.pathname}${location.search}`}</span>;
 }
 
-function renderPage(route = `/revisar-cambio-email?token=${TOKEN}`, path = '/revisar-cambio-email') {
+function renderPage(route = `/revisar-cambio-email?token=${TOKEN}`, mode = 'review') {
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <ReviewEmailChangePage path={path} />
+      <ReviewEmailChangePage mode={mode} />
       <LocationProbe />
     </MemoryRouter>,
   );
@@ -246,11 +246,157 @@ describe('ReviewEmailChangePage', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveFocus());
   });
 
-  it('servesTheLegacyCancelLinkWithTheSameScreen', async () => {
-    renderPage(`/cancelar-cambio-email?token=${TOKEN}`, '/cancelar-cambio-email');
+  it('showsExpiredInsteadOfOneHourWhenTheTokenAlreadyExpired', async () => {
+    server.use(
+      http.post(PREVIEW_URL, () =>
+        HttpResponse.json({
+          currentEmailMasked: 'm•••a@gmail.com',
+          newEmailMasked: 'm•••z@hotmail.com',
+          requestedByRole: 'ADMINISTRATIVO',
+          requestedAt: '2026-11-19T20:41:00',
+          expiresAt: '2026-11-20T11:00:00',
+        }),
+      ),
+    );
+    renderPage();
+
+    expect(await screen.findByText('Venció')).toBeInTheDocument();
+    expect(screen.queryByText(/Vence en/)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [404, 'No encontramos el cambio'],
+    [409, 'El cambio ya no se puede resolver'],
+    [400, 'Enlace no válido'],
+  ])('tellsStatus%dApartFromTheOthers', async (status, title) => {
+    server.use(http.post(PREVIEW_URL, () => HttpResponse.json(errorBody(status === 400 ? 'INVALID_EMAIL_VERIFICATION_TOKEN' : 'SOME_ERROR'), { status })));
+    renderPage();
+
+    expect(await screen.findByText(title)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('offersRetryOnAServerErrorInsteadOfADeadEnd', async () => {
+    let calls = 0;
+    server.use(
+      http.post(PREVIEW_URL, () => {
+        calls += 1;
+        if (calls === 1) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+        return HttpResponse.json({
+          currentEmailMasked: 'm•••a@gmail.com',
+          newEmailMasked: 'm•••z@hotmail.com',
+          requestedByRole: 'ADMINISTRATIVO',
+          requestedAt: '2026-11-19T20:41:00',
+          expiresAt: '2026-11-21T20:41:00',
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByText('Sin conexión')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(await screen.findByText('¿Cambiamos tu email?')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/cancelar-cambio-email$/));
+  });
+
+  it('retriesTheApprovalAfterAServerError', async () => {
+    let calls = 0;
+    server.use(
+      http.post(APPROVE_URL, () => {
+        calls += 1;
+        return calls === 1 ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 503 }) : new HttpResponse(null, { status: 200 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Revisar y aprobar' }));
+    await user.click(screen.getByRole('button', { name: 'Aprobar cambio' }));
+    expect(await screen.findByText('Sin conexión')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Falta un paso')).toBeInTheDocument();
+  });
+
+  describe('legacy cancel link', () => {
+    const legacyRoute = `/cancelar-cambio-email?token=${TOKEN}`;
+
+    it('cancelsEndToEndWithoutAskingForThePreview', async () => {
+      let previews = 0;
+      let approvals = 0;
+      let cancelBody;
+      server.use(
+        http.post(PREVIEW_URL, () => {
+          previews += 1;
+          return invalidToken();
+        }),
+        http.post(APPROVE_URL, () => {
+          approvals += 1;
+          return new HttpResponse(null, { status: 200 });
+        }),
+        http.post(CANCEL_URL, async ({ request }) => {
+          cancelBody = await request.json();
+          return new HttpResponse(null, { status: 200 });
+        }),
+      );
+      const user = userEvent.setup();
+      renderPage(legacyRoute, 'cancel');
+
+      expect(screen.getByText('¿No pediste cambiar tu email?')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /aprobar/i })).not.toBeInTheDocument();
+      await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/cancelar-cambio-email$/));
+      await user.click(screen.getByRole('button', { name: 'Cancelar el cambio' }));
+
+      expect(await screen.findByText('Cambio cancelado')).toBeInTheDocument();
+      expect(screen.getByText('Tu cuenta sigue con el mismo correo.')).toBeInTheDocument();
+      expect(cancelBody).toEqual({ token: TOKEN });
+      expect(previews).toBe(0);
+      expect(approvals).toBe(0);
+    });
+
+    it('sendsASingleCancelRequestOnDoubleClick', async () => {
+      let calls = 0;
+      server.use(
+        http.post(CANCEL_URL, () => {
+          calls += 1;
+          return new HttpResponse(null, { status: 200 });
+        }),
+      );
+      renderPage(legacyRoute, 'cancel');
+
+      await userEvent.dblClick(screen.getByRole('button', { name: 'Cancelar el cambio' }));
+      await screen.findByText('Cambio cancelado');
+
+      expect(calls).toBe(1);
+    });
+
+    it('retriesTheCancelAfterANetworkError', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      const user = userEvent.setup();
+      renderPage(legacyRoute, 'cancel');
+
+      await user.click(screen.getByRole('button', { name: 'Cancelar el cambio' }));
+      expect(await screen.findByText('Sin conexión')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+      expect(await screen.findByText('Cambio cancelado')).toBeInTheDocument();
+    });
+
+    it('showsInvalidLinkWhenTheCancelTokenIsRejected', async () => {
+      server.use(http.post(CANCEL_URL, invalidToken));
+      renderPage(legacyRoute, 'cancel');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Cancelar el cambio' }));
+
+      expect(await screen.findByText('Enlace no válido')).toBeInTheDocument();
+    });
+
+    it('showsInvalidLinkWithoutRequestWhenTheTokenIsMissing', () => {
+      renderPage('/cancelar-cambio-email', 'cancel');
+
+      expect(screen.getByText('Enlace no válido')).toBeInTheDocument();
+    });
   });
 
   it('hasNoAxeViolationsInEveryStep', async () => {

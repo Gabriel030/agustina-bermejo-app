@@ -13,7 +13,9 @@ import { EmailChangeComparisonTable } from '@/features/identity/pages/EmailChang
 import { EmailChangeResultCard } from '@/features/identity/pages/EmailChangeResultCard';
 
 const HOUR_MS = 60 * 60 * 1000;
-const ALERT_PHASES = ['invalid', 'offline'];
+const ALERT_PHASES = ['invalid', 'notFound', 'conflict', 'failed', 'offline'];
+const CANCEL_PATH = '/cancelar-cambio-email';
+const REVIEW_PATH = '/revisar-cambio-email';
 
 function postToken(path, token) {
   return apiFetch(path, { method: 'POST', body: JSON.stringify({ token }) });
@@ -25,12 +27,17 @@ function requestedMoment(value) {
   return `${day}/${month} a las ${time.slice(0, 5)}`;
 }
 
-function hoursUntil(value) {
-  return Math.max(1, Math.ceil((new Date(value).getTime() - Date.now()) / HOUR_MS));
+function expiryLabel(value) {
+  const remaining = new Date(value).getTime() - Date.now();
+  return remaining <= 0 ? 'Venció' : `Vence en ${Math.max(1, Math.ceil(remaining / HOUR_MS))} h`;
 }
 
 function failurePhase(error) {
-  return describeError(error).retryable ? 'offline' : 'invalid';
+  if (error?.status === 400) return 'invalid';
+  if (error?.status === 404) return 'notFound';
+  if (error?.status === 409) return 'conflict';
+  if (!error?.status || error.status >= 500 || describeError(error).retryable) return 'offline';
+  return 'failed';
 }
 
 function StepDots({ current }) {
@@ -51,13 +58,15 @@ function LoginButton() {
   );
 }
 
-export function ReviewEmailChangePage({ path = '/revisar-cambio-email' }) {
+export function ReviewEmailChangePage({ mode = 'review' }) {
+  const cancelOnly = mode === 'cancel';
+  const path = cancelOnly ? CANCEL_PATH : REVIEW_PATH;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [token] = useState(() => searchParams.get('token'));
   const messageRef = useRef(null);
   const submittingRef = useRef(false);
-  const [phase, setPhase] = useState(token ? 'loading' : 'invalid');
+  const [phase, setPhase] = useState(!token ? 'invalid' : cancelOnly ? 'cancelPrompt' : 'loading');
   const [preview, setPreview] = useState(null);
   const [submitting, setSubmitting] = useState(null);
   const [retryAction, setRetryAction] = useState(null);
@@ -79,11 +88,11 @@ export function ReviewEmailChangePage({ path = '/revisar-cambio-email' }) {
   }, [navigate, path]);
 
   useEffect(() => {
-    if (token) loadPreview();
-  }, [token, loadPreview]);
+    if (token && !cancelOnly) loadPreview();
+  }, [token, cancelOnly, loadPreview]);
 
   useEffect(() => {
-    if (phase !== 'loading') messageRef.current?.focus();
+    if (phase !== 'loading' && phase !== 'cancelPrompt') messageRef.current?.focus();
   }, [phase]);
 
   function submit(action) {
@@ -139,6 +148,20 @@ export function ReviewEmailChangePage({ path = '/revisar-cambio-email' }) {
             </>
           )}
 
+          {phase === 'cancelPrompt' && (
+            <EmailChangeResultCard
+              tone="warning"
+              icon={Shield}
+              title="¿No pediste cambiar tu email?"
+              description="Si no fuiste vos, cancelá el cambio y tu cuenta seguirá con el mismo correo."
+              action={
+                <Button variant="gradient" className="h-11 w-full" loading={submitting === 'cancel'} disabled={submitting !== null} onClick={() => submit('cancel')}>
+                  Cancelar el cambio
+                </Button>
+              }
+            />
+          )}
+
           {phase === 'review' && (
             <>
               <StepDots current={1} />
@@ -169,7 +192,7 @@ export function ReviewEmailChangePage({ path = '/revisar-cambio-email' }) {
               </div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-bg px-2.5 py-1 text-size-12 font-semibold text-ink-soft">
                 <Clock size={14} aria-hidden="true" />
-                Vence en {hoursUntil(preview.expiresAt)} h
+                {expiryLabel(preview.expiresAt)}
               </span>
             </>
           )}
@@ -228,6 +251,36 @@ export function ReviewEmailChangePage({ path = '/revisar-cambio-email' }) {
               icon={XCircle}
               title="Enlace no válido"
               description="Venció o ya se usó. Si no fuiste vos, revisalo en Mi perfil."
+              action={<LoginButton />}
+            />
+          )}
+
+          {phase === 'notFound' && (
+            <EmailChangeResultCard
+              tone="danger"
+              icon={XCircle}
+              title="No encontramos el cambio"
+              description="Puede que ya se haya resuelto o que el enlace sea incorrecto. Si no fuiste vos, revisalo en Mi perfil."
+              action={<LoginButton />}
+            />
+          )}
+
+          {phase === 'conflict' && (
+            <EmailChangeResultCard
+              tone="danger"
+              icon={XCircle}
+              title="El cambio ya no se puede resolver"
+              description="Ya se resolvió o está en otro estado. Revisalo en Mi perfil."
+              action={<LoginButton />}
+            />
+          )}
+
+          {phase === 'failed' && (
+            <EmailChangeResultCard
+              tone="danger"
+              icon={XCircle}
+              title="No pudimos completar la acción"
+              description="Probá de nuevo más tarde. Si no fuiste vos, revisalo en Mi perfil."
               action={<LoginButton />}
             />
           )}
