@@ -1,5 +1,7 @@
 package com.red_escuela.backend.notification.broadcast.domain;
 
+import java.util.Optional;
+
 public final class BroadcastDeliveryKind {
 
     private static final String PREFIX = "BROADCAST_";
@@ -11,10 +13,10 @@ public final class BroadcastDeliveryKind {
         return PREFIX + category.name();
     }
 
-    public static BroadcastCategory categoryOf(String kind) {
+    public static Optional<BroadcastCategory> categoryOf(String kind) {
         if (kind == null || !kind.startsWith(PREFIX)) {
-            throw new IllegalArgumentException("Not a broadcast delivery kind: " + kind);
+            return Optional.empty();
         }
-        return BroadcastCategory.valueOf(kind.substring(PREFIX.length()));
+        return Optional.of(BroadcastCategory.valueOf(kind.substring(PREFIX.length())));
     }
 }
