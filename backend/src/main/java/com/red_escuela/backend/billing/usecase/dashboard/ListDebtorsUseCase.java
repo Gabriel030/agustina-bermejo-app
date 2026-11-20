@@ -4,7 +4,6 @@ import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
 
 import com.red_escuela.backend.shared.pagination.PageResponse;
 
-
 public interface ListDebtorsUseCase {
 
     PageResponse<DebtorSummaryResponse> page(String sortBy, int page, int size);

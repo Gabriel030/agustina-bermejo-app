@@ -52,9 +52,6 @@ python3 perf/capture-origin.py
 |---|---|---|---|---|---|
 | director | `/financial-dashboard` | 19 | 27 | 71 | 282 |
 | director | `/financial-dashboard/debtors` | 435 | 495 | 6 | 612175 |
-
-> Nota (33.3b, #1042): `GET /financial-dashboard/debtors` se retiró; las filas que lo mencionan son la medición histórica del baseline. El listado vigente es `/financial-dashboard/debtors/page`.
-
 | director | `/financial-dashboard/debtors/page?page=0&size=25` | 28 | 42 | 2 | 5120 |
 | director | `/staff` | 9 | 10 | 6 | 10655 |
 | director | `/students` | 28 | 31 | 3 | 7496 |
@@ -85,6 +82,8 @@ python3 perf/capture-origin.py
 | alumno | `/me/program-enrollments/20001/invoices` | 11 | 13 | 11 | 6387 |
 | alumno | `/me/section-enrollments/100011/grade-items` | 4 | 4 | 5 | 2 |
 | alumno | `/me/section-enrollments/100011/attendance` | 3 | 4 | 5 | 2 |
+
+> Nota (33.3b, #1042): `GET /financial-dashboard/debtors` se retiró; las filas que lo mencionan son la medición histórica del baseline. El listado vigente es `/financial-dashboard/debtors/page`.
 
 El resto de los endpoints de `measure.py` (dashboard financiero, morosos, listados, notificaciones, `/me/*`) están en `perf/out/latest.json` al correrlo. Resumen de la corrida base: `/financial-dashboard/debtors` p50 424 ms con 612 KB de respuesta (el peor); `/financial-dashboard` 19 ms; `/students` 22 ms; `/waitlists` 37 ms; `attendance-summary` 4 consultas por request (una corrida previa llegó a contar 508 por ruido de jobs de fondo durante la ventana de conteo); el resto por debajo de 25 ms.
 
