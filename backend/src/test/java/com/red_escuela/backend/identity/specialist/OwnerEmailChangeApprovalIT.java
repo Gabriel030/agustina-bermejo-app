@@ -8,7 +8,9 @@ import com.red_escuela.backend.identity.exception.EmailChangeNeedsOwnerEmailExce
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.exception.InvalidEmailVerificationTokenException;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.testsupport.SharedMockBeans;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -18,11 +20,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +53,7 @@ class OwnerEmailChangeApprovalIT extends AbstractIntegrationTest {
     @Autowired
     private PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy;
     @Autowired
-    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
     @Autowired
     private EntityManager entityManager;
     @Autowired
@@ -161,5 +165,51 @@ class OwnerEmailChangeApprovalIT extends AbstractIntegrationTest {
         emailChangeRequester.requestOwnChange(owner, "owner-e-new@example.com", PASSWORD);
 
         assertThatThrownBy(() -> ownerEmailChangeApprover.approve(singleTokenOf(owner))).isInstanceOf(InvalidEmailVerificationTokenException.class);
+    }
+
+    @Test
+    void approvalOfAnExpiredTokenIsRejected() {
+        Person owner = persistPerson("owner-f", true);
+        Person staff = persistPerson("staff-f", true);
+        actAs(staff);
+        emailChangeRequester.requestStaffChange(owner, "owner-f-new@example.com");
+        EmailVerificationToken token = singleTokenOf(owner);
+        token.setExpiresAt(ApplicationTime.now().minus(Duration.ofMinutes(1)));
+
+        assertThatThrownBy(() -> ownerEmailChangeApprover.approve(token)).isInstanceOf(InvalidEmailVerificationTokenException.class);
+        assertThat(token.isAwaitingOwnerApproval()).isTrue();
+    }
+
+    @Test
+    void legacyStaffTokenWithoutTheFlagStaysConfirmable() {
+        Person owner = persistPerson("owner-g", true);
+        EmailVerificationToken legacy = new EmailVerificationToken();
+        legacy.setPerson(owner);
+        legacy.setTokenHash(TokenHashUtil.sha256Hex("legacy-owner-g"));
+        legacy.setNewEmail("owner-g-new@example.com");
+        legacy.setExpiresAt(ApplicationTime.now().plusHours(24));
+        tokenRepository.saveAndFlush(legacy);
+
+        pendingEmailChangeConfirmer.confirmIfPending(legacy);
+
+        assertThat(owner.emailValue()).isEqualTo("owner-g-new@example.com");
+    }
+
+    @Test
+    void secondStaffRequestReplacesTheFirstAndStillAwaitsApproval() {
+        Person owner = persistPerson("owner-h", true);
+        Person staff = persistPerson("staff-h", true);
+        actAs(staff);
+
+        emailChangeRequester.requestStaffChange(owner, "owner-h-first@example.com");
+        emailChangeRequester.requestStaffChange(owner, "owner-h-second@example.com");
+
+        entityManager.flush();
+        List<EmailVerificationToken> tokens = tokenRepository.findAll().stream()
+                .filter(token -> token.getPerson().getId().equals(owner.getId())).toList();
+        assertThat(tokens).singleElement().satisfies(token -> {
+            assertThat(token.getNewEmail()).isEqualTo("owner-h-second@example.com");
+            assertThat(token.isAwaitingOwnerApproval()).isTrue();
+        });
     }
 }
