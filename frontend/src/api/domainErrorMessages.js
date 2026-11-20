@@ -153,6 +153,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   REJECTION_REASON_INVALID: 'El motivo del rechazo debe tener entre 10 y 500 caracteres.',
   REVOCATION_REASON_INVALID: 'El motivo de la revocación debe tener entre 10 y 500 caracteres.',
   STANDING_EVIDENCE_INVALID: 'La nota de evidencia no puede superar los 500 caracteres.',
+  STANDING_EVIDENCE_REQUIRED: 'La institución exige una nota de evidencia para emitir la constancia.',
   STANDING_NOT_CONFIRMED: 'La condición del alumno todavía no está confirmada.',
   STUDENT_NOT_ACTIVE: 'El alumno no está activo.',
   STUDENT_NOT_CONFIRMED: 'La inscripción del alumno todavía no está confirmada.',
