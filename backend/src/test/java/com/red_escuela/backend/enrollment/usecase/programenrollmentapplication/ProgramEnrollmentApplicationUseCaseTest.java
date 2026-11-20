@@ -3,6 +3,9 @@ package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 import com.red_escuela.backend.enrollment.support.StudentDocumentFixtures;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.GetProgramEnrollmentApplicationApprovalCheckUseCase;
 import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.billing.operation.GatewayCheckoutRecording;
+import com.red_escuela.backend.billing.operation.NewGatewayCheckout;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
@@ -47,6 +50,7 @@ import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.exception.ApplicationDocumentsIncompleteException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,6 +76,8 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort registrationPort;
+    @Autowired
+    private GatewayCheckoutRecording gatewayCheckoutRecording;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -355,9 +361,13 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = application.getAdmissionInvoice();
         entityManager.flush();
         String mpPaymentId = "mp-" + System.nanoTime();
+        UUID publicReference = UUID.randomUUID();
+        gatewayCheckoutRecording.recordMercadoPagoCheckout(new NewGatewayCheckout(publicReference, invoice.getId(),
+                NonNegativeMoney.of(invoice.getAmounts().outstandingAmount().value()), "pref-" + publicReference));
+        entityManager.flush();
         var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort,
                 id -> java.util.Optional.of(new com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment(
-                        new ReportedGatewayAllocation(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
+                        new ReportedGatewayAllocation(publicReference, invoice.getAmounts().outstandingAmount().value()), 1)),
                 new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true)));
 
         service.process("", "req", mpPaymentId);
