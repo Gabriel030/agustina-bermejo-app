@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Iterator;
@@ -39,8 +39,7 @@ public class TemplatePngInspector {
                 if (width < 1 || height < 1 || width > MAX_SIDE_PIXELS || height > MAX_SIDE_PIXELS) {
                     throw new TemplateImageInvalidException();
                 }
-                BufferedImage image = reader.read(0);
-                return new PngFacts(width, height, image.getColorModel().hasAlpha());
+                return new PngFacts(width, height, hasAlpha(reader));
             } finally {
                 reader.dispose();
             }
@@ -50,6 +49,20 @@ public class TemplatePngInspector {
             }
             throw new TemplateImageInvalidException();
         }
+    }
+
+    private boolean hasAlpha(ImageReader reader) throws IOException {
+        ImageTypeSpecifier raw = reader.getRawImageType(0);
+        if (raw != null) {
+            return raw.getColorModel().hasAlpha();
+        }
+        Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
+        while (types.hasNext()) {
+            if (types.next().getColorModel().hasAlpha()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean startsWithPngSignature(byte[] content) {

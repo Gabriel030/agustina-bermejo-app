@@ -82,6 +82,18 @@ $$;
 create trigger trg_certificate_template_image_immutable before update or delete on certificate_template_image
     for each row execute function forbid_certificate_template_image_change();
 
+create function forbid_certificate_template_truncate() returns trigger language plpgsql as $$
+begin
+    raise exception 'certificate template table % is immutable: % is not allowed', tg_table_name, tg_op
+        using errcode = 'integrity_constraint_violation';
+end;
+$$;
+
+create trigger trg_certificate_template_version_no_truncate before truncate on certificate_template_version
+    for each statement execute function forbid_certificate_template_truncate();
+create trigger trg_certificate_template_image_no_truncate before truncate on certificate_template_image
+    for each statement execute function forbid_certificate_template_truncate();
+
 insert into certificate_template (kind) values ('PROGRAM'), ('COURSE');
 
 insert into certificate_template_version (template_id, version_number, status, institute_name, title, intro_text, approval_text,

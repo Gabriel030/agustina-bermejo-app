@@ -53,6 +53,11 @@ public class CertificateTemplateContentRules {
                     throw new TemplateUnknownMarkerException(matcher.group(1));
                 }
             }
+            String remainder = MARKER.matcher(text).replaceAll("");
+            int stray = Math.max(remainder.indexOf('{'), remainder.indexOf('}'));
+            if (stray >= 0) {
+                throw new TemplateUnknownMarkerException(String.valueOf(remainder.charAt(stray)));
+            }
         }
     }
 

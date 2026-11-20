@@ -8,6 +8,7 @@ import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -25,6 +26,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -117,7 +119,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     private int publishedVersionNumber() throws Exception {
         MvcResult result = send(get(BASE), director).andExpect(status().isOk()).andReturn();
-        return com.jayway.jsonpath.JsonPath.read(result.getResponse().getContentAsString(), "$.published.versionNumber");
+        return JsonPath.read(result.getResponse().getContentAsString(), "$.published.versionNumber");
     }
 
     @Test
@@ -168,6 +170,64 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void unbalancedBracesAreRejectedAsUnknownMarker() throws Exception {
+        for (String broken : new String[]{"{holder", "holder}", "{{holder}", "{holder}}", "{}"}) {
+            saveDraft(director, DRAFT_BODY.replace("{titleName}", broken))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.code").value("TEMPLATE_UNKNOWN_MARKER"));
+        }
+    }
+
+    @Test
+    void validLargePngOverTwoMegabytesIsRejectedBySize() throws Exception {
+        BufferedImage noise = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
+        java.util.Random random = new java.util.Random(7);
+        for (int x = 0; x < 1000; x++) {
+            for (int y = 0; y < 1000; y++) {
+                noise.setRGB(x, y, random.nextInt(0xFFFFFF));
+            }
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(noise, "png", out);
+        assertThat(out.size()).isGreaterThan(2 * 1024 * 1024);
+
+        upload(director, "LOGO", out.toByteArray(), "image/png")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_IMAGE_INVALID"));
+    }
+
+    @Test
+    void validPngWithAlteredSignatureIsRejected() throws Exception {
+        byte[] altered = png(BufferedImage.TYPE_INT_ARGB);
+        altered[1] = 'X';
+
+        upload(director, "LOGO", altered, "image/png")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_IMAGE_INVALID"));
+    }
+
+    @Test
+    void publishingWithReferencedLogoAndSignaturesKeepsTheReferences() throws Exception {
+        int logoId = JsonPath.read(upload(director, "LOGO", png(BufferedImage.TYPE_INT_RGB), "image/png")
+                .andReturn().getResponse().getContentAsString(), "$.id");
+        int signatureId = JsonPath.read(upload(director, "SIGNATURE", png(BufferedImage.TYPE_INT_ARGB), "image/png")
+                .andReturn().getResponse().getContentAsString(), "$.id");
+        String body = DRAFT_BODY.replace("\"instituteName\"", "\"logoImageId\":" + logoId + ",\"instituteName\"")
+                .replace("\"name\":\"Ana Gómez\"", "\"name\":\"Ana Gómez\",\"signatureImageId\":" + signatureId);
+        saveDraft(director, body).andExpect(status().isOk());
+
+        send(post(BASE + "/publish"), director)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.versionNumber").value(2))
+                .andExpect(jsonPath("$.content.logoImageId").value(logoId))
+                .andExpect(jsonPath("$.content.firstSigner.signatureImageId").value(signatureId));
+        send(get(BASE + "/versions/2"), administrative)
+                .andExpect(jsonPath("$.content.firstSigner.signatureImageId").value(signatureId));
+        send(post(BASE + "/preview").contentType(MediaType.APPLICATION_JSON).content("{\"source\":\"PUBLISHED\"}"), administrative)
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void everyAllowedMarkerIsAccepted() throws Exception {
         saveDraft(director, DRAFT_BODY.replace("{titleKind} {titleName}",
                 "{holder} {documentType} {documentNumber} {titleKind} {titleName} {hours} {graduationDate} {issuedOn} {registryNumber}"))
@@ -179,9 +239,9 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
         send(post(BASE + "/publish"), director)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("TEMPLATE_NOTHING_TO_PUBLISH"));
-        Object publishedContent = com.jayway.jsonpath.JsonPath.read(
+        Object publishedContent = JsonPath.read(
                 send(get(BASE), director).andReturn().getResponse().getContentAsString(), "$.published.content");
-        saveDraft(director, "{\"content\":" + new tools.jackson.databind.ObjectMapper().writeValueAsString(publishedContent) + "}")
+        saveDraft(director, "{\"content\":" + new ObjectMapper().writeValueAsString(publishedContent) + "}")
                 .andExpect(status().isOk());
         send(post(BASE + "/publish"), director)
                 .andExpect(status().isConflict())
@@ -235,7 +295,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void pngSignatureWithCorruptBodyIsRejected() throws Exception {
-        byte[] truncated = Arrays.copyOf(png(BufferedImage.TYPE_INT_ARGB), 40);
+        byte[] truncated = Arrays.copyOf(png(BufferedImage.TYPE_INT_ARGB), 20);
 
         upload(director, "LOGO", truncated, "image/png")
                 .andExpect(status().isUnprocessableEntity())
@@ -260,7 +320,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.contentType").value("image/png"))
                 .andExpect(jsonPath("$.widthPixels").value(20))
                 .andReturn();
-        int imageId = com.jayway.jsonpath.JsonPath.read(uploaded.getResponse().getContentAsString(), "$.id");
+        int imageId = JsonPath.read(uploaded.getResponse().getContentAsString(), "$.id");
 
         MvcResult served = send(get(BASE + "/images/" + imageId), administrative).andExpect(status().isOk()).andReturn();
         assertThat(served.getResponse().getContentType()).isEqualTo("image/png");
@@ -281,7 +341,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     @Test
     void draftCannotReferenceImageOfAnotherPurposeOrMissingImage() throws Exception {
         MvcResult logo = upload(director, "LOGO", png(BufferedImage.TYPE_INT_ARGB), "image/png").andReturn();
-        int logoId = com.jayway.jsonpath.JsonPath.read(logo.getResponse().getContentAsString(), "$.id");
+        int logoId = JsonPath.read(logo.getResponse().getContentAsString(), "$.id");
 
         saveDraft(director, DRAFT_BODY.replace("\"name\":\"Ana Gómez\"", "\"name\":\"Ana Gómez\",\"signatureImageId\":" + logoId))
                 .andExpect(status().isNotFound())
@@ -294,7 +354,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     @Test
     void imageOfAnotherKindIsNotServed() throws Exception {
         MvcResult logo = upload(director, "LOGO", png(BufferedImage.TYPE_INT_ARGB), "image/png").andReturn();
-        int logoId = com.jayway.jsonpath.JsonPath.read(logo.getResponse().getContentAsString(), "$.id");
+        int logoId = JsonPath.read(logo.getResponse().getContentAsString(), "$.id");
 
         send(get("/certificate-templates/COURSE/images/" + logoId), director)
                 .andExpect(status().isNotFound())

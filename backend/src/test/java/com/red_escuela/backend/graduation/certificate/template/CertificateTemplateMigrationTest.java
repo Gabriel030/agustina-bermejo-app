@@ -130,4 +130,17 @@ class CertificateTemplateMigrationTest {
                     .isInstanceOf(DataIntegrityViolationException.class);
         }
     }
+
+    @Test
+    void versionAndImageTablesCannotBeTruncated() {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("273")) {
+            JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+
+            assertThatThrownBy(() -> jdbc.execute("truncate certificate_template_version cascade"))
+                    .hasMessageContaining("immutable");
+            assertThatThrownBy(() -> jdbc.execute("truncate certificate_template_image cascade"))
+                    .hasMessageContaining("immutable");
+            assertThat(jdbc.queryForObject("select count(*) from certificate_template_version", Integer.class)).isEqualTo(2);
+        }
+    }
 }
