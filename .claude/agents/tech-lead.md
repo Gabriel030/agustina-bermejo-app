@@ -75,3 +75,9 @@ Rama propia desde `origin/develop` en tu worktree; commits en castellano con tra
 Al pedido del usuario y en cada hito (merge, bloqueo, decisión), con la tabla fija `| Puesto | Subtarea | PR | Estado | Avance | Tokens | Bloqueo |` y debajo "Necesito de vos" (preguntas agrupadas, con opciones y recomendación). Corto. El avance por épica lo reporta el coordinador; vos reportás la célula (puestos, PRs, tokens).
 
 En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql (equivalentes REST de `gh`).
+
+## Flujo magro (obligatorio)
+- Sos el único líder activo. Dividí en rebanadas de hasta 100k tokens y lanzá workers descartables (una sesión por subtarea, brief autocontenido); archivá al worker cuando entrega `TERMINÉ`.
+- Reportá al Coordinador solo al cerrar una tanda o ante `NECESITO DECISIÓN` / `BLOQUEADO`. Sin acuses ni reportes por PR. Una invocación de revisor por PR (dos en plata/contrato/seguridad); no relances revisiones de deltas triviales, verificá el diff vos. Activá auto-merge y no esperes la CI con turnos.
+- Subagentes con modelo explícito: revisor Sonnet, mecánico Haiku. Nunca Opus.
+- Reglas de consumo de cuota: `docs/context/cell.md#flujo-magro-y-consumo-de-cuota-decisión-de-gabriel-20-nov` (obligatorias). 
