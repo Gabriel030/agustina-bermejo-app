@@ -5,13 +5,17 @@ import com.red_escuela.backend.notification.broadcast.domain.RenderedContent;
 import com.red_escuela.backend.notification.broadcast.template.exception.MissingRequiredVariableException;
 import com.red_escuela.backend.notification.broadcast.template.exception.UnknownTemplateVariableException;
 
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class TemplateRenderer {
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{\\{([^{}]*)}}");
+
+    private static final Pattern LINE_BREAKS = Pattern.compile("[\\r\\n\\u000B\\f\\u0085\\u2028\\u2029]+");
 
     private TemplateRenderer() {
     }
@@ -21,9 +25,24 @@ public final class TemplateRenderer {
         replacePlaceholders(bodyText, Map.of(), true);
     }
 
+    public static Set<TemplateVariable> referencedVariables(String subject, String bodyText) {
+        Set<TemplateVariable> referenced = EnumSet.noneOf(TemplateVariable.class);
+        for (String text : new String[]{subject, bodyText}) {
+            if (text != null) {
+                Matcher matcher = PLACEHOLDER.matcher(text);
+                while (matcher.find()) {
+                    String token = matcher.group(1).strip();
+                    referenced.add(TemplateVariableCatalog.findByToken(token)
+                            .orElseThrow(() -> new UnknownTemplateVariableException(token)));
+                }
+            }
+        }
+        return referenced;
+    }
+
     public static RenderedContent render(ChannelType channel, String subject, String bodyText,
                                          Map<TemplateVariable, String> values) {
-        String renderedSubject = subject == null ? null : replacePlaceholders(subject, values, false);
+        String renderedSubject = subject == null ? null : LINE_BREAKS.matcher(replacePlaceholders(subject, values, false)).replaceAll(" ");
         String renderedBody = replacePlaceholders(bodyText, values, false);
         return new RenderedContent(renderedSubject, renderedBody);
     }

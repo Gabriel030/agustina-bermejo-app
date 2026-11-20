@@ -2,10 +2,12 @@ package com.red_escuela.backend.notification.broadcast.specialist;
 
 import com.red_escuela.backend.identity.api.EmailRecipient;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
+import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastDeliveryKind;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelAddress;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelCapabilities;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
+import com.red_escuela.backend.notification.broadcast.domain.ConsentDecision;
 import com.red_escuela.backend.notification.broadcast.domain.DeliveryMode;
 import com.red_escuela.backend.notification.broadcast.domain.DenialReason;
 import com.red_escuela.backend.notification.broadcast.domain.DispatchOutcome;
@@ -21,6 +23,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -70,8 +75,22 @@ public class EmailMessageChannel implements MessageChannel {
 
     @Override
     public DispatchOutcome dispatch(OutboundMessage message) {
-        BroadcastDeliveryContext context = new BroadcastDeliveryContext(message.recipientPersonId(), type(), message.category(),
-                contactConsentLedger.isAllowed(message.recipientPersonId(), type(), message.category()));
+        return dispatchWithConsent(message, contactConsentLedger.isAllowed(message.recipientPersonId(), type(), message.category()));
+    }
+
+    @Override
+    public List<DispatchOutcome> dispatchAll(List<OutboundMessage> messages) {
+        Map<BroadcastCategory, Map<Long, ConsentDecision>> decisionsByCategory = new HashMap<>();
+        messages.stream().map(OutboundMessage::category).distinct().forEach(category -> decisionsByCategory.put(category,
+                contactConsentLedger.isAllowedAll(messages.stream().filter(message -> message.category() == category)
+                        .map(OutboundMessage::recipientPersonId).toList(), type(), category)));
+        return messages.stream()
+                .map(message -> dispatchWithConsent(message, decisionsByCategory.get(message.category()).get(message.recipientPersonId())))
+                .toList();
+    }
+
+    private DispatchOutcome dispatchWithConsent(OutboundMessage message, ConsentDecision consent) {
+        BroadcastDeliveryContext context = new BroadcastDeliveryContext(message.recipientPersonId(), type(), message.category(), consent);
         return broadcastDeliveryPolicySet.evaluateRulesUntilFirstViolation(context).firstDenial()
                 .<DispatchOutcome>map(denial -> new DispatchOutcome.Rejected(DenialReason.valueOf(denial.code())))
                 .orElseGet(() -> enqueue(message));

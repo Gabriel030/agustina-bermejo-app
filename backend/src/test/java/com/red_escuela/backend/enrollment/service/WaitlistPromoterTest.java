@@ -4,6 +4,7 @@ import com.red_escuela.backend.enrollment.dto.WaitlistKind;
 import com.red_escuela.backend.enrollment.dto.WaitlistVerdict;
 import com.red_escuela.backend.enrollment.dto.WaitlistVerdictReason;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,8 @@ class WaitlistPromoterTest {
 
     @Mock
     private WaitlistCandidateEligibility eligibility;
+    @Mock
+    private AuditTrail auditTrail;
 
     private FakeQueue queue;
     private WaitlistPromoter promoter;
@@ -33,7 +36,7 @@ class WaitlistPromoterTest {
     @BeforeEach
     void setUp() {
         queue = new FakeQueue();
-        promoter = new WaitlistPromoter(new WaitlistQueues(List.of(queue)), eligibility);
+        promoter = new WaitlistPromoter(new WaitlistQueues(List.of(queue)), eligibility, auditTrail);
     }
 
     @Test

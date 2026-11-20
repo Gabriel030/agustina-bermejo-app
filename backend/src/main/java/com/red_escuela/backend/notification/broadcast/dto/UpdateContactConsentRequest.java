@@ -10,5 +10,5 @@ public record UpdateContactConsentRequest(
         @NotNull ConsentChannel channel,
         @NotNull BroadcastCategory category,
         @NotNull Boolean granted,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) ConsentSource source) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, allowableValues = {"PROFILE"}) ConsentSource source) {
 }

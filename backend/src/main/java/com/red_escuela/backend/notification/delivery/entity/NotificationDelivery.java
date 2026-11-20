@@ -8,6 +8,7 @@ import com.red_escuela.backend.notification.delivery.domain.DeliveryEvent;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatusReason;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatusStateMachine;
+import com.red_escuela.backend.notification.delivery.domain.WhatsAppTemplateUse;
 import com.red_escuela.backend.notification.delivery.exception.IllegalNotificationDeliveryStatusTransitionException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,7 +40,7 @@ public class NotificationDelivery {
     private String dedupKey;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "channel", nullable = false, length = 10)
+    @Column(name = "channel", nullable = false, length = 20)
     private DeliveryChannel channel;
 
     @Enumerated(EnumType.STRING)
@@ -95,8 +96,33 @@ public class NotificationDelivery {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "provider_error_code", length = 40)
+    private String providerErrorCode;
+
+    @Column(name = "template_name", length = 120)
+    private String templateName;
+
+    @Column(name = "template_language", length = 10)
+    private String templateLanguage;
+
+    @Column(name = "template_variables", columnDefinition = "text")
+    private String templateVariables;
+
+    @Column(name = "pricing_category", length = 20)
+    private String pricingCategory;
+
     public static NotificationDelivery queuedEmail(DeliveryEnvelope envelope, DeliveryContent content, Instant now) {
         return start(envelope, DeliveryChannel.EMAIL, content, now, DeliveryEvent.QUEUE_FOR_DISPATCH, null);
+    }
+
+    public static NotificationDelivery queuedWhatsApp(DeliveryEnvelope envelope, DeliveryContent content, WhatsAppTemplateUse template,
+                                                      Instant now) {
+        NotificationDelivery delivery = start(envelope, DeliveryChannel.WHATSAPP_API, content, now, DeliveryEvent.QUEUE_FOR_DISPATCH, null);
+        delivery.templateName = template.templateName();
+        delivery.templateLanguage = template.languageCode();
+        delivery.templateVariables = template.variablesJson();
+        delivery.pricingCategory = template.pricingCategory().name();
+        return delivery;
     }
 
     public static NotificationDelivery suppressedEmail(DeliveryEnvelope envelope, DeliveryContent content, String reason, Instant now) {
@@ -133,6 +159,11 @@ public class NotificationDelivery {
         moveTo(simulated ? DeliveryEvent.SEND_VIA_SIMULATOR : DeliveryEvent.SEND_VIA_PROVIDER, null);
         this.providerMessageId = providerMessageId;
         this.sentAt = now;
+    }
+
+    public void failForGood(String reason, String providerErrorCode) {
+        this.providerErrorCode = providerErrorCode;
+        recordFailedAttempt(reason, 1);
     }
 
     public void suppress(String reason) {

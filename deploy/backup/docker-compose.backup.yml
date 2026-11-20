@@ -1,10 +1,12 @@
 services:
   backup:
     build:
-      context: ./
+      context: ./deploy/backup
     image: agustina-bermejo/backup:local
     command: ["cron"]
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     environment:
       PGHOST: ${BACKUP_PGHOST:-postgres}
       PGPORT: ${BACKUP_PGPORT:-5432}
@@ -12,14 +14,15 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio}
       PGDATABASE: ${POSTGRES_DB:-agustina_bermejo}
       TZ: ${BACKUP_TZ:-America/Argentina/Buenos_Aires}
-      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 */6 * * *}
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 */4 * * *}
       BACKUP_FRESHNESS_SCHEDULE: ${BACKUP_FRESHNESS_SCHEDULE:-30 9 * * *}
-      BACKUP_MAX_AGE_HOURS: ${BACKUP_MAX_AGE_HOURS:-13}
+      BACKUP_MAX_AGE_HOURS: ${BACKUP_MAX_AGE_HOURS:-5}
       BACKUP_RUN_ON_START: ${BACKUP_RUN_ON_START:-false}
-      BACKUP_KEEP_RECENT: ${BACKUP_KEEP_RECENT:-4}
       BACKUP_KEEP_DAILY: ${BACKUP_KEEP_DAILY:-7}
       BACKUP_KEEP_WEEKLY: ${BACKUP_KEEP_WEEKLY:-4}
-      BACKUP_KEEP_MONTHLY: ${BACKUP_KEEP_MONTHLY:-6}
+      BACKUP_KEEP_QUARTERLY: ${BACKUP_KEEP_QUARTERLY:-0}
+      BACKUP_ALLOW_EMPTY_DATA: ${BACKUP_ALLOW_EMPTY_DATA:-false}
+      BACKUP_ORPHAN_HOURS: ${BACKUP_ORPHAN_HOURS:-6}
       BACKUP_HEARTBEAT_URL: ${BACKUP_HEARTBEAT_URL:-}
       AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:-}
       BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
@@ -38,6 +41,7 @@ services:
       - default
     volumes:
       - ${BACKUP_DIR:-backup_data}:/backups
+      - app_data:/data:ro
       - backup_metrics:/metrics
     healthcheck:
       test: ["CMD-SHELL", "pgrep crond > /dev/null && pg_isready -q -h \"$$PGHOST\" -p \"$$PGPORT\" -U \"$$PGUSER\""]
@@ -52,3 +56,4 @@ networks:
 volumes:
   backup_data:
   backup_metrics:
+  app_data:
