@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.specialist;
 
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,12 @@ public class PublicPasswordResetBlockPolicy {
         boolean changeInFlight = tokenRepository.existsByPersonAndNewEmailIsNotNull(person)
                 || contactChangeRecorder.hasRecentEmailChange(person.getId());
         return changeInFlight && !changeStartedByOwner(person);
+    }
+
+    public void requireNotBlocked(Person person) {
+        if (blocks(person)) {
+            throw new InvalidPasswordResetTokenException();
+        }
     }
 
     private boolean changeStartedByOwner(Person person) {

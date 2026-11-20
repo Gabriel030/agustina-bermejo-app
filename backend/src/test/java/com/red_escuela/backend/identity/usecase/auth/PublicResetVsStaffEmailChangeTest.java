@@ -205,4 +205,19 @@ class PublicResetVsStaffEmailChangeTest extends AbstractIntegrationTest {
                 new VerifyResetCodeCommand(target.emailValue(), CODE, "127.0.0.1")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
+
+    @Test
+    void exchangeTokenIssuedBeforeStaffChangeIsRejectedWhilePending() {
+        MutableClock.INSTANCE.setDateTime(START);
+        Person target = persistPerson("staff-exchange-target");
+        Person staff = persistPerson("staff-exchange-actor");
+        issueKnownCode(target);
+        String exchangeToken = verifyResetCodeUseCase.verify(
+                new VerifyResetCodeCommand(target.emailValue(), CODE, "127.0.0.1"));
+        startEmailChange(target, staff);
+
+        assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, NEW_PASSWORD)))
+                .isInstanceOf(InvalidPasswordResetTokenException.class);
+        assertThat(passwordEncoder.matches(PASSWORD, target.getPassword())).isTrue();
+    }
 }
