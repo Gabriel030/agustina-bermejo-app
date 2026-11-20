@@ -28,6 +28,21 @@ public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRec
             + "where r.broadcastId = :broadcastId and r.anonymizedAt is null")
     int anonymizeByBroadcastId(@Param("broadcastId") Long broadcastId, @Param("now") Instant now);
 
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = "delete from broadcast_recipient where id in "
+            + "(select id from broadcast_recipient where broadcast_id = :broadcastId order by id limit :chunkSize)", nativeQuery = true)
+    int deleteChunkByBroadcastId(@Param("broadcastId") Long broadcastId, @Param("chunkSize") int chunkSize);
+
+    @Query("""
+            select b.id from Broadcast b
+            where b.sentTotal is not null
+              and ((b.status = com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatus.CANCELLED and b.cancelledAt < :cutoff)
+                or (b.status = com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatus.COMPLETED and b.completedAt < :cutoff))
+              and exists (select 1 from BroadcastRecipient r where r.broadcastId = b.id)
+            order by b.id
+            """)
+    List<Long> findBroadcastIdsWithRecipientsPastPurgeCutoff(@Param("cutoff") Instant cutoff, Pageable pageable);
+
     long countByBroadcastId(Long broadcastId);
 
     long countByBroadcastIdAndStatusIn(Long broadcastId, Collection<BroadcastRecipientStatus> statuses);

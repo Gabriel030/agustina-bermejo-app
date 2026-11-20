@@ -288,5 +288,13 @@ from institution;
 \echo [V215] Filas de billing_period que V215 DESCARTA (configuracion sin efecto en la facturacion; solo informativo):
 select count(*) as billing_period_rows from billing_period;
 
+\echo
+\echo [V266] Destinatarios de envios COMPLETED o CANCELLED con mas de 12 meses que BroadcastRecipientPurgeJob BORRARA (V266 no aborta; solo informativo). Los envios sin totales congelados no se borran:
+select count(*) filter (where b.sent_total is not null) as recipient_rows_to_purge,
+       count(*) filter (where b.sent_total is null) as rows_kept_without_frozen_totals
+from broadcast_recipient r join broadcast b on b.id = r.broadcast_id
+where (b.status = 'CANCELLED' and b.cancelled_at < now() - interval '12 months')
+   or (b.status = 'COMPLETED' and b.completed_at < now() - interval '12 months');
+
 rollback;
 \echo ===== fin =====

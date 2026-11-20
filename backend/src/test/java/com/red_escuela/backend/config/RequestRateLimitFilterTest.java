@@ -56,6 +56,13 @@ class RequestRateLimitFilterTest {
     }
 
     @Test
+    void emailChangeTokenEndpointsAreLimitedPerIp() throws Exception {
+        assertLimited("POST", "/email-change-preview");
+        assertLimited("POST", "/approve-email-change");
+        assertLimited("POST", "/cancel-email-change");
+    }
+
+    @Test
     void publicProspectCreationIsLimitedPerIp() throws Exception {
         assertLimited("POST", "/prospects");
     }
