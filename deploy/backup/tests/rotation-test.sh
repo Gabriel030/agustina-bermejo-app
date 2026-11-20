@@ -69,4 +69,44 @@ check "rotate.sh: el par vencido desaparece completo (dump, checksum, meta, arch
   "abdb_20410309T200000Z.dump abdb_20410309T200000Z.dump.sha256 abdb_20410309T200000Z.meta abdb_20410310T040000Z.dump.age abdb_20410310T040000Z.dump.age.sha256 abdb_20410310T040000Z.meta abdb_20410310T080000Z.dump.age abdb_20410310T080000Z.dump.age.sha256 abdb_20410310T080000Z.meta abfiles_20410309T200000Z.tar.zst abfiles_20410309T200000Z.tar.zst.sha256 abfiles_20410310T040000Z.tar.zst.age abfiles_20410310T040000Z.tar.zst.age.sha256 abfiles_20410310T080000Z.tar.zst.age abfiles_20410310T080000Z.tar.zst.age.sha256 " \
   "$(find "$work" -maxdepth 1 -type f -printf '%f\n' | sort | tr '\n' ' ')"
 
+rm -rf "${work:?}"/*
+make_pair 20410309T000000Z ""
+: > "$work/abdb_20410310T080000Z.dump"; : > "$work/abdb_20410310T080000Z.dump.sha256"
+BACKUP_DIR="$work" BACKUP_METRICS_DIR="$work/m" BACKUP_NOW_EPOCH="$(epoch_of '2041-03-10 15:00:00')" BACKUP_TZ_OFFSET_SECONDS=0 \
+  BACKUP_KEEP_DAILY=1 BACKUP_KEEP_WEEKLY=0 BACKUP_KEEP_QUARTERLY=0 "$scripts/rotate.sh" > /dev/null
+check "un dump sin su archivo de /data no cuenta como ultimo: el par completo anterior se conserva" \
+  "abdb_20410309T000000Z.dump abdb_20410309T000000Z.dump.sha256 abdb_20410309T000000Z.meta abdb_20410310T080000Z.dump abdb_20410310T080000Z.dump.sha256 abfiles_20410309T000000Z.tar.zst abfiles_20410309T000000Z.tar.zst.sha256 " \
+  "$(find "$work" -maxdepth 1 -type f -printf '%f\n' | sort | tr '\n' ' ')"
+
+rm -rf "${work:?}"/*
+make_pair 20410310T040000Z ""
+: > "$work/abfiles_20410101T000000Z.tar.zst"; : > "$work/abfiles_20410101T000000Z.tar.zst.sha256"
+touch -d '10 hours ago' "$work/abfiles_20410101T000000Z.tar.zst" "$work/abfiles_20410101T000000Z.tar.zst.sha256"
+: > "$work/abfiles_20410310T090000Z.tar.zst"
+BACKUP_DIR="$work" BACKUP_METRICS_DIR="$work/m" BACKUP_NOW_EPOCH="$(epoch_of '2041-03-10 15:00:00')" BACKUP_TZ_OFFSET_SECONDS=0 \
+  BACKUP_KEEP_DAILY=7 BACKUP_KEEP_WEEKLY=0 BACKUP_KEEP_QUARTERLY=0 "$scripts/rotate.sh" > /dev/null
+check "un archivo de /data huerfano se borra pasado el umbral y uno reciente se espera" \
+  "abdb_20410310T040000Z.dump abdb_20410310T040000Z.dump.sha256 abdb_20410310T040000Z.meta abfiles_20410310T040000Z.tar.zst abfiles_20410310T040000Z.tar.zst.sha256 abfiles_20410310T090000Z.tar.zst " \
+  "$(find "$work" -maxdepth 1 -type f -printf '%f\n' | sort | tr '\n' ' ')"
+
+freshness() {
+  BACKUP_DIR="$work" BACKUP_METRICS_DIR="$work/m" BACKUP_MAX_AGE_HOURS=5 "$scripts/check-freshness.sh" 2>&1
+  echo "rc=$?"
+}
+rm -rf "${work:?}"/*
+make_pair "$(date -u +%Y%m%dT%H%M%SZ)" ""
+check "freshness: el par completo y reciente esta bien" "rc=0" "$(freshness | tail -1)"
+rm -f "$work"/abfiles_*
+check "freshness: sin archivo de /data no hay backup completo" "rc=1" "$(freshness | tail -1)"
+rm -rf "${work:?}"/*
+make_pair 20410101T000000Z ""
+touch -d '10 hours ago' "$work"/*
+check "freshness: un par completo pero viejo alerta" "rc=1" "$(freshness | tail -1)"
+
+cron_env="$work/cron.env"
+tricky=$'valor con "comillas", \'simples\', $dolar y\nsalto'
+(export BACKUP_TRICKY="$tricky" PGPASSWORD="pa\$\$ w'rd"; . "$scripts/lib.sh"; write_cron_env "$cron_env")
+check "cron.env: los valores con caracteres especiales sobreviven al re-leerlos" "$tricky" "$(bash -c ". '$cron_env'; printf %s \"\$BACKUP_TRICKY\"")"
+check "cron.env: queda en 0600" "600" "$(stat -c %a "$cron_env")"
+
 finish

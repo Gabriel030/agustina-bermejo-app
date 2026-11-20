@@ -5,6 +5,8 @@ services:
     image: agustina-bermejo/backup:local
     command: ["cron"]
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     environment:
       PGHOST: ${BACKUP_PGHOST:-postgres}
       PGPORT: ${BACKUP_PGPORT:-5432}
@@ -19,6 +21,8 @@ services:
       BACKUP_KEEP_DAILY: ${BACKUP_KEEP_DAILY:-7}
       BACKUP_KEEP_WEEKLY: ${BACKUP_KEEP_WEEKLY:-4}
       BACKUP_KEEP_QUARTERLY: ${BACKUP_KEEP_QUARTERLY:-0}
+      BACKUP_ALLOW_EMPTY_DATA: ${BACKUP_ALLOW_EMPTY_DATA:-false}
+      BACKUP_ORPHAN_HOURS: ${BACKUP_ORPHAN_HOURS:-6}
       BACKUP_HEARTBEAT_URL: ${BACKUP_HEARTBEAT_URL:-}
       AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:-}
       BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}

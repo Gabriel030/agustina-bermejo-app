@@ -20,15 +20,17 @@ tz_offset_seconds() {
 NOW_EPOCH="${BACKUP_NOW_EPOCH:-$(date -u +%s)}"
 TZ_OFFSET="${BACKUP_TZ_OFFSET_SECONDS:-$(tz_offset_seconds)}"
 
+ORPHAN_MINUTES=$(( ${BACKUP_ORPHAN_HOURS:-6} * 60 ))
+
 expired_from() {
-  grep -E "^${BACKUP_PREFIX}_[0-9]{8}T[0-9]{6}Z\.dump(\.age)?$" | sort |
+  complete_dumps_from_listing | sort |
     awk -v keep_daily="$KEEP_DAILY" -v keep_weekly="$KEEP_WEEKLY" -v keep_quarterly="$KEEP_QUARTERLY" \
       -v now_epoch="$NOW_EPOCH" -v tz_offset="$TZ_OFFSET" -f "$AWK_FILE"
 }
 
 status=0
 
-for expired in $(ls "$BACKUP_DIR" | expired_from); do
+for expired in $(find "$BACKUP_DIR" -maxdepth 1 -type f -printf '%f\n' | expired_from); do
   log "rotation: removing local pair of ${expired}"
   stamp=$(stamp_of "$expired")
   stem="${expired%.age}"
@@ -39,6 +41,14 @@ for expired in $(ls "$BACKUP_DIR" | expired_from); do
   done
 done
 find "$BACKUP_DIR" -maxdepth 1 -name '*.partial' -mmin +120 -delete 2> /dev/null
+
+while IFS= read -r archive; do
+  stamp=$(stamp_of "$archive")
+  if [ ! -e "$BACKUP_DIR/${BACKUP_PREFIX}_${stamp}.dump" ] && [ ! -e "$BACKUP_DIR/${BACKUP_PREFIX}_${stamp}.dump.age" ]; then
+    log "rotation: removing orphan files archive ${archive}"
+    remove_files "$BACKUP_DIR/$archive"
+  fi
+done < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name "${FILES_PREFIX}_*" -mmin "+$ORPHAN_MINUTES" -printf '%f\n')
 
 if s3_enabled; then
   rclone_env

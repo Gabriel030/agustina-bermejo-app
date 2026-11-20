@@ -28,8 +28,9 @@ newest() { find "$work/backups" -maxdepth 1 -name "$1" -printf '%f\n' 2> /dev/nu
 
 started=$(date +%s)
 output=$(run_backup)
-elapsed=$(( $(date +%s) - started ))
 status=$?
+elapsed=$(( $(date +%s) - started ))
+check "corrida sin cifrar: termina bien" "0" "$status"
 dump=$(newest 'abdb_*.dump')
 archive=$(newest 'abfiles_*.tar.zst')
 check "corrida sin cifrar: genera dump y archivo de /data con el mismo sello" \
@@ -46,11 +47,25 @@ archive_bytes=$(wc -c < "$work/backups/$archive" | tr -d ' ')
 echo "medicion: dump ${dump_bytes} bytes, archivo /data ${archive_bytes} bytes, duracion ${elapsed}s"
 check "segunda corrida el mismo dia no repite el aviso de cifrado" "0" "$(sleep 1; run_backup | grep -c 'BACKUP SIN CIFRAR')"
 
+check "el directorio de backups queda en 0700" "700" "$(stat -c %a "$work/backups")"
+check "todos los archivos quedan en 0600" "" "$(find "$work/backups" -maxdepth 1 -type f ! -perm 600)"
+check "el .meta marca el backup como best_effort" "consistency=best_effort" "$(grep '^consistency=' "$meta")"
+check "el .meta marca que nada cambio durante la copia" "files_changed_during_copy=no" "$(grep '^files_changed_during_copy=' "$meta")"
+
+touch -d '3 hours ago' "$work/backups/abdb_20000101T000000Z.dump.partial"
+run_backup > /dev/null
+check "las corridas limpian los .partial viejos" "0" "$(find "$work/backups" -name 'abdb_20000101T000000Z*' | wc -l | tr -d ' ')"
+
 identity="$work/key.txt"
 age-keygen -o "$identity" 2> /dev/null
 recipient=$(age-keygen -y "$identity")
 rm -rf "$work/backups"
-AGE_RECIPIENT="$recipient" run_backup > /dev/null
+mkdir -p "$work/agebin"
+printf '#!/bin/sh\nls -A "%s" >> "%s"\nexec %s "$@"\n' "$work/backups" "$work/age-sightings.log" "$(command -v age)" > "$work/agebin/age"
+chmod +x "$work/agebin/age"
+PATH="$work/agebin:$PATH" AGE_RECIPIENT="$recipient" run_backup > /dev/null
+check "con age: nunca hubo un dump o tar en claro en el disco" "0" "$(grep -cE '\.(dump|tar\.zst)(\.partial)?$' "$work/age-sightings.log")"
+check "con age: los archivos tambien quedan en 0600" "" "$(find "$work/backups" -maxdepth 1 -type f ! -perm 600)"
 dump=$(newest 'abdb_*.dump.age')
 archive=$(newest 'abfiles_*.tar.zst.age')
 check "con age: dump y archivo salen cifrados con su checksum" "OK" "$(cd "$work/backups" && sha256sum -c --status "$dump.sha256" "$archive.sha256" && echo OK)"
@@ -59,8 +74,13 @@ check "con age: el archivo descifrado conserva los archivos" "2" "$(age -d -i "$
 
 rm -rf "$work/backups" "$work/metrics" "$work/empty"
 mkdir -p "$work/empty"
-real_data="$data"; data="$work/empty"; output=$(run_backup); data="$real_data"
-check "con /data vacio la corrida avisa" "1" "$(echo "$output" | grep -c 'esta vacio')"
+real_data="$data"; data="$work/empty"; output=$(run_backup); status=$?
+check "con /data vacio la corrida falla" "1" "$status"
+check "con /data vacio alerta BACKUP FALLIDO" "1" "$(echo "$output" | grep -c 'BACKUP FALLIDO')"
+check "con /data vacio no queda ningun backup" "" "$(ls -A "$work/backups")"
+output=$(BACKUP_ALLOW_EMPTY_DATA=true run_backup); status=$?
+check "con BACKUP_ALLOW_EMPTY_DATA=true una instalacion nueva puede hacer su primer backup" "0" "$status"
+data="$real_data"
 rm -rf "$work/backups"
 output=$(BACKUP_DATA_DIR="$work/no-existe" BACKUP_DIR="$work/backups" BACKUP_METRICS_DIR="$work/metrics" "$scripts/backup.sh" 2>&1); status=$?
 check "sin /data montado la corrida falla" "1" "$status"
@@ -69,12 +89,29 @@ check "sin /data montado no queda ningun archivo del intento" "" "$(ls "$work/ba
 
 fakebin="$work/fakebin"
 mkdir -p "$fakebin"
-printf '#!/bin/sh\n/usr/bin/tar "$@"\n[ "$4" = "-cf" ] && exit 2\nexit 0\n' > "$fakebin/tar"
+printf '#!/bin/sh\n/usr/bin/tar "$@"\n[ "$4" = "-cvf" ] && exit 2\nexit 0\n' > "$fakebin/tar"
 chmod +x "$fakebin/tar"
 output=$(PATH="$fakebin:$PATH" run_backup); status=$?
 check "si falla el tar la corrida falla" "1" "$status"
 check "si falla el tar alerta BACKUP FALLIDO" "1" "$(echo "$output" | grep -c 'BACKUP FALLIDO')"
 check "si falla el tar no queda un dump huerfano" "" "$(ls "$work/backups" 2> /dev/null)"
 check "si falla el tar la metrica marca la corrida como fallida" "backup_last_run_success 0" "$(grep '^backup_last_run_success' "$work/metrics/backup.prom")"
+
+rm -rf "$work/backups" "$work/metrics"
+printf '#!/bin/sh\n/usr/bin/tar "$@"\n[ "$4" = "-cvf" ] && exit 1\nexit 0\n' > "$fakebin/tar"
+output=$(PATH="$fakebin:$PATH" run_backup); status=$?
+check "si un archivo cambia mientras se copia la corrida sigue" "0" "$status"
+check "si un archivo cambia el .meta lo registra" "files_changed_during_copy=yes" "$(grep -h '^files_changed_during_copy=' "$work"/backups/*.meta)"
+rm -f "$fakebin/tar"
+
+rm -rf "$work/backups" "$work/metrics"
+rclone_log="$work/rclone.log"
+printf '#!/bin/sh\necho "$@" >> "%s"\ncase "$1 $2" in "copyto "*abfiles*) exit 1 ;; esac\nexit 0\n' "$rclone_log" > "$fakebin/rclone"
+chmod +x "$fakebin/rclone"
+output=$(PATH="$fakebin:$PATH" BACKUP_S3_BUCKET=bucket run_backup); status=$?
+check "si falla la subida a S3 la corrida termina bien y alerta" "0 1" "$status $(echo "$output" | grep -c 'SUBIDA A S3 FALLIDA')"
+check "si falla la subida a S3 el backup local bueno se conserva" "2" "$(find "$work/backups" -maxdepth 1 \( -name 'abdb_*.dump' -o -name 'abfiles_*.tar.zst' \) | wc -l | tr -d ' ')"
+check "si sube el dump y falla abfiles se retira el dump remoto" "1" "$(grep -c '^deletefile .*abdb_.*\.dump$' "$rclone_log")"
+rm -f "$fakebin/rclone"
 
 finish
