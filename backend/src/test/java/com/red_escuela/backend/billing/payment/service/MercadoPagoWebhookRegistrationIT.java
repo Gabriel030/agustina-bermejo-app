@@ -4,9 +4,11 @@ import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
 import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort;
+import com.red_escuela.backend.billing.operation.MercadoPagoCheckoutMatch;
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +77,14 @@ class MercadoPagoWebhookRegistrationIT {
     @MockitoBean
     private MpWebhookSignatureVerifier signatureVerifier;
 
+    private static final UUID REFERENCE = UUID.randomUUID();
+
+    @BeforeEach
+    void checkoutIsKnown() {
+        when(registrationPort.findMercadoPagoCheckout(REFERENCE)).thenReturn(Optional.of(
+                new MercadoPagoCheckoutMatch(7L, Money.of(new BigDecimal("100.00"), Currency.ARS), false)));
+    }
+
     @Test
     void lockCheckAndRegistrationRunInsideTheSameTransactionOpenedByTheRegistration() {
         List<Boolean> transactionActiveAtEachStep = new ArrayList<>();
@@ -86,7 +97,7 @@ class MercadoPagoWebhookRegistrationIT {
             return false;
         });
         when(fetcher.fetchApproved(anyString())).thenReturn(Optional.of(
-                new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(7L, Money.of(new BigDecimal("100.00"), Currency.ARS)), 1)));
+                new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(REFERENCE, Money.of(new BigDecimal("100.00"), Currency.ARS)), 1)));
         when(registrationPort.registerApprovedMercadoPagoPayment(any(), any(), any(), any(), anyString())).thenAnswer(invocation -> {
             transactionActiveAtEachStep.add(TransactionSynchronizationManager.isActualTransactionActive());
             return 1L;
@@ -102,7 +113,7 @@ class MercadoPagoWebhookRegistrationIT {
         AtomicBoolean registered = new AtomicBoolean(false);
         when(registrationPort.isMercadoPagoPaymentRegistered(anyString())).thenAnswer(invocation -> registered.get());
         when(fetcher.fetchApproved(anyString())).thenReturn(Optional.of(
-                new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(7L, Money.of(new BigDecimal("100.00"), Currency.ARS)), 1)));
+                new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(REFERENCE, Money.of(new BigDecimal("100.00"), Currency.ARS)), 1)));
         when(registrationPort.registerApprovedMercadoPagoPayment(any(), any(), any(), any(), anyString())).thenAnswer(invocation -> {
             registered.set(true);
             return 1L;

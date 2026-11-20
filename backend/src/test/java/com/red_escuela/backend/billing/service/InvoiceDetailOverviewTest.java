@@ -319,8 +319,9 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
     private Long mercadoPagoPays(Long invoiceId, long amount) {
         String mpPaymentId = "mp-" + System.nanoTime();
+        java.util.UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoiceId, ars(amount));
         ProcessMpWebhookService service = new ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort,
-                id -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(invoiceId, ars(amount)), 1)),
+                id -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(publicReference, ars(amount)), 1)),
                 new MpWebhookSignatureVerifier("", true)));
         service.process("", "request-" + System.nanoTime(), mpPaymentId);
         return jdbc.queryForObject("select id from payment where gateway_payment_id = ?", Long.class, mpPaymentId);

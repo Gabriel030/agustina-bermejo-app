@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
 import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort;
+import com.red_escuela.backend.billing.operation.MercadoPagoCheckoutMatch;
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.shared.logging.LogSanitizer;
 import org.slf4j.Logger;
@@ -51,8 +52,15 @@ public class MercadoPagoWebhookRegistration {
             return;
         }
         ReportedGatewayAllocation reportedAllocation = approved.get().reportedAllocation();
-        registrationPort.registerApprovedMercadoPagoPayment(reportedAllocation.invoiceId(), reportedAllocation.amountApplied(),
+        Optional<MercadoPagoCheckoutMatch> checkout = registrationPort.findMercadoPagoCheckout(reportedAllocation.publicReference());
+        if (checkout.isEmpty()) {
+            log.warn("Webhook de Mercado Pago sin checkout emitido, no se acredita: pagoMp={}, referencia={}",
+                    LogSanitizer.sanitize(mpPaymentId), reportedAllocation.publicReference());
+            return;
+        }
+        Long invoiceId = checkout.get().invoiceId();
+        registrationPort.registerApprovedMercadoPagoPayment(invoiceId, reportedAllocation.amountApplied(),
                 approved.get().installments(), approved.get().cardType(), mpPaymentId);
-        log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, reportedAllocation.invoiceId(), reportedAllocation.amountApplied());
+        log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, invoiceId, reportedAllocation.amountApplied());
     }
 }

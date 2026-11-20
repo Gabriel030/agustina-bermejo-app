@@ -72,6 +72,8 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort registrationPort;
+    @Autowired
+    private com.red_escuela.backend.billing.operation.GatewayCheckoutRecording gatewayCheckoutRecording;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -355,9 +357,13 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = application.getAdmissionInvoice();
         entityManager.flush();
         String mpPaymentId = "mp-" + System.nanoTime();
+        java.util.UUID publicReference = java.util.UUID.randomUUID();
+        gatewayCheckoutRecording.recordMercadoPagoCheckout(new com.red_escuela.backend.billing.operation.NewGatewayCheckout(publicReference, invoice.getId(),
+                com.red_escuela.backend.shared.domain.NonNegativeMoney.of(invoice.getAmounts().outstandingAmount().value()), "pref-" + publicReference));
+        entityManager.flush();
         var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort,
                 id -> java.util.Optional.of(new com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment(
-                        new ReportedGatewayAllocation(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
+                        new ReportedGatewayAllocation(publicReference, invoice.getAmounts().outstandingAmount().value()), 1)),
                 new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true)));
 
         service.process("", "req", mpPaymentId);

@@ -86,6 +86,15 @@ public final class BillingTestFixtures {
                 invoiceId, amount, 1, null, "mp-fixture-" + UUID.randomUUID());
     }
 
+    public static UUID persistMercadoPagoCheckout(Long invoiceId, Money amount) {
+        UUID publicReference = UUID.randomUUID();
+        TransactionTemplate independentTransaction = new TransactionTemplate(bean(org.springframework.transaction.PlatformTransactionManager.class));
+        independentTransaction.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        independentTransaction.executeWithoutResult(status -> bean(com.red_escuela.backend.billing.operation.GatewayCheckoutRecording.class).recordMercadoPagoCheckout(
+                new com.red_escuela.backend.billing.operation.NewGatewayCheckout(publicReference, invoiceId, NonNegativeMoney.of(amount), "pref-" + publicReference)));
+        return publicReference;
+    }
+
     public static Long registerApprovedBankTransferPayment(Long invoiceId, Long reviewerPersonId) {
         return bean(com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort.class).registerApprovedBankTransferPayment(invoiceId, reviewerPersonId);
     }

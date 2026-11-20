@@ -169,7 +169,8 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
-        return serviceFetching(mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(invoiceId, ars(reportedAmount)), 1)),
+        java.util.UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoiceId, ars(reportedAmount));
+        return serviceFetching(mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(publicReference, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
     }
 
@@ -249,8 +250,9 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void theWebhookStoresTheCardTypeAndInstallmentsReportedByTheGateway() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
+        java.util.UUID publicReference = BillingTestFixtures.persistMercadoPagoCheckout(invoice.getId(), ars(BigDecimal.valueOf(10000)));
         ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
-                        new ReportedGatewayAllocation(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6, CardPaymentType.CREDIT)),
+                        new ReportedGatewayAllocation(publicReference, ars(BigDecimal.valueOf(10000))), 6, CardPaymentType.CREDIT)),
                 new MpWebhookSignatureVerifier("", true));
 
         transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
@@ -524,14 +526,18 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void anApprovedPaymentReportedForAnInvoiceThatDoesNotExistFailsAndRegistersNothing() {
+    @Tag("D-537")
+    void anApprovedPaymentWithAReferenceNoCheckoutWasIssuedForRegistersNothing(CapturedOutput output) {
         String mpPaymentId = "ghost-" + System.nanoTime();
-        ProcessMpWebhookService service = serviceReporting(Long.MAX_VALUE, BigDecimal.valueOf(10000));
+        java.util.UUID unknownReference = java.util.UUID.randomUUID();
+        ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
+                        new ReportedGatewayAllocation(unknownReference, ars(BigDecimal.valueOf(10000))), 1)),
+                new MpWebhookSignatureVerifier("", true));
 
-        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId)))
-                .isInstanceOf(com.red_escuela.backend.billing.exception.InvoiceNotFoundException.class);
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
 
         assertThat(mpPayments(mpPaymentId)).isEmpty();
+        assertThat(output.getOut()).contains("sin checkout emitido").contains("pagoMp=" + mpPaymentId);
     }
 
     @Test

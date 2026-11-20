@@ -6,18 +6,23 @@ import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.payment.domain.ApprovedPaymentRegistrationResult;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
 import com.red_escuela.backend.billing.operation.CardPaymentType;
+import com.red_escuela.backend.billing.operation.MercadoPagoCheckoutMatch;
 import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.operation.ApproveBankTransferReceiptCommand;
 import com.red_escuela.backend.billing.payment.operation.ApproveBankTransferReceiptOperation;
 import com.red_escuela.backend.billing.payment.operation.RegisterGatewayPaymentCommand;
 import com.red_escuela.backend.billing.payment.operation.RegisterGatewayPaymentOperation;
+import com.red_escuela.backend.billing.payment.repository.GatewayCheckoutRepository;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Component
 public class ApprovedPaymentRegistrationAdapter implements ApprovedPaymentRegistrationPort {
@@ -28,14 +33,17 @@ public class ApprovedPaymentRegistrationAdapter implements ApprovedPaymentRegist
     private final ApproveBankTransferReceiptOperation transferOperation;
     private final ReportedInvoiceLookup invoices;
     private final PaymentRepository payments;
+    private final GatewayCheckoutRepository checkouts;
 
     public ApprovedPaymentRegistrationAdapter(BillingOperationPipeline pipeline, RegisterGatewayPaymentOperation gatewayOperation,
-                                              ApproveBankTransferReceiptOperation transferOperation, ReportedInvoiceLookup invoices, PaymentRepository payments) {
+                                              ApproveBankTransferReceiptOperation transferOperation, ReportedInvoiceLookup invoices, PaymentRepository payments,
+                                              GatewayCheckoutRepository checkouts) {
         this.pipeline = pipeline;
         this.gatewayOperation = gatewayOperation;
         this.transferOperation = transferOperation;
         this.invoices = invoices;
         this.payments = payments;
+        this.checkouts = checkouts;
     }
 
     @Override
@@ -46,6 +54,14 @@ public class ApprovedPaymentRegistrationAdapter implements ApprovedPaymentRegist
     @Override
     public boolean isMercadoPagoPaymentRegistered(String mercadoPagoPaymentId) {
         return payments.existsByGatewayAndGatewayPaymentId(PaymentGatewayCode.MERCADO_PAGO, mercadoPagoPaymentId);
+    }
+
+    @Override
+    public Optional<MercadoPagoCheckoutMatch> findMercadoPagoCheckout(UUID publicReference) {
+        return checkouts.findByPublicReference(publicReference)
+                .filter(checkout -> checkout.getGateway() == PaymentGatewayCode.MERCADO_PAGO)
+                .map(checkout -> new MercadoPagoCheckoutMatch(checkout.getInvoiceId(), checkout.getAmount().value(),
+                        ApplicationTime.now().isAfter(checkout.getExpiresAt())));
     }
 
     @Override
