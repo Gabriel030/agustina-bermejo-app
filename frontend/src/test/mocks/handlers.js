@@ -67,15 +67,22 @@ export const handlers = [
       ),
     ),
   ),
-  http.put(`${API}/me/contact-consents`, () =>
-    HttpResponse.json({
+  http.put(`${API}/me/contact-consents`, async ({ request }) => {
+    const body = await request.json();
+    if (body.source !== undefined && body.source !== null && body.source !== 'PROFILE') {
+      return HttpResponse.json(
+        { code: 'CONSENT_SOURCE_NOT_ACCEPTED', requestId: 'req-test-0001', retryable: false, violations: [] },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json({
       channel: 'EMAIL',
       category: 'INSTITUTIONAL',
       granted: true,
       recordedAt: '2026-11-17T10:00:00Z',
       hasRecord: true,
-    }),
-  ),
+    });
+  }),
   http.get(`${API}/public/unsubscribe/:token`, () =>
     HttpResponse.json({ channel: 'EMAIL', category: 'PROMOTIONAL' }),
   ),

@@ -62,6 +62,16 @@ class MeContactConsentControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void entryWithoutRecordExposesNullRecordedAt() throws Exception {
+        Person person = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "me-consent-no-record");
+
+        mockMvc.perform(get("/me/contact-consents").header("Authorization", bearer(person)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.channel=='EMAIL' && @.category=='INSTITUTIONAL')].hasRecord").value(false))
+                .andExpect(jsonPath("$[?(@.channel=='EMAIL' && @.category=='INSTITUTIONAL')].recordedAt").value(org.hamcrest.Matchers.contains((Object) null)));
+    }
+
+    @Test
     void updatesOnlyOwnConsent() throws Exception {
         Person owner = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "me-consent-owner");
         Person other = BroadcastTestPersons.createStudentPerson(entityManager, roleRepository, "me-consent-other");
