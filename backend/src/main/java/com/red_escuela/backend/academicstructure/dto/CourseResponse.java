@@ -26,21 +26,29 @@ public class CourseResponse {
     private final Boolean full;
 
     public static CourseResponse from(Course course, long occupiedSeats) {
-        return baseBuilder(course).full(!course.hasCapacityFor(occupiedSeats)).build();
+        return from(course, course.priceAsMoney(), occupiedSeats);
     }
 
     public static CourseResponse from(Course course) {
-        return baseBuilder(course).build();
+        return from(course, course.priceAsMoney());
     }
 
-    private static CourseResponseBuilder baseBuilder(Course course) {
+    public static CourseResponse from(Course course, Money price, long occupiedSeats) {
+        return baseBuilder(course, price).full(!course.hasCapacityFor(occupiedSeats)).build();
+    }
+
+    public static CourseResponse from(Course course, Money price) {
+        return baseBuilder(course, price).build();
+    }
+
+    private static CourseResponseBuilder baseBuilder(Course course, Money price) {
         return CourseResponse.builder()
                 .id(course.getId())
                 .name(course.getName())
                 .termId(course.getTerm().getId())
                 .schedule(course.getSchedule())
                 .capacity(course.getCapacity())
-                .price(course.priceAsMoney())
+                .price(price)
                 .durationMonths(course.getDurationMonths())
                 .status(course.getIsActive() == null ? null : course.getIsActive().name())
                 .visibleInCatalog(course.isVisibleInCatalog())

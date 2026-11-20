@@ -3,6 +3,7 @@ package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.academicstructure.api.CourseSectionView;
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.enrollment.dto.WaitlistKind;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,13 +44,15 @@ class CourseSectionEnrollmentServiceTest {
     private CourseSubjectSectionEnrollmentRepository repository;
     @Mock
     private SectionFinder sectionFinder;
+    @Mock
+    private WaitlistPromoter waitlistPromoter;
 
     private CourseSectionEnrollmentService service;
     private CourseSubjectSection section;
 
     @BeforeEach
     void setUp() {
-        service = new CourseSectionEnrollmentService(repository, sectionFinder, CLOCK);
+        service = new CourseSectionEnrollmentService(repository, waitlistPromoter, CLOCK);
         section = new CourseSubjectSection();
         section.setId(40L);
     }
@@ -74,11 +78,8 @@ class CourseSectionEnrollmentServiceTest {
     void withdrawMarksActiveEnrollmentAsWithdrawnWithClockTimestamp(EnrollmentStatus status) {
         CourseSubjectSectionEnrollment active = enrollment(1L, status);
         when(repository.findById(1L)).thenReturn(Optional.of(active));
-        when(sectionFinder.findCourseSection(40L)).thenReturn(new CourseSectionView(40L, 5L, 6L, 7L, 1, "A"));
-        when(repository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED))
-                .thenReturn(Optional.empty());
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
         assertThat(active.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
         assertThat(active.getDroppedAt()).isEqualTo(LocalDateTime.of(2026, 5, 4, 15, 30));
@@ -91,51 +92,32 @@ class CourseSectionEnrollmentServiceTest {
         CourseSubjectSectionEnrollment inactive = enrollment(1L, status);
         when(repository.findById(1L)).thenReturn(Optional.of(inactive));
 
-        assertThatThrownBy(() -> service.withdraw(1L)).isInstanceOf(CannotWithdrawException.class);
+        assertThatThrownBy(() -> service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L))).isInstanceOf(CannotWithdrawException.class);
         assertThat(inactive.getStatus()).isEqualTo(status);
         assertThat(inactive.getDroppedAt()).isNull();
         verify(repository, never()).save(inactive);
-        verify(sectionFinder, never()).lockCourseSection(40L);
+        verifyNoInteractions(waitlistPromoter);
     }
 
     @Test
     void withdrawFailsWhenEnrollmentDoesNotExist() {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.withdraw(1L)).isInstanceOf(SectionEnrollmentNotFoundException.class);
+        assertThatThrownBy(() -> service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L))).isInstanceOf(SectionEnrollmentNotFoundException.class);
     }
 
+
+
     @Test
-    void withdrawPromotesOldestWaitlistedStudentAfterLockingTheSection() {
+    void withdrawAsksThePromoterForTheFreedSectionAfterSavingTheLeavingEnrollment() {
         CourseSubjectSectionEnrollment leaving = enrollment(1L, EnrollmentStatus.ENROLLED);
-        CourseSubjectSectionEnrollment next = enrollment(2L, EnrollmentStatus.WAITLISTED);
         when(repository.findById(1L)).thenReturn(Optional.of(leaving));
-        when(sectionFinder.findCourseSection(40L)).thenReturn(new CourseSectionView(40L, 5L, 6L, 7L, 1, "A"));
-        when(repository.countByCourseSubjectSectionIdAndStatusIn(40L, SEAT_HOLDING)).thenReturn(0L);
-        when(repository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED))
-                .thenReturn(Optional.of(next));
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
-        assertThat(next.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
-        InOrder order = inOrder(repository, sectionFinder);
+        InOrder order = inOrder(repository, waitlistPromoter);
         order.verify(repository).save(leaving);
-        order.verify(sectionFinder).lockCourseSection(40L);
-        order.verify(repository).save(next);
-    }
-
-    @Test
-    void withdrawWithEmptyWaitlistDoesNotPromoteAnyone() {
-        CourseSubjectSectionEnrollment leaving = enrollment(1L, EnrollmentStatus.IN_PROGRESS);
-        when(repository.findById(1L)).thenReturn(Optional.of(leaving));
-        when(sectionFinder.findCourseSection(40L)).thenReturn(new CourseSectionView(40L, 5L, 6L, 7L, 1, "A"));
-        when(repository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED))
-                .thenReturn(Optional.empty());
-
-        service.withdraw(1L);
-
-        verify(repository).save(leaving);
-        verify(sectionFinder).lockCourseSection(40L);
+        order.verify(waitlistPromoter).promoteNext(WaitlistKind.COURSE_SECTION, 40L);
     }
 
     @Test
@@ -143,38 +125,13 @@ class CourseSectionEnrollmentServiceTest {
         CourseSubjectSectionEnrollment waiting = enrollment(1L, EnrollmentStatus.WAITLISTED);
         when(repository.findById(1L)).thenReturn(Optional.of(waiting));
 
-        service.withdraw(1L);
+        service.withdraw(1L, EnrollmentChange.byStaff("Baja de prueba por secretaría", 99L));
 
         assertThat(waiting.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
         assertThat(waiting.getDroppedAt()).isEqualTo(LocalDateTime.of(2026, 5, 4, 15, 30));
         verify(repository).save(waiting);
-        verify(sectionFinder, never()).lockCourseSection(40L);
-        verify(repository, never()).findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED);
+        verifyNoInteractions(waitlistPromoter);
     }
 
-    @Test
-    void withdrawFromAnOverbookedSectionDoesNotPromoteTheWaitlistedStudent() {
-        CourseSubjectSectionEnrollment leaving = enrollment(1L, EnrollmentStatus.ENROLLED);
-        when(repository.findById(1L)).thenReturn(Optional.of(leaving));
-        when(sectionFinder.findCourseSection(40L)).thenReturn(new CourseSectionView(40L, 5L, 6L, 7L, 1, "A"));
-        when(repository.countByCourseSubjectSectionIdAndStatusIn(40L, SEAT_HOLDING)).thenReturn(1L);
 
-        service.withdraw(1L);
-
-        verify(repository, never()).findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED);
-    }
-
-    @Test
-    void withdrawFromASectionWithoutCapacityLimitPromotesTheWaitlistedStudent() {
-        CourseSubjectSectionEnrollment leaving = enrollment(1L, EnrollmentStatus.ENROLLED);
-        CourseSubjectSectionEnrollment next = enrollment(2L, EnrollmentStatus.WAITLISTED);
-        when(repository.findById(1L)).thenReturn(Optional.of(leaving));
-        when(sectionFinder.findCourseSection(40L)).thenReturn(new CourseSectionView(40L, 5L, 6L, 7L, null, "A"));
-        when(repository.findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(40L, EnrollmentStatus.WAITLISTED))
-                .thenReturn(Optional.of(next));
-
-        service.withdraw(1L);
-
-        assertThat(next.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
-    }
 }

@@ -51,23 +51,23 @@ export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Nombre *</label>
+              <label className="text-size-13 font-medium text-ink">Nombre *</label>
               <Input value={form.nombre} onChange={set('nombre')} placeholder="Ej: María" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Apellido *</label>
+              <label className="text-size-13 font-medium text-ink">Apellido *</label>
               <Input value={form.apellido} onChange={set('apellido')} placeholder="Ej: García" />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-ink">Email *</label>
+            <label className="text-size-13 font-medium text-ink">Email *</label>
             <Input type="email" value={form.email} onChange={set('email')} placeholder="correo@ejemplo.com" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Documento *</label>
+              <label className="text-size-13 font-medium text-ink">Documento *</label>
               <DocumentField
                 type={form.documentType}
                 number={form.dni}
@@ -76,7 +76,7 @@ export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Rol *</label>
+              <label className="text-size-13 font-medium text-ink">Rol *</label>
               <Select value={form.role} onValueChange={(v) => setForm((prev) => ({ ...prev, role: v }))}>
                 <SelectTrigger aria-label="Rol">
                   <SelectValue placeholder="Seleccioná un rol" />
@@ -92,26 +92,26 @@ export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Calle</label>
+              <label className="text-size-13 font-medium text-ink">Calle</label>
               <Input value={form.street} onChange={set('street')} placeholder="Av. Corrientes" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Número</label>
+              <label className="text-size-13 font-medium text-ink">Número</label>
               <Input value={form.number} onChange={set('number')} placeholder="1234" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Piso</label>
+              <label className="text-size-13 font-medium text-ink">Piso</label>
               <Input value={form.floor} onChange={set('floor')} placeholder="2B" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Ciudad</label>
+              <label className="text-size-13 font-medium text-ink">Ciudad</label>
               <Input value={form.city} onChange={set('city')} placeholder="Buenos Aires" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">CP</label>
+              <label className="text-size-13 font-medium text-ink">CP</label>
               <Input value={form.postalCode} onChange={set('postalCode')} placeholder="1000" />
             </div>
           </div>

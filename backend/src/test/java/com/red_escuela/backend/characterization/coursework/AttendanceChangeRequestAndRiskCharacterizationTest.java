@@ -111,9 +111,9 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
         getAs(preceptor, riskPath)
                 .andExpect(jsonPath("$.absencePercent").value(25.0))
                 .andExpect(jsonPath("$.libre").value(false));
-        getAs(classroom.teacher(), "/me/notifications")
+        getAs(classroom.teacher(), "/me/notifications?size=100")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.type=='ATTENDANCE_CHANGE_REQUEST_APPROVED')]").isNotEmpty());
+                .andExpect(jsonPath("$.items[?(@.type=='ATTENDANCE_CHANGE_REQUEST_APPROVED')]").isNotEmpty());
     }
 
     @Test
@@ -171,8 +171,8 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
 
         getAs(preceptor, "/section-enrollments/" + classroom.enrollment().getId() + "/attendance")
                 .andExpect(jsonPath("$[0].status").value("ABSENT"));
-        getAs(classroom.teacher(), "/me/notifications")
-                .andExpect(jsonPath("$[?(@.type=='ATTENDANCE_CHANGE_REQUEST_REJECTED')]").isNotEmpty());
+        getAs(classroom.teacher(), "/me/notifications?size=100")
+                .andExpect(jsonPath("$.items[?(@.type=='ATTENDANCE_CHANGE_REQUEST_REJECTED')]").isNotEmpty());
     }
 
     @Test

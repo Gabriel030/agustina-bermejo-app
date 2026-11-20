@@ -7,7 +7,7 @@ export function ViolationList({ violations, title }) {
         {violations.map((violation, index) => (
           <li key={`${violation.code ?? 'violation'}-${index}`}>
             <span className="text-ink">{violation.message}</span>
-            {violation.code && <span className="ml-1.5 text-[11px] text-ink-faint">{violation.code}</span>}
+            {violation.code && <span className="ml-1.5 text-size-11 text-ink-faint">{violation.code}</span>}
           </li>
         ))}
       </ul>

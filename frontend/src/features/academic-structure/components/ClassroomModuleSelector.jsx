@@ -37,7 +37,7 @@ export function ClassroomModuleSelector({ shift, selection, onChange }) {
               aria-label={`Módulo ${module.index + 1}, ${module.startTime} a ${module.endTime}`}
               onClick={() => handleToggle(module.index)}
               className={cn(
-                'flex min-h-11 flex-col items-center justify-center rounded-lg border px-2 py-1 text-[12px] transition-colors',
+                'flex min-h-11 flex-col items-center justify-center rounded-lg border px-2 py-1 text-size-12 transition-colors',
                 selected
                   ? 'border-accent bg-accent text-on-accent'
                   : 'border-surface-border bg-surface/50 text-ink hover:border-accent',
@@ -47,12 +47,12 @@ export function ClassroomModuleSelector({ shift, selection, onChange }) {
               <span className="opacity-80">
                 {module.startTime}–{module.endTime}
               </span>
-              {module.recessAfter && <span className="text-[10px] opacity-60">recreo después</span>}
+              {module.recessAfter && <span className="text-size-10 opacity-60">recreo después</span>}
             </button>
           );
         })}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[12px] text-ink-faint">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-size-12 text-ink-faint">
         <span aria-live="polite">
           {range
             ? `${range.startTime} a ${range.endTime} · ${selection.length} de ${MINIMUM_MODULES} módulos mínimos`
@@ -65,7 +65,7 @@ export function ClassroomModuleSelector({ shift, selection, onChange }) {
         )}
       </div>
       {hint && (
-        <p role="status" className="text-[12px] text-warning">
+        <p role="status" className="text-size-12 text-warning">
           {hint}
         </p>
       )}

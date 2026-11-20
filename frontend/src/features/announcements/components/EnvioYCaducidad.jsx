@@ -19,7 +19,7 @@ function Chip({ activo, onClick, disabled = false, children }) {
       aria-checked={activo}
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+      className={`rounded-xl border px-3.5 py-1.5 text-size-12-5 font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
         activo
           ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-on-accent'
           : 'border-border text-ink-soft hover:border-brand hover:text-ink'
@@ -35,7 +35,7 @@ export function EnvioYCaducidad({ abierto, onAbrir, valores, onChange, yaEnviado
 
   if (!abierto) {
     return (
-      <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-dashed border-border px-4 py-3 text-[12.5px] text-ink-soft">
+      <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-dashed border-border px-4 py-3 text-size-12-5 text-ink-soft">
         <span>
           {yaEnviadoEl ? 'Se envió el ' : 'Se envía '}
           <span className="font-bold text-ink">
@@ -63,7 +63,7 @@ export function EnvioYCaducidad({ abierto, onAbrir, valores, onChange, yaEnviado
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5" hidden={!!yaEnviadoEl}>
-        <span className="text-[13px] font-semibold text-ink" id="et-cuando">
+        <span className="text-size-13 font-semibold text-ink" id="et-cuando">
           ¿Cuándo se envía?
         </span>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="et-cuando">
@@ -79,7 +79,7 @@ export function EnvioYCaducidad({ abierto, onAbrir, valores, onChange, yaEnviado
           </Chip>
         </div>
         {soloReprogramar && (
-          <span className="text-[11.5px] text-ink-faint">
+          <span className="text-size-11-5 text-ink-faint">
             Para enviarlo ahora, creá un aviso nuevo. Acá solo podés cambiar la fecha de envío.
           </span>
         )}
@@ -96,13 +96,13 @@ export function EnvioYCaducidad({ abierto, onAbrir, valores, onChange, yaEnviado
               />
               <StatusPill tone="neutral">UTC−3</StatusPill>
             </div>
-            {scheduledFor && <span className="text-[11.5px] text-ink-faint">Sale el {fechaEnPalabras(scheduledFor)}.</span>}
+            {scheduledFor && <span className="text-size-11-5 text-ink-faint">Sale el {fechaEnPalabras(scheduledFor)}.</span>}
           </div>
         )}
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-ink" id="et-caducidad">
+        <span className="text-size-13 font-semibold text-ink" id="et-caducidad">
           ¿Hasta cuándo se muestra?
         </span>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="et-caducidad">

@@ -1,30 +1,53 @@
 import process from 'node:process'
 import { defineConfig, loadEnv } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
-import react from '@vitejs/plugin-react'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { manifest } from './pwa.manifest.js'
-import { resolveApiOrigin } from './csp.js'
+import { selectCriticalEntries } from './pwa.precache.js'
+import { readFileSync } from 'node:fs'
+import { extractInlineScripts, resolveApiOrigin } from './csp.js'
+
+const cspInHeader = (env) => env.VITE_CSP_IN_HEADER === 'true'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
-    'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.GITHUB_SHA ?? Date.now().toString()),
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.GITHUB_SHA || Date.now().toString()),
   },
   plugins: [
     {
       name: 'csp-api-origin',
       transformIndexHtml(html) {
         const env = loadEnv(mode, '.', 'VITE_')
-        return html.replace('__API_ORIGIN__', resolveApiOrigin(env.VITE_API_BASE_URL))
+        const withOrigin = html.replace('__API_ORIGIN__', resolveApiOrigin(env.VITE_API_BASE_URL))
+        if (!cspInHeader(env)) return withOrigin
+        return withOrigin.replace(/\s*<meta http-equiv="Content-Security-Policy"[^>]*>/, '')
       },
     },
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
+    {
+      name: 'theme-script-as-file',
+      apply: 'build',
+      buildStart() {
+        const env = loadEnv(mode, '.', 'VITE_')
+        if (!cspInHeader(env)) return
+        const source = extractInlineScripts(readFileSync('index.html', 'utf8'))[0]
+        this.emitFile({
+          type: 'asset',
+          fileName: 'theme-init.js',
+          source: source.replace('%VITE_DEFAULT_DESIGN%', env.VITE_DEFAULT_DESIGN ?? ''),
+        })
       },
-    }),
+      transformIndexHtml(html) {
+        const env = loadEnv(mode, '.', 'VITE_')
+        if (!cspInHeader(env)) return html
+        return html.replace(/<script>[\s\S]*?<\/script>/, '<script src="/theme-init.js"></script>')
+      },
+    },
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
     VitePWA({
       strategies: 'injectManifest',
@@ -36,6 +59,7 @@ export default defineConfig(({ mode }) => ({
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        manifestTransforms: [selectCriticalEntries],
       },
       devOptions: { enabled: false },
     }),

@@ -4,28 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, TriangleAlert } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EmptyState } from '@/components/EmptyState';
-import { useMisNotificaciones, useMarcarNotificacionLeida } from '@/features/notifications/hooks/useNotifications';
+import { Paginador } from '@/components/Paginador';
+import { NOTIFICATIONS_PAGE_SIZE, useMisNotificaciones, useNotificacionesNoLeidas, useMarcarNotificacionLeida } from '@/features/notifications/hooks/useNotifications';
 import { StaleStamp } from '@/components/offline/StaleStamp';
-import { useStaffBasePath } from '@/features/billing/monthly-run/useStaffBasePath';
+import { useActiveRole } from '@/hooks/useActiveRole';
+import { notificationDestination } from '@/lib/notificationDestination';
 import { TONO_NOTIFICACION, etiquetaNotificacion, tiempoRelativo } from '@/lib/notificaciones';
-
-const ANNOUNCEMENT_TYPES = new Set(['ANNOUNCEMENT_PUBLISHED', 'ANNOUNCEMENT_UPDATED']);
-
-const GRADUATION_TYPES = new Set([
-  'GRADUATION_REQUEST_CREATED',
-  'GRADUATION_REQUEST_PENDING_REVIEW',
-  'GRADUATION_REQUEST_VERIFIED',
-  'GRADUATION_REQUEST_DEBT_BLOCKED',
-  'GRADUATION_REQUEST_APPROVED',
-  'GRADUATION_REQUEST_REJECTED',
-  'GRADUATION_REQUEST_OUTDATED',
-]);
-
-const ATTENDANCE_CHANGE_TYPES = new Set(['ATTENDANCE_CHANGE_REQUEST_APPROVED', 'ATTENDANCE_CHANGE_REQUEST_REJECTED']);
-
-const OFFER_CYCLE_TYPES = new Set(['OFFER_CYCLE_APPROVED', 'OFFER_CYCLE_REJECTED']);
-
-const GRADE_TYPES =new Set(['GRADES_PUBLISHED', 'GRADE_CORRECTED']);
 
 const BORDE_TONO = {
   warning: 'border-l-warning',
@@ -44,70 +28,38 @@ const TEXTO_TONO = {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const staffBasePath = useStaffBasePath();
-  const { data: notificaciones, isError, isFetching, refetch, dataUpdatedAt } = useMisNotificaciones();
+  const { activeRole } = useActiveRole();
+  const [page, setPage] = useState(0);
+  const { data: notificaciones, isError, isFetching, refetch } = useMisNotificaciones({ page, enabled: open });
+  const { data: unread, isError: countFailed, isFetching: countFetching, dataUpdatedAt: countUpdatedAt } = useNotificacionesNoLeidas();
   const marcarLeida = useMarcarNotificacionLeida();
 
-  const lista = notificaciones ?? [];
-  const noLeidas = lista.filter((n) => !n.read).length;
+  const lista = notificaciones?.items ?? [];
+  const totalPages = notificaciones ? Math.max(1, Math.ceil(notificaciones.totalElements / (notificaciones.size || NOTIFICATIONS_PAGE_SIZE))) : 1;
+  const noLeidas = unread?.count ?? 0;
+  const badgeFailed = countFailed && unread === undefined;
   const loadFailed = isError && notificaciones === undefined;
+
+  function handleOpenChange(next) {
+    setOpen(next);
+    if (!next) setPage(0);
+  }
 
   function handleClick(n) {
     if (!n.read) marcarLeida.mutate(n.id);
-    if (ANNOUNCEMENT_TYPES.has(n.type) && n.relatedEntityId) {
-      setOpen(false);
-      navigate(`/alumno/inicio?aviso=${n.relatedEntityId}`);
-      return;
-    }
-    if (ATTENDANCE_CHANGE_TYPES.has(n.type)) {
-      setOpen(false);
-      navigate('/docente/tomar-asistencia?tab=pedidos');
-      return;
-    }
-    if (n.type === 'OFFER_CYCLE_SUBMITTED' && n.relatedEntityId) {
-      setOpen(false);
-      navigate(`/director/aprobaciones/oferta-academica/${n.relatedEntityId}`);
-      return;
-    }
-    if (OFFER_CYCLE_TYPES.has(n.type)) {
-      setOpen(false);
-      navigate(`${staffBasePath}/oferta-academica`);
-      return;
-    }
-    if (GRADE_TYPES.has(n.type)) {
-      setOpen(false);
-      navigate('/alumno/mis-carreras?tab=notas');
-      return;
-    }
-    if (GRADUATION_TYPES.has(n.type)) {
-      setOpen(false);
-      navigate('/alumno/mis-carreras');
-      return;
-    }
-    if (n.type === 'DRAFT_INVOICES_AWAITING_REVIEW' && n.relatedEntityId) {
-      setOpen(false);
-      navigate(`${staffBasePath}/emision-mensual/${n.relatedEntityId}/borradores`);
-      return;
-    }
-    if (n.type === 'PROGRAM_APPLICATION_RECEIVED') {
-      setOpen(false);
-      navigate(n.relatedEntityId ? `${staffBasePath}/solicitudes-de-ingreso/${n.relatedEntityId}` : `${staffBasePath}/solicitudes-de-ingreso`);
-      return;
-    }
-    if (n.type === 'PROGRAM_APPLICATION_APPROVED' && n.relatedEntityId) {
-      setOpen(false);
-      navigate(`/mis-solicitudes/${n.relatedEntityId}`);
-      return;
-    }
+    const destination = notificationDestination(n, activeRole);
+    if (!destination) return;
+    handleOpenChange(false);
+    navigate(destination);
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
           aria-label={
-            loadFailed
+            badgeFailed
               ? 'Notificaciones, no pudimos cargarlas'
               : noLeidas > 0
                 ? `Notificaciones, ${noLeidas} sin leer`
@@ -116,14 +68,14 @@ export function NotificationBell() {
           className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink-faint transition-transform hover:scale-105"
         >
           <Bell aria-hidden="true" className="h-[17px] w-[17px]" />
-          {loadFailed && (
+          {badgeFailed && (
             <span
               aria-hidden="true"
               data-testid="bell-error-indicator"
               className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-bg1 bg-warning"
             />
           )}
-          {!loadFailed && noLeidas > 0 && (
+          {!badgeFailed && noLeidas > 0 && (
             <span
               aria-hidden="true"
               className="absolute -right-1 -top-1 flex h-4 min-w-4 animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-on-accent motion-reduce:animate-none design-b:animate-none"
@@ -140,9 +92,9 @@ export function NotificationBell() {
         sideOffset={8}
         className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay backdrop-blur-[28px] backdrop-saturate-[1.6]"
       >
-        <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-[13px] font-semibold text-ink">
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-size-13 font-semibold text-ink">
           Notificaciones
-          <StaleStamp dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} isError={isError} hasData={notificaciones !== undefined} />
+          <StaleStamp dataUpdatedAt={countUpdatedAt} isFetching={countFetching} isError={countFailed} hasData={unread !== undefined} />
         </div>
         <div className="flex flex-col overflow-y-auto">
           {loadFailed ? (
@@ -189,6 +141,7 @@ export function NotificationBell() {
               );
             })
           )}
+          <Paginador page={page + 1} totalPages={totalPages} onChange={(next) => setPage(next - 1)} />
         </div>
       </PopoverContent>
     </Popover>

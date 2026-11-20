@@ -2,6 +2,12 @@ package com.red_escuela.backend.identity.controller;
 
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.academicstructure.CycleTestFixtures;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.identity.dto.ReactivateStudentRequest;
+import com.red_escuela.backend.identity.entity.StudentStatusChange;
+import com.red_escuela.backend.identity.entity.StudentStatusChangeType;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.AuthProvider;
@@ -170,11 +176,11 @@ class StudentControllerTest extends AbstractIntegrationTest {
         String preceptorToken = tokenWithRole("preceptor.motivo", "PRECEPTOR");
 
         mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + directorToken))
-                .andExpect(jsonPath("$[0].withdrawalReason").value("ABANDONO"));
+                .andExpect(jsonPath("$.items[0].withdrawalReason").value("ABANDONO"));
         mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + administrativeToken))
-                .andExpect(jsonPath("$[0].withdrawalReason").value("ABANDONO"));
+                .andExpect(jsonPath("$.items[0].withdrawalReason").value("ABANDONO"));
         mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + preceptorToken))
-                .andExpect(jsonPath("$[0].withdrawalReason").doesNotExist());
+                .andExpect(jsonPath("$.items[0].withdrawalReason").doesNotExist());
         mockMvc.perform(get("/students/{id}", student.getId()).header("Authorization", "Bearer " + administrativeToken))
                 .andExpect(jsonPath("$.motivoBaja").value("ABANDONO"))
                 .andExpect(jsonPath("$.detalleBaja").value("detalle"));
@@ -226,8 +232,8 @@ class StudentControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/students").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.dni=='40111222')].onboardingStatus").value("CONFIRMADO"))
-                .andExpect(jsonPath("$[?(@.dni=='40333444')]").isEmpty());
+                .andExpect(jsonPath("$.items[?(@.dni=='40111222')].onboardingStatus").value("CONFIRMADO"))
+                .andExpect(jsonPath("$.items[?(@.dni=='40333444')]").isEmpty());
     }
 
     @Test
@@ -241,8 +247,8 @@ class StudentControllerTest extends AbstractIntegrationTest {
                         .param("onboardingStatus", "PROSPECTO")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.dni=='40777888')].onboardingStatus").value("PROSPECTO"))
-                .andExpect(jsonPath("$[?(@.dni=='40555666')]").isEmpty());
+                .andExpect(jsonPath("$.items[?(@.dni=='40777888')].onboardingStatus").value("PROSPECTO"))
+                .andExpect(jsonPath("$.items[?(@.dni=='40555666')]").isEmpty());
     }
 
     @Test
@@ -269,6 +275,97 @@ class StudentControllerTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("40999000", "correcta123", "127.0.0.1")))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void reactivateRestoresActiveStatusKeepsEnrollmentsAndRecordsAudit() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("40999100", "40999100", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
+        CycleTestFixtures fixtures = new CycleTestFixtures(entityManager);
+        ProgramEnrollment completed = persistProgramEnrollment(student, fixtures, ProgramEnrollmentStatus.COMPLETED);
+        ProgramEnrollment withdrawn = persistProgramEnrollment(student, fixtures, ProgramEnrollmentStatus.WITHDRAWN);
+        String token = tokenWithRole("administrativo-reactivate", "ADMINISTRATIVO");
+        mockMvc.perform(post("/students/{id}/withdraw", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "dejó de asistir"))))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/students/{id}/reactivate", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new ReactivateStudentRequest("fue una baja por error"))))
+                .andExpect(status().isNoContent());
+
+        entityManager.flush();
+        entityManager.clear();
+        Student reloaded = entityManager.find(Student.class, student.getId());
+        assertThat(reloaded.getPerson().getStatus()).isEqualTo(StatusType.ACTIVE);
+        assertThat(reloaded.getWithdrawnAt()).isNull();
+        assertThat(loginUseCase.login(new LoginCommand("40999100", "correcta123", "127.0.0.1"))).isNotNull();
+        assertThat(entityManager.find(ProgramEnrollment.class, completed.getId()).getStatus()).isEqualTo(ProgramEnrollmentStatus.COMPLETED);
+        assertThat(entityManager.find(ProgramEnrollment.class, withdrawn.getId()).getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
+        List<StudentStatusChange> changes = entityManager.createQuery(
+                "select c from StudentStatusChange c where c.studentId = :id order by c.id", StudentStatusChange.class)
+                .setParameter("id", student.getId()).getResultList();
+        assertThat(changes).extracting(StudentStatusChange::getChangeType)
+                .containsExactly(StudentStatusChangeType.WITHDRAWN, StudentStatusChangeType.REACTIVATED);
+        StudentStatusChange reactivation = changes.get(1);
+        assertThat(reactivation.getReason()).isEqualTo("fue una baja por error");
+        assertThat(reactivation.getActorPersonId()).isNotNull();
+        assertThat(reactivation.getOccurredAt()).isNotNull();
+    }
+
+    @Test
+    void reactivateActiveStudentReturnsConflict() throws Exception {
+        Student student = persistStudent("40999101", "40999101", "correcta123", StudentOnboardingStatus.CONFIRMADO, persistInstitution());
+        String token = tokenWithRole("director-reactivate", "DIRECTOR");
+
+        mockMvc.perform(post("/students/{id}/reactivate", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new ReactivateStudentRequest("motivo suficiente"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("STUDENT_NOT_WITHDRAWN"));
+    }
+
+    @Test
+    void reactivateByPreceptorIsForbidden() throws Exception {
+        Student student = persistStudent("40999102", "40999102", "correcta123", StudentOnboardingStatus.CONFIRMADO, persistInstitution());
+        student.getPerson().setStatus(StatusType.DELETED);
+        entityManager.flush();
+        String token = tokenWithRole("preceptor-reactivate", "PRECEPTOR");
+
+        mockMvc.perform(post("/students/{id}/reactivate", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new ReactivateStudentRequest("motivo suficiente"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void reactivateWithTooShortReasonReturnsBadRequest() throws Exception {
+        Student student = persistStudent("40999103", "40999103", "correcta123", StudentOnboardingStatus.CONFIRMADO, persistInstitution());
+        student.getPerson().setStatus(StatusType.DELETED);
+        entityManager.flush();
+        String token = tokenWithRole("director-reactivate-short", "DIRECTOR");
+
+        mockMvc.perform(post("/students/{id}/reactivate", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new ReactivateStudentRequest("abcd"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    private ProgramEnrollment persistProgramEnrollment(Student student, CycleTestFixtures fixtures, ProgramEnrollmentStatus enrollmentStatus) {
+        ProgramEnrollment enrollment = new ProgramEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setProgram(fixtures.program());
+        enrollment.setStatus(enrollmentStatus);
+        enrollment.setEnrollmentDate(java.time.LocalDateTime.now().minusYears(2));
+        entityManager.persist(enrollment);
+        entityManager.flush();
+        return enrollment;
     }
 
     private Student persistStudentWithName(
@@ -304,8 +401,8 @@ class StudentControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/students").param("search", "garcia").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.dni=='41100001')]").isNotEmpty())
-                .andExpect(jsonPath("$[?(@.dni=='41100002')]").isEmpty());
+                .andExpect(jsonPath("$.items[?(@.dni=='41100001')]").isNotEmpty())
+                .andExpect(jsonPath("$.items[?(@.dni=='41100002')]").isEmpty());
     }
 
     @Test
@@ -317,8 +414,8 @@ class StudentControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/students").param("search", "41200001").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.dni=='41200001')]").isNotEmpty())
-                .andExpect(jsonPath("$[?(@.dni=='41200002')]").isEmpty());
+                .andExpect(jsonPath("$.items[?(@.dni=='41200001')]").isNotEmpty())
+                .andExpect(jsonPath("$.items[?(@.dni=='41200002')]").isEmpty());
     }
 
     @Test

@@ -18,27 +18,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.resttestclient.TestRestTemplate;
-import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
+import org.springframework.test.web.servlet.MockMvc;
 
-import org.springframework.web.client.ResourceAccessException;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@AutoConfigureTestRestTemplate
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
     @Autowired
-    private TestRestTemplate restTemplate;
+    private MockMvc mockMvc;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -81,7 +74,7 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void addingDocumentWithOversizedPdfReturns400() {
+    void addingDocumentWithOversizedPdfReturns400() throws Exception {
         institution = new Institution();
         institution.setName("Instituto de prueba");
         institution = institutionRepository.save(institution);
@@ -116,23 +109,17 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
 
         String token = jwtService.generateAccessToken(preceptor);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("file", new ByteArrayResource(new byte[6 * 1024 * 1024]) {
-            @Override
-            public String getFilename() {
-                return "dni.pdf";
-            }
-        });
-        body.add("type", "DNI_FRENTE");
+        MockMultipartFile file = new MockMultipartFile("file", "dni.pdf", "application/pdf", new byte[6 * 1024 * 1024]);
 
-        try {
-            ResponseEntity<String> response = restTemplate.postForEntity(
-                    "/prospects/{id}/documents", new HttpEntity<>(body, headers), String.class, student.getId());
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        } catch (ResourceAccessException e) {
-            assertThat(e.getMessage()).containsIgnoringCase("Broken pipe");
-        }
+        mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
+                        .file(file)
+                        .param("type", "DNI_FRENTE")
+                        .with(request -> {
+                            request.setContent(new byte[6 * 1024 * 1024 + 1024]);
+                            return request;
+                        })
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MAX_UPLOAD_SIZE_EXCEEDED"));
     }
 }

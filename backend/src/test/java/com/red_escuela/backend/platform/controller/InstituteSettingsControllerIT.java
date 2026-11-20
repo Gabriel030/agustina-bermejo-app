@@ -20,7 +20,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -61,7 +60,7 @@ class InstituteSettingsControllerIT extends AbstractIntegrationTest {
     @Autowired
     private FeatureSnapshotHolder featureSnapshotHolder;
 
-    @MockitoBean
+    @Autowired
     private OnlinePaymentDependencyPort onlinePaymentDependencies;
 
     private String directorToken;
@@ -76,7 +75,7 @@ class InstituteSettingsControllerIT extends AbstractIntegrationTest {
         administrativeToken = tokenOf("ADMINISTRATIVO", "Ana", "Administrativa");
         studentToken = tokenOf("ALUMNO", "Alma", "Alumna");
         platformAdminToken = tokenOf("PLATFORM_ADMIN", "Paula", "Plataforma");
-        Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(0L);
+        Mockito.doReturn(0L).when(onlinePaymentDependencies).countOpenOnlineDependencies();
         instituteSnapshotHolder.refresh();
         featureSnapshotHolder.refresh();
     }
@@ -188,7 +187,7 @@ class InstituteSettingsControllerIT extends AbstractIntegrationTest {
 
     @Test
     void lastDigitalMethodWithOpenOnlineInvoicesReturns409() throws Exception {
-        Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(4L);
+        Mockito.doReturn(4L).when(onlinePaymentDependencies).countOpenOnlineDependencies();
 
         mockMvc.perform(put("/institute-settings/payment-methods/BANK_TRANSFER").header("Authorization", "Bearer " + directorToken)
                         .contentType(MediaType.APPLICATION_JSON).content(DISABLE_TRANSFER))

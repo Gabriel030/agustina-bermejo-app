@@ -54,7 +54,7 @@ function creditBalance(available = '0.00') {
 function renderPage(route = '/', receipts = [pendingReceipt]) {
   server.use(
     http.get(`${API}/students`, () =>
-      HttpResponse.json([{ id: 2, personId: 20, username: 'macosta', nombre: 'Martina', apellido: 'Acosta', dni: '28016166', email: 'martina.acosta@example.com', emailVerified: true, status: 'ACTIVO', onboardingStatus: 'CONFIRMADO' }]),
+      HttpResponse.json({ items: [{ id: 2, personId: 20, username: 'macosta', nombre: 'Martina', apellido: 'Acosta', dni: '28016166', email: 'martina.acosta@example.com', emailVerified: true, status: 'ACTIVO', onboardingStatus: 'CONFIRMADO' }], page: 0, size: 25, totalElements: 1 }),
     ),
     http.get(`${API}/bank-transfer-receipts`, () =>
       receipts === null ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }) : HttpResponse.json(receipts),

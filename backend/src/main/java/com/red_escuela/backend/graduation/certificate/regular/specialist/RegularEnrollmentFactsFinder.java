@@ -5,6 +5,7 @@ import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
+import com.red_escuela.backend.graduation.certificate.regular.exception.RegularEnrollmentNotFoundException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,6 +17,14 @@ public class RegularEnrollmentFactsFinder {
     public RegularEnrollmentFactsFinder(ProgramEnrollmentFinder programEnrollmentFinder, CourseEnrollmentFinder courseEnrollmentFinder) {
         this.programEnrollmentFinder = programEnrollmentFinder;
         this.courseEnrollmentFinder = courseEnrollmentFinder;
+    }
+
+    public RegularEnrollmentFacts findOwnedBy(RegularityKind kind, Long enrollmentId, Long studentId) {
+        RegularEnrollmentFacts facts = find(kind, enrollmentId);
+        if (!facts.student().getId().equals(studentId)) {
+            throw new RegularEnrollmentNotFoundException();
+        }
+        return facts;
     }
 
     public RegularEnrollmentFacts find(RegularityKind kind, Long enrollmentId) {

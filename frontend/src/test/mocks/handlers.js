@@ -32,6 +32,9 @@ const personResponse = (overrides = {}) => ({
  * body (ver docs/context/backend.md) — acá se replica ese contrato a propósito.
  */
 export const handlers = [
+  http.get(`${API}/regular-certificate-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/graduation-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/regular-certificates`, () => HttpResponse.json([])),
   http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
   http.get(`${API}/institution/academic-settings`, () =>
     HttpResponse.json({
@@ -40,6 +43,7 @@ export const handlers = [
       justificationDeadlineBusinessDays: 5,
     }),
   ),
+  http.post(`${API}/cancel-email-change`, () => new HttpResponse(null, { status: 200 })),
   http.post(`${API}/auth/login`, () =>
     HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
   ),
@@ -50,11 +54,130 @@ export const handlers = [
   http.post(`${API}/auth/forgot-password`, () => new HttpResponse(null, { status: 202 })),
   http.post(`${API}/auth/verify-reset-code`, () => HttpResponse.json({ resetToken: 'reset-token-1' })),
   http.post(`${API}/auth/reset-password`, () => new HttpResponse(null, { status: 204 })),
+  http.get(`${API}/me/contact-consents`, () =>
+    HttpResponse.json(
+      ['EMAIL', 'WHATSAPP'].flatMap((channel) =>
+        ['INSTITUTIONAL', 'PROMOTIONAL'].map((category) => ({
+          channel,
+          category,
+          granted: false,
+          recordedAt: '2026-11-01T10:00:00Z',
+          hasRecord: true,
+        })),
+      ),
+    ),
+  ),
+  http.put(`${API}/me/contact-consents`, async ({ request }) => {
+    const body = await request.json().catch(() => ({}));
+    if (body.source !== undefined && body.source !== null && body.source !== 'PROFILE') {
+      return HttpResponse.json(
+        { code: 'CONSENT_SOURCE_NOT_ACCEPTED', requestId: 'req-test-0001', retryable: false, violations: [] },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json({
+      channel: 'EMAIL',
+      category: 'INSTITUTIONAL',
+      granted: true,
+      recordedAt: '2026-11-17T10:00:00Z',
+      hasRecord: true,
+    });
+  }),
+  http.get(`${API}/public/unsubscribe/:token`, () =>
+    HttpResponse.json({ channel: 'EMAIL', category: 'PROMOTIONAL' }),
+  ),
+  http.post(`${API}/public/unsubscribe/:token`, () => new HttpResponse(null, { status: 200 })),
+  http.get(`${API}/broadcasts`, () =>
+    HttpResponse.json({
+      items: [
+        {
+          id: 1,
+          name: 'Aviso de inicio de clases',
+          category: 'INSTITUTIONAL',
+          channel: 'EMAIL',
+          status: 'CONFIRMED',
+          createdAt: '2026-11-17T10:00:00Z',
+          confirmedAt: '2026-11-17T10:05:00Z',
+          createdByName: 'Laura Gómez',
+          confirmedByName: 'Laura Gómez',
+          recipientCounts: { PENDING: 0, QUEUED: 1, SENT: 0, FAILED: 0, EXCLUDED: 0, DONE: 0, SKIPPED: 0, INVALID_NUMBER: 0 },
+        },
+      ],
+      page: 0,
+      size: 20,
+      totalElements: 1,
+    }),
+  ),
+  http.get(`${API}/broadcasts/:id`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id),
+      name: 'Aviso de inicio de clases',
+      category: 'INSTITUTIONAL',
+      channel: 'EMAIL',
+      status: 'CONFIRMED',
+      subject: 'Inicio de clases',
+      bodyText: 'Las clases comienzan el lunes.',
+      createdAt: '2026-11-17T10:00:00Z',
+      confirmedAt: '2026-11-17T10:05:00Z',
+      recipientCounts: { PENDING: 0, QUEUED: 1, SENT: 0, FAILED: 0, EXCLUDED: 0, DONE: 0, SKIPPED: 0, INVALID_NUMBER: 0 },
+      createdByName: 'Laura Gómez',
+      confirmedByName: 'Laura Gómez',
+      estimatedCompletionDate: '2026-11-18',
+    }),
+  ),
+  http.get(`${API}/broadcasts/:id/recipients`, () =>
+    HttpResponse.json({
+      items: [{ personId: 10, fullName: 'Ana Pérez', status: 'QUEUED', addressMasked: 'a***@example.com' }],
+      page: 0,
+      size: 50,
+      totalElements: 1,
+    }),
+  ),
+  http.post(`${API}/broadcasts/:id/confirm`, ({ params }) =>
+    HttpResponse.json({ id: Number(params.id), status: 'CONFIRMED' }),
+  ),
+  http.post(`${API}/broadcasts/:id/cancel`, ({ params }) =>
+    HttpResponse.json({ id: Number(params.id), status: 'CANCELLED' }),
+  ),
   http.get(`${API}/me`, () => HttpResponse.json(personResponse({ dni: '' }))),
   http.put(`${API}/me`, () => HttpResponse.json(personResponse())),
   http.post(`${API}/auth/register`, () =>
     HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }, { status: 201 }),
   ),
+  http.get(`${API}/legal/documents/current`, () =>
+    HttpResponse.json({
+      documents: [
+        { type: 'TERMS', version: '2026-11-01', path: '/legal/terminos' },
+        { type: 'PRIVACY', version: '2026-11-01', path: '/legal/privacidad' },
+      ],
+    }),
+  ),
+  http.get(`${API}/me/legal-acceptances/pending`, () =>
+    HttpResponse.json({
+      documents: [],
+      suggestedDeadline: '2026-11-30',
+      gracePeriodExpired: false,
+      guardianConfirmationRequired: false,
+    }),
+  ),
+  http.post(`${API}/me/legal-acceptances`, () =>
+    HttpResponse.json({
+      documents: [],
+      suggestedDeadline: '2026-11-30',
+      gracePeriodExpired: false,
+      guardianConfirmationRequired: false,
+    }),
+  ),
+  http.post(`${API}/me/legal-acceptances/guardian-confirmation/resend`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API}/auth/legal/guardian-confirmation`, () => new HttpResponse(null, { status: 204 })),
+  http.get(`${API}/me/newsletter-preference`, () =>
+    HttpResponse.json({ optedIn: false, updatedAt: '2026-11-01T12:00:00Z' }),
+  ),
+  http.put(`${API}/me/newsletter-preference`, async ({ request }) => {
+    const body = await request.json().catch(() => ({}));
+    const optedIn = body.optedIn ?? false;
+    return HttpResponse.json({ optedIn, updatedAt: '2026-11-13T12:00:00Z' });
+  }),
   http.get(`${API}/institutions`, () => HttpResponse.json([{ id: 1, name: 'Instituto de prueba' }])),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
   http.get(`${API}/programs/:id`, ({ params }) =>
@@ -93,6 +216,15 @@ export const handlers = [
   http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: { amount: '8000.00', currency: 'ARS' } })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+  http.get(`${API}/waitlists`, () => HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 })),
+  http.get(`${API}/waitlists/:kind/:id`, () => HttpResponse.json({ code: 'WAITLIST_QUEUE_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
+  http.post(`${API}/waitlists/:kind/entries/:enrollmentId/promote`, () => HttpResponse.json({})),
+  http.post(`${API}/waitlists/:kind/entries/:enrollmentId/prioritize`, () => HttpResponse.json({})),
+  http.post(`${API}/waitlists/:kind/entries/:enrollmentId/remove`, () => HttpResponse.json({})),
+  http.get(`${API}/waitlists/:kind/:id/history`, () => HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 })),
+  http.post(`${API}/waitlists/:kind/entries/:enrollmentId/promote`, () => new HttpResponse(null, { status: 200 })),
+  http.post(`${API}/waitlists/:kind/entries/:enrollmentId/prioritize`, () => new HttpResponse(null, { status: 200 })),
+  http.post(`${API}/waitlists/:kind/entries/:enrollmentId/remove`, () => new HttpResponse(null, { status: 200 })),
   http.get(`${API}/program-enrollment-applications/pending`, () => HttpResponse.json([])),
   http.get(`${API}/program-enrollment-applications/history`, () => HttpResponse.json({ items: [], totalElements: 0 })),
   http.get(`${API}/program-enrollment-applications/:id`, () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
@@ -145,7 +277,36 @@ export const handlers = [
   http.post(`${API}/me/course-enrollments`, () =>
     HttpResponse.json({ id: 1, paymentStatus: 'PENDING_REVIEW' }, { status: 201 }),
   ),
-  http.get(`${API}/me/notifications`, () => HttpResponse.json([])),
+  http.get(`${API}/me/regular-certificates/eligibility`, ({ request }) => {
+    const url = new URL(request.url);
+    return HttpResponse.json({
+      kind: url.searchParams.get('kind') ?? 'PROGRAM',
+      enrollmentId: Number(url.searchParams.get('enrollmentId') ?? 1),
+      regular: true,
+      reasons: [],
+      attendanceControlled: true,
+      billingMode: 'OFF',
+      institutionallyRegular: true,
+      paymentStanding: 'VERIFIED',
+    });
+  }),
+  http.get(`${API}/me/regular-certificates`, ({ request }) => {
+    const url = new URL(request.url);
+    return HttpResponse.json({
+      kind: url.searchParams.get('kind') ?? 'PROGRAM',
+      enrollmentId: Number(url.searchParams.get('enrollmentId') ?? 1),
+      state: 'AVAILABLE',
+      staffConfirmationRequired: true,
+      certificate: null,
+      pendingRequest: null,
+      unavailableType: null,
+      rejectionReason: null,
+      reasons: [],
+      history: [],
+    });
+  }),
+  http.get(`${API}/me/notifications`, () => HttpResponse.json({ items: [], page: 0, size: 10, totalElements: 0 })),
+  http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json({ count: 0 })),
   http.get(`${API}/me/schedule`, () => HttpResponse.json({ generatedAt: '2026-11-05T12:00:00', items: [] })),
   http.get(`${API}/me/documents`, () => HttpResponse.json([])),
   http.get(`${API}/me/bank-transfer-receipts`, () => HttpResponse.json([])),
@@ -169,7 +330,18 @@ export const handlers = [
   ),
   http.get(`${API}/me/teaching-sections`, () => HttpResponse.json([])),
   http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
-  http.get(`${API}/students`, () => HttpResponse.json([])),
+  http.get(`${API}/me/course-enrollments/:id`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id),
+      courseId: 1,
+      courseName: 'Curso de prueba',
+      status: 'IN_PROGRESS',
+      enrollmentDate: '2026-03-01T10:00:00',
+      completionDate: null,
+      subjects: [],
+    }),
+  ),
+  http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
   http.get(`${API}/students/:id/documents`, () => HttpResponse.json([])),
   http.get(`${API}/terms`, () => HttpResponse.json([])),
   http.get(`${API}/subjects`, () => HttpResponse.json([])),

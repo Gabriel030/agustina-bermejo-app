@@ -142,7 +142,7 @@ public class ClosureRequirementsCalculator {
         Optional<CourseworkOutcome> calculated = scheme == null ? Optional.empty()
                 : outcomeCalculator.calculate(scheme, items, current, maxFinalExamAttempts);
         PrerequisiteGatedOutcome gated = outcomeCalculator.promotionPolicy()
-                .restrictPromotionWhenPrerequisitesUnmet(calculated, () -> prerequisitesMet);
+                .restrictApprovalWhenPrerequisitesUnmet(calculated, () -> prerequisitesMet);
         boolean promotionCandidate = calculated.filter(CourseworkOutcome::isPromotion).isPresent();
         var finalCondition = closureConditionPolicy.decideFinalCondition(
                 gated.outcome(), gated.forcedFinalCondition().isPresent(), current, free, payments, documentsComplete);

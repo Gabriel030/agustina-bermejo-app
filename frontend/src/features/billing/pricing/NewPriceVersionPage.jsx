@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
 import { InfoTip } from '@/components/charts/InfoTip';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useTerminos } from '@/features/academic-structure';
 import { FEE_TYPE_LABELS, formatDate, formatMoney, formatSignedMoney, todayIsoDate } from '@/lib/billing';
-import { detailPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { detailPath } from '../authorization/authorizationRequests';
 import { RadioChoice } from '../discounts/RadioChoice';
 import { ViolationList } from '../discounts/ViolationList';
 import { useOfferNames } from '../hooks/useOfferNames';
@@ -74,8 +74,7 @@ function WhatHappensPanel({ lines }) {
 export function NewPriceVersionPage() {
   const { priceId } = useParams();
   const navigate = useNavigate();
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const listPath = `/${roleBase}/precios`;
   const prices = usePrices();
@@ -96,12 +95,11 @@ export function NewPriceVersionPage() {
   const [serverViolations, setServerViolations] = useState([]);
 
   const price = (prices.data ?? []).find((item) => String(item.priceId) === priceId);
-  const currency = price?.currency ?? 'ARS';
+  const currency = String(price?.currency ?? 'ARS');
   const appliesToLectiveYear = lectiveYear === NO_YEAR ? null : lectiveYear;
   const start = startMode === 'today' ? today : effectiveFrom;
-  const form = { amount, discountKind, discountValue, effectiveFrom: start, reason };
-  const complete = isFormComplete(form);
-  const computed = amount === '' ? null : computeFinalAmount(form);
+  const complete = isFormComplete({ amount, discountKind, discountValue, effectiveFrom: start, reason });
+  const computed = amount === '' ? null : computeFinalAmount({ amount, discountKind, discountValue, effectiveFrom: start, reason });
   const termYears = useMemo(() => (terms.data ?? []).map((term) => Number(term.year)), [terms.data]);
   const yearOptions = lectiveYearOptions(today, termYears);
 
@@ -252,7 +250,7 @@ export function NewPriceVersionPage() {
           {startMode === 'date' && (
             <Input aria-label="Fecha de vigencia" type="date" min={today} className="max-w-[200px]" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} />
           )}
-          <p className="text-[12px] text-ink-faint">Rige desde el {formatDate(start)}.</p>
+          <p className="text-size-12 text-ink-faint">Rige desde el {formatDate(start)}.</p>
         </div>
 
         <div className="flex flex-col gap-1.5">

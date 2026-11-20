@@ -12,6 +12,7 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.specialist.DemoLearnerAccountsSeeder;
 import com.red_escuela.backend.identity.specialist.LocalSeedRunner;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
+import com.red_escuela.backend.testsupport.NightlyTest;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles({"test", "demo"})
 @TestPropertySource(properties = {"demo.dataset=ci", "demo.seed.enabled=false"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@NightlyTest(reason = "Seeds the demo dataset through the real HTTP API; guards demo data only, not product behavior")
 @SlowTest(reason = "Seeds the demo academic base through the real HTTP API of a started application")
 class DemoSeedIT extends AbstractIntegrationTest {
     private static final List<String> DEMO_USERS = List.of("alumno.demo", "docente.demo", "preceptor.demo", "administrativo.demo", "director.demo");
@@ -162,6 +164,19 @@ class DemoSeedIT extends AbstractIntegrationTest {
         for (int index = 0; index < dataset.studentCount(); index++) {
             assertThat(api.get(DemoPeopleSeedStep.studentUsername(index), "/me").path("id").asLong()).isPositive();
         }
+    }
+
+    @Test
+    void everySeededStudentHasStudentRoleAndUniqueEightDigitDocument() {
+        DemoDataset dataset = DemoDataset.of(DemoDataset.CI);
+        for (int index = 0; index < dataset.studentCount(); index++) {
+            String username = DemoPeopleSeedStep.studentUsername(index);
+            assertThat(api.get(username, "/me").path("roles").valueStream().map(role -> role.asString("")).toList())
+                    .contains("ALUMNO");
+            assertThat(jdbcTemplate.queryForObject("select dni from person where username = ?", String.class, username))
+                    .matches("\\d{8}");
+        }
+        assertThat(jdbcTemplate.queryForList("select dni from person where dni is not null group by dni having count(*) > 1")).isEmpty();
     }
 
     @Test

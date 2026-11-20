@@ -88,7 +88,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
         administrativeToken = tokenWithRole("ADMINISTRATIVO");
         String response = mockMvc.perform(post("/programs").header("Authorization", "Bearer " + administrativeToken).contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("name", "Carrera de lectura " + System.nanoTime(), "totalYears", 3, "totalCreditsRequired", 100,
-                                "price", Map.of("amount", 100000, "currency", "ARS")))))
+                                "price", Map.of("amount", 100000, "currency", "ARS"), "enrollmentFeeAmount", Map.of("amount", 50000, "currency", "ARS")))))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         programId = objectMapper.readTree(response).get("id").asLong();
         priceId = jdbc.queryForObject("select id from price where program_id = ? and fee_type = 'MONTHLY_INSTALLMENT'", Long.class, programId);

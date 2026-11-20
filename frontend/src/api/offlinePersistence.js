@@ -1,8 +1,10 @@
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { del, get, set } from 'idb-keyval';
-import { buildAad, createEncryptedStorage, decryptText, encryptText } from './offlineCrypto';
+import { del, get, keys, set } from 'idb-keyval';
+import { buildAad, decryptText, encryptText } from './offlineCrypto';
+import { OFFLINE_ENTRY_PREFIX, createOfflineQueryPersister } from './offlineQueryStore';
 import { PROFILE_SLOT, createIdbKeyVault, hasWebCrypto } from './offlineKeyVault';
+import { hasSessionHint } from './sessionHint';
 
+export { OFFLINE_ENTRY_PREFIX };
 export const OFFLINE_CACHE_KEY = 'offline-query-cache';
 export const OFFLINE_OWNER_KEY = 'offline-query-cache-owner';
 export const OFFLINE_PROFILE_KEY = 'offline-session-profile';
@@ -26,38 +28,48 @@ const vault = createIdbKeyVault();
 
 const readOwner = () => safely(() => get(OFFLINE_OWNER_KEY), undefined);
 
-const storagePersister = createAsyncStoragePersister({
-  key: OFFLINE_CACHE_KEY,
-  storage: createEncryptedStorage({
+const rawStorage = {
+  getItem: (key) => safely(() => get(key), null),
+  setItem: (key, value) => safely(() => set(key, value), undefined),
+  removeItem: (key) => safely(() => del(key), undefined),
+  keys: () => safely(() => keys(), []),
+};
+
+export function createOfflinePersister(options = {}) {
+  const store = createOfflineQueryPersister({
     vault,
+    rawStorage,
     scope: OFFLINE_BUSTER,
     resolveUserId: readOwner,
-    rawStorage: {
-      getItem: (key) => safely(() => get(key), null),
-      setItem: (key, value) => safely(() => set(key, value), undefined),
-      removeItem: (key) => safely(() => del(key), undefined),
+    manifestKey: OFFLINE_CACHE_KEY,
+    ...options,
+  });
+  return {
+    ...store,
+    restoreClient: async () => {
+      if (!hasSessionHint()) {
+        await clearOfflineCache();
+        return undefined;
+      }
+      return store.restoreClient();
     },
-  }),
-});
+  };
+}
 
-export const offlinePersister = {
-  ...storagePersister,
-  restoreClient: async () => {
-    if (!localStorage.getItem('refreshToken')) {
-      await clearOfflineCache();
-      return undefined;
-    }
-    return storagePersister.restoreClient();
-  },
-};
+export const offlinePersister = createOfflinePersister();
 
 export const offlineDehydrateOptions = {
   shouldDehydrateQuery: (query) => query.state.status === 'success' && query.meta?.offline === true,
 };
 
 export async function clearOfflineCache() {
+  offlinePersister.forget();
   await safely(() => vault.deleteAll(), undefined);
+  const entryNames = (await rawStorage.keys()).filter(
+    (name) => typeof name === 'string' && name.startsWith(OFFLINE_ENTRY_PREFIX),
+  );
   await Promise.all([
+    ...entryNames.map((name) => safely(() => del(name), undefined)),
     safely(() => del(OFFLINE_CACHE_KEY), undefined),
     safely(() => del(OFFLINE_OWNER_KEY), undefined),
     safely(() => del(OFFLINE_PROFILE_KEY), undefined),
@@ -65,6 +77,8 @@ export async function clearOfflineCache() {
 }
 
 export async function purgeOfflineData(queryClient) {
+  queryClient?.cancelQueries();
+
   try {
     await clearOfflineCache();
   } finally {
@@ -78,6 +92,7 @@ export async function claimOfflineCache(userId, queryClient) {
     await purgeOfflineData(queryClient);
   }
   await safely(() => set(OFFLINE_OWNER_KEY, userId), undefined);
+  return owner !== undefined && owner !== userId;
 }
 
 export async function storeOfflineProfile(profile) {

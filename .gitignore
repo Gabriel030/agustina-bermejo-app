@@ -8,6 +8,7 @@ backend/data/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+deploy/.env
 frontend/coverage/
 .vite/
 
@@ -17,3 +18,7 @@ frontend/coverage/
 # Perf
 perf/out/
 perf/results.json
+deploy/.env.staging
+
+__pycache__/
+*.pyc

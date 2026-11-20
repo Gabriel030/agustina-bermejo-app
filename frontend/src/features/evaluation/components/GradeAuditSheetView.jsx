@@ -18,12 +18,12 @@ export function GradeAuditSheetView({ student, column, cell, onBack }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Button variant="link" size="inline" type="button" onClick={onBack} className="w-fit text-left text-[13px] font-semibold">
+      <Button variant="link" size="inline" type="button" onClick={onBack} className="w-fit text-left text-size-13 font-semibold">
         {`← ${student.lastname}, ${student.name}`}
       </Button>
       <div>
         <h3 className="font-heading text-lg font-semibold text-ink">{`Historial · ${label}`}</h3>
-        <p className="text-[12.5px] text-ink-faint">Correcciones de esta nota</p>
+        <p className="text-size-12-5 text-ink-faint">Correcciones de esta nota</p>
       </div>
       {isLoading ? (
         <div aria-busy="true" aria-label="Cargando historial" className="flex flex-col gap-2">
@@ -43,12 +43,12 @@ export function GradeAuditSheetView({ student, column, cell, onBack }) {
           <ul className="flex flex-col gap-2">
             {entries.map((entry) => (
               <li key={entry.id} className="flex flex-col gap-1 rounded-2xl border border-border p-3">
-                <div className="flex items-center justify-between gap-2 text-[12.5px] text-ink-faint">
+                <div className="flex items-center justify-between gap-2 text-size-12-5 text-ink-faint">
                   <span>{formatAuditDate(entry.changedAt)}</span>
                   <span>Dirección</span>
                 </div>
                 <div className="text-sm font-semibold text-ink">{`${formatScore(entry.previousScore)} → ${formatScore(entry.newScore)}`}</div>
-                <p className="whitespace-pre-wrap text-[13px] text-ink-soft">{entry.reason}</p>
+                <p className="whitespace-pre-wrap text-size-13 text-ink-soft">{entry.reason}</p>
               </li>
             ))}
           </ul>

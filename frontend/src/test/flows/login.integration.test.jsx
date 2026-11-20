@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { profileFixture } from '@/test/fixtures/profile';
+import { contractList } from '@/test/fixtures/fromContract';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -45,6 +46,16 @@ async function login() {
   await user.click(screen.getByRole('button', { name: /ingresar/i }));
 }
 
+const DIRECTOR_HOME_SOURCES = [
+  '/graduation-requests',
+  '/academic-offering-cycles',
+  '/section-evaluation-configs',
+  '/director-approval-requests',
+  '/commission-closures',
+  '/exam-boards',
+  '/authorization-requests',
+];
+
 describe('flujo de login end-to-end', () => {
   it('login válido redirige a /preceptor/inicio para un usuario con rol PRECEPTOR (mock default)', async () => {
     renderApp();
@@ -80,6 +91,7 @@ describe('flujo de login end-to-end', () => {
           profileFixture({ id: 2, nombre: 'Otra', apellido: 'Persona', email: 'otra@example.com', roles: ['DIRECTOR'] }),
         ),
       ),
+      ...DIRECTOR_HOME_SOURCES.map((path) => http.get(`http://localhost:8080${path}`, () => HttpResponse.json(contractList(path, [])))),
     );
     await user.click(screen.getAllByRole('button', { name: 'Cerrar sesión' })[0]);
     await screen.findByPlaceholderText('DNI o email');
@@ -97,8 +109,8 @@ describe('flujo de login end-to-end', () => {
     expect(await screen.findByRole('heading', { name: 'Solicitudes de asistencia' })).toBeInTheDocument();
   });
 
-  it('recargar con un refreshToken guardado restaura la sesión sin pasar por /login', async () => {
-    localStorage.setItem('refreshToken', 'refresh-1');
+  it('recargar con la marca de sesión restaura la sesión sin pasar por /login', async () => {
+    localStorage.setItem('sessionHint', '1');
     renderApp('/preceptor/inicio');
 
     expect(await screen.findAllByText('Prueba Login')).toHaveLength(2);

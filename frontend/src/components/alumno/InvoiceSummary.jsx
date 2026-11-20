@@ -16,7 +16,7 @@ export function InvoiceSummary({ breakdown }) {
   return (
     <GlassCard className="flex flex-col gap-3 p-5">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">Estás pagando</p>
+        <p className="text-size-11 font-semibold uppercase tracking-wide text-ink-faint">Estás pagando</p>
         <p className="mt-0.5 font-semibold text-ink">{invoiceConcept(breakdown.feeType, breakdown.period)}</p>
       </div>
       <AmountBreakdown baseAmount={breakdown.baseAmount} lines={lines} />

@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiFetchBlob } from '@/api/client';
+import { PROFILE_STALE_TIME } from '@/api/cachePolicy';
 
 export function usePerfilPropio() {
-  return useQuery({ queryKey: ['me'], queryFn: () => apiFetch('/me') });
+  return useQuery({ queryKey: ['me'], queryFn: () => apiFetch('/me'), staleTime: PROFILE_STALE_TIME });
 }
 
 export function useActualizarPerfil() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (datos) => apiFetch('/me', { method: 'PUT', body: JSON.stringify(datos) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'], exact: true }),
+    onSuccess: (perfil) => {
+      queryClient.setQueryData(['me'], (actual) => ({ ...actual, ...perfil }));
+      queryClient.invalidateQueries({ queryKey: ['me'], exact: true, refetchType: 'none' });
+    },
   });
 }
 
@@ -74,7 +78,8 @@ export function useSubirAvatar() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me', 'avatar'], exact: true });
-      queryClient.invalidateQueries({ queryKey: ['me'], exact: true });
+      queryClient.setQueryData(['me'], (actual) => (actual ? { ...actual, hasAvatar: true } : actual));
+      queryClient.invalidateQueries({ queryKey: ['me'], exact: true, refetchType: 'none' });
     },
   });
 }

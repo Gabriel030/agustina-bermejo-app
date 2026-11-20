@@ -78,7 +78,7 @@ class BrevoEmailServiceCircuitTest {
 
         assertThatThrownBy(() -> service.sendPasswordResetCode(recipient, "Red Escuela", "123456")).isInstanceOf(CircuitOpenException.class);
         assertThatThrownBy(() -> service.sendEmailVerification(recipient, "Red Escuela", "https://x")).isInstanceOf(CircuitOpenException.class);
-        assertThatThrownBy(() -> service.sendEmailChangeNotice("Ana", "a@example.com", "b@example.com")).isInstanceOf(CircuitOpenException.class);
+        assertThatThrownBy(() -> service.sendEmailChangeNotice("Ana", "a@example.com", "b@example.com", "https://x.test/c?token=t")).isInstanceOf(CircuitOpenException.class);
         verify(mailSender, times(2)).send(any(MimeMessage.class));
 
         doNothing().when(mailSender).send(any(MimeMessage.class));

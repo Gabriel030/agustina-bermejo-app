@@ -112,9 +112,9 @@ export function GraduationTab({ carreraId, onSeeStudyPlan }) {
         </StatusPill>
       </div>
       <p className="text-sm text-ink">{summaryFor(state, own)}</p>
-      {rejectionReason && <div className="text-[13px] font-bold text-danger">Motivo: “{rejectionReason}”</div>}
+      {rejectionReason && <div className="text-size-13 font-bold text-danger">Motivo: “{rejectionReason}”</div>}
       {showMissing && <MissingRequirements own={own} onSeeStudyPlan={onSeeStudyPlan} />}
-      {context && <p className="text-[13px] text-ink-soft">{context}</p>}
+      {context && <p className="text-size-13 text-ink-soft">{context}</p>}
     </GlassCard>
   );
 }

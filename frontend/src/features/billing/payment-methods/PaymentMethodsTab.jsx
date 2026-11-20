@@ -21,10 +21,10 @@ function SettingRow({ entry, readOnly, tip, onToggle }) {
         <Icon className="size-5" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span id={`setting-${entry.key}-name`} className="font-heading text-[14px] font-semibold text-ink">
+        <span id={`setting-${entry.key}-name`} className="font-heading text-size-14 font-semibold text-ink">
           {catalog.label}
         </span>
-        <span className="text-[13px] text-ink-soft">{catalog.description}</span>
+        <span className="text-size-13 text-ink-soft">{catalog.description}</span>
       </div>
       {!available && <StatusPill tone="neutral">No habilitado</StatusPill>}
       {available && readOnly && (
@@ -49,7 +49,7 @@ export function PaymentMethodsTab({ entries, readOnly, onToggle }) {
         </div>
       )}
       <GlassCard className="flex flex-col py-2">
-        <h2 className="px-5 pb-1 pt-3 font-heading text-[17px] font-semibold text-ink">Medios de pago</h2>
+        <h2 className="px-5 pb-1 pt-3 font-heading text-size-17 font-semibold text-ink">Medios de pago</h2>
         <ul className="divide-y divide-border">
           {entries.methods.map((entry) => (
             <SettingRow key={entry.key} entry={entry} readOnly={readOnly} tip={entry.platformEnabled ? null : NOT_ENABLED_TIP} onToggle={onToggle} />
@@ -57,7 +57,7 @@ export function PaymentMethodsTab({ entries, readOnly, onToggle }) {
         </ul>
       </GlassCard>
       <GlassCard className="flex flex-col py-2">
-        <h2 className="px-5 pb-1 pt-3 font-heading text-[17px] font-semibold text-ink">Avisos</h2>
+        <h2 className="px-5 pb-1 pt-3 font-heading text-size-17 font-semibold text-ink">Avisos</h2>
         <ul>
           <SettingRow
             entry={entries.notifications}

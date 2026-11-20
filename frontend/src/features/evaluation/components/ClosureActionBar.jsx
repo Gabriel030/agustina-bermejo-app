@@ -10,7 +10,7 @@ function ApproveBar({ sheet, pending, onApprove }) {
   return (
     <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div className="min-w-0 flex-1 basis-64">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">Cierre del acta</h2>
+        <h2 className="font-heading text-size-15 font-semibold text-ink">Cierre del acta</h2>
         <p id="closure-approve-hint" className="mt-1 text-xs text-ink-soft">
           {approveHint(sheet)}
         </p>
@@ -28,7 +28,7 @@ function ReopenBar({ pending, onReopen }) {
   return (
     <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div className="min-w-0 flex-1 basis-64">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">Reapertura</h2>
+        <h2 className="font-heading text-size-15 font-semibold text-ink">Reapertura</h2>
         <p id="closure-reopen-hint" className="mt-1 text-xs text-ink-soft">
           Reabrir pide un motivo, deja auditoría y avisa al docente y a los alumnos. El acta pasa a la versión siguiente al volver a cerrarse.
         </p>

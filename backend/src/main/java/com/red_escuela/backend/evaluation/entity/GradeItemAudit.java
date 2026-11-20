@@ -58,7 +58,7 @@ public class GradeItemAudit {
     @Column(name = "reason", nullable = false, length = 500)
     private String reason;
 
-    @Column(name = "changed_by_id", nullable = false)
+    @Column(name = "changed_by_id")
     private Long changedById;
 
     @Column(name = "changed_at", nullable = false)

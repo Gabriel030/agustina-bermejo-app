@@ -46,10 +46,10 @@ function SeccionDetalle({ ciclo }) {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-heading text-[15px] font-semibold text-ink">{ciclo.termName}</span>
+            <span className="font-heading text-size-15 font-semibold text-ink">{ciclo.termName}</span>
             <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
           </div>
-          <div className="mt-0.5 text-[12px] text-ink-faint">Creado por {ciclo.createdByName}</div>
+          <div className="mt-0.5 text-size-12 text-ink-faint">Creado por {ciclo.createdByName}</div>
         </div>
         <ResumeCycleButton cycle={ciclo} />
       </div>
@@ -108,7 +108,7 @@ function SeccionDetalle({ ciclo }) {
           </div>
           {seccion.pendingApproval && (
             <div className="col-span-2">
-              <span className="rounded-full bg-accent-soft px-3 py-1 text-[12px] font-medium text-brand">
+              <span className="rounded-full bg-accent-soft px-3 py-1 text-size-12 font-medium text-brand">
                 Modificación pendiente de aprobación
               </span>
             </div>
@@ -122,8 +122,8 @@ function SeccionDetalle({ ciclo }) {
 function Campo({ label, valor }) {
   return (
     <div>
-      <div className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">{label}</div>
-      <div className="mt-0.5 text-[13.5px] text-ink">{valor}</div>
+      <div className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">{label}</div>
+      <div className="mt-0.5 text-size-13-5 text-ink">{valor}</div>
     </div>
   );
 }
@@ -179,7 +179,7 @@ export function PreceptorDetalleCurso() {
         <div>
           <Link
             to={`${basePath}/oferta-academica?tab=cursos`}
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Oferta académica
@@ -192,7 +192,7 @@ export function PreceptorDetalleCurso() {
               </Button>
             )}
           </div>
-          <div className="mt-0.5 text-[13px] text-ink-faint">{formatCourseDuration(curso?.durationMonths)}</div>
+          <div className="mt-0.5 text-size-13 text-ink-faint">{formatCourseDuration(curso?.durationMonths)}</div>
         </div>
 
         {loadingCiclos ? (

@@ -8,4 +8,6 @@ public interface EnrollmentAttendanceCounts {
     Long getPresent();
 
     Long getAbsences();
+
+    Long getPending();
 }

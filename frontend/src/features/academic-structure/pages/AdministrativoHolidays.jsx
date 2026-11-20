@@ -143,7 +143,7 @@ export function AdministrativoHolidays() {
           <Button type="button" variant="ghost" size="icon-lg" className="rounded-full" aria-label="Año anterior" onClick={() => changeYear(-1)}>
             <ChevronLeft />
           </Button>
-          <span aria-live="polite" className="min-w-20 text-center font-heading text-[17px] font-bold tabular-nums text-ink">{year}</span>
+          <span aria-live="polite" className="min-w-20 text-center font-heading text-size-17 font-bold tabular-nums text-ink">{year}</span>
           <Button type="button" variant="ghost" size="icon-lg" className="rounded-full" aria-label="Año siguiente" onClick={() => changeYear(1)}>
             <ChevronRight />
           </Button>

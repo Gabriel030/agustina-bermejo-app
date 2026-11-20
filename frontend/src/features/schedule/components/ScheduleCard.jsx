@@ -25,7 +25,7 @@ export function ScheduleCard() {
   return (
     <GlassCard className="flex flex-col gap-3 p-5">
       <div className="flex items-center gap-2">
-        <div className="font-heading text-[15px] font-semibold text-ink">Tu horario</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">Tu horario</div>
         <StaleStamp dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} isError={isError} hasData={data !== undefined} />
       </div>
       {isLoading ? (
@@ -39,7 +39,7 @@ export function ScheduleCard() {
           {next && (
             <div className="rounded-xl bg-accent-soft/40 px-4 py-3">
               <div className="text-xs font-semibold text-ink-faint">Próxima clase</div>
-              <div className="text-[13.5px] font-semibold text-ink">{next.item.courseSubjectName}</div>
+              <div className="text-size-13-5 font-semibold text-ink">{next.item.courseSubjectName}</div>
               <div className="text-xs text-ink-soft">{dayLabel(next)}</div>
             </div>
           )}
@@ -47,7 +47,7 @@ export function ScheduleCard() {
             {items.map((item) => (
               <li key={item.sectionEnrollmentId} className="flex flex-col gap-0.5 rounded-lg border border-border px-3 py-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[13px] font-semibold text-ink">{item.courseSubjectName}</span>
+                  <span className="text-size-13 font-semibold text-ink">{item.courseSubjectName}</span>
                   {isScheduledToday(item.schedule, now) && <StatusPill tone="accent">Hoy</StatusPill>}
                 </div>
                 <span className="text-xs text-ink-faint">

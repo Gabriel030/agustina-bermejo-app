@@ -28,4 +28,7 @@ public interface CourseEnrollmentApplicationRepository extends JpaRepository<Cou
     List<CourseEnrollmentApplication> findByStudentIdOrderByIdDesc(Long studentId);
 
     boolean existsByStudentIdAndCourseIdAndPaymentReceiptStatus(Long studentId, Long courseId, BankTransferReceiptStatus status);
+
+    @Query("select a.invoiceId from CourseEnrollmentApplication a where a.courseEnrollment.id = :courseEnrollmentId and a.invoiceId is not null order by a.id desc")
+    List<Long> findInvoiceIdsByCourseEnrollmentId(@org.springframework.data.repository.query.Param("courseEnrollmentId") Long courseEnrollmentId);
 }

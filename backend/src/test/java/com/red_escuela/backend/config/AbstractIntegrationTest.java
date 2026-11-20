@@ -5,6 +5,7 @@ import com.red_escuela.backend.shared.time.MutableClock;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -24,8 +25,9 @@ import java.util.stream.Stream;
 @Tag("integration")
 @ExtendWith(TestDatabaseIsolation.class)
 @AutoConfigureMockMvc
+@SharedSpyBeans
 public abstract class AbstractIntegrationTest {
-    static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine")
+    protected static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine")
             .withTmpFs(Map.of("/var/lib/postgresql/data", "rw"))
             .withCommand("postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off", "-c", "max_connections=500");
 

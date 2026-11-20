@@ -34,16 +34,16 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
         reason: reason.trim(),
         exceptionReason: expired ? exceptionReason.trim() : undefined,
       });
-      toast.success(`Falta del ${formatIsoDate(absence.classDate)} justificada`);
+      toast.success(`Inasistencia del ${formatIsoDate(absence.classDate)} justificada`);
       onClose();
     } catch (error) {
       if (error?.status === 409) {
         justify.refresh();
-        toast.warning('Esta falta ya cambió de estado. Actualizamos la lista.');
+        toast.warning('Esta inasistencia ya cambió de estado. Actualizamos la lista.');
         onClose();
         return;
       }
-      setSubmitError(describeError(error, { fallback: 'No pudimos justificar la falta. Revisá tu conexión y probá de nuevo.' }).message);
+      setSubmitError(describeError(error, { fallback: 'No pudimos justificar la inasistencia. Revisá tu conexión y probá de nuevo.' }).message);
     }
   }
 
@@ -51,23 +51,23 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Justificar falta</DialogTitle>
+          <DialogTitle>Justificar inasistencia</DialogTitle>
           <DialogDescription>
             {studentName} · {subjectLabel} · clase del {formatIsoDate(absence.classDate)}
           </DialogDescription>
         </DialogHeader>
         {expired ? (
-          <div className="rounded-xl bg-warning-bg px-4 py-2 text-[13px] text-warning-ink">
+          <div className="rounded-xl bg-warning-bg px-4 py-2 text-size-13 text-warning-ink">
             <b>Plazo vencido el {formatIsoDate(absence.justificationDeadline)}.</b> Podés justificarla como excepción: explicá por qué.
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-[13px] text-ink-soft">
+          <div className="flex items-center gap-2 text-size-13 text-ink-soft">
             <StatusPill tone="success">Dentro de plazo</StatusPill>
             <span>hasta el {formatIsoDate(absence.justificationDeadline)}</span>
           </div>
         )}
         {absence.justificationRejectionReason && (
-          <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] text-danger">
+          <div className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 text-danger">
             Justificación rechazada antes: {absence.justificationRejectionReason}
           </div>
         )}
@@ -89,10 +89,10 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
         </div>
         <p className="text-xs text-ink-faint">Esta justificación queda sin adjunto: el comprobante lo carga el alumno o el docente.</p>
         <ChangesTable rows={buildJustificationImpact(computedAbsences)} />
-        <div className="rounded-xl bg-warning-bg px-4 py-2 text-[13px] text-warning-ink">No se puede deshacer desde esta pantalla.</div>
+        <div className="rounded-xl bg-warning-bg px-4 py-2 text-size-13 text-warning-ink">No se puede deshacer desde esta pantalla.</div>
         {authorName && <p className="text-xs text-ink-faint">Queda registrado a nombre de {authorName}.</p>}
         {submitError && (
-          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">
+          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">
             {submitError}
           </div>
         )}
@@ -101,7 +101,7 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
             Cancelar
           </Button>
           <Button variant="gradient" onClick={submit} disabled={!canSubmit}>
-            {justify.isPending ? 'Justificando…' : 'Justificar falta'}
+            {justify.isPending ? 'Justificando…' : 'Justificar inasistencia'}
           </Button>
         </DialogFooter>
       </DialogContent>

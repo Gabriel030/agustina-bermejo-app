@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.evaluation.api.ClosureReportNumberAllocator;
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.evaluation.domain.ClosureExportFormat;
 import com.red_escuela.backend.evaluation.dto.ClosureExportFile;

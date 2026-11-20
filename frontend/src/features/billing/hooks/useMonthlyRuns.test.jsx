@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
@@ -31,6 +31,41 @@ describe('useMonthlyRuns', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data.total).toBe(3);
     expect(requested.searchParams.get('period')).toBe('2026-10');
+  });
+
+  describe('polling', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    const fullRun = (id, status) => ({
+      id, status, businessDate: '2026-10-01', pricingDate: '2026-10-01', period: '2026-10-01', mode: 'REAL', issuanceMode: 'AUTOMATIC', trigger: 'SCHEDULED',
+      startedAt: '2026-10-01T03:00:00', finishedAt: '2026-10-01T03:05:00', failureCode: 'NONE',
+      counters: { issued: 0, alreadyIssued: 0, notApplicable: 0, failed: 0, retriesExhausted: 0 },
+    });
+
+    async function intervalFor(items) {
+      server.use(http.get(`${API}/monthly-invoice-runs`, () => HttpResponse.json(items, { headers: { 'X-Total-Count': String(items.length) } })));
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const clientWrapper = ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+      const { result } = renderHook(() => useMonthlyRuns(), { wrapper: clientWrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const query = client.getQueryCache().find({ queryKey: ['monthly-runs', 'list', null, 50] });
+      const options = query.observers[0].options;
+      return { options, query };
+    }
+
+    it('pollsEveryFiveSecondsOnlyWhileARunIsRunningAndNeverInBackground', async () => {
+      const running = await intervalFor([fullRun(1, 'RUNNING')]);
+      expect(running.options.refetchInterval(running.query)).toBe(5000);
+      expect(running.options.refetchIntervalInBackground).toBe(false);
+      const idle = await intervalFor([fullRun(2, 'COMPLETED')]);
+      expect(idle.options.refetchInterval(idle.query)).toBe(false);
+    });
+
+    it('doesNotPollWhileOffline', async () => {
+      const running = await intervalFor([fullRun(1, 'RUNNING')]);
+      vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      expect(running.options.refetchInterval(running.query)).toBe(false);
+    });
   });
 });
 

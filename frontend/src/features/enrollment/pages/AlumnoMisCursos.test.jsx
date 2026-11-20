@@ -38,6 +38,15 @@ describe('AlumnoMisCursos', () => {
     expect(screen.getByRole('link', { name: /Ver oferta de cursos/ })).toHaveAttribute('href', '/catalogo?tab=cursos');
   });
 
+  it('links each course card to its detail page', async () => {
+    respondWith([enrollment({ id: 42 })]);
+
+    renderWithProviders(<AlumnoMisCursos />);
+
+    const link = await screen.findByRole('link', { name: /Excel Avanzado/ });
+    expect(link).toHaveAttribute('href', '/alumno/mis-cursos/42');
+  });
+
   it('hides the progress bar when the course has no active modules', async () => {
     respondWith([enrollment({ progressPercent: null })]);
 

@@ -18,10 +18,10 @@ function Fila({ e, esHistorial }) {
       className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60"
     >
       <div>
-        <div className="font-heading text-[14px] font-semibold text-ink">
+        <div className="font-heading text-size-14 font-semibold text-ink">
           {TIPO_EXCEPCION_LABEL[e.type] ?? e.type} · {e.studentName} · {e.programName}{e.subjectName ? ` · ${e.subjectName}` : ''}
         </div>
-        <div className="mt-0.5 text-[12px] text-ink-faint">
+        <div className="mt-0.5 text-size-12 text-ink-faint">
           {esHistorial ? `Decidido ${formatearFecha(e.decidedAt) ?? '—'}` : `Solicitado ${formatearFecha(e.requestedAt) ?? '—'} · ${ageLabel(e.requestedAt) ?? ''}`}
         </div>
       </div>

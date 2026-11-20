@@ -101,11 +101,11 @@ export function ReprogramarMesaDialog({ open, onClose, mesa, onConfirmar, envian
           </div>
         ) : (
           <div className="flex flex-col gap-1">
-            <div className="grid grid-cols-[1.4fr_1.2fr_1.2fr_1fr] gap-2 border-b border-border px-1 pb-2 text-[11px] font-bold uppercase tracking-wide text-ink-faint">
+            <div className="grid grid-cols-[1.4fr_1.2fr_1.2fr_1fr] gap-2 border-b border-border px-1 pb-2 text-size-11 font-bold uppercase tracking-wide text-ink-faint">
               <div>Dato</div><div>Hoy</div><div>Nuevo</div><div>Diferencia</div>
             </div>
             {filas.map((f) => (
-              <div key={f.clave} className="grid grid-cols-[1.4fr_1.2fr_1.2fr_1fr] items-center gap-2 px-1 py-2 text-[13px]">
+              <div key={f.clave} className="grid grid-cols-[1.4fr_1.2fr_1.2fr_1fr] items-center gap-2 px-1 py-2 text-size-13">
                 <div className="font-semibold text-ink">{f.etiqueta}</div>
                 <div className="text-ink-soft">{f.hoy}</div>
                 <div className="font-semibold text-ink">{f.nuevo}</div>

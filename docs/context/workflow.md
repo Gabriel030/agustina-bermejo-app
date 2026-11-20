@@ -29,12 +29,12 @@ Si la fase ya la está haciendo otra sesión, avisarle con `SendMessage` en vez 
 
 - Mostrar archivos tocados + mensaje de commit propuesto y esperar un "sí" explícito **antes de cada commit**.
 - Aprobación **aparte antes de cada push**. También para fixes urgentes de CI.
-- No abrir PR sin que el usuario lo haya pedido/aprobado. El merge lo hace el usuario.
+- No abrir PR sin que el usuario lo haya pedido/aprobado. El merge lo hace el Líder Técnico de la célula (dominio delegado por Gabriel el 17-nov, release a master incluido), con CI verde y las revisiones que correspondan.
 - Mensajes de commit en español, explicando el "por qué"; un commit por unidad coherente.
 
 ## 3. CI local ANTES de abrir el PR (obligatorio)
 
-**Excepción autorizada (15-oct-2026) para este repo, que es público (runners estándar gratis: el costo real de la CI es el tiempo de espera y el tope de 20 jobs concurrentes, no los minutos):** no hace falta correr la suite completa ni PIT en local. Alcanza con compilar y correr los tests focalizados del cambio (más ArchUnit/Modulith si se tocan paquetes); la suite completa y PIT corren en GitHub (job `mutation` en paralelo a los shards, requisito de merge vía el agregador `backend`; en push a `develop` lo corre en frío, sin bloquear el CI, el workflow aparte `mutation-develop-cold.yml`; ver `testing.md`, sección "PIT en GitHub"). El PR se abre en borrador mientras se itera y se marca listo para disparar la CI.
+**Excepción autorizada (15-oct-2026) para este repo, que es público (runners estándar gratis: el costo real de la CI es el tiempo de espera y el tope de 20 jobs concurrentes, no los minutos):** no hace falta correr la suite completa en local; PIT ya no corre en el CI: para cambios de plata correrlo en local (`cd backend && ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`). Alcanza con compilar y correr los tests focalizados del cambio (más ArchUnit/Modulith si se tocan paquetes); la suite completa corre en GitHub (ver `testing.md`, sección "PIT en local" para la mutación). El PR se abre en borrador mientras se itera y se marca listo para disparar la CI.
 
 Cuando el repo vuelva a tener minutos facturables, rige lo siguiente: GitHub Actions cobra minutos: no se abre un PR sin haber corrido en local lo mismo que corre `.github/workflows/ci.yml` y haberlo visto pasar.
 
@@ -85,7 +85,7 @@ Claude puede abrir PRs contra `master`. Cadencia obligatoria de releases: con 15
 
 ## 7. CI de GitHub (costo)
 
-`ci.yml` corre en PRs y en push a `develop`/`master`, cancela corridas viejas del mismo PR y **no corre si el cambio es solo `.md` o `docs/`**. Si se activan checks requeridos en la protección de rama, revisar que el filtro de paths no deje el check "omitido" y bloquee el merge de PRs de docs.
+`ci.yml` corre en PRs y en push a `develop`/`master` y cancela corridas viejas del mismo PR. Los PRs corren siempre (sin filtro de paths) porque la protección de rama exige los checks `backend` y `frontend`: si el cambio es solo `.md` o `docs/`, `detect-changes.sh` marca todo como no relevante y esos dos checks dan verde en segundos sin correr tests. Los push a `develop`/`master` siguen sin correr con cambios solo de `.md` o `docs/`.
 
 ### Seguridad de dependencias y secretos
 

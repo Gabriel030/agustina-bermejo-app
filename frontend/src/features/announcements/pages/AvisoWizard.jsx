@@ -138,13 +138,13 @@ export function AvisoWizard() {
       ) : (
         <>
           {esCurso ? (
-            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-brand/20 bg-accent-soft/55 px-4 py-2.5 text-[12.5px]">
-              <span className="text-[11px] font-bold uppercase tracking-[0.05em] text-ink-faint">Para</span>
+            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-brand/20 bg-accent-soft/55 px-4 py-2.5 text-size-12-5">
+              <span className="text-size-11 font-bold uppercase tracking-[0.05em] text-ink-faint">Para</span>
               <span className="font-bold text-ink">Todo el curso</span>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-brand/20 bg-accent-soft/55 px-4 py-2.5 text-[12.5px]">
-              <span className="text-[11px] font-bold uppercase tracking-[0.05em] text-ink-faint">Para</span>
+            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-brand/20 bg-accent-soft/55 px-4 py-2.5 text-size-12-5">
+              <span className="text-size-11 font-bold uppercase tracking-[0.05em] text-ink-faint">Para</span>
               <span className="font-bold text-ink">{preview?.label ?? 'Toda la comisión'}</span>
               <StatusPill tone="accent">{alcanzados === 1 ? '1 alumno' : `${alcanzados} alumnos`}</StatusPill>
               <Button type="button" variant="link" className="h-auto p-0" onClick={() => setRosterAbierto(true)}>

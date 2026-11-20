@@ -11,7 +11,6 @@ com.red_escuela.backend.attendance.usecase.record.CancelProgramSectionClassSessi
 com.red_escuela.backend.attendance.usecase.record.JustifyAttendanceService.justify(com.red_escuela.backend.attendance.usecase.record.JustifyAttendanceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.LoadCourseSectionAttendanceService.load(com.red_escuela.backend.attendance.usecase.record.LoadCourseSectionAttendanceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.LoadProgramSectionAttendanceService.load(com.red_escuela.backend.attendance.usecase.record.LoadProgramSectionAttendanceCommand) declares @Transactional
-com.red_escuela.backend.billing.usecase.billingperiod.CreateBillingPeriodService.create(com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateProgramCohortRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateService.create(java.lang.Long, java.lang.Long, java.lang.Integer, com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEntryFeeDiscountService.update(java.lang.Long, com.red_escuela.backend.shared.domain.Percentage) declares @Transactional

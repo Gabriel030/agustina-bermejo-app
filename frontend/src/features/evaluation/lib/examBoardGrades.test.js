@@ -10,12 +10,13 @@ import {
   correctionAccess,
   correctionChangeRows,
   hasInvalidBoardDraft,
+  isBlockedRow,
   patchBoardDraft,
   summarizeBoardSave,
 } from './examBoardGrades';
 
 function row(id, extra = {}) {
-  return { id, studentName: `Alumno ${id}`, status: 'REGISTERED', finalScore: null, priorCondition: 'REGULAR', minApprovalGrade: 6, result: null, ...extra };
+  return { id, studentName: `Alumno ${id}`, status: 'REGISTERED', finalScore: null, priorCondition: 'REGULAR', finalExamEligibility: { eligible: true, reason: null }, minApprovalGrade: 6, result: null, ...extra };
 }
 
 describe('examBoardGrades', () => {
@@ -42,11 +43,17 @@ describe('examBoardGrades', () => {
     expect(buildFinalGradesPayload(rows, drafts)).toEqual({ items: [{ registrationId: 1, score: 7.5 }, { registrationId: 2, absent: true }] });
   });
 
+  it('blocks by finalExamEligibility and ignores the deprecated priorCondition', () => {
+    expect(isBlockedRow(row(1, { priorCondition: 'FREE' }))).toBe(false);
+    expect(isBlockedRow(row(2, { priorCondition: 'REGULAR', finalExamEligibility: { eligible: false, reason: 'FREE_BY_ABSENCES' } }))).toBe(true);
+  });
+
   it('derives the result from the approval threshold of each row', () => {
     const strict = row(1, { minApprovalGrade: 7 });
     expect(boardRowResult(strict, { text: '6,5', absent: false })).toBe('FAILED');
     expect(boardRowResult(strict, { text: '7', absent: false })).toBe('PASSED');
-    expect(boardRowResult(row(2, { priorCondition: 'FREE' }))).toBe('NOT_REGULAR');
+    expect(boardRowResult(row(2, { finalExamEligibility: { eligible: false, reason: 'COURSEWORK_NOT_REGULAR' } }))).toBe('NOT_REGULAR');
+    expect(boardRowResult(row(4, { finalExamEligibility: { eligible: false, reason: 'FREE_BY_ABSENCES' } }))).toBe('FREE_BY_ABSENCES');
     expect(boardRowResult(row(3, { result: 'PASSED', finalScore: 8 }))).toBe('PASSED');
   });
 

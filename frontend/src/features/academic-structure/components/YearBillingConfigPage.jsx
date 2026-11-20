@@ -177,7 +177,7 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
                 onChange={(event) => set('advanceEnrollmentFeeOpensOn', event.target.value)}
               />
             )}
-            {openingError && <p role="alert" className="text-[12px] text-danger">{openingError}</p>}
+            {openingError && <p role="alert" className="text-size-12 text-danger">{openingError}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -246,7 +246,7 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
               ['blocksExamRegistration', 'Inscripción a mesas de examen'],
               ['blocksCertificates', 'Pedido de certificados'],
             ].map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 text-[13px] text-ink">
+              <label key={key} className="flex items-center gap-2 text-size-13 text-ink">
                 <Checkbox checked={form[key]} onCheckedChange={(checked) => set(key, checked === true)} />
                 {label}
               </label>

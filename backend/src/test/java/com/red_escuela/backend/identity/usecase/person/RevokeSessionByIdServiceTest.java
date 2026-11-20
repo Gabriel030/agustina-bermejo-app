@@ -22,7 +22,7 @@ class RevokeSessionByIdServiceTest {
     private static final Long SESSION_ID = 9L;
 
     private final RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
-    private final RevokeSessionByIdService service = new RevokeSessionByIdService(new SessionRevoker(refreshTokenRepository));
+    private final RevokeSessionByIdService service = new RevokeSessionByIdService(new SessionRevoker(refreshTokenRepository, org.mockito.Mockito.mock(com.red_escuela.backend.identity.repository.PersonRepository.class), org.mockito.Mockito.mock(com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache.class)));
 
     private Person person(Long id) {
         Person person = new Person();

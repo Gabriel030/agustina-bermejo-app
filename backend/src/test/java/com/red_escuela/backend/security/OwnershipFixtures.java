@@ -22,15 +22,24 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.evaluation.entity.ClosureStatus;
+import com.red_escuela.backend.evaluation.entity.CommissionClosure;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
+import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
+import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RoleRepository;
+import com.red_escuela.backend.notification.entity.Notification;
+import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -41,6 +50,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 final class OwnershipFixtures {
 
@@ -54,11 +64,20 @@ final class OwnershipFixtures {
     private String strangerInstructorToken;
     private Long programEnrollmentId;
     private Long sectionEnrollmentId;
+    private Long courseEnrollmentId;
     private Long courseSectionEnrollmentId;
     private Long sectionId;
     private Long attendanceId;
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
+    private Long examBoardId;
+    private Long invoiceId;
+    private Long notificationId;
+    private Long sessionId;
+    private Long closureId;
+    private Long closureSectionId;
+    private String teacherDirectorToken;
+    private String teacherStudentToken;
 
     OwnershipFixtures(TransactionTemplate transactions, EntityManager entityManager, RoleRepository roleRepository,
                       JwtService jwtService) {
@@ -72,11 +91,16 @@ final class OwnershipFixtures {
         return switch (kind) {
             case PROGRAM_ENROLLMENT -> programEnrollmentId;
             case SECTION_ENROLLMENT -> sectionEnrollmentId;
+            case COURSE_ENROLLMENT -> courseEnrollmentId;
             case COURSE_SECTION_ENROLLMENT -> courseSectionEnrollmentId;
             case SECTION_INSTRUCTOR -> sectionId;
             case ATTENDANCE_SECTION_INSTRUCTOR -> attendanceId;
             case ANNUAL_UPFRONT_REQUEST -> annualUpfrontRequestId;
             case STAFF_RECORD -> instructorPersonId;
+            case EXAM_BOARD_TRIBUNAL -> examBoardId;
+            case INVOICE -> invoiceId;
+            case NOTIFICATION -> notificationId;
+            case SESSION -> sessionId;
         };
     }
 
@@ -88,11 +112,35 @@ final class OwnershipFixtures {
         return kind.ownerRole() == MatrixRole.ALUMNO ? strangerStudentToken : strangerInstructorToken;
     }
 
+    Long closureId() {
+        return closureId;
+    }
+
+    Long examBoardId() {
+        return examBoardId;
+    }
+
+    Long closureSectionId() {
+        return closureSectionId;
+    }
+
+    String teacherDirectorToken() {
+        return teacherDirectorToken;
+    }
+
+    String teacherStudentToken() {
+        return teacherStudentToken;
+    }
+
     private void persistScenario() {
         Person ownerPerson = persistPerson("owner.student", "91000001", "ALUMNO");
         Person strangerPerson = persistPerson("stranger.student", "91000002", "ALUMNO");
         Person instructorPerson = persistPerson("owner.teacher", "91000003", "DOCENTE");
         Person strangerInstructorPerson = persistPerson("stranger.teacher", "91000004", "DOCENTE");
+        Person teacherDirectorPerson = persistPerson("multirole.teacher.director", "91000005", "DOCENTE", "DIRECTOR");
+        Person teacherStudentPerson = persistPerson("multirole.teacher.student", "91000006", "DOCENTE", "ALUMNO");
+        persistInstructor(teacherDirectorPerson);
+        persistInstructor(teacherStudentPerson);
         Student ownerStudent = persistStudent(ownerPerson);
         persistStudent(strangerPerson);
         Instructor instructor = persistInstructor(instructorPerson);
@@ -167,17 +215,69 @@ final class OwnershipFixtures {
         entityManager.persist(absence);
         entityManager.flush();
         attendanceId = absence.getId();
+        examBoardId = persistExamBoard(subject, term, instructor);
+        closureSectionId = persistClosureSection(subject, term, scheme, instructor);
+        closureId = persistClosure(closureSectionId);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
+        notificationId = persistNotification(ownerPerson);
+        sessionId = persistRefreshToken(ownerPerson);
 
         ownerStudentToken = jwtService.generateAccessToken(ownerPerson);
         strangerStudentToken = jwtService.generateAccessToken(strangerPerson);
+        teacherDirectorToken = jwtService.generateAccessToken(teacherDirectorPerson);
+        teacherStudentToken = jwtService.generateAccessToken(teacherStudentPerson);
         instructorToken = jwtService.generateAccessToken(instructorPerson);
         strangerInstructorToken = jwtService.generateAccessToken(strangerInstructorPerson);
         programEnrollmentId = programEnrollment.getId();
         sectionEnrollmentId = enrollment.getId();
         sectionId = section.getId();
         instructorPersonId = instructorPerson.getId();
+    }
+
+    private Long persistExamBoard(Subject subject, Term term, Instructor tribunalMember) {
+        ExamBoard board = new ExamBoard();
+        board.setSubject(subject);
+        board.setTerm(term);
+        board.setExamDate(LocalDateTime.now().plusDays(30));
+        board.setStatus(ExamBoardStatus.SCHEDULED);
+        ExamBoardInstructor member = new ExamBoardInstructor();
+        member.setExamBoard(board);
+        member.setInstructor(tribunalMember);
+        board.setTribunal(List.of(member));
+        entityManager.persist(board);
+        entityManager.flush();
+        return board.getId();
+    }
+
+    private Long persistClosureSection(Subject subject, Term term, EvaluationScheme scheme, Instructor instructor) {
+        SubjectSection section = new SubjectSection();
+        section.setName("Comision cierre matriz");
+        section.setSubject(subject);
+        section.setTerm(term);
+        section.setEvaluationScheme(scheme);
+        section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
+        section.setCapacity(30);
+        section.setStatus(StatusType.ACTIVE);
+        entityManager.persist(section);
+        SubjectSectionInstructor assignment = new SubjectSectionInstructor();
+        assignment.setSection(section);
+        assignment.setInstructor(instructor);
+        assignment.setRole(InstructorRole.LEAD);
+        entityManager.persist(assignment);
+        entityManager.flush();
+        return section.getId();
+    }
+
+    private Long persistClosure(Long sectionId) {
+        CommissionClosure closure = CommissionClosure.builder()
+                .sectionKind(SectionKind.PROGRAM)
+                .sectionId(sectionId)
+                .status(ClosureStatus.DRAFT_AVAILABLE)
+                .build();
+        entityManager.persist(closure);
+        entityManager.flush();
+        return closure.getId();
     }
 
     private Long persistCourseSectionEnrollment(Student student, Term term) {
@@ -201,6 +301,7 @@ final class OwnershipFixtures {
         courseEnrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
         courseEnrollment.setEnrollmentDate(LocalDateTime.now());
         entityManager.persist(courseEnrollment);
+        courseEnrollmentId = courseEnrollment.getId();
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
         enrollment.setStudent(student);
         enrollment.setCourseEnrollment(courseEnrollment);
@@ -227,6 +328,7 @@ final class OwnershipFixtures {
                     100, 'ARS', 0, 'ARS', 100, 'ARS', 0, 'ARS', 0, 'ARS', 100, 'ARS', now(), now())
                 returning id
                 """).setParameter("accountId", accountId).getSingleResult()).longValue();
+        this.invoiceId = invoiceId;
         return ((Number) entityManager.createNativeQuery("""
                 insert into annual_upfront_request (program_enrollment_id, lective_year_term_id, invoice_id, status, requested_by_person_id, requested_at,
                     accepted_terms_version, accepted_terms_text, accepted_at, accepted_by_person_id)
@@ -236,7 +338,29 @@ final class OwnershipFixtures {
                 .setParameter("personId", person.getId()).getSingleResult()).longValue();
     }
 
-    private Person persistPerson(String username, String dni, String roleName) {
+    private Long persistNotification(Person recipient) {
+        Notification notification = new Notification();
+        notification.setRecipient(recipient);
+        notification.setType(NotificationType.SECTION_EVAL_CONFIG_REMINDER);
+        notification.setMessage("Notificacion matriz");
+        notification.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(notification);
+        entityManager.flush();
+        return notification.getId();
+    }
+
+    private Long persistRefreshToken(Person person) {
+        RefreshToken token = new RefreshToken();
+        token.setPerson(person);
+        token.setTokenHash("matrix-session-" + person.getId());
+        token.setExpiresAt(LocalDateTime.now().plusDays(7));
+        token.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(token);
+        entityManager.flush();
+        return token.getId();
+    }
+
+    private Person persistPerson(String username, String dni, String roleName, String... extraRoleNames) {
         Address address = new Address();
         entityManager.persist(address);
         Person person = new Person();
@@ -250,6 +374,9 @@ final class OwnershipFixtures {
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
         person.getRoles().add(roleRepository.findByName(roleName).orElseThrow());
+        for (String extraRoleName : extraRoleNames) {
+            person.getRoles().add(roleRepository.findByName(extraRoleName).orElseThrow());
+        }
         entityManager.persist(person);
         entityManager.flush();
         return person;

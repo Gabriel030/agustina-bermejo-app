@@ -4,7 +4,10 @@ const sources = import.meta.glob('/src/**/*.{js,jsx}', { query: '?raw', import: 
 
 const EXEMPT_PATHS = [/^\/src\/theme\//, /^\/src\/components\/ui\//, /^\/src\/test\//, /\.test\.jsx?$/];
 
-const ALLOWED = {};
+const ALLOWED = {
+  '/src/features/graduation/certificates/components/CertificateVerdict.jsx': ['arbitrary pixel font size'],
+  '/src/features/evaluation/components/CalendarioConfiguracion.jsx': ['arbitrary pixel font size'],
+};
 
 const RULES = [
   { name: 'hex color', pattern: /#[0-9a-fA-F]{3,8}\b/g },
@@ -13,6 +16,7 @@ const RULES = [
   { name: 'hsl()/hsla()', pattern: /\bhsla?\(/g },
   { name: 'literal text/bg/border white or black', pattern: /(?<![\w-])(?:[a-z-]+:)*(?:text|bg|border|ring|from|to|via|fill|stroke)-(?:white|black)(?![\w-])/g },
   { name: 'literal shadow value', pattern: /(?<![\w-])shadow-\[/g },
+  { name: 'arbitrary pixel font size', pattern: /(?<![\w-])(?:[a-z-]+:)*text-\[\d+(?:\.\d+)?px\]/g },
 ];
 
 function findViolations(path, text) {
@@ -38,12 +42,13 @@ describe('literal design values outside tokens and ui components', () => {
       'const e = "text-white";',
       'const f = "hover:bg-black/40";',
       'const g = "shadow-[0_0_4px_red]";',
+      'const h = "md:text-[13px]";',
     ].join('\n');
-    expect(findViolations('/src/features/x/Sample.jsx', sample)).toHaveLength(7);
+    expect(findViolations('/src/features/x/Sample.jsx', sample)).toHaveLength(8);
   });
 
   it('the detector ignores token based classes and exempt paths', () => {
-    const sample = 'const a = "text-on-accent bg-(--overlay-bg) shadow-(--sh-popover) bg-surface";';
+    const sample = 'const a = "text-on-accent bg-(--overlay-bg) shadow-(--sh-popover) bg-surface text-size-13";';
     expect(findViolations('/src/features/x/Sample.jsx', sample)).toEqual([]);
     expect(findViolations('/src/components/ui/button.jsx', 'const a = "text-white #fff";')).toEqual([]);
   });

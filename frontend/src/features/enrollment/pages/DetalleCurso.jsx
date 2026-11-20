@@ -93,12 +93,12 @@ export function DetalleCurso() {
         <GlassCard className="flex flex-wrap gap-6 p-5">
           <div>
             <div className="text-xs text-ink-faint">Cuota mensual</div>
-            <div className="text-[15px] font-bold text-ink">{formatMoney(pricingQuery.data?.cuotaMensual) || 'A definir'}</div>
+            <div className="text-size-15 font-bold text-ink">{formatMoney(pricingQuery.data?.cuotaMensual) || 'A definir'}</div>
           </div>
         </GlassCard>
       </CatalogBlock>
 
-      <h2 className="font-heading text-[15px] font-semibold text-ink-soft">Temario</h2>
+      <h2 className="font-heading text-size-15 font-semibold text-ink-soft">Temario</h2>
       <CatalogBlock query={syllabusQuery} resource="el temario" skeletonClassName="h-40">
         {syllabusQuery.data?.length === 0 && (
           <GlassCard className="p-6 text-sm text-ink-faint">Todavía no se cargó el temario de este curso.</GlassCard>

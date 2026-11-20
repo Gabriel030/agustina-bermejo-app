@@ -78,6 +78,17 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         return session.api().post(DemoPersona.DIRECTOR, "/evaluation-schemes", scheme).get("id").asLong();
     }
 
+    private void ensureHolidaysLoaded(int year) {
+        String prefix = year + "-";
+        for (JsonNode holiday : session.api().get(DemoPersona.ADMIN, "/holidays")) {
+            if (holiday.path("date").asString("").startsWith(prefix)) {
+                return;
+            }
+        }
+        session.api().post(DemoPersona.ADMIN, "/holidays",
+                Map.of("date", year + "-05-01", "name", "Día del Trabajador", "type", "NATIONAL"));
+    }
+
     private long findOrCreateAnnualTerm(int year) {
         for (JsonNode term : session.api().get(DemoPersona.ADMIN, "/terms")) {
             if (term.path("year").asInt() == year && "ANNUAL".equals(term.path("type").asString(""))
@@ -85,6 +96,7 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
                 return term.get("id").asLong();
             }
         }
+        ensureHolidaysLoaded(year);
         Map<String, Object> term = new LinkedHashMap<>();
         term.put("year", year);
         term.put("description", "Ciclo lectivo " + year);
@@ -107,6 +119,8 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         program.put("name", spec.name());
         program.put("totalYears", spec.totalYears());
         program.put("totalCreditsRequired", subjectCount * CREDITS_PER_SUBJECT);
+        program.put("price", Map.of("amount", spec.monthlyPrice().toPlainString(), "currency", "ARS"));
+        program.put("enrollmentFeeAmount", Map.of("amount", spec.enrollmentFee().toPlainString(), "currency", "ARS"));
         long programId = session.api().post(DemoPersona.ADMIN, "/programs", program).get("id").asLong();
         session.programIdsByName().put(spec.name(), programId);
         long termId = findOrCreateAnnualTerm(2026);

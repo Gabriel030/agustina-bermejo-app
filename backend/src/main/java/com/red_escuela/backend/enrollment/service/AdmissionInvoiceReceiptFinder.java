@@ -18,4 +18,14 @@ public class AdmissionInvoiceReceiptFinder {
     public AdmissionReceiptSummary findLatestReceiptByAdmissionInvoiceId(Long admissionInvoiceId) {
         return receiptLookup.findLatestReceiptByInvoiceIds(List.of(admissionInvoiceId)).get(admissionInvoiceId);
     }
+
+    public boolean isLatestReceiptApproved(Long admissionInvoiceId) {
+        AdmissionReceiptSummary latest = findLatestReceiptByAdmissionInvoiceId(admissionInvoiceId);
+        return latest != null && latest.isApproved();
+    }
+
+    public boolean isLatestReceiptPendingReviewOrApproved(Long admissionInvoiceId) {
+        AdmissionReceiptSummary latest = findLatestReceiptByAdmissionInvoiceId(admissionInvoiceId);
+        return latest != null && ("PENDING_REVIEW".equals(latest.status()) || latest.isApproved());
+    }
 }

@@ -1,0 +1,3 @@
+subjectCode,name,weeklyHours,gradeMode,maxFinalExamAttempts,status
+ADM1,Introducción a la Administración,4,NUMERIC,3,ACTIVE
+MAT1,Matemática,6,NUMERIC,3,ACTIVE

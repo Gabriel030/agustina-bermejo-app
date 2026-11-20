@@ -1,5 +1,14 @@
 import { clsx } from "clsx";
-import { twMerge } from "tailwind-merge"
+import { extendTailwindMerge } from "tailwind-merge"
+
+export const FONT_SIZE_TOKENS = [
+  'size-10', 'size-10-5', 'size-11', 'size-11-5', 'size-12', 'size-12-5', 'size-13', 'size-13-5',
+  'size-14', 'size-14-5', 'size-15', 'size-16', 'size-17', 'size-22', 'size-26',
+];
+
+const twMerge = extendTailwindMerge({
+  extend: { classGroups: { 'font-size': [{ text: FONT_SIZE_TOKENS }] } },
+});
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs));

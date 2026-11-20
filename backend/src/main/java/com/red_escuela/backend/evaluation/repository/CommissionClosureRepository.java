@@ -32,4 +32,9 @@ public interface CommissionClosureRepository extends JpaRepository<CommissionClo
             on conflict (section_kind, section_id) do nothing
             """, nativeQuery = true)
     int insertDraftIfAbsent(@Param("kind") SectionKind kind, @Param("sectionId") Long sectionId);
+
+    @Query("select c.sectionId as sectionId, c.id as closureId from CommissionClosure c where c.sectionKind = :kind and c.sectionId in :sectionIds")
+    java.util.List<SectionClosureId> findClosureIdsBySectionKindAndSectionIdIn(@Param("kind") SectionKind kind, @Param("sectionIds") java.util.Collection<Long> sectionIds);
+
+    boolean existsByReportNumber(String reportNumber);
 }

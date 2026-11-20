@@ -24,10 +24,10 @@ function Row({ graduation, isHistory }) {
       className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60"
     >
       <div className="min-w-0">
-        <div className="font-heading text-[14px] font-semibold text-ink">
+        <div className="font-heading text-size-14 font-semibold text-ink">
           {graduation.studentName} · {graduation.programName}
         </div>
-        <div className="mt-0.5 text-[12px] text-ink-faint">
+        <div className="mt-0.5 text-size-12 text-ink-faint">
           {isHistory
             ? historySubtitle(graduation)
             : `Solicitado ${formatearFecha(graduation.requestedAt) ?? '—'} · ${ageLabel(graduation.requestedAt) ?? ''}`}

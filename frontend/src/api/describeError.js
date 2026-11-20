@@ -21,7 +21,7 @@ const CORE_ERROR_MESSAGES = {
   EXTERNAL_SERVICE_UNAVAILABLE: 'Un servicio externo no está disponible. Probá en unos minutos.',
   GRADE_ITEM_PUBLISHED_LOCKED: 'Esa evaluación ya está publicada y no se puede cargar ni editar.',
   NO_PENDING_GRADES_TO_PUBLISH: 'No hay notas cargadas para publicar en esta evaluación.',
-  JUSTIFICATION_DEADLINE_EXPIRED: 'Venció el plazo para justificar esta falta. Si corresponde, la resuelve el preceptor como excepción.',
+  JUSTIFICATION_DEADLINE_EXPIRED: 'Venció el plazo para justificar esta inasistencia. Si corresponde, la resuelve el preceptor como excepción.',
   INVALID_JUSTIFICATION_INPUT: 'El motivo de la justificación supera los 500 caracteres. Acortalo e intentá de nuevo.',
   SECTION_FULL: 'La comisión elegida no tiene cupo. Seguís en tu comisión actual.',
   CANNOT_JUSTIFY: 'Esta falta no se puede justificar en su estado actual.',

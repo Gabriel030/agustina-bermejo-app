@@ -12,7 +12,7 @@ export function DocumentosStep({ documentosSubidos, onFileSelected, isUploading,
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-semibold text-ink">Documentos</h2>
-      <p className="text-[13px] text-muted-foreground">
+      <p className="text-size-13 text-muted-foreground">
         Son opcionales: si faltan, el alumno queda con documentación pendiente y podés cargarlos después.{' '}
         <span className="text-ink-soft">{subidos}/{TIPOS.length} subidos</span>
       </p>
@@ -27,7 +27,7 @@ export function DocumentosStep({ documentosSubidos, onFileSelected, isUploading,
           />
         ))}
       </div>
-      {errorValidacion && <p className="text-[12px] text-danger">{errorValidacion}</p>}
+      {errorValidacion && <p className="text-size-12 text-danger">{errorValidacion}</p>}
     </div>
   );
 }
@@ -43,7 +43,7 @@ function DocumentoRow({ label, subido, isUploading, onChange }) {
         ) : (
           <FileText size={18} className="text-muted-foreground flex-shrink-0" />
         )}
-        <p className="text-[13px] font-medium text-ink">{label}</p>
+        <p className="text-size-13 font-medium text-ink">{label}</p>
       </div>
       <Button
         variant="text"
@@ -51,7 +51,7 @@ function DocumentoRow({ label, subido, isUploading, onChange }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isUploading}
-        className="gap-1.5 text-[12px] font-medium text-brand hover:text-accent-2 disabled:opacity-50">
+        className="gap-1.5 text-size-12 font-medium text-brand hover:text-accent-2 disabled:opacity-50">
         <Upload size={13} />
         {subido ? 'Reemplazar' : 'Subir'}
       </Button>

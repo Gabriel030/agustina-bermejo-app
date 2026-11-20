@@ -4,6 +4,7 @@
  */
 import { NetworkError, createCircuitBreaker, rateLimitMessage, runWithRetry } from '@/api/retryPolicy';
 import { ApiError } from '@/api/apiError';
+import { hasSessionHint, markSessionActive, sessionRefreshRequest } from '@/api/sessionHint';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
@@ -97,6 +98,10 @@ async function rawFetch(path, options) {
   }
   const timeout = AbortSignal.timeout(timeoutFor(options));
   const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  if (path.startsWith('/auth/')) {
+    headers.set('X-Requested-With', 'fetch');
+    fetchOptions.credentials = 'include';
+  }
   return fetch(`${API_BASE_URL}${path}`, { ...fetchOptions, headers, signal });
 }
 
@@ -118,7 +123,7 @@ export function resetCircuits() {
 }
 
 function circuitForHost() {
-  const host = new URL(API_BASE_URL).host;
+  const host = new URL(API_BASE_URL, globalThis.location?.href ?? 'http://localhost').host;
   if (!circuits.has(host)) circuits.set(host, createCircuitBreaker(circuitOptions));
   return circuits.get(host);
 }
@@ -147,18 +152,14 @@ function requestSessionRefresh() {
 }
 
 async function refreshSession() {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return false;
+  if (!hasSessionHint()) return false;
 
-  const response = await rawFetch('/auth/refresh', {
-    method: 'POST',
-    body: JSON.stringify({ refreshToken }),
-  });
+  const response = await rawFetch('/auth/refresh', sessionRefreshRequest());
   if (!response.ok) return false;
 
   const tokens = await response.json();
   setAccessToken(tokens.accessToken);
-  localStorage.setItem('refreshToken', tokens.refreshToken);
+  markSessionActive();
   return true;
 }
 

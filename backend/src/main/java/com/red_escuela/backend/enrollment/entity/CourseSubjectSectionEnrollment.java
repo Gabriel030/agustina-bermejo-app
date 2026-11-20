@@ -57,8 +57,20 @@ public class CourseSubjectSectionEnrollment {
     @Column(name = "enrolled_at")
     private LocalDateTime enrolledAt;
 
+    @Column(name = "waitlist_prioritized_at")
+    private LocalDateTime waitlistPrioritizedAt;
+
+    @Column(name = "waitlist_expiry_reminded_at")
+    private LocalDateTime waitlistExpiryRemindedAt;
+
     @Column(name = "dropped_at")
     private LocalDateTime droppedAt;
+
+    @Column(name = "withdrawal_reason")
+    private String withdrawalReason;
+
+    @Column(name = "withdrawn_by_person_id")
+    private Long withdrawnByPersonId;
 
     @Column(name = "attempt_number")
     private Integer attemptNumber;
@@ -70,7 +82,7 @@ public class CourseSubjectSectionEnrollment {
     @Column(name = "final_grade_type")
     private FinalGradeType finalGradeType;
 
-    public boolean isRegular() {
+    public boolean hasRegularCoursework() {
         return status == EnrollmentStatus.REGULAR;
     }
 

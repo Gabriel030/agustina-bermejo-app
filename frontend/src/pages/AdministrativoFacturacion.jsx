@@ -296,7 +296,8 @@ function TabFacturacion() {
   const { data: legajo, isError: legajoFailed } = useLegajoAlumno(studentId);
   const selectedStudent = legajo ?? (pickedStudent && String(pickedStudent.id) === studentId ? pickedStudent : null);
 
-  const { data: alumnos, isLoading: loadingAlumnos } = useAlumnos({ search: searchDebounced });
+  const { data: alumnosPage, isLoading: loadingAlumnos } = useAlumnos({ search: searchDebounced });
+  const alumnos = alumnosPage?.items;
   const {
     data: overview,
     isLoading: loadingOverview,

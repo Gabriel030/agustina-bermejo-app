@@ -14,13 +14,13 @@ export function SortableColumnHeader({ label, sortId, sortState, onToggle, extra
       <button
         type="button"
         onClick={() => onToggle(sortId)}
-        className="flex items-center gap-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase hover:text-foreground"
+        className="flex items-center gap-1 text-size-11 font-bold tracking-wide text-muted-foreground uppercase hover:text-foreground"
       >
         {label}
         {sortState ? (
           <span className="flex items-center gap-0.5 text-primary">
             {sortState.direccion === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            {sortState.prioridad > 1 && <span className="text-[10px] font-bold">{sortState.prioridad}</span>}
+            {sortState.prioridad > 1 && <span className="text-size-10 font-bold">{sortState.prioridad}</span>}
           </span>
         ) : (
           <ChevronsUpDown className="h-3.5 w-3.5 opacity-30" />

@@ -1,20 +1,25 @@
 package com.red_escuela.backend.billing.api;
 
-import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.billing.collections.service.StudentOverdueDebtFinder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
 
 @Component
 @Transactional(readOnly = true)
 public class StudentOverdueDebtQuery {
 
-    private final InvoiceQueryService invoiceQueryService;
+    private final StudentOverdueDebtFinder overdueDebtFinder;
+    private final Clock clock;
 
-    public StudentOverdueDebtQuery(InvoiceQueryService invoiceQueryService) {
-        this.invoiceQueryService = invoiceQueryService;
+    public StudentOverdueDebtQuery(StudentOverdueDebtFinder overdueDebtFinder, Clock clock) {
+        this.overdueDebtFinder = overdueDebtFinder;
+        this.clock = clock;
     }
 
     public boolean hasOverdueDebt(Long studentId) {
-        return invoiceQueryService.hasOverdueDebt(studentId);
+        return overdueDebtFinder.hasOverdueDebt(studentId, LocalDate.now(clock));
     }
 }

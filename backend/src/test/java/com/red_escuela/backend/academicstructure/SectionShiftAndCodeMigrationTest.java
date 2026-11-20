@@ -36,7 +36,7 @@ class SectionShiftAndCodeMigrationTest {
             jdbc.update("insert into subject (name, code) values ('Matematica 1', 'MAT1')");
             Long subjectId = jdbc.queryForObject("select max(id) from subject", Long.class);
             jdbc.update("insert into term (year_number, type, status, start_date, end_date, enrollment_start, enrollment_end) "
-                    + "values (2026, 'FIRST_SEMESTER', true, '2026-03-01', '2026-07-31', '2026-02-01', '2026-03-10')");
+                    + "values (2026, 'FIRST_SEMESTER', 'ACTIVE', '2026-03-01', '2026-07-31', '2026-02-01', '2026-03-10')");
             Long termId = jdbc.queryForObject("select max(id) from term", Long.class);
             insertSectionWithSlot(jdbc, "Sin franjas", subjectId, termId, null, null);
             insertSectionWithSlot(jdbc, "Manana", subjectId, termId, "09:00", "11:00");

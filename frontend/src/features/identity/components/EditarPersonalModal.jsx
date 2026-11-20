@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable';
@@ -9,7 +9,9 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
   const [confirming, setConfirming] = useState(false);
   const [form, setForm] = useState({ email: '', telefono: '', street: '', number: '', floor: '', city: '', state: '', postalCode: '', country: '' });
 
-  useEffect(() => {
+  const [synced, setSynced] = useState(null);
+  if (synced === null || synced.legajo !== legajo || synced.open !== open) {
+    setSynced({ legajo, open });
     if (legajo) {
       setForm({
         email: legajo.email ?? '',
@@ -24,7 +26,7 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
       });
     }
     setConfirming(false);
-  }, [legajo, open]);
+  }
 
   function set(field) {
     return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -64,7 +66,7 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
         {confirming ? (
           <div className="flex flex-col gap-3">
             <ChangeDiffTable rows={[{ key: 'email', label: 'Email', today: legajo.email, next: form.email.trim() }]} />
-            <p className="text-[13px] text-ink-soft">
+            <p className="text-size-13 text-ink-soft">
               {legajo.nombre} recibe un enlace a la casilla nueva y sigue ingresando con la actual hasta confirmarlo. Su reseteo de contraseña queda bloqueado 24 h.
             </p>
           </div>
@@ -72,37 +74,37 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Email</label>
+              <label className="text-size-13 font-medium text-ink">Email</label>
               <Input type="email" value={form.email} onChange={set('email')} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Teléfono</label>
+              <label className="text-size-13 font-medium text-ink">Teléfono</label>
               <Input value={form.telefono} onChange={set('telefono')} placeholder="+54 11..." />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Calle</label>
+              <label className="text-size-13 font-medium text-ink">Calle</label>
               <Input value={form.street} onChange={set('street')} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Número</label>
+              <label className="text-size-13 font-medium text-ink">Número</label>
               <Input value={form.number} onChange={set('number')} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Piso</label>
+              <label className="text-size-13 font-medium text-ink">Piso</label>
               <Input value={form.floor} onChange={set('floor')} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">Ciudad</label>
+              <label className="text-size-13 font-medium text-ink">Ciudad</label>
               <Input value={form.city} onChange={set('city')} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">CP</label>
+              <label className="text-size-13 font-medium text-ink">CP</label>
               <Input value={form.postalCode} onChange={set('postalCode')} />
             </div>
           </div>

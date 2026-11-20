@@ -1,11 +1,13 @@
 package com.red_escuela.backend.testsupport;
 
+import com.red_escuela.backend.shared.module.OnlinePaymentDependencyPort;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
 import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.platform.specialist.WhatsAppProviderConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockReset;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
@@ -24,7 +26,9 @@ import java.lang.annotation.Target;
         CurrentAccountAllocationService.class,
         PendingInvoiceQueryService.class,
         LateFeeChargeRepository.class,
-        EnrollmentWithdrawalBillingPort.class
+        EnrollmentWithdrawalBillingPort.class,
+        OnlinePaymentDependencyPort.class,
+        WhatsAppProviderConfiguration.class
 }, reset = MockReset.AFTER)
 public @interface SharedSpyBeans {
 }

@@ -85,9 +85,6 @@ function CursoEditarDatosForm({ id, course }) {
       ...validateCourseBasics({ name, capacity, price }),
       ...validateCourseDetail({ durationMonths, registrationStart, registrationEnd }),
     };
-    if (!found.price && course.price && price === '') {
-      found.price = 'No se puede dejar vacío: el sistema conserva el precio anterior. Ingresá 0 si el curso es gratuito.';
-    }
     if (course.teachingMode && !teachingMode) {
       found.teachingMode = 'No se puede quitar la modalidad una vez definida: elegí otra.';
     }
@@ -120,7 +117,7 @@ function CursoEditarDatosForm({ id, course }) {
         <div>
           <Link
             to={`/administrativo/gestion-academica/cursos/${id}`}
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             {course.name ?? 'Curso'}
@@ -147,9 +144,9 @@ function CursoEditarDatosForm({ id, course }) {
                 onChange={(e) => setCapacity(e.target.value)}
               />
             </FormField>
-            <FormField id="course-price" label="Precio" error={errors.price}>
+            <FormField id="course-price" label="Cuota mensual" required error={errors.price}>
               <Input
-                {...fieldProps('course-price', errors.price)}
+                {...fieldProps('course-price', errors.price, true)}
                 type="number"
                 min={0}
                 step={0.01}
@@ -202,12 +199,12 @@ function CursoEditarDatosForm({ id, course }) {
           </div>
 
           {countErrors(errors) > 0 && (
-            <p role="alert" className="text-[13px] text-danger">
+            <p role="alert" className="text-size-13 text-danger">
               {invalidFieldsSummary(errors)}
             </p>
           )}
           {submitError && (
-            <p role="alert" className="text-[13px] text-danger">
+            <p role="alert" className="text-size-13 text-danger">
               {submitError}
             </p>
           )}

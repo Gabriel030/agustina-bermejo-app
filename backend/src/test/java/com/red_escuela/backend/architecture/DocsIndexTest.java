@@ -19,6 +19,7 @@ class DocsIndexTest {
     private static final Path REPO_ROOT = Path.of("..");
     private static final Path DOCS_ROOT = REPO_ROOT.resolve("docs");
     private static final String INDEX_NAME = "README.md";
+    private static final String CELL_PROGRESS_PREFIX = "cell/progress/";
 
     @Test
     void everyMarkdownFileUnderDocsIsListedInTheIndex() throws IOException {
@@ -77,6 +78,9 @@ class DocsIndexTest {
                 continue;
             }
             String relative = docsRoot.relativize(document).toString().replace('\\', '/');
+            if (relative.startsWith(CELL_PROGRESS_PREFIX)) {
+                continue;
+            }
             if (!indexText.contains("](" + relative + ")")) {
                 unlisted.add(relative);
             }

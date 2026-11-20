@@ -78,6 +78,9 @@ public class ClosureEventsNotificationListener {
             eventPublisher.publishEvent(new ClosureNotification(NotificationType.CLOSURE_EXCEPTION_GRANTED,
                     "El Director registró una excepción de promoción en " + targets.sectionLabel() + ": " + event.reason(),
                     List.of(NotificationTopic.CLOSURE_SECRETARIAT), CLOSURE_ENTITY_TYPE, event.closureId()));
+            eventPublisher.publishEvent(new ClosureNotification(NotificationType.CLOSURE_EXCEPTION_GRANTED_TEACHER,
+                    "La planilla del cierre de " + targets.sectionLabel() + " cambió: el Director registró una excepción de promoción.",
+                    personRecipients(targets.instructorPersonIds()), CLOSURE_ENTITY_TYPE, event.closureId()));
         });
     }
 

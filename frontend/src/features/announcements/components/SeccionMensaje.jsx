@@ -8,7 +8,7 @@ import { CATEGORIA_AVISO_LABEL, hintDePrivacidad } from '@/lib/avisos';
 function Contador({ actual, max }) {
   const cerca = actual >= max * 0.9;
   return (
-    <span className={`text-[11px] tabular-nums ${cerca ? 'font-bold text-warning' : 'text-ink-faint'}`}>
+    <span className={`text-size-11 tabular-nums ${cerca ? 'font-bold text-warning' : 'text-ink-faint'}`}>
       {actual}/{max}
     </span>
   );
@@ -19,7 +19,7 @@ export function SeccionMensaje({ valores, onChange, mostrarHintPrivacidad, alcan
     <GlassCard className="flex flex-col gap-4 p-5">
       <div className="flex flex-wrap items-end gap-3.5">
         <div className="flex min-w-[220px] flex-1 flex-col gap-1.5">
-          <label className="text-[13px] font-semibold text-ink" htmlFor="categoria">
+          <label className="text-size-13 font-semibold text-ink" htmlFor="categoria">
             Categoría
           </label>
           <Select value={valores.category} onValueChange={(category) => onChange({ ...valores, category })}>
@@ -39,7 +39,7 @@ export function SeccionMensaje({ valores, onChange, mostrarHintPrivacidad, alcan
           type="button"
           aria-pressed={valores.urgent}
           onClick={() => onChange({ ...valores, urgent: !valores.urgent })}
-          className={`rounded-xl border px-3.5 py-2 text-[12.5px] font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+          className={`rounded-xl border px-3.5 py-2 text-size-12-5 font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
             valores.urgent
               ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-on-accent'
               : 'border-border text-ink-soft hover:border-brand hover:text-ink'
@@ -51,7 +51,7 @@ export function SeccionMensaje({ valores, onChange, mostrarHintPrivacidad, alcan
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-2">
-          <label className="text-[13px] font-semibold text-ink" htmlFor="titulo">
+          <label className="text-size-13 font-semibold text-ink" htmlFor="titulo">
             Título
           </label>
           <Contador actual={valores.title.length} max={100} />
@@ -67,7 +67,7 @@ export function SeccionMensaje({ valores, onChange, mostrarHintPrivacidad, alcan
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-2">
-          <label className="text-[13px] font-semibold text-ink" htmlFor="mensaje">
+          <label className="text-size-13 font-semibold text-ink" htmlFor="mensaje">
             Mensaje
           </label>
           <Contador actual={valores.body.length} max={1000} />
@@ -83,7 +83,7 @@ export function SeccionMensaje({ valores, onChange, mostrarHintPrivacidad, alcan
       </div>
 
       {mostrarHintPrivacidad && (
-        <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-[12.5px] leading-relaxed text-ink-soft">
+        <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-2" aria-hidden="true" />
           <span>{hintDePrivacidad({ alcanzados, programado })}</span>
         </div>

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
 import java.time.Clock;
+import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResolver;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -61,6 +62,9 @@ public class SubjectSectionEnrollmentService {
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final SectionWaitlistPromoter waitlistPromoter;
     private final SubjectRetakeGuard subjectRetakeGuard;
+    private final FinalExamEligibilityResolver finalExamEligibilityResolver;
+    private final StudentScheduleOverlapGuard scheduleOverlapGuard;
+    private final EnrollmentChangeEventPublisher changeEventPublisher;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -75,8 +79,14 @@ public class SubjectSectionEnrollmentService {
             StudentEnrollmentEligibility studentEnrollmentEligibility,
             SectionWaitlistPromoter waitlistPromoter,
             SubjectRetakeGuard subjectRetakeGuard,
+            FinalExamEligibilityResolver finalExamEligibilityResolver,
+            StudentScheduleOverlapGuard scheduleOverlapGuard,
+            EnrollmentChangeEventPublisher changeEventPublisher,
             Clock clock) {
+        this.scheduleOverlapGuard = scheduleOverlapGuard;
+        this.changeEventPublisher = changeEventPublisher;
         this.subjectRetakeGuard = subjectRetakeGuard;
+        this.finalExamEligibilityResolver = finalExamEligibilityResolver;
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.waitlistPromoter = waitlistPromoter;
@@ -98,7 +108,7 @@ public class SubjectSectionEnrollmentService {
         Student student = programEnrollment.getStudent();
         studentEnrollmentEligibility.requireConfirmedAndActive(student);
 
-        ProgramSectionView section = sectionFinder.findProgramSection(request.sectionId());
+        ProgramSectionView section = sectionFinder.findOpenProgramSection(request.sectionId());
         validateEnrollmentWindow(section.termId());
         enrollmentFeeRequirementService.requireForTerm(programEnrollment, academicReferenceFinder.findTerm(section.termId()));
 
@@ -126,6 +136,8 @@ public class SubjectSectionEnrollmentService {
             SubjectSectionEnrollment reactivada = existente.get();
             reactivada.setStatus(calculateStatusByCapacity(section));
             reactivada.setDroppedAt(null);
+            reactivada.setWithdrawalReason(null);
+            reactivada.setWithdrawnByPersonId(null);
             reactivada.setEnrolledAt(LocalDateTime.now(clock));
             return subjectSectionEnrollmentRepository.save(reactivada);
         }
@@ -156,6 +168,11 @@ public class SubjectSectionEnrollmentService {
 
     @Transactional
     public void withdraw(Long id) {
+        withdraw(id, EnrollmentChange.byStudent());
+    }
+
+    @Transactional
+    public void withdraw(Long id, EnrollmentChange change) {
         sectionFinder.lockProgramSection(findSubjectSectionIdOrThrow(id));
         SubjectSectionEnrollment enrollment = findOrThrow(id);
         EnrollmentStatus previousStatus = enrollment.getStatus();
@@ -164,16 +181,29 @@ public class SubjectSectionEnrollmentService {
             throw new CannotWithdrawException(
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS/WAITLISTED, no se puede dar de baja");
         }
-        enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
-        enrollment.setDroppedAt(LocalDateTime.now(clock));
+        markWithdrawn(enrollment, change, LocalDateTime.now(clock));
         subjectSectionEnrollmentRepository.save(enrollment);
         if (previousStatus != EnrollmentStatus.WAITLISTED) {
             promoteNextFromWaitlist(enrollment.subjectSectionId());
         }
+        changeEventPublisher.publishSubjectWithdrawn(enrollment, change);
+    }
+
+    private void markWithdrawn(SubjectSectionEnrollment enrollment, EnrollmentChange change, LocalDateTime now) {
+        enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
+        enrollment.setDroppedAt(now);
+        enrollment.setWithdrawalReason(change.reason());
+        enrollment.setWithdrawnByPersonId(change.actorPersonId() != null
+                ? change.actorPersonId() : enrollment.getStudent().getPerson().getId());
     }
 
     @Transactional
     public SubjectSectionEnrollment changeSection(Long id, ChangeSectionRequest request) {
+        return changeSection(id, request, EnrollmentChange.byStudent());
+    }
+
+    @Transactional
+    public SubjectSectionEnrollment changeSection(Long id, ChangeSectionRequest request, EnrollmentChange change) {
         lockProgramEnrollmentOrThrow(findProgramEnrollmentIdOrThrow(id));
         lockSectionsInAscendingOrder(findSubjectSectionIdOrThrow(id), request.newSectionId());
         SubjectSectionEnrollment origen = findOrThrow(id);
@@ -183,7 +213,7 @@ public class SubjectSectionEnrollmentService {
         }
         studentEnrollmentEligibility.requireConfirmedAndActive(origen.getStudent());
 
-        ProgramSectionView destino = sectionFinder.findProgramSection(request.newSectionId());
+        ProgramSectionView destino = sectionFinder.findOpenProgramSection(request.newSectionId());
         if (!destino.subjectId().equals(origen.subjectId())) {
             throw new InvalidSectionChangeException(
                     "La comisión destino tiene que ser de la misma materia que la comisión origen");
@@ -201,14 +231,14 @@ public class SubjectSectionEnrollmentService {
         if (countOccupiedSeats(destino.id()) >= capacityOf(destino)) {
             throw new SectionFullException(destino.id());
         }
+        scheduleOverlapGuard.requireNoOverlapForProgramSection(origen.getStudent().getId(), destino.id(), destino.termId(), origen.getId());
 
         Student student = origen.getStudent();
         ProgramEnrollment programEnrollment = origen.getProgramEnrollment();
         Integer attemptNumber = origen.getAttemptNumber();
         LocalDateTime now = LocalDateTime.now(clock);
 
-        origen.setStatus(EnrollmentStatus.WITHDRAWN);
-        origen.setDroppedAt(now);
+        markWithdrawn(origen, change, now);
         subjectSectionEnrollmentRepository.save(origen);
         promoteNextFromWaitlist(origen.subjectSectionId());
 
@@ -218,8 +248,12 @@ public class SubjectSectionEnrollmentService {
             SubjectSectionEnrollment reactivada = existenteDestino.get();
             reactivada.setStatus(calculateStatusByCapacity(destino));
             reactivada.setDroppedAt(null);
+            reactivada.setWithdrawalReason(null);
+            reactivada.setWithdrawnByPersonId(null);
             reactivada.setEnrolledAt(now);
-            return subjectSectionEnrollmentRepository.save(reactivada);
+            SubjectSectionEnrollment saved = subjectSectionEnrollmentRepository.save(reactivada);
+            changeEventPublisher.publishSectionChanged(origen, saved, change);
+            return saved;
         }
 
         SubjectSectionEnrollment nueva = new SubjectSectionEnrollment();
@@ -229,7 +263,9 @@ public class SubjectSectionEnrollmentService {
         nueva.setStatus(calculateStatusByCapacity(destino));
         nueva.setEnrolledAt(now);
         nueva.setAttemptNumber(attemptNumber);
-        return subjectSectionEnrollmentRepository.save(nueva);
+        SubjectSectionEnrollment saved = subjectSectionEnrollmentRepository.save(nueva);
+        changeEventPublisher.publishSectionChanged(origen, saved, change);
+        return saved;
     }
 
     public List<SubjectSectionEnrollment> listByEnrollment(Long programEnrollmentId) {
@@ -245,7 +281,8 @@ public class SubjectSectionEnrollmentService {
                     return SectionEnrollmentResponse.from(
                             enrollment,
                             position == null ? null : position.curricularYear(),
-                            position == null ? null : position.curricularTerm());
+                            position == null ? null : position.curricularTerm())
+                            .withFinalExamEligibility(finalExamEligibilityResolver.resolve(enrollment));
                 })
                 .toList();
     }

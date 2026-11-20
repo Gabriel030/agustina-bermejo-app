@@ -47,6 +47,12 @@ class ClosureEventsNotificationListenerTest {
         when(entityManager.getReference(Person.class, 11L)).thenReturn(person(11L));
         when(entityManager.getReference(Person.class, 12L)).thenReturn(person(12L));
         when(entityManager.getReference(Person.class, 77L)).thenReturn(person(77L));
+        when(entityManager.getReference(Person.class, 78L)).thenReturn(person(78L));
+        when(entityManager.getReference(Person.class, 88L)).thenReturn(person(88L));
+        when(targetsFinder.findClosureTargets(6L)).thenReturn(new ClosureNotificationTargets("Historia · B", "ACTA-2026-0043", 1, List.of(88L),
+                List.of(new ClosureStudentNotificationTarget(13L, "Promociona")), 1, 0));
+        when(targetsFinder.findClosureTargets(7L)).thenReturn(new ClosureNotificationTargets("Teorías · C", "ACTA-2026-0044", 1, List.of(77L, 78L),
+                List.of(new ClosureStudentNotificationTarget(11L, "Promociona")), 1, 0));
         when(targetsFinder.findClosureTargets(5L)).thenReturn(new ClosureNotificationTargets("Teorías · A", "ACTA-2026-0042", 1, List.of(77L),
                 List.of(new ClosureStudentNotificationTarget(11L, "Promociona"), new ClosureStudentNotificationTarget(12L, "Va a final")), 1, 1));
     }
@@ -92,7 +98,7 @@ class ClosureEventsNotificationListenerTest {
     void anExceptionIsAnnouncedToTheSecretariatTopicWithoutNamingTheStudent() {
         listener.notifyClosureExceptionGranted(ClosureExceptionGrantedEvent.of(5L, "PROGRAM", 9L, 31L, "Legajo en trámite"));
 
-        ClosureNotification notification = published(1).get(0);
+        ClosureNotification notification = published(2).get(0);
         assertThat(notification.type()).isEqualTo(NotificationType.CLOSURE_EXCEPTION_GRANTED);
         assertThat(notification.recipients()).containsExactly(NotificationTopic.CLOSURE_SECRETARIAT);
         assertThat(notification.message()).contains("Teorías · A", "Legajo en trámite");
@@ -107,5 +113,46 @@ class ClosureEventsNotificationListenerTest {
         assertThat(notification.message()).contains("7 días", "Teorías · A");
         assertThat(notification.relatedEntityType()).isEqualTo("SubjectSection");
         assertThat(notification.relatedEntityId()).isEqualTo(9L);
+    }
+
+    private List<Long> recipientPersonIds(ClosureNotification notification) {
+        return notification.recipients().stream().map(recipient -> ((PersonRecipient) recipient).person().getId()).toList();
+    }
+
+    @Test
+    void anExceptionAlsoNotifiesTheTeacherOfTheCommissionWithoutReasonNorStudentData() {
+        listener.notifyClosureExceptionGranted(ClosureExceptionGrantedEvent.of(5L, "PROGRAM", 9L, 31L, "Legajo en trámite"));
+
+        ClosureNotification teacherNotice = published(2).get(1);
+        assertThat(teacherNotice.type()).isEqualTo(NotificationType.CLOSURE_EXCEPTION_GRANTED_TEACHER);
+        assertThat(recipientPersonIds(teacherNotice)).containsExactly(77L);
+        assertThat(teacherNotice.message()).contains("Teorías · A", "planilla").doesNotContain("Legajo en trámite", "pago", "documento");
+    }
+
+    @Test
+    void theTeacherNoticeNeverReachesTheStudentsNorTeachersOfOtherCommissions() {
+        listener.notifyClosureExceptionGranted(ClosureExceptionGrantedEvent.of(6L, "PROGRAM", 10L, 32L, "Beca"));
+
+        ClosureNotification teacherNotice = published(2).get(1);
+        assertThat(recipientPersonIds(teacherNotice)).containsExactly(88L).doesNotContain(77L, 13L, 11L, 12L);
+    }
+
+    @Test
+    void everyTeacherOfTheCommissionIsNotifiedInASingleNotification() {
+        listener.notifyClosureExceptionGranted(ClosureExceptionGrantedEvent.of(7L, "PROGRAM", 11L, 33L, "Beca"));
+
+        ClosureNotification teacherNotice = published(2).get(1);
+        assertThat(recipientPersonIds(teacherNotice)).containsExactly(77L, 78L);
+    }
+
+    @Test
+    void theTeacherNoticeIsSentThroughTheOnceOnlyGuard() {
+        ClosureExceptionGrantedEvent event = ClosureExceptionGrantedEvent.of(5L, "PROGRAM", 9L, 31L, "Legajo en trámite");
+        doAnswer(invocation -> false).when(effectGuard).runEffectOnce(any(), any(), any());
+
+        listener.notifyClosureExceptionGranted(event);
+
+        verify(eventPublisher, times(0)).publishEvent(any(ClosureNotification.class));
+        verify(effectGuard).runEffectOnce(any(), org.mockito.ArgumentMatchers.eq(ClosureEventsNotificationListener.NOTIFY_CLOSURE_EXCEPTION_GRANTED_HANDLER), any());
     }
 }

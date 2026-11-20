@@ -1,0 +1,5 @@
+package com.red_escuela.backend.dataimport.entity;
+
+public enum ImportBatchStatus {
+    DRAFT, FILES_UPLOADED, VALIDATING, VALIDATED, VALIDATION_FAILED, COMMITTING, COMMITTED, PARTIAL, FAILED, SEALED, ROLLING_BACK, ROLLED_BACK
+}

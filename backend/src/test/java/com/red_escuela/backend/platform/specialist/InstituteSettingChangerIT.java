@@ -32,7 +32,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
@@ -75,7 +74,7 @@ class InstituteSettingChangerIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
 
-    @MockitoBean
+    @Autowired
     private OnlinePaymentDependencyPort onlinePaymentDependencies;
 
     private Long actorId;
@@ -85,7 +84,7 @@ class InstituteSettingChangerIT extends AbstractIntegrationTest {
         restoreSeedState();
         actorId = transactions.execute(status -> persistDirector().getId());
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(actorId.toString(), null));
-        Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(0L);
+        Mockito.doReturn(0L).when(onlinePaymentDependencies).countOpenOnlineDependencies();
         instituteSnapshotHolder.refresh();
         featureSnapshotHolder.refresh();
     }
@@ -125,7 +124,7 @@ class InstituteSettingChangerIT extends AbstractIntegrationTest {
 
     @Test
     void disablingLastDigitalMethodWithOpenOnlineInvoicesIsRejected() {
-        Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(3L);
+        Mockito.doReturn(3L).when(onlinePaymentDependencies).countOpenOnlineDependencies();
 
         assertThatThrownBy(() -> changer.change(change(InstituteSettingCode.PAYMENT_METHOD_BANK_TRANSFER, false, null, "Dejamos de aceptar transferencias")))
                 .isInstanceOfSatisfying(LastDigitalPaymentMethodRequiredException.class, failure -> assertThat(failure.details()).containsEntry("openOnlineInvoices", 3L));
@@ -143,7 +142,7 @@ class InstituteSettingChangerIT extends AbstractIntegrationTest {
 
     @Test
     void disablingDigitalMethodIsAllowedWhenAnotherDigitalMethodIsEnabledByPlatformAndInstitute() {
-        Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(5L);
+        Mockito.doReturn(5L).when(onlinePaymentDependencies).countOpenOnlineDependencies();
         enableGatewayOnPlatformAndInstitute();
 
         changer.change(change(InstituteSettingCode.PAYMENT_METHOD_BANK_TRANSFER, false, null, "Queda la pasarela online"));
@@ -153,7 +152,7 @@ class InstituteSettingChangerIT extends AbstractIntegrationTest {
 
     @Test
     void disablingDigitalMethodIsRejectedWhenTheOtherDigitalMethodIsOnlyEnabledByTheInstitute() {
-        Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(5L);
+        Mockito.doReturn(5L).when(onlinePaymentDependencies).countOpenOnlineDependencies();
         jdbc.update("update institute_setting set enabled = true where code = 'PAYMENT_METHOD_GATEWAY'");
 
         assertThatThrownBy(() -> changer.change(change(InstituteSettingCode.PAYMENT_METHOD_BANK_TRANSFER, false, null, "La pasarela está apagada por la plataforma")))
@@ -162,7 +161,7 @@ class InstituteSettingChangerIT extends AbstractIntegrationTest {
 
     @Test
     void disablingTheGatewayIsRejectedWhenItIsTheLastUsableDigitalMethod() {
-        Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(2L);
+        Mockito.doReturn(2L).when(onlinePaymentDependencies).countOpenOnlineDependencies();
         enableGatewayOnPlatformAndInstitute();
         jdbc.update("update institute_setting set enabled = false where code = 'PAYMENT_METHOD_BANK_TRANSFER'");
 
@@ -172,7 +171,7 @@ class InstituteSettingChangerIT extends AbstractIntegrationTest {
 
     @Test
     void disablingCashIsAllowedEvenWithOpenOnlineInvoices() {
-        Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(7L);
+        Mockito.doReturn(7L).when(onlinePaymentDependencies).countOpenOnlineDependencies();
 
         changer.change(change(InstituteSettingCode.PAYMENT_METHOD_CASH, false, null, "Ya no se cobra en caja"));
 

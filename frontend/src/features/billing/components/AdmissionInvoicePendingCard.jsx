@@ -31,7 +31,7 @@ function SolicitudPendiente({ solicitud, principal }) {
     return (
       <div className="flex flex-col gap-2 rounded-xl bg-warning-bg px-4 py-3">
         <StatusPill tone="warning">Pago en revisión</StatusPill>
-        <div className="text-[13px] text-ink-soft">
+        <div className="text-size-13 text-ink-soft">
           <span className="font-semibold text-ink">{solicitud.programName}.</span> Subiste el comprobante el{' '}
           {formatFecha(admissionInvoice.receiptUploadedAt)}; cuando lo aprobemos tu inscripción queda confirmada.
         </div>
@@ -40,7 +40,7 @@ function SolicitudPendiente({ solicitud, principal }) {
           size="inline"
           type="button"
           onClick={() => navigate(`/alumno/pagos/${admissionInvoice.id}/transferencia`, { state: originState })}
-          className="w-fit text-[12.5px] font-semibold"
+          className="w-fit text-size-12-5 font-semibold"
           >
           Ver estado del pago
         </Button>
@@ -50,7 +50,7 @@ function SolicitudPendiente({ solicitud, principal }) {
 
   return (
     <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${fase === 'OVERDUE' ? 'bg-warning-bg' : 'bg-neutral-bg'}`}>
-      <div className="text-[13px] text-ink-soft">{textoDeVencimiento(solicitud)}</div>
+      <div className="text-size-13 text-ink-soft">{textoDeVencimiento(solicitud)}</div>
       <Button
         variant={principal ? 'gradient' : 'outline'}
         onClick={() => navigate(`/alumno/pagos/${admissionInvoice.id}/seleccion`, { state: originState })}
@@ -85,7 +85,7 @@ export function AdmissionInvoicePendingCard() {
 
   return (
     <GlassCard className="flex flex-col gap-3 p-5">
-      <div className="font-heading text-[15px] font-semibold text-ink">{titulo}</div>
+      <div className="font-heading text-size-15 font-semibold text-ink">{titulo}</div>
       {pendientes.map((solicitud) => (
         <SolicitudPendiente key={solicitud.id} solicitud={solicitud} principal={solicitud.id === primeraAccionable?.id} />
       ))}

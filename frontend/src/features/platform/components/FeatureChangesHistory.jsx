@@ -103,9 +103,9 @@ export function FeatureChangesHistory() {
   return (
     <section aria-labelledby="feature-history-title" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="feature-history-title" className="font-heading text-[16px] font-semibold text-ink">Historial de cambios</h2>
+        <h2 id="feature-history-title" className="font-heading text-size-16 font-semibold text-ink">Historial de cambios</h2>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-[13px] font-medium text-ink-soft">
+          <label className="flex items-center gap-2 text-size-13 font-medium text-ink-soft">
             Módulo
             <NativeSelect
               className="w-auto"
@@ -118,7 +118,7 @@ export function FeatureChangesHistory() {
               ))}
             </NativeSelect>
           </label>
-          <label className="flex items-center gap-2 text-[13px] font-medium text-ink-soft">
+          <label className="flex items-center gap-2 text-size-13 font-medium text-ink-soft">
             Quién
             <NativeSelect
               className="w-auto"
@@ -131,11 +131,11 @@ export function FeatureChangesHistory() {
               ))}
             </NativeSelect>
           </label>
-          <label className="flex items-center gap-2 text-[13px] font-medium text-ink-soft">
+          <label className="flex items-center gap-2 text-size-13 font-medium text-ink-soft">
             Desde
             <Input type="date" value={from} max={to || undefined} onChange={(event) => selectFrom(event.target.value)} className="w-fit" />
           </label>
-          <label className="flex items-center gap-2 text-[13px] font-medium text-ink-soft">
+          <label className="flex items-center gap-2 text-size-13 font-medium text-ink-soft">
             Hasta
             <Input type="date" value={to} min={from || undefined} onChange={(event) => selectTo(event.target.value)} className="w-fit" />
           </label>

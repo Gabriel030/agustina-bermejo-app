@@ -45,21 +45,21 @@ function CohortCard({ cohort }) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[14px] font-semibold text-ink">{cohortTitle(cohort)}</span>
+            <span className="text-size-14 font-semibold text-ink">{cohortTitle(cohort)}</span>
             <StatusPill tone={status.tone}>{status.label}</StatusPill>
           </div>
-          {dateRange && <p className="mt-0.5 text-[12px] text-ink-faint">{dateRange}</p>}
+          {dateRange && <p className="mt-0.5 text-size-12 text-ink-faint">{dateRange}</p>}
           {cohort.cursadaStart && (
-            <p className="text-[12px] text-ink-faint">Inicio cursada: {cohort.cursadaStart}</p>
+            <p className="text-size-12 text-ink-faint">Inicio cursada: {cohort.cursadaStart}</p>
           )}
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-[12px] text-ink-faint">Inscriptos</p>
-          <p className="text-[14px] font-semibold text-ink">—</p>
+          <p className="text-size-12 text-ink-faint">Inscriptos</p>
+          <p className="text-size-14 font-semibold text-ink">—</p>
         </div>
       </div>
       {cohort.createdByName && (
-        <p className="mt-2 text-[11px] text-ink-faint">Creado por {cohort.createdByName}</p>
+        <p className="mt-2 text-size-11 text-ink-faint">Creado por {cohort.createdByName}</p>
       )}
     </GlassCard>
   );
@@ -72,7 +72,7 @@ export function CohortesSection({ programId }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Cohortes de ingreso</h2>
+        <h2 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Cohortes de ingreso</h2>
         <Button variant="gradient" size="sm" disabled={isError} onClick={() => setDialogOpen(true)}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           Nueva cohorte

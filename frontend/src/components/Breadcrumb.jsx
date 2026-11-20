@@ -9,7 +9,7 @@ export function Breadcrumb({ items }) {
   if (!items || items.length === 0) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px]">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-size-13">
       {items.map((item, i) => {
         const esUltimo = i === items.length - 1;
         return (

@@ -96,20 +96,20 @@ export function DetalleCarrera() {
         <GlassCard className="flex flex-wrap gap-6 p-5">
           <div>
             <div className="text-xs text-ink-faint">Matrícula (1ª cohorte)</div>
-            <div className="text-[15px] font-bold text-ink">{formatMoney(pricing?.matriculaCohorte1) || 'A definir'}</div>
+            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte1) || 'A definir'}</div>
           </div>
           <div>
             <div className="text-xs text-ink-faint">Matrícula (2ª cohorte)</div>
-            <div className="text-[15px] font-bold text-ink">{formatMoney(pricing?.matriculaCohorte2) || 'A definir'}</div>
+            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte2) || 'A definir'}</div>
           </div>
           <div>
             <div className="text-xs text-ink-faint">Cuota mensual</div>
-            <div className="text-[15px] font-bold text-ink">{formatMoney(pricing?.cuotaMensual) || 'A definir'}</div>
+            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.cuotaMensual) || 'A definir'}</div>
           </div>
         </GlassCard>
       </CatalogBlock>
 
-      <h2 className="font-heading text-[15px] font-semibold text-ink-soft">Plan de estudio</h2>
+      <h2 className="font-heading text-size-15 font-semibold text-ink-soft">Plan de estudio</h2>
       <CatalogBlock query={planQuery} resource="el plan de estudio" skeletonClassName="h-40">
         {planQuery.data?.length === 0 && (
           <GlassCard className="p-6 text-sm text-ink-faint">Todavía no se cargó el plan de estudio de esta carrera.</GlassCard>

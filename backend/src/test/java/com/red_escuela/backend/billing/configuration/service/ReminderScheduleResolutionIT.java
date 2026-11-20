@@ -116,7 +116,7 @@ class ReminderScheduleResolutionIT extends AbstractIntegrationTest {
     }
 
     private Long insertProgram(String name) {
-        return jdbcTemplate.queryForObject("insert into program (name, status, total_years, currency) values (?, true, 3, 'ARS') returning id", Long.class,
+        return jdbcTemplate.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 3, 'ARS') returning id", Long.class,
                 name + "." + System.nanoTime());
     }
 

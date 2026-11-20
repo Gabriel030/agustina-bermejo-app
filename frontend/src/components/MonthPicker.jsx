@@ -278,7 +278,7 @@ export function MonthPicker({ value, onChange, minMonth, maxMonth, currentMonth,
                 <StepButton label="Años anteriores" reason={minYear !== null && pageStart <= minYear ? NO_DATA_YEAR_REASON : null} onClick={() => setYear(pageStart - 1)}>
                   <ChevronLeft className="size-4" />
                 </StepButton>
-                <span className="font-heading text-[15px] font-bold tabular-nums">
+                <span className="font-heading text-size-15 font-bold tabular-nums">
                   {pageStart} – {pageStart + YEARS_PER_PAGE - 1}
                 </span>
                 <StepButton label="Años siguientes" reason={pageStart + YEARS_PER_PAGE - 1 >= anchorYear ? FUTURE_YEAR_REASON : null} onClick={() => setYear(pageStart + YEARS_PER_PAGE)}>
@@ -336,7 +336,7 @@ export function MonthPicker({ value, onChange, minMonth, maxMonth, currentMonth,
                     aria-label={reason ? `${shortcut.aria}, ${reason.toLowerCase()}` : shortcut.aria}
                     aria-disabled={reason ? 'true' : undefined}
                     onClick={reason ? undefined : () => pick(shortcut.month)}
-                    className={cn('h-10 flex-1 px-2 text-[13px] font-bold', reason && 'cursor-not-allowed opacity-50')}
+                    className={cn('h-10 flex-1 px-2 text-size-13 font-bold', reason && 'cursor-not-allowed opacity-50')}
                   >
                     {shortcut.text}
                   </Button>

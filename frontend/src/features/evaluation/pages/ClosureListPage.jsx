@@ -114,8 +114,7 @@ export function ClosureListPage({ role }) {
           data={data?.items}
           getRowId={(item) => `${item.sectionKind}-${item.sectionId}`}
           isLoading={isLoading}
-          mobileLayout="scroll"
-          minWidth={1160}
+          minWidth={0}
           emptyState={
             <EmptyState
               title="Ninguna comisión coincide con la búsqueda."

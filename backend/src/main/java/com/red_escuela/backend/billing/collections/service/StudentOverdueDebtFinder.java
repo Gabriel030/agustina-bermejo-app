@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.collections.repository.StudentUnpaidDocumentsQuery;
+import com.red_escuela.backend.billing.collections.repository.StudentUnpaidDocumentsQuery.StudentUnprotectedUnpaidDocument;
 import com.red_escuela.backend.billing.collections.repository.StudentUnpaidDocumentsQuery.UnprotectedUnpaidDocument;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
@@ -8,8 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class StudentOverdueDebtFinder {
@@ -30,6 +34,18 @@ public class StudentOverdueDebtFinder {
         Map<LocalDate, Integer> graceByDueDate = new HashMap<>();
         return unpaidDocuments.findUnprotectedDueBefore(studentId, today, protectionWindow.earliestProtectedUploadDateAsOf(today)).stream()
                 .anyMatch(document -> isPastGrace(document, today, graceByDueDate));
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Long> findStudentIdsWithOverdueDebt(Collection<Long> studentIds, LocalDate today) {
+        if (studentIds.isEmpty()) {
+            return Set.of();
+        }
+        Map<LocalDate, Integer> graceByDueDate = new HashMap<>();
+        return unpaidDocuments.findUnprotectedDueBefore(studentIds, today, protectionWindow.earliestProtectedUploadDateAsOf(today)).stream()
+                .filter(entry -> isPastGrace(entry.document(), today, graceByDueDate))
+                .map(StudentUnprotectedUnpaidDocument::studentId)
+                .collect(Collectors.toSet());
     }
 
     private boolean isPastGrace(UnprotectedUnpaidDocument document, LocalDate today, Map<LocalDate, Integer> graceByDueDate) {

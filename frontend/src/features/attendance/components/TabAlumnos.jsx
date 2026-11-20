@@ -51,9 +51,9 @@ const COLUMNS = [
     cell: ({ row }) => <span className="text-ink-faint">{row.original.dni}</span>,
   },
   {
-    id: 'absenceCount',
-    header: 'Faltas',
-    accessorKey: 'absenceCount',
+    id: 'countableAbsences',
+    header: 'Inasistencias',
+    accessorFn: (row) => row.absenceStanding.countableAbsences,
     cell: ({ row }) => <span className="tabular-nums">{row.original.risk.text}</span>,
   },
   {
@@ -88,9 +88,10 @@ const COLUMNS = [
 ];
 
 function maxRuleNote(rows) {
-  const reference = rows.find((row) => row.maxAbsenceRate != null && row.classesHeld > 0);
+  const reference = rows.find((row) => row.absenceStanding.maxAbsencePercent != null && row.absenceStanding.classesHeld > 0);
   if (!reference || reference.risk.permitted == null) return null;
-  return `Máximo de la comisión: ${percentFormatter.format(reference.maxAbsenceRate)}% de las clases (${reference.risk.permitted} de ${reference.classesHeld} dictadas)`;
+  const { maxAbsencePercent, classesHeld } = reference.absenceStanding;
+  return `Máximo de la comisión: ${percentFormatter.format(maxAbsencePercent)}% de las clases (${reference.risk.permitted} de ${classesHeld} dictadas)`;
 }
 
 export function TabAlumnos({ type, sectionId }) {
@@ -142,14 +143,14 @@ export function TabAlumnos({ type, sectionId }) {
         <EmptyState
           icon="👥"
           title="Todavía no hay alumnos inscriptos"
-          description="Cuando se inscriba el primero vas a verlo acá con sus faltas y su riesgo."
+          description="Cuando se inscriba el primero vas a verlo acá con sus inasistencias y su riesgo."
         />
       </GlassCard>
     );
   }
 
   const atRiskCount = rows.filter((row) => row.risk.level !== 'ok').length;
-  const totalAbsences = rows.reduce((sum, row) => sum + row.absenceCount, 0);
+  const totalAbsences = rows.reduce((sum, row) => sum + row.absenceStanding.countableAbsences, 0);
   const note = maxRuleNote(rows);
 
   return (
@@ -157,20 +158,20 @@ export function TabAlumnos({ type, sectionId }) {
       <div className="grid grid-cols-3 gap-3">
         <Stagger>
           <StatCard label="Inscriptos" className="p-3 md:p-5">
-            <span className="font-heading text-[22px] font-bold text-ink md:text-[26px]">{rows.length}</span>
+            <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{rows.length}</span>
           </StatCard>
           <StatCard label="En riesgo" className="p-3 md:p-5">
-            <span className="font-heading text-[22px] font-bold text-danger md:text-[26px]">{atRiskCount}</span>
+            <span className="font-heading text-size-22 font-bold text-danger md:text-size-26">{atRiskCount}</span>
           </StatCard>
-          <StatCard label="Faltas acumuladas" className="p-3 md:p-5">
-            <span className="font-heading text-[22px] font-bold text-ink md:text-[26px]">{totalAbsences}</span>
+          <StatCard label="Inasistencias acumuladas" className="p-3 md:p-5">
+            <span className="font-heading text-size-22 font-bold text-ink md:text-size-26">{totalAbsences}</span>
           </StatCard>
         </Stagger>
       </div>
       <GlassCard className="flex flex-col gap-3 p-3 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Buscador value={search} onChange={setSearch} placeholder="Buscar por nombre o DNI" />
-          {note && <span className="text-[12.5px] text-ink-faint">{note}</span>}
+          {note && <span className="text-size-12-5 text-ink-faint">{note}</span>}
         </div>
         <DataTable
           columns={COLUMNS}

@@ -30,7 +30,7 @@ function CorrectionSteps({ row, saving, failure, onClose, onConfirm }) {
     <div className="flex flex-col gap-4">
       <Stepper pasos={STEPS} pasoActual={step} pasosVisitados={step === 'confirm' ? ['data', 'confirm'] : ['data']} />
       {failure && (
-        <p role="alert" className="rounded-xl bg-danger-bg px-3 py-2.5 text-[13px] font-semibold text-pill-danger">
+        <p role="alert" className="rounded-xl bg-danger-bg px-3 py-2.5 text-size-13 font-semibold text-pill-danger">
           {failure}
         </p>
       )}
@@ -98,9 +98,9 @@ function CorrectionSteps({ row, saving, failure, onClose, onConfirm }) {
           <ChangesTable rows={correctionChangeRows(row, form)} />
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-ink-soft">Motivo</span>
-            <p className="whitespace-pre-wrap border-l-[3px] border-primary pl-3 text-[13px] text-ink-soft">{form.reason}</p>
+            <p className="whitespace-pre-wrap border-l-[3px] border-primary pl-3 text-size-13 text-ink-soft">{form.reason}</p>
           </div>
-          <p className="border-l-[3px] border-border pl-3 text-[12.5px] leading-relaxed text-ink-soft">
+          <p className="border-l-[3px] border-border pl-3 text-size-12-5 leading-relaxed text-ink-soft">
             Se aplica al confirmar y queda en el historial. Hasta que se cierre el acta podés volver a corregirla.
           </p>
           <div className="flex justify-end gap-2">

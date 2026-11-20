@@ -67,7 +67,7 @@ function buildSubjectColumns() {
       header: 'Código',
       accessorKey: 'code',
       cell: ({ row }) => (
-        <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{row.original.code}</span>
+        <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{row.original.code}</span>
       ),
     },
     {
@@ -79,12 +79,12 @@ function buildSubjectColumns() {
         <div className="min-w-0">
           <Link
             to={`/administrativo/gestion-academica/${row.original.id}`}
-            className="block truncate text-[14px] font-medium text-ink hover:underline"
+            className="block truncate text-size-14 font-medium text-ink hover:underline"
           >
             {row.original.name}
           </Link>
           {row.original.status === 'REJECTED' && row.original.rejectionReason && (
-            <span className="block truncate text-[12px] text-danger">Motivo: {row.original.rejectionReason}</span>
+            <span className="block truncate text-size-12 text-danger">Motivo: {row.original.rejectionReason}</span>
           )}
         </div>
       ),
@@ -172,8 +172,8 @@ function ProgramRow({ program, navigate }) {
       onClick={() => navigate(`/administrativo/gestion-academica/carreras/${program.id}`)}
       >
       <div className="min-w-0">
-        <span className="block truncate text-[14px] font-medium text-ink">{program.name}</span>
-        {meta && <span className="text-[12px] text-ink-faint">{meta}</span>}
+        <span className="block truncate text-size-14 font-medium text-ink">{program.name}</span>
+        {meta && <span className="text-size-12 text-ink-faint">{meta}</span>}
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
@@ -201,8 +201,8 @@ function CourseRow({ course, navigate }) {
       onClick={() => navigate(`/administrativo/gestion-academica/cursos/${course.id}`)}
       >
       <div className="min-w-0">
-        <span className="block truncate text-[14px] font-medium text-ink">{course.name}</span>
-        {meta && <span className="text-[12px] text-ink-faint">{meta}</span>}
+        <span className="block truncate text-size-14 font-medium text-ink">{course.name}</span>
+        {meta && <span className="text-size-12 text-ink-faint">{meta}</span>}
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
@@ -217,7 +217,7 @@ function PublishedProgramRow({ program, onRetire, isRetiring }) {
   return (
     <div className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60">
       <div className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-medium text-ink">{program.name}</span>
+        <span className="block truncate text-size-14 font-medium text-ink">{program.name}</span>
         <div className="flex items-center gap-2 mt-0.5">
           <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
         </div>
@@ -299,7 +299,7 @@ function PublishedCourseRow({ course, onRetire, isRetiring }) {
   return (
     <div className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60">
       <div className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-medium text-ink">{course.name}</span>
+        <span className="block truncate text-size-14 font-medium text-ink">{course.name}</span>
         <div className="flex items-center gap-2 mt-0.5">
           <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
         </div>

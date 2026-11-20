@@ -60,7 +60,7 @@ export function TabCarreras({ search, onSearchChange, page, onPageChange }) {
                   de CADA card en vez de quedar pegada al título — si el título
                   de al lado ocupa 2 líneas, sin esto la meta queda "flotando"
                   en alturas distintas entre cards de la misma fila. */}
-              <div className="mt-auto text-[13px] text-ink-faint">{programSummary(programa)}</div>
+              <div className="mt-auto text-size-13 text-ink-faint">{programSummary(programa)}</div>
             </GlassCard>
           ))}
         </Stagger>

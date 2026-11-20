@@ -1,6 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { QueryClientContext } from '@tanstack/react-query';
 import { apiFetch, setAccessToken, setOfflineSessionMode, setSessionExpiredHandler } from '@/api/client';
+import { clearSessionHint, hasSessionHint, markSessionActive, readLegacyRefreshToken, sessionRefreshRequest } from '@/api/sessionHint';
+import { myModulesQuery } from '@/hooks/useMyModules';
+import { pendingLegalAcceptancesQuery } from '@/features/identity/hooks/useLegal';
 import { claimOfflineCache, purgeOfflineData, readOfflineProfile, storeOfflineProfile } from '@/api/offlinePersistence';
 
 const AuthContext = createContext(null);
@@ -13,24 +16,21 @@ function isSessionRejected(error) {
 
 let storedSessionRestoration = null;
 
-export function restoreStoredSession() {
+export function restoreStoredSession(onTokensReady) {
   if (!storedSessionRestoration) {
-    storedSessionRestoration = loadStoredSession().finally(() => {
+    storedSessionRestoration = loadStoredSession(onTokensReady).finally(() => {
       storedSessionRestoration = null;
     });
   }
   return storedSessionRestoration;
 }
 
-async function loadStoredSession() {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return null;
-  const tokens = await apiFetch('/auth/refresh', {
-    method: 'POST',
-    body: JSON.stringify({ refreshToken }),
-  });
+async function loadStoredSession(onTokensReady) {
+  if (!hasSessionHint()) return null;
+  const tokens = await apiFetch('/auth/refresh', sessionRefreshRequest());
   setAccessToken(tokens.accessToken);
-  localStorage.setItem('refreshToken', tokens.refreshToken);
+  markSessionActive();
+  onTokensReady?.();
   return apiFetch('/me');
 }
 
@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
 
   const limpiarSesion = useCallback(() => {
     setAccessToken(null);
-    localStorage.removeItem('refreshToken');
+    clearSessionHint();
     setUsuario(null);
     setOfflineProfile(null);
     setOfflineSessionMode(false);
@@ -58,10 +58,11 @@ export function AuthProvider({ children }) {
       await purgeOfflineData(queryClient);
       setOfflineSessionMode(false);
       setAccessToken(tokens.accessToken);
-      localStorage.setItem('refreshToken', tokens.refreshToken);
+      markSessionActive();
       const perfil = await apiFetch('/me');
       await claimOfflineCache(perfil.id, queryClient);
       await storeOfflineProfile(perfil);
+      queryClient?.setQueryData(['me'], perfil);
       setUsuario(perfil);
       setLoggedOut(false);
       setSessionExpired(false);
@@ -79,19 +80,27 @@ export function AuthProvider({ children }) {
     setSessionExpiredHandler(expireSession);
   }, [expireSession]);
 
+  const prefetchBootstrapQueries = useCallback(() => {
+    queryClient?.prefetchQuery(pendingLegalAcceptancesQuery);
+    queryClient?.prefetchQuery(myModulesQuery);
+  }, [queryClient]);
+
   const attemptRestore = useCallback(async () => {
+    const wasOffline = sessionPending;
     try {
-      const perfil = await restoreStoredSession();
+      const perfil = await restoreStoredSession(prefetchBootstrapQueries);
       if (perfil) {
-        await claimOfflineCache(perfil.id, queryClient);
+        const ownerChanged = await claimOfflineCache(perfil.id, queryClient);
         await storeOfflineProfile(perfil);
+        queryClient?.setQueryData(['me'], perfil);
+        if (ownerChanged) prefetchBootstrapQueries();
         setUsuario(perfil);
       }
       setOfflineSessionMode(false);
       setOfflineProfile(null);
       setSessionPending(false);
       setRestoreAttempts(0);
-      queryClient?.invalidateQueries();
+      if (wasOffline) queryClient?.invalidateQueries();
     } catch (error) {
       if (isSessionRejected(error)) {
         setSessionPending(false);
@@ -105,10 +114,10 @@ export function AuthProvider({ children }) {
     } finally {
       setCargando(false);
     }
-  }, [queryClient, expireSession]);
+  }, [queryClient, expireSession, sessionPending, prefetchBootstrapQueries]);
 
   useEffect(() => {
-    if (!localStorage.getItem('refreshToken')) {
+    if (!hasSessionHint()) {
       setCargando(false);
       return;
     }
@@ -146,10 +155,10 @@ export function AuthProvider({ children }) {
   // Mismo patrón que login(): guarda tokens y le pide el perfil a /me. A
   // diferencia de login, la persona queda sin roles hasta su primera
   // aprobación (ver ProgramEnrollmentApplicationService / CourseEnrollmentService).
-  const register = useCallback(async ({ nombre, apellido, email, username, password, institutionId }) => {
+  const register = useCallback(async (data) => {
     const tokens = await apiFetch('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ nombre, apellido, email, username, password, institutionId }),
+      body: JSON.stringify(data),
     });
     return beginSession(tokens);
   }, [beginSession]);
@@ -179,18 +188,22 @@ export function AuthProvider({ children }) {
   const refrescarPerfil = useCallback(async () => {
     const perfil = await apiFetch('/me');
     await storeOfflineProfile(perfil);
+    queryClient?.setQueryData(['me'], perfil);
     setUsuario(perfil);
     setLoggedOut(false);
     return perfil;
-  }, []);
+  }, [queryClient]);
 
   const logout = useCallback(async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const legacyToken = readLegacyRefreshToken();
+    const hadSession = hasSessionHint();
     setLoggedOut(true);
     limpiarSesion();
-    if (refreshToken) {
+    if (hadSession) {
       try {
-        await apiFetch('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken }) });
+        await apiFetch('/auth/logout', legacyToken
+          ? { method: 'POST', body: JSON.stringify({ refreshToken: legacyToken }) }
+          : { method: 'POST' });
       } catch {
         // El logout local ya se aplicó; si la llamada al backend falla (red, token ya
         // vencido) no hay nada más que el usuario pueda hacer desde acá.

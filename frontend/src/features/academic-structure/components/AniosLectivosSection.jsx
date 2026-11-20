@@ -26,7 +26,7 @@ function Alert({ tone, children }) {
   const classes = tone === 'danger' ? 'bg-danger-bg text-ink' : 'bg-warning-bg text-ink';
   const iconClasses = tone === 'danger' ? 'text-danger' : 'text-warning';
   return (
-    <div role="alert" className={`flex items-start gap-2 rounded-xl px-3 py-2 text-[13px] ${classes}`}>
+    <div role="alert" className={`flex items-start gap-2 rounded-xl px-3 py-2 text-size-13 ${classes}`}>
       <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${iconClasses}`} />
       <span>{children}</span>
     </div>
@@ -67,7 +67,7 @@ export function AniosLectivosSection({ programId, canEdit = false }) {
       )}
 
       {!canEdit && (
-        <p className="text-[13px] text-ink-faint">Solo el director puede modificar la configuración de cobro.</p>
+        <p className="text-size-13 text-ink-faint">Solo el director puede modificar la configuración de cobro.</p>
       )}
 
       {isLoading ? (
@@ -87,9 +87,9 @@ export function AniosLectivosSection({ programId, canEdit = false }) {
               <GlassCard key={template.id} className="flex flex-col gap-3 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-ink">{tituloDe(template)} — {template.recurringFeeInvoicesCount} cuotas</p>
-                    <p className="text-[12px] text-ink-faint">{descripcionMatriculas(template)}</p>
-                    {line && <p className="text-[12px] text-ink-faint">{line}</p>}
+                    <p className="text-size-14 font-semibold text-ink">{tituloDe(template)} — {template.recurringFeeInvoicesCount} cuotas</p>
+                    <p className="text-size-12 text-ink-faint">{descripcionMatriculas(template)}</p>
+                    {line && <p className="text-size-12 text-ink-faint">{line}</p>}
                   </div>
                   {canEdit && (
                     <Button variant="outline" size="sm" onClick={() => setEditando(template)} aria-label={`Configurar cobro de ${tituloDe(template)}`}>

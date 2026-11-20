@@ -49,6 +49,7 @@ function gradeCell(row, column) {
 
 export function buildClosureColumns(sheet, { onOpenPrerequisites, detail = false, rowActions = null }) {
   const exams = examColumns(sheet);
+  const hasAbsenceLimit = sheet.scheme.maxAbsenceRate != null;
   return [
     {
       id: 'student',
@@ -109,19 +110,21 @@ export function buildClosureColumns(sheet, { onOpenPrerequisites, detail = false
     },
     {
       id: 'attendance',
-      header: `Asist. (mín. ${100 - sheet.scheme.maxAbsenceRate}%)`,
+      header: hasAbsenceLimit
+        ? `Asist. (mín. ${100 - sheet.scheme.maxAbsenceRate}%)`
+        : () => <ClosureHeaderAbbreviation short="Asist." full="Sin límite de inasistencias configurado" />,
       accessorFn: (row) => (isWithdrawn(row) ? undefined : row.attendancePercent),
       sortUndefined: 'last',
       sortDescFirst: true,
       meta: { align: 'right' },
       cell: ({ row }) =>
         isWithdrawn(row.original) ? null : (
-          <span className={cn(row.original.requirements.attendance === false && 'font-semibold text-danger')}>{formatScore(row.original.attendancePercent)}%</span>
+          <span className={cn(hasAbsenceLimit && row.original.requirements.attendance === false && 'font-semibold text-danger')}>{formatScore(row.original.attendancePercent)}%</span>
         ),
     },
     requirementColumn('coursework', 'TP', 'TP aprobados', (row) => row.requirements.coursework),
     requirementColumn('correlatives', 'Co', 'Correlativas', (row) => row.requirements.correlatives),
-    requirementColumn('attendanceOk', 'As', 'Asistencia', (row) => row.requirements.attendance),
+    requirementColumn('attendanceOk', 'As', 'Asistencia', (row) => (hasAbsenceLimit ? row.requirements.attendance : null)),
     requirementColumn('gradeOk', 'No', 'Ambos parciales con nota de promoción', (row) => row.requirements.grade),
     {
       ...requirementColumn('documents', 'Le', 'Legajo completo', (row) => row.administrative.documentsComplete),

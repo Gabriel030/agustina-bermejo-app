@@ -26,6 +26,17 @@ public class BasePersonCreator {
     }
 
     @Transactional
+    public void deleteBasePerson(Person person) {
+        Address address = person.getAddress();
+        personRepository.delete(person);
+        personRepository.flush();
+        if (address != null) {
+            addressRepository.delete(address);
+            addressRepository.flush();
+        }
+    }
+
+    @Transactional
     public Person createBasePerson(String firstName, String lastName, String email) {
         Address address = new Address();
         addressRepository.save(address);

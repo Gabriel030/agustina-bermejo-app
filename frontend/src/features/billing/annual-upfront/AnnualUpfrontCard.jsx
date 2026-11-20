@@ -75,7 +75,7 @@ function InstallmentsList({ lines }) {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex w-fit items-center gap-1 text-[13px] font-semibold"
+        className="flex w-fit items-center gap-1 text-size-13 font-semibold"
         >
         {summary.amount ? `${summary.count} cuotas de ${formatMoney(summary.amount)}` : `${summary.count} cuotas`}
         <Icon size={14} />
@@ -83,7 +83,7 @@ function InstallmentsList({ lines }) {
       {open && (
         <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
           {lines.map((line) => (
-            <li key={line.lineNumber} className="flex justify-between gap-3 rounded-lg bg-neutral-bg px-3 py-1.5 text-[13px]">
+            <li key={line.lineNumber} className="flex justify-between gap-3 rounded-lg bg-neutral-bg px-3 py-1.5 text-size-13">
               <span className="capitalize text-ink-soft">{periodLabel(line.period)}</span>
               <span className="tabular-nums text-ink">{formatMoney(line.finalAmount)}</span>
             </li>
@@ -139,7 +139,7 @@ function RequestDialog({ enrollmentId, quote, keyFor, onClose }) {
             <span className="text-sm text-ink-soft">Total del año</span>
             <span className="text-xl font-semibold tabular-nums text-ink">{formatMoney(quote.total)}</span>
           </div>
-          <p className="text-[13px] text-ink-soft">
+          <p className="text-size-13 text-ink-soft">
             Vas a tener hasta el {formatDateTime(quote.paymentDeadline)} para pagar por transferencia o en efectivo en administración.
           </p>
           <TermsAcceptanceRow
@@ -224,7 +224,7 @@ function Frame({ title, pill, children }) {
   return (
     <GlassCard className="flex flex-col gap-3 p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="font-heading text-[15px] font-semibold text-ink">{title}</div>
+        <div className="font-heading text-size-15 font-semibold text-ink">{title}</div>
         {pill}
       </div>
       {children}
@@ -241,7 +241,7 @@ function Offer({ enrollmentId, programName, eligibility, lastDiscarded, primary 
   return (
     <Frame title={`Pagá el año completo · ${programName}`} pill={!quote.discount && <StatusPill tone="neutral">Sin promoción</StatusPill>}>
       {lastDiscarded && (
-        <div className="flex items-start gap-2 rounded-xl bg-neutral-bg px-3 py-2 text-[13px] text-ink-soft">
+        <div className="flex items-start gap-2 rounded-xl bg-neutral-bg px-3 py-2 text-size-13 text-ink-soft">
           <Info size={14} className="mt-0.5 shrink-0" />
           <span>
             {DISCARDED_TITLES[lastDiscarded.discardReason] ?? 'Pedido anterior descartado'}
@@ -254,7 +254,7 @@ function Offer({ enrollmentId, programName, eligibility, lastDiscarded, primary 
         {hasSaving && <StatusPill tone="success">Ahorrás {formatMoney(saving)}</StatusPill>}
       </div>
       <InstallmentsList lines={quote.lines} />
-      <p className="text-[13px] text-ink-soft">
+      <p className="text-size-13 text-ink-soft">
         Podés elegirla una sola vez, hasta el {formatDate(requestDeadline)}. Si pagás una cuota, ya no.
       </p>
       <Button variant={primary ? 'gradient' : 'outline'} className="w-full sm:w-fit" onClick={() => setRequesting(true)}>
@@ -269,9 +269,9 @@ function Unavailable({ programName, eligibility, lastDiscarded }) {
   const known = INELIGIBLE_REASONS[eligibility.reasonCode];
   return (
     <Frame title={`Pagá el año completo · ${programName}`} pill={<StatusPill tone={known?.tone ?? 'neutral'}>{known?.label ?? 'No disponible'}</StatusPill>}>
-      <p className="text-[13px] text-ink-soft">{eligibility.reasonMessage}</p>
+      <p className="text-size-13 text-ink-soft">{eligibility.reasonMessage}</p>
       {lastDiscarded && (
-        <p className="text-[13px] text-ink-faint">
+        <p className="text-size-13 text-ink-faint">
           {DISCARDED_TITLES[lastDiscarded.discardReason] ?? 'Pedido descartado'}.
         </p>
       )}
@@ -291,7 +291,7 @@ function Tracking({ request, programName, primary }) {
     return (
       <Frame title={title} pill={<StatusPill tone="warning">Pago en revisión</StatusPill>}>
         <div className="text-2xl font-semibold tabular-nums text-ink">{formatMoney(request.total)}</div>
-        <p className="text-[13px] text-ink-soft">Estamos revisando tu pago. Mientras tanto el pedido no vence.</p>
+        <p className="text-size-13 text-ink-soft">Estamos revisando tu pago. Mientras tanto el pedido no vence.</p>
         <Button variant="outline" className="w-full sm:w-fit" onClick={goToReceipt}>
           Ver estado del pago
         </Button>
@@ -303,7 +303,7 @@ function Tracking({ request, programName, primary }) {
     return (
       <Frame title={title} pill={<StatusPill tone="success">Año confirmado</StatusPill>}>
         <div className="text-2xl font-semibold tabular-nums text-ink">{formatMoney(request.total)}</div>
-        <p className="text-[13px] text-ink-soft">Pagaste el año completo. Las cuotas quedan cubiertas.</p>
+        <p className="text-size-13 text-ink-soft">Pagaste el año completo. Las cuotas quedan cubiertas.</p>
       </Frame>
     );
   }
@@ -321,9 +321,9 @@ function Tracking({ request, programName, primary }) {
     <Frame title={title} pill={<StatusPill tone="warning">Esperando el pago</StatusPill>}>
       <div className="flex flex-wrap items-baseline gap-x-3">
         <span className="text-2xl font-semibold tabular-nums text-ink">{formatMoney(request.total)}</span>
-        <span className="text-[13px] text-ink-soft">Pagalo antes del {formatDateTime(request.paymentDeadline)}</span>
+        <span className="text-size-13 text-ink-soft">Pagalo antes del {formatDateTime(request.paymentDeadline)}</span>
       </div>
-      <div className="rounded-xl bg-neutral-bg px-4 py-3 text-[13px] text-ink-soft">
+      <div className="rounded-xl bg-neutral-bg px-4 py-3 text-size-13 text-ink-soft">
         <p className="font-semibold text-ink">Cómo sigue</p>
         <ul className="mt-1 list-disc pl-5">
           <li>Transferí el total y subí el comprobante.</li>

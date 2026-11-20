@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
@@ -100,6 +100,26 @@ describe('LegajoAlumno — load failure', () => {
   });
 });
 
+describe('LegajoAlumno — deep links to a tab', () => {
+  it.each([
+    ['academico', 'Académico'],
+    ['financiero', 'Financiero'],
+  ])('opens the %s tab when the view query asks for it', async (view, label) => {
+    server.use(
+      http.get(`${API}/students/9`, () => HttpResponse.json(STUDENT)),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/:rol/alumnos/:id" element={<LegajoAlumno />} />
+      </Routes>,
+      { route: `/administrativo/alumnos/9?view=${view}` },
+    );
+
+    expect(await screen.findByRole('tab', { name: label })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
 describe('LegajoAlumno — failed actions', () => {
   afterEach(() => {
     auth.roles = ['PRECEPTOR'];
@@ -127,7 +147,7 @@ describe('LegajoAlumno — failed actions', () => {
     );
     const user = userEvent.setup();
     renderAs('director');
-    await user.click(await screen.findByRole('button', { name: 'Dar de baja' }));
+    await user.click(await screen.findByRole('button', { name: 'Dar de baja al alumno del instituto' }));
     await user.click(screen.getByRole('combobox'));
     await user.click(await screen.findByRole('option', { name: 'Abandono' }));
     await user.type(screen.getByPlaceholderText(/Información adicional/), 'Dejó de asistir');
@@ -151,4 +171,41 @@ describe('LegajoAlumno — failed actions', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Tuvimos un problema de nuestro lado');
     expect(screen.getByRole('button', { name: 'Enviar link' })).toBeEnabled();
   });
+
+  it('reactivatesAWithdrawnStudentWithAReasonAndRefreshesTheRecord', async () => {
+    let body = null;
+    let status = 'DELETED';
+    auth.roles = ['DIRECTOR'];
+    server.use(
+      http.get(`${API}/students/9`, () => HttpResponse.json({ ...STUDENT, status })),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+      http.post(`${API}/students/9/reactivate`, async ({ request }) => {
+        body = await request.json();
+        status = 'ACTIVE';
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Routes>
+        <Route path="/:rol/alumnos/:id" element={<LegajoAlumno />} />
+      </Routes>,
+      { route: '/director/alumnos/9' },
+    );
+    expect(await screen.findByText('Dado de baja')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dar de baja al alumno del instituto' })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Reactivar alumno' }));
+    await user.type(screen.getByPlaceholderText('Motivo de la reactivación'), 'fue una baja por error');
+    await user.click(screen.getByRole('button', { name: 'Reactivar' }));
+
+    await waitFor(() => expect(body).toEqual({ reason: 'fue una baja por error' }));
+    expect(await screen.findByText('Activo')).toBeInTheDocument();
+  });
+
+  it('doesNotOfferReactivationToPreceptorOrForActiveStudents', async () => {
+    renderAs('preceptor');
+    expect(await screen.findByText('Pérez, Lucía')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivar alumno' })).not.toBeInTheDocument();
+  });
 });
+

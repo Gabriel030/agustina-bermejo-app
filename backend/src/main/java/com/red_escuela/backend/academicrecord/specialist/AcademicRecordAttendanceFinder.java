@@ -2,7 +2,7 @@ package com.red_escuela.backend.academicrecord.specialist;
 
 import com.red_escuela.backend.academicrecord.dto.StudentAttendanceResponse;
 import com.red_escuela.backend.academicrecord.dto.StudentAttendanceRiskResponse;
-import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
+import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 import com.red_escuela.backend.attendance.api.StudentAttendanceReader;
 import org.springframework.stereotype.Service;
 
@@ -12,12 +12,12 @@ import java.util.List;
 public class AcademicRecordAttendanceFinder {
 
     private final StudentAttendanceReader studentAttendanceReader;
-    private final AttendanceRiskReader attendanceRiskReader;
+    private final AttendanceStandingReader attendanceStandingReader;
 
     public AcademicRecordAttendanceFinder(
-            StudentAttendanceReader studentAttendanceReader, AttendanceRiskReader attendanceRiskReader) {
+            StudentAttendanceReader studentAttendanceReader, AttendanceStandingReader attendanceStandingReader) {
         this.studentAttendanceReader = studentAttendanceReader;
-        this.attendanceRiskReader = attendanceRiskReader;
+        this.attendanceStandingReader = attendanceStandingReader;
     }
 
     public List<StudentAttendanceResponse> listProgramEnrollmentAttendance(Long enrollmentId) {
@@ -27,7 +27,7 @@ public class AcademicRecordAttendanceFinder {
     }
 
     public StudentAttendanceRiskResponse readProgramEnrollmentRisk(Long enrollmentId) {
-        return StudentAttendanceRiskResponse.from(attendanceRiskReader.readProgramEnrollmentRisk(enrollmentId));
+        return StudentAttendanceRiskResponse.from(attendanceStandingReader.readProgramEnrollmentStanding(enrollmentId));
     }
 
     public List<StudentAttendanceResponse> listCourseEnrollmentAttendance(Long enrollmentId) {
@@ -37,7 +37,7 @@ public class AcademicRecordAttendanceFinder {
     }
 
     public StudentAttendanceRiskResponse readCourseEnrollmentRisk(Long enrollmentId) {
-        return StudentAttendanceRiskResponse.from(attendanceRiskReader.readCourseEnrollmentRisk(enrollmentId));
+        return StudentAttendanceRiskResponse.from(attendanceStandingReader.readCourseEnrollmentStanding(enrollmentId));
     }
 
     public void requireAttendanceOwnedBy(Long attendanceId, Long studentId) {

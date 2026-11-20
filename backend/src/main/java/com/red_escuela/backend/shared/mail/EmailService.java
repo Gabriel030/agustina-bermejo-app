@@ -8,5 +8,9 @@ public interface EmailService {
 
     void sendEmailChangeVerification(String recipientName, String newEmail, String verificationLink);
 
-    void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail);
+    void sendPasswordResetLockoutNotice(String recipientName, String email);
+
+    void sendGuardianLegalConfirmation(String guardianName, String guardianEmail, String minorFirstName, String institutionName, String confirmationLink);
+
+    void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail, String cancellationLink);
 }

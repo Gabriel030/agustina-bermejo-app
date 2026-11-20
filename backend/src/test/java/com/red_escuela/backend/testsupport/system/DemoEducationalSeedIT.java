@@ -12,6 +12,7 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.specialist.DemoLearnerAccountsSeeder;
 import com.red_escuela.backend.identity.specialist.LocalSeedRunner;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
+import com.red_escuela.backend.testsupport.NightlyTest;
 import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.shared.time.MutableClock;
 import java.time.LocalDate;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@NightlyTest(reason = "Seeds the demo educational data through the real HTTP API; guards demo data only, not product behavior")
 @SlowTest(reason = "Seeds the demo educational data through the real HTTP API of a started application")
 class DemoEducationalSeedIT extends AbstractIntegrationTest {
     @LocalServerPort

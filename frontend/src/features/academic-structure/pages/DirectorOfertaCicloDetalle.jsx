@@ -37,7 +37,7 @@ function buildSectionColumns(conflicted) {
       meta: { filterable: true, filterTitle: 'Materia', cardTitle: true },
       cell: ({ row }) => (
         <div className="flex min-w-0 flex-col gap-1">
-          <span className="font-heading text-[14px] font-semibold text-ink">{row.original.subjectName}</span>
+          <span className="font-heading text-size-14 font-semibold text-ink">{row.original.subjectName}</span>
           <span className="text-xs text-ink-faint">Comisión {row.original.code ?? row.original.name}</span>
           {conflicted.has(row.original.id) && <StatusPill tone="danger">Cruce</StatusPill>}
         </div>
@@ -59,7 +59,7 @@ function buildSectionColumns(conflicted) {
       cell: ({ row }) => (
         <ul className="flex flex-col gap-0.5">
           {sortedSlots(row.original.slots).map((slot) => (
-            <li key={`${slot.dayOfWeek}-${slot.startTime}-${slot.classroomId}`} className="whitespace-normal text-[13px] text-ink">
+            <li key={`${slot.dayOfWeek}-${slot.startTime}-${slot.classroomId}`} className="whitespace-normal text-size-13 text-ink">
               {slotLabel(slot)}
             </li>
           ))}
@@ -74,11 +74,11 @@ function buildSectionColumns(conflicted) {
       cell: ({ row }) => (
         <ul className="flex flex-col gap-0.5">
           {(row.original.instructors ?? []).map((instructor) => (
-            <li key={`${instructor.name}-${instructor.role}`} className="whitespace-normal text-[13px] text-ink">
+            <li key={`${instructor.name}-${instructor.role}`} className="whitespace-normal text-size-13 text-ink">
               {instructor.name}
             </li>
           ))}
-          {!row.original.instructors?.length && <li className="text-[13px] text-ink-faint">Sin docente</li>}
+          {!row.original.instructors?.length && <li className="text-size-13 text-ink-faint">Sin docente</li>}
         </ul>
       ),
     },
@@ -95,12 +95,12 @@ function buildSectionColumns(conflicted) {
 function ConflictsNotice({ conflicts }) {
   return (
     <div role="alert" className="flex flex-col gap-2 rounded-2xl border border-danger/30 bg-danger-bg px-4 py-3 text-danger">
-      <div className="font-heading text-[14px] font-semibold">
+      <div className="font-heading text-size-14 font-semibold">
         {conflicts.length === 1 ? 'Hay 1 cruce para revisar antes de aprobar' : `Hay ${conflicts.length} cruces para revisar antes de aprobar`}
       </div>
       <ul className="flex flex-col gap-2">
         {conflicts.map((conflict, index) => (
-          <li key={`${conflict.type}-${conflict.ownSection.sectionId}-${conflict.otherSection.sectionId}-${index}`} className="text-[13px] text-ink">
+          <li key={`${conflict.type}-${conflict.ownSection.sectionId}-${conflict.otherSection.sectionId}-${index}`} className="text-size-13 text-ink">
             <b className="font-semibold">{conflictTitle(conflict)}</b>
             <span className="block">{conflictDetail(conflict)}</span>
           </li>
@@ -119,14 +119,14 @@ function DecidedNotice({ cycle, alreadyDecided }) {
   const pill = CYCLE_STATUS_LABEL[cycle.status] ?? ESTADO_TRAMITE_LABEL[cycle.status] ?? { label: 'Sin estado', tone: 'neutral' };
   return (
     <GlassCard className="flex flex-col gap-2 p-4">
-      <div className="font-heading text-[15px] font-semibold text-ink">
+      <div className="font-heading text-size-15 font-semibold text-ink">
         {alreadyDecided ? 'Otra persona de dirección ya decidió este trámite' : 'Este ciclo ya no está pendiente'}
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-soft">
+      <div className="flex flex-wrap items-center gap-2 text-size-13 text-ink-soft">
         <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
         {cycle.decidedByName && <span>Decidió {cycle.decidedByName} · {formatearFecha(cycle.decidedAt) ?? '—'}</span>}
       </div>
-      {cycle.rejectionReason && <p className="text-[13px] text-ink">Motivo: &ldquo;{cycle.rejectionReason}&rdquo;</p>}
+      {cycle.rejectionReason && <p className="text-size-13 text-ink">Motivo: &ldquo;{cycle.rejectionReason}&rdquo;</p>}
     </GlassCard>
   );
 }
@@ -195,7 +195,7 @@ export function DirectorOfertaCicloDetalle() {
 
   return (
     <PageContainer>
-      <Link to={OFFER_APPROVALS_PATH} className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+      <Link to={OFFER_APPROVALS_PATH} className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink">
         ← Volver a Oferta por aprobar
       </Link>
 
@@ -205,7 +205,7 @@ export function DirectorOfertaCicloDetalle() {
           <p className="mt-0.5 text-sm text-ink-soft">
             {cycleTargetKind(cycle)} · {cycle.termName}
           </p>
-          <p className="mt-0.5 text-[13px] text-ink-faint">
+          <p className="mt-0.5 text-size-13 text-ink-faint">
             Enviado por {cycle.submittedByName ?? '—'} · {formatearFecha(cycle.submittedAt) ?? '—'}
           </p>
         </div>
@@ -216,14 +216,14 @@ export function DirectorOfertaCicloDetalle() {
 
       {pending && conflicts.length > 0 && <ConflictsNotice conflicts={conflicts} />}
       {pending && conflictsQuery.isError && (
-        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl bg-warning-bg px-4 py-3 text-[13px] text-ink">
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl bg-warning-bg px-4 py-3 text-size-13 text-ink">
           No pudimos comprobar los cruces de aulas y docentes.
           <Button variant="outline" size="sm" onClick={() => conflictsQuery.refetch()}>Reintentar</Button>
         </div>
       )}
 
       <GlassCard className="flex flex-col gap-2 p-2">
-        <h2 className="px-3 pt-2 font-heading text-[16px] font-semibold text-ink">Comisiones del ciclo</h2>
+        <h2 className="px-3 pt-2 font-heading text-size-16 font-semibold text-ink">Comisiones del ciclo</h2>
         <DataTable
           columns={buildSectionColumns(conflictedSectionIds(conflicts))}
           data={sections}

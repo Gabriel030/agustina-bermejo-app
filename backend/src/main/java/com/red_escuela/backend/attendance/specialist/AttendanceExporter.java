@@ -3,7 +3,7 @@ package com.red_escuela.backend.attendance.specialist;
 import com.red_escuela.backend.attendance.dto.AttendanceHistoryResponse;
 import com.red_escuela.backend.attendance.dto.ExportedAttendanceFile;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
-import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.attendance.api.AttendancePercentFormat;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,7 +105,7 @@ public class AttendanceExporter {
             List<String> values = new ArrayList<>();
             values.add(row.studentName());
             history.classDates().forEach(date -> values.add(statusOf(row, date)));
-            values.add(formatPercent(row.attendancePercent()));
+            values.add(AttendancePercentFormat.plain(row.attendancePercent()));
             return values;
         }).toList();
         return new Table("Historial de asistencia", headers, rows);
@@ -117,19 +116,17 @@ public class AttendanceExporter {
         return cell == null ? "-" : cell.status();
     }
 
-    private String formatPercent(Percentage percentage) {
-        return percentage == null ? "-" : percentage.points().setScale(0, RoundingMode.HALF_UP) + "%";
-    }
-
     private Table reportTable(List<RosterEntryResponse> report) {
-        List<String> headers = List.of("Alumno", "DNI", "Ausencias", "% Asistencia");
+        List<String> headers = List.of("Alumno", "DNI", "Inasistencias", "Por justificar", "% Inasistencia", "% Asistencia");
         List<List<String>> rows = report.stream()
                 .map(entry -> List.of(
                         entry.studentName(), entry.dni() == null ? "-" : entry.dni(),
                         String.valueOf(entry.absenceCount()),
-                        formatPercent(entry.attendancePercent())))
+                        String.valueOf(entry.pendingJustificationAbsences()),
+                        AttendancePercentFormat.absence(entry.absencePercent(), entry.maxAbsenceRate(), entry.atRisk()),
+                        AttendancePercentFormat.plain(entry.attendancePercent())))
                 .toList();
-        return new Table("Reporte de ausencias", headers, rows);
+        return new Table("Reporte de inasistencias", headers, rows);
     }
 
     private ExportedAttendanceFile generate(Table table, String scope, String format) {

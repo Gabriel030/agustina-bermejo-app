@@ -69,7 +69,7 @@ export function AdvanceEnrollmentFeeStaffSection({ enrollmentId, invoices = [] }
   const issuedInfo = issuedInvoice ? invoiceStatusInfo(invoiceDisplayStatus(issuedInvoice)) : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl bg-neutral-bg px-4 py-3 text-[13px] text-ink-soft">
+    <div className="flex flex-wrap items-center gap-2 rounded-xl bg-neutral-bg px-4 py-3 text-size-13 text-ink-soft">
       <span className="font-semibold text-ink">{concept}</span>
       {kind === 'issued' && issuedInfo && <StatusPill tone={issuedInfo.tone}>{issuedInfo.label}</StatusPill>}
       {kind === 'issued' && !issuedInfo && <StatusPill tone="neutral">Generada</StatusPill>}

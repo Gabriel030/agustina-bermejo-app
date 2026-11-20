@@ -1,8 +1,8 @@
 import { useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { ModalMotivo } from '@/components/ModalMotivo';
@@ -12,7 +12,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FEE_TYPE_LABELS, formatDate, formatMoney } from '@/lib/billing';
-import { inboxPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { inboxPath } from '../authorization/authorizationRequests';
 import { useOfferNames } from '../hooks/useOfferNames';
 import { PRICE_STATUS, REASON_MAX_LENGTH, VERSION_STATUS, amountOf, offerName, priceStatusKey } from './pricing';
 import { useCancelPriceVersion, usePriceHistory, usePrices } from './usePrices';
@@ -20,7 +20,7 @@ import { useCancelPriceVersion, usePriceHistory, usePrices } from './usePrices';
 function Breakdown({ version }) {
   const hasDiscount = amountOf(version.marketingDiscountAmount) > 0;
   return (
-    <p className="text-[13px] text-ink-soft">
+    <p className="text-size-13 text-ink-soft">
       Precio de lista {formatMoney(version.baseAmount)}
       {hasDiscount && ` − Descuento de marketing ${formatMoney(version.marketingDiscountAmount)}`}
       {hasDiscount && ` = Precio final ${formatMoney(version.finalAmount)}`}
@@ -92,8 +92,7 @@ function HistoryTable({ priceId }) {
 
 export function PriceDetailPage() {
   const { priceId } = useParams();
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const prices = usePrices();
   const names = useOfferNames();
@@ -162,7 +161,7 @@ export function PriceDetailPage() {
       <GlassCard className="flex flex-col gap-2 p-5">
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill tone={status.tone}>{status.label}</StatusPill>
-          {current && <span className="text-[12px] text-ink-faint">Vigente desde el {formatDate(current.effectiveFrom)}</span>}
+          {current && <span className="text-size-12 text-ink-faint">Vigente desde el {formatDate(current.effectiveFrom)}</span>}
         </div>
         {current ? (
           <>

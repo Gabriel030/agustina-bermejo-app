@@ -1,6 +1,6 @@
 package com.red_escuela.backend.academicrecord.dto;
 
-import com.red_escuela.backend.attendance.api.AttendanceRiskView;
+import com.red_escuela.backend.attendance.api.AttendanceStanding;
 import com.red_escuela.backend.shared.domain.Percentage;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -8,8 +8,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record StudentAttendanceRiskResponse(
         boolean calculable, boolean libre, Percentage absencePercent, Percentage maxAbsencePercent) {
 
-    public static StudentAttendanceRiskResponse from(AttendanceRiskView view) {
+    public static StudentAttendanceRiskResponse from(AttendanceStanding standing) {
         return new StudentAttendanceRiskResponse(
-                view.calculable(), view.libre(), view.absencePercent(), view.maxAbsencePercent());
+                standing.calculable(), standing.exceedsAbsenceLimit(),
+                standing.calculable() ? standing.absencePercent() : null, standing.maxAbsencePercent());
     }
 }

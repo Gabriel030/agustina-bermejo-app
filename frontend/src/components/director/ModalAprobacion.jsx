@@ -22,7 +22,7 @@ export function ModalAprobacion({ open, onClose, onConfirmar, confirmando, titul
           <DialogTitle>{titulo}</DialogTitle>
           <DialogDescription>Revisá el resumen antes de confirmar. La decisión no se puede deshacer.</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-1 rounded-xl bg-neutral-bg/50 p-3 text-[13.5px] text-ink">{resumen}</div>
+        <div className="flex flex-col gap-1 rounded-xl bg-neutral-bg/50 p-3 text-size-13-5 text-ink">{resumen}</div>
         {withNote && (
           <Textarea
             value={nota}

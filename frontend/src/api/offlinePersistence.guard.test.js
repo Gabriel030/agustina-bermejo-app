@@ -16,6 +16,10 @@ function sourceFiles(dir) {
 const MARKS_OFFLINE = /offline\s*:\s*true|offlineQuery\(/
 
 const OFFLINE_WHITELIST = {
+  'academic-structure/hooks/useHolidays.js': 'N0c',
+  'academic-structure/hooks/usePrograms.js': 'N0c',
+  'academic-structure/hooks/useTerminos.js': 'N0c',
+  'academic-structure/hooks/useTerms.js': 'N0c',
   'announcements/hooks/useNovedades.js': 'N0',
   'attendance/hooks/useStudentAttendance.js': 'N2',
   'notifications/hooks/useNotifications.js': 'N0',
@@ -52,6 +56,17 @@ describe('offline whitelist guard', () => {
       expect(source).not.toMatch(/['"`]\/me\/section-enrollments['"`]/)
       expect(source).not.toMatch(/grade-items|final-?score|finalScore|billing|payment|invoice|justificationReason|justificationRejectionReason/i)
     }
+  })
+
+  it('onlyTheModulesHookOutsideFeaturesIsMarkedOffline', () => {
+    const srcDir = join(process.cwd(), 'src')
+    const marked = sourceFiles(srcDir)
+      .filter((file) => !file.startsWith(featuresDir) && !/src\/(api|test)\//.test(file))
+      .filter((file) => MARKS_OFFLINE.test(readFileSync(file, 'utf8')))
+      .map((file) => file.slice(srcDir.length + 1))
+      .sort()
+    expect(marked).toEqual(['hooks/useMyModules.js'])
+    expect(readFileSync(join(srcDir, 'hooks', 'useMyModules.js'), 'utf8')).toMatch(/offlineQuery\('N0c'/)
   })
 
   it('onlyAuthContextWritesTheOfflineProfileAndItStoresOnlyNameAndRoles', () => {

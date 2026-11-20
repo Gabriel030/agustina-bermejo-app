@@ -6,7 +6,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/EmptyState';
-import { cn } from '@/lib/utils';
+import { ChoiceChip } from '@/components/ChoiceChip';
 import { useClassroomsAvailability } from '@/features/academic-structure/hooks/useClassrooms';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { ClassroomAvailabilityPicker } from '@/features/academic-structure/components/ClassroomAvailabilityPicker';
@@ -18,29 +18,21 @@ import { NativeSelect } from '@/components/ui/native-select';
 
 function SegmentedButton({ active, onClick, children }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        'shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors',
-        active ? 'bg-accent text-on-accent' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg',
-      )}
-    >
+    <ChoiceChip shape="pill" size="md" tone="solid" strong selected={active} onClick={onClick} className="shrink-0">
       {children}
-    </button>
+    </ChoiceChip>
   );
 }
 
 function FieldTitle({ children }) {
-  return <h2 className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{children}</h2>;
+  return <h2 className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">{children}</h2>;
 }
 
 function PeriodSelect({ termId, onChange }) {
   const { data: terms } = useTerminos();
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor="calendar-period" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+      <label htmlFor="calendar-period" className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
         Período
       </label>
       <NativeSelect
@@ -87,7 +79,7 @@ export function PreceptorCalendario() {
         <div>
           <Link
             to={`${basePath}/oferta-academica`}
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Oferta académica
@@ -141,7 +133,7 @@ export function PreceptorCalendario() {
               <ClassroomModuleSelector shift={shift} selection={selection} onChange={setSelection} />
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="classroom-seats" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+                <label htmlFor="classroom-seats" className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
                   Cupo
                 </label>
                 <Input

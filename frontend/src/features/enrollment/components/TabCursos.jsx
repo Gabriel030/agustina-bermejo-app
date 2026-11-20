@@ -58,7 +58,7 @@ export function TabCursos({ search, onSearchChange, page, onPageChange }) {
               {/* mt-auto: mismo criterio que TabCarreras — ancla la meta al pie
                   de cada card, para que no quede a distinta altura entre cards
                   de la misma fila cuando el título de una ocupa más líneas. */}
-              <div className="mt-auto text-[13px] text-ink-faint">{courseSummary(curso)}</div>
+              <div className="mt-auto text-size-13 text-ink-faint">{courseSummary(curso)}</div>
             </GlassCard>
           ))}
         </Stagger>

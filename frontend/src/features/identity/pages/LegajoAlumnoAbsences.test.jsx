@@ -62,9 +62,21 @@ function mockStudent() {
         creditosRequeridos: 120,
         promedioGeneral: 7,
         esRegular: true,
+        hasActiveCoursework: true,
         elegibleParaCompletar: false,
         obligatoriasPendientes: [],
         gruposElectivos: [],
+      })),
+    http.get(`${API}/regular-certificates/eligibility`, () =>
+      HttpResponse.json({
+        enrollmentId: 4,
+        kind: 'PROGRAM',
+        billingMode: 'OFF',
+        attendanceControlled: true,
+        regular: true,
+        institutionallyRegular: true,
+        paymentStanding: 'VERIFIED',
+        reasons: [],
       })),
     http.get(`${API}/program-enrollments/4/section-enrollments`, () => HttpResponse.json([SECTION])),
     http.get(`${API}/program-enrollments/4/attendance-summary`, () => HttpResponse.json([])),
@@ -94,9 +106,9 @@ describe('LegajoAlumno absences', () => {
     const user = userEvent.setup();
     await openAbsences(user);
 
-    await user.click(screen.getByRole('button', { name: 'Justificar la falta del 05/11/2026 de Valentina Suárez' }));
+    await user.click(screen.getByRole('button', { name: 'Justificar la inasistencia del 05/11/2026 de Valentina Suárez' }));
 
-    const dialog = await screen.findByRole('dialog', { name: 'Justificar falta' });
+    const dialog = await screen.findByRole('dialog', { name: 'Justificar inasistencia' });
     expect(within(dialog).getByText('Queda registrado a nombre de Ana Ruiz.')).toBeInTheDocument();
     expect(within(dialog).getByText(/Valentina Suárez · Historia del Arte I · Com\. A/)).toBeInTheDocument();
   });
@@ -108,6 +120,6 @@ describe('LegajoAlumno absences', () => {
 
     expect(screen.getByText('Dentro de plazo')).toBeInTheDocument();
     expect(screen.getByText('Solo lectura')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Justificar la falta/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Justificar la inasistencia/ })).not.toBeInTheDocument();
   });
 });

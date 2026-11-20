@@ -128,6 +128,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | SingleOpenProposalPerTopicPolicy | PROPOSAL_ALREADY_OPEN | D-116 |
 
+## Momento BROADCAST_DELIVERY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | BroadcastConsentPolicy | OPTED_OUT, NO_CONSENT | E29D-FASE1-CONSENT-POLICY |
+
 ## Momento CASH_PAYMENT_DATING
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -533,8 +539,10 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | PriceCurrencyPolicy | CURRENCY_MISMATCH | D-097, D-240 |
 | 2 | PriceAmountWithinLimitPolicy | PRICE_AMOUNT_TOO_LARGE | D-214 |
-| 3 | MarketingDiscountNotNegativePolicy | NEGATIVE_MARKETING_DISCOUNT | D-240 |
-| 4 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
+| 3 | OfferingListPricePositivePolicy | OFFERING_LIST_PRICE_NOT_POSITIVE | D-536 |
+| 4 | MarketingDiscountNotNegativePolicy | NEGATIVE_MARKETING_DISCOUNT | D-240 |
+| 5 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
+| 6 | MarketingDiscountLeavesAPricePolicy | MARKETING_DISCOUNT_LEAVES_NO_PRICE | D-536 |
 
 ## Momento PRICE_VERSION_CANCELLATION
 
@@ -853,6 +861,19 @@ Transiciones válidas: 7 de 42. Pares inválidos: (sin estado) × RUN_FINISHED_C
 | FAILED | — | — | — | — |
 
 Transiciones válidas: 4 de 20. Pares inválidos: (sin estado) × ALL_STEPS_FINISHED_CLEAN; (sin estado) × ALL_STEPS_FINISHED_WITH_ERRORS; (sin estado) × STEP_ABORTED; RUNNING × NIGHT_STARTED; COMPLETED × NIGHT_STARTED; COMPLETED × ALL_STEPS_FINISHED_CLEAN; COMPLETED × ALL_STEPS_FINISHED_WITH_ERRORS; COMPLETED × STEP_ABORTED; COMPLETED_WITH_ERRORS × NIGHT_STARTED; COMPLETED_WITH_ERRORS × ALL_STEPS_FINISHED_CLEAN; COMPLETED_WITH_ERRORS × ALL_STEPS_FINISHED_WITH_ERRORS; COMPLETED_WITH_ERRORS × STEP_ABORTED; FAILED × NIGHT_STARTED; FAILED × ALL_STEPS_FINISHED_CLEAN; FAILED × ALL_STEPS_FINISHED_WITH_ERRORS; FAILED × STEP_ABORTED.
+
+### BroadcastStatusStateMachine
+
+| Desde \ Evento | CONFIRM | START_SENDING | COMPLETE | CANCEL |
+|---|---|---|---|---|
+| (sin estado) | — | — | — | — |
+| DRAFT | CONFIRMED | — | — | CANCELLED |
+| CONFIRMED | — | SENDING | — | CANCELLED |
+| SENDING | — | — | COMPLETED | CANCELLED |
+| COMPLETED | — | — | — | — |
+| CANCELLED | — | — | — | — |
+
+Transiciones válidas: 6 de 24. Pares inválidos: (sin estado) × CONFIRM; (sin estado) × START_SENDING; (sin estado) × COMPLETE; (sin estado) × CANCEL; DRAFT × START_SENDING; DRAFT × COMPLETE; CONFIRMED × CONFIRM; CONFIRMED × COMPLETE; SENDING × CONFIRM; SENDING × START_SENDING; COMPLETED × CONFIRM; COMPLETED × START_SENDING; COMPLETED × COMPLETE; COMPLETED × CANCEL; CANCELLED × CONFIRM; CANCELLED × START_SENDING; CANCELLED × COMPLETE; CANCELLED × CANCEL.
 
 ### DeliveryStatusStateMachine
 

@@ -38,7 +38,7 @@ export function ResetPasswordModal({ open, onClose, email, onConfirmar, isPendin
         </DialogHeader>
 
         {errorMessage && (
-          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">
+          <div role="alert" className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">
             {errorMessage}
           </div>
         )}

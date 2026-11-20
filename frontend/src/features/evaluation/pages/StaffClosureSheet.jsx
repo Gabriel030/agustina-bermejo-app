@@ -21,6 +21,7 @@ import {
 } from '../hooks/useClosureSheet';
 import { CLOSURE_STATUS, STAFF_STATUS_DESCRIPTION, activeStudents, columnLabel, toggleResultKpi, unpublishedColumns, withdrawnCount } from '../lib/closureSheet';
 import { ClosureActionBar } from '../components/ClosureActionBar';
+import { ClosureNoAbsenceLimitNotice } from '../components/ClosureNoAbsenceLimitNotice';
 import { ClosureExportMenu } from '../components/ClosureExportMenu';
 import { ClosurePrerequisitesSheet } from '../components/ClosurePrerequisitesSheet';
 import { ClosureRowActions } from '../components/ClosureRowActions';
@@ -135,6 +136,8 @@ export function StaffClosureSheet({ role }) {
         </Notice>
       )}
 
+      {sheet.status !== 'CLOSED' && <ClosureNoAbsenceLimitNotice sheet={sheet} />}
+
       <div className="flex flex-col gap-2">
         <p className="text-xs text-ink-faint">
           Resumen sobre los {activeStudents(sheet).length} alumnos activos de la comisión ({bajas} {bajas === 1 ? 'baja no cuenta' : 'bajas no cuentan'}). Tocá una tarjeta para filtrar la planilla.
@@ -143,7 +146,7 @@ export function StaffClosureSheet({ role }) {
       </div>
 
       <GlassCard className="flex flex-col gap-3 p-4">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">
+        <h2 className="font-heading text-size-15 font-semibold text-ink">
           Alumnos <span className="font-normal text-ink-faint">{activeStudents(sheet).length}</span>
         </h2>
         <ClosureSheetTable

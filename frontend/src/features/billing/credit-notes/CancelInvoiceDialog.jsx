@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Info } from 'lucide-react';
@@ -8,10 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { InfoTip } from '@/components/charts/InfoTip';
-import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatMoney, invoiceTitle } from '@/lib/billing';
-import { inboxPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { inboxPath } from '../authorization/authorizationRequests';
 import { useCancelInvoice, useCancellationPreview } from '../hooks/useCreditNotes';
 import { CancellationEffects } from './CancellationEffects';
 import { CreditNoteViolation } from './CreditNoteViolation';
@@ -36,8 +36,7 @@ const PREVIEW_DEBOUNCE_MS = 400;
 const HARD_SERVER_CODES = [...RECEIPT_REVIEW_CODES, ...STALE_INVOICE_CODES];
 
 export function CancelInvoiceDialog({ invoice, studentId, onClose }) {
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();

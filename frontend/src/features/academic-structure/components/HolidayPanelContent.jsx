@@ -12,14 +12,14 @@ import { HOLIDAY_ALREADY_EXISTS, HOLIDAY_TYPES, formatLongDate } from '@/feature
 
 function FieldLabel({ htmlFor, children }) {
   return (
-    <Label htmlFor={htmlFor} className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+    <Label htmlFor={htmlFor} className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
       {children}
     </Label>
   );
 }
 
 function FieldError({ id, children }) {
-  return <p id={id} className="mt-1.5 text-[12.5px] text-danger">{children}</p>;
+  return <p id={id} className="mt-1.5 text-size-12-5 text-danger">{children}</p>;
 }
 
 export function HolidayPanelContent({ holiday, initialDate, findByDate, titleId, onClose, onSaved, onEditExisting, onDelete }) {
@@ -60,10 +60,10 @@ export function HolidayPanelContent({ holiday, initialDate, findByDate, titleId,
     <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-5">
         <div className="min-w-0">
-          <h2 id={titleId} className="font-heading text-[17px] font-semibold text-ink">
+          <h2 id={titleId} className="font-heading text-size-17 font-semibold text-ink">
             {editing ? 'Editar feriado' : 'Nuevo feriado'}
           </h2>
-          {date && <p className="text-[12.5px] text-ink-faint first-letter:uppercase">{formatLongDate(date)}</p>}
+          {date && <p className="text-size-12-5 text-ink-faint first-letter:uppercase">{formatLongDate(date)}</p>}
         </div>
         <Button type="button" variant="ghost" size="icon" aria-label="Cerrar panel" onClick={onClose}>
           <X />
@@ -86,7 +86,7 @@ export function HolidayPanelContent({ holiday, initialDate, findByDate, titleId,
           />
           {errors.date && <FieldError id="holiday-date-error">{errors.date}</FieldError>}
           {conflictDate === date && (
-            <div id="holiday-date-error" role="alert" className="mt-1.5 flex flex-wrap items-center gap-x-3 text-[12.5px] text-danger">
+            <div id="holiday-date-error" role="alert" className="mt-1.5 flex flex-wrap items-center gap-x-3 text-size-12-5 text-danger">
               <span>Ya hay un feriado cargado en esta fecha.</span>
               {conflictingHoliday && (
                 <button
@@ -117,7 +117,7 @@ export function HolidayPanelContent({ holiday, initialDate, findByDate, titleId,
           {errors.name && <FieldError id="holiday-name-error">{errors.name}</FieldError>}
         </div>
         <fieldset>
-          <legend className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Tipo</legend>
+          <legend className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Tipo</legend>
           <RadioGroup value={type} onValueChange={setType} className="mt-1.5 grid grid-cols-2 gap-2">
             {HOLIDAY_TYPES.map((option) => (
               <Label

@@ -73,7 +73,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(corsAllowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "If-Match"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "If-Match", "X-Requested-With"));
         configuration.setExposedHeaders(List.of("X-Total-Count", "Retry-After", "X-Request-Id", "Content-Disposition"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(CORS_PREFLIGHT_MAX_AGE);
@@ -105,8 +105,12 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.POST, "/payments/mp-webhook").permitAll()
                 .requestMatchers(HttpMethod.GET, "/verify-email").permitAll()
+                .requestMatchers(HttpMethod.POST, "/cancel-email-change").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/modules").permitAll()
+                .requestMatchers(HttpMethod.GET, "/legal/documents/current").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/certificates/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/public/unsubscribe/*").permitAll()
+                .requestMatchers(HttpMethod.POST, "/public/unsubscribe/*").permitAll()
                 .requestMatchers("/platform/**").hasRole(PLATFORM_ADMIN_ROLE)
                 .requestMatchers("/me/modules").authenticated()
                 .requestMatchers(HttpMethod.GET, "/me").authenticated()

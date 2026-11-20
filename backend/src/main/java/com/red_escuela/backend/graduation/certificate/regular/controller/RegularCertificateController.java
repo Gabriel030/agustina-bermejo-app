@@ -4,6 +4,7 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.IssueRegularCe
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityResponse;
+import com.red_escuela.backend.graduation.certificate.regular.dto.RevokeRegularCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.CheckRegularityUseCase;
@@ -11,6 +12,7 @@ import com.red_escuela.backend.graduation.certificate.regular.usecase.GetRegular
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetRegularCertificateUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.IssueRegularCertificateUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListRegularCertificatesUseCase;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.RevokeRegularCertificateUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -38,17 +40,20 @@ public class RegularCertificateController {
     private final GetRegularCertificateUseCase getUseCase;
     private final ListRegularCertificatesUseCase listUseCase;
     private final GetRegularCertificatePdfUseCase pdfUseCase;
+    private final RevokeRegularCertificateUseCase revokeUseCase;
 
     public RegularCertificateController(CheckRegularityUseCase checkRegularityUseCase,
                                         IssueRegularCertificateUseCase issueUseCase,
                                         GetRegularCertificateUseCase getUseCase,
                                         ListRegularCertificatesUseCase listUseCase,
-                                        GetRegularCertificatePdfUseCase pdfUseCase) {
+                                        GetRegularCertificatePdfUseCase pdfUseCase,
+                                        RevokeRegularCertificateUseCase revokeUseCase) {
         this.checkRegularityUseCase = checkRegularityUseCase;
         this.issueUseCase = issueUseCase;
         this.getUseCase = getUseCase;
         this.listUseCase = listUseCase;
         this.pdfUseCase = pdfUseCase;
+        this.revokeUseCase = revokeUseCase;
     }
 
     @GetMapping("/eligibility")
@@ -75,6 +80,12 @@ public class RegularCertificateController {
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
     public RegularCertificateResponse get(@PathVariable Long id) {
         return getUseCase.get(id);
+    }
+
+    @PostMapping("/{id}/revoke")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public RegularCertificateResponse revoke(@PathVariable Long id, @Valid @RequestBody RevokeRegularCertificateRequest request) {
+        return revokeUseCase.revoke(id, request.reason());
     }
 
     @GetMapping("/{id}/pdf")

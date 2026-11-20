@@ -19,4 +19,8 @@ public interface AcademicOfferingCycleRepository extends JpaRepository<AcademicO
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from AcademicOfferingCycle c where c.id = :id")
     Optional<AcademicOfferingCycle> findByIdForUpdate(@Param("id") Long id);
+
+    java.util.Optional<AcademicOfferingCycle> findFirstByTermIdOrderByIdAsc(Long termId);
+
+    java.util.Optional<AcademicOfferingCycle> findFirstByTermIdAndProgramIdOrderByIdAsc(Long termId, Long programId);
 }

@@ -69,11 +69,11 @@ function SubjectRow({ ps, onCorrelativas, onRemove, onRestore, isRestoring }) {
     <div className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{ps.subjectCode}</span>
+          <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{ps.subjectCode}</span>
           {ps.status === 'INACTIVE' && <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>}
         </div>
-        <span className="block truncate text-[14px] font-medium text-ink">{ps.subjectName}</span>
-        {meta && <span className="text-[12px] text-ink-faint">{meta}</span>}
+        <span className="block truncate text-size-14 font-medium text-ink">{ps.subjectName}</span>
+        {meta && <span className="text-size-12 text-ink-faint">{meta}</span>}
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <Button
@@ -125,7 +125,7 @@ function YearBlock({ year, totalYears, subjects, onAgregar, onCorrelativas, onRe
   return (
     <GlassCard className="p-4" data-year-block={year}>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className={`text-[11px] font-bold uppercase tracking-widest ${outOfRange ? 'text-danger' : 'text-ink-faint'}`}>
+        <h3 className={`text-size-11 font-bold uppercase tracking-widest ${outOfRange ? 'text-danger' : 'text-ink-faint'}`}>
           {yearBlockTitle(year, totalYears)}
         </h3>
         {!outOfRange && (
@@ -136,12 +136,12 @@ function YearBlock({ year, totalYears, subjects, onAgregar, onCorrelativas, onRe
         )}
       </div>
       {outOfRange && (
-        <p className="mb-2 text-[12px] text-ink-faint">
+        <p className="mb-2 text-size-12 text-ink-faint">
           Estas materias quedaron en un año mayor a la duración de la carrera. Quitalas del plan y volvé a agregarlas en el año correcto.
         </p>
       )}
       {subjects.length === 0 ? (
-        <p className="py-2 text-[13px] text-ink-faint">Sin materias en este año.</p>
+        <p className="py-2 text-size-13 text-ink-faint">Sin materias en este año.</p>
       ) : (
         <div className="divide-y divide-neutral-bg">
           {subjects.map((ps) => (
@@ -317,7 +317,7 @@ export function CarreraDetalle() {
         <div>
           <Link
             to="/administrativo/gestion-academica?section=carreras"
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Carreras
@@ -329,7 +329,7 @@ export function CarreraDetalle() {
                 <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
               </div>
               {metaItems.length > 0 && (
-                <p className="mt-0.5 text-[13px] text-ink-faint">{metaItems.join(' · ')}</p>
+                <p className="mt-0.5 text-size-13 text-ink-faint">{metaItems.join(' · ')}</p>
               )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -367,7 +367,7 @@ export function CarreraDetalle() {
         <GlassCard className="p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-[12px] font-medium uppercase tracking-widest text-ink-faint">Catálogo</span>
+              <span className="text-size-12 font-medium uppercase tracking-widest text-ink-faint">Catálogo</span>
               <StatusPill tone={program.visibleInCatalog ? 'success' : 'neutral'}>
                 {program.visibleInCatalog ? 'En catálogo' : 'No publicada'}
               </StatusPill>
@@ -396,10 +396,10 @@ export function CarreraDetalle() {
 
         {program.graduationProfile && (
           <GlassCard className="p-4">
-            <h2 className="mb-1 text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+            <h2 className="mb-1 text-size-11 font-bold uppercase tracking-widest text-ink-faint">
               Perfil del egresado
             </h2>
-            <p className="text-[13.5px] text-ink">{program.graduationProfile}</p>
+            <p className="text-size-13-5 text-ink">{program.graduationProfile}</p>
           </GlassCard>
         )}
 
@@ -413,7 +413,7 @@ export function CarreraDetalle() {
           <TabsContent value="plan">
             <div className="flex flex-col gap-4 pt-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Plan de estudios</h2>
+                <h2 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Plan de estudios</h2>
                 {!subjectsUnavailable && (
                   <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
                     <Plus className="mr-1.5 h-3.5 w-3.5" />

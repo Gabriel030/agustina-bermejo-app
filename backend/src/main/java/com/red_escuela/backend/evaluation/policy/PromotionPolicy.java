@@ -43,6 +43,14 @@ public final class PromotionPolicy {
         return PrerequisiteGatedOutcome.restrictedToFinal(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null));
     }
 
+    public PrerequisiteGatedOutcome restrictApprovalWhenPrerequisitesUnmet(
+            Optional<CourseworkOutcome> outcome, BooleanSupplier prerequisitesMet) {
+        if (outcome.isEmpty() || outcome.get().status() != EnrollmentStatus.APPROVED || prerequisitesMet.getAsBoolean()) {
+            return PrerequisiteGatedOutcome.unchanged(outcome);
+        }
+        return PrerequisiteGatedOutcome.restrictedToFinal(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null));
+    }
+
     private static boolean isPromotion(CourseworkOutcome outcome) {
         return outcome.status() == EnrollmentStatus.APPROVED && outcome.finalGradeType() == FinalGradeType.PROMOTION;
     }

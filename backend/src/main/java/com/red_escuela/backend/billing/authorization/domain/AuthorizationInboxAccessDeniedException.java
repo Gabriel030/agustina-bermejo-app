@@ -6,8 +6,4 @@ public class AuthorizationInboxAccessDeniedException extends ForbiddenException 
     public AuthorizationInboxAccessDeniedException() {
         super("Not allowed to read the authorization requests");
     }
-
-    public AuthorizationInboxAccessDeniedException(Long id) {
-        super("Not allowed to read authorization request " + id);
-    }
 }

@@ -28,12 +28,12 @@ const CICLO_STATUS_CONFIG = {
   CLOSED: { label: 'Cerrado', tone: 'neutral' },
 };
 
-function useCiclosPorPrograma(programId) {
-  return useCiclos({ programId });
-}
+const ACTIVE_CYCLE_STATUSES = ['APPROVED', 'PENDING_APPROVAL', 'DRAFT'];
 
-function useCiclosPorCurso(courseId) {
-  return useCiclos({ courseId });
+function findActiveCycle(cycles, key, id) {
+  return cycles
+    ?.filter((cycle) => cycle[key] === id && ACTIVE_CYCLE_STATUSES.includes(cycle.status))
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
 }
 
 function BadgeCiclo({ ciclo, failed = false }) {
@@ -43,10 +43,9 @@ function BadgeCiclo({ ciclo, failed = false }) {
   return <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>;
 }
 
-function FilaPrograma({ programa, navigate }) {
+function FilaPrograma({ programa, navigate, ciclos, ciclosFailed }) {
   const basePath = useRoleBasePath();
-  const { data: ciclos, isError: ciclosFailed } = useCiclosPorPrograma(programa.id);
-  const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
+  const cicloActivo = findActiveCycle(ciclos, 'programId', programa.id);
 
   return (
     <Button
@@ -56,8 +55,8 @@ function FilaPrograma({ programa, navigate }) {
       onClick={() => navigate(`${basePath}/oferta-academica/carreras/${programa.id}`)}
       >
       <div className="min-w-0">
-        <span className="block truncate text-[14px] font-medium text-ink">{programa.name}</span>
-        <span className="text-[12px] text-ink-faint">{programa.totalYears} {programa.totalYears === 1 ? 'año' : 'años'}</span>
+        <span className="block truncate text-size-14 font-medium text-ink">{programa.name}</span>
+        <span className="text-size-12 text-ink-faint">{programa.totalYears} {programa.totalYears === 1 ? 'año' : 'años'}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <BadgeCiclo ciclo={cicloActivo} failed={ciclosFailed} />
@@ -67,10 +66,9 @@ function FilaPrograma({ programa, navigate }) {
   );
 }
 
-function FilaCurso({ curso, navigate }) {
+function FilaCurso({ curso, navigate, ciclos, ciclosFailed }) {
   const basePath = useRoleBasePath();
-  const { data: ciclos, isError: ciclosFailed } = useCiclosPorCurso(curso.id);
-  const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
+  const cicloActivo = findActiveCycle(ciclos, 'courseId', curso.id);
 
   return (
     <Button
@@ -80,8 +78,8 @@ function FilaCurso({ curso, navigate }) {
       onClick={() => navigate(`${basePath}/oferta-academica/cursos/${curso.id}`)}
       >
       <div className="min-w-0">
-        <span className="block truncate text-[14px] font-medium text-ink">{curso.name}</span>
-        <span className="text-[12px] text-ink-faint">{formatCourseDuration(curso.durationMonths)}</span>
+        <span className="block truncate text-size-14 font-medium text-ink">{curso.name}</span>
+        <span className="text-size-12 text-ink-faint">{formatCourseDuration(curso.durationMonths)}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <BadgeCiclo ciclo={cicloActivo} failed={ciclosFailed} />
@@ -123,6 +121,8 @@ export function PreceptorOfertaAcademica() {
 
   const { data: programas, isLoading: loadingProgramas, isError: programasFailed, error: programasError, refetch: refetchProgramas } = useProgramas();
   const { data: cursos, isLoading: loadingCursos, isError: cursosFailed, error: cursosError, refetch: refetchCursos } = useCursos();
+
+  const { data: ciclos, isError: ciclosFailed } = useCiclos({});
 
   const programasFiltrados = (programas ?? []).filter((p) =>
     p.name.toLowerCase().includes(busqueda.toLowerCase())
@@ -173,7 +173,7 @@ export function PreceptorOfertaAcademica() {
                 onRetry={refetchProgramas}
                 resource="las carreras"
                 emptyText="No se encontraron carreras."
-                renderFila={(p) => <FilaPrograma key={p.id} programa={p} navigate={navigate} />}
+                renderFila={(p) => <FilaPrograma key={p.id} programa={p} navigate={navigate} ciclos={ciclos} ciclosFailed={ciclosFailed} />}
               />
             </TabsContent>
 
@@ -186,7 +186,7 @@ export function PreceptorOfertaAcademica() {
                 onRetry={refetchCursos}
                 resource="los cursos"
                 emptyText="No se encontraron cursos."
-                renderFila={(c) => <FilaCurso key={c.id} curso={c} navigate={navigate} />}
+                renderFila={(c) => <FilaCurso key={c.id} curso={c} navigate={navigate} ciclos={ciclos} ciclosFailed={ciclosFailed} />}
               />
             </TabsContent>
           </Tabs>

@@ -4,9 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatScore, scoreTextState } from '../lib/gradeGrid';
-import { isBlockedRow, isGradableRow } from '../lib/examBoardGrades';
+import { BLOCK_REASON_TEXT, isBlockedRow, isGradableRow } from '../lib/examBoardGrades';
 
-export const NOT_REGULAR_REASON = 'Requiere condición regular: perdió la regularidad';
 export const CLOSED_CORRECTION_REASON = 'El acta está cerrada: la nota ya no se puede corregir';
 export const SAVED_ABSENT_HINT = 'Ausente guardado: solo puede pasar a una nota';
 
@@ -35,22 +34,22 @@ function WithReason({ reason, children }) {
 export function ExamBoardStudentCell({ row }) {
   return (
     <div className="flex flex-col items-start gap-0.5">
-      <span className="flex items-center gap-1.5 text-[13px] font-semibold leading-tight text-ink">
+      <span className="flex items-center gap-1.5 text-size-13 font-semibold leading-tight text-ink">
         {row.studentName}
         {isBlockedRow(row) && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span tabIndex={0} role="img" aria-label={NOT_REGULAR_REASON} className="inline-flex text-warning">
+                <span tabIndex={0} role="img" aria-label={BLOCK_REASON_TEXT[row.finalExamEligibility.reason]} className="inline-flex text-warning">
                   <Lock aria-hidden="true" className="size-3.5" />
                 </span>
               </TooltipTrigger>
-              <TooltipContent>{NOT_REGULAR_REASON}</TooltipContent>
+              <TooltipContent>{BLOCK_REASON_TEXT[row.finalExamEligibility.reason]}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}
       </span>
-      <span className="text-[11px] font-normal text-ink-faint">
+      <span className="text-size-11 font-normal text-ink-faint">
         DNI {row.dni} · {row.attemptNumber}.º intento
       </span>
     </div>
@@ -114,9 +113,9 @@ export function ExamBoardGradeCell({ row, draft, mode, lockedReason, error, onCh
           {absent ? 'Ausente ✓' : 'Ausente'}
         </Toggle>
       </WithReason>
-      {!locked && !draft && row.status === 'ABSENT' && <span className="text-[12px] text-ink-faint">{SAVED_ABSENT_HINT}</span>}
+      {!locked && !draft && row.status === 'ABSENT' && <span className="text-size-12 text-ink-faint">{SAVED_ABSENT_HINT}</span>}
       {showError && (
-        <span id={errorId} role={error ? 'alert' : undefined} className="text-[12px] text-danger">
+        <span id={errorId} role={error ? 'alert' : undefined} className="text-size-12 text-danger">
           {error ?? 'Entre 1 y 10'}
         </span>
       )}

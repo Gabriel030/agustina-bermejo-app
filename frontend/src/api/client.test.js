@@ -47,6 +47,58 @@ describe('apiFetch', () => {
     expect(refresh.calls).toBe(1);
   });
 
+  it('refresh with only the session hint sends no body, the custom header and credentials, and keeps no token', async () => {
+    localStorage.setItem('sessionHint', '1');
+    let seen;
+    server.use(
+      http.get(`${API}/protegido`, ({ request }) =>
+        request.headers.get('authorization') === 'Bearer access-2'
+          ? HttpResponse.json({ ok: true })
+          : new HttpResponse(null, { status: 401 }),
+      ),
+      http.post(`${API}/auth/refresh`, async ({ request }) => {
+        seen = {
+          body: await request.text(),
+          requestedWith: request.headers.get('x-requested-with'),
+        };
+        return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+      }),
+    );
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await apiFetch('/protegido');
+
+    const refreshInit = fetchSpy.mock.calls.find(([url]) => String(url).endsWith('/auth/refresh'))[1];
+    fetchSpy.mockRestore();
+    expect(refreshInit.credentials).toBe('include');
+    expect(seen).toEqual({ body: '', requestedWith: 'fetch' });
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBe('1');
+  });
+
+  it('a legacy stored token is sent once in the body and removed after the refresh succeeds', async () => {
+    localStorage.setItem('refreshToken', 'refresh-legacy');
+    let sentBody;
+    server.use(
+      http.get(`${API}/protegido`, ({ request }) =>
+        request.headers.get('authorization') === 'Bearer access-2'
+          ? HttpResponse.json({ ok: true })
+          : new HttpResponse(null, { status: 401 }),
+      ),
+      http.post(`${API}/auth/refresh`, async ({ request }) => {
+        sentBody = await request.json();
+        return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+      }),
+    );
+
+    await apiFetch('/protegido');
+
+    expect(sentBody).toEqual({ refreshToken: 'refresh-legacy' });
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBe('1');
+  });
+
   it('a 403 never triggers a refresh and surfaces as a permission error', async () => {
     localStorage.setItem('refreshToken', 'refresh-1');
     const refresh = { calls: 0 };

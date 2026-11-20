@@ -26,7 +26,7 @@ function buildColumns(basePath, showReadAt) {
       meta: { cardTitle: true },
       sortingFn: (a, b) => a.original.name.localeCompare(b.original.name, 'es'),
       cell: ({ row }) => (
-        <Link to={`${basePath}/alumnos/${row.original.studentId}`} className="text-[13px] font-semibold text-primary hover:underline">
+        <Link to={`${basePath}/alumnos/${row.original.studentId}`} className="text-size-13 font-semibold text-primary hover:underline">
           {row.original.name}
         </Link>
       ),
@@ -74,9 +74,9 @@ export function StaffAnnouncementReaders() {
     <div className="flex flex-col gap-1.5">
       <Breadcrumb items={[...breadcrumb, { label: 'Avisos', to: announcementsPath }, { label: 'Quién lo abrió' }]} />
       <h1 className="font-heading text-xl font-bold text-ink md:text-2xl">{announcement?.title ?? 'Quién lo abrió'}</h1>
-      {sectionLabel && <p className="text-[12.5px] text-ink-faint">{sectionLabel}</p>}
+      {sectionLabel && <p className="text-size-12-5 text-ink-faint">{sectionLabel}</p>}
       {announcement && recipientsQuery.data && (
-        <p className="text-[12.5px] text-ink-faint">
+        <p className="text-size-12-5 text-ink-faint">
           Enviado {dispatchDate(announcement)} · {read.length} de {recipientsQuery.data.length} lo abrieron
         </p>
       )}

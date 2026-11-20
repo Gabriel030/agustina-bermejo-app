@@ -4,8 +4,11 @@ import { QueryClientProvider, focusManager } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/mocks/server'
 import { createQueryClient } from './queryClient'
-import { STALE_TIME } from './cachePolicy'
+import { PROFILE_STALE_TIME, STALE_TIME } from './cachePolicy'
+import { usePerfilPropio } from '@/features/identity/hooks/useMiPerfil'
 import { useMisNotificaciones } from '@/features/notifications/hooks/useNotifications'
+
+const pageOf = (items) => ({ items, page: 0, size: 10, totalElements: items.length })
 
 const API = 'http://localhost:8080'
 
@@ -77,7 +80,7 @@ describe('notifications polling', () => {
     let calls = 0
     server.use(http.get(`${API}/me/notifications`, () => {
       calls += 1
-      return HttpResponse.json([])
+      return HttpResponse.json(pageOf([]))
     }))
     const client = createQueryClient()
     const { result } = renderHook(() => useMisNotificaciones(), { wrapper: wrapperFor(client) })
@@ -95,13 +98,22 @@ describe('notifications polling', () => {
   })
 
   it('notificationsQueryDeclaresNoBackgroundPollingAndRefetchOnFocus', async () => {
-    server.use(http.get(`${API}/me/notifications`, () => HttpResponse.json([])))
+    server.use(http.get(`${API}/me/notifications`, () => HttpResponse.json(pageOf([]))))
     const client = createQueryClient()
     const { result } = renderHook(() => useMisNotificaciones(), { wrapper: wrapperFor(client) })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    const options = client.getQueryCache().find({ queryKey: ['me', 'notifications'] }).observers[0].options
+    const options = client.getQueryCache().find({ queryKey: ['me', 'notifications', { page: 0, size: 10 }] }).observers[0].options
     expect(options.refetchIntervalInBackground).toBe(false)
     expect(options.refetchOnWindowFocus).toBe(true)
     expect(options.staleTime).toBe(STALE_TIME.OPERATIONAL)
+  })
+
+  it('profileQueryIsCachedOperationalWhileItsChildrenStayCritical', async () => {
+    const client = createQueryClient()
+    const { result } = renderHook(() => usePerfilPropio(), { wrapper: wrapperFor(client) })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(PROFILE_STALE_TIME).toBe(STALE_TIME.OPERATIONAL)
+    expect(client.getQueryCache().find({ queryKey: ['me'], exact: true }).observers[0].options.staleTime).toBe(PROFILE_STALE_TIME)
+    expect(staleTimeOf(['me', 'invoices'])).toBe(STALE_TIME.CRITICAL)
   })
 })

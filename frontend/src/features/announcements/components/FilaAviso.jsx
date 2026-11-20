@@ -13,9 +13,9 @@ import {
 
 function CeldaFecha({ principal, secundario }) {
   return (
-    <td className="whitespace-nowrap px-3 py-[11px] text-[12px] text-ink-faint">
+    <td className="whitespace-nowrap px-3 py-[11px] text-size-12 text-ink-faint">
       {principal ?? <span className="text-ink-faint">—</span>}
-      {secundario && <small className="block text-[10.5px] text-ink-faint opacity-85">{secundario}</small>}
+      {secundario && <small className="block text-size-10-5 text-ink-faint opacity-85">{secundario}</small>}
     </td>
   );
 }
@@ -76,20 +76,20 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
               className={`h-3.5 w-3.5 shrink-0 text-ink-faint transition-transform ${abierto ? 'rotate-90' : ''}`}
               aria-hidden="true"
             />
-            <span className="min-w-0 text-balance font-heading text-[14px] font-medium leading-snug text-ink">
+            <span className="min-w-0 text-balance font-heading text-size-14 font-medium leading-snug text-ink">
               {aviso.title}
               {aviso.urgent && (
-                <StatusPill tone="danger" className="ml-1.5 align-[2px] px-2 py-0.5 text-[10px]">
+                <StatusPill tone="danger" className="ml-1.5 align-[2px] px-2 py-0.5 text-size-10">
                   Urgente
                 </StatusPill>
               )}
             </span>
           </span>
         </td>
-        <td className="whitespace-nowrap px-3 py-[11px] text-[12.5px] text-ink-soft">
+        <td className="whitespace-nowrap px-3 py-[11px] text-size-12-5 text-ink-soft">
           {CATEGORIA_AVISO_LABEL[aviso.category] ?? aviso.category}
         </td>
-        <td className="px-3 py-[11px] text-[12.5px] text-ink-soft">
+        <td className="px-3 py-[11px] text-size-12-5 text-ink-soft">
           <button
             type="button"
             className="cursor-pointer rounded-full transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
@@ -104,10 +104,10 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
             </StatusPill>
           </button>
         </td>
-        <td className="px-3 py-[11px] text-[12.5px]">
+        <td className="px-3 py-[11px] text-size-12-5">
           <StatusPill tone={vigencia.tone}>{vigencia.label}</StatusPill>
         </td>
-        <td className="px-3 py-[11px] text-[12.5px]">
+        <td className="px-3 py-[11px] text-size-12-5">
           <CeldaLectura aviso={aviso} />
         </td>
         <CeldaFecha principal={formatearFechaCorta(aviso.createdAt)} />
@@ -127,7 +127,7 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
               style={anchoVisible ? { width: `${anchoVisible - 32}px` } : undefined}
             >
               {aviso.status === 'SCHEDULED' && (
-                <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-[12.5px] leading-relaxed text-ink-soft">
+                <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-2" aria-hidden="true" />
                   <span>
                     Todavía no se envió. El grupo de destinatarios se calcula en el momento del envío, así que puede no
@@ -137,8 +137,8 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
               )}
 
               <div>
-                <div className="text-[10.5px] font-bold uppercase tracking-[0.04em] text-ink-faint">Mensaje</div>
-                <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">{aviso.body}</p>
+                <div className="text-size-10-5 font-bold uppercase tracking-[0.04em] text-ink-faint">Mensaje</div>
+                <p className="mt-1 whitespace-pre-line text-size-13 leading-relaxed text-ink-soft">{aviso.body}</p>
               </div>
 
               {!audienciaCompleta && (
@@ -146,7 +146,7 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
                   variant="link"
                   size="inline"
                   type="button"
-                  className="w-fit text-left text-[12.5px] font-semibold text-brand"
+                  className="w-fit text-left text-size-12-5 font-semibold text-brand"
                   onClick={() => onVerDestinatarios(aviso)}
                   >
                   Ver quiénes son los destinatarios
@@ -154,7 +154,7 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
               )}
 
               {aviso.updatedAt && (
-                <div className="text-[11.5px] text-ink-faint">Editado el {formatearFechaHora(aviso.updatedAt)}</div>
+                <div className="text-size-11-5 text-ink-faint">Editado el {formatearFechaHora(aviso.updatedAt)}</div>
               )}
 
               {!soloLectura && (

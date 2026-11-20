@@ -134,13 +134,13 @@
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
-			<version>0.12.6</version>
+			<version>0.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
-			<version>0.12.6</version>
+			<version>0.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -171,7 +171,7 @@
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
 			<artifactId>pdfbox</artifactId>
-			<version>3.0.3</version>
+			<version>3.0.8</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.zxing</groupId>
@@ -269,19 +269,6 @@
 			<version>${jqwik.version}</version>
 			<scope>test</scope>
 		</dependency>
-		<!--
-			QA de contrato HTTP con criterios de aceptación legibles (ver
-			docs/context/testing.md, "QA de contrato HTTP (Karate)") — a diferencia de
-			los tests de MockMvc, estos corren contra el server HTTP real levantado por
-			@SpringBootTest(webEnvironment = RANDOM_PORT), mismo Testcontainers que el
-			resto de la suite, sin necesidad de un job de CI separado.
-		-->
-		<dependency>
-			<groupId>com.intuit.karate</groupId>
-			<artifactId>karate-junit5</artifactId>
-			<version>1.4.1</version>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 
 	<build>
@@ -340,7 +327,7 @@
 				-->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-toolchains-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.0</version>
 				<executions>
 					<execution>
 						<goals>

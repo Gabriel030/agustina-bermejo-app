@@ -16,8 +16,8 @@ describe('menuAccess', () => {
     expect(hasRealScreen('alumno', 'inicio')).toBe(true);
     expect(hasRealScreen('docente', 'inicio')).toBe(false);
     expect(hasRealScreen('alumno', 'opciones')).toBe(false);
-    expect(hasRealScreen('administrativo', 'constancias')).toBe(false);
-    expect(hasRealScreen('director', 'constancias')).toBe(false);
+    expect(hasRealScreen('administrativo', 'constancias')).toBe(true);
+    expect(hasRealScreen('director', 'constancias')).toBe(true);
     expect(ROLE_CONFIG.director.pages).toContain('constancias');
     expect(ROLE_CONFIG.preceptor.pages).not.toContain('constancias');
   });
@@ -26,8 +26,8 @@ describe('menuAccess', () => {
     expect(firstRealPage('alumno', ROLE_CONFIG.alumno.pages)).toBe('inicio');
     expect(firstRealPage('docente', ROLE_CONFIG.docente.pages)).toBe('mis-comisiones');
     expect(firstRealPage('preceptor', ROLE_CONFIG.preceptor.pages)).toBe('alumnos');
-    expect(firstRealPage('administrativo', ROLE_CONFIG.administrativo.pages)).toBe('alumnos');
-    expect(firstRealPage('director', ROLE_CONFIG.director.pages)).toBe('alumnos');
+    expect(firstRealPage('administrativo', ROLE_CONFIG.administrativo.pages)).toBe('inicio');
+    expect(firstRealPage('director', ROLE_CONFIG.director.pages)).toBe('inicio');
     expect(firstRealPage('docente', ['inicio'])).toBeNull();
   });
 

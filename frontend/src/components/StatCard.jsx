@@ -9,7 +9,7 @@ import { GlassCard } from '@/components/GlassCard';
 export function StatCard({ label, children, className }) {
   return (
     <GlassCard className={`min-w-0 p-5 ${className ?? ''}`}>
-      <div className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{label}</div>
+      <div className="text-size-11 font-bold uppercase tracking-wide text-ink-faint">{label}</div>
       <div className="mt-1 min-w-0 overflow-hidden tabular-nums">{children}</div>
     </GlassCard>
   );

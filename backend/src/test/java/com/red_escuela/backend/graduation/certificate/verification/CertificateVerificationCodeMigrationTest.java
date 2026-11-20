@@ -39,7 +39,7 @@ class CertificateVerificationCodeMigrationTest {
         jdbc.update("insert into regular_student_certificate (code, kind, program_enrollment_id, student_id, status, issued_at, expires_at, "
                 + "validity_days, issued_by_id, issue_channel, request_id, billing_mode_at_issue, standing_basis, snapshot, template_ref, "
                 + "pdf_sha256, pdf_path) values (?, 'PROGRAM', 11, 1, 'VALID', now(), now(), 30, 1, 'STAFF', "
-                + "(select max(id) from regular_certificate_request), 'OFF', 'AUTOMATIC', '{}'::jsonb, 'REGULAR_BUILT_IN_V1', "
+                + "(select max(id) from regular_certificate_request), 'OFF', 'BILLING_VERIFIED', '{}'::jsonb, 'REGULAR_BUILT_IN_V1', "
                 + "repeat('c', 64), ?)", LEGACY_REGULAR, LEGACY_REGULAR + ".pdf");
     }
 

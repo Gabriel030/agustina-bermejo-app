@@ -7,5 +7,5 @@ import java.util.List;
 public record ProgramProgressView(
         Long programEnrollmentId, int accumulatedCredits, int requiredCredits,
         List<String> pendingMandatorySubjects, List<ElectiveGroupProgressView> electiveGroups,
-        boolean eligibleToComplete, boolean regular, Grade overallAverage) {
+        boolean eligibleToComplete, boolean hasActiveCoursework, Grade overallAverage) {
 }

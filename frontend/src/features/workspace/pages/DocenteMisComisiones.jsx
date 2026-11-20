@@ -25,16 +25,16 @@ function FilaComision({ comision }) {
       className="flex flex-col gap-2 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
     >
       <div className="min-w-0">
-        <div className="font-heading text-[13.5px] font-semibold text-ink">
+        <div className="font-heading text-size-13-5 font-semibold text-ink">
           {comision.subjectName} · {comision.sectionName}{comision.termStartDate ? ` (${new Date(comision.termStartDate).getFullYear()})` : ''}
         </div>
         {coDictantes.length > 0 && (
-          <div className="mt-0.5 text-[11px] text-ink-faint">Co-dictada con {coDictantes.map((i) => i.name).join(', ')}</div>
+          <div className="mt-0.5 text-size-11 text-ink-faint">Co-dictada con {coDictantes.map((i) => i.name).join(', ')}</div>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap sm:gap-4">
         <StatusPill tone="neutral">{esCurso ? 'Curso' : 'Carrera'}</StatusPill>
-        <span className="text-[12px] text-ink-faint">{formatearFecha(comision.termStartDate) ?? '—'}</span>
+        <span className="text-size-12 text-ink-faint">{formatearFecha(comision.termStartDate) ?? '—'}</span>
         {pill && <StatusPill tone={pill.tone}>{pill.label}</StatusPill>}
         <ChevronRight className="ml-auto h-4 w-4 text-ink-faint sm:ml-0" />
       </div>
@@ -46,7 +46,7 @@ function SeccionComisiones({ titulo, comisiones, vacio }) {
   if (comisiones.length === 0) return null;
   return (
     <GlassCard className="flex flex-col gap-1 p-4">
-      <div className="px-2 pb-2 font-heading text-[14.5px] font-semibold text-ink">
+      <div className="px-2 pb-2 font-heading text-size-14-5 font-semibold text-ink">
         {titulo} <span className="font-normal text-ink-faint">{comisiones.length}</span>
       </div>
       {comisiones.length === 0 ? (

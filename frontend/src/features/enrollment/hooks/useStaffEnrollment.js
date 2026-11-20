@@ -98,6 +98,19 @@ export function useRefreshCourseOccupancy() {
   return () => queryClient.invalidateQueries({ queryKey: [ROOT, 'cycles'] });
 }
 
+function recordEnrollment(queryClient, studentId, listKey, enrollment) {
+  if (enrollment?.id != null) {
+    queryClient.setQueryData(['alumno', studentId, listKey], (list) =>
+      list ? [...list.filter((item) => item.id !== enrollment.id), enrollment] : list,
+    );
+  }
+  queryClient.invalidateQueries({ queryKey: ['alumno', studentId], refetchType: 'none' });
+}
+
+function reloadStudent(queryClient, studentId) {
+  queryClient.invalidateQueries({ queryKey: ['alumno', studentId] });
+}
+
 export function useEnrollStudentInProgram(studentId) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -106,7 +119,8 @@ export function useEnrollStudentInProgram(studentId) {
         method: 'POST',
         body: JSON.stringify({ programId, cohortId }),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alumno', studentId] }),
+    onSuccess: (enrollment) => recordEnrollment(queryClient, studentId, 'program-enrollments', enrollment),
+    onError: () => reloadStudent(queryClient, studentId),
   });
 }
 
@@ -118,9 +132,10 @@ export function useEnrollStudentInCourse(studentId) {
         method: 'POST',
         body: JSON.stringify({ courseId, sectionOverrides }),
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alumno', studentId] });
+    onSuccess: (enrollment) => {
+      recordEnrollment(queryClient, studentId, 'course-enrollments', enrollment);
       queryClient.invalidateQueries({ queryKey: [ROOT, 'cycles'] });
     },
+    onError: () => reloadStudent(queryClient, studentId),
   });
 }

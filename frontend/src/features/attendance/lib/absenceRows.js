@@ -48,7 +48,7 @@ export function buildJustificationImpact(computedAbsences) {
     { key: 'status', label: 'Estado', today: 'Ausente', next: 'Justificada', difference: 'Cambia' },
     {
       key: 'computed',
-      label: 'Faltas computadas (materia)',
+      label: 'Inasistencias computadas (materia)',
       today: computedAbsences,
       next: computedAbsences - 1,
       difference: '−1',

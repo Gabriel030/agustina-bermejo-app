@@ -41,7 +41,7 @@ export const TIPOLOGIA_LABEL = { FIRST: 'Cuatrimestral (1°)', SECOND: 'Cuatrime
 export const TABS_ESTADO = [
   { id: 'todas', label: 'Todas' },
   { id: 'en-curso', label: 'En curso' },
-  { id: 'regulares', label: 'Regulares' },
+  { id: 'regulares', label: 'Cursada regular' },
   { id: 'aprobadas', label: 'Aprobadas' },
   { id: 'desaprobadas', label: 'Desaprobadas' },
   { id: 'bloqueadas', label: 'Bloqueadas' },

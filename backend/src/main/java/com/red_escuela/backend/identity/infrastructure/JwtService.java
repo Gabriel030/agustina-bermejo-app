@@ -20,6 +20,8 @@ import java.util.UUID;
 
 @Service
 public class JwtService {
+    public static final String TOKEN_VERSION_CLAIM = "tv";
+
     private final SecretKey signingKey;
     private final long accessTokenExpirationMinutes;
     private final String issuer;
@@ -51,6 +53,7 @@ public class JwtService {
                 .id(UUID.randomUUID().toString())
                 .subject(String.valueOf(person.getId()))
                 .claim("roles", roles)
+                .claim(TOKEN_VERSION_CLAIM, person.getTokenVersion())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(Duration.ofMinutes(accessTokenExpirationMinutes))))
                 .signWith(signingKey, Jwts.SIG.HS256)

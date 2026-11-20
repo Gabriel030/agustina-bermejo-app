@@ -5,11 +5,16 @@ import java.util.Arrays;
 enum OwnershipKind {
     PROGRAM_ENROLLMENT("program-enrollment", MatrixRole.ALUMNO, 404),
     SECTION_ENROLLMENT("section-enrollment", MatrixRole.ALUMNO, 404),
+    COURSE_ENROLLMENT("course-enrollment", MatrixRole.ALUMNO, 404),
     COURSE_SECTION_ENROLLMENT("course-section-enrollment", MatrixRole.ALUMNO, 404),
     SECTION_INSTRUCTOR("section-instructor", MatrixRole.DOCENTE, 404),
     ATTENDANCE_SECTION_INSTRUCTOR("attendance-section-instructor", MatrixRole.DOCENTE, 404),
     ANNUAL_UPFRONT_REQUEST("annual-upfront-request", MatrixRole.ALUMNO, 404),
-    STAFF_RECORD("staff-record", MatrixRole.DOCENTE, 404);
+    STAFF_RECORD("staff-record", MatrixRole.DOCENTE, 404),
+    EXAM_BOARD_TRIBUNAL("exam-board-tribunal", MatrixRole.DOCENTE, 404),
+    INVOICE("invoice", MatrixRole.ALUMNO, 404),
+    NOTIFICATION("notification", MatrixRole.ALUMNO, 404),
+    SESSION("session", MatrixRole.ALUMNO, 404);
 
     private final String label;
     private final MatrixRole ownerRole;

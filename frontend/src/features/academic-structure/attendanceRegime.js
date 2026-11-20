@@ -35,14 +35,14 @@ export function helperFor({ status, value }) {
     case 'invalid':
       return { tone: 'bad', text: 'Ingresá un valor entre 0 y 100.' };
     case 'strict':
-      return { tone: 'warn', text: 'Con 0 %, cualquier ausencia injustificada deja libre al alumno.' };
+      return { tone: 'warn', text: 'Con 0 %, cualquier inasistencia injustificada deja libre al alumno.' };
     case 'unlimited':
       return { tone: 'warn', text: 'Con 100 % nunca se marca libre a nadie. Si es lo que querés, elegí "Sin límite".' };
     default: {
       const absence = Math.floor((EXAMPLE_CLASSES * value) / 100) + 1;
       return {
         tone: 'ok',
-        text: `Queda libre con más de ${value} % de ausencias. Ejemplo: en ${EXAMPLE_CLASSES} clases dictadas, desde la ausencia número ${absence}.`,
+        text: `Queda libre con más de ${value} % de inasistencias. Ejemplo: en ${EXAMPLE_CLASSES} clases dictadas, desde la inasistencia número ${absence}.`,
       };
     }
   }

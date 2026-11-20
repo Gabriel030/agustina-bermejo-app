@@ -44,7 +44,7 @@ class MoneyCurrencyMigrationTest {
             Long institutionId = jdbc.queryForObject("select max(id) from institution", Long.class);
             jdbc.update("insert into student (person_id, institution_id) values (?, ?)", personId, institutionId);
             Long studentId = jdbc.queryForObject("select max(id) from student", Long.class);
-            jdbc.update("insert into term (year_number, status) values (2026, true)");
+            jdbc.update("insert into term (year_number, status) values (2026, 'ACTIVE')");
             Long termId = jdbc.queryForObject("select max(id) from term", Long.class);
             jdbc.update("insert into course (name, term_id) values ('Curso sembrado', ?)", termId);
             Long courseId = jdbc.queryForObject("select max(id) from course", Long.class);

@@ -5,6 +5,6 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityK
 import java.time.Instant;
 import java.util.List;
 
-public record RegularityVerdict(RegularityKind kind, boolean regular, List<RegularityReason> reasons,
+public record RegularityVerdict(RegularityKind kind, boolean institutionallyRegular, List<RegularityReason> reasons,
                                 boolean attendanceControlled, Instant evaluatedAt) {
 }

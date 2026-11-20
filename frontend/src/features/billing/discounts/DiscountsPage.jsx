@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useAuth } from '@/context/AuthContext';
 import { useDiscountDefinitions } from '../hooks/useDiscountDefinitions';
 import { useOfferNames } from '../hooks/useOfferNames';
-import { roleBaseOf } from '../authorization/authorizationRequests';
 import { DefinitionsSection } from './DefinitionsSection';
 import { GrantedDiscountsTab } from './GrantedDiscountsTab';
 import { LostBenefitsSection } from './LostBenefitsSection';
@@ -34,8 +33,7 @@ const PROMOTION_GROUPS = [
 ];
 
 export function DiscountsPage() {
-  const { usuario } = useAuth();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
   const basePath = `/${roleBase}/descuentos`;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -43,7 +41,7 @@ export function DiscountsPage() {
   const tab = TABS.includes(requestedTab) ? requestedTab : DEFAULT_TAB;
 
   const definitionsQuery = useDiscountDefinitions();
-  const names = useOfferNames();
+  const names = useOfferNames({ enabled: tab === 'promotions' });
   const catalogEntries = useMemo(
     () => (definitionsQuery.data ?? []).filter((entry) => CATALOG_DISCOUNT_TYPES.includes(entry.discountType)),
     [definitionsQuery.data],
@@ -96,7 +94,7 @@ export function DiscountsPage() {
             emptyTitle="Todavía no hay promociones"
             emptyDescription={isDirector ? 'Creá una para una carrera, una cohorte o un curso.' : 'Proponé la primera y el director la aprueba.'}
             entries={promotionEntries}
-            isLoading={definitionsQuery.isLoading}
+            isLoading={definitionsQuery.isLoading || names.isLoading}
             isError={definitionsQuery.isError}
             onRetry={() => definitionsQuery.refetch()}
             columns={promotionColumns}

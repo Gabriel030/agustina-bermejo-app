@@ -5,6 +5,13 @@ import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.academicstructure.CycleTestFixtures;
+import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
+import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
+import com.red_escuela.backend.academicstructure.exception.SectionNotOpenForEnrollmentException;
+import com.red_escuela.backend.academicstructure.exception.TermHasActiveEnrollmentsException;
+import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
+import com.red_escuela.backend.academicstructure.service.TermDeactivation;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -65,6 +72,15 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramEnrollmentService programEnrollmentService;
+
+    @Autowired
+    private SectionWaitlistPromoter waitlistPromoter;
+
+    @Autowired
+    private SubjectSectionService subjectSectionService;
+
+    @Autowired
+    private TermDeactivation termDeactivation;
 
     @Autowired
     private EntityManager entityManager;
@@ -692,5 +708,187 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         row.setAttemptNumber(1);
         entityManager.persist(row);
         return row;
+    }
+
+    private SubjectSection persistInactiveSection(Subject subject, Term term) {
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        section.setStatus(StatusType.INACTIVE);
+        entityManager.flush();
+        return section;
+    }
+
+    @Test
+    void enrollingInAnInactiveSectionIsRejectedWithoutCreatingARow() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("65000001", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaComisionInactiva");
+        Program program = persistProgram("CarreraComisionInactiva");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistInactiveSection(subject, term);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
+                .isInstanceOf(SectionNotOpenForEnrollmentException.class);
+        assertThat(entityManager.createQuery("select count(e) from SubjectSectionEnrollment e where e.subjectSection.id = :id", Long.class)
+                .setParameter("id", section.getId()).getSingleResult()).isZero();
+    }
+
+    @Test
+    void enrollingInAnActiveSectionOfAnUnapprovedCycleIsRejected() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("65000002", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaCicloBorrador");
+        Program program = persistProgram("CarreraCicloBorrador");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        var fixtures = new CycleTestFixtures(entityManager);
+        var cycle = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.DRAFT);
+        SubjectSection section = fixtures.section(subject, term, StatusType.ACTIVE, cycle);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
+                .isInstanceOf(SectionNotOpenForEnrollmentException.class);
+    }
+
+    @Test
+    void enrollingInAnActiveSectionOfAnApprovedCycleSucceeds() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("65000003", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaCicloAprobado");
+        Program program = persistProgram("CarreraCicloAprobado");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        var fixtures = new CycleTestFixtures(entityManager);
+        var cycle = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.APPROVED);
+        SubjectSection section = fixtures.section(subject, term, StatusType.ACTIVE, cycle);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        SubjectSectionEnrollment result = subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+
+        assertThat(result.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void changingToAnInactiveSectionIsRejectedAndKeepsTheOriginEnrollment() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("65000004", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaCambioInactiva");
+        Program program = persistProgram("CarreraCambioInactiva");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection origin = persistSubjectSection(subject, term, null);
+        SubjectSection target = persistSubjectSection(subject, term, null);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+        SubjectSectionEnrollment original = subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(origin.getId()));
+        target.setStatus(StatusType.INACTIVE);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.changeSection(
+                original.getId(), new ChangeSectionRequest(target.getId())))
+                .isInstanceOf(SectionNotOpenForEnrollmentException.class);
+        assertThat(subjectSectionEnrollmentService.get(original.getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void waitlistPromotionDoesNotPromoteIntoAnInactiveSection() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaPromocionInactiva");
+        Program program = persistProgram("CarreraPromocionInactiva");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, 1);
+        persistSeatHolder("65000005", institution, program, section, EnrollmentStatus.ENROLLED);
+        persistSeatHolder("65000006", institution, program, section, EnrollmentStatus.WAITLISTED);
+        section.setStatus(StatusType.INACTIVE);
+        entityManager.flush();
+        SubjectSectionEnrollment seated = entityManager.createQuery(
+                "select e from SubjectSectionEnrollment e where e.subjectSection.id = :id and e.status = :status", SubjectSectionEnrollment.class)
+                .setParameter("id", section.getId()).setParameter("status", EnrollmentStatus.ENROLLED).getSingleResult();
+        seated.setStatus(EnrollmentStatus.WITHDRAWN);
+        entityManager.flush();
+
+        waitlistPromoter.promoteNextFromWaitlist(section.getId());
+
+        assertThat(entityManager.createQuery("select count(e) from SubjectSectionEnrollment e where e.subjectSection.id = :id and e.status = :status", Long.class)
+                .setParameter("id", section.getId()).setParameter("status", EnrollmentStatus.ENROLLED).getSingleResult()).isZero();
+    }
+
+    @Test
+    void deactivatingASectionWithLiveEnrollmentsIsRejectedForEachLiveStatusAndKeepsItActive() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaBajaConInscriptos");
+        Program program = persistProgram("CarreraBajaConInscriptos");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        int dni = 66000000;
+        for (EnrollmentStatus live : List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS,
+                EnrollmentStatus.REGULAR, EnrollmentStatus.WAITLISTED)) {
+            SubjectSection section = persistSubjectSection(subject, term, null);
+            persistSeatHolder(String.valueOf(dni++), institution, program, section, live);
+            entityManager.flush();
+
+            assertThatThrownBy(() -> subjectSectionService.deactivate(section.getId()))
+                    .isInstanceOf(SectionHasActiveEnrollmentsException.class);
+            assertThat(section.getStatus()).isEqualTo(StatusType.ACTIVE);
+        }
+    }
+
+    @Test
+    void deactivatingASectionWhoseEnrollmentsAreAllClosedSucceeds() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaBajaSinInscriptos");
+        Program program = persistProgram("CarreraBajaSinInscriptos");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        persistSeatHolder("66100001", institution, program, section, EnrollmentStatus.WITHDRAWN);
+        persistSeatHolder("66100002", institution, program, section, EnrollmentStatus.FAILED);
+        persistSeatHolder("66100003", institution, program, section, EnrollmentStatus.APPROVED);
+        entityManager.flush();
+
+        subjectSectionService.deactivate(section.getId());
+
+        assertThat(section.getStatus()).isEqualTo(StatusType.INACTIVE);
+    }
+
+    @Test
+    void deactivatingATermWithALiveEnrollmentInAnyOfItsSectionsIsRejected() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaBajaTerminoConInscriptos");
+        Program program = persistProgram("CarreraBajaTerminoConInscriptos");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        persistSeatHolder("66200001", institution, program, section, EnrollmentStatus.WAITLISTED);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> termDeactivation.deactivate(term.getId()))
+                .isInstanceOf(TermHasActiveEnrollmentsException.class);
+        assertThat(term.getStatus()).isEqualTo(StatusType.ACTIVE);
+    }
+
+    @Test
+    void deactivatingATermWithoutLiveEnrollmentsSucceeds() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaBajaTerminoSinInscriptos");
+        Program program = persistProgram("CarreraBajaTerminoSinInscriptos");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        persistSeatHolder("66300001", institution, program, section, EnrollmentStatus.WITHDRAWN);
+        entityManager.flush();
+
+        termDeactivation.deactivate(term.getId());
+
+        assertThat(term.getStatus()).isEqualTo(StatusType.INACTIVE);
     }
 }

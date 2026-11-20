@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Users, Calendar, ClipboardList } from 'lucid
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
+import { ChoiceChip } from '@/components/ChoiceChip';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
@@ -47,25 +48,25 @@ function FilaSeccion({ seccion, cicloId }) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-heading text-[13.5px] font-semibold text-ink">{seccion.subjectName}</span>
-            <span className="text-[12px] text-ink-faint">· {seccion.name}</span>
+            <span className="font-heading text-size-13-5 font-semibold text-ink">{seccion.subjectName}</span>
+            <span className="text-size-12 text-ink-faint">· {seccion.name}</span>
             {seccion.pendingApproval && (
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-brand">
+              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-size-11 font-medium text-brand">
                 Modificación pendiente
               </span>
             )}
           </div>
           {titular && (
-            <div className="mt-0.5 text-[12px] text-ink-faint">Titular: {titular.name}</div>
+            <div className="mt-0.5 text-size-12 text-ink-faint">Titular: {titular.name}</div>
           )}
           {slotsPrimero && (
-            <div className="mt-0.5 text-[12px] text-ink-soft">
+            <div className="mt-0.5 text-size-12 text-ink-soft">
               {DIA_LABELS[slotsPrimero.dayOfWeek]} {formatHora(slotsPrimero.startTime)}–{formatHora(slotsPrimero.endTime)} · {slotsPrimero.classroomName}
             </div>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <div className="flex items-center gap-1 text-[12px] text-ink-faint">
+          <div className="flex items-center gap-1 text-size-12 text-ink-faint">
             <Users className="h-3.5 w-3.5" />
             {seccion.capacity}
           </div>
@@ -95,10 +96,10 @@ function PanelCiclo({ ciclo }) {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-heading text-[15px] font-semibold text-ink">{ciclo.termName}</span>
+            <span className="font-heading text-size-15 font-semibold text-ink">{ciclo.termName}</span>
             <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
           </div>
-          <div className="mt-0.5 text-[12px] text-ink-faint">Creado por {ciclo.createdByName}</div>
+          <div className="mt-0.5 text-size-12 text-ink-faint">Creado por {ciclo.createdByName}</div>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
           <ResumeCycleButton cycle={ciclo} />
@@ -188,7 +189,7 @@ export function PreceptorDetalleCarrera() {
         <div>
           <Link
             to={`${basePath}/oferta-academica?tab=carreras`}
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Oferta académica
@@ -201,26 +202,18 @@ export function PreceptorDetalleCarrera() {
               </Button>
             )}
           </div>
-          <div className="mt-0.5 text-[13px] text-ink-faint">
+          <div className="mt-0.5 text-size-13 text-ink-faint">
             {programa?.totalYears} {programa?.totalYears === 1 ? 'año' : 'años'}
           </div>
         </div>
 
         <div className="flex gap-2 border-b border-surface-border pb-2">
-          <button
-            type="button"
-            onClick={() => setVerAnteriores(false)}
-            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${!verAnteriores ? 'bg-accent-soft font-medium text-brand' : 'text-ink-faint hover:text-ink'}`}
-          >
+          <ChoiceChip tone="text" selected={!verAnteriores} onClick={() => setVerAnteriores(false)}>
             Actuales
-          </button>
-          <button
-            type="button"
-            onClick={() => setVerAnteriores(true)}
-            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${verAnteriores ? 'bg-accent-soft font-medium text-brand' : 'text-ink-faint hover:text-ink'}`}
-          >
+          </ChoiceChip>
+          <ChoiceChip tone="text" selected={verAnteriores} onClick={() => setVerAnteriores(true)}>
             Anteriores
-          </button>
+          </ChoiceChip>
         </div>
 
         {loadingCiclos ? (

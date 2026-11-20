@@ -37,16 +37,16 @@ export function GuardianStep({ register, control, errors, isLoading, fullName, b
   return (
     <div className="flex flex-col gap-5">
       <h2 className="text-base font-semibold text-ink">Responsables</h2>
-      <p role="status" className="rounded-lg border border-accent/30 bg-accent-soft p-3 text-[13px] text-ink">
+      <p role="status" className="rounded-lg border border-accent/30 bg-accent-soft p-3 text-size-13 text-ink">
         {fullName} tiene {ageOn(birthDate)} años. Tutor y contacto de emergencia son obligatorios. El tutor no tiene usuario ni acceso a la app.
       </p>
       {errors?.responsibles?.message && (
-        <p role="alert" className="rounded-lg border border-danger/40 bg-danger-bg p-3 text-[13px] text-danger">
+        <p role="alert" className="rounded-lg border border-danger/40 bg-danger-bg p-3 text-size-13 text-danger">
           {errors.responsibles.message}
         </p>
       )}
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Tutor</legend>
+        <legend className="mb-1 text-size-12 font-semibold uppercase tracking-wide text-ink-faint">Tutor</legend>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextField id="guardianName" label="Nombre y apellido" required register={register} errors={errors} disabled={isLoading} />
           <TextField id="guardianDni" label="DNI" required register={register} errors={errors} placeholder="12345678" disabled={isLoading} />
@@ -56,7 +56,7 @@ export function GuardianStep({ register, control, errors, isLoading, fullName, b
         </div>
       </fieldset>
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Contacto de emergencia</legend>
+        <legend className="mb-1 text-size-12 font-semibold uppercase tracking-wide text-ink-faint">Contacto de emergencia</legend>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextField id="emergencyName" label="Nombre y apellido" required register={register} errors={errors} disabled={isLoading} />
           <RelationshipField id="emergencyRelationship" control={control} errors={errors} options={EMERGENCY_RELATIONSHIPS} disabled={isLoading} />

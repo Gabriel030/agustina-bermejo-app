@@ -21,7 +21,7 @@ function DiaCelda({ dia, eventos, feriado }) {
     return (
       <div
         title={eventos.map((e) => e.etiqueta).join(', ')}
-        className={`flex aspect-square items-center justify-center rounded-full text-[10px] font-bold ${TONO_BG[evento.tono]}`}
+        className={`flex aspect-square items-center justify-center rounded-full text-size-10 font-bold ${TONO_BG[evento.tono]}`}
       >
         {dia}
       </div>
@@ -29,12 +29,12 @@ function DiaCelda({ dia, eventos, feriado }) {
   }
   if (feriado) {
     return (
-      <div title="Feriado" className="flex aspect-square items-center justify-center rounded bg-neutral-bg text-[10px] text-ink-faint line-through">
+      <div title="Feriado" className="flex aspect-square items-center justify-center rounded bg-neutral-bg text-size-10 text-ink-faint line-through">
         {dia}
       </div>
     );
   }
-  return <div className="flex aspect-square items-center justify-center text-[10px] text-ink-faint">{dia}</div>;
+  return <div className="flex aspect-square items-center justify-center text-size-10 text-ink-faint">{dia}</div>;
 }
 
 export function CalendarioConfiguracion({ config, form, feriados }) {
@@ -53,7 +53,7 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-4 text-[10.5px] font-semibold text-ink-faint">
+        <div className="flex flex-wrap items-center gap-4 text-size-10-5 font-semibold text-ink-faint">
           <span className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-success" /> Apertura/cierre
           </span>
@@ -81,7 +81,7 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
               className="text-ink-faint disabled:opacity-40">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            <span className="text-[11px] font-semibold text-ink-faint">
+            <span className="text-size-11 font-semibold text-ink-faint">
               {mesesVisibles[0]?.anio} · página {paginaActual + 1}/{totalPaginas}
             </span>
             <Button
@@ -101,7 +101,7 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
           const grilla = construirGrillaDeMes(anio, mes);
           return (
             <div key={clave} className="rounded-2xl border border-border bg-surface p-2.5">
-              <div className="mb-1.5 text-center text-[11px] font-bold text-ink">{grilla.nombre}</div>
+              <div className="mb-1.5 text-center text-size-11 font-bold text-ink">{grilla.nombre}</div>
               <div className="grid grid-cols-7 gap-0.5 text-center text-[7.5px] font-bold text-ink-faint">
                 {NOMBRES_DIA_SEMANA.map((d) => (
                   <div key={d}>{d}</div>

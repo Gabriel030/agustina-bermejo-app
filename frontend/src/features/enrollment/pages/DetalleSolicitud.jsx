@@ -143,14 +143,14 @@ export function DetalleSolicitud() {
       description={`Solicitada el ${formatFecha(solicitud.requestedAt)}`}
       action={<EstadoSolicitudBadge solicitud={solicitud} />}
     >
-      <Link to={MY_APPLICATIONS_PATH} className="-mt-3 flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+      <Link to={MY_APPLICATIONS_PATH} className="-mt-3 flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink">
         <span aria-hidden="true">←</span> Mis solicitudes
       </Link>
 
       <Stepper {...applicationProgress(solicitud)} />
 
       {solicitud.status === 'REJECTED' && (
-        <GlassCard className="flex flex-col gap-3 bg-danger-bg p-5 text-[13px] text-danger">
+        <GlassCard className="flex flex-col gap-3 bg-danger-bg p-5 text-size-13 text-danger">
           <div>
             <span className="font-bold">Solicitud rechazada.</span> {rejectionText}
           </div>
@@ -162,7 +162,7 @@ export function DetalleSolicitud() {
       )}
 
       {solicitud.status === 'EXPIRED' && (
-        <GlassCard className="flex flex-col gap-3 bg-danger-bg p-5 text-[13px] text-danger">
+        <GlassCard className="flex flex-col gap-3 bg-danger-bg p-5 text-size-13 text-danger">
           <div>
             <span className="font-bold">Solicitud vencida.</span> Cerró la admisión sin que se pagara la matrícula de ingreso y la factura quedó anulada.
           </div>
@@ -174,30 +174,30 @@ export function DetalleSolicitud() {
       )}
 
       {solicitud.status === 'APPROVED' && !invoice && (
-        <GlassCard className="bg-neutral-bg p-5 text-[13px] text-ink-soft">
+        <GlassCard className="bg-neutral-bg p-5 text-size-13 text-ink-soft">
           <span className="font-bold text-ink">Solicitud aprobada.</span> Consultá con Secretaría el pago de la matrícula de ingreso.
         </GlassCard>
       )}
 
       {solicitud.status === 'APPROVED' && invoice?.paymentStatus === 'PAID' && solicitud.programEnrollmentId && (
-        <GlassCard className="bg-success-bg p-5 text-[13px] text-success">
+        <GlassCard className="bg-success-bg p-5 text-size-13 text-success">
           <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso: tu inscripción a la carrera está confirmada.
         </GlassCard>
       )}
 
       {solicitud.status === 'APPROVED' && invoice?.paymentStatus === 'PAID' && !solicitud.programEnrollmentId && (
-        <GlassCard className="bg-warning-bg p-5 text-[13px] text-warning">
+        <GlassCard className="bg-warning-bg p-5 text-size-13 text-warning">
           <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso. Estamos confirmando tu inscripción en {solicitud.programName}.
         </GlassCard>
       )}
 
       {solicitud.status === 'APPROVED' && invoice && invoice.paymentStatus !== 'PAID' && (
         <GlassCard className="flex flex-col gap-3 p-5">
-          <div className="text-[13px] text-ink-soft">
+          <div className="text-size-13 text-ink-soft">
             <span className="font-bold text-ink">Solicitud aprobada.</span> Cuando confirmemos el pago, tu inscripción a la carrera queda confirmada.
           </div>
           {invoice.paymentStatus === 'OVERDUE' && (
-            <div className="rounded-xl bg-warning-bg px-4 py-3 text-[13px] text-warning">
+            <div className="rounded-xl bg-warning-bg px-4 py-3 text-size-13 text-warning">
               <span className="font-bold">La matrícula está vencida.</span> Pagala antes de que cierre la admisión: si cierra sin el pago, la solicitud
               vence y la factura se anula.
             </div>
@@ -218,7 +218,7 @@ export function DetalleSolicitud() {
                   size="inline"
                   type="button"
                   onClick={() => navigate(`/alumno/pagos/${invoice.id}/transferencia`, { state: originState })}
-                  className="text-[12.5px] font-semibold"
+                  className="text-size-12-5 font-semibold"
                   >
                   Ver estado del pago
                 </Button>
@@ -239,12 +239,12 @@ export function DetalleSolicitud() {
 
       {solicitud.status !== 'REJECTED' && solicitud.status !== 'EXPIRED' && solicitud.status !== 'APPROVED' && (
         <>
-          <GlassCard className="p-5 text-[13px] text-ink-soft">
+          <GlassCard className="p-5 text-size-13 text-ink-soft">
             Tu solicitud está en revisión. No se te cobró nada: si la aprueban, vas a recibir la factura de la matrícula de ingreso y vas
             a tener un plazo para pagarla. Te avisamos por notificación cuando haya novedades.
           </GlassCard>
 
-          <h2 className="font-heading text-[15px] font-semibold text-ink-soft">Documentos de tu solicitud</h2>
+          <h2 className="font-heading text-size-15 font-semibold text-ink-soft">Documentos de tu solicitud</h2>
 
           {documents.isError && (
             <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-warning-bg px-3 py-2 text-xs font-medium text-warning">
@@ -283,7 +283,7 @@ export function DetalleSolicitud() {
                       )}
                     </div>
                     <div>
-                      <div className="text-[13.5px] font-bold text-ink">{label}</div>
+                      <div className="text-size-13-5 font-bold text-ink">{label}</div>
                       <div className={`text-xs ${uploaded ? 'text-success' : 'text-ink-faint'}`}>
                         {documentStatusText({ fileName, previousUploadDate, documentsFailed: documents.isError })}
                       </div>

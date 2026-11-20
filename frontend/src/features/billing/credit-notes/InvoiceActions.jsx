@@ -1,10 +1,9 @@
 import { useNavigate } from 'react-router-dom';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { Ban, FilePlus2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InfoTip } from '@/components/charts/InfoTip';
-import { useAuth } from '@/context/AuthContext';
 import { formatDate } from '@/lib/billing';
-import { roleBaseOf } from '../authorization/authorizationRequests';
 import { PendingRequestActions } from './PendingRequestActions';
 import { creditNotePath, invoiceActionsOf } from './creditNotes';
 
@@ -20,9 +19,8 @@ function GuardedButton({ tip, children, ...props }) {
 }
 
 export function InvoiceActions({ invoice, invoices, studentId, studentName, onCancel }) {
-  const { usuario } = useAuth();
   const navigate = useNavigate();
-  const roleBase = roleBaseOf(usuario);
+  const { roleBase } = useActiveRole();
   const actions = invoiceActionsOf(invoice, { invoices });
 
   if (actions.pending) {

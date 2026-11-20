@@ -45,6 +45,12 @@ public class CourseEnrollment implements BillableEnrollment {
     @Column(name = "enrollment_date")
     private LocalDateTime enrollmentDate;
 
+    @Column(name = "waitlist_prioritized_at")
+    private LocalDateTime waitlistPrioritizedAt;
+
+    @Column(name = "waitlist_expiry_reminded_at")
+    private LocalDateTime waitlistExpiryRemindedAt;
+
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 
@@ -56,6 +62,9 @@ public class CourseEnrollment implements BillableEnrollment {
 
     @Column(name = "withdrawn_by_person_id")
     private Long withdrawnByPersonId;
+
+    @Column(name = "withdrawal_reason")
+    private String withdrawalReason;
 
     @OneToMany(mappedBy = "courseEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<CourseSubjectSectionEnrollment> sectionEnrollments;

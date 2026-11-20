@@ -27,7 +27,7 @@ class EnrollmentPaymentStandingMigrationTest {
             Long institutionId = jdbc.queryForObject("select max(id) from institution", Long.class);
             jdbc.update("insert into student (person_id, institution_id) values (?, ?)", personId, institutionId);
             Long studentId = jdbc.queryForObject("select max(id) from student", Long.class);
-            jdbc.update("insert into term (year_number, status, start_date, end_date) values (2027, true, timestamp '2027-03-01 00:00:00', timestamp '2027-12-15 00:00:00')");
+            jdbc.update("insert into term (year_number, status, start_date, end_date) values (2027, 'ACTIVE', timestamp '2027-03-01 00:00:00', timestamp '2027-12-15 00:00:00')");
             Long termId = jdbc.queryForObject("select max(id) from term", Long.class);
             jdbc.update("insert into program (name, status, total_years, currency) values ('Enfermería', true, 3, 'ARS')");
             Long programId = jdbc.queryForObject("select max(id) from program", Long.class);
@@ -83,7 +83,7 @@ class EnrollmentPaymentStandingMigrationTest {
             Long institutionId = jdbc.queryForObject("select max(id) from institution", Long.class);
             jdbc.update("insert into student (person_id, institution_id) values (?, ?)", personId, institutionId);
             Long studentId = jdbc.queryForObject("select max(id) from student", Long.class);
-            jdbc.update("insert into term (year_number, status, start_date, end_date) values (2027, true, timestamp '2027-03-01 00:00:00', timestamp '2027-12-15 00:00:00')");
+            jdbc.update("insert into term (year_number, status, start_date, end_date) values (2027, 'ACTIVE', timestamp '2027-03-01 00:00:00', timestamp '2027-12-15 00:00:00')");
             Long termId = jdbc.queryForObject("select max(id) from term", Long.class);
             jdbc.update("insert into program (name, status, total_years, currency) values ('Enfermería', true, 3, 'ARS')");
             Long programId = jdbc.queryForObject("select max(id) from program", Long.class);

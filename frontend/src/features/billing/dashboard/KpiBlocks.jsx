@@ -4,7 +4,6 @@ import { Stagger } from '@/components/Stagger';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { formatChartValue } from '@/components/charts';
-import { useFinancialDashboard } from '@/features/billing/hooks/useFinancialDashboard';
 import { useMonthlyMetric } from '@/features/billing/hooks/useMonthlyMetric';
 import { cn, formatMoney } from '@/lib/utils';
 import { deltaBetween, formatLongMonth, formatPointsDelta, formatShortMonth, goalStatusAt, previousMonthOf, valueAt } from './dashboardMetrics';
@@ -90,7 +89,7 @@ export function MonthKpis({ filters, month }) {
 
   return (
     <section aria-label={formatLongMonth(month)} className="flex min-w-0 flex-col gap-2">
-      <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">{formatLongMonth(month)}</h2>
+      <h2 className="text-size-11 font-bold uppercase tracking-wide text-ink-soft">{formatLongMonth(month)}</h2>
       <div className={GRID}>
         <Stagger className="min-w-0">
           <StatCard label="Pago a término">
@@ -133,8 +132,7 @@ export function MonthKpis({ filters, month }) {
   );
 }
 
-export function TodayKpis({ currency }) {
-  const dashboard = useFinancialDashboard();
+export function TodayKpis({ currency, dashboard }) {
   const { data, isLoading, isError } = dashboard;
   const retry = () => dashboard.refetch();
   const totals = (data?.totalsByCurrency ?? []).find((candidate) => candidate.totalDebt?.currency === currency);
@@ -143,7 +141,7 @@ export function TodayKpis({ currency }) {
 
   return (
     <section aria-label="Hoy" className="flex min-w-0 flex-col gap-2">
-      <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">Hoy · todas las ofertas</h2>
+      <h2 className="text-size-11 font-bold uppercase tracking-wide text-ink-soft">Hoy · todas las ofertas</h2>
       <div className={GRID}>
         <Stagger className="min-w-0">
           <StatCard label="Deuda total">

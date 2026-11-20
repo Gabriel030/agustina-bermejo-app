@@ -94,8 +94,14 @@ public class ProgramEnrollment implements BillableEnrollment {
     @Column(name = "withdrawal_registered_on")
     private LocalDate withdrawalRegisteredOn;
 
+    @Column(name = "entry_year")
+    private Integer entryYear;
+
     @Column(name = "withdrawn_by_person_id")
     private Long withdrawnByPersonId;
+
+    @Column(name = "withdrawal_reason")
+    private String withdrawalReason;
 
     @Transient
     private ProgramEnrollmentGraduatedEvent pendingGraduationEvent;

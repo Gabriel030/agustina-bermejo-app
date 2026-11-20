@@ -73,7 +73,7 @@ describe('DocenteClosureSheet', () => {
     renderSheet();
     await screen.findByRole('rowheader', { name: 'Acosta, Lucía' });
 
-    const card = screen.getByRole('button', { name: /^Libres: 1/ });
+    const card = screen.getByRole('button', { name: /^Libres por inasistencias: 1/ });
     await user.click(card);
 
     expect(card).toHaveAttribute('aria-pressed', 'true');
@@ -96,7 +96,7 @@ describe('DocenteClosureSheet', () => {
 
     const drawer = await screen.findByRole('dialog', { name: 'Correlativas de Domínguez, Martín' });
     expect(await within(drawer).findByText('ANAT')).toBeInTheDocument();
-    expect(within(drawer).getByText('Regular')).toBeInTheDocument();
+    expect(within(drawer).getByText('Cursada regular')).toBeInTheDocument();
     expect(within(drawer).getByText('Exceptuada')).toBeInTheDocument();
     expect(within(drawer).getByText('Falta cumplir una correlativa.', { exact: false })).toBeInTheDocument();
   });

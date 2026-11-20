@@ -17,13 +17,14 @@ export function buildClosureListColumns(role) {
       id: 'subject',
       header: 'Materia',
       enableSorting: false,
-      meta: { sticky: true, rowHeader: true },
+      meta: { sticky: true, rowHeader: true, cardTitle: true },
       cell: ({ row }) => (
         <div className="flex min-w-36 max-w-56 flex-col whitespace-normal">
           <Link to={closureSheetPath(role, row.original)} className="font-semibold text-ink hover:underline">
             {row.original.subjectName}
           </Link>
           <span className="text-xs text-ink-soft">{row.original.sectionName}</span>
+          {row.original.termLabel && <span className="text-xs text-ink-faint">{row.original.termLabel}</span>}
         </div>
       ),
     },
@@ -31,13 +32,11 @@ export function buildClosureListColumns(role) {
       id: 'instructor',
       header: 'Docente',
       enableSorting: false,
-      cell: ({ row }) => firstInstructorLabel(row.original.instructorNames),
-    },
-    {
-      id: 'term',
-      header: 'Término',
-      enableSorting: false,
-      cell: ({ row }) => row.original.termLabel ?? EMPTY,
+      cell: ({ row }) => (
+        <span className="block max-w-36 truncate" title={row.original.instructorNames.join(', ')}>
+          {firstInstructorLabel(row.original.instructorNames)}
+        </span>
+      ),
     },
     {
       id: 'students',

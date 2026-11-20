@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
+import { postLoginPathFor } from '@/lib/activeRole';
 import { Link, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
+import { InstitutionalNoticesCheckbox } from '@/features/identity/consent/InstitutionalNoticesCheckbox';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/api/client';
+import { describeError } from '@/api/describeError';
 import { messageForAuthError } from '@/features/identity/lib/loginErrors';
+import { useCurrentLegalDocuments } from '@/features/identity/hooks/useLegal';
+import { isMinorOn, formatLegalDate } from '@/features/identity/lib/legalDocuments';
+
+const LEGAL_CODES = ['LEGAL_ACCEPTANCE_REQUIRED', 'BIRTH_DATE_REQUIRED', 'MINOR_GUARDIAN_REQUIRED'];
 
 const PASSWORD_MIN_LENGTH = 8;
 // Mismo criterio que auth.password.require-letter-and-digit/require-uppercase del
@@ -27,16 +33,24 @@ export function Registrarse() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [repetirPassword, setRepetirPassword] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [guardianName, setGuardianName] = useState('');
+  const [guardianEmail, setGuardianEmail] = useState('');
+  const [guardianRelationship, setGuardianRelationship] = useState('');
+  const [acceptedInstitutionalNotices, setAcceptedInstitutionalNotices] = useState(false);
   const [institutionId, setInstitutionId] = useState(null);
   const [errorInstitucion, setErrorInstitucion] = useState(false);
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const { usuario, register } = useAuth();
   const navigate = useNavigate();
+  const { data: legalDocuments } = useCurrentLegalDocuments();
+  const isMinor = isMinorOn(birthDate);
+  const termsVersion = legalDocuments?.documents?.find((document) => document.type === 'TERMS')?.version;
 
   useEffect(() => {
     if (usuario) {
-      navigate(usuario.roles.length ? `/${usuario.roles[0].toLowerCase()}/inicio` : '/catalogo', { replace: true });
+      navigate(postLoginPathFor(usuario), { replace: true });
     }
   }, [usuario, navigate]);
 
@@ -71,8 +85,24 @@ export function Registrarse() {
 
     setEnviando(true);
     try {
-      await register({ nombre, apellido, email, username: email, password, institutionId });
+      await register({
+        nombre,
+        apellido,
+        email,
+        username: email,
+        password,
+        institutionId,
+        birthDate,
+        acceptedTerms: acceptedInstitutionalNotices,
+        acceptedPrivacy: acceptedInstitutionalNotices,
+        acceptedInstitutionalNotices,
+        ...(isMinor && { guardianName, guardianEmail, guardianRelationship }),
+      });
     } catch (err) {
+      if (LEGAL_CODES.includes(err.code)) {
+        setError(describeError(err).message);
+        return;
+      }
       setError(
         err.code === 'EMAIL_ALREADY_EXISTS'
           ? 'Ese email ya está registrado.'
@@ -85,7 +115,6 @@ export function Registrarse() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <MeshBackground />
       <GlassCard className="w-full max-w-[480px] p-6 pb-7 sm:p-10 sm:pb-8">
         <div className="mb-6">
           <InstitutionBrand titulo="Creá tu cuenta" subtitulo="Registrate para solicitar una carrera o anotarte a un curso" />
@@ -126,7 +155,7 @@ export function Registrarse() {
               required
               disabled={enviando}
             />
-            <div className="mt-1 text-[11.5px] text-ink-faint">Este email va a ser tu usuario para ingresar.</div>
+            <div className="mt-1 text-size-11-5 text-ink-faint">Este email va a ser tu usuario para ingresar.</div>
           </div>
 
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
@@ -151,7 +180,80 @@ export function Registrarse() {
               />
             </div>
           </div>
-          <div className="-mt-1.5 text-[11.5px] text-ink-faint">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con una mayúscula y un número.</div>
+          <div className="-mt-1.5 text-size-11-5 text-ink-faint">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con una mayúscula y un número.</div>
+
+          <div>
+            <label htmlFor="birth-date" className="mb-1.5 block text-xs font-semibold text-ink-soft">
+              Fecha de nacimiento
+            </label>
+            <Input
+              id="birth-date"
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+              required
+              disabled={enviando}
+            />
+          </div>
+
+          {isMinor && (
+            <fieldset className="flex flex-col gap-3.5 rounded-lg border border-border p-3">
+              <legend className="px-1.5 text-size-13 font-bold text-ink">Responsable (obligatorio para menores de 18)</legend>
+              <div>
+                <label htmlFor="guardian-name" className="mb-1.5 block text-xs font-semibold text-ink-soft">
+                  Nombre del responsable
+                </label>
+                <Input
+                  id="guardian-name"
+                  value={guardianName}
+                  maxLength={255}
+                  onChange={(e) => setGuardianName(e.target.value)}
+                  required
+                  disabled={enviando}
+                />
+              </div>
+              <div>
+                <label htmlFor="guardian-email" className="mb-1.5 block text-xs font-semibold text-ink-soft">
+                  Correo del responsable
+                </label>
+                <Input
+                  id="guardian-email"
+                  type="email"
+                  value={guardianEmail}
+                  maxLength={255}
+                  onChange={(e) => setGuardianEmail(e.target.value)}
+                  required
+                  disabled={enviando}
+                />
+              </div>
+              <div>
+                <label htmlFor="guardian-relationship" className="mb-1.5 block text-xs font-semibold text-ink-soft">
+                  Vínculo con el responsable
+                </label>
+                <Input
+                  id="guardian-relationship"
+                  placeholder="Madre, padre, tutor…"
+                  value={guardianRelationship}
+                  maxLength={60}
+                  onChange={(e) => setGuardianRelationship(e.target.value)}
+                  required
+                  disabled={enviando}
+                />
+              </div>
+              <p className="text-size-11-5 text-ink-faint">
+                La aceptación de los documentos la confirma tu responsable desde el correo que le enviamos.
+              </p>
+            </fieldset>
+          )}
+
+          <InstitutionalNoticesCheckbox
+            id="accepted-institutional-notices"
+            checked={acceptedInstitutionalNotices}
+            onCheckedChange={setAcceptedInstitutionalNotices}
+            disabled={enviando}
+            termsVersion={termsVersion && (formatLegalDate(termsVersion) || termsVersion)}
+          />
 
           {errorInstitucion && (
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
@@ -160,18 +262,23 @@ export function Registrarse() {
           )}
           {error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{error}</div>}
 
+          <p id="register-submit-hint" className="text-size-12 text-ink-soft empty:hidden">
+            {acceptedInstitutionalNotices ? '' : 'Marcá la casilla de aceptación para crear la cuenta.'}
+          </p>
+
           <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <Button
               type="submit"
-              disabled={enviando || !institutionId}
+              disabled={enviando || !institutionId || !acceptedInstitutionalNotices}
+              aria-describedby="register-submit-hint"
               variant="gradient"
-              className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
+              className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
             >
               {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
             </Button>
           </m.div>
 
-          <div className="-mt-1 text-center text-[11.5px] text-ink-faint">
+          <div className="-mt-1 text-center text-size-11-5 text-ink-faint">
             Al crear tu cuenta entrás directo — todavía no hay verificación de email.
           </div>
         </form>

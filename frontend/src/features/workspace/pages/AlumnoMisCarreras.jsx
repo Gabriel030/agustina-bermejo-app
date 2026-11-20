@@ -10,13 +10,14 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CertificateActions } from '@/features/workspace/components/CertificateActions';
+import { TabTramites } from '@/features/workspace/components/TabTramites';
 import { TabMaterias } from '@/features/workspace/components/TabMaterias';
 import { TabPlanDeEstudio } from '@/features/workspace/components/TabPlanDeEstudio';
 import { TabNotas } from '@/features/evaluation';
 import { TabAsistencia } from '@/features/attendance';
 import { TabMesasDeExamen } from '@/features/evaluation';
-import { GraduationTab, GraduationRequestAction } from '@/features/graduation';
+import { GraduationRequestAction } from '@/features/graduation';
+import { describeRegularity, useMyRegularity } from '@/features/identity';
 import { useMisMatriculaciones, useMiProgreso } from '@/features/enrollment';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
@@ -44,9 +45,12 @@ export function AlumnoMisCarreras() {
   const carreraParam = searchParams.get('carrera');
   const matricula = activas.find((m) => m.id === Number(carreraParam)) ?? activas[0];
   const graduated = matricula?.status === 'COMPLETED';
-  const tab = searchParams.get('tab') ?? 'materias';
+  const requestedTab = searchParams.get('tab') ?? 'materias';
+  const tab = requestedTab === 'egreso' ? 'tramites' : requestedTab;
 
   const { data: progreso } = useMiProgreso(matricula?.id);
+  const { data: regularity } = useMyRegularity('PROGRAM', graduated ? null : matricula?.id);
+  const regularityView = regularity ? describeRegularity(regularity) : null;
   const { data: planDeEstudio } = useProgramaPlanDeEstudio(matricula?.programId);
   const totalMateriasPlan = planDeEstudio?.length;
   // Mismo cruce plan+inscripciones que usan las pestañas Materias/Notas (React Query
@@ -120,19 +124,26 @@ export function AlumnoMisCarreras() {
             <div className="font-heading text-2xl font-bold tracking-tight text-ink">Mis carreras</div>
             {graduated && <StatusPill tone="success">Carrera finalizada</StatusPill>}
             {progreso && !graduated && (
-              <StatusPill tone={progreso.esRegular ? 'success' : 'neutral'}>
-                {progreso.esRegular ? 'Inscripción activa' : 'Sin inscripción activa'}
+              <StatusPill tone={progreso.hasActiveCoursework ? 'success' : 'neutral'}>
+                {progreso.hasActiveCoursework ? 'Con cursada activa' : 'Sin cursada activa'}
               </StatusPill>
             )}
           </div>
+          {regularityView && (
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <StatusPill tone={regularityView.tone}>{regularityView.label}</StatusPill>
+              {regularityView.details.length > 0 && (
+                <span className="text-size-12 text-ink-faint">{regularityView.details.join(' · ')}</span>
+              )}
+            </div>
+          )}
           <div className="mt-1 text-sm text-ink-faint">Progreso del plan de estudios</div>
         </div>
         {/* Siempre visible, aunque haya una sola carrera — predecible, no aparece/desaparece
             según cuántas carreras tenga el alumno (decisión de producto). En la URL
             (?carrera=) para que el breadcrumb pueda volver acá sin perder la carrera elegida. */}
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <CertificateActions key={`certificates-${matricula.id}`} carreraId={matricula.id} />
-          {tab === 'egreso' && <GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
+          {tab === 'tramites' &&<GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
           <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
             <SelectTrigger>
               <SelectValue />
@@ -179,7 +190,7 @@ export function AlumnoMisCarreras() {
           <TabsTrigger value="mesas-de-examen">Mesas de examen</TabsTrigger>
           <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
           <TabsTrigger value="plan-de-estudio">Plan de estudio</TabsTrigger>
-          <TabsTrigger value="egreso">Egreso</TabsTrigger>
+          <TabsTrigger value="tramites">Trámites</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -192,7 +203,7 @@ export function AlumnoMisCarreras() {
       {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
       {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
       {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
-      {tab === 'egreso' && <GraduationTab key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
+      {tab === 'tramites' && <TabTramites key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
     </PageContainer>
   );
 }

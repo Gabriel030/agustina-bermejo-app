@@ -34,7 +34,7 @@ export function BankAccountDetails() {
       {fields.map((field) => (
         <div key={field.label} className="flex flex-wrap items-baseline justify-between gap-x-4">
           <span className="text-xs text-ink-faint">{field.label}</span>
-          <span className="break-all font-mono text-[13px] font-semibold text-ink">{field.value}</span>
+          <span className="break-all font-mono text-size-13 font-semibold text-ink">{field.value}</span>
         </div>
       ))}
     </div>

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import jakarta.validation.Valid;
+
 import com.red_escuela.backend.billing.discount.domain.CohortPromotionStatus;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStatus;
@@ -77,7 +79,7 @@ public class DiscountDefinitionController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director publicó la promoción", content = @Content(schema = @Schema(implementation = DiscountDefinitionResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido pendiente de aprobación", content = @Content(schema = @Schema(implementation = DiscountDefinitionPendingAuthorizationResponse.class)))})
-    public ResponseEntity<?> createDiscountDefinition(@RequestBody CreateDiscountDefinitionRequest request) {
+    public ResponseEntity<?> createDiscountDefinition(@Valid @RequestBody CreateDiscountDefinitionRequest request) {
         return responseOf(createUseCase.createDiscountDefinition(request.toDraft()));
     }
 
@@ -87,7 +89,7 @@ public class DiscountDefinitionController {
             @ApiResponse(responseCode = "200", description = "Todas las violaciones de las reglas del catálogo; lista vacía si el borrador es coherente"),
             @ApiResponse(responseCode = "400", description = "Cuerpo que no se puede interpretar: INVALID_PERCENTAGE (porcentaje fuera de 0 a 100), NEGATIVE_ADJUSTMENT_AMOUNT (monto fijo negativo), UNSUPPORTED_CURRENCY. Estos no vuelven como violaciones porque el valor no llega a construirse"),
             @ApiResponse(responseCode = "404", description = "La carrera, el curso o la cohorte del alcance no existen")})
-    public DiscountDefinitionValidationResponse validateDiscountDefinition(@RequestBody CreateDiscountDefinitionRequest request) {
+    public DiscountDefinitionValidationResponse validateDiscountDefinition(@Valid @RequestBody CreateDiscountDefinitionRequest request) {
         return new DiscountDefinitionValidationResponse(validateUseCase.validateDiscountDefinition(request.toDraft()));
     }
 
@@ -97,7 +99,7 @@ public class DiscountDefinitionController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director cerró la promoción", content = @Content(schema = @Schema(implementation = DiscountDefinitionResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido de cierre pendiente de aprobación", content = @Content(schema = @Schema(implementation = DiscountDefinitionPendingAuthorizationResponse.class)))})
-    public ResponseEntity<?> closeDiscountDefinition(@PathVariable Long id, @RequestBody CloseDiscountDefinitionRequest request) {
+    public ResponseEntity<?> closeDiscountDefinition(@PathVariable Long id, @Valid @RequestBody CloseDiscountDefinitionRequest request) {
         return responseOf(closeUseCase.closeDiscountDefinition(id, request.reason()));
     }
 

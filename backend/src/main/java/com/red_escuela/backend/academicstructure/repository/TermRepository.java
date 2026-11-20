@@ -24,4 +24,6 @@ public interface TermRepository extends JpaRepository<Term, Long> {
             where ps.subject = ss.subject and ps.program.id = :programId and ss.term is not null
             """)
     List<Term> findTermsOfProgram(@Param("programId") Long programId);
+
+    java.util.Optional<Term> findFirstByYearAndTypeOrderByIdAsc(Integer year, com.red_escuela.backend.academicstructure.domain.TermType type);
 }

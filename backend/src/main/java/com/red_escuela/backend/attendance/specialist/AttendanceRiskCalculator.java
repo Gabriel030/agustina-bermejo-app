@@ -1,33 +1,29 @@
 package com.red_escuela.backend.attendance.specialist;
 
-import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
-import com.red_escuela.backend.attendance.api.AttendanceRiskView;
+import com.red_escuela.backend.attendance.api.AttendanceStanding;
+import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
-import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AttendanceRiskCalculator {
 
-    private final AttendanceRiskReader attendanceRiskReader;
+    private final AttendanceStandingReader attendanceStandingReader;
 
-    public AttendanceRiskCalculator(AttendanceRiskReader attendanceRiskReader) {
-        this.attendanceRiskReader = attendanceRiskReader;
+    public AttendanceRiskCalculator(AttendanceStandingReader attendanceStandingReader) {
+        this.attendanceStandingReader = attendanceStandingReader;
     }
 
     public AttendanceRiskResponse calculateForProgramEnrollment(Long enrollmentId) {
-        return toResponse(attendanceRiskReader.readProgramEnrollmentRisk(enrollmentId));
+        return toResponse(attendanceStandingReader.readProgramEnrollmentStanding(enrollmentId));
     }
 
     public AttendanceRiskResponse calculateForCourseEnrollment(Long enrollmentId) {
-        return toResponse(attendanceRiskReader.readCourseEnrollmentRisk(enrollmentId));
+        return toResponse(attendanceStandingReader.readCourseEnrollmentStanding(enrollmentId));
     }
 
-    public AttendanceRiskResponse evaluate(Percentage maxAbsenceRate, long total, long absences) {
-        return toResponse(attendanceRiskReader.evaluateRisk(maxAbsenceRate, total, absences));
-    }
-
-    private AttendanceRiskResponse toResponse(AttendanceRiskView view) {
-        return new AttendanceRiskResponse(view.calculable(), view.libre(), view.absencePercent(), view.maxAbsencePercent());
+    private AttendanceRiskResponse toResponse(AttendanceStanding standing) {
+        return new AttendanceRiskResponse(standing.calculable(), standing.exceedsAbsenceLimit(),
+                standing.calculable() ? standing.absencePercent() : null, standing.maxAbsencePercent());
     }
 }

@@ -6,7 +6,9 @@ import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.api.SectionEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -43,6 +45,8 @@ public class CourseSectionService {
     private final SectionIdentityAssigner identityAssigner;
     private final SectionConflictChecker conflictChecker;
     private final SectionScheduleSlotRepository slotRepository;
+    private final SectionEnrollmentActivityPort enrollmentActivityPort;
+    private final CapacityChangeEvents capacityChangeEvents;
 
     public CourseSectionService(
             CourseSubjectSectionRepository sectionRepository,
@@ -54,7 +58,11 @@ public class CourseSectionService {
             SectionEvaluationSetupPort evaluationSetupPort,
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
-            SectionScheduleSlotRepository slotRepository) {
+            SectionScheduleSlotRepository slotRepository,
+            SectionEnrollmentActivityPort enrollmentActivityPort,
+            CapacityChangeEvents capacityChangeEvents) {
+        this.capacityChangeEvents = capacityChangeEvents;
+        this.enrollmentActivityPort = enrollmentActivityPort;
         this.sectionRepository = sectionRepository;
         this.courseSubjectRepository = courseSubjectRepository;
         this.termRepository = termRepository;
@@ -97,6 +105,7 @@ public class CourseSectionService {
     @Transactional
     public CourseSubjectSection update(Long id, UpdateSectionRequest request) {
         CourseSubjectSection section = findOrThrow(id);
+        Integer previousCapacity = section.getCapacity();
         if (request.name() != null) {
             section.setName(request.name());
         }
@@ -115,7 +124,9 @@ public class CourseSectionService {
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
-        return sectionRepository.save(section);
+        CourseSubjectSection saved = sectionRepository.save(section);
+        capacityChangeEvents.courseSectionChanged(saved.getId(), previousCapacity, saved.getCapacity());
+        return saved;
     }
 
     public List<CourseSubjectSection> listByCourseSubject(Long courseSubjectId, StatusType status) {
@@ -131,6 +142,9 @@ public class CourseSectionService {
     @Transactional
     public void deactivate(Long id) {
         CourseSubjectSection section = findOrThrow(id);
+        if (enrollmentActivityPort.hasLiveEnrollmentsInCourseSection(id)) {
+            throw new SectionHasActiveEnrollmentsException(id);
+        }
         section.setStatus(StatusType.INACTIVE);
         sectionRepository.save(section);
     }

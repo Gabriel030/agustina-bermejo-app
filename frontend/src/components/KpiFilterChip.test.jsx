@@ -25,4 +25,19 @@ describe('KpiFilterChip', () => {
 
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it('rendersTheInlineVariantWithItsOwnAccessibleName', () => {
+    render(<KpiFilterChip variant="inline" label="Aprobados" count={7} pressed ariaLabel="Aprobados: 7. Filtrar la planilla" onClick={() => {}} />);
+
+    const chip = screen.getByRole('button', { name: 'Aprobados: 7. Filtrar la planilla' });
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    expect(chip).toHaveClass('ring-2', 'ring-primary');
+    expect(chip).not.toHaveClass('bg-accent-soft');
+  });
+
+  it('highlightsThePressedCardVariantWithTheAccentSurface', () => {
+    render(<KpiFilterChip label="Cerradas" count={4} pressed onClick={() => {}} />);
+
+    expect(screen.getByRole('button', { name: '4 Cerradas' })).toHaveClass('bg-accent-soft', 'border-primary');
+  });
 });

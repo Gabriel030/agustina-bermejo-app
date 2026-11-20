@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { NavGroups } from '@/components/NavGroups';
 import { useAuth } from '@/context/AuthContext';
+import { RoleSwitcher } from '@/components/RoleSwitcher';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useTheme } from '@/context/ThemeContext';
 import { isDesignB } from '@/theme/design';
 
@@ -71,6 +73,7 @@ export function MobileMenu({ titulo, items, groups }) {
   const { usuario, logout } = useAuth();
   const { tema, alternarTema } = useTheme();
   const { pathname } = useLocation();
+  const { canSwitch } = useActiveRole();
   const designB = isDesignB();
 
   const principales = items.filter((item) => item.label !== 'Opciones');
@@ -99,7 +102,7 @@ export function MobileMenu({ titulo, items, groups }) {
             <DialogPrimitive.Title asChild>
               <div>
                 <InstitutionBrand layout="horizontal" />
-                <div className="mt-4 text-sm font-semibold text-ink-faint">{titulo}</div>
+                {!canSwitch && <div className="mt-4 text-sm font-semibold text-ink-faint">{titulo}</div>}
                 {usuario && (
                   <div className="mt-1 truncate font-heading text-base font-semibold text-ink">
                     {usuario.nombre} {usuario.apellido}
@@ -113,6 +116,8 @@ export function MobileMenu({ titulo, items, groups }) {
               </button>
             </DialogPrimitive.Close>
           </div>
+
+          <RoleSwitcher variant="inline" onNavigate={() => setOpen(false)} />
 
           <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
             {grouped ? (

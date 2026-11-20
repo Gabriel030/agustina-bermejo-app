@@ -2,7 +2,9 @@ package com.red_escuela.backend.identity.specialist;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
+import com.red_escuela.backend.identity.events.GuardianConfirmationRequestedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
+import com.red_escuela.backend.identity.events.PasswordResetLockoutNoticeEvent;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import com.red_escuela.backend.shared.mail.EmailService;
@@ -44,6 +46,27 @@ public class IdentityEmailDispatcher {
     }
 
     @ApplicationModuleListener
+    public void onPasswordResetLockoutNotice(PasswordResetLockoutNoticeEvent event) {
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onPasswordResetLockoutNotice", () ->
+                personRepository.findById(event.personId()).ifPresentOrElse(
+                        person -> {
+                            if (hasNoEmail(person)) {
+                                log.warn("Password reset lockout notice skipped, person has no email: personId={}", event.personId());
+                                return;
+                            }
+                            emailService.sendPasswordResetLockoutNotice(displayNameOf(person, person.emailValue()), person.emailValue());
+                        },
+                        () -> log.warn("Password reset lockout notice skipped, person not found: personId={}", event.personId())));
+    }
+
+    @ApplicationModuleListener
+    public void onGuardianConfirmationRequested(GuardianConfirmationRequestedEvent event) {
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onGuardianConfirmationRequested", () ->
+                emailService.sendGuardianLegalConfirmation(event.guardianName(), event.guardianEmail(), event.minorFirstName(),
+                        institutionNameResolver.resolveInstitutionName(), event.confirmationLink()));
+    }
+
+    @ApplicationModuleListener
     public void onEmailVerificationIssued(EmailVerificationIssuedEvent event) {
         effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onEmailVerificationIssued", () ->
                 personRepository.findById(event.personId()).ifPresentOrElse(
@@ -63,7 +86,8 @@ public class IdentityEmailDispatcher {
                 personRepository.findById(event.personId()).ifPresentOrElse(person -> {
                     emailService.sendEmailChangeVerification(person.getName(), event.newEmail(), event.verificationLink());
                     if (event.previousEmail() != null) {
-                        emailService.sendEmailChangeNotice(person.getName(), event.previousEmail(), event.newEmail());
+                        emailService.sendEmailChangeNotice(person.getName(), event.previousEmail(), event.newEmail(),
+                                event.cancellationLink());
                     }
                 }, () -> log.warn("Email change mail skipped, person not found: personId={}", event.personId())));
     }

@@ -11,6 +11,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | Documento | Para qué | Estado |
 |---|---|---|
 | [backend.md](context/backend.md) | Convenciones de backend: entidades, casos de uso, servicios, controllers, migraciones | vigente |
+| [data-retention.md](context/data-retention.md) | Retención de datos operativos: jobs, plazos `app.retention.*` y qué se conserva | vigente |
 | [frontend.md](context/frontend.md) | Convenciones de frontend, flujo de diseño con `ux-advisor`, rutas por rol | vigente |
 | [design-system.md](context/design-system.md) | Sistema de diseño: cómo registrar un diseño nuevo cambiando solo los tokens | vigente |
 | [components.md](context/components.md) | Qué componente usar y cómo listarlos en una spec | vigente |
@@ -21,12 +22,30 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [workflow.md](context/workflow.md) | Git, CI local, commits, PRs, migraciones y backport | vigente |
 | [test-users.md](context/test-users.md) | Usuarios de prueba y con cuál probar cada flujo | vigente |
 | [specs.md](context/specs.md) | Dónde viven las specs y el roadmap (Obsidian) | vigente |
+| [cell.md](context/cell.md) | Célula de agentes: roles, arranque de sesiones, flujo de un ticket, local vs nube | vigente |
+| [plans/TEMPLATE.md](cell/plans/TEMPLATE.md) | Plantilla de plan de la célula (`docs/cell/plans/<ticket>.md`) | vigente |
+| [plans/920.md](cell/plans/920.md) | Cierre de la Fase 1 de comunicación masiva: residual derivado | vigente |
+| [plans/921.md](cell/plans/921.md) | Residual de la lista de espera: vencimiento de colas de materias y auditoría de promoción automática | vigente |
+| [plans/932.md](cell/plans/932.md) | Residual de la Fase 2: variables faltantes en la vista previa, contrato y OR por clave | vigente |
+| [plans/933.md](cell/plans/933.md) | Residual de la Fase 3: render por destinatario, baja y retención definitiva | vigente |
+| [plans/949.md](cell/plans/949.md) | Residual del consentimiento al crear la cuenta: contrato y decisiones | vigente |
+| `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
+| [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 
 ## Release (`docs/release/`)
 
 | Documento | Para qué | Estado |
 |---|---|---|
 | [release/migration-smoke.md](release/migration-smoke.md) | Pasos para probar la cadena de migraciones de master (V110) a develop sobre Postgres en Docker | vigente |
+| [release/institution-sms-credential.md](release/institution-sms-credential.md) | Qué hacer si `institution.sms_password` tenía una credencial cargada antes de V214 | vigente |
+| [deploy/README.md](deploy/README.md) | Runbook de despliegue de producción: primer despliegue, actualización con migraciones, rollback, secretos y logs | vigente |
+| [security/plan-produccion.md](security/plan-produccion.md) | Seguridad de producción (Épica 29, bloque G): diagnóstico de sesión, CSP, auditoría y matriz de autorización; planes de cookie HttpOnly, CSP con nonce y audit log | vigente |
+| [security/audit-2026-11-03-status.md](security/audit-2026-11-03-status.md) | Estado de los hallazgos de la auditoría del 3-nov-2026: 12 cerrados y 4 abiertos (parciales) | vigente |
+| [legal/derechos-de-las-personas.md](legal/derechos-de-las-personas.md) | Procedimiento para pedidos de acceso, rectificación y supresión de datos personales (Épica 29, C5): inventario de datos, qué no se puede borrar, plantillas y paquetes futuros; pendiente de abogado | borrador |
+| [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
+| [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
+| [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
+| [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
 | [../perf/README.md](../perf/README.md) | Como reproducir la medicion de rendimiento: Postgres con pg_stat_statements, perfil `perf`, presupuestos y k6 | vigente |
 
 ## Decisiones de arquitectura (`docs/adr/`)

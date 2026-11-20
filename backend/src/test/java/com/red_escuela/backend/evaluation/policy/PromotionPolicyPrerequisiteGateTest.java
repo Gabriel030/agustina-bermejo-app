@@ -60,4 +60,40 @@ class PromotionPolicyPrerequisiteGateTest {
         }
         assertThat(consultations).hasValue(0);
     }
+
+    private static CourseworkOutcome approvedByFinal() {
+        return new CourseworkOutcome(EnrollmentStatus.APPROVED, Grade.of(new BigDecimal("7.0")), FinalGradeType.FINAL_EXAM);
+    }
+
+    @Test
+    void approvalByFinalWithUnmetPrerequisitesBecomesRegularWithAlert() {
+        PrerequisiteGatedOutcome result = policy.restrictApprovalWhenPrerequisitesUnmet(Optional.of(approvedByFinal()), () -> false);
+
+        assertThat(result.outcome()).contains(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null));
+        assertThat(result.alerts()).containsExactly(ClosureAlert.UNMET_PREREQUISITE);
+    }
+
+    @Test
+    void approvalByFinalWithMetPrerequisitesIsLeftUntouched() {
+        PrerequisiteGatedOutcome result = policy.restrictApprovalWhenPrerequisitesUnmet(Optional.of(approvedByFinal()), () -> true);
+
+        assertThat(result.outcome()).contains(approvedByFinal());
+        assertThat(result.alerts()).isEmpty();
+    }
+
+    @Test
+    void approvalGateOnlyConsultsPrerequisitesForApprovedOutcomes() {
+        AtomicInteger consultations = new AtomicInteger();
+        for (Optional<CourseworkOutcome> outcome : List.of(
+                Optional.of(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null)),
+                Optional.of(new CourseworkOutcome(EnrollmentStatus.FAILED, null, null)),
+                Optional.<CourseworkOutcome>empty())) {
+            PrerequisiteGatedOutcome result = policy.restrictApprovalWhenPrerequisitesUnmet(outcome, () -> {
+                consultations.incrementAndGet();
+                return false;
+            });
+            assertThat(result.outcome()).isEqualTo(outcome);
+        }
+        assertThat(consultations).hasValue(0);
+    }
 }

@@ -4,6 +4,10 @@ import com.red_escuela.backend.identity.specialist.StaffReactivator;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -26,9 +30,10 @@ class ReactivateStaffServiceTest {
     private static final Long TARGET_ID = 50L;
 
     private final PersonRepository personRepository = mock(PersonRepository.class);
+    private final AuditTrail auditTrail = mock(AuditTrail.class);
 
     private ReactivateStaffService serviceActingAs(String actorRole) {
-        return new ReactivateStaffService(new StaffReactivator(personRepository, policyActingAs(actorRole)));
+        return new ReactivateStaffService(new StaffReactivator(personRepository, policyActingAs(actorRole), mock(com.red_escuela.backend.identity.infrastructure.AccountAccessStateCache.class), auditTrail));
     }
 
     private Person target(StatusType status, String... roles) {
@@ -45,6 +50,8 @@ class ReactivateStaffServiceTest {
 
         assertThat(teacher.getStatus()).isEqualTo(StatusType.ACTIVE);
         verify(personRepository).save(teacher);
+        verify(auditTrail).record(new AuditRecord(AuditAction.STAFF_REACTIVATED, AuditEntityType.PERSON,
+                TARGET_ID, "INACTIVE", "ACTIVE", null));
     }
 
     @Test
@@ -63,6 +70,7 @@ class ReactivateStaffServiceTest {
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").reactivate(TARGET_ID))
                 .isInstanceOf(PersonNotFoundException.class);
         verify(personRepository, never()).save(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
@@ -73,6 +81,7 @@ class ReactivateStaffServiceTest {
                 .isInstanceOf(PersonNotFoundException.class);
         assertThat(student.getStatus()).isEqualTo(StatusType.INACTIVE);
         verify(personRepository, never()).save(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
@@ -83,6 +92,7 @@ class ReactivateStaffServiceTest {
                 .isInstanceOf(PersonNotFoundException.class);
         assertThat(administrative.getStatus()).isEqualTo(StatusType.INACTIVE);
         verify(personRepository, never()).save(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
@@ -92,6 +102,7 @@ class ReactivateStaffServiceTest {
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").reactivate(TARGET_ID))
                 .isInstanceOf(PersonNotFoundException.class);
         verify(personRepository, never()).save(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
@@ -111,6 +122,7 @@ class ReactivateStaffServiceTest {
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
         assertThat(teacher.getStatus()).isEqualTo(StatusType.ACTIVE);
         verify(personRepository, never()).save(any());
+        verify(auditTrail, never()).record(any());
     }
 
     @Test
@@ -120,5 +132,6 @@ class ReactivateStaffServiceTest {
         assertThatThrownBy(() -> serviceActingAs("ADMINISTRATIVO").reactivate(TARGET_ID))
                 .isInstanceOf(ResponseStatusException.class);
         verify(personRepository, never()).save(any());
+        verify(auditTrail, never()).record(any());
     }
 }

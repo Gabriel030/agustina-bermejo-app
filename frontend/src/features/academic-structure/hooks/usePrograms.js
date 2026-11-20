@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
+import { offlineQuery } from '@/api/offlineQuery';
 
-export function usePrograms(status) {
+export function usePrograms(status, { enabled = true } = {}) {
   const qs = status ? `?status=${status}` : '';
-  return useQuery({
-    queryKey: ['programs', { status }],
-    queryFn: () => apiFetch(`/programs${qs}`),
-  });
+  return useQuery(
+    offlineQuery('N0c', {
+      queryKey: ['programs', { status }],
+      queryFn: () => apiFetch(`/programs${qs}`),
+      enabled,
+    }),
+  );
 }
 
 export function useProgram(id) {

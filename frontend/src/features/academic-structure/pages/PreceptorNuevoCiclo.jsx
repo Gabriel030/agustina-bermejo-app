@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ChevronLeft, Plus, CheckCircle2 } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
+import { ChoiceChip } from '@/components/ChoiceChip';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,7 +150,7 @@ function CampoSelect({ label, value, onChange, children, required }) {
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
+      <label htmlFor={id} className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">{label}</label>
       <NativeSelect
         id={id}
         value={value}
@@ -166,7 +167,7 @@ function ReadOnlyField({ label, value }) {
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
+      <label htmlFor={id} className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">{label}</label>
       <Input id={id} value={value} readOnly className="cursor-default" />
     </div>
   );
@@ -240,17 +241,19 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
         </CampoSelect>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Tipo</label>
+          <label className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">Tipo</label>
           <div className="flex gap-2">
             {[{ value: 'programa', label: 'Carrera' }, { value: 'curso', label: 'Curso' }].map((op) => (
-              <button
+              <ChoiceChip
                 key={op.value}
-                type="button"
+                shape="rounded"
+                size="lg"
+                strong
+                selected={state.tipo === op.value}
                 onClick={() => { dispatch({ type: 'SET', campo: 'tipo', valor: op.value }); dispatch({ type: 'SET', campo: 'programaId', valor: '' }); dispatch({ type: 'SET', campo: 'cursoId', valor: '' }); }}
-                className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-colors ${state.tipo === op.value ? 'bg-accent-soft text-brand' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
               >
                 {op.label}
-              </button>
+              </ChoiceChip>
             ))}
           </div>
         </div>
@@ -277,7 +280,7 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
       </div>
 
       {error && (
-        <p className="text-[13px] text-danger">
+        <p className="text-size-13 text-danger">
           {error.message}
           {error.alreadyInProgress && (
             <>
@@ -357,7 +360,7 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
 
   if (subjectStatus === 'DRAFT') {
     return (
-      <p className="rounded-xl bg-warning-bg px-3 py-2 text-[12.5px] text-warning">
+      <p className="rounded-xl bg-warning-bg px-3 py-2 text-size-12-5 text-warning">
         {SECTION_ERROR_MESSAGES.SUBJECT_NOT_OPENABLE_FOR_SECTIONS}
       </p>
     );
@@ -368,7 +371,7 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] text-brand hover:bg-accent-soft/50 transition-colors"
+        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-size-13 text-brand hover:bg-accent-soft/50 transition-colors"
       >
         <Plus className="h-3.5 w-3.5" />
         Agregar comisión para {subjectName}
@@ -378,20 +381,20 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
 
   return (
     <div className="rounded-2xl border border-surface-border bg-surface/30 p-4">
-      <p className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-ink-faint">{subjectName}</p>
+      <p className="mb-3 text-size-12 font-semibold uppercase tracking-wide text-ink-faint">{subjectName}</p>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${fieldId}-name`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Nombre / turno</label>
+          <label htmlFor={`${fieldId}-name`} className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">Nombre / turno</label>
           <Input id={`${fieldId}-name`} placeholder="Ej: A, Turno mañana…" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${fieldId}-capacity`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Cupo</label>
+          <label htmlFor={`${fieldId}-capacity`} className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">Cupo</label>
           <Input id={`${fieldId}-capacity`} type="number" min="1" placeholder="Ej: 30" value={cupo} onChange={(e) => setCupo(e.target.value)} />
         </div>
       </div>
 
       <div className="mt-3 flex flex-col gap-1">
-        <label htmlFor={`${fieldId}-instructor`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Docente titular</label>
+        <label htmlFor={`${fieldId}-instructor`} className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">Docente titular</label>
         <NativeSelect
           id={`${fieldId}-instructor`}
           value={instructorId}
@@ -403,34 +406,29 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
       </div>
 
       <div className="mt-3 flex flex-col gap-1">
-        <label className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Día</label>
+        <label className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">Día</label>
         <div className="flex flex-wrap gap-1.5">
           {DIAS.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => setDia(d.id)}
-              className={`rounded-lg px-3 py-1 text-[12px] transition-colors ${dia === d.id ? 'bg-accent-soft font-medium text-brand' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
-            >
+            <ChoiceChip key={d.id} shape="rounded" size="xs" selected={dia === d.id} onClick={() => setDia(d.id)}>
               {d.label}
-            </button>
+            </ChoiceChip>
           ))}
         </div>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${fieldId}-start`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Horario inicio</label>
+          <label htmlFor={`${fieldId}-start`} className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">Horario inicio</label>
           <Input id={`${fieldId}-start`} type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${fieldId}-end`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Horario fin</label>
+          <label htmlFor={`${fieldId}-end`} className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">Horario fin</label>
           <Input id={`${fieldId}-end`} type="time" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
         </div>
       </div>
 
       <div className="mt-3 flex flex-col gap-1">
-        <label htmlFor={`${fieldId}-classroom`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Aula</label>
+        <label htmlFor={`${fieldId}-classroom`} className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">Aula</label>
         <NativeSelect
           id={`${fieldId}-classroom`}
           value={aulaId}
@@ -454,7 +452,7 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
         />
       )}
 
-      {error && <p className="mt-2 text-[12px] text-danger">{error}</p>}
+      {error && <p className="mt-2 text-size-12 text-danger">{error}</p>}
 
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => { setAbierto(false); setError(null); }}>Cancelar</Button>
@@ -514,7 +512,7 @@ function Paso2Comisiones({ state, dispatch }) {
   return (
     <div className="flex flex-col gap-4">
       <GlassCard className="flex flex-col gap-4 p-4">
-        <p className="text-[13px] text-ink-faint">
+        <p className="text-size-13 text-ink-faint">
           Agregá las comisiones con docente, aula y horario. Podés dejar materias sin comisión si no aplican este período.
         </p>
 
@@ -528,16 +526,16 @@ function Paso2Comisiones({ state, dispatch }) {
             return (
               <div key={m.id} className="flex flex-col gap-2 rounded-2xl border border-surface-border px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-heading text-[13.5px] font-semibold text-ink">{subjectName}</span>
+                  <span className="font-heading text-size-13-5 font-semibold text-ink">{subjectName}</span>
                   {secciones.length > 0 && (
-                    <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-[11px] font-medium text-success">
+                    <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-size-11 font-medium text-success">
                       {sectionCountLabel(secciones.length)}
                     </span>
                   )}
                 </div>
 
                 {secciones.map((s) => (
-                  <div key={s.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-success-soft/40 px-3 py-1.5 text-[12px] text-ink-soft">
+                  <div key={s.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-success-soft/40 px-3 py-1.5 text-size-12 text-ink-soft">
                     <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
                     <span className="font-medium text-ink">{s.name}</span>
                     <span>· {leadInstructorName(s)}</span>
@@ -598,29 +596,29 @@ function Paso3Resumen({ state, dispatch }) {
       <GlassCard className="flex flex-col gap-4 p-5">
         <div className="grid grid-cols-2 gap-x-8 gap-y-3">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Período</p>
-            <p className="mt-0.5 text-[14px] font-medium text-ink">{state.termName || '—'}</p>
+            <p className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">Período</p>
+            <p className="mt-0.5 text-size-14 font-medium text-ink">{state.termName || '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">{state.tipo === 'programa' ? 'Carrera' : 'Curso'}</p>
-            <p className="mt-0.5 text-[14px] font-medium text-ink">{state.entityName || '—'}</p>
+            <p className="text-size-11 font-medium uppercase tracking-wide text-ink-faint">{state.tipo === 'programa' ? 'Carrera' : 'Curso'}</p>
+            <p className="mt-0.5 text-size-14 font-medium text-ink">{state.entityName || '—'}</p>
           </div>
         </div>
 
         <div>
-          <p className="mb-2 text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+          <p className="mb-2 text-size-12 font-medium uppercase tracking-wide text-ink-faint">
             Comisiones ({sections.length})
           </p>
           <div className="flex flex-col gap-2">
             {sections.map((s) => (
               <div key={s.id} className="rounded-xl border border-surface-border px-3 py-2.5">
                 <div className="flex items-baseline justify-between">
-                  <span className="font-heading text-[13px] font-semibold text-ink">{s.subjectName}</span>
-                  <span className="text-[12px] text-ink-faint">{s.name}</span>
+                  <span className="font-heading text-size-13 font-semibold text-ink">{s.subjectName}</span>
+                  <span className="text-size-12 text-ink-faint">{s.name}</span>
                 </div>
-                <p className="mt-0.5 text-[12px] text-ink-soft">{leadInstructorName(s)}</p>
+                <p className="mt-0.5 text-size-12 text-ink-soft">{leadInstructorName(s)}</p>
                 {s.slots?.map((slot) => (
-                  <p key={`${slot.dayOfWeek}-${slot.startTime}`} className="text-[12px] text-ink-soft">
+                  <p key={`${slot.dayOfWeek}-${slot.startTime}`} className="text-size-12 text-ink-soft">
                     {slot.classroomName} · {DAY_NAMES[slot.dayOfWeek] ?? slot.dayOfWeek} {formatTime(slot.startTime)}–{formatTime(slot.endTime)}
                   </p>
                 ))}
@@ -630,7 +628,7 @@ function Paso3Resumen({ state, dispatch }) {
         </div>
       </GlassCard>
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
+      {error && <p className="text-size-13 text-danger">{error}</p>}
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'comisiones' })}>
@@ -713,7 +711,7 @@ export function PreceptorNuevoCiclo() {
         <div>
           <Link
             to={`${basePath}/oferta-academica`}
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Oferta académica

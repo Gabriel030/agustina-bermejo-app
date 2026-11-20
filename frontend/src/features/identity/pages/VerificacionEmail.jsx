@@ -3,31 +3,27 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { m } from 'motion/react';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { apiFetch } from '@/api/client';
 
 export function VerificacionEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const [estado, setEstado] = useState('verificando');
+  const [resultado, setResultado] = useState('verificando');
+  const estado = token ? resultado : 'error';
   const requestedTokenRef = useRef(null);
 
   useEffect(() => {
-    if (!token) {
-      setEstado('error');
-      return;
-    }
+    if (!token) return;
     if (requestedTokenRef.current === token) return;
     requestedTokenRef.current = token;
     apiFetch(`/verify-email?token=${encodeURIComponent(token)}`)
-      .then(() => setEstado('ok'))
-      .catch(() => setEstado('error'));
+      .then(() => setResultado('ok'))
+      .catch(() => setResultado('error'));
   }, [token]);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
-      <MeshBackground />
       <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -42,7 +38,7 @@ export function VerificacionEmail() {
           {estado === 'verificando' && (
             <>
               <Loader2 size={40} className="text-brand animate-spin" />
-              <p className="text-[14px] text-ink-soft">Confirmando tu email…</p>
+              <p className="text-size-14 text-ink-soft">Confirmando tu email…</p>
             </>
           )}
 
@@ -53,11 +49,11 @@ export function VerificacionEmail() {
               </div>
               <div>
                 <p className="font-heading text-lg font-bold text-ink">Email confirmado</p>
-                <p className="mt-1 text-[13px] text-ink-soft">
+                <p className="mt-1 text-size-13 text-ink-soft">
                   Tu email quedó confirmado. Desde ahora lo usás para ingresar.
                 </p>
               </div>
-              <Link to="/login" className="text-[13px] font-semibold text-brand hover:text-accent-2">
+              <Link to="/login" className="text-size-13 font-semibold text-brand hover:text-accent-2">
                 Ir a ingresar
               </Link>
             </>
@@ -70,15 +66,15 @@ export function VerificacionEmail() {
               </div>
               <div>
                 <p className="font-heading text-lg font-bold text-ink">El enlace venció o ya se usó</p>
-                <p className="mt-1 text-[13px] text-ink-soft">
+                <p className="mt-1 text-size-13 text-ink-soft">
                   Los enlaces duran 48 horas y sirven una sola vez. Si todavía no confirmaste tu email, entrá a Mi perfil y pedí un enlace nuevo; si ya lo confirmaste, no hace falta hacer nada más.
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/perfil" className="text-[13px] font-semibold text-brand hover:text-accent-2">
+                <Link to="/perfil" className="text-size-13 font-semibold text-brand hover:text-accent-2">
                   Ir a Mi perfil
                 </Link>
-                <Link to="/login" className="text-[13px] font-semibold text-brand hover:text-accent-2">
+                <Link to="/login" className="text-size-13 font-semibold text-brand hover:text-accent-2">
                   Ir a ingresar
                 </Link>
               </div>

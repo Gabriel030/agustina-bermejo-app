@@ -3,7 +3,7 @@ import { fechaEnPalabras, textoDeAlcance } from '@/lib/avisos';
 
 function Linea({ icono: Icono, children }) {
   return (
-    <div className="flex items-start gap-2.5 text-[12.5px] leading-relaxed text-ink-soft">
+    <div className="flex items-start gap-2.5 text-size-12-5 leading-relaxed text-ink-soft">
       <Icono className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
       <span>{children}</span>
     </div>

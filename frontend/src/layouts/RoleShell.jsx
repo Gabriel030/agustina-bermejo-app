@@ -1,8 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, m } from 'motion/react';
 import { Sidebar } from '@/components/Sidebar';
-import { MeshBackground } from '@/components/MeshBackground';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { TopHeader } from '@/components/TopHeader';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
@@ -10,15 +9,21 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorFallback } from '@/components/ErrorFallback';
 import { SkipToContent } from '@/components/SkipToContent';
 import { SystemBar } from '@/pwa/SystemBar';
+import { LegalNoticeBanner } from '@/features/identity/legal/LegalNoticeBanner';
 import { isDesignB } from '@/theme/design';
+import { useAuth } from '@/context/AuthContext';
+import { readLastRole } from '@/lib/activeRole';
 
 const HEADING_WAIT_MS = 2000;
 
-function useFocusHeadingOnNavigation(mainRef, pathname) {
+function useFocusHeadingOnNavigation(mainRef, pathname, focusOnMount) {
   const previousPath = useRef(pathname);
+  const pendingFocus = useRef(focusOnMount);
   useEffect(() => {
-    if (previousPath.current === pathname) return undefined;
+    const changed = previousPath.current !== pathname;
     previousPath.current = pathname;
+    if (!changed && !pendingFocus.current) return undefined;
+    pendingFocus.current = false;
     const main = mainRef.current;
     if (!main || !isDesignB()) return undefined;
     const focusHeading = () => {
@@ -55,7 +60,13 @@ export function RoleShell({ titulo, items, groups }) {
   const element = useOutlet();
   const breadcrumbItems = useBreadcrumb();
   const mainRef = useRef(null);
-  useFocusHeadingOnNavigation(mainRef, location.pathname);
+  const { usuario } = useAuth();
+  const [arrivedFromOtherRole] = useState(() => {
+    const segment = location.pathname.split('/')[1]?.toUpperCase();
+    const lastRole = usuario ? readLastRole(usuario.id) : null;
+    return Boolean(lastRole) && lastRole !== segment;
+  });
+  useFocusHeadingOnNavigation(mainRef, location.pathname, arrivedFromOtherRole);
 
   return (
     // h-screen + overflow-hidden en la raíz: el shell ocupa exactamente el viewport
@@ -68,7 +79,6 @@ export function RoleShell({ titulo, items, groups }) {
     // no a una bottom tab bar — decisión revisada con el usuario (ver docs/context/frontend.md).
     <div className="flex h-screen flex-col gap-(--shell-gap) overflow-hidden p-(--shell-pad) lg:flex-row">
       <SkipToContent />
-      <MeshBackground />
       <Sidebar titulo={titulo} items={items} groups={groups} />
       {/* Columna de contenido junto al Sidebar, en mobile y desktop por igual —
           apila TopHeader arriba de <main>. Antes este wrapper colapsaba con
@@ -78,6 +88,7 @@ export function RoleShell({ titulo, items, groups }) {
       <div className="flex min-w-0 flex-1 flex-col gap-(--shell-gap) overflow-hidden">
         <TopHeader titulo={titulo} items={items} groups={groups} />
         <SystemBar />
+        <LegalNoticeBanner />
         {/* min-w-0: sin esto, un flex item no se achica más allá del ancho
             intrínseco de su contenido (default min-width:auto) — con una
             pantalla de contenido ancho (ej. Catálogo, Épica 7 Fase 3) esto

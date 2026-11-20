@@ -28,7 +28,7 @@ class BillingMirrorEndpointsIT extends AuthorizationMatrixSupport {
     private static final String BILLING_PACKAGE = "com.red_escuela.backend.billing.";
 
     private static final List<String> BILLING_TABLES = List.of("invoice", "payment", "credit_note", "refund", "chargeback", "student_discount",
-            "discount_definition", "billing_period", "monthly_invoice_run", "nightly_billing_run", "bank_transfer_receipt", "payment_plan_option",
+            "discount_definition", "monthly_invoice_run", "nightly_billing_run", "bank_transfer_receipt", "payment_plan_option",
             "payment_plan_selection", "promotion", "annual_upfront_request", "authorization_request", "payment_gateway_config");
 
     @Autowired

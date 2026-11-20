@@ -13,6 +13,7 @@ import com.red_escuela.backend.identity.api.StudentRoleGranter;
 import com.red_escuela.backend.enrollment.dto.CourseProgressResponse;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
+import com.red_escuela.backend.enrollment.dto.WaitlistKind;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,6 +50,7 @@ public class CourseEnrollmentService {
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final CourseCatalogFinder courseCatalogFinder;
     private final SectionFinder sectionFinder;
+    private final WaitlistPromoter waitlistPromoter;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final StudentRoleGranter studentRoleGranter;
     private final EnrollmentDebtGuard enrollmentDebtGuard;
@@ -66,8 +69,10 @@ public class CourseEnrollmentService {
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             CatalogAvailabilityGuard catalogAvailabilityGuard,
-            Clock clock) {
+            Clock clock,
+            WaitlistPromoter waitlistPromoter) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.waitlistPromoter = waitlistPromoter;
         this.studentFinder = studentFinder;
         this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.courseCatalogFinder = courseCatalogFinder;
@@ -239,6 +244,7 @@ public class CourseEnrollmentService {
         LocalDate registeredOn = withdrawalDateResolver.registrationDate();
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
+        enrollment.setWithdrawalReason(withdrawal.reason());
         courseEnrollmentRepository.save(enrollment);
         cancelModuleEnrollments(enrollment, promotesWaitlist);
         if (liberaCupoDelCurso && promotesWaitlist) {
@@ -277,30 +283,11 @@ public class CourseEnrollmentService {
     }
 
     private void promoteNextFromCourseWaitlist(Long courseId) {
-        if (!courseCatalogFinder.hasCapacityFor(courseId, countOccupiedSeats(courseId))) {
-            return;
-        }
-        courseEnrollmentRepository
-                .findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(courseId, EnrollmentStatus.WAITLISTED)
-                .ifPresent(siguiente -> {
-                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
-                    courseEnrollmentRepository.save(siguiente);
-                });
+        waitlistPromoter.promoteNext(WaitlistKind.COURSE, courseId);
     }
 
     private void promoteNextFromWaitlist(Long courseSubjectSectionId) {
-        Integer capacity = sectionFinder.findCourseSection(courseSubjectSectionId).capacity();
-        long occupiedSeats = courseSubjectSectionEnrollmentRepository.countByCourseSubjectSectionIdAndStatusIn(
-                courseSubjectSectionId, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));
-        if (capacity != null && occupiedSeats >= capacity) {
-            return;
-        }
-        courseSubjectSectionEnrollmentRepository
-                .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
-                .ifPresent(siguiente -> {
-                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
-                    courseSubjectSectionEnrollmentRepository.save(siguiente);
-                });
+        waitlistPromoter.promoteNext(WaitlistKind.COURSE_SECTION, courseSubjectSectionId);
     }
 
     public CourseEnrollment get(Long id) {
@@ -318,14 +305,23 @@ public class CourseEnrollmentService {
         List<CourseSubjectSectionEnrollment> inscripciones = courseSubjectSectionEnrollmentRepository
                 .findByCourseEnrollmentId(enrollment.getId());
 
+        Set<Long> approvedModuleIds = inscripciones.stream()
+                .filter(inscripcion -> inscripcion.getStatus() == EnrollmentStatus.APPROVED)
+                .map(CourseSubjectSectionEnrollment::courseSubjectId)
+                .collect(Collectors.toSet());
         List<String> modulosPendientes = modulos.stream()
-                .filter(modulo -> inscripciones.stream().noneMatch(inscripcion ->
-                        inscripcion.courseSubjectId().equals(modulo.id())
-                                && inscripcion.getStatus() == EnrollmentStatus.APPROVED))
+                .filter(modulo -> !approvedModuleIds.contains(modulo.id()))
                 .map(CourseModuleView::name)
                 .toList();
 
-        return new CourseProgressResponse(enrollment.getId(), modulosPendientes, modulosPendientes.isEmpty());
+        Map<Long, String> moduleNames = modulos.stream().collect(Collectors.toMap(CourseModuleView::id, CourseModuleView::name, (first, second) -> first));
+        List<CourseProgressResponse.ModuleEnrollmentView> moduleEnrollments = inscripciones.stream()
+                .map(inscripcion -> new CourseProgressResponse.ModuleEnrollmentView(inscripcion.getId(), inscripcion.courseSubjectId(),
+                        moduleNames.getOrDefault(inscripcion.courseSubjectId(), inscripcion.getCourseSubjectSection().getModuleName()),
+                        inscripcion.getCourseSubjectSection().getName(), inscripcion.getStatus()))
+                .toList();
+
+        return new CourseProgressResponse(enrollment.getId(), modulosPendientes, modulosPendientes.isEmpty(), moduleEnrollments);
     }
 
     public Optional<Percentage> calculateApprovedModulesPercentage(CourseEnrollment enrollment) {

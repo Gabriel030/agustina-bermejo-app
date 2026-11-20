@@ -1,7 +1,5 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.service.InvoiceQueryService;
-
 import com.red_escuela.backend.evaluation.api.PaymentsStanding;
 import com.red_escuela.backend.evaluation.api.StudentPaymentsStandingPort;
 import com.red_escuela.backend.shared.module.BillingMode;
@@ -20,12 +18,12 @@ import java.util.Set;
 public class StudentPaymentsStandingPortAdapter implements StudentPaymentsStandingPort {
 
     private final CurrentBillingModePort currentBillingModePort;
-    private final InvoiceQueryService invoiceQueryService;
+    private final StudentOverdueDebtFinder overdueDebtFinder;
 
     public StudentPaymentsStandingPortAdapter(
-            CurrentBillingModePort currentBillingModePort, InvoiceQueryService invoiceQueryService) {
+            CurrentBillingModePort currentBillingModePort, StudentOverdueDebtFinder overdueDebtFinder) {
         this.currentBillingModePort = currentBillingModePort;
-        this.invoiceQueryService = invoiceQueryService;
+        this.overdueDebtFinder = overdueDebtFinder;
     }
 
     @Override
@@ -35,7 +33,7 @@ public class StudentPaymentsStandingPortAdapter implements StudentPaymentsStandi
             studentIds.forEach(studentId -> standings.put(studentId, PaymentsStanding.NOT_VERIFIED));
             return standings;
         }
-        Set<Long> withDebt = invoiceQueryService.findStudentIdsWithOverdueDebt(studentIds, today);
+        Set<Long> withDebt = overdueDebtFinder.findStudentIdsWithOverdueDebt(studentIds, today);
         studentIds.forEach(studentId ->
                 standings.put(studentId, withDebt.contains(studentId) ? PaymentsStanding.NOT_OK : PaymentsStanding.OK));
         return standings;

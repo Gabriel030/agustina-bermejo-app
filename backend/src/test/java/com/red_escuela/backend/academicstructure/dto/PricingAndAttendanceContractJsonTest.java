@@ -72,7 +72,9 @@ class PricingAndAttendanceContractJsonTest {
     void rosterHistoryAndSummaryExposeAttendancePercentInPoints() throws Exception {
         Percentage half = Percentage.ofFraction(new BigDecimal("0.5"));
 
-        JsonNode roster = json(new RosterEntryResponse(1L, 2L, "Ana", "30", 1, half, false, 4, half, 1));
+        com.red_escuela.backend.attendance.dto.AttendanceStandingResponse standing =
+                new com.red_escuela.backend.attendance.dto.AttendanceStandingResponse(4, 2, 1, half, half, 2, 0, true);
+        JsonNode roster = json(new RosterEntryResponse(1L, 2L, "Ana", "30", 1, half, false, 4, half, 1, half, 0, standing));
         JsonNode history = json(new AttendanceHistoryResponse.StudentHistoryRow(2L, "Ana", Map.of(), half));
         JsonNode summary = json(new SubjectAttendanceSummaryResponse("Matematica", half));
 
@@ -80,16 +82,18 @@ class PricingAndAttendanceContractJsonTest {
         assertThat(history.get("attendancePercent").decimalValue()).isEqualByComparingTo("50");
         assertThat(summary.get("attendancePercent").decimalValue()).isEqualByComparingTo("50");
         assertThat(roster.has("attendancePercentage")).isFalse();
+        assertThat(roster.get("absenceStanding").get("absencePercent").decimalValue()).isEqualByComparingTo("50");
+        assertThat(roster.get("absenceStanding").get("exceedsAbsenceLimit").asBoolean()).isTrue();
+        assertThat(roster.get("absenceStanding").get("pendingJustificationAbsences").asLong()).isEqualTo(1);
     }
 
     @Test
     void courseAndProgramPricesAreMoneyObjects() throws Exception {
-        Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).price(new BigDecimal("18000")).currency(Currency.USD).build();
-        Program program = Program.builder().name("Carrera").price(new BigDecimal("45000"))
-                .enrollmentFeeAmount(new BigDecimal("30000")).currency(Currency.ARS).build();
+        Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).currency(Currency.USD).build();
+        Program program = Program.builder().name("Carrera").currency(Currency.ARS).build();
 
-        JsonNode courseJson = json(CourseResponse.from(course));
-        JsonNode programJson = json(ProgramResponse.from(program));
+        JsonNode courseJson = json(CourseResponse.from(course, Money.of(new BigDecimal("18000"), Currency.USD)));
+        JsonNode programJson = json(ProgramResponse.from(program, Money.of(new BigDecimal("45000"), Currency.ARS), Money.of(new BigDecimal("30000"), Currency.ARS)));
 
         assertThat(courseJson.get("price")).isEqualTo(json(Money.of(new BigDecimal("18000"), Currency.USD)));
         assertThat(programJson.get("price").get("amount").asString("")).isEqualTo("45000.00");
@@ -101,7 +105,7 @@ class PricingAndAttendanceContractJsonTest {
     void courseWithoutPriceSerializesNull() throws Exception {
         Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).build();
 
-        assertThat(json(CourseResponse.from(course)).get("price").isNull()).isTrue();
+        assertThat(json(CourseResponse.from(course, null)).get("price").isNull()).isTrue();
     }
 
     @Test

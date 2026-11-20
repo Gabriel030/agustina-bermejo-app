@@ -34,32 +34,8 @@ public class Institution {
     @Column(name = "website")
     private String website;
 
-    @Column(name = "facebook")
-    private String facebook;
-
-    @Column(name = "tweeter")
-    private String tweeter;
-
-    @Column(name = "pref_notas")
-    private Boolean prefNotas;
-
-    @Column(name = "pref_calendario")
-    private Boolean prefCalendario;
-
-    @Column(name = "pref_asignar_curso")
-    private Boolean prefAsignarCurso;
-
     @Column(name = "email")
     private String email;
-
-    @Column(name = "sms_url")
-    private String smsUrl;
-
-    @Column(name = "sms_usuario")
-    private String smsUsuario;
-
-    @Column(name = "sms_password")
-    private String smsPassword;
 
     @Column(name = "justification_deadline_business_days", nullable = false)
     private int justificationDeadlineBusinessDays = 5;

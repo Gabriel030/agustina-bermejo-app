@@ -24,38 +24,38 @@ function RequestDetail({ request, sections }) {
   return (
     <div className="grid max-w-3xl gap-3 sm:grid-cols-2">
       <div>
-        <div className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">Tu motivo</div>
-        <p className="break-words text-[13px] text-ink">{request.reason}</p>
+        <div className="text-size-11 font-bold uppercase tracking-wide text-ink-faint">Tu motivo</div>
+        <p className="break-words text-size-13 text-ink">{request.reason}</p>
       </div>
       <div>
-        <div className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">Pedido #{request.id}</div>
-        <p className="text-[13px] text-ink">
+        <div className="text-size-11 font-bold uppercase tracking-wide text-ink-faint">Pedido #{request.id}</div>
+        <p className="text-size-13 text-ink">
           {formatDate(request.classDate)} · de {statusLabelOf(request.previousStatus)} a {statusLabelOf(request.requestedStatus)}
         </p>
       </div>
       {request.status === 'REJECTED' && (
         <div className="rounded-xl bg-danger-bg px-3 py-2.5 sm:col-span-2">
-          <div className="text-[11px] font-bold uppercase tracking-wide text-danger">Motivo del rechazo</div>
+          <div className="text-size-11 font-bold uppercase tracking-wide text-danger">Motivo del rechazo</div>
           {rejectionReason ? (
-            <p className="break-words text-[13px] text-ink">{rejectionReason}</p>
+            <p className="break-words text-size-13 text-ink">{rejectionReason}</p>
           ) : (
-            <p className="text-[13px] italic text-ink-soft">{NO_REJECTION_REASON_TEXT}. Consultá con preceptoría.</p>
+            <p className="text-size-13 italic text-ink-soft">{NO_REJECTION_REASON_TEXT}. Consultá con preceptoría.</p>
           )}
           <Link
             to={reRequestHref(request, sections)}
-            className="mt-2 inline-block text-[13px] font-bold text-brand hover:underline"
+            className="mt-2 inline-block text-size-13 font-bold text-brand hover:underline"
           >
             Volver a pedir en Tomar asistencia · clase del {formatDate(request.classDate)}
           </Link>
         </div>
       )}
       {request.status === 'APPROVED' && (
-        <div className="rounded-xl bg-success-bg px-3 py-2.5 text-[13px] font-semibold text-success sm:col-span-2">
+        <div className="rounded-xl bg-success-bg px-3 py-2.5 text-size-13 font-semibold text-success sm:col-span-2">
           El cambio ya figura en la asistencia de esa clase.
         </div>
       )}
       {request.status === 'PENDING' && (
-        <div className="rounded-xl bg-warning-bg px-3 py-2.5 text-[13px] font-semibold text-warning sm:col-span-2">
+        <div className="rounded-xl bg-warning-bg px-3 py-2.5 text-size-13 font-semibold text-warning sm:col-span-2">
           Esperando la respuesta de preceptoría.
         </div>
       )}

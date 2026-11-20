@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export function EnrollmentPicker({ id, label, options, value, onChange }) {
   return (
     <div className="flex max-w-md flex-col gap-1">
-      <label htmlFor={id} className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+      <label htmlFor={id} className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
         {label}
       </label>
       <Select value={value} onValueChange={onChange}>

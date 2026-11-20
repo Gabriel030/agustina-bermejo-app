@@ -22,8 +22,8 @@ export function FeatureRow({ feature, available, onToggle }) {
         <Icon className="h-[18px] w-[18px]" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span id={`feature-${feature.code}-name`} className="font-heading text-[14px] font-semibold text-ink">{catalog.label}</span>
-        <span className="text-[13px] text-ink-soft">{catalog.description}</span>
+        <span id={`feature-${feature.code}-name`} className="font-heading text-size-14 font-semibold text-ink">{catalog.label}</span>
+        <span className="text-size-13 text-ink-soft">{catalog.description}</span>
         <StatusPill tone={status.tone} className="mt-1">{status.text}</StatusPill>
       </div>
       {!isBilling && (

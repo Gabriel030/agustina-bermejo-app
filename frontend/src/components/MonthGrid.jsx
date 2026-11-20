@@ -71,7 +71,7 @@ export function MonthGrid({ year, month, entries, todayIso, selectedIso, onSelec
           <span
             key={`${name}-${index}`}
             role="columnheader"
-            className="py-1 text-center text-[11px] font-bold uppercase tracking-widest text-ink-faint"
+            className="py-1 text-center text-size-11 font-bold uppercase tracking-widest text-ink-faint"
           >
             {name}
           </span>
@@ -108,7 +108,7 @@ export function MonthGrid({ year, month, entries, todayIso, selectedIso, onSelec
                 >
                   <span
                     className={cn(
-                      'grid size-6 flex-none place-items-center rounded-full text-[13px] font-semibold tabular-nums text-ink',
+                      'grid size-6 flex-none place-items-center rounded-full text-size-13 font-semibold tabular-nums text-ink',
                       today && 'bg-ink font-bold text-background',
                     )}
                   >
@@ -116,13 +116,13 @@ export function MonthGrid({ year, month, entries, todayIso, selectedIso, onSelec
                   </span>
                   {entry && (
                     <>
-                      <span className="line-clamp-2 hidden text-[11.5px] font-semibold leading-tight sm:block" title={entry.label}>
+                      <span className="line-clamp-2 hidden text-size-11-5 font-semibold leading-tight sm:block" title={entry.label}>
                         {entry.label}
                       </span>
                       <span
                         aria-hidden="true"
                         className={cn(
-                          'grid h-5 sm:absolute sm:right-1 sm:top-1 min-w-5 place-items-center rounded-md border-[1.5px] px-0.5 text-[10.5px] font-extrabold leading-none',
+                          'grid h-5 sm:absolute sm:right-1 sm:top-1 min-w-5 place-items-center rounded-md border-[1.5px] px-0.5 text-size-10-5 font-extrabold leading-none',
                           'border-current',
                         )}
                       >

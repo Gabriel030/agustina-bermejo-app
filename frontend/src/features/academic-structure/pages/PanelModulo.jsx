@@ -61,7 +61,7 @@ export function PanelModulo({ open, onClose, courseId }) {
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+            <label className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
               Nombre <span className="text-danger">*</span>
             </label>
             <Input
@@ -73,7 +73,7 @@ export function PanelModulo({ open, onClose, courseId }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+              <label className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
                 Hs. semanales
               </label>
               <Input
@@ -85,7 +85,7 @@ export function PanelModulo({ open, onClose, courseId }) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+              <label className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
                 Orden
               </label>
               <Input
@@ -99,7 +99,7 @@ export function PanelModulo({ open, onClose, courseId }) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+            <label className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
               Recurrencia
             </label>
             <NativeSelect
@@ -115,7 +115,7 @@ export function PanelModulo({ open, onClose, courseId }) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+            <label className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
               Tipo de calificación
             </label>
             <Input
@@ -125,7 +125,7 @@ export function PanelModulo({ open, onClose, courseId }) {
             />
           </div>
 
-          {error && <p className="text-[13px] text-danger">{error}</p>}
+          {error && <p className="text-size-13 text-danger">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={handleClose}>

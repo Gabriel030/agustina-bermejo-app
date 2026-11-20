@@ -15,7 +15,7 @@ function overlapsProposal(slot, proposal) {
 function SlotCard({ slot, proposal }) {
   const clashes = slot.overlapsInDates && overlapsProposal(slot, proposal);
   return (
-    <li className="flex flex-col gap-1 rounded-lg border border-surface-border p-2 text-[12px]" data-clash={clashes}>
+    <li className="flex flex-col gap-1 rounded-lg border border-surface-border p-2 text-size-12" data-clash={clashes}>
       <span className="font-semibold text-ink">
         {slot.startTime}–{slot.endTime}
       </span>
@@ -53,9 +53,9 @@ export function ClassroomWeekOccupancy({ classroomId, classroomName, termId, pro
               .sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
             return (
               <section key={day.id} aria-label={day.label} className="flex flex-col gap-2">
-                <h3 className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{day.label}</h3>
+                <h3 className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">{day.label}</h3>
                 {daySlots.length === 0 ? (
-                  <p className="text-[12px] text-ink-faint">Sin clases.</p>
+                  <p className="text-size-12 text-ink-faint">Sin clases.</p>
                 ) : (
                   <ul className="flex flex-col gap-2">
                     {daySlots.map((slot) => (

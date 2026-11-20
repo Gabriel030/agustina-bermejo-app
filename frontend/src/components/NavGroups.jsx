@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const GROUP_HEADING = 'text-[11px] font-bold uppercase tracking-[0.08em] text-ink-faint';
+const GROUP_HEADING = 'text-size-11 font-bold uppercase tracking-[0.08em] text-ink-faint';
 
 function isActivePath(item, pathname) {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
@@ -74,12 +74,11 @@ export function NavGroups({ groups, renderItem, collapsible = false, pathname = 
     });
   }
 
-  let startIndex = 0;
+  const startIndexes = groups.reduce((acc, group, index) => [...acc, acc[index] + group.items.length], [0]);
   return (
     <div className="flex flex-col">
-      {groups.map((group) => {
-        const groupStart = startIndex;
-        startIndex += group.items.length;
+      {groups.map((group, index) => {
+        const groupStart = startIndexes[index];
         if (!group.label) {
           return <ItemList key={group.id} items={group.items} startIndex={groupStart} renderItem={renderItem} />;
         }

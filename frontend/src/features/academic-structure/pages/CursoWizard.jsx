@@ -117,9 +117,9 @@ function Paso1Datos({ state, dispatch }) {
             placeholder="Ej. 30"
           />
         </FormField>
-        <FormField id="course-price" label="Precio" error={errors.price}>
+        <FormField id="course-price" label="Cuota mensual" required error={errors.price}>
           <Input
-            {...fieldProps('course-price', errors.price)}
+            {...fieldProps('course-price', errors.price, true)}
             type="number"
             min={0}
             step={0.01}
@@ -139,7 +139,7 @@ function Paso1Datos({ state, dispatch }) {
       />
 
       {countErrors(errors) > 0 && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-size-13 text-danger">
           {invalidFieldsSummary(errors)}
         </p>
       )}
@@ -169,7 +169,7 @@ function Paso2Detalle({ state, dispatch }) {
         name: state.name.trim(),
         termId: parseInt(state.termId),
         capacity: parseInt(state.capacity),
-        ...(state.price && { price: { amount: String(parseFloat(state.price)), currency: 'ARS' } }),
+        price: { amount: String(parseFloat(state.price)), currency: 'ARS' },
         ...(state.teachingMode && { teachingMode: state.teachingMode }),
         ...(state.schedule.trim() && { schedule: state.schedule.trim() }),
         ...(state.durationMonths && { durationMonths: parseInt(state.durationMonths) }),
@@ -228,12 +228,12 @@ function Paso2Detalle({ state, dispatch }) {
       </div>
 
       {countErrors(errors) > 0 && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-size-13 text-danger">
           {invalidFieldsSummary(errors)}
         </p>
       )}
       {submitError && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-size-13 text-danger">
           {submitError}
         </p>
       )}
@@ -283,7 +283,7 @@ export function CursoWizard() {
         <div>
           <Link
             to="/administrativo/gestion-academica?section=cursos"
-            className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
+            className="mb-1 flex items-center gap-1 text-size-12 text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Cursos

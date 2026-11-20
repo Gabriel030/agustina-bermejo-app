@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { formatearFecha } from '@/lib/comisiones';
 import { useClosureSheet, useConfirmClosure } from '../hooks/useClosureSheet';
 import { CLOSURE_STATUS, activeStudents, blockedMessage, columnLabel, toggleResultKpi, unpublishedColumns, withdrawnCount } from '../lib/closureSheet';
+import { ClosureNoAbsenceLimitNotice } from '../components/ClosureNoAbsenceLimitNotice';
 import { ClosurePrerequisitesSheet } from '../components/ClosurePrerequisitesSheet';
 import { ClosureSheetTable } from '../components/ClosureSheetTable';
 import { ClosureSummaryCards } from '../components/ClosureSummaryCards';
@@ -24,7 +25,7 @@ function ConfirmBar({ sheet, onConfirm, pending }) {
   return (
     <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div className="min-w-0 flex-1 basis-64">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">Confirmar el cierre</h2>
+        <h2 className="font-heading text-size-15 font-semibold text-ink">Confirmar el cierre</h2>
         <p id="closure-confirm-hint" className="mt-1 text-xs text-ink-soft">
           {reason ?? 'Confirmás que revisaste notas, asistencia y resultado sugerido. El Administrativo aprueba y emite el acta.'}
         </p>
@@ -119,6 +120,8 @@ export function DocenteClosureSheet() {
         </Notice>
       )}
 
+      {sheet.status !== 'CLOSED' && <ClosureNoAbsenceLimitNotice sheet={sheet} />}
+
       <div className="flex flex-col gap-2">
         <p className="text-xs text-ink-faint">
           Resumen sobre los {activeStudents(sheet).length} alumnos activos de la comisión ({bajas} {bajas === 1 ? 'baja no cuenta' : 'bajas no cuentan'}). Tocá una tarjeta para filtrar la planilla.
@@ -131,7 +134,7 @@ export function DocenteClosureSheet() {
       </div>
 
       <GlassCard className="flex flex-col gap-3 p-4">
-        <h2 className="font-heading text-[15px] font-semibold text-ink">
+        <h2 className="font-heading text-size-15 font-semibold text-ink">
           Alumnos <span className="font-normal text-ink-faint">{activeStudents(sheet).length}</span>
         </h2>
         <ClosureSheetTable

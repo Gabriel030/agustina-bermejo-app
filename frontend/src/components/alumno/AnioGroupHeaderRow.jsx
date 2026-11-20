@@ -3,7 +3,7 @@
 export function AnioGroupHeaderRow({ anio, colSpan }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="bg-neutral-bg px-4 py-1.5 text-[11px] font-bold tracking-wide text-ink-faint uppercase">
+      <td colSpan={colSpan} className="bg-neutral-bg px-4 py-1.5 text-size-11 font-bold tracking-wide text-ink-faint uppercase">
         {anio != null ? `${anio}° año` : 'Sin año asignado'}
       </td>
     </tr>

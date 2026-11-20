@@ -36,7 +36,7 @@ const ADD_ERROR_MESSAGES = {
 function CampoSelect({ id, label, value, onChange, options, required }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
+      <label htmlFor={id} className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">{label}</label>
       <NativeSelect
         id={id}
         value={value}
@@ -157,12 +157,12 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
                   onClick={() => setSelectedSubjectId(s.id)}
                   className="flex flex-col gap-0.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-neutral-bg/60"
                 >
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{s.code}</span>
-                  <span className="text-[13.5px] font-medium text-ink">{s.name}</span>
+                  <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{s.code}</span>
+                  <span className="text-size-13-5 font-medium text-ink">{s.name}</span>
                 </button>
               ))}
               {filtered.length === 0 && (
-                <p className="py-4 text-center text-[13px] text-ink-faint">Sin resultados</p>
+                <p className="py-4 text-center text-size-13 text-ink-faint">Sin resultados</p>
               )}
             </div>
           </div>
@@ -170,17 +170,17 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between rounded-xl bg-neutral-bg/60 px-3 py-2">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+                <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">
                   {selectedSubject.code}
                 </span>
-                <p className="text-[13.5px] font-medium text-ink">{selectedSubject.name}</p>
+                <p className="text-size-13-5 font-medium text-ink">{selectedSubject.name}</p>
               </div>
               <Button
                 variant="subtle"
                 size="inline"
                 type="button"
                 onClick={() => setSelectedSubjectId(null)}
-                className="text-[12px] underline"
+                className="text-size-12 underline"
                 >
                 Cambiar
               </Button>
@@ -196,13 +196,13 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
             />
 
             {category === 'ADDITIONAL_MANDATORY' ? (
-              <p className="text-[12px] text-ink-faint">
+              <p className="text-size-12 text-ink-faint">
                 Las obligatorias adicionales no tienen año ni cuatrimestre: se cursan en cualquier momento de la carrera.
               </p>
             ) : (
               <div className="flex gap-3">
                 <div className="flex flex-1 flex-col gap-1.5">
-                  <label htmlFor="program-subject-year" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+                  <label htmlFor="program-subject-year" className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
                     Año curricular
                   </label>
                   <Input
@@ -228,7 +228,7 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="program-subject-credits" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+              <label htmlFor="program-subject-credits" className="text-size-12 font-medium uppercase tracking-wide text-ink-faint">
                 Créditos *
               </label>
               <Input
@@ -255,7 +255,7 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
             {category === 'ELECTIVE' &&
               !electiveGroupsFailed &&
               (electiveWithoutGroups ? (
-                <p className="text-[13px] text-danger">
+                <p className="text-size-13 text-danger">
                   Esta carrera no tiene grupos electivos asignados, así que todavía no se le pueden agregar electivas.
                 </p>
               ) : (
@@ -268,7 +268,7 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
                 />
               ))}
 
-            {error && <p className="text-[13px] text-danger">{error}</p>}
+            {error && <p className="text-size-13 text-danger">{error}</p>}
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={handleClose}>

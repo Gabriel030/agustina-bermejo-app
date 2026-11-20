@@ -24,7 +24,7 @@ class AttendancePercentageMigrationTest {
             jdbc.execute("alter table course_section disable trigger all");
             jdbc.update("insert into subject (name, code) values ('Materia sembrada', 'MS-1')");
             Long subjectId = jdbc.queryForObject("select max(id) from subject", Long.class);
-            jdbc.update("insert into term (year_number, status) values (2026, true)");
+            jdbc.update("insert into term (year_number, status) values (2026, 'ACTIVE')");
             Long termId = jdbc.queryForObject("select max(id) from term", Long.class);
             jdbc.update("insert into subject_section (subject_id, term_id, name, max_absence_percentage) "
                     + "values (?, ?, 'Comision A', 25.0)", subjectId, termId);

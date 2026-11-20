@@ -19,7 +19,7 @@ describe('AttendanceRegimeField', () => {
     const user = userEvent.setup();
     render(<Harness initial={{ mode: 'limit', percent: '0' }} />);
 
-    expect(screen.getByText(/Con 0 %, cualquier ausencia injustificada/)).toBeInTheDocument();
+    expect(screen.getByText(/Con 0 %, cualquier inasistencia injustificada/)).toBeInTheDocument();
     await user.clear(screen.getByLabelText('Porcentaje máximo de ausentismo'));
     await user.type(screen.getByLabelText('Porcentaje máximo de ausentismo'), '100');
     expect(screen.getByText(/Con 100 % nunca se marca libre a nadie/)).toBeInTheDocument();
@@ -51,6 +51,6 @@ describe('AttendanceRegimeField', () => {
     render(<Harness initial={{ mode: 'none', percent: '' }} />);
 
     await user.click(screen.getByRole('button', { name: 'Qué significa el máximo de ausentismo' }));
-    expect(await screen.findByText(/Las ausencias justificadas no cuentan/)).toBeInTheDocument();
+    expect(await screen.findByText(/Las inasistencias justificadas no cuentan/)).toBeInTheDocument();
   });
 });

@@ -7,21 +7,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AttendanceStandingFinder {
 
-    private final AttendanceRiskReader attendanceRiskReader;
+    private final AttendanceStandingReader attendanceStandingReader;
 
-    public AttendanceStandingFinder(AttendanceRiskReader attendanceRiskReader) {
-        this.attendanceRiskReader = attendanceRiskReader;
+    public AttendanceStandingFinder(AttendanceStandingReader attendanceStandingReader) {
+        this.attendanceStandingReader = attendanceStandingReader;
     }
 
     public AttendanceStandingView ofProgramSectionEnrollment(Long subjectSectionEnrollmentId) {
-        return toView(attendanceRiskReader.readProgramEnrollmentRisk(subjectSectionEnrollmentId));
+        return toView(attendanceStandingReader.readProgramEnrollmentStanding(subjectSectionEnrollmentId));
     }
 
     public AttendanceStandingView ofCourseSectionEnrollment(Long courseSectionEnrollmentId) {
-        return toView(attendanceRiskReader.readCourseEnrollmentRisk(courseSectionEnrollmentId));
+        return toView(attendanceStandingReader.readCourseEnrollmentStanding(courseSectionEnrollmentId));
     }
 
-    private AttendanceStandingView toView(AttendanceRiskView view) {
-        return new AttendanceStandingView(view.calculable(), view.libre());
+    private AttendanceStandingView toView(AttendanceStanding standing) {
+        return new AttendanceStandingView(standing.calculable(), standing.exceedsAbsenceLimit());
     }
 }

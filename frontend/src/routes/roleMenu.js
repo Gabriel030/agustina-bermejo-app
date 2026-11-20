@@ -1,4 +1,4 @@
-import { BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText } from 'lucide-react';
+import { Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -20,9 +20,12 @@ const annualTerms = { slug: 'terminos-del-pago-anual', label: 'Términos del pag
 const financial ={ slug: 'financiero', label: 'Financiero', icon: BarChart2 };
 const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText };
 const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicitudes de ingreso', icon: UserPlus };
+const waitlists = { slug: 'inscripciones/listas-de-espera', label: 'Listas de espera', icon: ListOrdered };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const closures = { slug: 'cierres-de-comision', label: 'Cierres de comisión', icon: FileSignature };
+const broadcasts = { slug: 'comunicaciones', label: 'Comunicaciones', icon: Megaphone };
+const audit = { slug: 'auditoria', label: 'Auditoría', icon: History };
 const approvals = { slug: 'aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 };
 
 export const ROLE_MENU = {
@@ -44,6 +47,7 @@ export const ROLE_MENU = {
     inicio,
     alumnos,
     enrollmentApplications,
+    waitlists,
     academicOffering,
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     solicitudes,
@@ -54,6 +58,7 @@ export const ROLE_MENU = {
     alumnos,
     personal,
     enrollmentApplications,
+    waitlists,
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     closures,
     invoicing,
@@ -71,10 +76,13 @@ export const ROLE_MENU = {
     academicManagement,
     periodos,
     { slug: 'feriados', label: 'Feriados', icon: CalendarDays },
+    broadcasts,
   ],
   director: [
     inicio,
     alumnos,
+    waitlists,
+    broadcasts,
     academicOffering,
     personal,
     approvals,
@@ -83,6 +91,8 @@ export const ROLE_MENU = {
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     closures,
     { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
+    { slug: 'importacion-inicial', label: 'Importación inicial', icon: Upload },
+    audit,
     invoicing,
     discounts,
     prices,
@@ -95,7 +105,7 @@ export const ROLE_MENU = {
     certificates,
     periodos,
   ],
-  platform_admin: [{ ...inicio, hidden: true }, { slug: 'modulos', label: 'Módulos', icon: Puzzle }, { slug: 'primer-director', label: 'Primer director', icon: UserPlus }],
+  platform_admin: [{ ...inicio, hidden: true }, { slug: 'modulos', label: 'Módulos', icon: Puzzle }, { slug: 'primer-director', label: 'Primer director', icon: UserPlus }, audit],
 };
 
 export function pagesFor(role) {
@@ -111,7 +121,8 @@ export function menuItemsFor(role) {
 const MENU_GROUPS = {
   director: [
     { id: 'main', label: null, slugs: ['inicio', 'aprobaciones'] },
-    { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal'] },
+    { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal', 'comunicaciones'] },
+    { id: 'enrollment', label: 'Inscripciones', slugs: ['inscripciones/listas-de-espera'] },
     {
       id: 'academic',
       label: 'Académico',
@@ -131,7 +142,7 @@ const MENU_GROUPS = {
         'financiero',
       ],
     },
-    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto'] },
+    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto', 'importacion-inicial', 'auditoria'] },
   ],
 };
 

@@ -68,7 +68,7 @@ export function SettingChangeDialog({ entry, onClose, onRefresh }) {
           </div>
         )}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="setting-change-reason" className="text-[13px] font-medium text-ink-soft">
+          <label htmlFor="setting-change-reason" className="text-size-13 font-medium text-ink-soft">
             Motivo
           </label>
           <Textarea

@@ -141,7 +141,7 @@ export function FeatureChangeDialog({ change, features, onClose, onRefresh }) {
         )}
         {!onImpactStep && (
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="feature-change-reason" className="text-[13px] font-medium text-ink-soft">Motivo</label>
+            <label htmlFor="feature-change-reason" className="text-size-13 font-medium text-ink-soft">Motivo</label>
             <Textarea
               id="feature-change-reason"
               value={reason}

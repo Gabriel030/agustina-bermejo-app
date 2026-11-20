@@ -28,7 +28,7 @@ export function DirectorSectionGrades() {
       <div className="flex flex-col gap-1.5">
         <Breadcrumb items={breadcrumb} />
         <h1 className="font-heading text-xl font-bold text-ink md:text-2xl">Notas de la comisión</h1>
-        {section && <p className="text-[12.5px] text-ink-faint">{describeSection(section)}</p>}
+        {section && <p className="text-size-12-5 text-ink-faint">{describeSection(section)}</p>}
       </div>
       {cycle && <DirectorGradeGrid sectionId={sectionId} kind={kind} />}
     </PageContainer>

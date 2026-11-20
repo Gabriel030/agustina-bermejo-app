@@ -34,6 +34,14 @@ describe('describeSaveError', () => {
   });
 });
 
+describe('validateProgramFields with prices', () => {
+  it('requires a monthly fee and an enrollment fee greater than zero when asked', () => {
+    const errors = validateProgramFields({ ...PROGRAM, price: '0', enrollmentFee: '' }, { requireCredits: true, requirePrices: true });
+    expect(Object.keys(errors).sort()).toEqual(['enrollmentFee', 'price']);
+    expect(validateProgramFields({ ...PROGRAM, price: '48000', enrollmentFee: '95000' }, { requireCredits: true, requirePrices: true })).toEqual({});
+  });
+});
+
 describe('validateProgramFields', () => {
   it('accepts a complete program', () => {
     expect(validateProgramFields(PROGRAM, { requireCredits: true })).toEqual({});
@@ -60,8 +68,15 @@ describe('course validation', () => {
     expect(Object.keys(errors).sort()).toEqual(['capacity', 'name', 'price', 'termId']);
   });
 
+  it('requires a monthly fee greater than zero for a course', () => {
+    expect(validateCourseBasics({ name: 'Excel', capacity: '20', price: '' }).price).toMatch(/obligatoria y debe ser mayor que cero/);
+    expect(validateCourseBasics({ name: 'Excel', capacity: '20', price: '0' }).price).toMatch(/mayor que cero/);
+    expect(validateCourseBasics({ name: 'Excel', capacity: '20', price: '-5' }).price).toMatch(/mayor que cero/);
+    expect(validateCourseBasics({ name: 'Excel', capacity: '20', price: '0.01' }).price).toBeUndefined();
+  });
+
   it('does not require a term when none is being edited', () => {
-    expect(validateCourseBasics({ name: 'Excel', capacity: '20', price: '' })).toEqual({});
+    expect(validateCourseBasics({ name: 'Excel', capacity: '20', price: '15000' })).toEqual({});
   });
 
   it('requires the duration and a coherent registration window', () => {

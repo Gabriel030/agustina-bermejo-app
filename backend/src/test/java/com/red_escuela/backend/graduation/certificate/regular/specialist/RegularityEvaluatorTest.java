@@ -15,8 +15,8 @@ class RegularityEvaluatorTest {
 
     @Test
     void delegatesToTheRuleOfTheRequestedKind() {
-        RegularityRule programRule = mock(RegularityRule.class);
-        RegularityRule courseRule = mock(RegularityRule.class);
+        InstitutionalRegularityRule programRule = mock(InstitutionalRegularityRule.class);
+        InstitutionalRegularityRule courseRule = mock(InstitutionalRegularityRule.class);
         when(programRule.kind()).thenReturn(RegularityKind.PROGRAM);
         when(courseRule.kind()).thenReturn(RegularityKind.COURSE);
         RegularityVerdict courseVerdict = new RegularityVerdict(RegularityKind.COURSE, true, List.of(), false, Instant.EPOCH);

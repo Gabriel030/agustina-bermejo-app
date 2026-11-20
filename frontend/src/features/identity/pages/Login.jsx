@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import { postLoginPathFor } from '@/lib/activeRole';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GoogleLogin } from '@react-oauth/google';
 import { GlassCard } from '@/components/GlassCard';
-import { MeshBackground } from '@/components/MeshBackground';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,7 +58,7 @@ export function Login() {
     const from = location.state?.from;
     const destino = from?.pathname
       ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`
-      : usuario.roles.length ? `/${usuario.roles[0].toLowerCase()}/inicio` : '/catalogo';
+      : postLoginPathFor(usuario);
     navigate(destino, { replace: true });
   }, [usuario, location.state, navigate]);
 
@@ -110,7 +110,6 @@ export function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <MeshBackground />
       <GlassCard className="w-full max-w-[436px] p-10 pb-9">
         <div className="mb-7">
           <InstitutionBrand subtitulo="Ingresá a tu cuenta" />
@@ -155,7 +154,7 @@ export function Login() {
               type="submit"
               variant="gradient"
               disabled={enviando || cooldown.active}
-              className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
+              className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
             >
               {enviando ? 'Ingresando…' : cooldown.active ? `Reintentar en ${cooldown.secondsLeft} s` : 'Ingresar'}
             </Button>
@@ -169,7 +168,7 @@ export function Login() {
 
           {googleIdTokenPendiente ? (
             <div className="flex flex-col gap-2.5 rounded-2xl border border-border bg-accent-soft/40 p-3.5 text-center">
-              <div className="text-[13px] font-medium text-ink">
+              <div className="text-size-13 font-medium text-ink">
                 No encontramos una cuenta con ese email. ¿Querés crear una cuenta nueva?
               </div>
               <div className="flex gap-2">

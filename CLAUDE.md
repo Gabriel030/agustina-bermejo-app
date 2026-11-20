@@ -40,7 +40,7 @@ y `~/.claude/instructions/workflow-git.md`):
 - **CI local antes de abrir cualquier PR**: correr lo mismo que corre el CI y verlo
   pasar. No se abre un PR que pueda romper el CI (GitHub Actions cobra minutos).
 - **PRs siempre contra `develop`** (`--base develop` explícito); rama propia por cambio;
-  aprobación explícita antes de cada commit y de cada push; el merge lo hace el usuario.
+  aprobación explícita antes de cada commit y de cada push; el merge lo hace el Líder Técnico de la célula (dominio delegado por Gabriel el 17-nov, release a master incluido).
 - **Migraciones Flyway**: mirar el último número en `origin/develop` y `origin/master`
   antes de crear una.
 - **Todo diseño o mockup pasa por el agente `ux-advisor`** antes de mostrarse, y no se
@@ -63,12 +63,14 @@ y `~/.claude/instructions/workflow-git.md`):
 | Tocar **límites entre módulos** (Spring Modulith: api/events/model, línea base de violaciones) | [docs/context/modules.md](docs/context/modules.md), [ADR 0002](docs/adr/0002-patron-de-modulos.md) |
 | Escribir o revisar **tests** (unitarios, integración, frontend) | [docs/context/testing.md](docs/context/testing.md) — empezá por "Mapa de herramientas: qué pregunta responde cada una" |
 | Agregar un **diseño nuevo**, restilizar por tokens o entender qué se centraliza | [docs/context/design-system.md](docs/context/design-system.md) |
+| **Desplegar** a un servidor (Docker, Caddy, variables, runbook) | [docs/deploy/README.md](docs/deploy/README.md) |
 | **Debuggear** algo que no arranca o falla localmente | [docs/context/debugging.md](docs/context/debugging.md) |
 | **Git / commits / PRs / ramas / CI local / migraciones / Backport** | [docs/context/workflow.md](docs/context/workflow.md) |
 | Elegir **qué componente usar** / listar componentes en una spec | [docs/context/components.md](docs/context/components.md) |
 | **Usuarios de prueba** y qué usuario usar para probar cada flujo | [docs/context/test-users.md](docs/context/test-users.md) |
 | **Diseñar o mockear** una pantalla (flujo con `ux-advisor`) | [docs/context/frontend.md](docs/context/frontend.md), sección "Flujo de diseño" |
 | Escribir una **spec técnica/funcional nueva** antes de implementar | Skill `spec-writing` — no leas un doc, disparala directamente |
+| Trabajar en la **célula de agentes** (líder, backend, frontend, revisores, mecánico; sesiones locales o en la nube) | [docs/context/cell.md](docs/context/cell.md) |
 | Elegir un **patrón de diseño** (GoF o táctico DDD) para una feature o refactor | Skill `design-patterns` |
 
 Si la tarea no encaja en ninguna fila, seguí con el juicio normal — este índice

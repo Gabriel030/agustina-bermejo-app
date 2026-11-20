@@ -4,6 +4,8 @@ import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionNotOpenForEnrollmentException;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
@@ -50,6 +52,35 @@ public class SectionFinder {
                 section.getCapacity(), section.getName());
     }
 
+    public ProgramSectionView findOpenProgramSection(Long id) {
+        SubjectSection section = programSectionRepository.findById(id)
+                .orElseThrow(() -> new SectionNotFoundException(id));
+        requireOpenForEnrollment(section);
+        return new ProgramSectionView(section.getId(), section.getSubject().getId(), section.getTerm().getId(),
+                section.getCapacity(), section.getName());
+    }
+
+    public List<ProgramSectionCandidateView> findProgramSectionCandidates(Long subjectId) {
+        return programSectionRepository.findBySubjectId(subjectId).stream()
+                .map(section -> new ProgramSectionCandidateView(section.getId(), section.getName(), section.getTerm().getId(),
+                        section.getCapacity(), isOpenForEnrollment(section)))
+                .toList();
+    }
+
+    public boolean isProgramSectionOpenForEnrollment(Long id) {
+        return programSectionRepository.findById(id).map(this::isOpenForEnrollment).orElse(false);
+    }
+
+    private void requireOpenForEnrollment(SubjectSection section) {
+        if (!isOpenForEnrollment(section)) {
+            throw new SectionNotOpenForEnrollmentException(section.getId());
+        }
+    }
+
+    private boolean isOpenForEnrollment(SubjectSection section) {
+        return section.getStatus() == StatusType.ACTIVE && section.isOfferingApproved();
+    }
+
     public CourseSectionView findCourseSection(Long id) {
         CourseSubjectSection section = courseSectionRepository.findById(id)
                 .orElseThrow(() -> new SectionNotFoundException(id));
@@ -60,6 +91,14 @@ public class SectionFinder {
 
     public SubjectSection findProgramSectionEntity(Long id) {
         return programSectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
+    }
+
+    public SubjectSection findProgramSectionWithSchemeAndTerms(Long id) {
+        return programSectionRepository.findByIdWithSchemeAndTerms(id).orElseThrow(() -> new SectionNotFoundException(id));
+    }
+
+    public CourseSubjectSection findCourseSectionWithSchemeAndTerms(Long id) {
+        return courseSectionRepository.findByIdWithSchemeAndTerms(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
 
     public CourseSubjectSection findCourseSectionEntity(Long id) {

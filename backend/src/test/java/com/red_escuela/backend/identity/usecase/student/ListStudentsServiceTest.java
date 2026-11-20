@@ -1,8 +1,10 @@
 package com.red_escuela.backend.identity.usecase.student;
 
+import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -63,8 +65,8 @@ class ListStudentsServiceTest extends AbstractIntegrationTest {
     }
 
     private List<Long> search(String text) {
-        return listStudentsUseCase.list(new ListStudentsCommand(StatusType.ACTIVE, null, text)).stream()
-                .map(Student::getId)
+        return listStudentsUseCase.list(new ListStudentsCommand(StatusType.ACTIVE, null, text, 0, 100, false)).items().stream()
+                .map(StudentResponse::id)
                 .toList();
     }
 
@@ -93,5 +95,30 @@ class ListStudentsServiceTest extends AbstractIntegrationTest {
         Student other = persistStudent("43000006", "Dario", "OtroLegajo", true);
 
         assertThat(search(student.getPerson().getFile())).contains(student.getId()).doesNotContain(other.getId());
+    }
+
+    @Test
+    void pageSlicesInSqlOrderedByLastnameAndReportsTotal() {
+        Student first = persistStudent("43100001", "Zelmira", "Aaa", true);
+        Student second = persistStudent("43100002", "Zelmira", "Bbb", true);
+        Student third = persistStudent("43100003", "Zelmira", "Ccc", true);
+
+        PageResponse<StudentResponse> page0 = listStudentsUseCase.list(new ListStudentsCommand(StatusType.ACTIVE, null, "Zelmira", 0, 2, false));
+        PageResponse<StudentResponse> page1 = listStudentsUseCase.list(new ListStudentsCommand(StatusType.ACTIVE, null, "Zelmira", 1, 2, false));
+
+        assertThat(page0.items()).extracting(StudentResponse::id).containsExactly(first.getId(), second.getId());
+        assertThat(page1.items()).extracting(StudentResponse::id).containsExactly(third.getId());
+        assertThat(page0.totalElements()).isEqualTo(3);
+        assertThat(page1.totalElements()).isEqualTo(3);
+    }
+
+    @Test
+    void sizeAboveMaximumIsBounded() {
+        persistStudent("43100004", "Beto", "Limite", true);
+
+        PageResponse<StudentResponse> page = listStudentsUseCase.list(new ListStudentsCommand(StatusType.ACTIVE, null, "Limite", -1, 100000, false));
+
+        assertThat(page.page()).isZero();
+        assertThat(page.size()).isEqualTo(PageResponse.MAX_SIZE);
     }
 }

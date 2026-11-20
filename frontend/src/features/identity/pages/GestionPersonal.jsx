@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
 import { usePersonal } from '@/features/identity/hooks/usePersonal';
 import { useCrearPersonal } from '@/features/identity/hooks/useAccionesPersonal';
 import { AltaPersonalModal } from '@/features/identity/components/AltaPersonalModal';
@@ -50,15 +50,15 @@ function FilaPersonal({ persona, onClick }) {
       onClick={onClick}
       >
       <div className="flex min-w-0 flex-col">
-        <span className="truncate text-[14px] font-medium text-ink">
+        <span className="truncate text-size-14 font-medium text-ink">
           {persona.apellido}, {persona.nombre}
         </span>
-        <span className="text-[12px] text-ink-faint">{persona.email}</span>
+        <span className="text-size-12 text-ink-faint">{persona.email}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <div className="flex flex-col items-end gap-0.5">
-          <span className="font-mono text-[13px] text-ink-soft">{persona.dni}</span>
-          <span className="text-[11px] text-ink-faint">
+          <span className="font-mono text-size-13 text-ink-soft">{persona.dni}</span>
+          <span className="text-size-11 text-ink-faint">
             {ETIQUETA_ROL[persona.role] ?? persona.role}
           </span>
         </div>
@@ -85,7 +85,7 @@ function ListaPersonal({ personal, isLoading, isError, error, onRetry, navigate,
 
   if (!personal?.length) {
     return (
-      <div className="flex min-h-[160px] items-center justify-center text-[13px] text-ink-faint">
+      <div className="flex min-h-[160px] items-center justify-center text-size-13 text-ink-faint">
         No se encontraron miembros del personal que coincidan.
       </div>
     );
@@ -105,10 +105,9 @@ function ListaPersonal({ personal, isLoading, isError, error, onRetry, navigate,
 }
 
 export function GestionPersonal() {
-  const { usuario } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const rolBase = usuario?.roles[0]?.toLowerCase();
+  const { roleBase: rolBase } = useActiveRole();
 
   const tabDesdeUrl = searchParams.get('tab');
   const tabInicial = TABS.find((t) => t.id === tabDesdeUrl) ? tabDesdeUrl : 'activos';

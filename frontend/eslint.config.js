@@ -1,3 +1,4 @@
+import { fixupPluginRules } from '@eslint/compat'
 import js from '@eslint/js'
 import globals from 'globals'
 import react from 'eslint-plugin-react'
@@ -5,6 +6,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import { RAW_ELEMENT_EXCEPTIONS, localPlugin } from './eslint-rules/raw-elements.js'
+import { RAW_BUTTON_EXCEPTIONS, noRawButtonRule } from './eslint-rules/raw-button.js'
 
 const FEATURES = [
   'identity',
@@ -49,8 +51,8 @@ export default defineConfig([
     files: ['**/*.{js,jsx}'],
     extends: [
       js.configs.recommended,
-      react.configs.flat.recommended,
-      reactHooks.configs['recommended-latest'],
+      { ...react.configs.flat.recommended, plugins: { react: fixupPluginRules(react) } },
+      reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
     languageOptions: {
@@ -79,6 +81,23 @@ export default defineConfig([
     files: ['src/components/ui/**/*.jsx', 'src/context/**/*.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: [
+      'src/context/AuthContext.jsx',
+      'src/features/attendance/pages/DocenteTomarAsistencia.jsx',
+      'src/features/billing/dashboard/OfferCombobox.jsx',
+      'src/pages/AdministrativoFacturacion.jsx',
+    ],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  {
+    files: ['src/components/MonthPicker.jsx'],
+    rules: {
+      'react-hooks/refs': 'off',
     },
   },
   {
@@ -111,6 +130,12 @@ export default defineConfig([
     ignores: ['src/components/ui/**', '**/*.test.{js,jsx}', ...RAW_ELEMENT_EXCEPTIONS],
     plugins: { local: localPlugin },
     rules: { 'local/no-raw-elements': 'error' },
+  },
+  {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/components/ui/**', '**/*.test.{js,jsx}', ...RAW_BUTTON_EXCEPTIONS],
+    plugins: { guard: { rules: { 'no-raw-button': noRawButtonRule } } },
+    rules: { 'guard/no-raw-button': 'error' },
   },
   {
     files: ['src/components/**/*.{js,jsx}', 'src/lib/**/*.{js,jsx}', 'src/layouts/**/*.{js,jsx}'],

@@ -77,4 +77,15 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
     @Query("select e.id as enrollmentId, e.program.name as name from ProgramEnrollment e where e.id in :ids")
     List<EnrollmentNameRow> findNameRows(@Param("ids") Collection<Long> ids);
+
+    @Query("select new com.red_escuela.backend.enrollment.repository.ProgramEnrollmentDateRow(e.id, e.student.id, e.program.id, e.enrollmentDate) from ProgramEnrollment e where e.student.id in :studentIds and e.program.id in :programIds order by e.id")
+    List<ProgramEnrollmentDateRow> findDateRowsByStudentIdInAndProgramIdIn(@Param("studentIds") Collection<Long> studentIds, @Param("programIds") Collection<Long> programIds);
+
+    java.util.Optional<ProgramEnrollment> findFirstByStudentIdAndProgramIdOrderByIdAsc(Long studentId, Long programId);
+
+    @Query("select distinct e.student.person.id from ProgramEnrollment e where e.program.id = :programId and e.status = :status and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
+    java.util.List<Long> findStudentPersonIdsByProgramAndStatus(Long programId, ProgramEnrollmentStatus status);
+
+    @Query("select distinct e.student.person.id from ProgramEnrollment e where e.status = :status and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
+    java.util.List<Long> findStudentPersonIdsByStatus(ProgramEnrollmentStatus status);
 }

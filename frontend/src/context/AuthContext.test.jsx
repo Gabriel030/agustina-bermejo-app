@@ -10,6 +10,7 @@ import {
   storeOfflineProfile,
 } from '@/api/offlinePersistence';
 import { apiFetch, setOfflineSessionMode } from '@/api/client';
+import { LEGAL_KEYS } from '@/features/identity/hooks/useLegal';
 
 const store = new Map();
 
@@ -48,7 +49,35 @@ describe('restoreStoredSession', () => {
     expect(apiFetch.mock.calls.filter(([path]) => path === '/auth/refresh')).toHaveLength(1);
     expect(first).toEqual({ id: 1 });
     expect(second).toEqual({ id: 1 });
-    expect(localStorage.getItem('refreshToken')).toBe('new');
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBe('1');
+  });
+
+  it('migrates a legacy stored token by sending it once in the body and then drops it', async () => {
+    localStorage.setItem('refreshToken', 'legacy');
+    apiFetch.mockImplementation(async (path) =>
+      path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'new' } : { id: 1 },
+    );
+
+    await restoreStoredSession();
+
+    const refreshCall = apiFetch.mock.calls.find(([path]) => path === '/auth/refresh');
+    expect(JSON.parse(refreshCall[1].body)).toEqual({ refreshToken: 'legacy' });
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBe('1');
+  });
+
+  it('refreshes without a body when only the session hint exists', async () => {
+    localStorage.setItem('sessionHint', '1');
+    apiFetch.mockImplementation(async (path) =>
+      path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'new' } : { id: 1 },
+    );
+
+    await restoreStoredSession();
+
+    const refreshCall = apiFetch.mock.calls.find(([path]) => path === '/auth/refresh');
+    expect(refreshCall[1].body).toBeUndefined();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
   });
 
   it('returns null without calling the api when there is no stored token', async () => {
@@ -59,6 +88,7 @@ describe('restoreStoredSession', () => {
 
 describe('offline cache lifecycle', () => {
   let auth;
+  let lastLogin;
   let queryClient;
 
   function Probe() {
@@ -68,6 +98,9 @@ describe('offline cache lifecycle', () => {
 
   function renderProvider() {
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['me'], { id: 1, roles: ['ADMIN'] });
+    queryClient.setQueryData(['me', 'modules'], { modules: ['ADMIN_ONLY'] });
+    queryClient.setQueryData(LEGAL_KEYS.pending, { documents: [{ type: 'ANA' }] });
     queryClient.setQueryData(['me', 'notifications'], [{ id: 1 }]);
     return render(
       <QueryClientProvider client={queryClient}>
@@ -84,8 +117,11 @@ describe('offline cache lifecycle', () => {
     vi.stubGlobal('indexedDB', {});
     apiFetch.mockReset();
     apiFetch.mockImplementation(async (path, options) => {
-      if (path === '/auth/login') return { accessToken: 'a', refreshToken: `r-${JSON.parse(options.body).username}` };
-      if (path === '/me') return { id: localStorage.getItem('refreshToken') === 'r-ana' ? 1 : 2, roles: [] };
+      if (path === '/auth/login') {
+        lastLogin = JSON.parse(options.body).username;
+        return { accessToken: 'a', refreshToken: `r-${lastLogin}` };
+      }
+      if (path === '/me') return { id: lastLogin === 'ana' ? 1 : 2, roles: [] };
       return {};
     });
   });
@@ -121,6 +157,9 @@ describe('offline cache lifecycle', () => {
     });
 
     expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
     expect(store.get(OFFLINE_OWNER_KEY)).toBe(2);
     expect(screen.getByText('user-2')).toBeInTheDocument();
@@ -129,14 +168,103 @@ describe('offline cache lifecycle', () => {
   it('restoredSessionOfAnotherOwnerPurgesStaleCache', async () => {
     store.set(OFFLINE_OWNER_KEY, 1);
     store.set(OFFLINE_CACHE_KEY, 'cache-of-ana');
-    localStorage.setItem('refreshToken', 'r-beto');
+    localStorage.setItem('sessionHint', '1');
     apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [] }));
 
     renderProvider();
 
     await screen.findByText('user-2');
-    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
+  });
+
+  it('restoredSessionOfAnotherOwnerNeverExposesPreviousUserQueries', async () => {
+    store.set(OFFLINE_OWNER_KEY, 1);
+    localStorage.setItem('sessionHint', '1');
+    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [] }));
+
+    renderProvider();
+
+    await screen.findByText('user-2');
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    const cachedData = JSON.stringify(queryClient.getQueryCache().getAll().map((query) => query.state.data));
+    expect(cachedData).not.toContain('ADMIN_ONLY');
+    expect(cachedData).not.toContain('ANA');
+    expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
+  });
+
+  it('logoutThenLoginAsAnotherUserNeverExposesPreviousUserQueries', async () => {
+    renderProvider();
+    await act(async () => {
+      await auth.login('ana', 'x');
+    });
+
+    await act(async () => {
+      await auth.logout();
+    });
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+
+    await act(async () => {
+      await auth.login('beto', 'x');
+    });
+
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
+  });
+
+  it('loginAsAnotherUserWithoutLogoutNeverExposesPreviousUserData', async () => {
+    store.set(OFFLINE_CACHE_KEY, 'cache-of-ana');
+    renderProvider();
+
+    await act(async () => {
+      await auth.login('beto', 'x');
+    });
+
+    expect(apiFetch.mock.calls.filter(([path]) => path === '/me')).toHaveLength(1);
+    expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
+    expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
+    const cachedData = JSON.stringify(queryClient.getQueryCache().getAll().map((query) => query.state.data));
+    expect(cachedData).not.toContain('ADMIN_ONLY');
+    expect(cachedData).not.toContain('ANA');
+    expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
+    expect(store.get(OFFLINE_OWNER_KEY)).toBe(2);
+    expect(screen.getByText('user-2')).toBeInTheDocument();
+  });
+
+  it('purgeCancelsInFlightQueriesOfThePreviousUser', async () => {
+    renderProvider();
+    await act(async () => {
+      await auth.login('ana', 'x');
+    });
+    let release;
+    const inFlight = queryClient.fetchQuery({
+      queryKey: ['me', 'modules'],
+      queryFn: () => new Promise((resolve) => { release = () => resolve({ modules: ['ADMIN_ONLY'] }); }),
+    }).then(() => 'resolved', () => 'cancelled');
+
+    await act(async () => {
+      await auth.logout();
+    });
+    release();
+
+    expect(await inFlight).toBe('cancelled');
+    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+  });
+
+  it('restoredSessionOfAnotherOwnerRefetchesBootstrapQueriesAfterThePurge', async () => {
+    store.set(OFFLINE_OWNER_KEY, 1);
+    localStorage.setItem('sessionHint', '1');
+    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [], path }));
+
+    renderProvider();
+
+    await screen.findByText('user-2');
+    await waitFor(() => expect(queryClient.getQueryData(['me', 'modules'])).toEqual({ id: 2, roles: [], path: '/me/modules' }));
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toEqual({ id: 2, roles: [], path: '/me/legal-acceptances/pending' });
   });
 });
 
@@ -186,7 +314,7 @@ describe('session restore failures', () => {
     store.clear();
     vi.stubGlobal('indexedDB', {});
     apiFetch.mockReset();
-    localStorage.setItem('refreshToken', 'stored');
+    localStorage.setItem('sessionHint', '1');
   });
 
   it('networkErrorDuringRestoreKeepsTheSession', async () => {
@@ -197,7 +325,7 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('pending');
-    expect(localStorage.getItem('refreshToken')).toBe('stored');
+    expect(localStorage.getItem('sessionHint')).toBe('1');
     expect(store.get(OFFLINE_CACHE_KEY)).toBe('cache');
     expect(auth.usuario).toBeNull();
   });
@@ -209,7 +337,7 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('anonymous');
-    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBeNull();
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
   });
 
@@ -219,7 +347,7 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('anonymous');
-    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBeNull();
   });
 
   it('serverErrorDuringRestoreKeepsTheSession', async () => {
@@ -228,7 +356,7 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('pending');
-    expect(localStorage.getItem('refreshToken')).toBe('stored');
+    expect(localStorage.getItem('sessionHint')).toBe('1');
   });
 
   it('sessionRecoversWhenTheNetworkReturns', async () => {
@@ -242,7 +370,7 @@ describe('session restore failures', () => {
     });
 
     await screen.findByText('user-7');
-    expect(localStorage.getItem('refreshToken')).toBe('rotated');
+    expect(localStorage.getItem('sessionHint')).toBe('1');
     expect(store.get(OFFLINE_OWNER_KEY)).toBe(7);
   });
 
@@ -302,7 +430,7 @@ describe('session restore failures', () => {
     });
 
     await screen.findByText('anonymous');
-    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBeNull();
   });
 
   it('noAuthenticatedCallsAreMadeWhileThePendingSessionIsOffline', async () => {

@@ -5,15 +5,22 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface SubjectSectionEnrollmentRepository extends JpaRepository<SubjectSectionEnrollment, Long> {
+    @Modifying
+    @Query("delete from SubjectSectionEnrollment e where e.id in :ids")
+    int deleteByIdIn(@Param("ids") Collection<Long> ids);
+
     long countBySubjectSectionIdAndStatusIn(Long sectionId, List<EnrollmentStatus> statuses);
 
     List<SubjectSectionEnrollment> findByProgramEnrollmentId(Long programEnrollmentId);
@@ -94,6 +101,10 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     Optional<SubjectSectionEnrollment> findByStudentIdAndSubjectSectionId(Long studentId, Long subjectSectionId);
 
+    boolean existsBySubjectSectionIdAndStatusIn(Long sectionId, List<EnrollmentStatus> statuses);
+
+    boolean existsBySubjectSectionTermIdAndStatusIn(Long termId, List<EnrollmentStatus> statuses);
+
     boolean existsByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, List<EnrollmentStatus> statuses);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -105,4 +116,48 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     @Query("select e.subjectSection.id from SubjectSectionEnrollment e where e.id = :id")
     Optional<Long> findSubjectSectionIdById(@Param("id") Long id);
+
+    @Query("""
+            select s.id as id, concat(sub.name, ', ', s.name) as name, t.description as termDescription, t.year as termYear,
+                   s.capacity as capacity,
+                   count(case when e.status in :occupying then 1 end) as occupied,
+                   count(case when e.status = :waiting then 1 end) as waiting,
+                   case when t.enrollmentOverride = com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.OPEN then null else t.enrollmentEnd end as nextExpiry
+            from SubjectSection s join s.subject sub join s.term t
+            left join SubjectSectionEnrollment e on e.subjectSection = s
+            where (:sectionId is null or s.id = :sectionId) and (:termId is null or t.id = :termId)
+            group by s.id, sub.name, s.name, t.description, t.year, s.capacity, t.enrollmentEnd, t.enrollmentOverride
+            having (:sectionId is not null or count(case when e.status = :waiting then 1 end) > 0)
+            """)
+    List<WaitlistQueueRow> findWaitlistQueueRows(@Param("sectionId") Long sectionId, @Param("termId") Long termId,
+                                                 @Param("occupying") java.util.Collection<EnrollmentStatus> occupying,
+                                                 @Param("waiting") EnrollmentStatus waiting);
+
+    @Query("""
+            select e.id as enrollmentId, st.id as studentId, concat(p.name, ' ', p.lastname) as fullName, p.dni as documentNumber,
+                   e.enrolledAt as joinedAt, e.waitlistPrioritizedAt as prioritizedAt, e.programEnrollment.id as programEnrollmentId, s.subject.id as subjectId,
+                   s.id as sectionId, s.term.id as termId
+            from SubjectSectionEnrollment e join e.student st join st.person p join e.subjectSection s
+            where s.id = :sectionId and e.status = :waiting
+            order by e.waitlistPrioritizedAt desc nulls last, e.enrolledAt asc, e.id asc
+            """)
+    List<ProgramWaitlistEntryRow> findWaitlistEntryRows(@Param("sectionId") Long sectionId, @Param("waiting") EnrollmentStatus waiting);
+
+    @Query("select e.id as enrollmentId, e.student.id as studentId from SubjectSectionEnrollment e where e.subjectSection.id = :sectionId")
+    List<WaitlistEnrollmentStudentRow> findWaitlistEnrollmentStudentRows(@Param("sectionId") Long sectionId);
+
+    @Query("select new com.red_escuela.backend.enrollment.repository.SectionEnrollmentPairRow(e.student.id, e.subjectSection.id) from SubjectSectionEnrollment e where e.student.id in :studentIds and e.subjectSection.id in :sectionIds")
+    List<SectionEnrollmentPairRow> findPairRowsByStudentIdInAndSubjectSectionIdIn(@Param("studentIds") java.util.Collection<Long> studentIds, @Param("sectionIds") java.util.Collection<Long> sectionIds);
+
+    @Query("select distinct e.student.person.id from SubjectSectionEnrollment e where e.subjectSection.subject.id = :subjectId and e.status in :statuses and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
+    java.util.List<Long> findStudentPersonIdsBySubjectAndStatusIn(Long subjectId, java.util.Collection<EnrollmentStatus> statuses);
+
+    @Query("select distinct e.student.person.id from SubjectSectionEnrollment e where e.status in :statuses and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
+    java.util.List<Long> findStudentPersonIdsByStatusIn(java.util.Collection<EnrollmentStatus> statuses);
+
+    @Query("select distinct e.subjectSection.id from SubjectSectionEnrollment e where e.status = :waiting and e.subjectSection.term.enrollmentEnd < :now and (e.subjectSection.term.enrollmentOverride is null or e.subjectSection.term.enrollmentOverride <> com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.OPEN)")
+    List<Long> findWaitlistedQueueIdsPastEnrollmentEnd(@Param("now") LocalDateTime now, @Param("waiting") EnrollmentStatus waiting);
+
+    @Query("select e.id from SubjectSectionEnrollment e where e.status = :waiting and e.waitlistExpiryRemindedAt is null and e.subjectSection.term.enrollmentEnd > :now and e.subjectSection.term.enrollmentEnd <= :until and (e.subjectSection.term.enrollmentOverride is null or e.subjectSection.term.enrollmentOverride <> com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.CLOSED) order by e.id")
+    List<Long> findWaitlistedIdsToRemind(@Param("now") LocalDateTime now, @Param("until") LocalDateTime until, @Param("waiting") EnrollmentStatus waiting);
 }
