@@ -41,7 +41,7 @@ function CommandSteps({ steps }) {
                 ))}
               </ul>
             )}
-            {step.command && <CopyableCommand stepNumber={index + 1} actor={step.actor} command={step.command} />}
+            {step.command && <CopyableCommand stepNumber={index + 1} stepTitle={step.title} actor={step.actor} command={step.command} />}
           </div>
         </li>
       ))}

@@ -29,11 +29,11 @@ export function BackupAlertsList({ alerts, restoreTest }) {
                 <span className="col-span-2 md:col-span-1">{reminder}</span>
               </li>
             )}
-            {alerts.map((alert) => {
+            {alerts.map((alert, index) => {
               const pill = pillFor(ALERT_LEVEL_PILLS, alert.level);
               return (
                 <li
-                  key={`${alert.at}-${alert.code}`}
+                  key={`${alert.at}-${alert.code}-${index}`}
                   className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 border-b border-border px-5 py-3 text-size-14 last:border-b-0 md:grid-cols-[6rem_8rem_minmax(0,1fr)]"
                 >
                   <StatusPill tone={pill.tone}>{pill.label}</StatusPill>

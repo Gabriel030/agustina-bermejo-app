@@ -13,7 +13,7 @@ export function BackupSummaryCard({ tone, lead, text, needsSupport }) {
   const config = TONES[tone];
   const Icon = config.icon;
   return (
-    <GlassCard className={cn('flex items-start gap-4 p-5', config.card)} aria-label="Resumen">
+    <GlassCard className={cn('flex items-start gap-4 p-5', config.card)} role="region" aria-label="Resumen">
       <span className={cn('grid size-11 shrink-0 place-items-center rounded-control', config.tile)}>
         <Icon className="size-5.5" aria-hidden="true" />
       </span>

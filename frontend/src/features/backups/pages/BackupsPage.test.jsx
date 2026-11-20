@@ -133,7 +133,7 @@ describe('BackupsPage', () => {
     await user.click(await screen.findByRole('tab', { name: 'Cómo restaurar' }));
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 
-    const button = screen.getAllByRole('button', { name: 'Copiar comandos del paso 1' })[0];
+    const button = screen.getAllByRole('button', { name: /^Copiar comandos del paso 1: / })[0];
     await user.click(button);
 
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('docker compose exec backup ls'));
@@ -151,7 +151,7 @@ describe('BackupsPage', () => {
     await user.click(await screen.findByRole('tab', { name: 'Cómo restaurar' }));
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 
-    const button = screen.getAllByRole('button', { name: 'Copiar comandos del paso 1' })[0];
+    const button = screen.getAllByRole('button', { name: /^Copiar comandos del paso 1: / })[0];
     await user.click(button);
     const region = within(button.closest('div').parentElement).getByRole('status');
     const firstAnnouncement = region.firstElementChild;
@@ -163,6 +163,27 @@ describe('BackupsPage', () => {
     const clear = vi.spyOn(globalThis, 'clearTimeout');
     unmount();
     expect(clear).toHaveBeenCalled();
+  });
+
+  it('keepsTheLossBarEmptyWhenTheObjectiveIsZero', async () => {
+    const base = backupStatusForDirector();
+    respondWith(backupStatusForDirector({ summary: { ...base.summary, targetRpoHours: 0 } }));
+    renderWithProviders(<BackupsPage viewer="director" />);
+
+    const bar = await screen.findByRole('progressbar', { name: /Pérdida posible contra el objetivo/ });
+    expect(bar).toHaveAttribute('aria-valuenow', '0');
+  });
+
+  it('givesEachCopyButtonADistinctNameAcrossSections', async () => {
+    respondWith(backupStatusForPlatformAdmin());
+    const user = userEvent.setup();
+    renderWithProviders(<BackupsPage viewer="platform_admin" />);
+    await user.click(await screen.findByRole('tab', { name: 'Cómo restaurar' }));
+    await user.click(screen.getByRole('button', { name: /Pasar a trabajar con la base restaurada/ }));
+
+    const names = screen.getAllByRole('button', { name: /Copiar comandos del paso/ }).map((button) => button.getAttribute('aria-label'));
+    expect(names.length).toBeGreaterThan(6);
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it('remindsWhenThereIsNoRestoreTest', async () => {

@@ -6,7 +6,7 @@ import { formatBackupMoment, formatHours } from '@/features/backups/lib/backupFo
 export function BackupKeyFacts({ summary }) {
   const { lastCompleteBackupAt, hoursSinceLastCompleteBackup, potentialLossHours, targetRpoHours, consecutiveFailures } = summary;
   const overTarget = potentialLossHours != null && potentialLossHours > targetRpoHours;
-  const lossPercent = potentialLossHours == null ? 0 : (potentialLossHours / targetRpoHours) * 100;
+  const lossPercent = potentialLossHours == null || !(targetRpoHours > 0) ? 0 : (potentialLossHours / targetRpoHours) * 100;
 
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">

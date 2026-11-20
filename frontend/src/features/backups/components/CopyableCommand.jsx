@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 const MESSAGES = { copied: 'Comando copiado', failed: 'Seleccioná y copiá con Ctrl+C' };
 
-export function CopyableCommand({ stepNumber, actor, command }) {
+export function CopyableCommand({ stepNumber, stepTitle, actor, command }) {
   const [message, setMessage] = useState('');
   const [announcement, setAnnouncement] = useState(0);
   const timerRef = useRef(null);
@@ -28,14 +28,15 @@ export function CopyableCommand({ stepNumber, actor, command }) {
     <div className="mt-2 flex min-w-0 flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2 text-size-12 font-bold text-ink-soft">
         <span>{actor}</span>
-        <Button type="button" variant="outline" size="xs" aria-label={`Copiar comandos del paso ${stepNumber}`} onClick={copyCommand}>
+        <Button type="button" variant="outline" size="xs" aria-label={`Copiar comandos del paso ${stepNumber}: ${stepTitle}`} onClick={copyCommand}>
           <Copy aria-hidden="true" />
           {message === MESSAGES.copied ? 'Copiado' : 'Copiar'}
         </Button>
       </div>
       <pre
         tabIndex={0}
-        aria-label={`Comandos del paso ${stepNumber}`}
+        role="region"
+        aria-label={`Comandos del paso ${stepNumber}: ${stepTitle}`}
         className="overflow-x-auto rounded-control bg-neutral-bg px-3 py-2.5 font-mono text-size-12-5 leading-relaxed text-ink"
       >
         {command}
