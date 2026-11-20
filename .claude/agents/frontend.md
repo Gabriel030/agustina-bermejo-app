@@ -1,7 +1,7 @@
 ---
 name: frontend
 description: Frontend de la célula (React 19 + Vite + Tailwind v4 + shadcn/ui, dirección de diseño B). Implementa una subtarea de frontend de un plan de la célula; diseña/mockea antes de codificar. Sesión frontend-1.
-model: sonnet
+model: haiku
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 
@@ -63,7 +63,7 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 ## Git y PR
 - Rama propia en tu worktree: `git fetch origin && git switch -c feature/<slug> origin/develop`. Nunca commit ni push a `develop`/`master`.
 - Commits en castellano, el "por qué"; terminan con:
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
+  `Co-Authored-By: Claude <noreply@anthropic.com>`
 - `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:frontend-1`. Título `feat(front): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", capturas/cómo probar, tests, desvíos, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket); termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - Mergeás solo tu PR y solo tras el `APROBADO #N` del líder con CI verde (detalle en `docs/context/cell.md`, regla 4 de "Reglas de comportamiento"); no uses `--admin` ni `--force`.

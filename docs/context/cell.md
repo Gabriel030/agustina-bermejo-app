@@ -6,10 +6,10 @@ Equipo fijo de agentes que ejecuta tickets de punta a punta. El rol vive en arch
 
 | Rol | Ficha | Modelo | Qué hace |
 |---|---|---|---|
-| Coordinador | `.claude/agents/coordinator.md` | Opus, local | Backlog en Obsidian, prioridades, Issues `cell` para el líder, reporte de épicas a Gabriel; único que escribe en Obsidian |
-| Líder técnico | `.claude/agents/tech-lead.md` | Opus | Issue => plan, contratos, asignación, orden de merge, preguntas al usuario |
-| Backend (backend-1, backend-2) | `.claude/agents/backend.md` | Sonnet | Una subtarea de backend en el módulo que indique el ticket |
-| Frontend (frontend-1) | `.claude/agents/frontend.md` | Sonnet | Una subtarea de front, con diseño aprobado |
+| Coordinador | `.claude/agents/coordinator.md` | Sonnet, local | Backlog en Obsidian, prioridades, Issues `cell` para el líder, reporte de épicas a Gabriel; único que escribe en Obsidian |
+| Líder técnico | `.claude/agents/tech-lead.md` | Sonnet | Issue => plan, contratos, asignación, orden de merge, preguntas al usuario |
+| Backend (backend-1 a backend-5) | `.claude/agents/backend.md` | Haiku (1 a 3), Sonnet (4 y 5) | Una subtarea de backend en el módulo que indique el ticket |
+| Frontend (frontend-1) | `.claude/agents/frontend.md` | Haiku | Una subtarea de front, con diseño aprobado |
 | Revisor (subagente) | `.claude/agents/reviewer.md` | Sonnet, `maxTurns` 30 | Revisión independiente del diff; lo lanza el líder por PR con contexto limpio |
 | Mecánico (subagente) | `.claude/agents/mechanic.md` | Haiku, `maxTurns` 25 | Traer develop, conflictos de docs/logs; lo lanza el líder por tarea |
 
@@ -118,6 +118,13 @@ Canal único y confiable: comentario en el Issue de la tarea. El mensaje directo
 - Reporte del líder al usuario: al pedido y en cada hito (merge, bloqueo, decisión), con la tabla fija y debajo "Necesito de vos" (preguntas agrupadas, opciones y recomendación):
 
 `| Puesto | Subtarea | PR | Estado | Avance | Tokens | Bloqueo |`
+
+## Presupuesto de cuota y modelos (decisión de Gabriel, 20-nov)
+
+- Prohibido Opus o superior en cualquier sesión o subagente de la célula. Modelos: Coordinador y líderes en Sonnet; backend-1 a backend-3 y frontend-1 en Haiku (tareas mecánicas: tests, docs, fixtures, ajustes de pantalla); backend-4 y backend-5 en Sonnet (migraciones, plata, seguridad y contrato); revisor en Sonnet; mecánico en Haiku. Esfuerzo medio en todos.
+- Tareas chicas: cada subtarea para un worker en Haiku es de un solo objetivo, pocos archivos y ≤60k tokens, con brief autocontenido (rama, archivos permitidos, fuera de alcance, comando de verificación). Lo que exige criterio (migraciones, dinero, seguridad, contratos) va a Sonnet.
+- Ahorro de relecturas: cada mensaje entre sesiones despierta a la receptora, que relee todo su contexto. Sin mensajes de confirmación (solo `TERMINÉ`, `BLOQUEADO`, `NECESITO DECISIÓN`); un mensaje agrupado por hito; sin sondeos ni turnos si no hay nada accionable; auto-merge en lugar de esperar la CI con turnos; una invocación de revisor por PR (dos en plata, contrato y seguridad); sin re-revisión de deltas triviales; sin mockups ni capturas repetidos.
+- Compactación: se pide al 20% con la variable de entorno `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`, que solo se cambia desde los ajustes del entorno. `/compact` solo lo escribe un usuario dentro de la sesión.
 
 ## Presupuesto y contexto
 
