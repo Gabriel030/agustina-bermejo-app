@@ -34,6 +34,8 @@ export function formatBytes(bytes) {
   return `${formatDecimal(value, { maximumFractionDigits: unit < 2 ? 0 : 1 })} ${BYTE_UNITS[unit]}`;
 }
 
+const UNKNOWN_PILL = { tone: 'neutral', label: 'Desconocido' };
+
 export const TIER_LABELS = {
   INTRADAY: 'Del día',
   DAILY: 'Diaria',
@@ -101,4 +103,12 @@ export function restoreTestReminder(restoreTest, now = new Date()) {
   if (!restoreTest) return 'Todavía no se hizo una prueba completa de restauración.';
   const ageDays = (now.getTime() - new Date(restoreTest.ranAt).getTime()) / DAY_MS;
   return ageDays > RESTORE_TEST_MAX_AGE_DAYS ? `Pasaron más de ${RESTORE_TEST_MAX_AGE_DAYS} días sin una prueba completa de restauración.` : null;
+}
+
+export function tierLabel(tier) {
+  return TIER_LABELS[tier] ?? 'Otro nivel';
+}
+
+export function pillFor(pills, value) {
+  return pills[value] ?? UNKNOWN_PILL;
 }

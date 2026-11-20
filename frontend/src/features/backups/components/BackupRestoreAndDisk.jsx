@@ -1,8 +1,8 @@
 import { StatCard } from '@/components/StatCard';
 import { ProgressBar } from '@/components/ProgressBar';
 import { StatusPill } from '@/components/StatusPill';
-import { restoreTestFailureLabel } from '@/features/platform/lib/backupLabels';
-import { RESTORE_RESULT_PILLS, diskFreePercent, diskTone, formatBackupMoment, formatBytes } from '@/features/backups/lib/backupFormat';
+import { restoreTestFailureLabel } from '@/features/backups/lib/backupLabels';
+import { RESTORE_RESULT_PILLS, diskFreePercent, diskTone, formatBackupMoment, formatBytes, pillFor } from '@/features/backups/lib/backupFormat';
 import { formatPercent } from '@/lib/formatNumber';
 
 function RestoreTestCard({ restoreTest }) {
@@ -14,7 +14,7 @@ function RestoreTestCard({ restoreTest }) {
       </StatCard>
     );
   }
-  const pill = RESTORE_RESULT_PILLS[restoreTest.result];
+  const pill = pillFor(RESTORE_RESULT_PILLS, restoreTest.result);
   return (
     <StatCard label="Prueba de restauración">
       <div className="flex flex-wrap items-center gap-2 font-heading text-size-17 font-bold">

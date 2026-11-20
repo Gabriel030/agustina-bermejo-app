@@ -12,6 +12,7 @@ import {
   staleBackupStatus,
 } from '@/test/fixtures/backupStatus';
 import { errorBody } from '@/test/fixtures/errors';
+import { takeContractDeviations } from '@/test/contract/withContract';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { roleRoutesFor } from '@/routes/featureRoutes';
@@ -73,8 +74,8 @@ describe('BackupsPage', () => {
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
 
-  it('hidesTechnicalDetailsAndCommandsFromDirector', async () => {
-    respondWith(backupStatusForDirector());
+  it('hidesTechnicalDetailsAndCommandsFromDirectorEvenWhenTheResponseCarriesThem', async () => {
+    respondWith(backupStatusForPlatformAdmin());
     const user = userEvent.setup();
     renderWithProviders(<BackupsPage viewer="director" />);
 
@@ -82,11 +83,33 @@ describe('BackupsPage', () => {
     expect(screen.queryByText(/\.dump\.age/)).not.toBeInTheDocument();
     expect(screen.queryByText('/var/backups/agustina')).not.toBeInTheDocument();
 
+    await user.click(screen.getByRole('tab', { name: 'Qué se respalda' }));
+    expect(screen.queryByText('/var/backups/agustina')).not.toBeInTheDocument();
+    expect(screen.queryByText('BACKUP_DIR')).not.toBeInTheDocument();
+
     await user.click(screen.getByRole('tab', { name: 'Cómo restaurar' }));
     expect(screen.getByText('Esta pantalla no restaura nada.')).toBeInTheDocument();
     expect(screen.getAllByText('A quién avisar')).toHaveLength(1);
     expect(screen.queryByRole('button', { name: /Copiar comandos/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/restore\.sh/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/docker compose/)).not.toBeInTheDocument();
+  });
+
+  it('rendersNeutralFallbacksForUnknownEnumValues', async () => {
+    const base = backupStatusForDirector();
+    respondWith(
+      backupStatusForDirector({
+        tiers: [{ ...base.tiers[0], tier: 'FUTURE_TIER', verification: 'FUTURE_STATE' }],
+        lastRestoreTest: { ranAt: '2026-11-19T04:00:00Z', result: 'FUTURE_RESULT', failureCode: null },
+        alerts: [{ at: '2026-11-20T08:05:00Z', level: 'FUTURE_LEVEL', code: 'FUTURE_CODE' }],
+      }),
+    );
+    renderWithProviders(<BackupsPage viewer="director" />);
+
+    expect(await screen.findByText('Otro nivel')).toBeInTheDocument();
+    expect(screen.getAllByText('Desconocido')).toHaveLength(3);
+    expect(screen.getByText('Alerta de backups')).toBeInTheDocument();
+    takeContractDeviations();
   });
 
   it('showsFileNamesDiskPathAndCopyableCommandsToPlatformAdmin', async () => {
@@ -118,6 +141,28 @@ describe('BackupsPage', () => {
     expect(region).toHaveAttribute('aria-live', 'polite');
     expect(region).toHaveTextContent('Comando copiado');
     expect(button).toHaveTextContent('Copiado');
+  });
+
+  it('announcesEveryCopyAgainAndStopsItsTimerOnUnmount', async () => {
+    respondWith(backupStatusForPlatformAdmin());
+    const writeText = vi.fn().mockResolvedValue();
+    const user = userEvent.setup();
+    const { unmount } = renderWithProviders(<BackupsPage viewer="platform_admin" />);
+    await user.click(await screen.findByRole('tab', { name: 'Cómo restaurar' }));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+
+    const button = screen.getAllByRole('button', { name: 'Copiar comandos del paso 1' })[0];
+    await user.click(button);
+    const region = within(button.closest('div').parentElement).getByRole('status');
+    const firstAnnouncement = region.firstElementChild;
+    await user.click(button);
+
+    expect(region.firstElementChild).not.toBe(firstAnnouncement);
+    expect(region).toHaveTextContent('Comando copiado');
+    expect(writeText).toHaveBeenCalledTimes(2);
+    const clear = vi.spyOn(globalThis, 'clearTimeout');
+    unmount();
+    expect(clear).toHaveBeenCalled();
   });
 
   it('remindsWhenThereIsNoRestoreTest', async () => {

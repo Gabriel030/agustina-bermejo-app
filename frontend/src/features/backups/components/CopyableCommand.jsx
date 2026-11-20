@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -6,14 +6,21 @@ const MESSAGES = { copied: 'Comando copiado', failed: 'Seleccioná y copiá con 
 
 export function CopyableCommand({ stepNumber, actor, command }) {
   const [message, setMessage] = useState('');
+  const [announcement, setAnnouncement] = useState(0);
+  const timerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   async function copyCommand() {
     try {
       await navigator.clipboard.writeText(command);
+      clearTimeout(timerRef.current);
       setMessage(MESSAGES.copied);
-      setTimeout(() => setMessage(''), 1600);
+      setAnnouncement((count) => count + 1);
+      timerRef.current = setTimeout(() => setMessage(''), 1600);
     } catch {
       setMessage(MESSAGES.failed);
+      setAnnouncement((count) => count + 1);
     }
   }
 
@@ -34,7 +41,7 @@ export function CopyableCommand({ stepNumber, actor, command }) {
         {command}
       </pre>
       <span role="status" aria-live="polite" className="sr-only">
-        {message}
+        <span key={announcement}>{message}</span>
       </span>
     </div>
   );

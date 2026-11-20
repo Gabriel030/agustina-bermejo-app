@@ -1,8 +1,8 @@
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { StatusPill } from '@/components/StatusPill';
-import { backupAlertLabel } from '@/features/platform/lib/backupLabels';
-import { ALERT_LEVEL_PILLS, formatBackupMoment, restoreTestReminder } from '@/features/backups/lib/backupFormat';
+import { backupAlertLabel } from '@/features/backups/lib/backupLabels';
+import { ALERT_LEVEL_PILLS, formatBackupMoment, pillFor, restoreTestReminder } from '@/features/backups/lib/backupFormat';
 
 export function BackupAlertsList({ alerts, restoreTest }) {
   const reminder = restoreTestReminder(restoreTest);
@@ -30,7 +30,7 @@ export function BackupAlertsList({ alerts, restoreTest }) {
               </li>
             )}
             {alerts.map((alert) => {
-              const pill = ALERT_LEVEL_PILLS[alert.level];
+              const pill = pillFor(ALERT_LEVEL_PILLS, alert.level);
               return (
                 <li
                   key={`${alert.at}-${alert.code}`}

@@ -1,17 +1,17 @@
 import { DataTable } from '@/components/table/DataTable';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
-import { TIER_LABELS, VERIFICATION_PILLS, formatBackupMoment, formatBytes } from '@/features/backups/lib/backupFormat';
+import { VERIFICATION_PILLS, formatBackupMoment, formatBytes, pillFor, tierLabel } from '@/features/backups/lib/backupFormat';
 
 function buildColumns(showFileNames) {
   return [
     {
       id: 'tier',
       header: 'Nivel',
-      accessorFn: (tier) => TIER_LABELS[tier.tier],
+      accessorFn: (tier) => tierLabel(tier.tier),
       cell: ({ row }) => (
         <span>
-          <span className="font-semibold">{TIER_LABELS[row.original.tier]}</span>
+          <span className="font-semibold">{tierLabel(row.original.tier)}</span>
           {row.original.label && <span className="block text-size-12 text-ink-soft">{row.original.label}</span>}
         </span>
       ),
@@ -48,7 +48,7 @@ function buildColumns(showFileNames) {
       header: 'Verificación',
       accessorFn: (tier) => tier.verification,
       cell: ({ row }) => {
-        const pill = VERIFICATION_PILLS[row.original.verification];
+        const pill = pillFor(VERIFICATION_PILLS, row.original.verification);
         return <StatusPill tone={pill.tone}>{pill.label}</StatusPill>;
       },
       enableSorting: false,
@@ -72,7 +72,7 @@ export function BackupTiersTable({ tiers, isPlatformAdmin }) {
         <h2 id="backup-tiers-heading" className="px-5 pt-4 pb-2 font-heading text-size-16 font-bold text-ink">
           Último backup por nivel
         </h2>
-        <DataTable columns={buildColumns(isPlatformAdmin)} data={tiers} getRowId={(tier) => tier.tier} minWidth={720} />
+        <DataTable columns={buildColumns(isPlatformAdmin)} data={tiers} getRowId={(tier) => `${tier.tier}-${tier.takenAt}`} minWidth={720} />
         {hasUnverified && (
           <p className="px-5 pt-1 pb-3 text-size-12-5 text-ink-soft">
             <b className="text-ink">Sin verificar:</b> la copia existe, pero todavía no se comprobó que esté completa.

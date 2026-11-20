@@ -1,6 +1,6 @@
 import { Check, Minus } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { TIER_LABELS } from '@/features/backups/lib/backupFormat';
+import { tierLabel } from '@/features/backups/lib/backupFormat';
 
 const INCLUDED = [
   'Todas las tablas de la base: alumnos, cursos, materias, notas, asistencia, pagos e historial completo',
@@ -45,8 +45,8 @@ export function BackupWhatIsBackedUp({ tiers, diskPath, isPlatformAdmin }) {
         <h2 className="px-5 py-4 font-heading text-size-16 font-bold text-ink">Cuántas se conservan</h2>
         <dl className="grid grid-cols-[minmax(0,1fr)_auto] border-t border-border text-size-14">
           {tiers.map((tier) => (
-            <div key={tier.tier} className="col-span-2 grid grid-cols-subgrid border-b border-border px-5 py-3 last:border-b-0">
-              <dt>{TIER_LABELS[tier.tier]}</dt>
+            <div key={`${tier.tier}-${tier.takenAt}`} className="col-span-2 grid grid-cols-subgrid border-b border-border px-5 py-3 last:border-b-0">
+              <dt>{tierLabel(tier.tier)}</dt>
               <dd className="font-semibold tabular-nums">{keptLabel(tier)}</dd>
             </div>
           ))}
