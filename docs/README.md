@@ -49,6 +49,11 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [cell.md](context/cell.md) | Célula de agentes: roles, arranque de sesiones, flujo de un ticket, local vs nube | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 | [plans/TEMPLATE.md](cell/plans/TEMPLATE.md) | Plantilla de plan de la célula (`docs/cell/plans/<ticket>.md`) | vigente |
+| [plans/920.md](cell/plans/920.md) | Cierre de la Fase 1 de comunicación masiva: residual derivado | vigente |
+| [plans/921.md](cell/plans/921.md) | Residual de la lista de espera: vencimiento de colas de materias y auditoría de promoción automática | vigente |
+| [plans/932.md](cell/plans/932.md) | Residual de la Fase 2: variables faltantes en la vista previa, contrato y OR por clave | vigente |
+| [plans/933.md](cell/plans/933.md) | Residual de la Fase 3: render por destinatario, baja y retención definitiva | vigente |
+| [plans/949.md](cell/plans/949.md) | Residual del consentimiento al crear la cuenta: contrato y decisiones | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
