@@ -29,6 +29,10 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [plans/932.md](cell/plans/932.md) | Residual de la Fase 2: variables faltantes en la vista previa, contrato y OR por clave | vigente |
 | [plans/933.md](cell/plans/933.md) | Residual de la Fase 3: render por destinatario, baja y retención definitiva | vigente |
 | [plans/949.md](cell/plans/949.md) | Residual del consentimiento al crear la cuenta: contrato y decisiones | vigente |
+| [plans/951.md](cell/plans/951.md) | Cierre de 24-A: tabla final de los hallazgos de la auditoría del 3-nov | vigente |
+| [plans/954.md](cell/plans/954.md) | Cierre de 33.4: conteo de consultas en /me y asistencia, con N>50 | vigente |
+| [plans/955.md](cell/plans/955.md) | Cierre de 24-B: el dueño aprueba el cambio de email pedido por el personal | vigente |
+| [plans/956.md](cell/plans/956.md) | Cierre de 24-D: límites de tamaño de subidas probados con servidor real | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 
