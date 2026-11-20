@@ -68,7 +68,7 @@ export const handlers = [
     ),
   ),
   http.put(`${API}/me/contact-consents`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     if (body.source !== undefined && body.source !== null && body.source !== 'PROFILE') {
       return HttpResponse.json(
         { code: 'CONSENT_SOURCE_NOT_ACCEPTED', requestId: 'req-test-0001', retryable: false, violations: [] },
