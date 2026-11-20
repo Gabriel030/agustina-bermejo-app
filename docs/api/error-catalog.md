@@ -429,6 +429,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `DUPLICATE_INVOICE_CHARGE` | no | `DuplicateInvoiceChargeException` | billing |
 | `ELECTIVE_GROUP_ALREADY_EXISTS` | no | `ElectiveGroupAlreadyExistsException` | academicstructure |
 | `ELECTIVE_GROUP_IN_USE` | no | `ElectiveGroupInUseException` | academicstructure |
+| `EMAIL_CHANGE_NEEDS_OWNER_EMAIL` | no | `EmailChangeNeedsOwnerEmailException` | identity |
 | `EMAIL_CHANGE_PENDING_BY_OWNER` | no | `EmailChangePendingByOwnerException` | identity |
 | `EMPTY_AUDIENCE` | no | `EmptyAudienceException` | notification |
 | `ENROLLMENT_FEE_ALREADY_ISSUED` | no | `EnrollmentFeeAlreadyIssuedException` | billing |
@@ -696,6 +697,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/academic-offering-cycles/{id}/sections` | `AcademicOfferingCycleController#createSection` |
 | POST | `/academic-offering-cycles/{id}/submit` | `AcademicOfferingCycleController#submit` |
 | POST | `/annual-upfront-terms/versions` | `AnnualUpfrontTermsController#publishNewTermsVersion` |
+| POST | `/approve-email-change` | `OwnerEmailChangeApprovalController#approveEmailChange` |
 | POST | `/attendance/change-requests/{id}/approve` | `AttendanceChangeRequestController#approve` |
 | POST | `/attendance/change-requests/{id}/reject` | `AttendanceChangeRequestController#reject` |
 | POST | `/attendance/{id}/approve-justification` | `AttendanceController#approveJustification` |
@@ -777,6 +779,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/discount-definitions/validation` | `DiscountDefinitionController#validateDiscountDefinition` |
 | POST | `/discount-definitions/{id}/closure` | `DiscountDefinitionController#closeDiscountDefinition` |
 | POST | `/elective-groups` | `ElectiveGroupController#create` |
+| POST | `/email-change-preview` | `OwnerEmailChangeApprovalController#previewEmailChange` |
 | POST | `/enrollment-fee-exemptions/{id}/revoke` | `EnrollmentFeeController#revoke` |
 | POST | `/evaluation-schemes` | `EvaluationSchemeController#create` |
 | POST | `/exam-board-registrations/{id}/withdraw` | `ExamBoardRegistrationController#withdraw` |

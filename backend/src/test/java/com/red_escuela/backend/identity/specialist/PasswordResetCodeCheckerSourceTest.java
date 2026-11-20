@@ -20,7 +20,7 @@ class PasswordResetCodeCheckerSourceTest {
 
     private final PasswordResetTokenRepository tokens = mock(PasswordResetTokenRepository.class);
     private final PasswordResetCodeChecker checker = new PasswordResetCodeChecker(
-            mock(PersonRepository.class), tokens, mock(ApplicationEventPublisher.class), Clock.systemUTC(), 10, 30, 50, 24, 60);
+            mock(PersonRepository.class), tokens, mock(ApplicationEventPublisher.class), Clock.systemUTC(), mock(PublicPasswordResetBlockPolicy.class), 10, 30, 50, 24, 60);
 
     private String sourceHashFor(String ip) {
         Person person = new Person();
