@@ -341,7 +341,7 @@ final class OwnershipFixtures {
     private Long persistNotification(Person recipient) {
         Notification notification = new Notification();
         notification.setRecipient(recipient);
-        notification.setType(NotificationType.values()[0]);
+        notification.setType(NotificationType.SECTION_EVAL_CONFIG_REMINDER);
         notification.setMessage("Notificacion matriz");
         notification.setCreatedAt(LocalDateTime.now());
         entityManager.persist(notification);

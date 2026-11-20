@@ -224,7 +224,7 @@ POST,/me/exam-board-registrations/{id}/withdraw,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALL
 GET,/me/exam-boards,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/me/invoices/{id}/bank-transfer-receipts,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,invoice,
 POST,/me/invoices/{id}/mp-preference,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,invoice,
-GET,/me/invoices/{id}/price-breakdown,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/me/invoices/{id}/price-breakdown,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,invoice,
 GET,/me/modules,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/me/legal-acceptances/pending,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/contact-consents,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
