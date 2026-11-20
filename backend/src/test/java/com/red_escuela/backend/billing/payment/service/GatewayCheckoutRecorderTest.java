@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.repository.GatewayCheckoutRepository;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -22,6 +23,7 @@ class GatewayCheckoutRecorderTest {
     private final GatewayCheckoutRecorder recorder = new GatewayCheckoutRecorder(repository, 48);
 
     @Test
+    @Tag("D-538")
     void checkoutExpiresFortyEightHoursAfterCreation() {
         recorder.recordMercadoPagoCheckout(new NewGatewayCheckout(UUID.randomUUID(), 9L,
                 NonNegativeMoney.of(new BigDecimal("10.00"), Currency.ARS), "pref"));

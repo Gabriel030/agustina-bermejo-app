@@ -110,7 +110,7 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
                     publicReference, invoiceId, outstanding, preferenceId));
             log.info("Preferencia de Mercado Pago creada: preferencia={}, factura={}, monto={}", preferenceId, invoiceId, amount);
             return new MpPreferenceResponse(preferenceId, preference.getInitPoint());
-        } catch (MPException | MPApiException e) {
+        } catch (MPException | MPApiException | RuntimeException e) {
             log.error("Falló la creación de la preferencia de Mercado Pago: factura={}", invoiceId, e);
             throw new MercadoPagoGatewayException("Error al crear preferencia de pago", e);
         }

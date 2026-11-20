@@ -109,4 +109,18 @@ class CreateMpPreferenceServiceTest {
 
         Mockito.verifyNoInteractions(checkoutRecording);
     }
+
+    @Test
+    void checkoutSaveFailureAfterPreferenceCreationIsMappedToGatewayException() {
+        payableArsInvoice();
+        Preference orphan = preference("orphan");
+        Mockito.doThrow(new IllegalStateException("db down")).when(checkoutRecording)
+                .recordMercadoPagoCheckout(Mockito.any(NewGatewayCheckout.class));
+        try (MockedConstruction<PreferenceClient> ignored = Mockito.mockConstruction(PreferenceClient.class,
+                (client, context) -> Mockito.when(client.create(Mockito.any(PreferenceRequest.class))).thenReturn(orphan))) {
+            assertThatThrownBy(() -> service.create(INVOICE_ID, STUDENT_ID))
+                    .isInstanceOf(MercadoPagoGatewayException.class)
+                    .hasCauseInstanceOf(IllegalStateException.class);
+        }
+    }
 }
