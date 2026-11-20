@@ -28,6 +28,10 @@ public class NoOpEmailService implements EmailService {
     }
 
     @Override
+    public void sendEmailChangeOwnerApproval(String recipientName, String currentEmail, String requestedEmail, String approvalLink, String cancellationLink) {
+    }
+
+    @Override
     public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail, String cancellationLink) {
     }
 }

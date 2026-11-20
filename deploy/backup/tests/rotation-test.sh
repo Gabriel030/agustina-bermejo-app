@@ -107,6 +107,8 @@ cron_env="$work/cron.env"
 tricky=$'valor con "comillas", \'simples\', $dolar y\nsalto'
 (export BACKUP_TRICKY="$tricky" PGPASSWORD="pa\$\$ w'rd"; . "$scripts/lib.sh"; write_cron_env "$cron_env")
 check "cron.env: los valores con caracteres especiales sobreviven al re-leerlos" "$tricky" "$(bash -c ". '$cron_env'; printf %s \"\$BACKUP_TRICKY\"")"
+(export AGE_IDENTITY_FILE=/secreto/clave.txt AGE_RECIPIENT=age1publica; . "$scripts/lib.sh"; write_cron_env "$cron_env.age")
+check "cron.env: pasa la clave publica pero nunca la identidad privada" "AGE_RECIPIENT=age1publica 0" "$(grep -o '^export AGE_RECIPIENT=age1publica' "$cron_env.age" | sed 's/^export //') $(grep -c AGE_IDENTITY "$cron_env.age")"
 check "cron.env: queda en 0600" "600" "$(stat -c %a "$cron_env")"
 
 finish

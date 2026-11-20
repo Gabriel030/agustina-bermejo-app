@@ -5,6 +5,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -22,6 +23,10 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
     @Query("select e.id as enrollmentId, e.program.id as programId from ProgramEnrollment e where e.id in :ids")
     List<ProgramIdOfEnrollment> findProgramIdsByIdIn(@Param("ids") Collection<Long> ids);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from ProgramEnrollment e where e.id in :ids")
+    int deleteByIdIn(@Param("ids") Collection<Long> ids);
 
     boolean existsByStudentIdAndStatusIn(Long studentId, Collection<ProgramEnrollmentStatus> statuses);
 

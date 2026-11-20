@@ -3,7 +3,7 @@
 exports[`route table > keeps every path, role and page unchanged 1`] = `
 [
   "public|-|/baja|BajaComunicaciones",
-  "public|-|/cancelar-cambio-email|CancelEmailChangePage",
+  "public|-|/cancelar-cambio-email|ReviewEmailChangePage",
   "public|-|/confirmar-responsable|ConfirmarResponsable",
   "public|-|/legal/privacidad|PrivacyPage",
   "public|-|/legal/terminos|TermsPage",
@@ -11,6 +11,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "public|-|/no-autorizado|NoAutorizado",
   "public|-|/olvide-mi-contrasena|ForgotPassword",
   "public|-|/registrarse|Registrarse",
+  "public|-|/revisar-cambio-email|ReviewEmailChangePage",
   "public|-|/verificar-email|VerificacionEmail",
   "public|-|/verificar/:code|VerifyCertificate",
   "role|administrativo,director|alumnos/:id/descuentos/nuevo|GrantDiscountPage",
@@ -82,6 +83,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "role|director|aprobaciones/oferta-academica|DirectorOfertaPorAprobar",
   "role|director|aprobaciones|DirectorAprobaciones",
   "role|director|auditoria|AuditLogPage",
+  "role|director|backups|BackupsPage",
   "role|director|cierre-de-comision/:sectionId|StaffClosureSheet",
   "role|director|cierres-de-comision|ClosureListPage",
   "role|director|esquemas-evaluacion|DirectorEsquemasEvaluacion",
@@ -104,6 +106,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "role|docente|mis-comisiones|DocenteMisComisiones",
   "role|docente|tomar-asistencia|DocenteTomarAsistencia",
   "role|platform_admin|auditoria|AuditLogPage",
+  "role|platform_admin|backups|BackupsPage",
   "role|platform_admin|inicio|Navigate",
   "role|platform_admin|modulos|ModulosPlataforma",
   "role|platform_admin|primer-director|PrimerDirector",

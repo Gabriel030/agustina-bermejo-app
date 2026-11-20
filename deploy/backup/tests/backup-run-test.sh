@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -uo pipefail
 scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+schema="$here/../../../docs/deploy/backup-status.schema.json"
 . "$(dirname "${BASH_SOURCE[0]}")/lib-test.sh"
 use_scripts_as_opt_backup
 
@@ -49,6 +51,39 @@ check "no queda ningun listado ni conteo del tar en el disco" "0" "$(find "$work
 echo "medicion: dump ${dump_bytes} bytes, archivo /data ${archive_bytes} bytes, duracion ${elapsed}s"
 check "segunda corrida el mismo dia no repite el aviso de cifrado" "0" "$(sleep 1; run_backup | grep -c 'BACKUP SIN CIFRAR')"
 
+status_json="$work/backups/status/status.json"
+check "la corrida real deja un status.json que cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
+check "la corrida real informa un backup completo y sin fallas" "true 0" "$(jq -r '[(.lastCompleteBackupAt != null), .consecutiveFailures] | join(" ")' "$status_json")"
+restore_env() { BACKUP_DIR="$work/backups" BACKUP_METRICS_DIR="$work/metrics" "$scripts/restore-test.sh" > "$work/restore.log" 2>&1; echo $?; }
+check "la prueba de restauracion contra Postgres pasa con un backup sano" "0" "$(restore_env)"
+check "la prueba de restauracion que pasa queda en el estado" "PASSED null" "$(jq -r '.lastRestoreTest | "\(.result) \(.failureCode)"' "$status_json")"
+check "la prueba de restauracion no deja bases descartables" "0" "$(psql -Atc "SELECT count(*) FROM pg_database WHERE datname LIKE 'restore_test_%'")"
+sed -i 's/^person|150000$/person|1/' "$work"/backups/*.meta
+check "si los conteos del backup no coinciden la prueba falla" "1" "$(restore_env)"
+check "la falla de conteos se informa como COUNTS_MISMATCH" "FAILED COUNTS_MISMATCH" "$(jq -r '.lastRestoreTest | "\(.result) \(.failureCode)"' "$status_json")"
+sed -i 's/^person|1$/person|150000/' "$work"/backups/*.meta
+psql -Atc "CREATE DATABASE restore_test_orfana" > /dev/null
+restore_env > /dev/null
+check "la prueba de restauracion barre las bases descartables huerfanas" "0" "$(psql -Atc "SELECT count(*) FROM pg_database WHERE datname LIKE 'restore_test_%'")"
+
+tiers_before=$(jq -c '[.tiers[] | {tier, takenAt}]' "$status_json")
+last_success_before=$(cat "$work/metrics/.last_success")
+failures_before=$(jq '.consecutiveFailures' "$status_json")
+sleep 1
+BACKUP_PREFIX=abpre-v1.0.0 FILES_PREFIX=abprefiles-v1.0.0 BACKUP_SKIP_ROTATION=true run_backup > /dev/null
+check "un backup pre-release no cambia los niveles reales del estado" "$tiers_before" "$(jq -c '[.tiers[] | select(.tier != "PRE_RELEASE") | {tier, takenAt}]' "$status_json")"
+check "un backup pre-release aparece como PRE_RELEASE con su version" "v1.0.0" "$(jq -r '.tiers[] | select(.tier=="PRE_RELEASE") | .label' "$status_json")"
+check "un backup pre-release no toca .last_success ni las fallas consecutivas" "$last_success_before $failures_before" "$(cat "$work/metrics/.last_success") $(jq '.consecutiveFailures' "$status_json")"
+check "el estado con un pre-release cumple el esquema" "" "$(python3 "$here/validate-status.py" "$schema" "$status_json")"
+rm -f "$work"/backups/abpre-* "$work"/backups/abprefiles-*
+BACKUP_DIR="$work/backups" BACKUP_METRICS_DIR="$work/metrics" BACKUP_DATA_DIR="$data" BACKUP_PREFIX=abpre-v1.0.1 FILES_PREFIX=abprefiles-v1.0.1 BACKUP_SKIP_ROTATION=true "$scripts/backup.sh" > "$work/interrupted.log" 2>&1 &
+interrupted_pid=$!
+sleep 0.6
+kill -TERM "$interrupted_pid" 2> /dev/null
+wait "$interrupted_pid"
+interrupted_status=$?
+check "un backup interrumpido por una senal falla" "1" "$interrupted_status"
+check "un backup interrumpido no deja ningun abpre-* ni abprefiles-* (ni parciales)" "0" "$(find "$work/backups" -maxdepth 1 \( -name 'abpre-*' -o -name 'abprefiles-*' \) | wc -l | tr -d ' ')"
 check "el directorio de backups queda en 0700" "700" "$(stat -c %a "$work/backups")"
 check "todos los archivos quedan en 0600" "" "$(find "$work/backups" -maxdepth 1 -type f ! -perm 600)"
 check "el .meta marca el backup como best_effort" "consistency=best_effort" "$(grep '^consistency=' "$meta")"
@@ -87,7 +122,7 @@ rm -rf "$work/backups"
 output=$(BACKUP_DATA_DIR="$work/no-existe" BACKUP_DIR="$work/backups" BACKUP_METRICS_DIR="$work/metrics" "$scripts/backup.sh" 2>&1); status=$?
 check "sin /data montado la corrida falla" "1" "$status"
 check "sin /data montado alerta BACKUP FALLIDO" "1" "$(echo "$output" | grep -c 'BACKUP FALLIDO')"
-check "sin /data montado no queda ningun archivo del intento" "" "$(ls "$work/backups" 2> /dev/null)"
+check "sin /data montado no queda ningun archivo del intento" "" "$(find "$work/backups" -maxdepth 1 -type f ! -name .backup.lock 2> /dev/null)"
 
 fakebin="$work/fakebin"
 mkdir -p "$fakebin"
@@ -96,7 +131,8 @@ chmod +x "$fakebin/tar"
 output=$(PATH="$fakebin:$PATH" run_backup); status=$?
 check "si falla el tar la corrida falla" "1" "$status"
 check "si falla el tar alerta BACKUP FALLIDO" "1" "$(echo "$output" | grep -c 'BACKUP FALLIDO')"
-check "si falla el tar no queda un dump huerfano" "" "$(ls "$work/backups" 2> /dev/null)"
+check "si falla el tar no queda un dump huerfano" "" "$(find "$work/backups" -maxdepth 1 -type f ! -name .backup.lock 2> /dev/null)"
+check "una corrida fallida deja la alerta BACKUP_FAILED y cuenta la falla" "1 1" "$(jq -r '[(.consecutiveFailures >= 1), ([.alerts[] | select(.code=="BACKUP_FAILED")] | length >= 1)] | map(if . then 1 else 0 end) | join(" ")' "$work/backups/status/status.json")"
 check "si falla el tar la metrica marca la corrida como fallida" "backup_last_run_success 0" "$(grep '^backup_last_run_success' "$work/metrics/backup.prom")"
 
 rm -rf "$work/backups" "$work/metrics"

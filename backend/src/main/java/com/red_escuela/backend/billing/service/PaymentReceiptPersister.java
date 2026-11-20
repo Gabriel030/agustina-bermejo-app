@@ -28,13 +28,18 @@ public class PaymentReceiptPersister {
         this.studentRepository = studentRepository;
     }
 
+    @Transactional(readOnly = true)
+    public void assertUploadable(Long invoiceId, Long studentId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+        validateOwnership(invoice, studentId);
+        requirePayable(invoice);
+    }
+
     @Transactional
     public BankTransferReceipt persist(Long invoiceId, Long studentId, String filePath) {
         Invoice invoice = invoiceRepository.findByIdForUpdate(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
         validateOwnership(invoice, studentId);
-        if (!invoice.isPayable()) {
-            throw new InvoiceNotPayableException(invoiceId, invoice.getPaymentStatus() == null ? invoice.getDocumentStatus().name() : invoice.getPaymentStatus().name());
-        }
+        requirePayable(invoice);
         if (bankTransferReceiptRepository.existsByInvoiceIdAndStatus(invoiceId, BankTransferReceiptStatus.PENDING_REVIEW)) {
             throw new PaymentReceiptAlreadyPendingException(invoiceId);
         }
@@ -46,6 +51,12 @@ public class PaymentReceiptPersister {
         receipt.setUploadedBy(studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId)).getPerson());
         return bankTransferReceiptRepository.save(receipt);
+    }
+
+    private void requirePayable(Invoice invoice) {
+        if (!invoice.isPayable()) {
+            throw new InvoiceNotPayableException(invoice.getId(), invoice.getPaymentStatus() == null ? invoice.getDocumentStatus().name() : invoice.getPaymentStatus().name());
+        }
     }
 
     private void validateOwnership(Invoice invoice, Long studentId) {

@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.exception.EmailAlreadyExistsException;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.shared.exception.InvalidEmailVerificationTokenException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,6 +30,9 @@ public class PendingEmailChangeConfirmer {
     public void confirmIfPending(EmailVerificationToken token) {
         if (token.getNewEmail() == null) {
             return;
+        }
+        if (token.isAwaitingOwnerApproval()) {
+            throw new InvalidEmailVerificationTokenException();
         }
         Person person = token.getPerson();
         EmailAddress newEmail = EmailAddress.of(token.getNewEmail());

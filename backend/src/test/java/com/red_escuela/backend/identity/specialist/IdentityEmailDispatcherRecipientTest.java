@@ -102,6 +102,19 @@ class IdentityEmailDispatcherRecipientTest {
                 "https://example.test/cancelar-cambio-email?token=def");
     }
 
+    @Test
+    void ownerApprovalMailGoesToTheCurrentAddressWithBothLinks() {
+        Person person = mock(Person.class);
+        when(person.getName()).thenReturn("Ana");
+        when(personRepository.findById(7L)).thenReturn(Optional.of(person));
+
+        dispatcher.onEmailChangeOwnerApprovalRequested(EmailChangeOwnerApprovalRequestedEvent.requestedFor(7L, "actual@example.com",
+                "nuevo@example.com", "https://example.test/revisar-cambio-email?token=abc", "https://example.test/cancelar-cambio-email?token=abc"));
+
+        verify(emailService).sendEmailChangeOwnerApproval("Ana", "actual@example.com", "nuevo@example.com",
+                "https://example.test/revisar-cambio-email?token=abc", "https://example.test/cancelar-cambio-email?token=abc");
+    }
+
     private MailRecipient recipientFor(String name, String username, String email) {
         Person person = mock(Person.class);
         when(person.getId()).thenReturn(7L);

@@ -80,6 +80,18 @@ public class BrevoEmailService implements EmailService {
     }
 
     @Override
+    public void sendEmailChangeOwnerApproval(String recipientName, String currentEmail, String requestedEmail,
+                                             String approvalLink, String cancellationLink) {
+        String body = "<p>Hola " + HtmlUtils.htmlEscape(recipientName) + ",</p>"
+                + "<p>El personal de la institución pidió cambiar el email de tu cuenta a " + HtmlUtils.htmlEscape(requestedEmail)
+                + ". El cambio no se aplica hasta que lo apruebes desde esta dirección y después se confirme desde la nueva.</p>"
+                + "<p><a href=\"" + HtmlUtils.htmlEscape(approvalLink) + "\">Revisar y aprobar el cambio</a></p>"
+                + "<p><a href=\"" + HtmlUtils.htmlEscape(cancellationLink) + "\">Cancelar el cambio de email</a></p>"
+                + "<p>Si no esperabas este cambio, cancelalo con el enlace de arriba y avisá a la institución.</p>";
+        sendChangeMessage(currentEmail, "Aprobá el cambio de email de tu cuenta", body);
+    }
+
+    @Override
     public void sendGuardianLegalConfirmation(String guardianName, String guardianEmail, String minorFirstName,
                                               String institutionName, String confirmationLink) {
         String body = "<p>Hola " + HtmlUtils.htmlEscape(guardianName) + ",</p>"

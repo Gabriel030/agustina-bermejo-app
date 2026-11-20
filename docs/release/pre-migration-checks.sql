@@ -169,6 +169,8 @@ begin
       ('exam_board', 'status', array['CANCELED', 'CLOSED', 'SCHEDULED']),
       ('exam_board_registration', 'status', array['ABSENT', 'GRADED', 'REGISTERED', 'WITHDRAWN']),
       ('feature_change_log', 'code', array['ANALYTICS', 'BILLING', 'BILLING_NOTIFICATIONS', 'EXTERNAL_BILLING', 'FISCAL_INVOICING', 'PAYMENT_METHOD_BANK_TRANSFER', 'PAYMENT_METHOD_CASH', 'PAYMENT_METHOD_GATEWAY']),
+      ('gateway_checkout', 'currency', array['ARS', 'USD']),
+      ('gateway_checkout', 'gateway', array['DLOCAL', 'MANUAL', 'MERCADO_PAGO']),
       ('grade_item', 'type', array['EXAM', 'FINAL', 'TP']),
       ('grade_item_audit', 'grade_item_type', array['EXAM', 'FINAL', 'TP']),
       ('grade_item_audit', 'kind', array['CORRECTION', 'FINAL_REVERT', 'RECOVERY', 'SYSTEM_REVERT']),
