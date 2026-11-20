@@ -83,4 +83,16 @@ class TemplateRendererTest {
 
         assertThat(content.body()).isEqualTo("${1+1} #{2} {{apellido}}");
     }
+
+    @Test
+    void referencedVariablesCollectsSubjectAndBodyWithoutDuplicates() {
+        assertThat(TemplateRenderer.referencedVariables("Hola {{nombre}}", "{{ nombre }} de {{carrera}}"))
+                .containsExactlyInAnyOrder(TemplateVariable.FIRST_NAME, TemplateVariable.PROGRAM);
+    }
+
+    @Test
+    void referencedVariablesRejectsUnknownToken() {
+        assertThatThrownBy(() -> TemplateRenderer.referencedVariables(null, "{{inexistente}}"))
+                .isInstanceOf(UnknownTemplateVariableException.class);
+    }
 }
