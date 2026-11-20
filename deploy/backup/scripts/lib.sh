@@ -4,6 +4,8 @@ BACKUP_DIR="${BACKUP_DIR:-/backups}"
 METRICS_DIR="${BACKUP_METRICS_DIR:-/metrics}"
 ALERT_LABEL="${ALERT_LABEL:-agustina-bermejo}"
 BACKUP_PREFIX="${BACKUP_PREFIX:-abdb}"
+FILES_PREFIX="${FILES_PREFIX:-abfiles}"
+DATA_DIR="${BACKUP_DATA_DIR:-/data}"
 
 log() {
   printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"
@@ -59,6 +61,14 @@ s3_remote() {
   printf 'BACKUPS3:%s/%s' "$BACKUP_S3_BUCKET" "${BACKUP_S3_PREFIX:-agustina-bermejo}"
 }
 
+stamp_of() {
+  basename "$1" | sed -E 's/^[^_]*_([0-9]{8}T[0-9]{6}Z)\..*$/\1/'
+}
+
+files_archive_names() {
+  printf '%s\n' "${FILES_PREFIX}_$1.tar.zst" "${FILES_PREFIX}_$1.tar.zst.sha256" "${FILES_PREFIX}_$1.tar.zst.age" "${FILES_PREFIX}_$1.tar.zst.age.sha256"
+}
+
 latest_local_dump() {
   find "$BACKUP_DIR" -maxdepth 1 -type f \( -name "${BACKUP_PREFIX}_*.dump" -o -name "${BACKUP_PREFIX}_*.dump.age" \) | sort | tail -n 1
 }
@@ -79,4 +89,25 @@ write_metrics() {
     echo "# TYPE backup_last_size_bytes gauge"
     echo "backup_last_size_bytes $size"
   } > "$tmp" && mv "$tmp" "$METRICS_DIR/backup.prom"
+}
+
+append_files_metric() {
+  [ -f "$METRICS_DIR/backup.prom" ] || return 0
+  {
+    echo "# TYPE backup_last_files_size_bytes gauge"
+    echo "backup_last_files_size_bytes $1"
+  } >> "$METRICS_DIR/backup.prom"
+}
+
+warn_once_per_day() {
+  local name="$1" message="$2" marker today
+  marker="$METRICS_DIR/.alerted_$name"
+  today=$(date -u +%Y%m%d)
+  [ "$(cat "$marker" 2> /dev/null)" = "$today" ] && return 0
+  notify "$message"
+  mkdir -p "$METRICS_DIR" 2> /dev/null && echo "$today" > "$marker"
+}
+
+warn_unencrypted_once() {
+  warn_once_per_day unencrypted "BACKUP SIN CIFRAR: falta AGE_RECIPIENT, los backups quedan legibles en el disco"
 }

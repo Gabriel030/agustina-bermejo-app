@@ -7,7 +7,7 @@ if [ "${1:-}" != "cron" ]; then
 fi
 
 : "${PGPASSWORD:?PGPASSWORD es obligatorio}"
-schedule="${BACKUP_SCHEDULE:-0 */6 * * *}"
+schedule="${BACKUP_SCHEDULE:-0 */4 * * *}"
 freshness="${BACKUP_FRESHNESS_SCHEDULE:-30 9 * * *}"
 
 env | grep -E '^(PG|BACKUP_|AGE_|ALERT_|TZ=)' | sed -e 's/^/export /' -e "s/=/='/" -e "s/\$/'/" > /opt/backup/cron.env
