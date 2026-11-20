@@ -7,6 +7,9 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.shared.persistence.InClauseChunks;
+import java.util.Collection;
+import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +36,18 @@ public class BasePersonCreator {
         if (address != null) {
             addressRepository.delete(address);
             addressRepository.flush();
+        }
+    }
+
+    @Transactional
+    public void deleteBasePersons(Collection<Long> personIds) {
+        for (List<Long> chunk : InClauseChunks.of(personIds)) {
+            List<Long> addressIds = personRepository.findAddressIdsByIdIn(chunk);
+            personRepository.deleteRolesByPersonIdIn(chunk);
+            personRepository.deleteByIdIn(chunk);
+            for (List<Long> addressChunk : InClauseChunks.of(addressIds)) {
+                addressRepository.deleteByIdIn(addressChunk);
+            }
         }
     }
 
