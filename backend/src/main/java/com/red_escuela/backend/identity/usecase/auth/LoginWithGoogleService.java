@@ -8,6 +8,7 @@ import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedExceptio
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
+import com.red_escuela.backend.identity.specialist.PublicPasswordResetBlockPolicy;
 import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.time.ApplicationTime;
@@ -19,12 +20,15 @@ public class LoginWithGoogleService implements LoginWithGoogleUseCase {
     private final GoogleIdTokenService googleIdTokenService;
     private final PersonRepository personRepository;
     private final AuthTokenIssuer authTokenIssuer;
+    private final PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy;
 
     public LoginWithGoogleService(GoogleIdTokenService googleIdTokenService, PersonRepository personRepository,
-                                   AuthTokenIssuer authTokenIssuer) {
+                                   AuthTokenIssuer authTokenIssuer,
+                                   PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy) {
         this.googleIdTokenService = googleIdTokenService;
         this.personRepository = personRepository;
         this.authTokenIssuer = authTokenIssuer;
+        this.publicPasswordResetBlockPolicy = publicPasswordResetBlockPolicy;
     }
 
     @Override
@@ -41,10 +45,17 @@ public class LoginWithGoogleService implements LoginWithGoogleUseCase {
         Person person = personRepository.findByEmail(EmailAddress.of(profile.email()))
                 .orElseThrow(() -> new GoogleAccountNotLinkedException(profile.email()));
         requireAllowedToLogIn(person);
+        requireAllowedToLinkByEmail(person);
 
         person.setGoogleSubjectId(profile.subject());
         personRepository.save(person);
         return authTokenIssuer.issueTokens(person);
+    }
+
+    private void requireAllowedToLinkByEmail(Person person) {
+        if (!Boolean.TRUE.equals(person.getEmailVerified()) || publicPasswordResetBlockPolicy.blocks(person)) {
+            throw new InvalidCredentialsException();
+        }
     }
 
     private void requireAllowedToLogIn(Person person) {
