@@ -5,6 +5,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 
 import java.awt.Color;
 import java.io.IOException;
@@ -16,15 +17,15 @@ public class ApprovalCertificateDesign {
     public static final float PX = 0.75f;
 
     public static final Rect LOGO = new Rect(515, 60, 92, 92);
-    public static final Rect INSTITUTION = new Rect(0, 162, 1123, 20);
-    public static final Rect TITLE = new Rect(0, 184, 1123, 60);
-    public static final Rect CERTIFIES = new Rect(0, 252, 1123, 28);
+    public static final Rect INSTITUTION = new Rect(160, 162, 803, 20);
+    public static final Rect TITLE = new Rect(160, 184, 803, 60);
+    public static final Rect CERTIFIES = new Rect(160, 252, 803, 28);
     public static final Rect HOLDER = new Rect(180, 292, 763, 58);
     public static final Rect DOCUMENT = new Rect(431, 354, 261, 26);
-    public static final Rect APPROVED = new Rect(0, 396, 1123, 28);
+    public static final Rect APPROVED = new Rect(160, 396, 803, 28);
     public static final Rect PROGRAM = new Rect(150, 428, 823, 46);
-    public static final Rect HOURS_LINE = new Rect(0, 488, 1123, 24);
-    public static final Rect DATE_LINE = new Rect(0, 526, 1123, 24);
+    public static final Rect HOURS_LINE = new Rect(160, 488, 803, 24);
+    public static final Rect DATE_LINE = new Rect(160, 526, 803, 24);
     public static final Rect SIGNATORY_LEFT = new Rect(104, 596, 250, 92);
     public static final Rect SIGNATORY_RIGHT = new Rect(769, 596, 250, 92);
     public static final Rect QR = new Rect(491, 572, 140, 140);
@@ -94,6 +95,7 @@ public class ApprovalCertificateDesign {
         float height = page.getHeight();
         paper(content, page);
         frames(content, page);
+        guilloche(content, height);
         logo(document, content, fonts, height, assets);
         text(content, height, fonts.sans(), INSTITUTION, "INSTITUTO AGUSTINA BERMEJO", 13, 9, GOLD_DARK, Align.CENTER);
         text(content, height, fonts.serifBold(), TITLE, HEADLINE, 44, 24, NAVY, Align.CENTER);
@@ -143,6 +145,30 @@ public class ApprovalCertificateDesign {
         corner(content, right, top, arm, -1, -1);
         corner(content, left, bottom, arm, 1, 1);
         corner(content, right, bottom, arm, -1, 1);
+    }
+
+    private void guilloche(PDPageContentStream content, float pageHeight) throws IOException {
+        PDExtendedGraphicsState translucent = new PDExtendedGraphicsState();
+        translucent.setStrokingAlphaConstant(0.65f);
+        content.saveGraphicsState();
+        content.setGraphicsStateParameters(translucent);
+        content.setStrokingColor(GOLD);
+        content.setLineWidth(0.6f * PX);
+        for (Rect band : List.of(GuillocheBand.LEFT, GuillocheBand.RIGHT)) {
+            for (List<float[]> line : GuillocheBand.polylines(band)) {
+                for (int i = 0; i < line.size(); i++) {
+                    float x = line.get(i)[0] * PX;
+                    float y = pageHeight - line.get(i)[1] * PX;
+                    if (i == 0) {
+                        content.moveTo(x, y);
+                    } else {
+                        content.lineTo(x, y);
+                    }
+                }
+                content.stroke();
+            }
+        }
+        content.restoreGraphicsState();
     }
 
     private void corner(PDPageContentStream content, float x, float y, float arm, int dx, int dy) throws IOException {

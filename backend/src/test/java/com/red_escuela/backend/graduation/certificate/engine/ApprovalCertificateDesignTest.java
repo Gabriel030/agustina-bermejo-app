@@ -56,7 +56,7 @@ class ApprovalCertificateDesignTest {
     private static CertificateSnapshot snapshot(String holder, String program, String institution, String signerName, String signerTitle) {
         return new CertificateSnapshot(holder, "DNI", "30123456", "la carrera", program, "UNDERGRADUATE", 1800,
                 LocalDate.of(2026, 7, 15), LocalDate.of(2026, 11, 5), institution,
-                List.of(new SignatorySnapshot(signerName, signerTitle), new SignatorySnapshot("Lic. Carlos Gómez", "Director académico")),
+                List.of(new SignatorySnapshot(signerName, signerTitle), new SignatorySnapshot("Lic. Carlos Gómez", "Director Académico")),
                 BuiltInCertificateTemplate.BUILT_IN_V1);
     }
 
@@ -177,7 +177,7 @@ class ApprovalCertificateDesignTest {
     @ParameterizedTest(name = "{0} stays inside its box with regular data")
     @MethodSource("allMarkers")
     void markerStaysInsideItsBoxWithRegularData(Marker marker) throws IOException {
-        assertMarkerInsideItsBox(marker, snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Rectora"));
+        assertMarkerInsideItsBox(marker, snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"));
     }
 
     @ParameterizedTest(name = "{0} stays inside its box with very long data")
@@ -190,7 +190,7 @@ class ApprovalCertificateDesignTest {
 
     @Test
     void registrationNumberStaysInsideItsBox() throws IOException {
-        CertificateSnapshot snapshot = snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Rectora");
+        CertificateSnapshot snapshot = snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal");
         byte[] pdf = renderer.render(template, snapshot, CODE, URL, new CertificateAssets(null, List.of(), "0001234/2026"));
         String expected = "REG. DE CERTIF. N°: 0001234/2026";
 
@@ -203,14 +203,14 @@ class ApprovalCertificateDesignTest {
 
     @Test
     void registrationNumberIsOmittedWhenAbsent() throws IOException {
-        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Rectora"));
+        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"));
 
         assertThat(wordsOf(pdf)).noneMatch(word -> word.text().contains("REG."));
     }
 
     @Test
     void veryLongHolderNameIsWrappedOrShrunkWithoutLeavingItsBox() throws Exception {
-        byte[] pdf = pdfOf(snapshot(LONG_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Rectora"));
+        byte[] pdf = pdfOf(snapshot(LONG_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"));
 
         List<Word> lines = linesNear(wordsOf(pdf), ApprovalCertificateDesign.HOLDER, LONG_HOLDER);
 
@@ -220,7 +220,7 @@ class ApprovalCertificateDesignTest {
 
     @Test
     void qrStaysVectorialAndDecodesToVerificationUrl() throws Exception {
-        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Rectora"));
+        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"));
 
         try (PDDocument document = Loader.loadPDF(pdf)) {
             assertThat(document.getPage(0).getResources().getXObjectNames()).isEmpty();
@@ -233,7 +233,7 @@ class ApprovalCertificateDesignTest {
 
     @Test
     void qrIsPaintedInsideItsBox() throws Exception {
-        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Rectora"));
+        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"));
 
         try (PDDocument document = Loader.loadPDF(pdf)) {
             BufferedImage image = new PDFRenderer(document).renderImageWithDPI(0, 96);
@@ -268,7 +268,7 @@ class ApprovalCertificateDesignTest {
                 return new boolean[][]{{false}};
             }
         });
-        byte[] pdf = withoutQr.render(template, snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Rectora"), CODE, URL);
+        byte[] pdf = withoutQr.render(template, snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"), CODE, URL);
 
         try (PDDocument document = Loader.loadPDF(pdf)) {
             BufferedImage image = new PDFRenderer(document).renderImageWithDPI(0, 300);
@@ -324,5 +324,74 @@ class ApprovalCertificateDesignTest {
         for (String line : fitted.lines()) {
             assertThat(TextFitter.width(font, fitted.fontSize(), line)).isLessThanOrEqualTo(100);
         }
+    }
+
+    private static boolean intersects(Rect first, Rect second) {
+        return first.x() < second.x() + second.width() && second.x() < first.x() + first.width()
+                && first.y() < second.y() + second.height() && second.y() < first.y() + first.height();
+    }
+
+    @Test
+    void guillocheLinesStayInsideTheirBandBoxes() {
+        for (Rect band : List.of(GuillocheBand.LEFT, GuillocheBand.RIGHT)) {
+            for (List<float[]> line : GuillocheBand.polylines(band)) {
+                assertThat(line).allSatisfy(point -> {
+                    assertThat(point[0]).isBetween(band.x(), band.x() + band.width());
+                    assertThat(point[1]).isBetween(band.y(), band.y() + band.height());
+                });
+            }
+        }
+        assertThat(GuillocheBand.LEFT.x()).isEqualTo(58);
+        assertThat(GuillocheBand.LEFT.x() + GuillocheBand.LEFT.width()).isEqualTo(150);
+        assertThat(GuillocheBand.RIGHT.x() + GuillocheBand.RIGHT.width()).isEqualTo(1123 - 58);
+        assertThat(GuillocheBand.LEFT.y()).isEqualTo(118);
+        assertThat(GuillocheBand.LEFT.y() + GuillocheBand.LEFT.height()).isEqualTo(548);
+    }
+
+    @Test
+    void guillocheBandsDoNotCrossTextQrOrLogo() throws IOException {
+        List<Rect> reserved = List.of(ApprovalCertificateDesign.LOGO, ApprovalCertificateDesign.HOLDER,
+                ApprovalCertificateDesign.DOCUMENT, ApprovalCertificateDesign.PROGRAM, ApprovalCertificateDesign.QR);
+        for (Rect band : List.of(GuillocheBand.LEFT, GuillocheBand.RIGHT)) {
+            assertThat(reserved).noneMatch(box -> intersects(band, box));
+        }
+        for (CertificateSnapshot snapshot : List.of(
+                snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"),
+                snapshot(LONG_HOLDER, LONG_PROGRAM, "Instituto Superior de Formación Técnica y Profesional Agustina Bermejo de Ciencias de la Salud",
+                        "Dra. María Laura Fernández de la Cruz y Alvarado", "Secretaria Legal"))) {
+            for (Word word : wordsOf(pdfOf(snapshot))) {
+                Rect text = new Rect(word.left(), word.top(), word.right() - word.left(), word.bottom() - word.top());
+                if (text.y() >= 118 && text.y() <= 548) {
+                    assertThat(intersects(GuillocheBand.LEFT, text)).as(word.text()).isFalse();
+                    assertThat(intersects(GuillocheBand.RIGHT, text)).as(word.text()).isFalse();
+                }
+            }
+        }
+    }
+
+    @Test
+    void guillocheBandsArePaintedOnBothSidesAndNowhereElseOutsideTextAndFrames() throws IOException {
+        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"));
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            BufferedImage image = new PDFRenderer(document).renderImageWithDPI(0, 96);
+            assertThat(inkedPixels(image, GuillocheBand.LEFT)).isGreaterThan(400);
+            assertThat(inkedPixels(image, GuillocheBand.RIGHT)).isGreaterThan(400);
+            assertThat(inkedPixels(image, new Rect(160, 130, 40, 150))).isZero();
+        }
+    }
+
+    private static int inkedPixels(BufferedImage image, Rect area) {
+        int count = 0;
+        for (int y = (int) area.y(); y < area.y() + area.height(); y++) {
+            for (int x = (int) area.x(); x < area.x() + area.width(); x++) {
+                int rgb = image.getRGB(x, y) & 0xFFFFFF;
+                int red = (rgb >> 16) & 0xFF;
+                int blue = rgb & 0xFF;
+                if (red - blue > 40) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 }
