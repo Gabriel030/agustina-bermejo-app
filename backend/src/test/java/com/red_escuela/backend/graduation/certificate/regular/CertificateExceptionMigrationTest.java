@@ -43,7 +43,7 @@ class CertificateExceptionMigrationTest {
             assertThatThrownBy(() -> insertException(jdbc, 1L, null, "COURT", "EXP-1", REASON, "APPROVED", 10L, 10L))
                     .isInstanceOf(DataIntegrityViolationException.class);
             insertException(jdbc, 1L, null, "COURT", "EXP-1", REASON, "APPROVED", 10L, 20L);
-            insertException(jdbc, 1L, null, "COURT", "EXP-2", REASON, "PENDING", 10L, null);
+            insertException(jdbc, 2L, null, "COURT", "EXP-2", REASON, "PENDING", 10L, null);
             assertThat(jdbc.queryForObject("select count(*) from certificate_exception_approval", Integer.class)).isEqualTo(2);
         }
     }
@@ -93,6 +93,37 @@ class CertificateExceptionMigrationTest {
             assertThatThrownBy(() -> jdbc.update(sql, id, 10L, "job")).isInstanceOf(DataIntegrityViolationException.class);
             jdbc.update(sql, id, 10L, null);
             jdbc.update(sql, id, null, "job");
+        }
+    }
+
+    @Test
+    void approvedWithoutValidUntilIsRejectedByItsOwnConstraint() {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("271")) {
+            JdbcTemplate jdbc = migratedJdbc(dataSource);
+            String sql = "insert into certificate_exception_approval (student_id, kind, program_enrollment_id, organism_kind, organism_reference, "
+                    + "reason, status, requested_by_id, requested_at, decided_by_id, decided_at, decision_reason, valid_until) "
+                    + "values (1, 'PROGRAM', 1, 'COURT', 'EXP-1', ?, 'APPROVED', 10, now(), 20, now(), 'ok verificado', ?)";
+
+            assertThatThrownBy(() -> jdbc.update(sql, REASON, null)).isInstanceOf(DataIntegrityViolationException.class)
+                    .hasMessageContaining("ck_certificate_exception_approved_has_validity");
+            jdbc.update(sql, REASON, java.sql.Timestamp.valueOf("2026-11-17 12:00:00"));
+        }
+    }
+
+    @Test
+    void onlyOneOpenExceptionPerEnrollmentAndKind() {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("271")) {
+            JdbcTemplate jdbc = migratedJdbc(dataSource);
+            insertException(jdbc, 1L, null, "COURT", "EXP-1", REASON, "PENDING", 10L, null);
+
+            assertThatThrownBy(() -> insertException(jdbc, 1L, null, "COURT", "EXP-2", REASON, "PENDING", 10L, null))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> insertException(jdbc, 1L, null, "COURT", "EXP-2", REASON, "APPROVED", 10L, 20L))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            insertException(jdbc, 2L, null, "COURT", "EXP-3", REASON, "PENDING", 10L, null);
+            jdbc.update("update certificate_exception_approval set status = 'WITHDRAWN' where organism_reference = 'EXP-1'");
+            insertException(jdbc, 1L, null, "COURT", "EXP-4", REASON, "PENDING", 10L, null);
+            assertThat(jdbc.queryForObject("select count(*) from certificate_exception_approval", Integer.class)).isEqualTo(3);
         }
     }
 }

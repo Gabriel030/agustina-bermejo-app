@@ -254,6 +254,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `AUTHORIZATION_INBOX_ACCESS_DENIED` | no | `AuthorizationInboxAccessDeniedException` | billing |
 | `AUTHORIZATION_REQUEST_ACCESS_DENIED` | no | `AuthorizationRequestAccessDeniedException` | billing |
+| `EXCEPTION_WITHDRAW_NOT_ALLOWED` | no | `ExceptionWithdrawNotAllowedException` | graduation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
 | `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
@@ -387,6 +388,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CANNOT_JUSTIFY` | no | `CannotJustifyException` | attendance |
 | `CANNOT_WITHDRAW` | no | `CannotWithdrawException` | enrollment |
 | `CASH_PAYMENT_PREVIEW_OUTDATED` | no | `CashPaymentPreviewOutdatedException` | billing |
+| `CERTIFICATE_EXCEPTION_ALREADY_OPEN` | no | `CertificateExceptionAlreadyOpenException` | graduation |
 | `CERTIFICATE_EXPIRED` | no | `CertificateExpiredException` | graduation |
 | `CERTIFICATE_REVOKED` | no | `CertificateRevokedException` | graduation |
 | `CHANNEL_NOT_AVAILABLE` | no | `ChannelNotAvailableException` | notification |
@@ -452,6 +454,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_REGISTRATION_WITHDRAWN` | no | `ExamBoardRegistrationWithdrawnException` | evaluation |
 | `EXCEPTION_ALREADY_CONSUMED` | no | `ExceptionAlreadyConsumedException` | graduation |
 | `EXCEPTION_NOT_APPROVED` | no | `ExceptionNotApprovedException` | graduation |
+| `EXCEPTION_TARGET_MISMATCH` | no | `ExceptionTargetMismatchException` | graduation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
 | `FINAL_EXAM_BLOCKED_BY_ABSENCES` | no | `FinalExamBlockedByAbsencesException` | evaluation |
 | `FINAL_EXAM_PREREQUISITES_NOT_APPROVED` | no | `FinalExamPrerequisitesNotApprovedException` | evaluation |

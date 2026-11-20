@@ -5,6 +5,8 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Certific
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionAlreadyConsumedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionNotApprovedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.IllegalCertificateExceptionTransitionException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionTargetMismatchException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionWithdrawNotAllowedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OrganismKindRequiredException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OrganismReferenceInvalidException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OwnExceptionDecisionException;
@@ -153,7 +155,7 @@ class CertificateExceptionApprovalTest {
         CertificateExceptionApproval approval = approved();
         LocalDateTime consumedAt = NOW.plusDays(1);
 
-        approval.consume(99L, 30L, consumedAt);
+        approval.consume(99L, 3L, RegularityKind.PROGRAM, 5L, 30L, consumedAt);
 
         assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.CONSUMED);
         assertThat(approval.getConsumedAt()).isEqualTo(consumedAt);
@@ -166,25 +168,25 @@ class CertificateExceptionApprovalTest {
     @Test
     void secondConsumeIsRejectedAsAlreadyConsumed() {
         CertificateExceptionApproval approval = approved();
-        approval.consume(99L, 30L, NOW.plusDays(1));
+        approval.consume(99L, 3L, RegularityKind.PROGRAM, 5L, 30L, NOW.plusDays(1));
 
-        assertThatThrownBy(() -> approval.consume(100L, 30L, NOW.plusDays(1))).isInstanceOf(ExceptionAlreadyConsumedException.class);
+        assertThatThrownBy(() -> approval.consume(100L, 3L, RegularityKind.PROGRAM, 5L, 30L, NOW.plusDays(1))).isInstanceOf(ExceptionAlreadyConsumedException.class);
         assertThat(approval.getConsumedCertificateId()).isEqualTo(99L);
     }
 
     @Test
     void consumeRequiresApprovedStatusAndTimeInsideValidity() {
-        assertThatThrownBy(() -> pending().consume(99L, 30L, NOW)).isInstanceOf(ExceptionNotApprovedException.class);
+        assertThatThrownBy(() -> pending().consume(99L, 3L, RegularityKind.PROGRAM, 5L, 30L, NOW)).isInstanceOf(ExceptionNotApprovedException.class);
         CertificateExceptionApproval rejected = pending();
         rejected.reject(DIRECTOR, DECISION, NOW);
-        assertThatThrownBy(() -> rejected.consume(99L, 30L, NOW)).isInstanceOf(ExceptionNotApprovedException.class);
+        assertThatThrownBy(() -> rejected.consume(99L, 3L, RegularityKind.PROGRAM, 5L, 30L, NOW)).isInstanceOf(ExceptionNotApprovedException.class);
 
         CertificateExceptionApproval approval = approved();
         LocalDateTime validUntil = approval.getValidUntil();
-        assertThatThrownBy(() -> approval.consume(99L, 30L, validUntil)).isInstanceOf(ExceptionNotApprovedException.class);
-        assertThatThrownBy(() -> approval.consume(99L, 30L, validUntil.plusSeconds(1))).isInstanceOf(ExceptionNotApprovedException.class);
+        assertThatThrownBy(() -> approval.consume(99L, 3L, RegularityKind.PROGRAM, 5L, 30L, validUntil)).isInstanceOf(ExceptionNotApprovedException.class);
+        assertThatThrownBy(() -> approval.consume(99L, 3L, RegularityKind.PROGRAM, 5L, 30L, validUntil.plusSeconds(1))).isInstanceOf(ExceptionNotApprovedException.class);
         assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.APPROVED);
-        approval.consume(99L, 30L, validUntil.minusSeconds(1));
+        approval.consume(99L, 3L, RegularityKind.PROGRAM, 5L, 30L, validUntil.minusSeconds(1));
         assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.CONSUMED);
     }
 
@@ -211,6 +213,29 @@ class CertificateExceptionApprovalTest {
         CertificateExceptionStatusChange last = history.get(history.size() - 1);
         assertThat(last.getActorPersonId()).isNull();
         assertThat(last.getActorProcess()).isEqualTo(CertificateExceptionApproval.EXPIRATION_PROCESS);
-        assertThatThrownBy(() -> approval.consume(99L, 30L, NOW)).isInstanceOf(ExceptionNotApprovedException.class);
+        assertThatThrownBy(() -> approval.consume(99L, 3L, RegularityKind.PROGRAM, 5L, 30L, NOW)).isInstanceOf(ExceptionNotApprovedException.class);
+    }
+
+    @Test
+    void consumeRejectsAnotherStudentKindOrEnrollment() {
+        CertificateExceptionApproval approval = approved();
+
+        assertThatThrownBy(() -> approval.consume(99L, 4L, RegularityKind.PROGRAM, 5L, 30L, NOW.plusDays(1)))
+                .isInstanceOf(ExceptionTargetMismatchException.class);
+        assertThatThrownBy(() -> approval.consume(99L, 3L, RegularityKind.PROGRAM, 6L, 30L, NOW.plusDays(1)))
+                .isInstanceOf(ExceptionTargetMismatchException.class);
+        assertThatThrownBy(() -> approval.consume(99L, 3L, RegularityKind.COURSE, 5L, 30L, NOW.plusDays(1)))
+                .isInstanceOf(ExceptionTargetMismatchException.class);
+        assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.APPROVED);
+    }
+
+    @Test
+    void onlyTheRequesterCanWithdraw() {
+        CertificateExceptionApproval approval = pending();
+
+        assertThatThrownBy(() -> approval.withdraw(DIRECTOR, NOW)).isInstanceOf(ExceptionWithdrawNotAllowedException.class);
+        assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.PENDING);
+        approval.withdraw(REQUESTER, NOW);
+        assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.WITHDRAWN);
     }
 }

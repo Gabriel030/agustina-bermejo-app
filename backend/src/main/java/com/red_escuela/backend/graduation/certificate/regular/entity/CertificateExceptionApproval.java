@@ -4,6 +4,8 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Certific
 import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionReasonInvalidException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionAlreadyConsumedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionNotApprovedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionTargetMismatchException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionWithdrawNotAllowedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.IllegalCertificateExceptionTransitionException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OrganismKindRequiredException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OrganismReferenceInvalidException;
@@ -149,11 +151,18 @@ public class CertificateExceptionApproval {
     }
 
     public void withdraw(Long actorId, LocalDateTime now) {
+        if (!requestedById.equals(actorId)) {
+            throw new ExceptionWithdrawNotAllowedException();
+        }
         moveTo(CertificateExceptionEvent.WITHDRAW, StatusChangeActor.ofPerson(actorId), now, null);
     }
 
-    public void consume(Long certificateId, Long actorId, LocalDateTime now) {
+    public void consume(Long certificateId, Long expectedStudentId, RegularityKind expectedKind, Long expectedEnrollmentId, Long actorId,
+                        LocalDateTime now) {
         Objects.requireNonNull(certificateId);
+        if (!studentId.equals(expectedStudentId) || kind != expectedKind || !enrollmentId().equals(expectedEnrollmentId)) {
+            throw new ExceptionTargetMismatchException();
+        }
         if (status == CertificateExceptionStatus.CONSUMED) {
             throw new ExceptionAlreadyConsumedException();
         }

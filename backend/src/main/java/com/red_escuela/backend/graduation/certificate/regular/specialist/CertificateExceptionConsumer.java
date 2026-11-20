@@ -1,6 +1,7 @@
 package com.red_escuela.backend.graduation.certificate.regular.specialist;
 
 import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionApproval;
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionNotFoundException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import org.springframework.stereotype.Service;
@@ -21,10 +22,10 @@ public class CertificateExceptionConsumer {
     }
 
     @Transactional
-    public void consume(Long exceptionId, Long certificateId, Long actorId) {
+    public void consume(Long exceptionId, Long certificateId, Long studentId, RegularityKind kind, Long enrollmentId, Long actorId) {
         CertificateExceptionApproval approval = repository.findByIdForUpdate(exceptionId)
                 .orElseThrow(CertificateExceptionNotFoundException::new);
-        approval.consume(certificateId, actorId, LocalDateTime.now(clock));
+        approval.consume(certificateId, studentId, kind, enrollmentId, actorId, LocalDateTime.now(clock));
         repository.saveAndFlush(approval);
     }
 }

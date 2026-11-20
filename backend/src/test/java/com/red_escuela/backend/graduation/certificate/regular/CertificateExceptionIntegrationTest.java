@@ -12,11 +12,22 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCert
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequestOutcome;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.entity.ValidityDays;
+import com.red_escuela.backend.graduation.certificate.regular.dto.CertificateExceptionResponse;
+import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionAlreadyOpenException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionAlreadyConsumedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionTargetMismatchException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionWithdrawNotAllowedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.OwnExceptionDecisionException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionNotApprovedException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionConsumer;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionDueExpirer;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RequestCertificateExceptionCommand;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.ApproveCertificateExceptionUseCase;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.RejectCertificateExceptionUseCase;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.RequestCertificateExceptionUseCase;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.WithdrawCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionExpirer;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -26,12 +37,15 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -70,6 +84,22 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private CertificateExceptionExpirer expirer;
 
+    @Autowired
+    private CertificateExceptionDueExpirer dueExpirer;
+    @Autowired
+    private RequestCertificateExceptionUseCase requestUseCase;
+    @Autowired
+    private ApproveCertificateExceptionUseCase approveUseCase;
+    @Autowired
+    private RejectCertificateExceptionUseCase rejectUseCase;
+    @Autowired
+    private WithdrawCertificateExceptionUseCase withdrawUseCase;
+
+    private record Target(Long studentId, Long enrollmentId) {
+    }
+
+    private Institution institution;
+    private Target target;
     private Long enrollmentId;
     private Long studentId;
     private Long requesterId;
@@ -79,9 +109,29 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     void seed() {
         MutableClock.INSTANCE.setDateTime(NOW);
         transactions.executeWithoutResult(status -> {
-            Institution institution = new Institution();
+            institution = new Institution();
             institution.setName("Instituto de prueba");
             entityManager.persist(institution);
+            requesterId = persistPerson().getId();
+            directorId = persistPerson().getId();
+        });
+        target = newTarget();
+        enrollmentId = target.enrollmentId();
+        studentId = target.studentId();
+    }
+
+    @AfterEach
+    void restore() {
+        SecurityContextHolder.clearContext();
+        jdbc.update("update regular_certificate_settings set exception_validity_days = 7");
+    }
+
+    private void actAs(Long personId) {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(personId.toString(), null));
+    }
+
+    private Target newTarget() {
+        return transactions.execute(status -> {
             Student student = new Student();
             student.setPerson(persistPerson());
             student.setInstitution(institution);
@@ -93,11 +143,8 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
             enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
             enrollment.setEnrollmentDate(NOW.minusMonths(8));
             entityManager.persist(enrollment);
-            requesterId = persistPerson().getId();
-            directorId = persistPerson().getId();
             entityManager.flush();
-            enrollmentId = enrollment.getId();
-            studentId = student.getId();
+            return new Target(student.getId(), enrollment.getId());
         });
     }
 
@@ -119,7 +166,11 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     }
 
     private Long persistApproved(LocalDateTime approvedAt) {
-        CertificateExceptionApproval approval = CertificateExceptionApproval.request(RegularityKind.PROGRAM, enrollmentId, studentId,
+        return persistApproved(approvedAt, target);
+    }
+
+    private Long persistApproved(LocalDateTime approvedAt, Target owner) {
+        CertificateExceptionApproval approval = CertificateExceptionApproval.request(RegularityKind.PROGRAM, owner.enrollmentId(), owner.studentId(),
                 OrganismKind.EDUCATION_MINISTRY, "EXP-77/2026", REASON, requesterId, approvedAt.minusHours(1));
         approval.approve(directorId, "Reclamo verificado con el expediente", new ValidityDays(7), approvedAt);
         return repository.saveAndFlush(approval).getId();
@@ -163,24 +214,16 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void databaseRejectsADeciderEqualToTheRequester() {
-        Long id = persistApproved(NOW);
-
-        assertThatThrownBy(() -> jdbc.update("update certificate_exception_approval set decided_by_id = requested_by_id where id = ?", id))
-                .isInstanceOf(DataIntegrityViolationException.class);
-    }
-
-    @Test
     void consumeMarksTheExceptionConsumedInTheDatabase() {
         Long id = persistApproved(NOW);
         Long certificateId = persistCertificate(uniqueCode());
 
-        consumer.consume(id, certificateId, requesterId);
+        consumer.consume(id, certificateId, studentId, RegularityKind.PROGRAM, enrollmentId, requesterId);
 
         assertThat(jdbc.queryForObject("select status from certificate_exception_approval where id = ?", String.class, id)).isEqualTo("CONSUMED");
         assertThat(jdbc.queryForObject("select consumed_certificate_id from certificate_exception_approval where id = ?", Long.class, id))
                 .isEqualTo(certificateId);
-        assertThatThrownBy(() -> consumer.consume(id, certificateId, requesterId)).isInstanceOf(ExceptionAlreadyConsumedException.class);
+        assertThatThrownBy(() -> consumer.consume(id, certificateId, studentId, RegularityKind.PROGRAM, enrollmentId, requesterId)).isInstanceOf(ExceptionAlreadyConsumedException.class);
     }
 
     @Test
@@ -198,7 +241,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
                     ready.countDown();
                     go.await();
                     try {
-                        consumer.consume(id, certificateId, requesterId);
+                        consumer.consume(id, certificateId, studentId, RegularityKind.PROGRAM, enrollmentId, requesterId);
                         return null;
                     } catch (Throwable failure) {
                         return failure;
@@ -235,9 +278,9 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void expirerOnlyExpiresApprovedExceptionsPastTheirValidityUsingTheClock() {
-        Long due = persistApproved(NOW.minusDays(8));
-        Long stillValid = persistApproved(NOW.minusDays(2));
-        Long expiredAtBoundary = persistApproved(NOW.minusDays(7));
+        Long due = persistApproved(NOW.minusDays(8), target);
+        Long stillValid = persistApproved(NOW.minusDays(2), newTarget());
+        Long expiredAtBoundary = persistApproved(NOW.minusDays(7), newTarget());
 
         int expired = expirer.expireDue();
 
@@ -245,7 +288,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
         assertThat(statusOf(due)).isEqualTo("EXPIRED");
         assertThat(statusOf(expiredAtBoundary)).isEqualTo("EXPIRED");
         assertThat(statusOf(stillValid)).isEqualTo("APPROVED");
-        assertThatThrownBy(() -> consumer.consume(due, persistCertificate(uniqueCode()), requesterId)).isInstanceOf(ExceptionNotApprovedException.class);
+        assertThatThrownBy(() -> consumer.consume(due, persistCertificate(uniqueCode()), studentId, RegularityKind.PROGRAM, enrollmentId, requesterId)).isInstanceOf(ExceptionNotApprovedException.class);
 
         MutableClock.INSTANCE.setDateTime(NOW.plusDays(6));
         assertThat(expirer.expireDue()).isEqualTo(1);
@@ -258,8 +301,105 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
         Long certificateId = persistCertificate(uniqueCode());
         MutableClock.INSTANCE.setDateTime(NOW.plusDays(7));
 
-        assertThatThrownBy(() -> consumer.consume(id, certificateId, requesterId)).isInstanceOf(ExceptionNotApprovedException.class);
+        assertThatThrownBy(() -> consumer.consume(id, certificateId, studentId, RegularityKind.PROGRAM, enrollmentId, requesterId)).isInstanceOf(ExceptionNotApprovedException.class);
         assertThat(statusOf(id)).isEqualTo("APPROVED");
+    }
+
+    @Test
+    void expiringOneDueExceptionNeverTouchesAnAlreadyConsumedOne() {
+        Long consumed = persistApproved(NOW.minusDays(7));
+        Long certificateId = persistCertificate(uniqueCode());
+        MutableClock.INSTANCE.setDateTime(NOW.minusDays(1));
+        consumer.consume(consumed, certificateId, studentId, RegularityKind.PROGRAM, enrollmentId, requesterId);
+        Long due = persistApproved(NOW.minusDays(8), newTarget());
+        MutableClock.INSTANCE.setDateTime(NOW);
+
+        assertThat(dueExpirer.expireIfDue(consumed)).isFalse();
+        assertThat(expirer.expireDue()).isEqualTo(1);
+        assertThat(statusOf(consumed)).isEqualTo("CONSUMED");
+        assertThat(statusOf(due)).isEqualTo("EXPIRED");
+    }
+
+    @Test
+    void consumeRejectsAnotherStudentOrEnrollment() {
+        Long id = persistApproved(NOW);
+        Long certificateId = persistCertificate(uniqueCode());
+        Target other = newTarget();
+
+        assertThatThrownBy(() -> consumer.consume(id, certificateId, other.studentId(), RegularityKind.PROGRAM, enrollmentId, requesterId))
+                .isInstanceOf(ExceptionTargetMismatchException.class);
+        assertThatThrownBy(() -> consumer.consume(id, certificateId, studentId, RegularityKind.PROGRAM, other.enrollmentId(), requesterId))
+                .isInstanceOf(ExceptionTargetMismatchException.class);
+        assertThat(statusOf(id)).isEqualTo("APPROVED");
+    }
+
+    @Test
+    void databaseRefusesAnExceptionIdThatDoesNotExist() {
+        Long certificateId = persistCertificate(uniqueCode());
+
+        assertThatThrownBy(() -> jdbc.update("update regular_student_certificate set exception_id = 987654321 where id = ?", certificateId))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void approvalUsesTheConfiguredExceptionValidityAndTheCurrentActor() {
+        jdbc.update("update regular_certificate_settings set exception_validity_days = 10");
+        actAs(requesterId);
+        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+                OrganismKind.COURT, "Causa 55/2026", REASON));
+        actAs(directorId);
+
+        CertificateExceptionResponse approved = approveUseCase.approve(requested.id(), "Reclamo verificado en el juzgado");
+
+        assertThat(requested.status()).isEqualTo(CertificateExceptionStatus.PENDING);
+        assertThat(requested.requestedById()).isEqualTo(requesterId);
+        assertThat(requested.studentId()).isEqualTo(studentId);
+        assertThat(approved.status()).isEqualTo(CertificateExceptionStatus.APPROVED);
+        assertThat(approved.decidedById()).isEqualTo(directorId);
+        assertThat(approved.validUntil()).isEqualTo(approved.decidedAt().plusDays(10)).isEqualTo(NOW.plusDays(10));
+    }
+
+    @Test
+    void requesterCannotApproveTheirOwnRequestAndNobodyElseCanWithdrawIt() {
+        actAs(requesterId);
+        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+                OrganismKind.CONSUMER_DEFENSE, "EXP-1/2026", REASON));
+
+        assertThatThrownBy(() -> approveUseCase.approve(requested.id(), "Reclamo verificado en el juzgado"))
+                .isInstanceOf(OwnExceptionDecisionException.class);
+        assertThatThrownBy(() -> rejectUseCase.reject(requested.id(), "Reclamo verificado en el juzgado"))
+                .isInstanceOf(OwnExceptionDecisionException.class);
+        actAs(directorId);
+        assertThatThrownBy(() -> withdrawUseCase.withdraw(requested.id())).isInstanceOf(ExceptionWithdrawNotAllowedException.class);
+        assertThat(statusOf(requested.id())).isEqualTo("PENDING");
+        actAs(requesterId);
+        assertThat(withdrawUseCase.withdraw(requested.id()).status()).isEqualTo(CertificateExceptionStatus.WITHDRAWN);
+    }
+
+    @Test
+    void directorRejectionRecordsTheDirectorAsDecider() {
+        actAs(requesterId);
+        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+                OrganismKind.OTHER, "Nota 12", REASON));
+        actAs(directorId);
+
+        CertificateExceptionResponse rejected = rejectUseCase.reject(requested.id(), "El reclamo no está respaldado");
+
+        assertThat(rejected.status()).isEqualTo(CertificateExceptionStatus.REJECTED);
+        assertThat(rejected.decidedById()).isEqualTo(directorId);
+    }
+
+    @Test
+    void secondOpenRequestForTheSameEnrollmentIsRejectedUntilTheFirstIsClosed() {
+        actAs(requesterId);
+        CertificateExceptionResponse first = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+                OrganismKind.COURT, "Causa 1", REASON));
+
+        assertThatThrownBy(() -> requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+                OrganismKind.COURT, "Causa 2", REASON))).isInstanceOf(CertificateExceptionAlreadyOpenException.class);
+        withdrawUseCase.withdraw(first.id());
+        assertThat(requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId, OrganismKind.COURT,
+                "Causa 2", REASON)).status()).isEqualTo(CertificateExceptionStatus.PENDING);
     }
 
     private String statusOf(Long id) {
