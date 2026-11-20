@@ -74,7 +74,7 @@ class PasswordResetFailureConcurrencyIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void concurrentResetCodeUseSucceedsOnlyOnce() throws Exception {
+    void concurrentResetCodeUseRemainsSingleUse() throws Exception {
         Person person = persistPerson("reset-once-" + System.nanoTime());
         persistCode(person);
         List<Callable<String>> calls = new ArrayList<>();

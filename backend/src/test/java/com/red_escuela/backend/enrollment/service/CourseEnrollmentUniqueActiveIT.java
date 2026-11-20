@@ -113,7 +113,7 @@ class CourseEnrollmentUniqueActiveIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void concurrentEnrollmentCreationLeavesOneActiveEnrollment() throws Exception {
+    void concurrentEnrollmentCreationRemainsSingleActive() throws Exception {
         Course[] courseHolder = new Course[1];
         persistCourseWithOneSection(courseHolder);
         Long courseId = courseHolder[0].getId();
@@ -154,6 +154,8 @@ class CourseEnrollmentUniqueActiveIT extends AbstractIntegrationTest {
 
         assertThat(outcomes.stream().filter(Outcome::succeeded)).hasSize(1);
         assertThat(outcomes.stream().filter(outcome -> !outcome.succeeded()).map(Outcome::failure))
-                .allMatch(DataIntegrityViolationException.class::isInstance);
+                .allMatch(failure -> failure instanceof DataIntegrityViolationException violation
+                        && violation.getCause() instanceof org.hibernate.exception.ConstraintViolationException constraint
+                        && "uk_course_enrollment_student_course_active".equals(constraint.getConstraintName()));
     }
 }

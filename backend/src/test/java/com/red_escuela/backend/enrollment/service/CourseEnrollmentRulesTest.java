@@ -254,6 +254,33 @@ class CourseEnrollmentRulesTest {
         verify(courseCatalogFinder).lockCourse(COURSE_ID);
     }
 
+    private void givenEnrollableCourseWhoseInsertViolates(String constraintName) {
+        givenStudentWithOpenWindow();
+        when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
+        when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of());
+        when(courseCatalogFinder.findCourseEntity(COURSE_ID)).thenReturn(course);
+        when(courseCatalogFinder.hasCapacityFor(any(), org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
+        when(courseEnrollmentRepository.saveAndFlush(any(CourseEnrollment.class))).thenThrow(new org.springframework.dao.DataIntegrityViolationException(
+                "duplicate", new org.hibernate.exception.ConstraintViolationException("duplicate", new java.sql.SQLException("duplicate"),
+                        "insert", constraintName)));
+    }
+
+    @Test
+    void duplicateActiveCourseEnrollmentIndexViolationIsTranslatedToTheDomainError() {
+        givenEnrollableCourseWhoseInsertViolates("uk_course_enrollment_student_course_active");
+
+        assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null)))
+                .isInstanceOf(AlreadyEnrolledInCourseException.class);
+    }
+
+    @Test
+    void violationOfAnotherConstraintIsNotTranslatedToTheDomainError() {
+        givenEnrollableCourseWhoseInsertViolates("fk_course_enrollment_student");
+
+        assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null)))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
     @Test
     void enrollSelfServiceGrantsTheStudentRoleToTheEnrolledPerson() {
         givenStudentWithOpenWindow();
