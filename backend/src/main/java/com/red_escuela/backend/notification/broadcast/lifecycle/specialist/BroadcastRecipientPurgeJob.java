@@ -56,7 +56,7 @@ public class BroadcastRecipientPurgeJob {
         int broadcasts = 0;
         for (int round = 0; round < settings.maxBatchesPerRun(); round++) {
             List<Long> batch = recipientRepository.findBroadcastIdsWithRecipientsPastPurgeCutoff(cutoff, PageRequest.ofSize(settings.batchSize()));
-            batch.forEach(broadcastId -> transaction.executeWithoutResult(status -> purgeRecipients(broadcastId)));
+            batch.forEach(this::purgeRecipients);
             broadcasts += batch.size();
             if (batch.size() < settings.batchSize()) {
                 break;
@@ -66,10 +66,23 @@ public class BroadcastRecipientPurgeJob {
     }
 
     private void purgeRecipients(Long broadcastId) {
-        int purged = recipientRepository.deleteByBroadcastId(broadcastId);
-        if (purged > 0) {
+        int chunkSize = settings.batchSize();
+        int purgedBefore = 0;
+        int removed;
+        do {
+            int alreadyPurged = purgedBefore;
+            removed = transaction.execute(status -> deleteChunk(broadcastId, chunkSize, alreadyPurged));
+            purgedBefore += removed;
+        } while (removed == chunkSize);
+    }
+
+    private int deleteChunk(Long broadcastId, int chunkSize, int alreadyPurged) {
+        int removed = recipientRepository.deleteChunkByBroadcastId(broadcastId, chunkSize);
+        int purgedInTotal = alreadyPurged + removed;
+        if (removed < chunkSize && purgedInTotal > 0) {
             auditTrail.record(new AuditRecord(AuditAction.BROADCAST_RECIPIENTS_PURGED, AuditEntityType.BROADCAST,
-                    broadcastId, null, String.valueOf(purged), "RETENTION_" + retentionMonths + "_MONTHS"));
+                    broadcastId, null, String.valueOf(purgedInTotal), "RETENTION_" + retentionMonths + "_MONTHS"));
         }
+        return removed;
     }
 }

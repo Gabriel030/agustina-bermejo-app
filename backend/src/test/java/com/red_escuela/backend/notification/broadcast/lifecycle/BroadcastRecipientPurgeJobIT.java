@@ -61,6 +61,7 @@ class BroadcastRecipientPurgeJobIT extends AbstractIntegrationTest {
     private JdbcTemplate jdbc;
 
     private final List<Long> createdBroadcastIds = new ArrayList<>();
+    private final List<Long> createdDeliveryIds = new ArrayList<>();
 
     @AfterEach
     void cleanCreatedRows() {
@@ -70,6 +71,10 @@ class BroadcastRecipientPurgeJobIT extends AbstractIntegrationTest {
             jdbc.update("delete from broadcast where id = ?", broadcastId);
         }
         createdBroadcastIds.clear();
+        for (Long deliveryId : createdDeliveryIds) {
+            jdbc.update("delete from notification_delivery where id = ?", deliveryId);
+        }
+        createdDeliveryIds.clear();
     }
 
     private BroadcastRecipientPurgeJob job() {
@@ -194,14 +199,73 @@ class BroadcastRecipientPurgeJobIT extends AbstractIntegrationTest {
 
     @Test
     void isIdempotent() {
-        Broadcast broadcast = broadcast(person(), BroadcastStatus.CANCELLED, NOW.minusMonths(13).toInstant(), null);
+        Person creator = person();
+        Broadcast broadcast = broadcast(creator, BroadcastStatus.CANCELLED, NOW.minusMonths(13).toInstant(), null);
+        Broadcast other = broadcast(creator, BroadcastStatus.COMPLETED, null, NOW.minusMonths(2).toInstant());
         recipients(broadcast, person(), person());
+        recipients(other, person(), person());
 
         job().purgeExpiredRecipients();
         int secondRun = job().purgeExpiredRecipients();
 
         assertThat(secondRun).isZero();
         assertThat(auditEntries(broadcast)).isEqualTo(1);
+        assertThat(recipientRepository.countByBroadcastId(other.getId())).isEqualTo(2);
+        assertThat(auditEntries(other)).isZero();
+    }
+
+    @Test
+    void crossedDatesAreNeverPurged() {
+        Person creator = person();
+        Instant old = NOW.minusMonths(14).toInstant();
+        Instant recent = NOW.minusMonths(2).toInstant();
+        Broadcast completedWithOldCancelledAt = broadcast(creator, BroadcastStatus.COMPLETED, old, recent);
+        Broadcast cancelledWithOldCompletedAt = broadcast(creator, BroadcastStatus.CANCELLED, recent, old);
+        recipients(completedWithOldCancelledAt, person(), person());
+        recipients(cancelledWithOldCompletedAt, person(), person());
+
+        job().purgeExpiredRecipients();
+
+        assertThat(recipientRepository.countByBroadcastId(completedWithOldCancelledAt.getId())).isEqualTo(2);
+        assertThat(recipientRepository.countByBroadcastId(cancelledWithOldCompletedAt.getId())).isEqualTo(2);
+        assertThat(auditEntries(completedWithOldCancelledAt)).isZero();
+        assertThat(auditEntries(cancelledWithOldCompletedAt)).isZero();
+    }
+
+    @Test
+    void purgesMoreRowsThanOneChunkWithASingleAuditEntry() {
+        Person creator = person();
+        Broadcast broadcast = broadcast(creator, BroadcastStatus.COMPLETED, null, NOW.minusMonths(13).toInstant());
+        for (int i = 0; i < 5; i++) {
+            recipientRepository.saveAndFlush(BroadcastRecipient.builder().broadcastId(broadcast.getId()).personId(person().getId())
+                    .status(BroadcastRecipientStatus.SENT).addressMasked("a***@mail.com").updatedAt(NOW.minusMonths(14).toInstant()).build());
+        }
+
+        job(2, 100).purgeExpiredRecipients();
+
+        assertThat(recipientRepository.countByBroadcastId(broadcast.getId())).isZero();
+        assertThat(auditEntries(broadcast)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select after_value from audit_log where entity_type = 'BROADCAST' and entity_id = ? and action = 'BROADCAST_RECIPIENTS_PURGED'",
+                String.class, broadcast.getId())).isEqualTo("5");
+    }
+
+    @Test
+    void deliveryReferencedByAPurgedRecipientSurvives() {
+        Person creator = person();
+        Broadcast broadcast = broadcast(creator, BroadcastStatus.COMPLETED, null, NOW.minusMonths(13).toInstant());
+        Person recipient = person();
+        Long deliveryId = jdbc.queryForObject("insert into notification_delivery (dedup_key, channel, category, kind, priority, recipient_person_id, status, "
+                + "scheduled_for, body_text, sent_at, created_at) values (?, 'IN_APP', 'BROADCAST', 'K', 1, ?, 'SENT', ?, 'b', now(), now()) returning id",
+                Long.class, "purge:" + System.nanoTime(), recipient.getId(), java.sql.Date.valueOf("2026-05-01"));
+        createdDeliveryIds.add(deliveryId);
+        recipientRepository.saveAndFlush(BroadcastRecipient.builder().broadcastId(broadcast.getId()).personId(recipient.getId())
+                .status(BroadcastRecipientStatus.SENT).addressMasked("a***@mail.com").deliveryId(deliveryId)
+                .updatedAt(NOW.minusMonths(14).toInstant()).build());
+
+        job().purgeExpiredRecipients();
+
+        assertThat(recipientRepository.countByBroadcastId(broadcast.getId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from notification_delivery where id = ?", Integer.class, deliveryId)).isEqualTo(1);
     }
 
     @Test
