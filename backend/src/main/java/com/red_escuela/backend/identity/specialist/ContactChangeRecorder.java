@@ -33,6 +33,11 @@ public class ContactChangeRecorder {
                 ApplicationTime.now().minus(RECENT_EMAIL_CHANGE_WINDOW));
     }
 
+    public Optional<ContactChangeLog> lastEmailChangeRequest(Long personId) {
+        return contactChangeLogRepository.findFirstByPersonIdAndChangeTypeOrderByIdDesc(personId,
+                ContactChangeType.EMAIL_CHANGE_REQUESTED);
+    }
+
     public Optional<Long> lastEmailChangeRequesterId(Long personId) {
         return contactChangeLogRepository.findFirstByPersonIdAndChangeTypeOrderByIdDesc(personId,
                 ContactChangeType.EMAIL_CHANGE_REQUESTED).map(ContactChangeLog::getActorPersonId);

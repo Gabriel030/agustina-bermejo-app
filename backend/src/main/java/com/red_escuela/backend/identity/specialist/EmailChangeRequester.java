@@ -22,7 +22,7 @@ import java.util.Base64;
 @Service
 public class EmailChangeRequester {
 
-    private static final long EXPIRATION_HOURS = 48;
+    static final long EXPIRATION_HOURS = 48;
 
     private final PersonRepository personRepository;
     private final EmailVerificationTokenRepository tokenRepository;
@@ -121,12 +121,16 @@ public class EmailChangeRequester {
                 previousEmail, newEmail.value());
         if (awaitingOwnerApproval) {
             eventPublisher.publishEvent(EmailChangeOwnerApprovalRequestedEvent.requestedFor(person.getId(), previousEmail,
-                    newEmail.value(), frontendBaseUrl + "/cancelar-cambio-email?token=" + clearCancelToken));
+                    newEmail.value(), linkTo("/revisar-cambio-email", clearCancelToken), linkTo("/cancelar-cambio-email", clearCancelToken)));
             return;
         }
         eventPublisher.publishEvent(EmailChangeRequestedEvent.requestedFor(person.getId(), previousEmail,
                 newEmail.value(), frontendBaseUrl + "/verificar-email?token=" + clearToken,
                 frontendBaseUrl + "/cancelar-cambio-email?token=" + clearCancelToken));
+    }
+
+    private String linkTo(String path, String clearToken) {
+        return frontendBaseUrl + path + "?token=" + clearToken;
     }
 
     private String newClearToken() {
