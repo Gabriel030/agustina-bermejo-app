@@ -144,6 +144,7 @@ describe('BroadcastWizard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
 
     expect(await screen.findByText('Sin destinatarios')).toBeInTheDocument();
+    expect(screen.getByText('Nadie coincide con estos criterios.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled();
   });
 
@@ -364,17 +365,98 @@ describe('BroadcastWizard', () => {
     expect(contractViolations('/broadcasts/audience-preview', onPreview.mock.calls[0][0])).toEqual([]);
   });
 
-  it('keeps a single enrollment status selected at a time', async () => {
+  async function openAudienceStep() {
     window.localStorage.clear();
-    mockBackend();
     renderWithProviders(<BroadcastWizard />);
     await userEvent.type(await screen.findByLabelText('Nombre interno'), 'Mesas');
     await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Cursando' }));
+    await screen.findByRole('button', { name: 'Cursando' });
+  }
+
+  const lastCriteria = (previews) => previews.at(-1)?.segmentSpec.criteria;
+
+  it('sendsOneCriterionForASingleSelectedStatus', async () => {
+    const previews = [];
+    mockBackend({ onPreview: (body) => previews.push(body) });
+    await openAudienceStep();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cursando' }));
+
+    await waitFor(() => expect(lastCriteria(previews)).toEqual([{ key: 'ENROLLMENT_STATUS', value: 'IN_COURSE' }]));
+  });
+
+  it('sendsOneCriterionPerValueWhenSeveralStatusesAreSelected', async () => {
+    const previews = [];
+    mockBackend({ onPreview: (body) => previews.push(body) });
+    await openAudienceStep();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cursando' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cursada regular' }));
 
-    expect(screen.getByRole('button', { name: 'Cursando' })).toHaveAttribute('aria-pressed', 'false');
+    await waitFor(() =>
+      expect(lastCriteria(previews)).toEqual([
+        { key: 'ENROLLMENT_STATUS', value: 'IN_COURSE' },
+        { key: 'ENROLLMENT_STATUS', value: 'REGULAR' },
+      ]),
+    );
+    expect(screen.getByRole('button', { name: 'Cursando' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Cursada regular' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('combinesSeveralValuesOfTwoDifferentKeys', async () => {
+    const previews = [];
+    mockBackend({ catalog: [{ key: 'STAFF_ROLE', parameters: [] }], onPreview: (body) => previews.push(body) });
+    await openAudienceStep();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cursando' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Egresado' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Docencia' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Preceptoría' }));
+
+    await waitFor(() =>
+      expect(lastCriteria(previews)).toEqual([
+        { key: 'ENROLLMENT_STATUS', value: 'IN_COURSE' },
+        { key: 'ENROLLMENT_STATUS', value: 'GRADUATED' },
+        { key: 'STAFF_ROLE', value: 'DOCENTE' },
+        { key: 'STAFF_ROLE', value: 'PRECEPTOR' },
+      ]),
+    );
+  });
+
+  it('turnsAChipOffWhenItIsTappedAgain', async () => {
+    const previews = [];
+    mockBackend({ onPreview: (body) => previews.push(body) });
+    await openAudienceStep();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cursando' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cursada regular' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cursando' }));
+
+    expect(screen.getByRole('button', { name: 'Cursando' })).toHaveAttribute('aria-pressed', 'false');
+    await waitFor(() => expect(lastCriteria(previews)).toEqual([{ key: 'ENROLLMENT_STATUS', value: 'REGULAR' }]));
+  });
+
+  it('asksForNoAudienceOnceTheLastChipIsTurnedOff', async () => {
+    const previews = [];
+    mockBackend({ onPreview: (body) => previews.push(body) });
+    await openAudienceStep();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cursando' }));
+    await waitFor(() => expect(previews).toHaveLength(1));
+    await userEvent.click(screen.getByRole('button', { name: 'Cursando' }));
+
+    expect(await screen.findByText('Elegí un criterio')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled();
+    expect(previews).toHaveLength(1);
+  });
+
+  it('explainsHowSeveralChipsCombine', async () => {
+    mockBackend();
+    await openAudienceStep();
+
+    expect(
+      screen.getByText('Podés marcar varias en un mismo grupo (alcanza con una). Si marcás en los dos grupos, llega a quienes cumplan ambos.'),
+    ).toBeInTheDocument();
   });
 
   it('flags a body that breaks the contract', () => {

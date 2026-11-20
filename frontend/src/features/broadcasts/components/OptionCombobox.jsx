@@ -12,9 +12,9 @@ export function OptionCombobox({ label, options, value, onChange, placeholder = 
       <span className="text-size-13 font-semibold text-ink">{label}</span>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" role="combobox" aria-expanded={open} aria-label={label} disabled={disabled} className="justify-between">
-            <span className="truncate">{selected?.label ?? placeholder}</span>
-            <ChevronsUpDown className="size-4 opacity-60" />
+          <Button type="button" variant="outline" role="combobox" aria-expanded={open} aria-label={label} disabled={disabled} className="h-auto min-h-9 justify-between py-1.5 whitespace-normal">
+            <span className="min-w-0 text-left break-words">{selected?.label ?? placeholder}</span>
+            <ChevronsUpDown className="size-4 shrink-0 opacity-60" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] min-w-64 p-0">

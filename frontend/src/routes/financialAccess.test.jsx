@@ -35,7 +35,6 @@ async function signInAs(role, path) {
     http.get(`${API}/me`, () => HttpResponse.json(profileFixture({ id: 2, nombre: 'Uno', apellido: 'Prueba', email: 'uno@demo.test', roles: [role] }))),
     http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
     http.get(`${API}/financial-dashboard`, () => HttpResponse.json({ studentsInDebt: 1, studentsUpToDate: 2, totalsByCurrency: [] })),
-    http.get(`${API}/financial-dashboard/debtors`, () => HttpResponse.json([])),
     http.get(`${API}/billing/metrics/:panel`, ({ params }) =>
       HttpResponse.json({ panel: params.panel, available: true, partial: false, months: ['2026-10'], series: [] }),
     ),

@@ -10,6 +10,10 @@ const MONEY_MONO_ALLOWED = [
   '/src/features/identity/pages/GestionPersonal.jsx',
   '/src/features/evaluation/components/ClosurePrerequisitesSheet.jsx',
   '/src/pages/AlumnoPagarTransferencia.jsx',
+  '/src/features/backups/components/BackupRestoreAndDisk.jsx',
+  '/src/features/backups/components/BackupTiersTable.jsx',
+  '/src/features/backups/components/BackupWhatIsBackedUp.jsx',
+  '/src/features/backups/components/CopyableCommand.jsx',
 ];
 
 const MONEY_MONO_PENDING = [
