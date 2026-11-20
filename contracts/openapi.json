@@ -3528,7 +3528,7 @@
           },
           "recordedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "category", "channel", "granted", "hasRecord", "recordedAt" ],
@@ -14121,7 +14121,7 @@
             "type" : "boolean"
           },
           "source" : {
-            "enum" : [ "PROFILE", "EMAIL_LINK", "STAFF_ON_BEHALF", "IMPORT", "ACCOUNT_CREATION" ],
+            "enum" : [ "PROFILE" ],
             "type" : "string"
           }
         },
