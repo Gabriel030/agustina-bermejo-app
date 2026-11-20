@@ -43,6 +43,7 @@ final class MatrixKnownResponses {
             Map.entry("POST /prospects/by-staff", REFERENCED_ENTITY),
             Map.entry("POST /graduation-certificates", REFERENCED_ENTITY),
             Map.entry("POST /regular-certificates", REFERENCED_ENTITY),
+            Map.entry("POST /certificate-exceptions", REFERENCED_ENTITY),
             Map.entry("POST /director-approval-requests", REFERENCED_ENTITY),
             Map.entry("POST /me/bank-transfer-receipts", NO_DATA),
             Map.entry("POST /me/course-enrollments", NO_PROFILE),

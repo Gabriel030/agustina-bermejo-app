@@ -6,5 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record IssueRegularCertificateRequest(@NotNull RegularityKind kind, @NotNull Long enrollmentId,
-                                             boolean standingConfirmed, @Size(max = 500) @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String standingEvidence) {
+                                             boolean standingConfirmed, @Size(max = 500) @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String standingEvidence,
+                                             @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Long exceptionId) {
 }

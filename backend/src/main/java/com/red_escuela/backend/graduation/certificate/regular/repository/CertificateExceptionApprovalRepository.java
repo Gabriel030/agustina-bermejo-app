@@ -25,4 +25,8 @@ public interface CertificateExceptionApprovalRepository extends JpaRepository<Ce
     boolean existsByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, Collection<CertificateExceptionStatus> statuses);
 
     boolean existsByCourseEnrollmentIdAndStatusIn(Long courseEnrollmentId, Collection<CertificateExceptionStatus> statuses);
+
+    List<CertificateExceptionApproval> findAllByOrderByIdDesc();
+
+    List<CertificateExceptionApproval> findAllByRequestedByIdOrderByIdDesc(Long requestedById);
 }

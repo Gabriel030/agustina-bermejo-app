@@ -313,6 +313,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   MINOR_GUARDIAN_REQUIRED: 'Si sos menor de 18 años tenés que cargar nombre, correo y vínculo de un responsable.',
   LEGAL_ACCEPTANCE_REQUIRED: 'Para registrarte tenés que aceptar los términos y condiciones y la política de privacidad.',
   NOT_REGULAR: 'No tenés la cursada regular de esta materia.',
+  NO_DEBT_TO_EXCEPT: 'El alumno no tiene deuda: no hace falta una excepción.',
   PENDING_COURSE_ENROLLMENT_APPLICATION: 'Hay una inscripción al curso pendiente de aprobación.',
   PREREQUISITE_ALREADY_EXISTS: 'Esa correlatividad ya existe.',
   PUBLISHED_GRADES_INCOMPLETE: 'Faltan publicar evaluaciones: no se puede confirmar el cierre todavía.',

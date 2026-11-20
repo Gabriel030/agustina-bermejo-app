@@ -535,6 +535,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NIGHTLY_BILLING_NOT_COMPLETED` | no | `NightlyBillingNotCompletedException` | billing |
 | `NOT_REGULAR` | no | `NotRegularException` | graduation |
 | `NO_ACTIVE_PAYMENT_PLAN` | no | `NoActivePaymentPlanException` | billing |
+| `NO_DEBT_TO_EXCEPT` | no | `NoDebtToExceptException` | graduation |
 | `NO_EFFECTIVE_CONFIGURATION` | no | `NoEffectiveConfigurationException` | billing |
 | `NO_EFFECTIVE_PRICE` | no | `NoEffectivePriceException` | billing |
 | `NO_PENDING_GRADES_TO_PUBLISH` | no | `NoPendingGradesToPublishException` | evaluation |
@@ -747,6 +748,10 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/broadcasts/{id}/cancel` | `BroadcastLifecycleController#cancelBroadcast` |
 | POST | `/broadcasts/{id}/confirm` | `BroadcastLifecycleController#confirmBroadcast` |
 | POST | `/cancel-email-change` | `CancelEmailChangeController#cancelEmailChange` |
+| POST | `/certificate-exceptions` | `CertificateExceptionController#request` |
+| POST | `/certificate-exceptions/{id}/approve` | `CertificateExceptionController#approve` |
+| POST | `/certificate-exceptions/{id}/reject` | `CertificateExceptionController#reject` |
+| POST | `/certificate-exceptions/{id}/withdraw` | `CertificateExceptionController#withdraw` |
 | POST | `/chargebacks/{chargebackId}/reversal` | `PaymentReversalController#reverseChargeback` |
 | POST | `/chargebacks/{chargebackId}/reversal/preview` | `PaymentReversalPreviewController#previewChargebackReversal` |
 | POST | `/classrooms` | `ClassroomController#create` |

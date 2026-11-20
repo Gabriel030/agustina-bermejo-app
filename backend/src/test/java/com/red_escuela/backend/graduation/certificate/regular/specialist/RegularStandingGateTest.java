@@ -6,6 +6,7 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Standing
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateSettings;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceRequiredException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingNotConfirmedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.NoDebtToExceptException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StudentHasDebtException;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularStandingGate.StandingConfirmation;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularStandingGate.StandingResolution;
@@ -190,5 +191,46 @@ class RegularStandingGateTest {
         when(overdueDebtProbe.isEnrollmentFeePaid(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(true);
 
         assertThat(resolve(NOT_CONFIRMED).basis()).isEqualTo(StandingBasis.BILLING_VERIFIED);
+    }
+
+    @Test
+    void exceptionResolutionInFullModeWithDebtReturnsExceptionApprovedBasis() {
+        givenMode(BillingMode.FULL);
+        when(overdueDebtProbe.isEnrollmentFeePaid(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(true);
+        when(overdueDebtProbe.hasOverdueDebt(STUDENT_ID)).thenReturn(true);
+
+        StandingResolution resolution = gate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID);
+
+        assertThat(resolution.basis()).isEqualTo(StandingBasis.EXCEPTION_APPROVED);
+        assertThat(resolution.mode()).isEqualTo(BillingMode.FULL);
+        assertThat(resolution.confirmedById()).isNull();
+    }
+
+    @Test
+    void exceptionResolutionInFullModeWithUnpaidEnrollmentFeeCountsAsDebt() {
+        givenMode(BillingMode.FULL);
+        when(overdueDebtProbe.isEnrollmentFeePaid(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(false);
+        when(overdueDebtProbe.hasOverdueDebt(STUDENT_ID)).thenReturn(false);
+
+        assertThat(gate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID).basis()).isEqualTo(StandingBasis.EXCEPTION_APPROVED);
+    }
+
+    @Test
+    void exceptionIsRefusedInFullModeWhenThereIsNothingToExcept() {
+        givenMode(BillingMode.FULL);
+        when(overdueDebtProbe.isEnrollmentFeePaid(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(true);
+        when(overdueDebtProbe.hasOverdueDebt(STUDENT_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> gate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID)).isInstanceOf(NoDebtToExceptException.class);
+        assertThatThrownBy(() -> gate.requireDebtToExcept(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID)).isInstanceOf(NoDebtToExceptException.class);
+    }
+
+    @Test
+    void exceptionIsAcceptedWithoutDebtLookupWhenBillingIsNotFull() {
+        givenMode(BillingMode.OFF);
+
+        assertThat(gate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID).mode()).isEqualTo(BillingMode.OFF);
+        gate.requireDebtToExcept(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID);
+        verifyNoInteractions(overdueDebtProbe);
     }
 }
