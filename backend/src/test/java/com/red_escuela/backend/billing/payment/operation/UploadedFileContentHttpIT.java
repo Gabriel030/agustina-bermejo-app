@@ -14,6 +14,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -121,7 +122,8 @@ class UploadedFileContentHttpIT extends AbstractBankTransferReceiptHttpIT {
                         .header("Authorization", "Bearer " + studentTokenOf(debtor)))
                 .andExpect(status().isBadRequest())
                 .andReturn();
-        assertThat(result.getResponse().getContentAsString()).doesNotContain(UNSUPPORTED_FILE_TYPE);
+        assertThat(result.getResolvedException()).isInstanceOf(MissingServletRequestPartException.class);
+        assertThat(result.getResponse().getContentAsString()).isEmpty();
         assertThat(filesStoredFor(debtor.studentId())).isZero();
     }
 
@@ -152,12 +154,11 @@ class UploadedFileContentHttpIT extends AbstractBankTransferReceiptHttpIT {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        assertThat(result.getResponse().getContentAsString()).doesNotContain("..").doesNotContain("evil");
         assertThat(filesStoredFor(debtor.studentId())).isEqualTo(1);
         Path studentDirectory = Path.of(uploadsDirectory).resolve("students").resolve(debtor.studentId().toString());
         try (Stream<Path> stored = Files.list(studentDirectory)) {
             assertThat(stored.map(path -> path.getFileName().toString()))
-                    .allMatch(name -> name.startsWith("comprobantes_") && name.endsWith(".pdf") && !name.contains("evil"));
+                    .allMatch(name -> name.matches("comprobantes_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf"));
         }
         assertThat(Files.exists(Path.of(uploadsDirectory).resolve("evil.pdf"))).isFalse();
         assertThat(Files.exists(Path.of(uploadsDirectory).getParent().resolve("evil.pdf"))).isFalse();
