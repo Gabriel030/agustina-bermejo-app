@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification.broadcast.audience.controller;
 
 import com.red_escuela.backend.notification.broadcast.audience.dto.AudiencePreviewRequest;
-import com.red_escuela.backend.notification.broadcast.audience.dto.AudiencePreviewResponse;
+import com.red_escuela.backend.notification.broadcast.audience.dto.BroadcastAudiencePreviewResponse;
 import com.red_escuela.backend.notification.broadcast.audience.dto.SegmentCatalogEntry;
 import com.red_escuela.backend.notification.broadcast.audience.usecase.ListSegmentCatalogUseCase;
 import com.red_escuela.backend.notification.broadcast.audience.usecase.PreviewBroadcastAudienceUseCase;
@@ -35,7 +35,7 @@ public class BroadcastAudienceController {
     }
 
     @PostMapping("/audience-preview")
-    public AudiencePreviewResponse previewBroadcastAudience(@Valid @RequestBody AudiencePreviewRequest request) {
+    public BroadcastAudiencePreviewResponse previewBroadcastAudience(@Valid @RequestBody AudiencePreviewRequest request) {
         return previewBroadcastAudience.previewBroadcastAudience(request);
     }
 }

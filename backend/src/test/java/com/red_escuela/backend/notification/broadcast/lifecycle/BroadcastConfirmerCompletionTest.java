@@ -13,6 +13,8 @@ import com.red_escuela.backend.notification.broadcast.lifecycle.specialist.Broad
 import com.red_escuela.backend.notification.broadcast.specialist.BroadcastProgressTracker;
 import com.red_escuela.backend.notification.broadcast.specialist.ChannelRegistry;
 import com.red_escuela.backend.notification.broadcast.specialist.MessageChannel;
+import com.red_escuela.backend.notification.broadcast.specialist.UnsubscribeLinkFactory;
+import com.red_escuela.backend.notification.broadcast.template.specialist.TemplateVariableSource;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +51,7 @@ class BroadcastConfirmerCompletionTest {
         when(registry.channel(ChannelType.EMAIL)).thenReturn(channel);
         when(channel.resolveAddress(anyLong())).thenReturn(Optional.empty());
         BroadcastConfirmer confirmer = new BroadcastConfirmer(broadcasts, recipients, mock(RecipientFreezer.class), registry, tracker,
-                mock(AuditTrail.class), Clock.fixed(NOW, ZoneOffset.UTC));
+                mock(TemplateVariableSource.class), mock(UnsubscribeLinkFactory.class), mock(AuditTrail.class), Clock.fixed(NOW, ZoneOffset.UTC));
 
         confirmer.confirmBroadcast(7L, 1L);
 

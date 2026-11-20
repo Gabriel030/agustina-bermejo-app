@@ -44,6 +44,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -165,7 +166,7 @@ abstract class AbstractBroadcastDispatchIT extends AbstractIntegrationTest {
             return receipt;
         };
         return new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceFinder, emailDeliveryPolicySet, recording,
-                circuitBreakerFactory) {
+                circuitBreakerFactory, (category, kind, recipientPersonId) -> Optional.empty()) {
             @Override
             public void dispatchDelivery(Long deliveryId) {
                 transactionTemplate.executeWithoutResult(status -> super.dispatchDelivery(deliveryId));
