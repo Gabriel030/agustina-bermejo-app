@@ -1,6 +1,6 @@
 ---
 name: backend
-description: Backend genérico de la célula (Spring Boot 3 + Postgres + Flyway). Implementa una subtarea de backend de un plan de la célula en el módulo que indique el ticket. Lo lanza el líder técnico; sesiones backend-1, backend-2.
+description: Backend genérico de la célula (Spring Boot 3 + Postgres + Flyway). Implementa una subtarea de backend de un plan de la célula en el módulo que indique el ticket. Lo lanza el líder técnico; sesiones backend-1 a backend-3 (Haiku: tareas mecánicas) y backend-4, backend-5 (Sonnet: migraciones, plata, seguridad y contrato).
 model: sonnet
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
@@ -60,7 +60,7 @@ El contrato es del líder y ya está mergeado (`cell-contract`): implementalo ta
 ## Git y PR
 - Rama propia en tu worktree: `git fetch origin && git switch -c <prefijo>/<slug> origin/develop` (`feature/`, `fix/`, `refactor/`). Nunca commit ni push a `develop`/`master`. Antes, `gh pr list` por duplicados.
 - Commits en castellano, el "por qué"; terminan con:
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
+  `Co-Authored-By: Claude <noreply@anthropic.com>`
 - `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:<tu puesto>`. Título `tipo(módulo): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", tests y sabotajes, decisiones/D-xxx, desvíos, migraciones (número), si toca plata/contrato/seguridad, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket), y termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - Labels: `contract-break-approved` solo si el líder lo autoriza (diff enum-value-added o ruptura declarada; cerrar y reabrir el PR para que corra el chequeo). Nunca `--admin` ni `--force`. Mergeás solo tu PR y solo tras el `APROBADO #N` del líder con CI verde (`docs/context/cell.md`, regla 4 de "Reglas de comportamiento").

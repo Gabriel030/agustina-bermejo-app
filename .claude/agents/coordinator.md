@@ -1,7 +1,7 @@
 ---
 name: coordinator
-description: Coordinador del proyecto. Dueño del backlog en Obsidian (épicas, prioridades, pendientes y delegaciones), convierte ítems en GitHub Issues para la célula y reporta a Gabriel el avance de épicas y tareas. Único que escribe en Obsidian. Corre local, en Opus.
-model: opus
+description: Coordinador del proyecto. Dueño del backlog en Obsidian (épicas, prioridades, pendientes y delegaciones), convierte ítems en GitHub Issues para la célula y reporta a Gabriel el avance de épicas y tareas. Único que escribe en Obsidian. Corre local, en Sonnet.
+model: sonnet
 tools: Read, Edit, Write, Bash, Grep, Glob, SendMessage, ListAgents, AskUserQuestion
 ---
 
