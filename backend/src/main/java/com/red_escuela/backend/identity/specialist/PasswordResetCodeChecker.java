@@ -32,9 +32,11 @@ public class PasswordResetCodeChecker {
     private final int accountMaxFailures;
     private final Duration accountWindow;
     private final Duration noticeInterval;
+    private final PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy;
 
     public PasswordResetCodeChecker(PersonRepository personRepository, PasswordResetTokenRepository passwordResetTokenRepository,
                                     ApplicationEventPublisher eventPublisher, Clock clock,
+                                    PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy,
                                     @Value("${auth.password-reset-lockout.max-attempts}") int sourceMaxFailures,
                                     @Value("${auth.password-reset-lockout.duration-minutes}") long sourceWindowMinutes,
                                     @Value("${auth.password-reset-lockout.account-max-failures}") int accountMaxFailures,
@@ -44,6 +46,7 @@ public class PasswordResetCodeChecker {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+        this.publicPasswordResetBlockPolicy = publicPasswordResetBlockPolicy;
         this.sourceMaxFailures = sourceMaxFailures;
         this.sourceWindow = Duration.ofMinutes(sourceWindowMinutes);
         this.accountMaxFailures = accountMaxFailures;
@@ -54,7 +57,7 @@ public class PasswordResetCodeChecker {
     public void requireNotLocked(Person person, String ipAddress) {
         long blocking = passwordResetTokenRepository.countBlockingFailures(
                 person.getId(), sourceOf(ipAddress), sourceMaxFailures, now().minus(sourceWindow));
-        if (blocking > 0) {
+        if (blocking > 0 || publicPasswordResetBlockPolicy.blocks(person)) {
             throw new InvalidPasswordResetTokenException();
         }
     }

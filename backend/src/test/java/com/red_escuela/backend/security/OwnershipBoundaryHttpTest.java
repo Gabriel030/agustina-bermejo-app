@@ -3,12 +3,14 @@ package com.red_escuela.backend.security;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
 class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
 
@@ -29,6 +31,27 @@ class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
         String uri(long id) {
             return template.formatted(id);
         }
+    }
+
+    enum StudentResource {
+        INVOICE_MP_PREFERENCE(HttpMethod.POST, "/me/invoices/%d/mp-preference", OwnershipKind.INVOICE),
+        INVOICE_PRICE_BREAKDOWN(HttpMethod.GET, "/me/invoices/%d/price-breakdown", OwnershipKind.INVOICE),
+        NOTIFICATION_READ(HttpMethod.POST, "/me/notifications/%d/read", OwnershipKind.NOTIFICATION),
+        SESSION_REVOKE(HttpMethod.DELETE, "/me/sessions/%d", OwnershipKind.SESSION);
+
+        private final HttpMethod method;
+        private final String template;
+        private final OwnershipKind kind;
+
+        StudentResource(HttpMethod method, String template, OwnershipKind kind) {
+            this.method = method;
+            this.template = template;
+            this.kind = kind;
+        }
+    }
+
+    static Stream<StudentResource> studentResources() {
+        return Stream.of(StudentResource.values());
     }
 
     static Stream<Resource> resources() {
@@ -55,6 +78,22 @@ class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
         assertThat(response.getStatus()).isEqualTo(404);
         assertThat(response.getContentAsString()).doesNotContain("code");
         assertThat(response.getContentAsString()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @MethodSource("studentResources")
+    void foreignResourceLooksIdenticalToMissingOneForStudent(StudentResource resource) throws Exception {
+        String strangerToken = ownership.strangerTokenFor(resource.kind);
+        long existingId = ownership.resourceIdFor(resource.kind);
+        MockHttpServletResponse foreign = mockMvc.perform(request(resource.method, resource.template.formatted(existingId))
+                .header("Authorization", "Bearer " + strangerToken)).andReturn().getResponse();
+        MockHttpServletResponse missing = mockMvc.perform(request(resource.method, resource.template.formatted(MISSING_ID))
+                .header("Authorization", "Bearer " + strangerToken)).andReturn().getResponse();
+
+        assertThat(foreign.getStatus()).isEqualTo(404);
+        assertThat(missing.getStatus()).isEqualTo(404);
+        assertThat(foreign.getContentAsString()).isEqualTo(missing.getContentAsString());
+        assertThat(foreign.getContentType()).isEqualTo(missing.getContentType());
     }
 
     @ParameterizedTest

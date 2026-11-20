@@ -2,7 +2,7 @@
 
 Verificado contra `origin/develop` (841f9105d, 19-nov-2026). Rutas de producción relativas a `backend/src/main/java/com/red_escuela/backend/`, tests relativos a `backend/src/test/java/com/red_escuela/backend/`. Cada evidencia se comprobó con `git grep -n`. Este documento es solo estado: no corrige nada.
 
-Resumen: 12 cerrados, 4 abiertos (parciales): A4, A7, B1, B4.
+Resumen: 15 hallazgos (A2-A9 y B1-B7): 11 cerrados, 4 abiertos (parciales): A4, A7, B1, B4.
 
 | id | hallazgo | severidad | estado | evidencia (archivo:línea) | test que lo cubre | PR |
 |---|---|---|---|---|---|---|
