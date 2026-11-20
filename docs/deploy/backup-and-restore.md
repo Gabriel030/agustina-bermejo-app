@@ -8,7 +8,7 @@ Los comandos de este documento son los de `deploy/backup/scripts/`. Si cambian l
 
 | Concepto | Valor |
 |---|---|
-| Frecuencia | Cada 4 h (`BACKUP_SCHEDULE=0 */4 * * *`) |
+| Frecuencia | Cada 4 h (`BACKUP_SCHEDULE=0 */4 * * *`). Dentro del día en curso se conservan todos (tier INTRADAY) |
 | RPO | Hasta 4 h (`BACKUP_TARGET_RPO_HOURS=4`) |
 | Retención diaria | Último backup de cada día, últimos 7 días (`BACKUP_KEEP_DAILY=7`) |
 | Retención semanal | Último backup de cada semana, últimas 4 semanas (`BACKUP_KEEP_WEEKLY=4`) |
@@ -30,7 +30,12 @@ Cada ejecución de `backup.sh` produce, con el mismo sello de tiempo:
 - `abfiles_<fecha>.tar.zst` (o `.tar.zst.age`): archivos subidos y certificados del volumen `app_data`.
 - `.sha256` de cada archivo y `.meta` con las migraciones Flyway y el conteo de filas por tabla (lo usa la prueba de restauración).
 
-Antes de rotar se elige cada tier con `select-expired.awk`. Lo que no entra en ningún tier se borra.
+Antes de rotar se elige cada tier con `select-expired.awk`:
+
+- **INTRADAY**: se conservan todos los backups del día en curso.
+- **DAILY**, **WEEKLY** y **QUARTERLY**: el último backup de cada día, semana y trimestre, según la retención de la tabla.
+
+Lo que no entra en ningún tier se borra.
 
 ## Custodia de la clave `age`
 
@@ -39,6 +44,16 @@ Antes de rotar se elige cada tier con `select-expired.awk`. Lo que no entra en n
 - **Qué se guarda en el servidor**: solo la clave pública en `BACKUP_AGE_RECIPIENT`.
 - **Cómo se prueba la custodia**: cada trimestre, en el simulacro, cada custodio abre su copia y confirma que puede leerla. Si uno no puede, se genera un par nuevo y se cambia `BACKUP_AGE_RECIPIENT`; los dumps anteriores siguen necesitando la clave vieja, así que esta se conserva mientras existan.
 - **Si se pierde la clave**: los dumps `.age` no se pueden restaurar. Hay que usar la copia del custodio. Si se pierden las dos, no hay recuperación de esos backups. Por eso hay dos custodios.
+
+## Arranque del servicio
+
+Desde la raíz del repo, con el mismo `.env` de producción:
+
+```bash
+docker compose -f docker-compose.prod.yml -f deploy/backup/docker-compose.backup.yml --env-file deploy/.env up -d backup
+```
+
+El servicio `backup` se une a la red `internal` para llegar a `postgres` (`BACKUP_PGHOST`, `BACKUP_PGPORT`) y a la red por defecto para salir a S3. Usa `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB` del mismo `.env`. Monta `app_data` en solo lectura para copiar los archivos subidos.
 
 ## Backup manual
 
@@ -116,12 +131,18 @@ Hay dos caminos. Elegir según el caso.
      -c "ALTER DATABASE agustina_bermejo_nueva RENAME TO agustina_bermejo;"
    ```
    Para volver atrás, renombrar al revés. No hace falta cambiar `DB_URL` ni `POSTGRES_DB`.
-6. Restaurar los archivos subidos y los certificados del mismo momento:
+6. Restaurar los archivos subidos y los certificados del mismo momento. Antes, buscar el nombre real del volumen (Compose lo prefija con el nombre del proyecto):
+   ```bash
+   docker volume ls | grep app_data
+   ```
+   Después, con el nombre que apareció (aquí `<proyecto>_app_data`):
    ```bash
    age -d -i <clave privada> /backups/abfiles_AAAAMMDDTHHMMSSZ.tar.zst.age \
-     | zstd -d | docker run --rm -i -v app_data:/data alpine tar -x -C /data
+     | zstd -d | docker run --rm -i -v <proyecto>_app_data:/data alpine tar -x -C /data
    ```
    Si el archivo no está cifrado, omitir `age -d -i ...` y pasar el `.tar.zst` directo a `zstd -d`.
+
+   `tar -x` sobrescribe lo que está en el tar y **no borra** archivos que no estén en él. Si hace falta el estado exacto del backup, vaciar `/data` antes, con el backend parado. El host donde se corre este paso necesita `age` y `zstd` instalados.
 7. Levantar el backend: `docker compose -f docker-compose.prod.yml start backend`. Flyway valida el historial al arrancar y aplica las migraciones pendientes si el dump es de una versión anterior.
 8. Verificar antes de abrir a los usuarios. Todo tiene que pasar:
    - La app arranca: `curl -fsS https://<dominio>/api/actuator/health`.
@@ -171,7 +192,7 @@ Hacerlo en una fecha fija de cada trimestre, en un servidor de prueba o en stagi
 - `GET /backups/status`: pantalla de solo lectura para `DIRECTOR` y `PLATFORM_ADMIN`. Lee `status.json`.
 - `deploy/backup/scripts/status.sh` regenera `status.json` (lo corre `pre-release.sh`).
 - Alertas por webhook y/o Telegram (`ALERT_WEBHOOK_URL`, `ALERT_TELEGRAM_BOT_TOKEN` + `ALERT_TELEGRAM_CHAT_ID`) para fallas de backup, dump dañado, prueba de restauración fallida y disco bajo.
-- Revisión diaria de antigüedad (`BACKUP_FRESHNESS_SCHEDULE`, `30 9 * * *`): alerta si el último backup supera `BACKUP_MAX_AGE_HOURS`.
+- Revisión diaria de antigüedad (`BACKUP_FRESHNESS_SCHEDULE`, `30 9 * * *`): alerta si el último backup supera `BACKUP_MAX_AGE_HOURS` (5 h por defecto, mayor que el intervalo de 4 h).
 - `BACKUP_HEARTBEAT_URL` (opcional, por ejemplo healthchecks.io): ping tras cada backup exitoso. Avisa si el servidor entero deja de responder.
 
 ## Variables
@@ -185,12 +206,19 @@ Las que usan los scripts. Están en `deploy/.env.example`.
 | `BACKUP_FRESHNESS_SCHEDULE` | `30 9 * * *` | Cron de la revisión de antigüedad |
 | `BACKUP_TZ` | `America/Argentina/Buenos_Aires` | Zona horaria de los crons |
 | `BACKUP_DIR` | `backup_data` (volumen) | Ruta absoluta del segundo disco del host |
+| `BACKUP_PGHOST` / `BACKUP_PGPORT` | `postgres` / `5432` | Dónde está Postgres |
+| `BACKUP_RUN_ON_START` | `false` | Hace un backup al arrancar el contenedor |
 | `BACKUP_TARGET_RPO_HOURS` | `4` | RPO objetivo que muestra el estado |
-| `BACKUP_MAX_AGE_HOURS` | `13` | Antigüedad máxima aceptable |
+| `BACKUP_ALLOW_EMPTY_DATA` | `false` | Permite backup con `app_data` vacío (solo en una instalación nueva) |
+| `BACKUP_ORPHAN_HOURS` | `6` | Antigüedad a partir de la que se borra un archivo de archivos (`abfiles_*`) sin su dump asociado |
+| `BACKUP_MAX_AGE_HOURS` | `5` | Antigüedad máxima aceptable del último backup |
 | `BACKUP_KEEP_DAILY` / `_WEEKLY` / `_QUARTERLY` | `7` / `4` / `0` | Retención (`0` en trimestral = sin vencimiento) |
 | `BACKUP_AGE_RECIPIENT` | vacío | Clave pública `age1...` para cifrar |
 | `BACKUP_HEARTBEAT_URL` | vacío | Ping tras cada backup exitoso |
-| `BACKUP_S3_BUCKET` y `BACKUP_S3_*` | vacío | Copia a S3 compatible. Credenciales solo por variables de entorno |
+| `BACKUP_S3_BUCKET` | vacío | Activa la copia a S3 compatible |
+| `BACKUP_S3_PREFIX` | `agustina-bermejo` | Carpeta dentro del bucket |
+| `BACKUP_S3_ENDPOINT`, `BACKUP_S3_REGION`, `BACKUP_S3_PROVIDER` | vacío, vacío, `Other` | Proveedor (`AWS`, `Backblaze`, `Cloudflare`, `Minio`, `Other`) |
+| `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | vacío | Credenciales. Solo por variables de entorno |
 | `ALERT_WEBHOOK_URL` | vacío | Webhook de avisos |
 | `ALERT_TELEGRAM_BOT_TOKEN` / `ALERT_TELEGRAM_CHAT_ID` | vacío | Aviso por Telegram |
 
