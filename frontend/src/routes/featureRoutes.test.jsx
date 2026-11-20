@@ -17,6 +17,7 @@ describe('feature routes', () => {
         'announcements',
         'attendance',
         'audit',
+        'backups',
         'billing',
         'broadcasts',
         'data-import',
