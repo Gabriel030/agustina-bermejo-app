@@ -28,6 +28,19 @@ public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRec
             + "where r.broadcastId = :broadcastId and r.anonymizedAt is null")
     int anonymizeByBroadcastId(@Param("broadcastId") Long broadcastId, @Param("now") Instant now);
 
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from BroadcastRecipient r where r.broadcastId = :broadcastId")
+    int deleteByBroadcastId(@Param("broadcastId") Long broadcastId);
+
+    @Query("""
+            select distinct r.broadcastId from BroadcastRecipient r, Broadcast b
+            where b.id = r.broadcastId and b.sentTotal is not null
+              and ((b.status = com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatus.CANCELLED and b.cancelledAt < :cutoff)
+                or (b.status = com.red_escuela.backend.notification.broadcast.draft.domain.BroadcastStatus.COMPLETED and b.completedAt < :cutoff))
+            order by r.broadcastId
+            """)
+    List<Long> findBroadcastIdsWithRecipientsPastPurgeCutoff(@Param("cutoff") Instant cutoff, Pageable pageable);
+
     long countByBroadcastId(Long broadcastId);
 
     long countByBroadcastIdAndStatusIn(Long broadcastId, Collection<BroadcastRecipientStatus> statuses);
