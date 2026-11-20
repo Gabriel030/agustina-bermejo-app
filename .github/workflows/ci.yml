@@ -94,6 +94,9 @@ jobs:
       - name: Test the backup rotation
         run: bash deploy/backup/tests/rotation-test.sh
 
+      - name: Test the backup dump streaming
+        run: bash deploy/backup/tests/dump-stream-test.sh
+
       - name: Validate the compose files
         env:
           POSTGRES_PASSWORD: ci

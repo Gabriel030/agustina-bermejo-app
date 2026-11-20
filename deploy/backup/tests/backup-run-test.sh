@@ -14,7 +14,7 @@ port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); pr
 docker run -d --name "$container" -e POSTGRES_PASSWORD=test -p "127.0.0.1:$port:5432" "$PG_IMAGE" > /dev/null || exit 2
 export PGHOST=127.0.0.1 PGPORT="$port" PGUSER=postgres PGPASSWORD=test PGDATABASE=postgres
 for _ in $(seq 1 60); do pg_isready -q && break; sleep 1; done
-psql -q -c "CREATE TABLE flyway_schema_history (version text, success boolean); INSERT INTO flyway_schema_history VALUES ('1', true), ('2', true); CREATE TABLE person (id serial, name text); INSERT INTO person (name) SELECT 'p' || g FROM generate_series(1, 500) g;" || exit 2
+psql -q -c "CREATE TABLE flyway_schema_history (version text, success boolean); INSERT INTO flyway_schema_history VALUES ('1', true), ('2', true); CREATE TABLE person (id serial, name text); INSERT INTO person (name) SELECT md5(random()::text) || md5(random()::text) || md5(random()::text) || md5(random()::text) FROM generate_series(1, 150000) g;" || exit 2
 
 data="$work/data"
 mkdir -p "$data/uploads/docs"
@@ -40,10 +40,12 @@ check "el archivo contiene los archivos de /data" "2" "$(tar --zstd -tf "$work/b
 meta="$work/backups/$(echo "$dump" | sed 's/\.dump$/.meta/')"
 check "el .meta registra el archivo de /data" "files_archive=$archive" "$(grep '^files_archive=' "$meta")"
 check "el .meta cuenta los archivos" "files_count=2" "$(grep '^files_count=' "$meta")"
-check "el .meta guarda el resultado de las tablas" "person|500" "$(grep '^person|' "$meta")"
+check "el .meta guarda el resultado de las tablas" "person|150000" "$(grep '^person|' "$meta")"
 check "sin AGE_RECIPIENT la corrida avisa que no cifra" "1" "$(echo "$output" | grep -c 'BACKUP SIN CIFRAR')"
 dump_bytes=$(wc -c < "$work/backups/$dump" | tr -d ' ')
 archive_bytes=$(wc -c < "$work/backups/$archive" | tr -d ' ')
+check "el dump real pesa mas de 5 MB (no cabe en un buffer de pipe)" "1" "$([ "$dump_bytes" -gt 5000000 ] && echo 1 || echo 0)"
+check "no queda ningun listado ni conteo del tar en el disco" "0" "$(find "$work/backups" -name '*tar-count*' -o -name '*listing*' | wc -l | tr -d ' ')"
 echo "medicion: dump ${dump_bytes} bytes, archivo /data ${archive_bytes} bytes, duracion ${elapsed}s"
 check "segunda corrida el mismo dia no repite el aviso de cifrado" "0" "$(sleep 1; run_backup | grep -c 'BACKUP SIN CIFRAR')"
 
@@ -77,7 +79,7 @@ mkdir -p "$work/empty"
 real_data="$data"; data="$work/empty"; output=$(run_backup); status=$?
 check "con /data vacio la corrida falla" "1" "$status"
 check "con /data vacio alerta BACKUP FALLIDO" "1" "$(echo "$output" | grep -c 'BACKUP FALLIDO')"
-check "con /data vacio no queda ningun backup" "" "$(ls -A "$work/backups")"
+check "con /data vacio no queda ningun backup" "" "$(find "$work/backups" -maxdepth 1 -type f ! -name .backup.lock)"
 output=$(BACKUP_ALLOW_EMPTY_DATA=true run_backup); status=$?
 check "con BACKUP_ALLOW_EMPTY_DATA=true una instalacion nueva puede hacer su primer backup" "0" "$status"
 data="$real_data"
@@ -113,5 +115,19 @@ check "si falla la subida a S3 la corrida termina bien y alerta" "0 1" "$status 
 check "si falla la subida a S3 el backup local bueno se conserva" "2" "$(find "$work/backups" -maxdepth 1 \( -name 'abdb_*.dump' -o -name 'abfiles_*.tar.zst' \) | wc -l | tr -d ' ')"
 check "si sube el dump y falla abfiles se retira el dump remoto" "1" "$(grep -c '^deletefile .*abdb_.*\.dump$' "$rclone_log")"
 rm -f "$fakebin/rclone"
+
+rm -rf "$work/backups" "$work/metrics"
+mkdir -p "$work/backups"
+(
+  exec 8> "$work/backups/.backup.lock"
+  flock -n 8
+  sleep 20
+) &
+holder=$!
+sleep 1
+output=$(run_backup); status=$?
+kill "$holder" 2> /dev/null
+check "con otra corrida en curso la segunda sale sin fallar y avisa" "0 1" "$status $(echo "$output" | grep -c 'sigue en curso')"
+check "la segunda corrida no genera backups" "0" "$(find "$work/backups" -name 'abdb_*' | wc -l | tr -d ' ')"
 
 finish

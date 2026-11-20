@@ -1,6 +1,16 @@
 # Tests de los backups
 
-## Rotación (sin Docker, corre en el CI)
+## Sin Docker (corren en el CI)
+
+```
+deploy/backup/tests/rotation-test.sh
+deploy/backup/tests/dump-stream-test.sh
+```
+
+`dump-stream-test.sh` fija que el verificador de `pg_restore --list` drena todo el stream (un verificador que sale
+temprano no puede matar a `pg_dump` con SIGPIPE) y cubre el conteo de archivos del tar.
+
+## Rotación (detalle)
 
 ```
 deploy/backup/tests/rotation-test.sh
@@ -30,3 +40,27 @@ docker compose -f docker-compose.prod.yml -f deploy/backup/docker-compose.backup
 ```
 
 El archivo `docker-compose.backup.yml` solo, sin el de producción, no es un uso válido.
+
+## Limpieza manual de dumps anteriores a BK#1a (sin archivo de `/data`)
+
+La rotación no cuenta ni borra los dumps que no tienen su archivo de `/data` (podrían ser los únicos backups viejos). Para listarlos,
+dentro de la carpeta de backups (`BACKUP_DIR`):
+
+```
+for dump in abdb_*.dump abdb_*.dump.age; do
+  [ -e "$dump" ] || continue
+  stamp=${dump#abdb_}; stamp=${stamp%%.*}
+  ls "abfiles_$stamp.tar.zst" "abfiles_$stamp.tar.zst.age" > /dev/null 2>&1 || echo "$dump"
+done
+```
+
+Después de revisar la lista, para borrarlos (el dump, su checksum y su `.meta`):
+
+```
+for dump in abdb_*.dump abdb_*.dump.age; do
+  [ -e "$dump" ] || continue
+  stamp=${dump#abdb_}; stamp=${stamp%%.*}
+  ls "abfiles_$stamp.tar.zst" "abfiles_$stamp.tar.zst.age" > /dev/null 2>&1 && continue
+  rm -v -- "$dump" "$dump.sha256" "abdb_$stamp.meta"
+done
+```

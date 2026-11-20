@@ -111,6 +111,30 @@ warn_unencrypted_once() {
   warn_once_per_day unencrypted "BACKUP SIN CIFRAR: falta AGE_RECIPIENT, los backups quedan legibles en el disco"
 }
 
+verify_while_streaming() {
+  local rc_file="$1"
+  shift
+  tee >( { "$@" > /dev/null 2>&1; echo $? > "$rc_file"; cat > /dev/null; } )
+}
+
+count_files_in_tar_listing() {
+  local count_file="$1"
+  awk -v count_file="$count_file" '
+    /^\.\// { if ($0 !~ /\/$/) files++; next }
+    { print > "/dev/stderr" }
+    END { print files + 0 > count_file }
+  '
+}
+
+wait_for_file() {
+  local file="$1" _
+  for _ in $(seq 1 60); do
+    [ -s "$file" ] && return 0
+    sleep 1
+  done
+  return 1
+}
+
 complete_dumps_from_listing() {
   local listing dump_name stamp
   listing=$(cat)

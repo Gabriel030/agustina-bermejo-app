@@ -18,11 +18,11 @@ dump="${base}.dump${suffix}"
 files_archive="${files_base}.tar.zst${suffix}"
 dump_tmp="${dump}.partial"
 files_tmp="${files_archive}.partial"
-tar_listing="${base}.tar-listing.partial"
+tar_count="${base}.tar-count.partial"
 verify_rc="${base}.verify-rc.partial"
 
 fail() {
-  remove_files "$dump_tmp" "$files_tmp" "$tar_listing" "$verify_rc" "$dump" "${dump}.sha256" "$files_archive" "${files_archive}.sha256" "${base}.meta"
+  remove_files "$dump_tmp" "$files_tmp" "$tar_count" "$verify_rc" "$dump" "${dump}.sha256" "$files_archive" "${files_archive}.sha256" "${base}.meta"
   local previous
   previous=$(cat "$METRICS_DIR/.last_success" 2> /dev/null || echo 0)
   write_metrics 0 "$previous" 0
@@ -40,15 +40,20 @@ encrypt_sink() {
 
 mkdir -p "$BACKUP_DIR" || fail "no se puede escribir en $BACKUP_DIR"
 chmod 700 "$BACKUP_DIR" || fail "no se pueden fijar los permisos de $BACKUP_DIR"
+exec 9> "$BACKUP_DIR/.backup.lock"
+if ! flock -n 9; then
+  log "otra corrida de backup sigue en curso: se omite esta"
+  exit 0
+fi
 find "$BACKUP_DIR" -maxdepth 1 -name '*.partial' -mmin +60 -delete 2> /dev/null
 [ -d "$DATA_DIR" ] || fail "no existe $DATA_DIR: el servicio de backup tiene que montar app_data"
 log "starting backup of $PGDATABASE@$PGHOST"
 
-pg_dump -Fc --no-owner --no-privileges | tee >(pg_restore --list > /dev/null 2>&1; echo $? > "$verify_rc") | encrypt_sink "$dump_tmp"
+pg_dump -Fc --no-owner --no-privileges | verify_while_streaming "$verify_rc" pg_restore --list | encrypt_sink "$dump_tmp"
 dump_statuses=("${PIPESTATUS[@]}")
-[ "${dump_statuses[0]}" -eq 0 ] || fail "pg_dump devolvio error"
 [ "${dump_statuses[2]}" -eq 0 ] || fail "no se pudo escribir o cifrar el dump"
-for _ in $(seq 1 60); do [ -s "$verify_rc" ] && break; sleep 1; done
+[ "${dump_statuses[0]}" -eq 0 ] || fail "pg_dump devolvio error (${dump_statuses[0]})"
+wait_for_file "$verify_rc"
 [ "$(cat "$verify_rc" 2> /dev/null)" = "0" ] || fail "el dump generado no se puede leer con pg_restore --list"
 [ -s "$dump_tmp" ] || fail "el dump quedo vacio"
 
@@ -56,8 +61,10 @@ migrations=$(psql -Atc "SELECT count(*) FROM flyway_schema_history WHERE success
 max_version=$(psql -Atc "SELECT coalesce(max(version::int), 0) FROM flyway_schema_history WHERE success AND version ~ '^[0-9]+\$'" 2> /dev/null || echo 0)
 counts=$(psql -At -F '|' -c "SELECT table_name, (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text::bigint FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1" 2> /dev/null) || fail "no se pudieron contar las tablas"
 
-tar --zstd -C "$DATA_DIR" -cvf - . 2> "$tar_listing" | encrypt_sink "$files_tmp"
+tar --zstd -C "$DATA_DIR" -cvf - . 2> >(count_files_in_tar_listing "$tar_count") | encrypt_sink "$files_tmp"
 tar_statuses=("${PIPESTATUS[@]}")
+[ "${tar_statuses[1]}" -eq 0 ] || fail "no se pudo escribir o cifrar el archivo de $DATA_DIR"
+wait_for_file "$tar_count" || fail "no se pudo contar los archivos de $DATA_DIR"
 files_changed=no
 if [ "${tar_statuses[0]}" -eq 1 ]; then
   files_changed=yes
@@ -65,10 +72,9 @@ if [ "${tar_statuses[0]}" -eq 1 ]; then
 elif [ "${tar_statuses[0]}" -ne 0 ]; then
   fail "tar de $DATA_DIR devolvio error (${tar_statuses[0]})"
 fi
-[ "${tar_statuses[1]}" -eq 0 ] || fail "no se pudo escribir o cifrar el archivo de $DATA_DIR"
 [ -s "$files_tmp" ] || fail "el archivo de $DATA_DIR quedo vacio"
-files_count=$(grep -E '^\./' "$tar_listing" | grep -vcE '/$')
-remove_files "$tar_listing"
+files_count=$(cat "$tar_count")
+remove_files "$tar_count"
 if [ "$files_count" -eq 0 ]; then
   if [ "${BACKUP_ALLOW_EMPTY_DATA:-false}" = "true" ]; then
     log "WARNING: $DATA_DIR esta vacio (BACKUP_ALLOW_EMPTY_DATA=true)"
