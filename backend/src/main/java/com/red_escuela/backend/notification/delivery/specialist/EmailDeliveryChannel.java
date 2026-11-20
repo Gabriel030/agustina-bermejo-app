@@ -24,6 +24,7 @@ import com.red_escuela.backend.shared.mail.TransactionalEmailRejectedException;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,11 +44,14 @@ public class EmailDeliveryChannel {
     private final PolicySet<EmailDeliveryContext> emailDeliveryPolicySet;
     private final TransactionalEmailGateway gateway;
     private final CircuitBreaker mailBreaker;
+    private final DeliveryUnsubscribeLinkProvider unsubscribeLinkProvider;
 
+    @Autowired
     public EmailDeliveryChannel(NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
                                 NotificationPreferenceFinder notificationPreferenceQuery,
                                 PolicySet<EmailDeliveryContext> emailDeliveryPolicySet, TransactionalEmailGateway gateway,
-                                CircuitBreakerFactory circuitBreakerFactory) {
+                                CircuitBreakerFactory circuitBreakerFactory, DeliveryUnsubscribeLinkProvider unsubscribeLinkProvider) {
+        this.unsubscribeLinkProvider = unsubscribeLinkProvider;
         this.mailBreaker = circuitBreakerFactory.breakerNamed(MailCircuit.NAME);
         this.deliveryRepository = deliveryRepository;
         this.personContactFinder = personContactFinder;
@@ -96,7 +100,8 @@ public class EmailDeliveryChannel {
             logOutcome(delivery, null);
             return;
         }
-        TransactionalEmail email = new TransactionalEmail(recipient.get().address(), delivery.getSubject(), delivery.getBodyText(), delivery.getBodyHtml());
+        String unsubscribeUrl = unsubscribeLinkProvider.unsubscribeUrlFor(delivery.getCategory(), delivery.getKind(), delivery.getRecipientPersonId()).orElse(null);
+        TransactionalEmail email = new TransactionalEmail(recipient.get().address(), delivery.getSubject(), delivery.getBodyText(), delivery.getBodyHtml(), unsubscribeUrl);
         EmailDeliveryReceipt receipt = null;
         try {
             receipt = mailBreaker.execute(() -> gateway.send(email), MailCircuit::countsAsProviderFailure);

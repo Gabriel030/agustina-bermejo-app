@@ -85,6 +85,16 @@ class TemplateRendererTest {
     }
 
     @Test
+    void lineBreaksInTheRenderedSubjectAreFlattened() {
+        Map<TemplateVariable, String> values = values();
+        values.put(TemplateVariable.FIRST_NAME, "Ana\r\nBcc: intruso@example.com\u000B\f\u0085\u2028\u2029fin");
+
+        RenderedContent content = TemplateRenderer.render(ChannelType.EMAIL, "Hola {{nombre}}", "Cuerpo", values);
+
+        assertThat(content.subject()).isEqualTo("Hola Ana Bcc: intruso@example.com fin");
+    }
+
+    @Test
     void referencedVariablesCollectsSubjectAndBodyWithoutDuplicates() {
         assertThat(TemplateRenderer.referencedVariables("Hola {{nombre}}", "{{ nombre }} de {{carrera}}"))
                 .containsExactlyInAnyOrder(TemplateVariable.FIRST_NAME, TemplateVariable.PROGRAM);
