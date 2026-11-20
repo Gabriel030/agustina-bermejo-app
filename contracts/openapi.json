@@ -1696,15 +1696,16 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "code" : {
+            "enum" : [ "BACKUP_FAILED", "BACKUP_STALE", "BACKUP_DAMAGED", "RESTORE_TEST_FAILED", "DISK_LOW", "DISK_CRITICAL", "ENCRYPTION_DISABLED", "DATA_DIR_EMPTY" ],
+            "type" : "string"
+          },
           "level" : {
             "enum" : [ "WARNING", "CRITICAL" ],
             "type" : "string"
-          },
-          "message" : {
-            "type" : "string"
           }
         },
-        "required" : [ "at", "level", "message" ],
+        "required" : [ "at", "code", "level" ],
         "type" : "object"
       },
       "BackupDiskResponse" : {
@@ -1726,10 +1727,10 @@
         "type" : "object"
       },
       "BackupStatusResponse" : {
-        "description" : "Estado de los backups. Archivo de estado ausente o corrupto: state NOT_CONFIGURED. Campos técnicos solo para PLATFORM_ADMIN (null para DIRECTOR): disk.path y tiers[].fileNames, que son solo la ruta del disco y los nombres de los archivos de backup, nunca su contenido. La respuesta no contiene datos de alumnos ni de pagos (D-484)",
+        "description" : "Estado de los backups. Archivo de estado ausente o corrupto: state NOT_CONFIGURED. Campos técnicos solo para PLATFORM_ADMIN (null para DIRECTOR): disk.path y tiers[].fileNames, que son solo la ruta del disco y los nombres de los archivos de backup, nunca su contenido. Sin texto libre de los scripts: alertas y fallas de restauración llegan como códigos cerrados. La respuesta no contiene datos de alumnos ni de pagos (D-484)",
         "properties" : {
           "alerts" : {
-            "description" : "Alertas de los últimos 30 días",
+            "description" : "Alertas: el backend filtra a los últimos 30 días; el script puede escribir más",
             "items" : {
               "$ref" : "#/components/schemas/BackupAlertResponse"
             },
@@ -12460,7 +12461,9 @@
       },
       "RestoreTestResponse" : {
         "properties" : {
-          "detail" : {
+          "failureCode" : {
+            "description" : "Motivo de la falla; null si result es PASSED",
+            "enum" : [ "CHECKSUM_MISMATCH", "RESTORE_FAILED", "COUNTS_MISMATCH", "SCHEMA_VALIDATION_FAILED", null ],
             "type" : [ "string", "null" ]
           },
           "ranAt" : {
@@ -12472,7 +12475,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "detail", "ranAt", "result" ],
+        "required" : [ "failureCode", "ranAt", "result" ],
         "type" : "object"
       },
       "RevokeBankTransferApprovalRequest" : {

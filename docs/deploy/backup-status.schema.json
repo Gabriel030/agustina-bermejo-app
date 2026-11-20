@@ -1,8 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agustina-bermejo-app/docs/deploy/backup-status.schema.json",
   "title": "Estado de los backups",
-  "description": "Archivo que escriben los scripts de backup y lee GET /backups/status. El backend calcula state y summary; si el archivo falta o no valida contra este esquema, responde state NOT_CONFIGURED. No contiene datos de alumnos ni de pagos: solo la ruta del disco y los nombres de los archivos de backup, nunca su contenido.",
+  "description": "Archivo que escriben los scripts de backup y lee GET /backups/status. El backend calcula state y summary; si el archivo falta o no valida contra este esquema, responde state NOT_CONFIGURED. No contiene datos de alumnos ni de pagos: solo la ruta del disco y los nombres de los archivos de backup, nunca su contenido. Sin texto libre: alertas y fallas de la restauración de prueba se escriben como códigos cerrados.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -107,7 +106,7 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["ranAt", "result", "detail"],
+          "required": ["ranAt", "result", "failureCode"],
           "properties": {
             "ranAt": {
               "type": "string",
@@ -116,8 +115,30 @@
             "result": {
               "enum": ["PASSED", "FAILED"]
             },
-            "detail": {
-              "type": ["string", "null"]
+            "failureCode": {
+              "enum": ["CHECKSUM_MISMATCH", "RESTORE_FAILED", "COUNTS_MISMATCH", "SCHEMA_VALIDATION_FAILED", null],
+              "description": "Motivo de la falla con un código cerrado, nunca la salida del comando; null si result es PASSED."
+            }
+          },
+          "if": {
+            "properties": {
+              "result": {
+                "const": "PASSED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "failureCode": {
+                "const": null
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "failureCode": {
+                "type": "string"
+              }
             }
           }
         }
@@ -125,11 +146,11 @@
     },
     "alerts": {
       "type": "array",
-      "description": "Alertas de los últimos 30 días.",
+      "description": "Alertas: el backend filtra a los últimos 30 días; el script puede escribir más.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["at", "level", "message"],
+        "required": ["at", "level", "code"],
         "properties": {
           "at": {
             "type": "string",
@@ -138,8 +159,18 @@
           "level": {
             "enum": ["WARNING", "CRITICAL"]
           },
-          "message": {
-            "type": "string"
+          "code": {
+            "enum": [
+              "BACKUP_FAILED",
+              "BACKUP_STALE",
+              "BACKUP_DAMAGED",
+              "RESTORE_TEST_FAILED",
+              "DISK_LOW",
+              "DISK_CRITICAL",
+              "ENCRYPTION_DISABLED",
+              "DATA_DIR_EMPTY"
+            ],
+            "description": "Código cerrado de la alerta; el script no escribe texto libre (D-484)."
           }
         }
       }

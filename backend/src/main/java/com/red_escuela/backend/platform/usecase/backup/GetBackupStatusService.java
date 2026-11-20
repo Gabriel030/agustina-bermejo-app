@@ -11,7 +11,7 @@ import java.util.List;
 @UseCase
 public class GetBackupStatusService implements GetBackupStatusUseCase {
 
-    private static final int TARGET_RPO_HOURS = 6;
+    private static final int TARGET_RPO_HOURS = 4;
 
     @Override
     public BackupStatus read(BackupStatusViewer viewer) {
