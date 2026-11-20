@@ -219,4 +219,39 @@ class BroadcastPersonalizedRenderIT extends AbstractBroadcastDispatchIT {
         assertThat(jdbc.queryForObject("select exclusion_reason from broadcast_recipient where broadcast_id = ? and person_id = ?", String.class,
                 broadcast.getId(), withoutName.getId())).isEqualTo("MISSING_TEMPLATE_VARIABLE");
     }
+
+    @Test
+    void optedOutAndUnconsentedRecipientsAreSkippedBeforeRenderingAndGetNoToken() {
+        Person revoked = preceptorNamed("Revocada");
+        revokeConsent(revoked, BroadcastCategory.PROMOTIONAL);
+        jdbc.update("update person set name = ' ' where id = ?", revoked.getId());
+        Person unconsented = persistPerson();
+        jdbc.update("update person set name = ' ' where id = ?", unconsented.getId());
+        jdbc.update("insert into person_role (person_id, role_id) select ?, id from role where name = 'PRECEPTOR'", unconsented.getId());
+        Person neighbor = preceptorNamed("Vecina");
+
+        Broadcast broadcast = confirmedBroadcast("Aviso", "Hola {{nombre}}, para no recibir más: {{linkBaja}} fin");
+
+        assertThat(exclusionReasonOf(broadcast, revoked)).isEqualTo("OPTED_OUT");
+        assertThat(exclusionReasonOf(broadcast, unconsented)).isEqualTo("NO_CONSENT");
+        assertThat(deliveryIdOf(broadcast, revoked)).isNull();
+        assertThat(deliveryIdOf(broadcast, unconsented)).isNull();
+        assertThat(exclusionReasonOf(broadcast, neighbor)).isNull();
+        assertThat(bodyOf(broadcast, neighbor)).startsWith("Hola Vecina");
+        assertThat(count("category = 'BROADCAST'")).isEqualTo(1);
+    }
+
+    @Test
+    void lineBreakInRecipientNameIsFlattenedInTheSubject() {
+        Person person = preceptorNamed("Ana\r\nBcc: intruso@example.com");
+
+        Broadcast broadcast = confirmedBroadcast("Aviso para {{nombre}}", "Hola {{nombre}}");
+
+        assertThat(subjectOf(broadcast, person)).isEqualTo("Aviso para Ana Bcc: intruso@example.com");
+    }
+
+    private String exclusionReasonOf(Broadcast broadcast, Person person) {
+        return jdbc.queryForObject("select exclusion_reason from broadcast_recipient where broadcast_id = ? and person_id = ?", String.class,
+                broadcast.getId(), person.getId());
+    }
 }

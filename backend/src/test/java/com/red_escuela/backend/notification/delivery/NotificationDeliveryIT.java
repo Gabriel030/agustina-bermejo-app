@@ -40,6 +40,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -333,7 +334,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             sends.incrementAndGet();
             throw new TransactionalEmailDeliveryException("proveedor caido", null);
         };
-        EmailDeliveryChannel failingChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, failing, circuitBreakerFactory);
+        EmailDeliveryChannel failingChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, failing, circuitBreakerFactory, (category, kind, recipientPersonId) -> Optional.empty());
 
         assertThatCode(() -> transactionTemplate.executeWithoutResult(status -> failingChannel.dispatchDelivery(id))).doesNotThrowAnyException();
         NotificationDelivery afterFirst = deliveryRepository.findById(id).orElseThrow();
@@ -393,7 +394,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             }
             return new com.red_escuela.backend.shared.mail.EmailDeliveryReceipt("provider-1", false);
         };
-        EmailDeliveryChannel channel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gateway, enabledFactory);
+        EmailDeliveryChannel channel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gateway, enabledFactory, (category, kind, recipientPersonId) -> Optional.empty());
 
         transactionTemplate.executeWithoutResult(status -> channel.dispatchDelivery(id));
         assertThat(deliveryRepository.findById(id).orElseThrow().getAttempts()).isEqualTo(1);
@@ -432,7 +433,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             }
             return gateway.send(email);
         };
-        EmailDeliveryChannel flakyChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, flaky, circuitBreakerFactory);
+        EmailDeliveryChannel flakyChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, flaky, circuitBreakerFactory, (category, kind, recipientPersonId) -> Optional.empty());
 
         transactionTemplate.executeWithoutResult(status -> flakyChannel.dispatchDelivery(id));
         transactionTemplate.executeWithoutResult(status -> flakyChannel.dispatchDelivery(id));
@@ -531,7 +532,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
         TransactionalEmailGateway broken = (TransactionalEmail email) -> {
             throw new IllegalStateException("503 del proveedor");
         };
-        EmailDeliveryChannel brokenChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, broken, circuitBreakerFactory);
+        EmailDeliveryChannel brokenChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, broken, circuitBreakerFactory, (category, kind, recipientPersonId) -> Optional.empty());
 
         for (int attempt = 1; attempt <= 3; attempt++) {
             assertThatCode(() -> transactionTemplate.executeWithoutResult(status -> brokenChannel.dispatchDelivery(id))).doesNotThrowAnyException();
@@ -581,7 +582,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             }
             return gateway.send(email);
         };
-        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gated, circuitBreakerFactory);
+        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gated, circuitBreakerFactory, (category, kind, recipientPersonId) -> Optional.empty());
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
             Future<?> first = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));

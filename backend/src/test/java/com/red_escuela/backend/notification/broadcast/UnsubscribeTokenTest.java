@@ -99,4 +99,14 @@ class UnsubscribeTokenTest {
         assertThat(new UnsubscribeTokenVerifier(new UnsubscribeTokenSigner("jwt-secret-jwt-secret-jwt-secret-12")).verifyToken(token).personId())
                 .isEqualTo(5L);
     }
+
+    @Test
+    void springUsesTheConstructorThatKnowsTheProfile() {
+        var autowired = java.util.Arrays.stream(UnsubscribeTokenSigner.class.getConstructors())
+                .filter(constructor -> constructor.isAnnotationPresent(org.springframework.beans.factory.annotation.Autowired.class))
+                .toList();
+
+        assertThat(autowired).hasSize(1);
+        assertThat(autowired.get(0).getParameterTypes()).containsExactly(String.class, String.class, org.springframework.core.env.Environment.class);
+    }
 }

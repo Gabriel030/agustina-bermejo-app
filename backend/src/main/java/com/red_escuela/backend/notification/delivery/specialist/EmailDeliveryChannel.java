@@ -46,14 +46,6 @@ public class EmailDeliveryChannel {
     private final CircuitBreaker mailBreaker;
     private final DeliveryUnsubscribeLinkProvider unsubscribeLinkProvider;
 
-    public EmailDeliveryChannel(NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
-                                NotificationPreferenceFinder notificationPreferenceQuery,
-                                PolicySet<EmailDeliveryContext> emailDeliveryPolicySet, TransactionalEmailGateway gateway,
-                                CircuitBreakerFactory circuitBreakerFactory) {
-        this(deliveryRepository, personContactFinder, notificationPreferenceQuery, emailDeliveryPolicySet, gateway, circuitBreakerFactory,
-                (category, kind, recipientPersonId) -> Optional.empty());
-    }
-
     @Autowired
     public EmailDeliveryChannel(NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
                                 NotificationPreferenceFinder notificationPreferenceQuery,

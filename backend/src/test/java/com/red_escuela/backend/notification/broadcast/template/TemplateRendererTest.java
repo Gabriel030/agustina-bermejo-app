@@ -83,4 +83,14 @@ class TemplateRendererTest {
 
         assertThat(content.body()).isEqualTo("${1+1} #{2} {{apellido}}");
     }
+
+    @Test
+    void lineBreaksInTheRenderedSubjectAreFlattened() {
+        Map<TemplateVariable, String> values = values();
+        values.put(TemplateVariable.FIRST_NAME, "Ana\r\nBcc: intruso@example.com");
+
+        RenderedContent content = TemplateRenderer.render(ChannelType.EMAIL, "Hola {{nombre}}", "Cuerpo", values);
+
+        assertThat(content.subject()).isEqualTo("Hola Ana Bcc: intruso@example.com");
+    }
 }

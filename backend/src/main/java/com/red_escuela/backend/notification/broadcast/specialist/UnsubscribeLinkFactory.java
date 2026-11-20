@@ -34,6 +34,6 @@ public class UnsubscribeLinkFactory implements DeliveryUnsubscribeLinkProvider {
         if (category != DeliveryCategory.BROADCAST) {
             return Optional.empty();
         }
-        return Optional.of(linkFor(recipientPersonId, ConsentChannel.EMAIL, BroadcastDeliveryKind.categoryOf(kind)));
+        return BroadcastDeliveryKind.categoryOf(kind).map(broadcastCategory -> linkFor(recipientPersonId, ConsentChannel.EMAIL, broadcastCategory));
     }
 }
