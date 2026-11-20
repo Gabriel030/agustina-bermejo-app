@@ -10,7 +10,7 @@ export function EmailChangeComparisonTable({ caption, columns, rows }) {
           <TableRow>
             <TableCell className="w-16" />
             {columns.map((column) => (
-              <TableHead key={column} scope="col" className="text-size-12">
+              <TableHead key={column} scope="col" className="h-auto px-2.5 py-2 text-size-12">
                 {column}
               </TableHead>
             ))}
@@ -19,11 +19,11 @@ export function EmailChangeComparisonTable({ caption, columns, rows }) {
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.label}>
-              <TableHead scope="row" className="w-16 align-top font-medium text-ink-soft normal-case">
+              <TableHead scope="row" className="h-auto w-16 px-2.5 py-2.5 align-top font-medium text-ink-soft normal-case">
                 {row.label}
               </TableHead>
               {row.cells.map((cell, index) => (
-                <TableCell key={columns[index]} className={cn('align-top break-words whitespace-normal text-ink', (row.emphasis ?? index === columns.length - 1) && 'font-bold')}>
+                <TableCell key={columns[index]} className={cn('p-2.5 align-top break-words whitespace-normal text-ink', (row.emphasis ?? index === columns.length - 1) && 'font-bold')}>
                   {cell}
                 </TableCell>
               ))}
