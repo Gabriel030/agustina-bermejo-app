@@ -56,6 +56,8 @@ GET,/billing/configuration-alerts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/billing/metrics/first-month,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/billing/metrics/{panel},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/cancel-email-change,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
+POST,/email-change-preview,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
+POST,/approve-email-change,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/chargebacks/{chargebackId}/reversal,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/chargebacks/{chargebackId}/reversal/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/classrooms,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
@@ -558,3 +560,4 @@ POST,/waitlists/{kind}/entries/{enrollmentId}/remove,DENY,DENY,DENY,DENY,ALLOW,A
 GET,/institute-settings/notifications/whatsapp/templates,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/institute-settings/notifications/whatsapp/templates,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""messageTemplateId"":1,""providerTemplateName"":""aviso_general"",""languageCode"":""es_AR"",""status"":""PENDING"",""variableOrder"":[""desconocida""]}"
 PUT,/institute-settings/notifications/whatsapp/templates/{id},DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""messageTemplateId"":1,""providerTemplateName"":""aviso_general"",""languageCode"":""es_AR"",""status"":""PENDING"",""variableOrder"":[]}"
+GET,/backups/status,DENY,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,

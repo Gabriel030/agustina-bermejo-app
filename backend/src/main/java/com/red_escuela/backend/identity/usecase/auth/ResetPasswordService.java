@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenExcep
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.PasswordPolicyValidator;
+import com.red_escuela.backend.identity.specialist.PublicPasswordResetBlockPolicy;
 import com.red_escuela.backend.identity.specialist.SessionRevoker;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
@@ -23,16 +24,19 @@ public class ResetPasswordService implements ResetPasswordUseCase {
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final SessionRevoker sessionRevoker;
     private final IdentityAuditRecorder identityAuditRecorder;
+    private final PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy;
 
     public ResetPasswordService(PasswordResetTokenRepository passwordResetTokenRepository, PersonRepository personRepository,
                                  PasswordEncoder passwordEncoder, PasswordPolicyValidator passwordPolicyValidator,
-                                 SessionRevoker sessionRevoker, IdentityAuditRecorder identityAuditRecorder) {
+                                 SessionRevoker sessionRevoker, IdentityAuditRecorder identityAuditRecorder,
+                                 PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy) {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.personRepository = personRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
         this.sessionRevoker = sessionRevoker;
         this.identityAuditRecorder = identityAuditRecorder;
+        this.publicPasswordResetBlockPolicy = publicPasswordResetBlockPolicy;
     }
 
     @Override
@@ -46,6 +50,7 @@ public class ResetPasswordService implements ResetPasswordUseCase {
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
         Person person = resetToken.getPerson();
+        publicPasswordResetBlockPolicy.requireNotBlocked(person);
         person.setPassword(passwordEncoder.encode(command.newPassword()));
         personRepository.save(person);
         sessionRevoker.revokeAllSessions(person);
