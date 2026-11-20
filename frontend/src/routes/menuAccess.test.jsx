@@ -15,7 +15,7 @@ describe('menuAccess', () => {
   it('detects which pages of a role have a real screen', () => {
     expect(hasRealScreen('alumno', 'inicio')).toBe(true);
     expect(hasRealScreen('docente', 'inicio')).toBe(false);
-    expect(hasRealScreen('alumno', 'opciones')).toBe(false);
+    expect(hasRealScreen('alumno', 'opciones')).toBe(true);
     expect(hasRealScreen('administrativo', 'constancias')).toBe(true);
     expect(hasRealScreen('director', 'constancias')).toBe(true);
     expect(ROLE_CONFIG.director.pages).toContain('constancias');
@@ -34,7 +34,7 @@ describe('menuAccess', () => {
   it('hides role items without a screen and keeps shared links', () => {
     const items = [
       { to: '/alumno/inicio', label: 'Inicio' },
-      { to: '/alumno/opciones', label: 'Opciones' },
+      { to: '/alumno/pendiente', label: 'Pendiente' },
       { to: '/catalogo', label: 'Catálogo' },
     ];
     expect(visibleMenuItems('alumno', items).map((item) => item.label)).toEqual(['Inicio', 'Catálogo']);
