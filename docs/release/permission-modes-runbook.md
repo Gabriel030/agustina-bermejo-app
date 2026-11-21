@@ -37,3 +37,10 @@ Pasar un módulo a `ENFORCE` solo con cero discrepancias sin explicar durante al
 ## Limpieza final de legacyRoles
 
 Quitar `legacyRoles` del código es una limpieza de código, no un cambio de configuración: después de ese deploy ya no existe regla vieja a la que volver y `PUT /permissions/modes` en `LEGACY` deja de tener efecto. Solo se hace con todos los módulos migrados en `ENFORCE` y estables. Revertirla exige un deploy.
+
+## Notas operativas
+
+- Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.
+- Los cambios de modo se auditan con la acción `PERMISSION_GRID_CHANGED` y el tipo `PERMISSION`, pero el identificador de la entidad es el de la fila de `permission_module_mode`, no el de un permiso del catálogo. El rol, el módulo y el modo anterior y nuevo están en los valores de antes y después, y el motivo en el motivo.
+- Pasar un rol a Activo con su grilla vacía en ese módulo le cierra el acceso a todo ese módulo. El sistema no lo impide: revisá la grilla y las discrepancias antes, y recordá que volver a Legado siempre es posible y no depende de la grilla.
+- Dos cambios de modo simultáneos sobre el mismo rol y módulo sin fila previa pueden hacer que el segundo responda 409: se repite el pedido. Solo el Director cambia modos, así que es poco probable.
