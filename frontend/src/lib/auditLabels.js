@@ -34,6 +34,13 @@ const ACTIONS = {
   GATEWAY_PAYMENT_CHECKOUT_EXPIRED: ['Checkout de pago vencido', 'neutral'],
   GATEWAY_PAYMENT_UNMATCHED: ['Pago sin comprobante asociado', 'warning'],
   GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT: ['Pago duplicado para un checkout', 'danger'],
+  CERTIFICATE_SIGNATORY_CREATED: ['Firmante de certificado creado', 'success'],
+  CERTIFICATE_SIGNATORY_UPDATED: ['Firmante de certificado modificado', 'neutral'],
+  CERTIFICATE_SIGNATORY_PERMS_CHANGED: ['Permisos de firmante modificados', 'accent'],
+  CERTIFICATE_SIGNATORY_DEACTIVATED: ['Firmante de certificado desactivado', 'danger'],
+  CERTIFICATE_SIGNATORY_ACTIVATED: ['Firmante de certificado activado', 'success'],
+  CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED: ['Firma de certificado cargada', 'neutral'],
+  CERTIFICATE_SIGNATORY_SIGNATURE_DELETED: ['Firma de certificado eliminada', 'warning'],
 };
 
 const ENTITIES = {
@@ -44,6 +51,11 @@ const ENTITIES = {
   PROGRAM_ENROLLMENT: 'Inscripción a carrera',
   COURSE_ENROLLMENT: 'Inscripción a cursada',
   DATA_IMPORT_BATCH: 'Lote de importación',
+  BROADCAST: 'Difusión',
+  INSTITUTE_SETTING: 'Configuración del instituto',
+  INVOICE: 'Factura',
+  GATEWAY_PAYMENT: 'Pago en línea',
+  CERTIFICATE_SIGNATORY: 'Firmante de certificado',
 };
 
 const ROLES = {
