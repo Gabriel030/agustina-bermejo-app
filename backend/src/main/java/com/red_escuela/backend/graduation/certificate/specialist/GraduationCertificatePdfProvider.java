@@ -13,6 +13,7 @@ import com.red_escuela.backend.graduation.certificate.repository.GraduationCerti
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -46,20 +47,44 @@ public class GraduationCertificatePdfProvider {
     public GraduationCertificatePdf pdfOf(Long id) {
         GraduationCertificate certificate = repository.findById(id)
                 .orElseThrow(() -> new GraduationCertificateNotFoundException(id));
-        Optional<byte[]> stored = fileStore.load(certificate.getPdfPath())
-                .filter(content -> digest.sha256(content).equals(certificate.getPdfSha256()));
+        Optional<byte[]> stored = storedContent(certificate);
         if (stored.isPresent()) {
             return new GraduationCertificatePdf(certificate.getCode(), stored.get());
         }
         log.warn("El PDF del certificado {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getId());
+        byte[] regenerated = regenerate(certificate);
+        String path = fileStore.save(certificate.getCode(), regenerated);
+        certificate.replacePdf(digest.sha256(regenerated), path);
+        return new GraduationCertificatePdf(certificate.getCode(), regenerated);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<GraduationCertificatePdf> verifiedPdfOf(GraduationCertificate certificate) {
+        Optional<byte[]> stored = storedContent(certificate);
+        if (stored.isPresent()) {
+            return Optional.of(new GraduationCertificatePdf(certificate.getCode(), stored.get()));
+        }
+        log.warn("El PDF del certificado {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getId());
+        byte[] regenerated = regenerate(certificate);
+        if (!digest.sha256(regenerated).equals(certificate.getPdfSha256())) {
+            log.error("El PDF regenerado del certificado {} no coincide con el hash guardado; no se sirve", certificate.getId());
+            return Optional.empty();
+        }
+        certificate.replacePdf(certificate.getPdfSha256(), fileStore.save(certificate.getCode(), regenerated));
+        return Optional.of(new GraduationCertificatePdf(certificate.getCode(), regenerated));
+    }
+
+    private Optional<byte[]> storedContent(GraduationCertificate certificate) {
+        return fileStore.load(certificate.getPdfPath())
+                .filter(content -> digest.sha256(content).equals(certificate.getPdfSha256()));
+    }
+
+    private byte[] regenerate(GraduationCertificate certificate) {
         CertificateCode code = certificate.certificateCode();
         CertificateAssets assets = certificate.getTemplateVersionId() == null
                 ? new CertificateAssets(null, null, certificate.getRegistryNumber(), null)
                 : templateSource.assetsOf(templateSource.byId(certificate.getTemplateVersionId()), certificate.getRegistryNumber());
-        byte[] regenerated = renderer.render(builtInTemplate.resolve(certificate.getKind(), null), certificate.getSnapshot(),
+        return renderer.render(builtInTemplate.resolve(certificate.getKind(), null), certificate.getSnapshot(),
                 code, verificationUrl.of(code), assets);
-        String path = fileStore.save(code.value(), regenerated);
-        certificate.replacePdf(digest.sha256(regenerated), path);
-        return new GraduationCertificatePdf(certificate.getCode(), regenerated);
     }
 }

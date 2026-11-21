@@ -42,6 +42,8 @@ const ACTIONS = {
   CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED: ['Firma de certificado cargada', 'neutral'],
   CERTIFICATE_SIGNATORY_SIGNATURE_DELETED: ['Firma de certificado eliminada', 'warning'],
   PERMISSION_GRID_CHANGED: ['Grilla de permisos modificada', 'accent'],
+  GRADUATION_CERTIFICATE_DOWNLOADED: ['Certificado de egreso descargado', 'accent'],
+  GRADUATION_CERTIFICATE_PDF_MISMATCH: ['PDF de certificado de egreso con hash distinto', 'warning'],
 };
 
 const ENTITIES = {
@@ -58,6 +60,7 @@ const ENTITIES = {
   GATEWAY_PAYMENT: 'Pago en línea',
   CERTIFICATE_SIGNATORY: 'Firmante de certificado',
   PERMISSION: 'Permiso',
+  GRADUATION_CERTIFICATE: 'Certificado de egreso',
 };
 
 const ROLES = {

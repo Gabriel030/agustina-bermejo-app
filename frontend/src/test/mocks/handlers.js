@@ -61,6 +61,7 @@ export const handlers = [
   http.get(`${API}/graduation-certificates/:id`, ({ params }) =>
     HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) })),
   ),
+  http.get(`${API}/graduation-certificates/:id/pdf`, () => pdfResponse()),
   http.post(`${API}/graduation-certificates/preview`, () => pdfResponse()),
   http.post(`${API}/graduation-certificates/batch`, () => HttpResponse.json(graduationCertificateBatch())),
   http.post(`${API}/graduation-certificates/:id/revoke`, ({ params }) =>
