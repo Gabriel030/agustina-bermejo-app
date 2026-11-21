@@ -11,6 +11,9 @@ import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionModificationProposalRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.events.SectionModificationRequestedEvent;
+import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,8 @@ public class SectionModificationRequester {
     private final SectionModificationProposalRepository proposalRepository;
     private final SectionModificationConflictDetector conflictDetector;
     private final SectionCycleApprovalGuard cycleApprovalGuard;
+    private final CurrentActorFinder currentActorFinder;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public SectionModificationRequester(
@@ -38,6 +43,8 @@ public class SectionModificationRequester {
             SectionModificationProposalRepository proposalRepository,
             SectionModificationConflictDetector conflictDetector,
             SectionCycleApprovalGuard cycleApprovalGuard,
+            CurrentActorFinder currentActorFinder,
+            ApplicationEventPublisher eventPublisher,
             Clock clock
     ) {
         this.sectionRepository = sectionRepository;
@@ -46,6 +53,8 @@ public class SectionModificationRequester {
         this.proposalRepository = proposalRepository;
         this.conflictDetector = conflictDetector;
         this.cycleApprovalGuard = cycleApprovalGuard;
+        this.currentActorFinder = currentActorFinder;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
@@ -76,9 +85,11 @@ public class SectionModificationRequester {
             }
         }
 
-        proposalRepository.save(SectionModificationProposal.pending(
-                section, request.slots() != null, proposedSlots, LocalDateTime.now(clock)));
+        var proposal = SectionModificationProposal.pending(
+                section, request.slots() != null, proposedSlots, currentActorFinder.currentPerson(), LocalDateTime.now(clock));
+        proposalRepository.save(proposal);
         section.setPendingApproval(true);
         sectionRepository.save(section);
+        eventPublisher.publishEvent(SectionModificationRequestedEvent.requestedFor(proposal));
     }
 }
