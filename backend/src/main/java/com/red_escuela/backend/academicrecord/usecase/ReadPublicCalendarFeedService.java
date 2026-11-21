@@ -1,10 +1,10 @@
 package com.red_escuela.backend.academicrecord.usecase;
 
 import com.red_escuela.backend.academicrecord.service.CalendarFeedTokenReader.ActiveCalendarFeedToken;
+import com.red_escuela.backend.academicrecord.service.PublicCalendarFeedTokenResolver;
 import com.red_escuela.backend.academicrecord.specialist.CalendarFeedLocator;
 import com.red_escuela.backend.academicrecord.specialist.IcsCalendarWriter;
 import com.red_escuela.backend.academicrecord.specialist.MyCalendarEventsFinder;
-import com.red_escuela.backend.academicrecord.specialist.PublicCalendarFeedTokenResolver;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.time.Clock;

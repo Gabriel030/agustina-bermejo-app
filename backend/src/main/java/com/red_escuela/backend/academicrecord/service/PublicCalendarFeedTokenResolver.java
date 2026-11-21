@@ -1,12 +1,13 @@
-package com.red_escuela.backend.academicrecord.specialist;
+package com.red_escuela.backend.academicrecord.service;
 
 import com.red_escuela.backend.academicrecord.exception.CalendarFeedNotFoundException;
-import com.red_escuela.backend.academicrecord.service.CalendarFeedTokenReader;
 import com.red_escuela.backend.academicrecord.service.CalendarFeedTokenReader.ActiveCalendarFeedToken;
-import com.red_escuela.backend.academicrecord.service.CalendarFeedTokenUsageRecorder;
-import org.springframework.stereotype.Component;
+import com.red_escuela.backend.academicrecord.specialist.CalendarFeedRateLimiter;
+import com.red_escuela.backend.academicrecord.specialist.CalendarFeedTokenFactory;
+import com.red_escuela.backend.academicrecord.specialist.CalendarFeedTokenHasher;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class PublicCalendarFeedTokenResolver {
 
     private static final String NEVER_ISSUED_TOKEN = "0".repeat(CalendarFeedTokenFactory.TOKEN_LENGTH);

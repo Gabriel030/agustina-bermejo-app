@@ -201,7 +201,7 @@ dc stats --no-stream                    # memoria y CPU por contenedor
 `GET /api/public/calendar/<token>.ics` es el feed suscribible del calendario del alumno: el token (256 bits) es la única credencial y va en el path. Estado verificado en este repositorio:
 
 - El `frontend/Caddyfile` **no define la directiva `log`**: Caddy no escribe access log por defecto, así que el path (y el token) no queda guardado en el proxy. Si alguien agrega `log` o un `access_log`, hay que enmascarar el path `/api/public/calendar/*` (filtro `replace` sobre `request>uri`) antes de habilitarlo.
-- El backend no activa el access log de Tomcat ni loguea URIs de pedidos; el nivel raíz de producción es WARN y el de `com.red_escuela.backend` INFO. Hay un test (`CalendarFeedSecurityIT.tokenNeverAppearsInApplicationLogs`) que falla si el token aparece en un log de aplicación.
+- El backend no activa el access log de Tomcat ni loguea URIs de pedidos; el nivel raíz es INFO (WARN en un perfil) y el de `com.red_escuela.backend` INFO, sin DEBUG de Spring MVC. Hay un test (`CalendarFeedSecurityIT.tokenNeverAppearsInApplicationLogs`) que falla si el token aparece en un log de aplicación.
 - Si el servidor está detrás de otro proxy o balanceador (CDN, WAF), ese componente puede guardar el path: configurar el enmascarado ahí.
 - Un token filtrado se invalida regenerándolo o revocándolo desde la cuenta del alumno; el token anterior deja de funcionar de inmediato.
 
