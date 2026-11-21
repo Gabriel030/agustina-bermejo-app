@@ -25,6 +25,11 @@ public final class AuditLogSpecifications {
             if (filter.actorPersonId() != null) {
                 predicates.add(builder.equal(root.get("actorPersonId"), filter.actorPersonId()));
             }
+            if (filter.actorPersonIds() != null) {
+                predicates.add(filter.actorPersonIds().isEmpty()
+                        ? builder.disjunction()
+                        : root.get("actorPersonId").in(filter.actorPersonIds()));
+            }
             if (!filter.actorRoles().isEmpty()) {
                 predicates.add(root.get("actorRole").in(filter.actorRoles()));
             }

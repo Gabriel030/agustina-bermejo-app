@@ -80,10 +80,36 @@ class DemoSeedStepsTest {
 
     @Test
     void classDatesAreRecentWeekdaysStrictlyBeforeToday() {
-        List<java.time.LocalDate> dates = DemoAttendanceSeedStep.recentWeekdaysBefore(java.time.LocalDate.of(2026, 11, 9), 4);
+        List<java.time.LocalDate> dates = DemoAttendanceSeedStep.recentClassDaysBefore(java.time.LocalDate.of(2026, 11, 9), 4, Set.of());
 
         assertThat(dates).containsExactly(java.time.LocalDate.of(2026, 11, 3), java.time.LocalDate.of(2026, 11, 4),
                 java.time.LocalDate.of(2026, 11, 5), java.time.LocalDate.of(2026, 11, 6));
+    }
+
+    @Test
+    void classDatesSkipHolidaysOnTheLongNovemberWeekend() {
+        Set<java.time.LocalDate> holidays = Set.of(java.time.LocalDate.of(2026, 11, 20), java.time.LocalDate.of(2026, 11, 23));
+
+        for (int day : new int[] {21, 22, 23}) {
+            List<java.time.LocalDate> dates = DemoAttendanceSeedStep.recentClassDaysBefore(java.time.LocalDate.of(2026, 11, day), 4, holidays);
+
+            assertThat(dates).containsExactly(java.time.LocalDate.of(2026, 11, 16), java.time.LocalDate.of(2026, 11, 17),
+                    java.time.LocalDate.of(2026, 11, 18), java.time.LocalDate.of(2026, 11, 19));
+        }
+    }
+
+    @Test
+    void classDatesNeverFallOnWeekendsHolidaysOrTodayOnward() {
+        Set<java.time.LocalDate> holidays = Set.of(java.time.LocalDate.of(2026, 10, 12), java.time.LocalDate.of(2026, 11, 20),
+                java.time.LocalDate.of(2026, 11, 23), java.time.LocalDate.of(2026, 12, 8));
+
+        for (java.time.LocalDate today = java.time.LocalDate.of(2026, 3, 1); today.isBefore(java.time.LocalDate.of(2026, 12, 31)); today = today.plusDays(1)) {
+            for (java.time.LocalDate date : DemoAttendanceSeedStep.recentClassDaysBefore(today, 4, holidays)) {
+                assertThat(date).isBefore(today);
+                assertThat(date.getDayOfWeek()).isNotIn(java.time.DayOfWeek.SATURDAY, java.time.DayOfWeek.SUNDAY);
+                assertThat(holidays).doesNotContain(date);
+            }
+        }
     }
 
     @Test
