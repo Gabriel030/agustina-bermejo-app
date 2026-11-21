@@ -1,12 +1,12 @@
 import { StatusPill } from '@/components/StatusPill';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
-import { formatRequestedDate, formatSlot } from '@/features/academic-structure/lib/sectionScheduleRequest';
+import { buildScheduleRows, formatRequestedDate } from '@/features/academic-structure/lib/sectionScheduleRequest';
 
 export function SectionPendingScheduleNotice({ section }) {
   const pending = section.pendingModification;
 
   if (pending) {
-    const rows = Math.max(section.slots?.length ?? 0, pending.slots.length);
+    const rows = buildScheduleRows(section.slots ?? [], pending.slots);
     return (
       <div className="mt-3 flex flex-col gap-2 rounded-2xl bg-warning-bg px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -19,10 +19,12 @@ export function SectionPendingScheduleNotice({ section }) {
           <span>Hoy</span>
           <span>Nuevo (pedido)</span>
         </div>
-        {Array.from({ length: rows }, (_, index) => (
-          <div key={index} className="grid grid-cols-2 gap-3 text-size-13 text-ink">
-            <span>{section.slots?.[index] ? formatSlot(section.slots[index]) : '—'}</span>
-            <span className="font-semibold">{pending.slots[index] ? formatSlot(pending.slots[index]) : 'Se quita esta franja'}</span>
+        {rows.map((row) => (
+          <div key={row.key} className="grid grid-cols-2 gap-3 text-size-13 text-ink">
+            <span>{row.today}</span>
+            <span className={row.unchanged ? 'text-ink-faint' : 'font-semibold'}>
+              {row.removed ? 'Se quita esta franja' : row.unchanged ? 'sin cambios' : row.next}
+            </span>
           </div>
         ))}
         <p className="text-size-12 text-ink-faint">

@@ -6,11 +6,12 @@ import { SectionScheduleRequestSheet } from '@/features/academic-structure/compo
 import {
   canRequestScheduleChange,
   hasPendingModification,
+  shiftForSection,
 } from '@/features/academic-structure/lib/sectionScheduleRequest';
 
 export function SectionScheduleRequestAction({ section, cycle }) {
   const [open, setOpen] = useState(false);
-  if (!canRequestScheduleChange(cycle)) return null;
+  if (!canRequestScheduleChange(cycle) || !shiftForSection(section)) return null;
   const pending = hasPendingModification(section);
 
   const button = (

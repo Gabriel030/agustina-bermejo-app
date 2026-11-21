@@ -1,10 +1,16 @@
 import { WEEKDAYS } from './classroomAvailability';
 import { MINIMUM_MODULES, SHIFTS, buildModules } from './classroomModules';
 
-const EVENING_SHIFT = SHIFTS.find((shift) => shift.id === 'EVENING');
-
 export function shiftForSection(section) {
-  return SHIFTS.find((shift) => shift.id === section?.shift) ?? EVENING_SHIFT;
+  const declared = SHIFTS.find((shift) => shift.id === section?.shift);
+  if (declared) return declared;
+  const slots = section?.slots ?? [];
+  if (slots.length === 0) return null;
+  return (
+    SHIFTS.find((shift) =>
+      slots.every((slot) => trimTime(slot.startTime) >= shift.start && trimTime(slot.endTime) <= shift.end),
+    ) ?? null
+  );
 }
 
 export function canRequestScheduleChange(cycle) {
@@ -24,10 +30,18 @@ export function slotsToDrafts(slots, shift) {
   return slots.map((slot, index) => {
     const start = trimTime(slot.startTime);
     const end = trimTime(slot.endTime);
-    const selection = modules
-      .filter((module) => module.startTime >= start && module.endTime <= end)
-      .map((module) => module.index);
-    return { key: index, dayOfWeek: slot.dayOfWeek, classroomId: slot.classroomId, selection };
+    const covered = modules.filter((module) => module.startTime >= start && module.endTime <= end);
+    const aligned =
+      covered.length > 0 &&
+      covered[0].startTime === start &&
+      covered[covered.length - 1].endTime === end;
+    return {
+      key: index,
+      dayOfWeek: slot.dayOfWeek,
+      classroomId: slot.classroomId,
+      selection: aligned ? covered.map((module) => module.index) : [],
+      legacy: !aligned,
+    };
   });
 }
 
@@ -66,9 +80,14 @@ export function sameSlot(a, b) {
   );
 }
 
+export function slotKey(slot) {
+  return `${slot.dayOfWeek}|${Number(slot.classroomId)}|${trimTime(slot.startTime)}|${trimTime(slot.endTime)}`;
+}
+
 export function hasScheduleChanges(currentSlots, nextSlots) {
   if (currentSlots.length !== nextSlots.length) return true;
-  return nextSlots.some((slot, index) => !sameSlot(currentSlots[index], slot));
+  const nextKeys = new Set(nextSlots.map(slotKey));
+  return currentSlots.some((slot) => !nextKeys.has(slotKey(slot)));
 }
 
 export function formatSlot(slot, classroomName) {
@@ -77,20 +96,35 @@ export function formatSlot(slot, classroomName) {
   return `${day} ${trimTime(slot.startTime)}–${trimTime(slot.endTime)}${room ? ` · ${room}` : ''}`;
 }
 
-export function buildScheduleRows(currentSlots, nextSlots, classroomNameById) {
-  const total = Math.max(currentSlots.length, nextSlots.length);
-  return Array.from({ length: total }, (_, index) => {
-    const current = currentSlots[index];
-    const next = nextSlots[index];
-    return {
-      key: index,
-      label: `Franja ${index + 1}`,
-      today: current ? formatSlot(current) : '—',
-      next: next ? formatSlot(next, classroomNameById[next.classroomId]) : null,
-      unchanged: sameSlot(current, next),
-      removed: !next,
-    };
+export function buildScheduleRows(currentSlots, nextSlots, classroomNameById = {}) {
+  const nextKeys = new Set(nextSlots.map(slotKey));
+  const currentKeys = new Set(currentSlots.map(slotKey));
+  const replacements = nextSlots.filter((slot) => !currentKeys.has(slotKey(slot)));
+  const rows = [];
+  let replacementIndex = 0;
+  currentSlots.forEach((current) => {
+    if (nextKeys.has(slotKey(current))) {
+      rows.push({ today: formatSlot(current), next: null, unchanged: true, removed: false });
+      return;
+    }
+    const replacement = replacements[replacementIndex];
+    replacementIndex += 1;
+    rows.push({
+      today: formatSlot(current),
+      next: replacement ? formatSlot(replacement, classroomNameById[replacement.classroomId]) : null,
+      unchanged: false,
+      removed: !replacement,
+    });
   });
+  replacements.slice(replacementIndex).forEach((added) => {
+    rows.push({
+      today: '—',
+      next: formatSlot(added, classroomNameById[added.classroomId]),
+      unchanged: false,
+      removed: false,
+    });
+  });
+  return rows.map((row, index) => ({ ...row, key: index }));
 }
 
 export function formatRequestedDate(requestedAt) {

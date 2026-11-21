@@ -66,12 +66,12 @@ function mockOffer({ cycle = aCycle(), sections = [aSection()] } = {}) {
   );
 }
 
-function renderDetail() {
+function renderDetail(role = 'preceptor') {
   return renderWithProviders(
     <Routes>
-      <Route path="/preceptor/oferta-academica/carreras/:programaId" element={<PreceptorDetalleCarrera />} />
+      <Route path="/:role/oferta-academica/carreras/:programaId" element={<PreceptorDetalleCarrera />} />
     </Routes>,
-    { route: '/preceptor/oferta-academica/carreras/6' },
+    { route: `/${role}/oferta-academica/carreras/6` },
   );
 }
 
@@ -87,6 +87,22 @@ describe('section schedule request', () => {
 
   it('offers the action only for sections of an approved cycle', async () => {
     mockOffer({ cycle: aCycle({ status: 'DRAFT' }) });
+    renderDetail();
+
+    expect(await screen.findByText('Química')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Modificar horario' })).not.toBeInTheDocument();
+  });
+
+  it('does not offer the action to the director', async () => {
+    mockOffer();
+    renderDetail('director');
+
+    expect(await screen.findByText('Química')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Modificar horario' })).not.toBeInTheDocument();
+  });
+
+  it('does not offer the action when the shift cannot be determined', async () => {
+    mockOffer({ sections: [aSection({ shift: null, slots: [] })] });
     renderDetail();
 
     expect(await screen.findByText('Química')).toBeInTheDocument();
@@ -152,8 +168,20 @@ describe('section schedule request', () => {
     expect(dialog.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
-  it('sends the new slots and confirms with a toast', async () => {
+  it('sends the new slots, refetches the offer and confirms with a toast', async () => {
     mockOffer();
+    let sectionFetches = 0;
+    let cycleFetches = 0;
+    server.use(
+      http.get(`${API}/academic-offering-cycles`, () => {
+        cycleFetches += 1;
+        return HttpResponse.json([aCycle()]);
+      }),
+      http.get(`${API}/academic-offering-cycles/:id/sections`, () => {
+        sectionFetches += 1;
+        return HttpResponse.json([aSection()]);
+      }),
+    );
     let body = null;
     server.use(
       http.post(`${API}/subject-sections/91/modification-request`, async ({ request }) => {
@@ -169,7 +197,7 @@ describe('section schedule request', () => {
     await user.selectOptions(dialog.getByLabelText('Aula'), '4');
     await user.click(dialog.getByRole('button', { name: 'Continuar' }));
 
-    expect(dialog.getByText('Revisá los cambios', { selector: 'h3' })).toBeInTheDocument();
+    expect(dialog.getByText('Revisá los cambios', { selector: 'h3' })).toHaveFocus();
     await user.click(dialog.getByRole('button', { name: 'Enviar pedido de aprobación' }));
 
     await vi.waitFor(() => expect(toastMock.success).toHaveBeenCalledWith('Pedido enviado al Director'));
@@ -177,6 +205,20 @@ describe('section schedule request', () => {
       slots: [{ classroomId: 4, dayOfWeek: 'TUESDAY', startTime: '18:30', endTime: '20:30' }],
     });
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await vi.waitFor(() => {
+      expect(sectionFetches).toBe(2);
+      expect(cycleFetches).toBe(2);
+    });
+  });
+
+  it('does not treat a legacy slot as a change until the modules are chosen', async () => {
+    mockOffer({ sections: [aSection({ slots: [{ ...CURRENT_SLOT, endTime: '20:50:00' }] })] });
+    const user = userEvent.setup();
+    renderDetail();
+    const dialog = within(await openSheet(user));
+
+    expect(dialog.getByText(/no coincide con los módulos del turno/)).toBeInTheDocument();
+    expect(dialog.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
   it('shows the server conflict in the review step and keeps the panel open', async () => {

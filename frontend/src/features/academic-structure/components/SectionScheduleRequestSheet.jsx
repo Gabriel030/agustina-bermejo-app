@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,11 @@ function SlotDraftCard({ index, draft, shift, classrooms, canRemove, onChange, o
           </NativeSelect>
         </div>
       </div>
+      {draft.legacy && draft.selection.length === 0 && (
+        <p role="note" className="text-size-12 text-warning">
+          El horario actual de esta franja no coincide con los módulos del turno. Elegí los módulos de nuevo para reemplazarla.
+        </p>
+      )}
       <ClassroomModuleSelector
         shift={shift}
         selection={draft.selection}
@@ -114,6 +119,11 @@ export function SectionScheduleRequestSheet({ section, cycleId, open, onClose })
   const [drafts, setDrafts] = useState(() => slotsToDrafts(section.slots ?? [], shift));
   const [nextKey, setNextKey] = useState(() => (section.slots ?? []).length);
   const [serverError, setServerError] = useState(null);
+  const reviewHeadingRef = useRef(null);
+
+  useEffect(() => {
+    if (step === 'review') reviewHeadingRef.current?.focus();
+  }, [step]);
 
   const errors = draftErrors(drafts);
   const nextSlots = errors.length === 0 ? draftsToSlots(drafts, shift) : [];
@@ -211,14 +221,16 @@ export function SectionScheduleRequestSheet({ section, cycleId, open, onClose })
 
         {step === 'review' && (
           <div className="flex flex-col gap-4">
-            <h3 className="font-heading text-size-15 font-semibold text-ink">Revisá los cambios</h3>
+            <h3 ref={reviewHeadingRef} tabIndex={-1} className="font-heading text-size-15 font-semibold text-ink outline-none">
+              Revisá los cambios
+            </h3>
             <ScheduleDiffTable rows={buildScheduleRows(section.slots ?? [], nextSlots, classroomNameById)} />
             <p className="text-size-12 text-ink-faint">No se cambian alumnos, docente ni cupo: solo día, hora y aula.</p>
             <Notice tone="neutral" title="Qué va a pasar">
               <ul className="mt-1 list-disc pl-4">
                 <li>El pedido queda pendiente hasta que el Director lo resuelva.</li>
                 <li>Mientras tanto sigue vigente el horario actual.</li>
-                <li>Te avisamos del resultado en la comisión y en notificaciones.</li>
+                <li>Te avisamos del resultado en la comisión.</li>
               </ul>
             </Notice>
             {serverError && (
