@@ -2,15 +2,20 @@ package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.academicstructure.dto.ModifySectionRequest;
 import com.red_escuela.backend.academicstructure.dto.SectionModificationPreviewResponse;
+import com.red_escuela.backend.academicstructure.service.SectionModificationPreviewer;
 import com.red_escuela.backend.shared.UseCase;
-
-import java.util.List;
 
 @UseCase
 public class PreviewSectionModificationService implements PreviewSectionModificationUseCase {
 
+    private final SectionModificationPreviewer previewer;
+
+    public PreviewSectionModificationService(SectionModificationPreviewer previewer) {
+        this.previewer = previewer;
+    }
+
     @Override
     public SectionModificationPreviewResponse preview(Long sectionId, ModifySectionRequest request) {
-        return new SectionModificationPreviewResponse(List.of());
+        return previewer.previewModification(sectionId, request);
     }
 }

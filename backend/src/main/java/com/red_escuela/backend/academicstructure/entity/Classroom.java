@@ -26,8 +26,12 @@ public class Classroom {
     @Column(name = "status", nullable = false)
     private StatusType status = StatusType.ACTIVE;
 
+    public boolean canHost(Integer seats) {
+        return seats == null || seats <= capacity;
+    }
+
     public void ensureCanHost(Integer seats) {
-        if (seats != null && seats > capacity) {
+        if (!canHost(seats)) {
             throw new SectionCapacityExceedsClassroomException(id, capacity, seats);
         }
     }

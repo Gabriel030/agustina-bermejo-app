@@ -26,6 +26,7 @@ public class SectionModificationApprover {
     private final SectionModificationProposalRepository proposalRepository;
     private final SectionConflictChecker conflictChecker;
     private final ClassroomRepository classroomRepository;
+    private final SectionCycleApprovalGuard cycleApprovalGuard;
     private final Clock clock;
 
     public SectionModificationApprover(
@@ -34,6 +35,7 @@ public class SectionModificationApprover {
             SectionModificationProposalRepository proposalRepository,
             SectionConflictChecker conflictChecker,
             ClassroomRepository classroomRepository,
+            SectionCycleApprovalGuard cycleApprovalGuard,
             Clock clock
     ) {
         this.sectionRepository = sectionRepository;
@@ -41,6 +43,7 @@ public class SectionModificationApprover {
         this.proposalRepository = proposalRepository;
         this.conflictChecker = conflictChecker;
         this.classroomRepository = classroomRepository;
+        this.cycleApprovalGuard = cycleApprovalGuard;
         this.clock = clock;
     }
 
@@ -50,6 +53,8 @@ public class SectionModificationApprover {
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
         var proposal = proposalRepository.findFirstBySubjectSectionIdAndStatus(sectionId, SectionModificationStatus.PENDING)
                 .orElseThrow(() -> new SectionModificationNotPendingException(sectionId));
+
+        cycleApprovalGuard.ensureCycleIsApproved(section);
 
         if (proposal.isReplacesSchedule()) {
             replaceSchedule(section, proposal);
