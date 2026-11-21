@@ -50,7 +50,7 @@ export function VerifyAnotherCode({ onSubmit, disabled = false }) {
               spellCheck={false}
               className="h-12 min-w-0 flex-[1_1_200px] bg-dialog-bg px-3.5 tracking-[0.06em]"
             />
-            <Button type="submit" variant="gradient" disabled={!normalized || disabled} className="h-12 px-[18px]">
+            <Button type="submit" variant="primary" disabled={!normalized || disabled} className="h-12 px-[18px]">
               Verificar
             </Button>
           </form>

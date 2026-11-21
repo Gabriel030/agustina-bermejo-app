@@ -243,7 +243,7 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
     }
 
     private RegularCertificateResponse issue(boolean confirmed, String evidence) {
-        return issueUseCase.issue(new IssueRegularCertificateRequest(RegularityKind.PROGRAM, enrollmentId, confirmed, evidence));
+        return issueUseCase.issue(new IssueRegularCertificateRequest(RegularityKind.PROGRAM, enrollmentId, confirmed, evidence, null));
     }
 
     private RegularCertificateResponse issueConfirmed() {

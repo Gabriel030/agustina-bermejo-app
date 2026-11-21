@@ -80,7 +80,7 @@ function HabilitarDialog({ obligacion, programEnrollmentId, onClose }) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" variant="gradient" loading={otorgar.isPending} disabled={!motivoValido}>Registrar habilitación</Button>
+            <Button type="submit" variant="primary" loading={otorgar.isPending} disabled={!motivoValido}>Registrar habilitación</Button>
           </DialogFooter>
         </form>
       </DialogContent>

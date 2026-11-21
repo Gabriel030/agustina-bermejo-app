@@ -370,7 +370,7 @@ function TabFacturacion() {
               )}
               <div className="flex flex-col gap-2 sm:flex-row">
                 {canCollect && (
-                  <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setShowCashPayment(true)} disabled={!debtIsCurrent}>
+                  <Button variant="primary" className="w-full sm:w-auto" onClick={() => setShowCashPayment(true)} disabled={!debtIsCurrent}>
                     <CreditCard size={14} className="mr-1.5" />
                     Cobrar en efectivo
                   </Button>

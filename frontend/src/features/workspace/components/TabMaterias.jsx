@@ -74,7 +74,7 @@ export function TabMaterias({ carreraId }) {
             ))}
           </TabsList>
         </Tabs>
-        <OfflineAwareButton variant="gradient" onClick={() => setInscribiendo(true)}>
+        <OfflineAwareButton variant="primary" onClick={() => setInscribiendo(true)}>
           + Inscribirme a materias
         </OfflineAwareButton>
       </div>

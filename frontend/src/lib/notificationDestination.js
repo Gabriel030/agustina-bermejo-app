@@ -64,6 +64,8 @@ export const NOTIFICATION_DESTINATIONS = {
   SECTION_CHANGED_TEACHER: [TEACHER_SECTIONS],
   REGULAR_CERTIFICATE_READY: [alumno('/alumno/mis-carreras?tab=tramites')],
   REGULAR_CERTIFICATE_REJECTED: [alumno('/alumno/mis-carreras?tab=tramites')],
+  CERTIFICATE_EXCEPTION_REQUESTED: [staff(['director'], 'aprobaciones')],
+  CERTIFICATE_EXCEPTION_DECIDED: [staff(['administrativo', 'director'], 'inicio')],
   PAYMENT_RECEIPT_APPROVED: [PAYMENTS],
   PAYMENT_RECEIPT_REJECTED: [PAYMENTS],
   ANNOUNCEMENT_PUBLISHED: [

@@ -34,7 +34,7 @@ export function ModalAprobacion({ open, onClose, onConfirmar, confirmando, titul
         )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={confirmando}>Cancelar</Button>
-          <Button variant="gradient" loading={confirmando} onClick={confirmar}>Aprobar</Button>
+          <Button variant="primary" loading={confirmando} onClick={confirmar}>Aprobar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

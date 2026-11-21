@@ -28,7 +28,7 @@ export const REVERSAL_KINDS = {
     menuLabel: 'Revertir contracargo del banco',
     title: 'Revertir contracargo',
     confirmLabel: 'Revertir contracargo',
-    confirmVariant: 'gradient',
+    confirmVariant: 'primary',
     group: 'bank',
     irreversible: false,
   },

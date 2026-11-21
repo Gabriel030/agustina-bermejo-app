@@ -423,7 +423,7 @@ export function TabAsistencia({ type, sectionId }) {
         <Button variant="destructive" size="sm" onClick={() => setConfirmarCancelar(true)} disabled={claseCancelada}>
           Cancelar clase
         </Button>
-        <Button variant="gradient" onClick={guardarAsistencia} disabled={!huboCambios || guardar.isPending || claseCancelada}>
+        <Button variant="primary" onClick={guardarAsistencia} disabled={!huboCambios || guardar.isPending || claseCancelada}>
           Guardar asistencia
         </Button>
       </div>
@@ -436,7 +436,7 @@ export function TabAsistencia({ type, sectionId }) {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmarMarcarTodos(false)}>Cancelar</Button>
-            <Button variant="gradient" onClick={marcarTodosPresentes}>Marcar presentes</Button>
+            <Button variant="primary" onClick={marcarTodosPresentes}>Marcar presentes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -511,7 +511,7 @@ function ModalSolicitarModificacion({ attendanceId, estadoActual, onClose }) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button variant="gradient" onClick={enviar} disabled={!motivo || solicitar.isPending}>Enviar solicitud</Button>
+          <Button variant="primary" onClick={enviar} disabled={!motivo || solicitar.isPending}>Enviar solicitud</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -716,7 +716,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 </Link>
               </>
             ) : (
-              <Button variant="gradient" onClick={() => setSolicitandoModificacion(true)}>Solicitar modificación</Button>
+              <Button variant="primary" onClick={() => setSolicitandoModificacion(true)}>Solicitar modificación</Button>
             )}
           </DialogFooter>
         </DialogContent>
@@ -1007,12 +1007,12 @@ function TabExportar({ type, sectionId }) {
       <GlassCard className="flex flex-col gap-3 p-4">
         <div className="font-heading text-size-14 font-semibold text-ink">Formato</div>
         <div className="flex gap-2">
-          <Button variant={format === 'pdf' ? 'gradient' : 'outline'} onClick={() => setFormat('pdf')}>PDF</Button>
-          <Button variant={format === 'xlsx' ? 'gradient' : 'outline'} onClick={() => setFormat('xlsx')}>XLS</Button>
+          <Button variant={format === 'pdf' ? 'primary' : 'outline'} onClick={() => setFormat('pdf')}>PDF</Button>
+          <Button variant={format === 'xlsx' ? 'primary' : 'outline'} onClick={() => setFormat('xlsx')}>XLS</Button>
         </div>
       </GlassCard>
 
-      <Button variant="gradient" onClick={exportar} disabled={exportando || (scope === 'class' && !classDate)} className="w-fit">
+      <Button variant="primary" onClick={exportar} disabled={exportando || (scope === 'class' && !classDate)} className="w-fit">
         {exportando ? 'Generando...' : 'Exportar'}
       </Button>
     </div>

@@ -12,6 +12,8 @@ import { useCurso } from '@/hooks/useCatalogo';
 import { useCiclos, useCicloSecciones } from '@/features/academic-structure/hooks/useCiclos';
 import { ResumeCycleButton } from '@/features/academic-structure/components/ResumeCycleButton';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
+import { SectionScheduleRequestAction } from '@/features/academic-structure/components/SectionScheduleRequestAction';
+import { SectionPendingScheduleNotice } from '@/features/academic-structure/components/SectionPendingScheduleNotice';
 import { formatCourseDuration } from '@/lib/courseDuration';
 
 const CICLO_STATUS_CONFIG = {
@@ -98,21 +100,25 @@ function SeccionDetalle({ ciclo }) {
               valor={seccion.instructors.find((i) => i.role === 'LEAD')?.name ?? '—'}
             />
           )}
-          <div className="col-span-2">
+          <div className="col-span-2 flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link to={`${basePath}/oferta-academica/ciclos/${ciclo.id}/comisiones/${seccion.id}/inscriptos`}>
                 <ClipboardList className="mr-1.5 h-3.5 w-3.5" />
                 Inscriptos
               </Link>
             </Button>
+            {basePath !== '/director' && <SectionScheduleRequestAction section={seccion} cycle={ciclo} />}
           </div>
-          {seccion.pendingApproval && (
+          {seccion.pendingApproval && !seccion.pendingModification && (
             <div className="col-span-2">
               <span className="rounded-full bg-accent-soft px-3 py-1 text-size-12 font-medium text-brand">
                 Modificación pendiente de aprobación
               </span>
             </div>
           )}
+          <div className="col-span-2 empty:hidden">
+            <SectionPendingScheduleNotice section={seccion} />
+          </div>
         </div>
       )}
     </GlassCard>
@@ -187,7 +193,7 @@ export function PreceptorDetalleCurso() {
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-xl font-bold text-ink">{curso?.name}</h1>
             {basePath !== '/director' && (
-              <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
+              <Button variant="primary" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
                 Iniciar alta de ciclo
               </Button>
             )}

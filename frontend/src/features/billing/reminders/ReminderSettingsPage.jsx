@@ -92,7 +92,7 @@ function ChangesBar({ count, onDiscard, onReview }) {
         <Button variant="ghost" onClick={onDiscard}>
           Descartar
         </Button>
-        <Button variant="gradient" onClick={onReview}>
+        <Button variant="primary" onClick={onReview}>
           Revisar cambios
         </Button>
       </div>

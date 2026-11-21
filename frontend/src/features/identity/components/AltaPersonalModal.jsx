@@ -121,7 +121,7 @@ export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
           <Button variant="outline" onClick={handleClose} disabled={isPending}>
             Cancelar
           </Button>
-          <Button variant="gradient" onClick={handleConfirmar} disabled={!valido || isPending}>
+          <Button variant="primary" onClick={handleConfirmar} disabled={!valido || isPending}>
             {isPending ? 'Creando...' : 'Crear personal'}
           </Button>
         </DialogFooter>

@@ -108,7 +108,7 @@ export function AlumnoMisCursos() {
               title="No estás cursando ningún curso"
               description="Explorá la oferta de cursos para inscribirte."
               action={
-                <Button asChild variant="gradient">
+                <Button asChild variant="primary">
                   <Link to={CATALOG_COURSES_PATH}>Ver oferta de cursos</Link>
                 </Button>
               }

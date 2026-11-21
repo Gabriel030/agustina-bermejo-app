@@ -86,7 +86,7 @@ export function WaitlistEntryMenu({ queue, entry }) {
         title="Promover ahora"
         description={`${name} pasa a inscripto y recibe un aviso.`}
         confirmLabel="Promover"
-        confirmVariant="gradient"
+        confirmVariant="primary"
         pending={promote.isPending}
         onConfirm={() => run(promote, undefined, 'Persona promovida.', 'No pudimos promover a la persona. Probá de nuevo.')}
       >
@@ -109,7 +109,7 @@ export function WaitlistEntryMenu({ queue, entry }) {
         description={`${name} hoy está en el puesto ${entry.position}. Pasa al 1 y queda con prioridad manual. El motivo queda en el historial.`}
         placeholder="Por qué pasa primero"
         confirmLabel="Mover"
-        confirmVariant="gradient"
+        confirmVariant="primary"
         pending={prioritize.isPending}
         onClose={() => setDialog(null)}
         onConfirm={(reason) => run(prioritize, reason, 'Persona movida al primer lugar.', 'No pudimos mover a la persona. Probá de nuevo.')}

@@ -130,7 +130,7 @@ export function AvisoWizard() {
             <Button type="button" variant="outline" className="mr-auto" onClick={salir}>
               Cancelar
             </Button>
-            <Button type="button" variant="gradient" disabled={alcanzados === 0} onClick={irAMensaje}>
+            <Button type="button" variant="primary" disabled={alcanzados === 0} onClick={irAMensaje}>
               Siguiente
             </Button>
           </div>
@@ -192,7 +192,7 @@ export function AvisoWizard() {
             </Button>
             <Button
               type="button"
-              variant="gradient"
+              variant="primary"
               disabled={!puedePublicar}
               loading={crearAviso.isPending}
               onClick={publicar}

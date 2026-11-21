@@ -123,7 +123,7 @@ export function DirectorExcepcionDetalle() {
           {decisionError && <div role="alert" className="text-size-13 font-semibold text-danger">{decisionError}</div>}
           <div className="flex justify-end gap-2">
             <Button variant="outline" disabled={deciding} onClick={() => setModalRechazo(true)}>Rechazar</Button>
-            <Button variant="gradient" disabled={deciding} onClick={() => setModalAprobacion(true)}>
+            <Button variant="primary" disabled={deciding} onClick={() => setModalAprobacion(true)}>
               Aprobar excepción
             </Button>
           </div>

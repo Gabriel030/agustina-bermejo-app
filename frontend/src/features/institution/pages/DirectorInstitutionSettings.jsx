@@ -86,7 +86,7 @@ function ChangesBar({ count, invalid, onDiscard, onReview }) {
         <Button variant="ghost" onClick={onDiscard} disabled={count === 0}>
           Descartar
         </Button>
-        <Button variant="gradient" onClick={onReview} disabled={count === 0 || invalid}>
+        <Button variant="primary" onClick={onReview} disabled={count === 0 || invalid}>
           Revisar cambios
         </Button>
       </div>
@@ -157,7 +157,7 @@ function SettingsEditor({ settings }) {
           <Button variant="outline" onClick={() => setStep('changes')} disabled={save.isPending}>
             Volver
           </Button>
-          <Button variant="gradient" onClick={confirm} loading={save.isPending}>
+          <Button variant="primary" onClick={confirm} loading={save.isPending}>
             Confirmar y guardar
           </Button>
         </div>
