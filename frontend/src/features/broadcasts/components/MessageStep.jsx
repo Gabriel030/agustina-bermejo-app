@@ -100,7 +100,7 @@ export function MessageStep({ state, onChange, preview, onExcludeMissing }) {
         )}
         {templateDirty && (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="gradient" loading={saveTemplate.isPending} onClick={() => persist(undefined)}>
+            <Button type="button" size="sm" variant="primary" loading={saveTemplate.isPending} onClick={() => persist(undefined)}>
               Guardar como nueva
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={() => setConfirmOverwrite(true)}>

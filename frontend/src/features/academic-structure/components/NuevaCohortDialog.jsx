@@ -192,7 +192,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
           </div>
 
           <DialogFooter>
-            <Button type="submit" variant="gradient" loading={createCohort.isPending} disabled={missingTemplates}>
+            <Button type="submit" variant="primary" loading={createCohort.isPending} disabled={missingTemplates}>
               Crear cohorte
             </Button>
           </DialogFooter>

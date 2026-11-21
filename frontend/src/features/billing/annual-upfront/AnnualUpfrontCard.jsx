@@ -166,7 +166,7 @@ function RequestDialog({ enrollmentId, quote, keyFor, onClose }) {
             Cancelar
           </Button>
           <Button
-            variant="gradient"
+            variant="primary"
             onClick={submit}
             loading={mutation.isPending}
             disabled={!accepted}
@@ -257,7 +257,7 @@ function Offer({ enrollmentId, programName, eligibility, lastDiscarded, primary 
       <p className="text-size-13 text-ink-soft">
         Podés elegirla una sola vez, hasta el {formatDate(requestDeadline)}. Si pagás una cuota, ya no.
       </p>
-      <Button variant={primary ? 'gradient' : 'outline'} className="w-full sm:w-fit" onClick={() => setRequesting(true)}>
+      <Button variant={primary ? 'primary' : 'outline'} className="w-full sm:w-fit" onClick={() => setRequesting(true)}>
         {lastDiscarded ? 'Volver a pedir' : 'Pedir el año completo'}
       </Button>
       {requesting && <RequestDialog enrollmentId={enrollmentId} quote={quote} keyFor={keyFor} onClose={() => setRequesting(false)} />}
@@ -332,7 +332,7 @@ function Tracking({ request, programName, primary }) {
         </ul>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button variant={primary ? 'gradient' : 'outline'} onClick={goToReceipt}>
+        <Button variant={primary ? 'primary' : 'outline'} onClick={goToReceipt}>
           Subir comprobante
         </Button>
         <Button variant="ghost" onClick={() => setDiscarding(true)}>

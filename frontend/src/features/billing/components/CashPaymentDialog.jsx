@@ -395,7 +395,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
               <Button variant="outline" onClick={() => onClose(false)} disabled={busy}>
                 Cancelar
               </Button>
-              <Button variant="gradient" onClick={handleReview} loading={loadingPreview}>
+              <Button variant="primary" onClick={handleReview} loading={loadingPreview}>
                 Revisar cobro
               </Button>
             </>
@@ -410,7 +410,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
                   Volver
                 </Button>
               )}
-              <Button variant="gradient" onClick={handleConfirm} loading={registerMutation.isPending} disabled={!preview || loadingPreview}>
+              <Button variant="primary" onClick={handleConfirm} loading={registerMutation.isPending} disabled={!preview || loadingPreview}>
                 {unknownOutcome ? 'Reintentar cobro' : 'Confirmar cobro'}
               </Button>
             </>

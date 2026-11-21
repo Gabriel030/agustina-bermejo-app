@@ -15,7 +15,7 @@ function ApproveBar({ sheet, pending, onApprove }) {
           {approveHint(sheet)}
         </p>
       </div>
-      <Button type="button" variant="gradient" disabled={!canApproveClosure(sheet)} aria-describedby="closure-approve-hint" onClick={() => setOpen(true)}>
+      <Button type="button" variant="primary" disabled={!canApproveClosure(sheet)} aria-describedby="closure-approve-hint" onClick={() => setOpen(true)}>
         {closedWithoutTeacher(sheet) ? 'Cerrar sin confirmación del docente' : 'Aprobar y cerrar'}
       </Button>
       <ClosureApproveDialog open={open} sheet={sheet} pending={pending} onClose={() => setOpen(false)} onApprove={onApprove} />

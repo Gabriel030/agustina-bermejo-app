@@ -297,7 +297,7 @@ export function PrimerDirector() {
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-xs text-ink-faint">Se le envía un email para crear su contraseña.</span>
-          <Button variant="gradient" onClick={askConfirmation} loading={provision.isPending}>
+          <Button variant="primary" onClick={askConfirmation} loading={provision.isPending}>
             {provision.isPending ? 'Creando Director' : 'Crear Director'}
           </Button>
         </div>

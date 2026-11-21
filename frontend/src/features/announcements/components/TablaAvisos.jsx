@@ -68,7 +68,7 @@ export function TablaAvisos({ avisos, isLoading, isError, onReintentar, soloLect
           icon="📣"
           title="Todavía no publicaste avisos en esta comisión"
           description="Los avisos les llegan a tus alumnos en Novedades y en su campana de notificaciones."
-          action={soloLectura ? null : <Button variant="gradient" onClick={onNuevoAviso}>Nuevo aviso</Button>}
+          action={soloLectura ? null : <Button variant="primary" onClick={onNuevoAviso}>Nuevo aviso</Button>}
         />
       </GlassCard>
     );

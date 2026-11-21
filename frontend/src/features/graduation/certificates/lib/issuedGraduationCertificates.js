@@ -64,7 +64,7 @@ export const ACTION_COPY = {
     title: 'Reemitir certificado',
     confirmTitle: 'Confirmar reemisión',
     confirmLabel: 'Reemitir certificado',
-    confirmVariant: 'gradient',
+    confirmVariant: 'primary',
     resultTitle: 'Certificado reemitido',
     description: 'Se emite un certificado nuevo que reemplaza a este.',
     confirmDescription: 'Se emite un certificado nuevo con la plantilla vigente y queda vinculado a este.',

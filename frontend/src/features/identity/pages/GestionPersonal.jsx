@@ -132,7 +132,7 @@ export function GestionPersonal() {
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold text-ink">Gestión de personal</h1>
           <Button
-            variant="gradient"
+            variant="primary"
             onClick={() => {
               setAltaSession((n) => n + 1);
               setAltaOpen(true);

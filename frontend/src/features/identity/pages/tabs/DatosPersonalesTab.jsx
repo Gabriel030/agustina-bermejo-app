@@ -154,7 +154,7 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, pued
                   <span className="text-size-14 font-medium text-ink">Resetear contraseña</span>
                   <span className="text-size-12 text-ink-faint">Envía un link de recuperación al email del alumno.</span>
                 </div>
-                <Button variant="gradient" size="sm" onClick={onReset}>
+                <Button variant="primary" size="sm" onClick={onReset}>
                   Resetear contraseña
                 </Button>
               </div>
@@ -165,7 +165,7 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, pued
                   <span className="text-size-14 font-medium text-ink">Reactivar alumno</span>
                   <span className="text-size-12 text-ink-faint">Vuelve a habilitar la cuenta y conserva su historia académica.</span>
                 </div>
-                <Button variant="gradient" size="sm" onClick={onReactivar}>
+                <Button variant="primary" size="sm" onClick={onReactivar}>
                   Reactivar alumno
                 </Button>
               </div>

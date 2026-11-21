@@ -244,12 +244,12 @@ export function DirectorOfertaCicloDetalle() {
           {confirming ? (
             <>
               <Button variant="outline" disabled={deciding} onClick={() => setConfirming(false)}>Cancelar</Button>
-              <Button variant="gradient" loading={approve.isPending} onClick={confirmApprove}>Confirmar aprobación</Button>
+              <Button variant="primary" loading={approve.isPending} onClick={confirmApprove}>Confirmar aprobación</Button>
             </>
           ) : (
             <>
               <Button variant="outline" disabled={deciding} onClick={() => setRejecting(true)}>Rechazar</Button>
-              <Button variant="gradient" disabled={deciding} onClick={() => setConfirming(true)}>Aprobar ciclo</Button>
+              <Button variant="primary" disabled={deciding} onClick={() => setConfirming(true)}>Aprobar ciclo</Button>
             </>
           )}
         </StickyActionBar>

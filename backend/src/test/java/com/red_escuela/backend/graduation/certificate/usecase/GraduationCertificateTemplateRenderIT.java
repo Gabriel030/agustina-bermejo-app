@@ -17,7 +17,6 @@ import com.red_escuela.backend.graduation.certificate.entity.GraduationCertifica
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateRegistryNumberAssigner;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateContent;
-import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateSigner;
 import com.red_escuela.backend.graduation.certificate.template.usecase.PublishCertificateTemplateUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.SaveCertificateTemplateDraftUseCase;
 import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateStatus;
@@ -121,10 +120,19 @@ class GraduationCertificateTemplateRenderIT extends AbstractIntegrationTest {
         }
     }
 
+    private Long signatory(String name, String role) {
+        Long id = jdbc.queryForObject("insert into certificate_signatory (name, role, active, created_at, updated_at) values (?, ?, true, now(), now()) returning id",
+                Long.class, name, role);
+        jdbc.update("insert into certificate_signatory_permission (signatory_id, document_type) values (?, 'GRADUATION_APPROVAL')", id);
+        return id;
+    }
+
     private void publishNewVersion(String title, String signerName) {
+        Long first = signatory(signerName, "Rectora");
+        Long second = signatory("Luis Firmante", "Secretario");
         saveDraft.save(GraduationCertificateKind.PROGRAM, new CertificateTemplateContent("INSTITUTO NUEVO", null, title, "Por la presente",
                 "ha aprobado {titleKind}", "Dictada por la institución", "VALIDÁ ESTE DOCUMENTO", "Leyenda nueva {registryNumber}",
-                new CertificateTemplateSigner(signerName, "Rectora", null), new CertificateTemplateSigner("Luis Firmante", "Secretario", null)));
+                null, null, first, second));
         publish.publish(GraduationCertificateKind.PROGRAM);
         entityManager.flush();
     }

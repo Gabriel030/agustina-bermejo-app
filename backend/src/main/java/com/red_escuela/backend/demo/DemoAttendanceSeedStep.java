@@ -8,9 +8,11 @@ import tools.jackson.databind.JsonNode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @Profile("demo")
@@ -36,18 +38,30 @@ public class DemoAttendanceSeedStep implements DemoSeedStep {
 
     @Override
     public void seed(DemoDataset dataset) {
-        List<LocalDate> classDates = recentWeekdaysBefore(ApplicationTime.today(), CLASSES_PER_SECTION);
+        List<LocalDate> classDates = recentClassDaysBefore(ApplicationTime.today(), CLASSES_PER_SECTION, holidayDates());
         List<Long> sectionIds = session.enrolledSectionIdsOf(dataset);
         for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
             recordSection(sectionIds.get(sectionPosition), sectionPosition, classDates);
         }
     }
 
-    static List<LocalDate> recentWeekdaysBefore(LocalDate today, int count) {
+    private Set<LocalDate> holidayDates() {
+        Set<LocalDate> holidays = new HashSet<>();
+        for (JsonNode holiday : session.api().get(DemoPersona.ADMIN, "/holidays")) {
+            String date = holiday.path("date").asString("");
+            if (!date.isBlank()) {
+                holidays.add(LocalDate.parse(date));
+            }
+        }
+        return holidays;
+    }
+
+    static List<LocalDate> recentClassDaysBefore(LocalDate today, int count, Set<LocalDate> holidays) {
         List<LocalDate> dates = new ArrayList<>();
         LocalDate day = today.minusDays(1);
         while (dates.size() < count) {
-            if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            boolean weekend = day.getDayOfWeek() == DayOfWeek.SATURDAY || day.getDayOfWeek() == DayOfWeek.SUNDAY;
+            if (!weekend && !holidays.contains(day)) {
                 dates.add(0, day);
             }
             day = day.minusDays(1);

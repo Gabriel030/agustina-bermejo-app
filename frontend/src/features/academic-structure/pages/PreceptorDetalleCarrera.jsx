@@ -197,7 +197,7 @@ export function PreceptorDetalleCarrera() {
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-xl font-bold text-ink">{programa?.name}</h1>
             {basePath !== '/director' && (
-              <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
+              <Button variant="primary" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
                 Iniciar alta de ciclo
               </Button>
             )}

@@ -207,7 +207,7 @@ export function NotificationMatrix() {
           <Button size="sm" variant="ghost" onClick={() => setPending(null)} disabled={update.isPending}>
             Cancelar
           </Button>
-          <Button size="sm" variant="gradient" onClick={save} loading={update.isPending}>
+          <Button size="sm" variant="primary" onClick={save} loading={update.isPending}>
             Guardar
           </Button>
         </div>

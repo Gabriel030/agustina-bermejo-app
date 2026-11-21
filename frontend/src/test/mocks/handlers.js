@@ -12,6 +12,7 @@ import {
   ownGraduationCertificate,
   springPage,
 } from '@/test/fixtures/certificates';
+import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 
 import { permissionCatalog, permissionDiscrepancy, permissionGrid } from '@/test/fixtures/permissions';
 
@@ -77,6 +78,46 @@ export const handlers = [
   ),
   http.get(`${API}/me/certificates`, () => HttpResponse.json([ownGraduationCertificate()])),
   http.get(`${API}/me/certificates/:id/pdf`, () => pdfResponse()),
+  http.get(`${API}/certificate-signatories`, ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const active = params.get('active');
+    const documentType = params.get('documentType');
+    const query = (params.get('q') ?? '').toLowerCase();
+    const content = signatoryList().filter(
+      (signatory) =>
+        (active === null || String(signatory.active) === active) &&
+        (documentType === null || signatory.allowedDocumentTypes.includes(documentType)) &&
+        (query === '' || `${signatory.name} ${signatory.role}`.toLowerCase().includes(query)),
+    );
+    return HttpResponse.json(springPage(content));
+  }),
+  http.post(`${API}/certificate-signatories`, async ({ request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(
+      signatoryDetail({ id: 5, hasSignature: false, usedInTemplates: [], ...body }),
+      { status: 201 },
+    );
+  }),
+  http.get(`${API}/certificate-signatories/:id/signature`, () => pngResponse()),
+  http.put(`${API}/certificate-signatories/:id/signature`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id), hasSignature: true })),
+  ),
+  http.delete(`${API}/certificate-signatories/:id/signature`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id), hasSignature: false })),
+  ),
+  http.post(`${API}/certificate-signatories/:id/deactivate`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id), active: false })),
+  ),
+  http.post(`${API}/certificate-signatories/:id/activate`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id), active: true })),
+  ),
+  http.get(`${API}/certificate-signatories/:id`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id) })),
+  ),
+  http.put(`${API}/certificate-signatories/:id`, async ({ params, request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(signatoryDetail({ id: Number(params.id), ...body }));
+  }),
   http.get(`${API}/certificate-templates/:kind`, () => HttpResponse.json(certificateTemplate())),
   http.get(`${API}/certificate-templates/:kind/versions`, () =>
     HttpResponse.json([{ versionNumber: 3, publishedAt: '2026-11-18T09:05:00', publishedBy: 'Director Prueba' }]),
