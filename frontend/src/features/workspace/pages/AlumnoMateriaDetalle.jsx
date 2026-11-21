@@ -144,7 +144,7 @@ export function AlumnoMateriaDetalle() {
       </GlassCard>
 
       <Dialog open={modalBajaAbierto} onOpenChange={setModalBajaAbierto}>
-        <DialogContent className="max-w-sm rounded-xl border border-border bg-surface p-6 text-ink backdrop-blur-[28px] backdrop-saturate-[1.6]">
+        <DialogContent className="max-w-sm rounded-xl border border-border bg-surface p-6 text-ink backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)">
           <DialogHeader>
             <DialogTitle>¿Dar de baja esta materia?</DialogTitle>
           </DialogHeader>

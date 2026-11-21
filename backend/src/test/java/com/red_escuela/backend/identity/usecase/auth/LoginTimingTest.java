@@ -5,6 +5,7 @@ import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.specialist.DummyPasswordHash;
 import com.red_escuela.backend.identity.repository.LoginAttemptRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.service.CredentialLoginTransaction;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.ApplicationTime;
@@ -27,8 +28,8 @@ class LoginTimingTest {
     private final PersonRepository personRepository = mock(PersonRepository.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final DummyPasswordHash dummyPasswordHash = dummyHash();
-    private final LoginService service = new LoginService(personRepository, mock(LoginAttemptRepository.class),
-            passwordEncoder, mock(AuthTokenIssuer.class), dummyPasswordHash, 5, 15);
+    private final LoginService service = new LoginService(new CredentialLoginTransaction(personRepository, mock(LoginAttemptRepository.class),
+            passwordEncoder, mock(AuthTokenIssuer.class), dummyPasswordHash, 5, 15));
 
     private DummyPasswordHash dummyHash() {
         DummyPasswordHash hash = mock(DummyPasswordHash.class);

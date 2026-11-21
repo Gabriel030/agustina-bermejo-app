@@ -274,6 +274,7 @@ describe('NotificationBell', () => {
     ['OFFER_CYCLE_SUBMITTED', 'CycleSubmitted', '/director/aprobaciones/oferta-academica/9'],
     ['OFFER_CYCLE_APPROVED', 'AcademicOfferingCycle', '/director/oferta-academica'],
     ['OFFER_CYCLE_REJECTED', 'AcademicOfferingCycle', '/director/oferta-academica'],
+    ['SECTION_MODIFICATION_REQUESTED', 'SubjectSection', '/director/aprobaciones'],
   ])('navigates to the offer screen when tapping %s', async (type, entityType, destination) => {
     const user = userEvent.setup();
     function Destino() {
@@ -304,6 +305,7 @@ describe('NotificationBell', () => {
     ['SUBJECT_WITHDRAWN', '/alumno/inicio', '/alumno/mis-carreras?tab=materias'],
     ['REGULAR_CERTIFICATE_READY', '/alumno/inicio', '/alumno/mis-carreras?tab=tramites'],
     ['SUBJECT_WITHDRAWN_TEACHER', '/docente/inicio', '/docente/mis-comisiones'],
+    ['SECTION_MODIFICATION_REJECTED', '/preceptor/inicio', '/preceptor/oferta-academica'],
   ])('takes the active role to the matching screen when tapping %s', async (type, start, destination) => {
     const user = userEvent.setup();
     function Destino() {
