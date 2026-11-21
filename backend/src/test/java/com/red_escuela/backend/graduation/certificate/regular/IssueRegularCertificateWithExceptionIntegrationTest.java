@@ -468,6 +468,21 @@ class IssueRegularCertificateWithExceptionIntegrationTest extends AbstractIntegr
     }
 
     @Test
+    void listingFiltersByStudentAndStatusInTheQuery() throws Exception {
+        Long id = requestException().id();
+
+        mockMvc.perform(get("/certificate-exceptions").param("studentId", studentId.toString()).param("status", "PENDING")
+                        .header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.id==" + id + ")]").exists());
+        mockMvc.perform(get("/certificate-exceptions").param("status", "APPROVED").param("studentId", studentId.toString())
+                        .header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.id==" + id + ")]").doesNotExist());
+        mockMvc.perform(get("/certificate-exceptions").param("studentId", "987654321")
+                        .header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.id==" + id + ")]").doesNotExist());
+    }
+
+    @Test
     void listingShowsEverythingToTheDirectorAndOnlyTheirOwnToAdministrative() throws Exception {
         Long id = requestException().id();
 

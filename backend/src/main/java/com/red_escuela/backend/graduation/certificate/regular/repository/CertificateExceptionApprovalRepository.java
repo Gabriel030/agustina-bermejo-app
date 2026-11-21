@@ -4,6 +4,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.Certificate
 import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +14,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface CertificateExceptionApprovalRepository extends JpaRepository<CertificateExceptionApproval, Long> {
+public interface CertificateExceptionApprovalRepository extends JpaRepository<CertificateExceptionApproval, Long>,
+        JpaSpecificationExecutor<CertificateExceptionApproval> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from CertificateExceptionApproval e where e.id = :id")
@@ -25,8 +27,4 @@ public interface CertificateExceptionApprovalRepository extends JpaRepository<Ce
     boolean existsByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, Collection<CertificateExceptionStatus> statuses);
 
     boolean existsByCourseEnrollmentIdAndStatusIn(Long courseEnrollmentId, Collection<CertificateExceptionStatus> statuses);
-
-    List<CertificateExceptionApproval> findAllByOrderByIdDesc();
-
-    List<CertificateExceptionApproval> findAllByRequestedByIdOrderByIdDesc(Long requestedById);
 }

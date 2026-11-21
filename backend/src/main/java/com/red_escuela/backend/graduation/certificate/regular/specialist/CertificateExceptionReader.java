@@ -6,6 +6,8 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.Certificate
 import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionNotFoundException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,12 +35,18 @@ public class CertificateExceptionReader {
 
     @Transactional(readOnly = true)
     public List<CertificateExceptionResponse> list(boolean seesAll, Long studentId, CertificateExceptionStatus status) {
-        List<CertificateExceptionApproval> candidates = seesAll
-                ? repository.findAllByOrderByIdDesc()
-                : repository.findAllByRequestedByIdOrderByIdDesc(currentActorFinder.currentPersonId());
-        return candidates.stream()
-                .filter(approval -> studentId == null || approval.getStudentId().equals(studentId))
-                .filter(approval -> status == null || approval.getStatus() == status)
+        Specification<CertificateExceptionApproval> filter = (root, query, builder) -> builder.conjunction();
+        if (!seesAll) {
+            Long requesterId = currentActorFinder.currentPersonId();
+            filter = filter.and((root, query, builder) -> builder.equal(root.get("requestedById"), requesterId));
+        }
+        if (studentId != null) {
+            filter = filter.and((root, query, builder) -> builder.equal(root.get("studentId"), studentId));
+        }
+        if (status != null) {
+            filter = filter.and((root, query, builder) -> builder.equal(root.get("status"), status));
+        }
+        return repository.findAll(filter, Sort.by(Sort.Direction.DESC, "id")).stream()
                 .map(CertificateExceptionResponses::of)
                 .toList();
     }
