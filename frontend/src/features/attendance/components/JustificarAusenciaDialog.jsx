@@ -78,7 +78,7 @@ export function JustificarAusenciaDialog({ type, sectionId, absence, onClose }) 
         )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button variant="gradient" onClick={submit} disabled={!file || !!fileError || attach.isPending}>
+          <Button variant="primary" onClick={submit} disabled={!file || !!fileError || attach.isPending}>
             {attach.isPending ? 'Enviando…' : 'Enviar comprobante'}
           </Button>
         </DialogFooter>
