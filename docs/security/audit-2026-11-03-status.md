@@ -32,7 +32,7 @@ Resumen al 21-nov-2026: 15 hallazgos (A2-A9 y B1-B7): 13 cerrados (A2, A3, A4, A
 
 - #956: 24-D, validación de archivos por contenido en los flujos viejos. Cerrado el 21-nov-2026 (verificado: #970, #1079 y `UploadedFileSizeLimitHttpIT` existen en develop).
 - G6: usuarios enumerables por `/auth/register` y la bandeja de autorizaciones. Rebanada propia, separada de S2.
-- G8: rotación de secretos (JWT, base, credenciales); falta procedimiento y prueba.
+- G8: rotación de secretos (JWT, base, credenciales). Procedimiento y prueba escritos en [secrets-rotation.md](secrets-rotation.md) (#1152); falta el ensayo en staging (checklist del documento, lo corre Gabriel).
 - 24.3b: bulkhead para Mercado Pago y Brevo. Baja prioridad.
 - Sentry: DSN vacío por defecto.
 - De #991 (no cerrados, se llevan a S2, que es G5 + A7 + estos pendientes): caso positivo del dueño contra un cierre real; filas OWNER para pedidos de autorización y comisiones de curso; dos asserts flojos en `AuthorizationRequestInboxIT` y `CreditNoteIssuingFlowIT`; `GET /authorization-requests/{id}` sin test HTTP de ownership.

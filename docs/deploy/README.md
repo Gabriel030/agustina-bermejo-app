@@ -173,6 +173,8 @@ Si se trabaja con un registro de imágenes, el rollback es poner en `deploy/.env
 
 ## Rotación de secretos
 
+Procedimiento completo por secreto (impacto, pasos, verificación, rollback, cadencia y checklist de ensayo en staging): [docs/security/secrets-rotation.md](../security/secrets-rotation.md). Lo que sigue es el resumen.
+
 Todos viven en `deploy/.env`. Después de cambiar uno: `dc up -d` (recrea solo lo que cambió).
 
 | Secreto | Efecto de rotarlo | Cómo |
