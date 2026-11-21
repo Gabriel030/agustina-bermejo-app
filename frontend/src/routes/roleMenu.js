@@ -1,4 +1,4 @@
-import { Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup } from 'lucide-react';
+import { PenLine, Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -23,6 +23,7 @@ const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicit
 const waitlists = { slug: 'inscripciones/listas-de-espera', label: 'Listas de espera', icon: ListOrdered };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const graduationCertificates = { slug: 'egresos', label: 'Egresos', icon: GraduationCap };
+const graduationSignatories = { slug: 'firmantes', label: 'Firmantes', icon: PenLine };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const closures = { slug: 'cierres-de-comision', label: 'Cierres de comisión', icon: FileSignature };
 const broadcasts = { slug: 'comunicaciones', label: 'Comunicaciones', icon: Megaphone };
@@ -73,6 +74,7 @@ export const ROLE_MENU = {
     approvals,
     graduationVerification,
     graduationCertificates,
+    graduationSignatories,
     financial,
     certificates,
     solicitudes,
@@ -90,6 +92,7 @@ export const ROLE_MENU = {
     personal,
     approvals,
     graduationCertificates,
+    graduationSignatories,
     academicManagement,
     { slug: 'esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
@@ -131,7 +134,7 @@ const MENU_GROUPS = {
     {
       id: 'academic',
       label: 'Académico',
-      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'egresos'],
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'egresos', 'firmantes'],
     },
     {
       id: 'billing',
