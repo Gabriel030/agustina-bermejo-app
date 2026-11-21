@@ -6,7 +6,7 @@ import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditLogFilter;
 import com.red_escuela.backend.shared.audit.AuditLogView;
 import com.red_escuela.backend.shared.pagination.PageResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +27,7 @@ public class AuditLogController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "audit.read", legacyRoles = "ROLE_DIRECTOR")
     public PageResponse<AuditLogView> listAuditLog(@RequestParam(required = false) List<AuditAction> action,
                                                    @RequestParam(required = false) AuditEntityType entityType,
                                                    @RequestParam(required = false) Long entityId,
