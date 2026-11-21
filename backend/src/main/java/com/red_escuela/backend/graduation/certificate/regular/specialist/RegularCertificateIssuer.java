@@ -15,6 +15,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStud
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.entity.ValidityDays;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ConcurrentRegularCertificateIssueException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.NoDebtToExceptException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.NotRegularException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateAlreadyIssuedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceInvalidException;
@@ -65,6 +66,7 @@ public class RegularCertificateIssuer {
     private final MeterRegistry meterRegistry;
     private final Clock clock;
     private final RegularCertificateSettingsFinder settingsFinder;
+    private final CertificateExceptionConsumer exceptionConsumer;
     private final SecureRandom random = new SecureRandom();
 
     public RegularCertificateIssuer(RegularStudentCertificateRepository certificateRepository,
@@ -75,7 +77,8 @@ public class RegularCertificateIssuer {
                                     CertificateVerificationUrl verificationUrl, CertificateDigest digest,
                                     CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher,
                                     MeterRegistry meterRegistry, Clock clock,
-                                    RegularCertificateSettingsFinder settingsFinder) {
+                                    RegularCertificateSettingsFinder settingsFinder,
+                                    CertificateExceptionConsumer exceptionConsumer) {
         this.certificateRepository = certificateRepository;
         this.requestRepository = requestRepository;
         this.regularityEvaluator = regularityEvaluator;
@@ -91,11 +94,12 @@ public class RegularCertificateIssuer {
         this.meterRegistry = meterRegistry;
         this.clock = clock;
         this.settingsFinder = settingsFinder;
+        this.exceptionConsumer = exceptionConsumer;
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
             StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class,
-            StandingEvidenceRequiredException.class})
+            StandingEvidenceRequiredException.class, NoDebtToExceptException.class})
     public RegularCertificateResponse issue(IssueRegularCertificateCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
         RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
@@ -110,7 +114,7 @@ public class RegularCertificateIssuer {
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
             StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class,
-            StandingEvidenceRequiredException.class})
+            StandingEvidenceRequiredException.class, NoDebtToExceptException.class})
     public RegularCertificateSubmissionResponse submitFromPortal(IssueRegularCertificateCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
         RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
@@ -177,10 +181,14 @@ public class RegularCertificateIssuer {
 
     private StandingResolution resolveStanding(IssueRegularCertificateCommand command, Long studentId, Long actorId, LocalDateTime now) {
         try {
+            if (command.exceptionId() != null) {
+                exceptionConsumer.requireUsable(command.exceptionId(), studentId, command.kind(), command.enrollmentId());
+                return standingGate.resolveByException(studentId, command.kind(), command.enrollmentId());
+            }
             return standingGate.resolve(studentId, command.kind(), command.enrollmentId(),
                     new StandingConfirmation(command.standingConfirmed(), command.standingEvidence()));
         } catch (StudentHasDebtException | StandingNotConfirmedException | StandingEvidenceInvalidException
-                 | StandingEvidenceRequiredException e) {
+                 | StandingEvidenceRequiredException | NoDebtToExceptException e) {
             recordRequest(command, studentId, actorId, now, RegularRequestOutcome.REJECTED, List.of(reasonCodeOf(e)));
             throw e;
         }
@@ -228,11 +236,13 @@ public class RegularCertificateIssuer {
                     .standingConfirmedById(standing.confirmedById())
                     .standingConfirmedAt(standing.confirmedAt())
                     .standingEvidence(standing.evidence())
+                    .exceptionId(command.exceptionId())
                     .snapshot(snapshot)
                     .templateRef(snapshot.templateRef())
                     .pdfSha256(digest.sha256(pdf))
                     .pdfPath(path)
                     .build());
+            consumeExceptionIfPresent(command, saved, studentId, actorId, path);
             request.linkCertificate(saved.getId());
             pending.ifPresent(open -> open.resolveAsIssued(saved.getId()));
             requestRepository.save(request);
@@ -246,6 +256,19 @@ public class RegularCertificateIssuer {
         } catch (DataIntegrityViolationException e) {
             fileStore.deleteIfRolledBack(path);
             throw new ConcurrentRegularCertificateIssueException();
+        }
+    }
+
+    private void consumeExceptionIfPresent(IssueRegularCertificateCommand command, RegularStudentCertificate saved, Long studentId,
+                                           Long actorId, String path) {
+        if (command.exceptionId() == null) {
+            return;
+        }
+        try {
+            exceptionConsumer.consume(command.exceptionId(), saved.getId(), studentId, command.kind(), command.enrollmentId(), actorId);
+        } catch (RuntimeException failure) {
+            fileStore.deleteIfRolledBack(path);
+            throw failure;
         }
     }
 

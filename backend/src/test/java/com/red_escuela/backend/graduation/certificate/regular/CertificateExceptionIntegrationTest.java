@@ -16,7 +16,7 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.CertificateExc
 import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionAlreadyOpenException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionAlreadyConsumedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionTargetMismatchException;
-import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionWithdrawNotAllowedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionNotFoundException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OwnExceptionDecisionException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionNotApprovedException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
@@ -30,6 +30,7 @@ import com.red_escuela.backend.graduation.certificate.regular.usecase.RequestCer
 import com.red_escuela.backend.graduation.certificate.regular.usecase.WithdrawCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionExpirer;
 import com.red_escuela.backend.identity.entity.Institution;
+import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -76,6 +77,8 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
     @Autowired
+    private FeatureSnapshotHolder snapshotHolder;
+    @Autowired
     private CertificateExceptionApprovalRepository repository;
     @Autowired
     private RegularCertificateRequestRepository requestRepository;
@@ -108,6 +111,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void seed() {
         MutableClock.INSTANCE.setDateTime(NOW);
+        setBillingMode("OFF");
         transactions.executeWithoutResult(status -> {
             institution = new Institution();
             institution.setName("Instituto de prueba");
@@ -124,6 +128,12 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     void restore() {
         SecurityContextHolder.clearContext();
         jdbc.update("update regular_certificate_settings set exception_validity_days = 7");
+        setBillingMode("FULL");
+    }
+
+    private void setBillingMode(String mode) {
+        jdbc.update("update platform_feature set enabled = ?, mode = ? where code = 'BILLING'", !"OFF".equals(mode), mode);
+        snapshotHolder.refresh();
     }
 
     private void actAs(Long personId) {
@@ -370,7 +380,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> rejectUseCase.reject(requested.id(), "Reclamo verificado en el juzgado"))
                 .isInstanceOf(OwnExceptionDecisionException.class);
         actAs(directorId);
-        assertThatThrownBy(() -> withdrawUseCase.withdraw(requested.id())).isInstanceOf(ExceptionWithdrawNotAllowedException.class);
+        assertThatThrownBy(() -> withdrawUseCase.withdraw(requested.id())).isInstanceOf(CertificateExceptionNotFoundException.class);
         assertThat(statusOf(requested.id())).isEqualTo("PENDING");
         actAs(requesterId);
         assertThat(withdrawUseCase.withdraw(requested.id()).status()).isEqualTo(CertificateExceptionStatus.WITHDRAWN);
@@ -400,6 +410,47 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
         withdrawUseCase.withdraw(first.id());
         assertThat(requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId, OrganismKind.COURT,
                 "Causa 2", REASON)).status()).isEqualTo(CertificateExceptionStatus.PENDING);
+    }
+
+    @Test
+    void twoConcurrentRequestsForTheSameEnrollmentLetExactlyOneWin() throws Exception {
+        int threads = 2;
+        CountDownLatch ready = new CountDownLatch(threads);
+        CountDownLatch go = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        try {
+            List<Future<Throwable>> futures = new ArrayList<>();
+            for (int index = 0; index < threads; index++) {
+                Callable<Throwable> attempt = () -> {
+                    actAs(requesterId);
+                    ready.countDown();
+                    go.await();
+                    try {
+                        requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId, OrganismKind.COURT,
+                                "Causa concurrente", REASON));
+                        return null;
+                    } catch (Throwable failure) {
+                        return failure;
+                    } finally {
+                        SecurityContextHolder.clearContext();
+                    }
+                };
+                futures.add(executor.submit(attempt));
+            }
+            ready.await();
+            go.countDown();
+            List<Throwable> outcomes = new ArrayList<>();
+            for (Future<Throwable> future : futures) {
+                outcomes.add(future.get());
+            }
+
+            assertThat(outcomes.stream().filter(outcome -> outcome == null)).hasSize(1);
+            assertThat(outcomes.stream().filter(outcome -> outcome instanceof CertificateExceptionAlreadyOpenException)).hasSize(1);
+            assertThat(jdbc.queryForObject("select count(*) from certificate_exception_approval where program_enrollment_id = ?", Integer.class,
+                    enrollmentId)).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     private String statusOf(Long id) {
