@@ -42,6 +42,7 @@ const ACTIONS = {
   CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED: ['Firma de certificado cargada', 'neutral'],
   CERTIFICATE_SIGNATORY_SIGNATURE_DELETED: ['Firma de certificado eliminada', 'warning'],
   PERMISSION_GRID_CHANGED: ['Grilla de permisos modificada', 'accent'],
+  PERMISSION_SENSITIVE_CHANGED: ['Permiso sensible modificado', 'warning'],
 };
 
 const ENTITIES = {
