@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { localIsoDate } from '@/lib/calendario';
 import { useMyCalendar } from '@/features/workspace/hooks/useMyCalendar';
 import {
   CALENDAR_EVENT_TYPES,
@@ -7,38 +8,59 @@ import {
   filterCalendarEvents,
   groupEventsByDay,
   hasOnlyHolidays,
+  institutionToday,
   monthKeyOf,
   monthRange,
   parseDateKey,
   shiftSelection,
   subjectNamesOf,
-  toDateKey,
   weekDayKeys,
 } from '@/features/workspace/lib/studentCalendar';
 
+const TODAY_REFRESH_MS = 60_000;
+
 export function useStudentCalendarState() {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [today] = useState(() => new Date());
+  const [today, setToday] = useState(institutionToday);
   const [view, setView] = useState(isDesktop ? 'month' : 'week');
   const [selectedDate, setSelectedDate] = useState(today);
   const [activeTypes, setActiveTypes] = useState(() => new Set(CALENDAR_EVENT_TYPES));
   const [subject, setSubject] = useState('');
 
+  useEffect(() => {
+    function refreshToday() {
+      const next = institutionToday();
+      setToday((current) => (localIsoDate(current) === localIsoDate(next) ? current : next));
+    }
+    const interval = setInterval(refreshToday, TODAY_REFRESH_MS);
+    window.addEventListener('focus', refreshToday);
+    document.addEventListener('visibilitychange', refreshToday);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshToday);
+      document.removeEventListener('visibilitychange', refreshToday);
+    };
+  }, []);
+
   const monthKey = monthKeyOf(selectedDate);
   const range = useMemo(() => monthRange(parseDateKey(`${monthKey}-01`)), [monthKey]);
   const query = useMyCalendar(range.from, range.to);
-  const allEvents = query.data?.events;
+  const isRangeLoading = query.isPlaceholderData;
+  const isRangeReady = query.isSuccess && !isRangeLoading;
+  const allEvents = useMemo(() => (isRangeLoading ? [] : (query.data?.events ?? [])), [isRangeLoading, query.data]);
+
+  const subjects = useMemo(() => subjectNamesOf(allEvents), [allEvents]);
+  const activeSubject = subjects.includes(subject) ? subject : '';
 
   const visibleEvents = useMemo(
-    () => filterCalendarEvents(allEvents ?? [], { types: activeTypes, subject }),
-    [allEvents, activeTypes, subject],
+    () => filterCalendarEvents(allEvents, { types: activeTypes, subject: activeSubject }),
+    [allEvents, activeTypes, activeSubject],
   );
   const eventsByDay = useMemo(() => groupEventsByDay(visibleEvents), [visibleEvents]);
-  const counts = useMemo(() => countEventsByType(allEvents ?? [], monthKey, subject), [allEvents, monthKey, subject]);
-  const subjects = useMemo(() => subjectNamesOf(allEvents ?? []), [allEvents]);
+  const counts = useMemo(() => countEventsByType(allEvents, monthKey, activeSubject), [allEvents, monthKey, activeSubject]);
 
-  const selectedKey = toDateKey(selectedDate);
-  const hasActiveFilter = activeTypes.size !== CALENDAR_EVENT_TYPES.length || subject !== '';
+  const selectedKey = localIsoDate(selectedDate);
+  const hasActiveFilter = activeTypes.size !== CALENDAR_EVENT_TYPES.length || activeSubject !== '';
 
   function toggleType(type) {
     setActiveTypes((current) => {
@@ -54,7 +76,7 @@ export function useStudentCalendarState() {
     view,
     setView,
     today,
-    todayKey: toDateKey(today),
+    todayKey: localIsoDate(today),
     selectedDate,
     selectedKey,
     monthKey,
@@ -62,14 +84,15 @@ export function useStudentCalendarState() {
     gridDays: range.days,
     weekDays: weekDayKeys(selectedDate),
     query,
-    generatedAt: query.data?.generatedAt ?? null,
-    hasNoEnrollments: Boolean(allEvents) && hasOnlyHolidays(allEvents),
+    isRangeLoading,
+    generatedAt: isRangeReady ? (query.data?.generatedAt ?? null) : null,
+    hasNoEnrollments: isRangeReady && hasOnlyHolidays(allEvents),
     eventsByDay,
     selectedDayEvents: eventsByDay.get(selectedKey) ?? [],
     counts,
     subjects,
     activeTypes,
-    subject,
+    subject: activeSubject,
     hasActiveFilter,
     toggleType,
     setSubject,

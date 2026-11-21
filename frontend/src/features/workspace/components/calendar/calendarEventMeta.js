@@ -8,8 +8,6 @@ const TYPE_META = {
 
 const CANCELED_META = { tone: 'text-danger-ink', bar: 'border-l-danger' };
 
-export const DOT_COLOR = { CLASS: 'bg-brand', HOLIDAY: 'bg-warning', EXAM_BOARD: 'bg-success', CANCELED: 'bg-danger' };
-
 export function isCanceled(event) {
   return event.status === 'CANCELED';
 }
@@ -19,13 +17,22 @@ export function eventMeta(event) {
   return isCanceled(event) ? { ...base, ...CANCELED_META } : base;
 }
 
-export function dotKey(event) {
+function dotKey(event) {
   return isCanceled(event) ? 'CANCELED' : event.type;
 }
 
+export function dayMarks(events) {
+  const marks = new Map();
+  events.forEach((event) => {
+    if (!marks.has(dotKey(event))) marks.set(dotKey(event), eventMeta(event));
+  });
+  return [...marks].map(([key, meta]) => ({ key, glyph: meta.glyph, tone: meta.tone }));
+}
+
 export function eventAriaLabel(event) {
-  const suffix = isCanceled(event) ? ' (cancelada)' : '';
-  return `${TYPE_META[event.type].label}: ${event.title}${suffix}`;
+  const details = [`${TYPE_META[event.type].label}: ${event.title}`, eventTimeLabel(event)];
+  if (event.type !== 'HOLIDAY') details.push(eventStatusPill(event).label);
+  return details.join(', ');
 }
 
 export function eventStatusPill(event) {

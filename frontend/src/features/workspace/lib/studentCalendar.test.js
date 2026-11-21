@@ -7,6 +7,7 @@ import {
   formatUpdatedAt,
   formatWeekTitle,
   groupEventsByDay,
+  institutionTodayKey,
   monthRange,
   shiftSelection,
   weekDayKeys,
@@ -14,6 +15,13 @@ import {
 import { canceledClassEvent, classEvent, examBoardEvent, holidayEvent } from '@/test/fixtures/studentCalendar';
 
 const ALL_TYPES = new Set(['CLASS', 'HOLIDAY', 'EXAM_BOARD']);
+
+describe('institutionTodayKey', () => {
+  it('reads the day in the institute time zone, not in the browser time zone', () => {
+    expect(institutionTodayKey(new Date('2026-11-21T02:30:00Z'))).toBe('2026-11-20');
+    expect(institutionTodayKey(new Date('2026-11-21T14:30:00Z'))).toBe('2026-11-21');
+  });
+});
 
 describe('monthRange', () => {
   it('spans whole Monday-to-Sunday weeks around the month', () => {

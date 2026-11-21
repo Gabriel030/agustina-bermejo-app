@@ -5,7 +5,7 @@ import { HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { installFixedClock } from '@/test/fixedClock';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { calendarHandler, calendarResponse, classEvent, holidayEvent } from '@/test/fixtures/studentCalendar';
+import { calendarHandler, calendarResponse, classEvent, defaultCalendarEvents, holidayEvent } from '@/test/fixtures/studentCalendar';
 import { AlumnoCalendario } from '@/features/workspace/pages/AlumnoCalendario';
 
 const originalMatchMedia = window.matchMedia;
@@ -48,6 +48,7 @@ describe('AlumnoCalendario', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Calendario' })).toBeInTheDocument();
     expect(screen.getByText('Actualizado hoy 09:30')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Agregar a mi calendario' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Agregar a mi calendario' })).toHaveAccessibleDescription('Disponible próximamente');
     expect(screen.getByRole('heading', { name: 'noviembre de 2026' })).toBeInTheDocument();
   });
 
@@ -56,17 +57,17 @@ describe('AlumnoCalendario', () => {
       await renderDesktop();
 
       expect(screen.getByRole('button', { name: 'viernes 20 de noviembre, 1 evento' })).toBeInTheDocument();
-      expect(screen.getAllByRole('button', { name: 'Clase: Programación II' })).toHaveLength(2);
-      expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Mesa de examen: Mesa de Matemática' })).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })).toHaveLength(2);
+      expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional, Todo el día' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Mesa de examen: Mesa de Matemática, 09:00, Inscripto a la mesa' })).toBeInTheDocument();
     });
 
     it('strikes through canceled classes and names them as canceled', async () => {
       await renderDesktop();
 
-      const canceled = screen.getByRole('button', { name: 'Clase: Matemática (cancelada)' });
+      const canceled = screen.getByRole('button', { name: 'Clase: Matemática, 10:00, Clase cancelada' });
       expect(within(canceled).getByText('Matemática')).toHaveClass('line-through');
-      const regular = screen.getAllByRole('button', { name: 'Clase: Programación II' })[0];
+      const regular = screen.getAllByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })[0];
       expect(within(regular).getByText('Programación II')).not.toHaveClass('line-through');
     });
 
@@ -77,18 +78,30 @@ describe('AlumnoCalendario', () => {
       renderWithProviders(<AlumnoCalendario />);
 
       expect(await screen.findByRole('button', { name: '+2 más' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Clase: Materia 4' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Clase: Materia 4, 18:00, Programada' })).not.toBeInTheDocument();
     });
 
     it('selects the day when an event is clicked and lists it in the selected day block', async () => {
       const user = userEvent.setup();
       await renderDesktop();
 
-      await user.click(screen.getAllByRole('button', { name: 'Clase: Programación II' })[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })[0]);
 
       const block = screen.getByRole('region', { name: /viernes 20 de noviembre/i });
       expect(within(block).getByText('Programada')).toBeInTheDocument();
       expect(within(block).getByText('Aula 12', { exact: false })).toBeInTheDocument();
+    });
+
+    it('marks each event type with its own shape in the compact grid', async () => {
+      const user = userEvent.setup();
+      setViewport(false);
+      renderWithProviders(<AlumnoCalendario />);
+      await screen.findByRole('heading', { name: '16 al 22 de noviembre de 2026' });
+
+      await user.click(screen.getByRole('button', { name: 'Mes' }));
+
+      expect(within(screen.getByRole('button', { name: 'viernes 20 de noviembre, 1 evento' })).getByText('●')).toBeInTheDocument();
+      expect(within(screen.getByRole('button', { name: 'lunes 23 de noviembre, 1 evento' })).getByText('◆')).toBeInTheDocument();
     });
 
     it('shows an empty message for a day without events', async () => {
@@ -128,7 +141,7 @@ describe('AlumnoCalendario', () => {
 
       expect(screen.getByRole('heading', { name: '16 al 22 de noviembre de 2026' })).toBeInTheDocument();
       expect(screen.getAllByText('Sin eventos')).toHaveLength(6);
-      expect(screen.getByRole('button', { name: 'Clase: Programación II' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })).toBeInTheDocument();
     });
 
     it('moves a week at a time and crosses into the next month', async () => {
@@ -140,7 +153,7 @@ describe('AlumnoCalendario', () => {
       await user.click(screen.getByRole('button', { name: 'Semana siguiente' }));
 
       expect(await screen.findByRole('heading', { name: '30 de noviembre al 6 de diciembre de 2026' })).toBeInTheDocument();
-      expect(await screen.findByRole('button', { name: 'Mesa de examen: Mesa de Didáctica' })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Mesa de examen: Mesa de Didáctica, 09:00, Inscripción abierta' })).toBeInTheDocument();
     });
 
     it('groups the month by day in the agenda view with pills and no selected day block', async () => {
@@ -183,7 +196,7 @@ describe('AlumnoCalendario', () => {
 
       await user.click(screen.getByRole('button', { name: 'viernes 20 de noviembre, 1 evento' }));
 
-      expect(screen.getByRole('button', { name: 'Clase: Programación II' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })).toBeInTheDocument();
       expect(screen.getByText('Programada')).toBeInTheDocument();
     });
 
@@ -210,7 +223,7 @@ describe('AlumnoCalendario', () => {
       await user.click(screen.getByRole('button', { name: 'Mes' }));
 
       expect(screen.getByRole('heading', { name: 'noviembre de 2026' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Clase: Programación II' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'viernes 20 de noviembre, 1 evento' })).toBeInTheDocument();
     });
   });
@@ -232,8 +245,44 @@ describe('AlumnoCalendario', () => {
 
       await user.click(screen.getByRole('button', { name: 'Clases 3' }));
 
-      expect(screen.queryByRole('button', { name: 'Clase: Programación II' })).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional, Todo el día' })).toBeInTheDocument();
+    });
+
+    it('drops the subject filter when the next month has no events of that subject', async () => {
+      const user = userEvent.setup();
+      const didactica = classEvent({ id: 'dec-didactica', date: '2026-12-15', title: 'Didáctica', subjectName: 'Didáctica' });
+      server.use(
+        calendarHandler(({ request }) => {
+          const from = new URL(request.url).searchParams.get('from');
+          return HttpResponse.json(calendarResponse({ events: from === '2026-10-26' ? defaultCalendarEvents() : [didactica] }));
+        }),
+      );
+      await renderDesktop();
+      await user.selectOptions(screen.getByLabelText('Materia'), 'Programación II');
+      expect(screen.getByLabelText('Materia')).toHaveValue('Programación II');
+
+      await user.click(screen.getByRole('button', { name: 'Mes siguiente' }));
+
+      expect(await screen.findByRole('button', { name: 'Clase: Didáctica, 18:00, Programada' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Materia')).toHaveValue('');
+    });
+
+    it('marks the grid as busy and hides the previous month events while the next month loads', async () => {
+      const user = userEvent.setup();
+      server.use(
+        calendarHandler(({ request }) => {
+          const from = new URL(request.url).searchParams.get('from');
+          return from === '2026-10-26' ? HttpResponse.json(calendarResponse()) : new Promise(() => {});
+        }),
+      );
+      await renderDesktop();
+
+      await user.click(screen.getByRole('button', { name: 'Mes siguiente' }));
+
+      const December = await screen.findByRole('button', { name: /^martes 1 de diciembre/ });
+      expect(December.closest('[aria-busy]')).toHaveAttribute('aria-busy', 'true');
+      expect(screen.queryByRole('button', { name: /^Clase: Programación II/ })).not.toBeInTheDocument();
     });
 
     it('filters by subject but keeps holidays visible', async () => {
@@ -242,10 +291,10 @@ describe('AlumnoCalendario', () => {
 
       await user.selectOptions(screen.getByLabelText('Materia'), 'Programación II');
 
-      expect(screen.queryByRole('button', { name: 'Clase: Matemática (cancelada)' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Mesa de examen: Mesa de Matemática' })).not.toBeInTheDocument();
-      expect(screen.getAllByRole('button', { name: 'Clase: Programación II' })).toHaveLength(2);
-      expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Clase: Matemática, 10:00, Clase cancelada' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Mesa de examen: Mesa de Matemática, 09:00, Inscripto a la mesa' })).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })).toHaveLength(2);
+      expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional, Todo el día' })).toBeInTheDocument();
       expect(screen.getByText('Los feriados se muestran siempre, aunque filtres por materia.')).toBeInTheDocument();
     });
   });
@@ -289,7 +338,7 @@ describe('AlumnoCalendario', () => {
       const banner = await screen.findByRole('status');
       expect(within(banner).getByText('Todavía no estás inscripto a ninguna materia')).toBeInTheDocument();
       expect(within(banner).getByRole('link', { name: 'Ver oferta académica' })).toHaveAttribute('href', '/catalogo');
-      expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional, Todo el día' })).toBeInTheDocument();
     });
 
     it('does not show the banner when the student has classes', async () => {

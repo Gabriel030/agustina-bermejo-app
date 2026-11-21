@@ -1,4 +1,13 @@
+import { localIsoDate } from '@/lib/calendario';
+
 export const CALENDAR_EVENT_TYPES = ['CLASS', 'HOLIDAY', 'EXAM_BOARD'];
+const INSTITUTION_TIME_ZONE = 'America/Argentina/Buenos_Aires';
+const institutionDayFormat = new Intl.DateTimeFormat('en-CA', {
+  timeZone: INSTITUTION_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
 
 const WEEKDAYS_LONG = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MONTHS_LONG = [
@@ -7,10 +16,12 @@ const MONTHS_LONG = [
 ];
 export const WEEKDAY_INITIALS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-const pad = (value) => String(value).padStart(2, '0');
+export function institutionTodayKey(now = new Date()) {
+  return institutionDayFormat.format(now);
+}
 
-export function toDateKey(date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+export function institutionToday(now = new Date()) {
+  return parseDateKey(institutionTodayKey(now));
 }
 
 export function parseDateKey(key) {
@@ -28,7 +39,7 @@ export function startOfWeek(date) {
 
 export function weekDayKeys(date) {
   const start = startOfWeek(date);
-  return Array.from({ length: 7 }, (_, index) => toDateKey(addDays(start, index)));
+  return Array.from({ length: 7 }, (_, index) => localIsoDate(addDays(start, index)));
 }
 
 export function monthRange(date) {
@@ -37,12 +48,12 @@ export function monthRange(date) {
   const start = startOfWeek(first);
   const end = addDays(startOfWeek(last), 6);
   const dayCount = Math.round((end - start) / 86_400_000) + 1;
-  const days = Array.from({ length: dayCount }, (_, index) => toDateKey(addDays(start, index)));
+  const days = Array.from({ length: dayCount }, (_, index) => localIsoDate(addDays(start, index)));
   return { from: days[0], to: days[days.length - 1], days };
 }
 
 export function monthKeyOf(date) {
-  return toDateKey(date).slice(0, 7);
+  return localIsoDate(date).slice(0, 7);
 }
 
 export function shiftMonth(date, amount, today) {

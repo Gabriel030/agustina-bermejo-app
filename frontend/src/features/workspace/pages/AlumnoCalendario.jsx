@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CalendarPlus, SlidersHorizontal } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
@@ -17,10 +18,13 @@ function CalendarHeaderAction({ updatedLabel }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       {updatedLabel && <span className="text-size-12 text-ink-soft tabular-nums">{updatedLabel}</span>}
-      <Button variant="primary" disabled title="Próximamente" className="max-md:min-h-11">
+      <Button variant="primary" disabled aria-describedby="calendar-export-soon" className="max-md:min-h-11">
         <CalendarPlus aria-hidden="true" />
         Agregar a mi calendario
       </Button>
+      <span id="calendar-export-soon" className="sr-only">
+        Disponible próximamente
+      </span>
     </div>
   );
 }
@@ -83,7 +87,9 @@ export function AlumnoCalendario() {
         <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_300px]">
           <div className="flex min-w-0 flex-col gap-3">
             <GlassCard className="flex flex-col gap-3 p-3 sm:p-4">
-              <CalendarBody state={state} onSelectEvent={onSelectEvent} />
+              <div aria-busy={state.isRangeLoading} className={cn('flex flex-col gap-3', state.isRangeLoading && 'opacity-60')}>
+                <CalendarBody state={state} onSelectEvent={onSelectEvent} />
+              </div>
             </GlassCard>
             <CalendarLegend />
             {!isDesktop && showDayBlock && (

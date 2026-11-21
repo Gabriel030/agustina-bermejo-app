@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -47,13 +47,56 @@ describe('useMyCalendar', () => {
     expect(result.current.data.events[0]).toMatchObject({ startTime: null, place: null, subjectName: null });
   });
 
-  it('keeps one cache entry per range and refetches on window focus', async () => {
+  it('keeps one cache entry per range', async () => {
     const { queryClient, result } = renderCalendarHook('2026-10-26', '2026-12-06');
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    const query = queryClient.getQueryCache().find({ queryKey: ['me', 'calendar', '2026-10-26', '2026-12-06'] });
-    expect(query).toBeDefined();
-    expect(query.observers[0].options.refetchOnWindowFocus).toBe(true);
-    expect(query.observers[0].options.refetchInterval).toBeUndefined();
+    expect(queryClient.getQueryCache().find({ queryKey: ['me', 'calendar', '2026-10-26', '2026-12-06'] })).toBeDefined();
+  });
+
+  describe('when the window regains focus', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('requests the range again once the cached data is stale', async () => {
+      let requests = 0;
+      server.use(
+        calendarHandler(() => {
+          requests += 1;
+          return HttpResponse.json(calendarResponse({ events: [classEvent()] }));
+        }),
+      );
+      const { result } = renderCalendarHook('2026-10-26', '2026-12-06');
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(requests).toBe(1);
+
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(Date.now() + 61_000);
+      act(() => {
+        window.dispatchEvent(new Event('visibilitychange'));
+      });
+
+      await waitFor(() => expect(requests).toBe(2));
+    });
+
+    it('keeps the cached data when it is still fresh', async () => {
+      let requests = 0;
+      server.use(
+        calendarHandler(() => {
+          requests += 1;
+          return HttpResponse.json(calendarResponse({ events: [classEvent()] }));
+        }),
+      );
+      const { result } = renderCalendarHook('2026-10-26', '2026-12-06');
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      act(() => {
+        window.dispatchEvent(new Event('visibilitychange'));
+      });
+
+      await waitFor(() => expect(result.current.isFetching).toBe(false));
+      expect(requests).toBe(1);
+    });
   });
 });

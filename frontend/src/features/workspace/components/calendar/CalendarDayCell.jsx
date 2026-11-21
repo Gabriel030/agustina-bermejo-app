@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { CalendarEventButton } from '@/features/workspace/components/calendar/CalendarEventButton';
-import { DOT_COLOR, dayAriaLabel, dotKey } from '@/features/workspace/components/calendar/calendarEventMeta';
+import { dayAriaLabel, dayMarks } from '@/features/workspace/components/calendar/calendarEventMeta';
 import { parseDateKey } from '@/features/workspace/lib/studentCalendar';
 
 const MAX_VISIBLE_EVENTS = 3;
@@ -57,7 +57,7 @@ export function CalendarDayCell({ dateKey, todayKey, inMonth, selected, events, 
 export function CalendarCompactDayCell({ dateKey, todayKey, inMonth, selected, events, onSelectDay }) {
   const isToday = dateKey === todayKey;
   const hasHoliday = events.some((event) => event.type === 'HOLIDAY');
-  const dotKeys = [...new Set(events.map(dotKey))];
+  const marks = dayMarks(events);
   return (
     <Button variant="ghost" size="inline"
       aria-label={dayAriaLabel(dateKey, todayKey, events)}
@@ -79,9 +79,11 @@ export function CalendarCompactDayCell({ dateKey, todayKey, inMonth, selected, e
       >
         {parseDateKey(dateKey).getDate()}
       </span>
-      <span aria-hidden="true" className="flex h-1.5 gap-0.5">
-        {dotKeys.map((key) => (
-          <span key={key} className={cn('size-1.5 rounded-full', DOT_COLOR[key])} />
+      <span aria-hidden="true" className="flex h-3 items-center gap-0.5">
+        {marks.map((mark) => (
+          <span key={mark.key} className={cn('text-size-11 leading-none', mark.tone)}>
+            {mark.glyph}
+          </span>
         ))}
       </span>
     </Button>

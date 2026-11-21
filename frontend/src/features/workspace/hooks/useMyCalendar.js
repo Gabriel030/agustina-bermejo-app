@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 import { STALE_TIME } from '@/api/cachePolicy';
 
@@ -28,5 +28,6 @@ export function useMyCalendar(from, to) {
     queryFn: async () => toCalendarView(await apiFetch(`/me/calendar?from=${from}&to=${to}`)),
     staleTime: STALE_TIME.MEDIUM,
     refetchOnWindowFocus: true,
+    placeholderData: keepPreviousData,
   });
 }
