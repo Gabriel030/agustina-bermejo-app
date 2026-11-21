@@ -1,10 +1,13 @@
 package com.red_escuela.backend.identity.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.identity.api.AccountCreationConsentChoice;
 import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.identity.dto.RegisterRequest;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.exception.UsernameAlreadyExistsException;
+import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
 import com.red_escuela.backend.identity.specialist.LegalRegistrationCompleter;
 import com.red_escuela.backend.identity.usecase.auth.RegisterUseCase;
@@ -22,10 +25,14 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
 
 @SpringBootTest
@@ -52,6 +59,9 @@ class RegistrationAtomicityIT extends AbstractIntegrationTest {
     @MockitoSpyBean
     private AuthTokenIssuer authTokenIssuer;
 
+    @MockitoSpyBean
+    private PersonRepository personRepository;
+
     private Long institutionId;
 
     private AtomicityTestSupport support;
@@ -71,7 +81,7 @@ class RegistrationAtomicityIT extends AbstractIntegrationTest {
 
     @AfterEach
     void cleanUp() {
-        reset(legalRegistrationCompleter, authTokenIssuer);
+        reset(legalRegistrationCompleter, authTokenIssuer, personRepository);
         String personIds = "select id from person where username = ?";
         jdbcTemplate.update("delete from refresh_token where person_id in (" + personIds + ")", USERNAME);
         jdbcTemplate.update("delete from legal_acceptance where person_id in (" + personIds + ")", USERNAME);
@@ -85,7 +95,8 @@ class RegistrationAtomicityIT extends AbstractIntegrationTest {
 
     private RegisterRequest request() {
         return new RegisterRequest("Ana", "Perez", USERNAME + "@example.com", USERNAME, "Password123", institutionId,
-                true, true, LocalDate.of(2000, 1, 15), null, null, null, true, true, null);
+                true, true, LocalDate.of(2000, 1, 15), null, null, null, true, true,
+                List.of(new AccountCreationConsentChoice("PROMOTIONAL", false)));
     }
 
     @Test
@@ -101,6 +112,24 @@ class RegistrationAtomicityIT extends AbstractIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from legal_acceptance where person_id in (select id from person where username = ?)",
                 Integer.class, USERNAME)).isPositive();
+        assertThat(rowsForUser("newsletter_preference")).isEqualTo(1);
+        assertThat(rowsForUser("contact_consent")).isEqualTo(2);
+        assertThat(rowsForUser("refresh_token")).isEqualTo(1);
+    }
+
+    private int rowsForUser(String table) {
+        return jdbcTemplate.queryForObject(
+                "select count(*) from " + table + " where person_id in (select id from person where username = ?)",
+                Integer.class, USERNAME);
+    }
+
+    private long totalRows() {
+        return jdbcTemplate.queryForObject("select count(*) from person", Long.class)
+                + jdbcTemplate.queryForObject("select count(*) from student", Long.class)
+                + jdbcTemplate.queryForObject("select count(*) from legal_acceptance", Long.class)
+                + jdbcTemplate.queryForObject("select count(*) from newsletter_preference", Long.class)
+                + jdbcTemplate.queryForObject("select count(*) from contact_consent", Long.class)
+                + jdbcTemplate.queryForObject("select count(*) from refresh_token", Long.class);
     }
 
     @Test
@@ -126,5 +155,41 @@ class RegistrationAtomicityIT extends AbstractIntegrationTest {
 
             registerUseCase.register(request());
         });
+    }
+
+    @Test
+    void registrationFailingRightAfterTheTokensWereIssuedLeavesNoRowInAnyObservedTable() {
+        support.assertNothingPersistedWhenFailingAtStep(1, steps -> {
+            doAnswer(invocation -> {
+                Object result = invocation.callRealMethod();
+                steps.run(() -> { });
+                return result;
+            }).when(authTokenIssuer).issueTokens(any(Person.class));
+
+            registerUseCase.register(request());
+        });
+    }
+
+    @Test
+    void registeringTheSameUsernameTwiceIsRejectedWithoutPartialRows() {
+        registerUseCase.register(request());
+        long before = totalRows();
+
+        assertThatThrownBy(() -> registerUseCase.register(request()))
+                .isInstanceOf(UsernameAlreadyExistsException.class);
+
+        assertThat(totalRows()).isEqualTo(before);
+    }
+
+    @Test
+    void aUniqueViolationAfterThePreCheckIsReportedAsAlreadyRegisteredWithoutPartialRows() {
+        registerUseCase.register(request());
+        long before = totalRows();
+        doReturn(Optional.empty()).when(personRepository).findByUsername(USERNAME);
+
+        assertThatThrownBy(() -> registerUseCase.register(request()))
+                .isInstanceOf(UsernameAlreadyExistsException.class);
+
+        assertThat(totalRows()).isEqualTo(before);
     }
 }
