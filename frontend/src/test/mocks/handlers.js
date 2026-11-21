@@ -14,7 +14,7 @@ import {
 } from '@/test/fixtures/certificates';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 
-import { permissionCatalog, permissionDiscrepancy, permissionGrid } from '@/test/fixtures/permissions';
+import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
 const API = 'http://localhost:8080';
 
@@ -455,6 +455,7 @@ export const handlers = [
   http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
   http.get(`${API}/students/:id/documents`, () => HttpResponse.json([])),
   http.get(`${API}/terms`, () => HttpResponse.json([])),
+  http.get(`${API}/holidays`, () => HttpResponse.json([])),
   http.get(`${API}/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/programs/:id/elective-groups`, () => HttpResponse.json([])),
   http.get(`${API}/elective-groups`, () => HttpResponse.json([])),
@@ -472,6 +473,8 @@ export const handlers = [
   http.get(`${API}/permissions/catalog`, () => HttpResponse.json(permissionCatalog())),
   http.get(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
   http.put(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
+  http.put(`${API}/permissions/modes`, () => HttpResponse.json(permissionGrid())),
+  http.get(`${API}/permissions/discrepancies/summary`, () => HttpResponse.json(permissionDiscrepancySummary())),
   http.get(`${API}/permissions/discrepancies`, () =>
     HttpResponse.json({ items: [permissionDiscrepancy()], page: 0, size: 50, totalElements: 1 }),
   ),

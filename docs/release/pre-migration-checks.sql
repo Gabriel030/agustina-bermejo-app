@@ -221,6 +221,7 @@ begin
       ('payment', 'refunded_amount_currency', array['ARS', 'USD']),
       ('payment_checkout_item', 'outstanding_at_selection_currency', array['ARS', 'USD']),
       ('payment_plan_option', 'cadence', array['ANNUAL_UPFRONT', 'MONTHLY']),
+      ('permission_discrepancy_counter', 'direction', array['LEGACY_ALLOWED_GRID_DENIED', 'LEGACY_DENIED_GRID_ALLOWED']),
       ('permission_module_mode', 'mode', array['ENFORCE', 'LEGACY', 'SHADOW']),
       ('person', 'auth_provider', array['GOOGLE', 'LOCAL']),
       ('person', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),

@@ -10,6 +10,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -176,6 +177,23 @@ class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"observation\":\"Observacion de prueba\"}"))
                 .andReturn().getResponse().getStatus();
+    }
+
+    @Test
+    void strangerTeacherCannotDeleteAnnouncementOfAnotherSection() throws Exception {
+        long announcementId = ownership.resourceIdFor(OwnershipKind.ANNOUNCEMENT_INSTRUCTOR);
+
+        MockHttpServletResponse foreign = mockMvc.perform(delete("/announcements/{id}", announcementId)
+                .header("Authorization", "Bearer " + strangerTeacherToken())).andReturn().getResponse();
+        MockHttpServletResponse missing = mockMvc.perform(delete("/announcements/{id}", MISSING_ID)
+                .header("Authorization", "Bearer " + strangerTeacherToken())).andReturn().getResponse();
+
+        assertThat(foreign.getStatus()).isEqualTo(404);
+        assertThat(foreign.getContentAsString()).isEqualTo(missing.getContentAsString());
+        MockHttpServletResponse stillThere = mockMvc.perform(get("/announcements/{id}/recipients", announcementId)
+                .header("Authorization", "Bearer " + ownership.ownerTokenFor(OwnershipKind.ANNOUNCEMENT_INSTRUCTOR)))
+                .andReturn().getResponse();
+        assertThat(stillThere.getStatus()).isEqualTo(200);
     }
 
     @Test

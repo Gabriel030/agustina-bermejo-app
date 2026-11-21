@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
@@ -8,6 +8,9 @@ import { StatusPill } from '@/components/StatusPill';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { Button } from '@/components/ui/button';
 import { describeError } from '@/api/describeError';
+import { TemplatePreviewDialog } from '@/features/graduation/certificates/components/TemplatePreviewDialog';
+import { TemplateSystemData } from '@/features/graduation/certificates/components/TemplateSystemData';
+import { TemplateVersions } from '@/features/graduation/certificates/components/TemplateVersions';
 import { TemplateLogoField } from '@/features/graduation/certificates/components/TemplateLogoField';
 import { TemplateSignatories } from '@/features/graduation/certificates/components/TemplateSignatories';
 import { TemplateTextFields } from '@/features/graduation/certificates/components/TemplateTextFields';
@@ -15,12 +18,16 @@ import {
   useCertificateTemplate,
   useDiscardTemplateDraft,
   useGraduationSignatories,
+  usePreviewTemplate,
+  usePublishTemplate,
   useSaveTemplateDraft,
 } from '@/features/graduation/certificates/hooks/useCertificateTemplate';
 import {
   baselineOf,
+  canPublish,
   contentFromForm,
   isSameForm,
+  previewSourceOf,
   statusOf,
   validateForm,
 } from '@/features/graduation/certificates/lib/certificateTemplate';
@@ -40,6 +47,15 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
   const signatories = useGraduationSignatories();
   const save = useSaveTemplateDraft(kind);
   const discard = useDiscardTemplateDraft(kind);
+  const publish = usePublishTemplate(kind);
+  const previewTemplate = usePreviewTemplate(kind);
+  const [preview, setPreview] = useState(null);
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const previewUrl = preview?.url;
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
   const [actionError, setActionError] = useState(null);
   const [savedNotice, setSavedNotice] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -88,6 +104,33 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
     }
   }
 
+  const previewSource = previewSourceOf({ isDirector: !readOnly, template: data });
+  const publishable = canPublish({ template: data, dirty, form, signatories: signatories.data });
+  const nextVersion = data.draft?.versionNumber;
+
+  async function publishDraft() {
+    setActionError(null);
+    try {
+      await publish.mutateAsync();
+      onSettled();
+      setSavedNotice(false);
+    } catch (error) {
+      setActionError(describeError(error).message);
+    } finally {
+      setConfirmPublish(false);
+    }
+  }
+
+  async function openPreview() {
+    setActionError(null);
+    try {
+      const { blob } = await previewTemplate.mutateAsync(previewSource);
+      setPreview({ url: URL.createObjectURL(blob), source: previewSource });
+    } catch (error) {
+      setActionError(describeError(error).message);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {readOnly && (
@@ -107,8 +150,18 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
                 : 'Las emisiones nuevas usan la versión publicada.'}
           </span>
         </div>
-        {!readOnly && (
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={previewSource === null || (!readOnly && dirty)}
+            loading={previewTemplate.isPending}
+            onClick={openPreview}
+          >
+            Vista previa
+          </Button>
+          {!readOnly && (
+            <>
             <Button
               type="button"
               variant="outline"
@@ -120,14 +173,22 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
             <Button type="button" variant="primary" disabled={!dirty || hasErrors} loading={save.isPending} onClick={saveDraft}>
               Guardar borrador
             </Button>
-          </div>
-        )}
+            <Button type="button" variant="primary" disabled={!publishable} onClick={() => setConfirmPublish(true)}>
+              Publicar
+            </Button>
+            </>
+          )}
+        </div>
       </GlassCard>
 
       {actionError && (
         <p role="alert" className="text-size-14 font-medium text-danger">
           {actionError}
         </p>
+      )}
+
+      {!readOnly && data.draft && !dirty && !publishable && (
+        <p className="text-size-13 text-ink-soft">Elegí los dos firmantes para poder publicar.</p>
       )}
 
       {neverPublished && !dirty && (
@@ -161,6 +222,20 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
         <TemplateSignatories form={form} readOnly={readOnly} signatories={signatories} errors={errors} onChange={change} />
       </GlassCard>
 
+      <TemplateSystemData />
+      <TemplateVersions kind={kind} />
+
+      <TemplatePreviewDialog preview={preview} onClose={() => setPreview(null)} />
+      <ConfirmActionDialog
+        open={confirmPublish}
+        onOpenChange={setConfirmPublish}
+        title={`Publicar la versión ${nextVersion}`}
+        description={`Las emisiones nuevas de «${documentName}» van a usar esta versión. Los certificados ya emitidos conservan la suya y no cambian. La versión publicada no se puede editar.`}
+        confirmLabel={`Publicar v${nextVersion}`}
+        confirmVariant="primary"
+        pending={publish.isPending}
+        onConfirm={publishDraft}
+      />
       <ConfirmActionDialog
         open={confirmDiscard}
         onOpenChange={setConfirmDiscard}
