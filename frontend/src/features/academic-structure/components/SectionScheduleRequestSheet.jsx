@@ -212,7 +212,7 @@ export function SectionScheduleRequestSheet({ section, cycleId, open, onClose })
               <Button type="button" variant="outline" className="min-h-11" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="button" variant="gradient" className="min-h-11" disabled={!changed} onClick={() => setStep('review')}>
+              <Button type="button" variant="primary" className="min-h-11" disabled={!changed} onClick={() => setStep('review')}>
                 Continuar
               </Button>
             </div>
@@ -242,7 +242,7 @@ export function SectionScheduleRequestSheet({ section, cycleId, open, onClose })
               <Button type="button" variant="outline" className="min-h-11" disabled={mutation.isPending} onClick={() => setStep('edit')}>
                 Volver
               </Button>
-              <Button type="button" variant="gradient" className="min-h-11" loading={mutation.isPending} onClick={submit}>
+              <Button type="button" variant="primary" className="min-h-11" loading={mutation.isPending} onClick={submit}>
                 Enviar pedido de aprobación
               </Button>
             </div>
