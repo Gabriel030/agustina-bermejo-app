@@ -216,7 +216,7 @@ function CursoEditarDatosForm({ id, course }) {
             >
               Cancelar
             </Button>
-            <Button variant="gradient" loading={updateCourse.isPending} onClick={handleGuardar}>
+            <Button variant="primary" loading={updateCourse.isPending} onClick={handleGuardar}>
               Guardar cambios
             </Button>
           </div>

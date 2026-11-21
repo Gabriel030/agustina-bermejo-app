@@ -116,7 +116,7 @@ export function FeatureChangeDialog({ change, features, onClose, onRefresh }) {
             : 'Revisá qué cambia antes de confirmar. El cambio queda en el historial con tu motivo.'
       }
       confirmLabel={confirmLabel}
-      confirmVariant="gradient"
+      confirmVariant="primary"
       pending={mutation.isPending}
       confirmDisabled={confirmDisabled}
       onConfirm={confirm}

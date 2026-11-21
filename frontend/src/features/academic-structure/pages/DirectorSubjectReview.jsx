@@ -47,7 +47,7 @@ function SubjectReviewRow({ subject, onApprove, onReject, isActing }) {
           Rechazar
         </Button>
         <Button
-          variant="gradient"
+          variant="primary"
           size="sm"
           onClick={() => onApprove(subject.id)}
           disabled={isActing}
