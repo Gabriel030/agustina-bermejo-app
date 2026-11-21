@@ -24,7 +24,8 @@ export function SectionScheduleApprovalsPanel() {
   const reject = useRejectSectionScheduleChange();
   const [approving, setApproving] = useState(null);
   const [rejecting, setRejecting] = useState(null);
-  const [decisionError, setDecisionError] = useState(null);
+  const [approveError, setApproveError] = useState(null);
+  const [rejectError, setRejectError] = useState(null);
 
   const requests = pending.data ?? [];
   const busy = approve.isPending || reject.isPending;
@@ -34,25 +35,44 @@ export function SectionScheduleApprovalsPanel() {
     !!approving,
   );
 
+  function startApproving(request) {
+    setApproveError(null);
+    setApproving(request);
+  }
+
+  function startRejecting(request) {
+    setRejectError(null);
+    setRejecting(request);
+  }
+
+  function closeApproving() {
+    setApproving(null);
+    setApproveError(null);
+  }
+
+  function closeRejecting() {
+    setRejecting(null);
+    setRejectError(null);
+  }
+
   async function confirmApprove() {
-    setDecisionError(null);
+    setApproveError(null);
     try {
       await approve.mutateAsync({ sectionId: approving.sectionId });
-    } catch (error) {
-      setDecisionError(describeError(error, { fallback: APPROVE_FALLBACK }).message);
-    } finally {
       setApproving(null);
+    } catch (error) {
+      setApproveError(describeError(error, { fallback: APPROVE_FALLBACK }).message);
     }
   }
 
   async function confirmReject(reason) {
-    setDecisionError(null);
+    setRejectError(null);
     try {
       await reject.mutateAsync({ sectionId: rejecting.sectionId, reason });
-    } catch (error) {
-      setDecisionError(describeError(error, { fallback: REJECT_FALLBACK }).message);
-    } finally {
       setRejecting(null);
+    } catch (error) {
+      setRejectError(describeError(error, { fallback: REJECT_FALLBACK }).message);
+      return false;
     }
   }
 
@@ -73,8 +93,8 @@ export function SectionScheduleApprovalsPanel() {
             key={request.sectionId}
             request={request}
             disabled={busy}
-            onApprove={setApproving}
-            onReject={setRejecting}
+            onApprove={startApproving}
+            onReject={startRejecting}
           />
         ))}
       </ul>
@@ -94,25 +114,22 @@ export function SectionScheduleApprovalsPanel() {
             </span>
           )}
         </div>
-        {decisionError && (
-          <div role="alert" className="text-size-12 font-semibold text-danger">
-            {decisionError}
-          </div>
-        )}
         {renderContent()}
         <SectionScheduleApproveDialog
           request={approving}
           open={!!approving}
-          onClose={() => setApproving(null)}
+          onClose={closeApproving}
           onConfirm={confirmApprove}
           confirming={approve.isPending}
+          errorMessage={approveError}
           preview={preview}
         />
         <ModalMotivo
           open={!!rejecting}
-          onClose={() => setRejecting(null)}
+          onClose={closeRejecting}
           onConfirmar={confirmReject}
           confirmando={reject.isPending}
+          errorMessage={rejectError}
           requerido
           titulo="Rechazar el cambio de horario"
           descripcion={rejecting ? `${sectionScheduleTitle(rejecting)}. Contale a quien lo pidió por qué no se aprueba — es obligatorio.` : undefined}

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { errorBody } from '@/test/fixtures/errors';
@@ -149,5 +149,74 @@ describe('SectionScheduleApprovalsPanel', () => {
     await user.click(await screen.findByRole('button', { name: 'Confirmar aprobación' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('El ciclo ya cerró y no se puede modificar el horario de sus comisiones.');
+  });
+
+  it('omits the requester when the request has none', async () => {
+    pendingWith([{ ...pendingRequest, requestedByName: '' }]);
+    renderWithProviders(<SectionScheduleApprovalsPanel />);
+
+    expect(await screen.findByText(/Primer año 2026/)).toBeInTheDocument();
+    expect(screen.queryByText(/pedido por/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the reason and shows the domain error inside the dialog when the rejection fails', async () => {
+    pendingWith([pendingRequest]);
+    server.use(
+      http.post(`${API}/subject-sections/:id/modification-request/reject`, () =>
+        HttpResponse.json(errorBody('SECTION_MODIFICATION_NOT_PENDING'), { status: 409 }),
+      ),
+    );
+    renderWithProviders(<SectionScheduleApprovalsPanel />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: `Rechazar el horario de ${SECTION_TITLE}` }));
+    await user.type(screen.getByPlaceholderText('Motivo del rechazo'), LONG_REASON);
+    await user.click(screen.getByRole('button', { name: 'Rechazar horario' }));
+
+    expect(await screen.findByText('La modificación de la comisión no está pendiente.')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Motivo del rechazo')).toHaveValue(LONG_REASON);
+    expect(screen.getByRole('button', { name: 'Rechazar horario' })).toBeInTheDocument();
+  });
+
+  it('keeps the approval dialog disabled while the conflicts are still loading', async () => {
+    pendingWith([pendingRequest]);
+    server.use(
+      http.post(`${API}/subject-sections/:id/modification-request/preview`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ conflicts: [] });
+      }),
+    );
+    renderWithProviders(<SectionScheduleApprovalsPanel />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: `Aprobar el horario de ${SECTION_TITLE}` }));
+
+    expect(await screen.findByRole('button', { name: 'Confirmar aprobación' })).toBeDisabled();
+  });
+
+  it('blocks the approval when the conflicts fail to load and allows retrying them', async () => {
+    pendingWith([pendingRequest]);
+    let previewCalls = 0;
+    server.use(
+      http.post(`${API}/subject-sections/:id/modification-request/preview`, () => {
+        previewCalls += 1;
+        if (previewCalls === 1) {
+          return HttpResponse.json(errorBody('INTERNAL'), { status: 500 });
+        }
+        return HttpResponse.json({ conflicts: [] });
+      }),
+    );
+    renderWithProviders(<SectionScheduleApprovalsPanel />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: `Aprobar el horario de ${SECTION_TITLE}` }));
+
+    expect(await screen.findByText('No pudimos revisar los conflictos del nuevo horario.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar aprobación' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Sin conflictos con el nuevo horario.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar aprobación' })).toBeEnabled();
   });
 });

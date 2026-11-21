@@ -22,9 +22,10 @@ export function SectionScheduleApprovalRow({ request, onApprove, onReject, disab
           <span className="font-heading text-size-14 font-semibold text-ink">{title}</span>
           {request.replacesSchedule && <StatusPill tone="neutral">Reemplaza el horario</StatusPill>}
         </div>
-        <div className="text-size-12 text-ink-faint">
-          {request.offeringName} · pedido por {request.requestedByName}
-          {ageLabel(request.requestedAt) ? ` · ${ageLabel(request.requestedAt)}` : ''}
+        <div className="min-w-0 break-words text-size-12 text-ink-faint">
+          {[request.offeringName, request.requestedByName && `pedido por ${request.requestedByName}`, ageLabel(request.requestedAt)]
+            .filter(Boolean)
+            .join(' · ')}
         </div>
         <div className="mt-1 flex flex-col gap-1">
           <SlotsLine label="Horario actual" slots={request.currentSlots} />
