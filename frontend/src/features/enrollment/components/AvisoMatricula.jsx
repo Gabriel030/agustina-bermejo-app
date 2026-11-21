@@ -43,7 +43,7 @@ export function AvisoMatricula({ obligacion, onPagar }) {
         </span>
       </div>
       {obligacion?.invoiceId && onPagar && (
-        <Button type="button" variant="gradient" size="sm" className="self-start" onClick={() => onPagar(obligacion.invoiceId)}>
+        <Button type="button" variant="primary" size="sm" className="self-start" onClick={() => onPagar(obligacion.invoiceId)}>
           Pagar matrícula
         </Button>
       )}

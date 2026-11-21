@@ -203,7 +203,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
             </div>
           )}
 
-          <OfflineAwareButton variant="gradient" disabled={!comisionSeleccionada || inscribirme.isPending} onClick={confirmar} className="self-start">
+          <OfflineAwareButton variant="primary" disabled={!comisionSeleccionada || inscribirme.isPending} onClick={confirmar} className="self-start">
             {inscribirme.isPending ? 'Confirmando…' : 'Confirmar inscripción'}
           </OfflineAwareButton>
         </GlassCard>

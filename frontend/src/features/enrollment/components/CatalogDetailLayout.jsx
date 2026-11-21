@@ -15,7 +15,7 @@ export function CatalogEnrollAction({ onEnroll, disabled, reason, reasonTone = '
         onClick={onEnroll}
         disabled={disabled}
         aria-describedby={reason ? reasonId : undefined}
-        variant="gradient"
+        variant="primary"
         className="w-full px-6 py-5 text-size-13-5 md:w-auto"
       >
         Inscribirme

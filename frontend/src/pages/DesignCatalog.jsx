@@ -23,7 +23,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Stepper } from '@/components/Stepper';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-const BUTTON_VARIANTS = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link', 'text', 'subtle', 'ghost-destructive', 'gradient'];
+const BUTTON_VARIANTS = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link', 'text', 'subtle', 'ghost-destructive', 'primary'];
 const BUTTON_SIZES = ['default', 'sm', 'lg'];
 const PILL_TONES = ['success', 'warning', 'danger', 'accent', 'neutral'];
 const BADGE_VARIANTS = ['default', 'secondary', 'destructive', 'outline', 'ghost'];
@@ -61,7 +61,7 @@ function ExampleDialog({ open, onOpenChange }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="gradient">Abrir diálogo</Button>
+        <Button variant="primary">Abrir diálogo</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -70,7 +70,7 @@ function ExampleDialog({ open, onOpenChange }) {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline">Cancelar</Button>
-          <Button variant="gradient">Confirmar</Button>
+          <Button variant="primary">Confirmar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

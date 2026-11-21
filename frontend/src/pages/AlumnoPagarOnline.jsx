@@ -113,7 +113,7 @@ function OnlinePaymentRedirect({ invoiceId }) {
           <>
             <p className="font-semibold text-danger">No pudimos iniciar el pago</p>
             <p className="text-sm text-ink-faint">{error.message}</p>
-            <Button variant="gradient" onClick={() => mutate(invoiceId)}>
+            <Button variant="primary" onClick={() => mutate(invoiceId)}>
               Reintentar
             </Button>
           </>
