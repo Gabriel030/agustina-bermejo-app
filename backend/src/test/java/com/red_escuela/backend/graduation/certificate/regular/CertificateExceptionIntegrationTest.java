@@ -23,7 +23,7 @@ import com.red_escuela.backend.graduation.certificate.regular.repository.Certifi
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionConsumer;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionDueExpirer;
-import com.red_escuela.backend.graduation.certificate.regular.specialist.RequestCertificateExceptionCommand;
+import com.red_escuela.backend.graduation.certificate.regular.dto.RequestCertificateExceptionRequest;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ApproveCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RejectCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RequestCertificateExceptionUseCase;
@@ -355,7 +355,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     void approvalUsesTheConfiguredExceptionValidityAndTheCurrentActor() {
         jdbc.update("update regular_certificate_settings set exception_validity_days = 10");
         actAs(requesterId);
-        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId,
                 OrganismKind.COURT, "Causa 55/2026", REASON));
         actAs(directorId);
 
@@ -372,7 +372,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     @Test
     void requesterCannotApproveTheirOwnRequestAndNobodyElseCanWithdrawIt() {
         actAs(requesterId);
-        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId,
                 OrganismKind.CONSUMER_DEFENSE, "EXP-1/2026", REASON));
 
         assertThatThrownBy(() -> approveUseCase.approve(requested.id(), "Reclamo verificado en el juzgado"))
@@ -389,7 +389,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     @Test
     void directorRejectionRecordsTheDirectorAsDecider() {
         actAs(requesterId);
-        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+        CertificateExceptionResponse requested = requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId,
                 OrganismKind.OTHER, "Nota 12", REASON));
         actAs(directorId);
 
@@ -402,13 +402,13 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     @Test
     void secondOpenRequestForTheSameEnrollmentIsRejectedUntilTheFirstIsClosed() {
         actAs(requesterId);
-        CertificateExceptionResponse first = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+        CertificateExceptionResponse first = requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId,
                 OrganismKind.COURT, "Causa 1", REASON));
 
-        assertThatThrownBy(() -> requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+        assertThatThrownBy(() -> requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId,
                 OrganismKind.COURT, "Causa 2", REASON))).isInstanceOf(CertificateExceptionAlreadyOpenException.class);
         withdrawUseCase.withdraw(first.id());
-        assertThat(requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId, OrganismKind.COURT,
+        assertThat(requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId, OrganismKind.COURT,
                 "Causa 2", REASON)).status()).isEqualTo(CertificateExceptionStatus.PENDING);
     }
 
@@ -426,7 +426,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
                     ready.countDown();
                     go.await();
                     try {
-                        requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId, OrganismKind.COURT,
+                        requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId, OrganismKind.COURT,
                                 "Causa concurrente", REASON));
                         return null;
                     } catch (Throwable failure) {

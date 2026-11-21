@@ -4,7 +4,6 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.CertificateExc
 import com.red_escuela.backend.graduation.certificate.regular.dto.DecideCertificateExceptionRequest;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RequestCertificateExceptionRequest;
 import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionStatus;
-import com.red_escuela.backend.graduation.certificate.regular.specialist.RequestCertificateExceptionCommand;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ApproveCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListCertificateExceptionsUseCase;
@@ -56,8 +55,7 @@ public class CertificateExceptionController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
     public CertificateExceptionResponse request(@Valid @RequestBody RequestCertificateExceptionRequest request) {
-        return requestUseCase.request(new RequestCertificateExceptionCommand(request.kind(), request.enrollmentId(),
-                request.organismKind(), request.organismReference(), request.reason()));
+        return requestUseCase.request(request);
     }
 
     @GetMapping

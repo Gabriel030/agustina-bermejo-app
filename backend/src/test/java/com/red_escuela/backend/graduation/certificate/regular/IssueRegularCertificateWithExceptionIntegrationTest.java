@@ -62,7 +62,7 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Exceptio
 import com.red_escuela.backend.graduation.certificate.regular.exception.NoDebtToExceptException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionDueExpirer;
-import com.red_escuela.backend.graduation.certificate.regular.specialist.RequestCertificateExceptionCommand;
+import com.red_escuela.backend.graduation.certificate.regular.dto.RequestCertificateExceptionRequest;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ApproveCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RequestCertificateExceptionUseCase;
 import org.apache.pdfbox.Loader;
@@ -259,7 +259,7 @@ class IssueRegularCertificateWithExceptionIntegrationTest extends AbstractIntegr
 
     private CertificateExceptionResponse requestException() {
         actAs(staff);
-        return requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, enrollmentId,
+        return requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId,
                 OrganismKind.EDUCATION_MINISTRY, ORGANISM_REFERENCE, REQUEST_REASON));
     }
 
@@ -361,7 +361,7 @@ class IssueRegularCertificateWithExceptionIntegrationTest extends AbstractIntegr
         Long otherEnrollmentId = newEnrollmentOfAnotherStudent();
         setBillingMode("OFF");
         actAs(staff);
-        Long foreignException = requestUseCase.request(new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, otherEnrollmentId,
+        Long foreignException = requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, otherEnrollmentId,
                 OrganismKind.COURT, "Causa 12/2026", REQUEST_REASON)).id();
         actAs(director);
         approveUseCase.approve(foreignException, DECISION_REASON);
