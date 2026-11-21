@@ -9,6 +9,7 @@ import { describeError } from '@/api/describeError';
 import { EligibleBatchConfirmDialog } from '@/features/graduation/certificates/components/EligibleBatchConfirmDialog';
 import { EligibleBatchResult } from '@/features/graduation/certificates/components/EligibleBatchResult';
 import { EligibleGraduatesTable } from '@/features/graduation/certificates/components/EligibleGraduatesTable';
+import { IssuedCertificatesTable } from '@/features/graduation/certificates/components/IssuedCertificatesTable';
 import { EligiblePreviewDialog } from '@/features/graduation/certificates/components/EligiblePreviewDialog';
 import {
   useEligibleGraduates,
@@ -24,6 +25,7 @@ import {
 } from '@/features/graduation/certificates/lib/staffGraduationCertificates';
 
 export function StaffGraduationCertificates() {
+  const [view, setView] = useState('eligible');
   const [kind, setKind] = useState('PROGRAM');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -152,19 +154,30 @@ export function StaffGraduationCertificates() {
 
   return (
     <PageContainer title="Egresos" description="Certificados de egreso">
-      <Tabs value={kind} onValueChange={changeKind} className="gap-4">
+      <Tabs value={view} onValueChange={setView} className="gap-4">
         <TabsList variant="segmented">
-          {KIND_TABS.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
+          <TabsTrigger value="eligible">Por emitir</TabsTrigger>
+          <TabsTrigger value="issued">Emitidos</TabsTrigger>
         </TabsList>
-        {KIND_TABS.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value} className="hidden" />
-        ))}
+        <TabsContent value="eligible" className="mt-0 flex flex-col gap-4">
+          <Tabs value={kind} onValueChange={changeKind} className="gap-4">
+            <TabsList variant="segmented">
+              {KIND_TABS.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value}>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {KIND_TABS.map((tab) => (
+              <TabsContent key={tab.value} value={tab.value} className="hidden" />
+            ))}
+          </Tabs>
+          {panel}
+        </TabsContent>
+        <TabsContent value="issued" className="mt-0">
+          <IssuedCertificatesTable />
+        </TabsContent>
       </Tabs>
-      {panel}
 
       <EligibleBatchConfirmDialog
         rows={issuance}

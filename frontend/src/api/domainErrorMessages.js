@@ -189,6 +189,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   NOT_OWN_SECTION: 'Esa comisión no es tuya.',
   NOT_SECTION_INSTRUCTOR: 'No sos docente de esta comisión.',
   NOT_SECTION_LEAD_INSTRUCTOR: 'Solo el docente a cargo de la comisión puede hacer esto.',
+  PERMISSION_FIXED_TO_DIRECTOR: 'Ese permiso es exclusivo del Director y no se puede delegar.',
+  PERMISSION_GRID_FORBIDDEN: 'Solo el Director puede editar la grilla de permisos.',
   REFRESH_CSRF_REJECTED: 'No pudimos validar tu sesión. Recargá la página e ingresá de nuevo.',
   ROLE_NOT_ASSIGNABLE_BY_ACTOR: 'No tenés permiso para asignar ese rol.',
   ANNOUNCEMENT_NOT_FOUND: 'No encontramos el aviso.',

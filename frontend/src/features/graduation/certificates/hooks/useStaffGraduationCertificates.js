@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiFetchBlob } from '@/api/client';
 
-const CERTIFICATES_KEY = ['graduation-certificates'];
+export const CERTIFICATES_KEY = ['graduation-certificates'];
 const PAGE_SIZE = 20;
 
 export function useEligibleGraduates({ kind, query, page }) {

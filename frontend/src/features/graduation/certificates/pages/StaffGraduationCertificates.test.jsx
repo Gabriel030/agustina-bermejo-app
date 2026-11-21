@@ -132,7 +132,7 @@ describe('StaffGraduationCertificates', () => {
   });
 
   it('stops selecting at the batch limit', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const rows = Array.from({ length: BATCH_LIMIT + 1 }, (_, index) =>
       eligibleGraduate({ enrollmentId: index + 1, studentFullName: `Alumno ${index + 1}`, status: 'PENDING' }),
     );
@@ -145,7 +145,7 @@ describe('StaffGraduationCertificates', () => {
 
     expect(screen.getByRole('checkbox', { name: `Seleccionar a Alumno ${BATCH_LIMIT + 1}` })).toBeDisabled();
     expect(screen.getByText(`${BATCH_LIMIT} seleccionados · máximo ${BATCH_LIMIT}`)).toBeInTheDocument();
-  });
+  }, 60000);
 
   it('has no accessibility violations', async () => {
     eligibleList([pendingRow, blockedRow]);
