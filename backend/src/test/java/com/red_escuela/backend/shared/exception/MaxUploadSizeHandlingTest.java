@@ -28,4 +28,12 @@ class MaxUploadSizeHandlingTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void oversizedNonPutOnTheSignatureUrlKeepsBadRequest() {
+        ResponseEntity<ErrorCodeResponse> response = handler.handleMaxUploadSize(
+                new MaxUploadSizeExceededException(5L * 1024 * 1024), new MockHttpServletRequest("POST", "/certificate-signatories/7/signature"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
 }

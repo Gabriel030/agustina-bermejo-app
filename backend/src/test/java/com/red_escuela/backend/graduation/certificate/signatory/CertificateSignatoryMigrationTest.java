@@ -109,8 +109,12 @@ class CertificateSignatoryMigrationTest {
             migrate(dataSource);
             String insert = "insert into audit_log (occurred_at, action, entity_type, entity_id) values (now(), ?, ?, 1)";
 
-            jdbc.update(insert, "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY");
-            jdbc.update(insert, "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "CERTIFICATE_SIGNATORY");
+            for (String action : List.of("CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED",
+                    "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED",
+                    "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED")) {
+                jdbc.update(insert, action, "CERTIFICATE_SIGNATORY");
+            }
+            assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'CERTIFICATE_SIGNATORY'", Integer.class)).isEqualTo(7);
             jdbc.update(insert, "STAFF_WITHDRAWN", "PERSON");
             assertThatThrownBy(() -> jdbc.update(insert, "CERTIFICATE_SIGNATORY_UNKNOWN", "CERTIFICATE_SIGNATORY"))
                     .isInstanceOf(DataIntegrityViolationException.class);

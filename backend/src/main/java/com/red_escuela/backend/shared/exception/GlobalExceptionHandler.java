@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorCodeResponse> handleMaxUploadSize(MaxUploadSizeExceededException exception, HttpServletRequest request) {
-        if (request.getRequestURI().matches(".*/certificate-signatories/[^/]+/signature")) {
+        if ("PUT".equals(request.getMethod()) && request.getRequestURI().matches(".*/certificate-signatories/[^/]+/signature")) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(new ErrorCodeResponse("SIGNATORY_SIGNATURE_INVALID"));
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorCodeResponse.of(exception));

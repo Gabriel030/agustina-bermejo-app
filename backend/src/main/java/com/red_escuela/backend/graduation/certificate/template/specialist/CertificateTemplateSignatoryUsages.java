@@ -10,6 +10,7 @@ import com.red_escuela.backend.graduation.certificate.template.repository.Certif
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -47,7 +48,7 @@ public class CertificateTemplateSignatoryUsages {
         for (Long signatoryId : signatoryIds) {
             for (CertificateTemplateVersion version : ordered) {
                 if (signatoryId.equals(version.getSignatory1Id()) || signatoryId.equals(version.getSignatory2Id())) {
-                    result.computeIfAbsent(signatoryId, key -> new java.util.ArrayList<>()).add(new SignatoryTemplateUsageResponse(
+                    result.computeIfAbsent(signatoryId, key -> new ArrayList<>()).add(new SignatoryTemplateUsageResponse(
                             CertificateTemplateSignatories.DOCUMENT_TYPE, nameOf(templates.get(version.getTemplateId())),
                             version.getVersionNumber(), version.getStatus() == null ? TemplateVersionStatus.DRAFT : version.getStatus()));
                 }
