@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "mcp__claude-code-remote__get_session",
-      "mcp__claude-code-remote__list_sessions"
+      "mcp__claude-code-remote__list_sessions",
+      "Bash(git commit:*)",
+      "Bash(git push origin feature/*)",
+      "Bash(git push origin fix/*)",
+      "Bash(git push origin contract/*)",
+      "Bash(git push origin docs/*)"
     ]
   },
   "hooks": {
