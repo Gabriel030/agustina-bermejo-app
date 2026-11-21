@@ -75,6 +75,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   CLOSURE_NOT_CONFIRMED: 'El docente todavía no confirmó el cierre.',
   CLOSURE_STUDENT_NOT_FOUND: 'El alumno no figura en el cierre de esta comisión.',
   CLOSURE_SNAPSHOT_NOT_RECALCULABLE: 'El cierre ya fue confirmado o cerrado: no se puede recalcular.',
+  CALENDAR_FEED_NOT_FOUND: 'Ese enlace de calendario no existe o ya no está vigente. Generá uno nuevo desde la sección Calendario, en Agregar a mi calendario.',
   CLASS_ON_HOLIDAY: 'La clase cae en un feriado.',
   CURRENCY_MISMATCH: 'La moneda no coincide con la del registro.',
   CURRICULAR_YEAR_OUT_OF_RANGE: 'El año de cursada está fuera del rango del plan.',

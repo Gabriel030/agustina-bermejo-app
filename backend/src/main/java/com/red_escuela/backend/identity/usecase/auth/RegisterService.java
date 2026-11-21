@@ -52,7 +52,7 @@ public class RegisterService implements RegisterUseCase {
         passwordPolicyValidator.validate(request.password());
 
         if (personRepository.findByUsername(request.username()).isPresent()) {
-            throw new UsernameAlreadyExistsException(request.username());
+            throw new UsernameAlreadyExistsException();
         }
 
         Institution institution = institutionRepository.findById(request.institutionId())
@@ -73,7 +73,7 @@ public class RegisterService implements RegisterUseCase {
 
             return authTokenIssuer.issueTokens(person);
         } catch (DataIntegrityViolationException e) {
-            throw new UsernameAlreadyExistsException(request.username());
+            throw new UsernameAlreadyExistsException();
         }
     }
 }

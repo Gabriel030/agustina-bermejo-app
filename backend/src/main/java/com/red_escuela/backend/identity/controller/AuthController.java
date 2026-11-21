@@ -81,6 +81,9 @@ public class AuthController {
         if (!rateLimiter.tryConsumeRegister(httpRequest.getRemoteAddr())) {
             throw new RateLimitExceededException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
         }
+        if (!rateLimiter.tryConsumeRegisterForUser(httpRequest.getRemoteAddr(), request.username())) {
+            throw new RateLimitExceededException("Demasiados intentos de registro, esperá un momento antes de reintentar");
+        }
         AuthTokens tokens = registerUseCase.register(request);
         return withRefreshCookie(HttpStatus.CREATED, tokens);
     }

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
+import com.red_escuela.backend.academicstructure.RequesterAuthentication;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseSubjectRequest;
@@ -25,6 +26,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.exception.ConflictException;
 import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +81,12 @@ class InstructorScheduleConflictIT extends AbstractIntegrationTest {
         roomA = fixtures.classroom(30);
         roomB = fixtures.classroom(30);
         approvedCycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
+        RequesterAuthentication.authenticateNewRequester(entityManager);
+    }
+
+    @AfterEach
+    void clearAuthentication() {
+        RequesterAuthentication.clear();
     }
 
     private AssignInstructorRequest assignment(Instructor instructor) {

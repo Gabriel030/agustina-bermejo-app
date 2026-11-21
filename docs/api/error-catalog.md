@@ -275,6 +275,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `AUTHORIZATION_REQUEST_NOT_FOUND` | no | `AuthorizationRequestNotFoundException` | billing |
 | `BILLING_RUN_STEP_NOT_FOUND` | no | `BillingRunStepNotFoundException` | billing |
 | `BROADCAST_NOT_FOUND` | no | `BroadcastNotFoundException` | notification |
+| `CALENDAR_FEED_NOT_FOUND` | no | `CalendarFeedNotFoundException` | academicrecord |
 | `CERTIFICATE_EXCEPTION_NOT_FOUND` | no | `CertificateExceptionNotFoundException` | graduation |
 | `CERTIFICATE_NOT_FOUND` | no | `CertificateNotFoundException` | graduation |
 | `CHARGEBACK_NOT_FOUND` | no | `ChargebackNotFoundException` | billing |
@@ -698,6 +699,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `EXTERNAL_SERVICE_UNAVAILABLE` | sí | `CalendarProviderUnavailableException` | academicrecord |
 | `EXTERNAL_SERVICE_UNAVAILABLE` | sí | `CircuitOpenException` | shared |
 
 ## Idempotencia de las escrituras
@@ -860,6 +862,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/annual-upfront-requests/{id}/discard` | `AnnualUpfrontRequestController#discardAnnualUpfrontRequest` |
 | POST | `/me/attendance/{id}/justify` | `MeAcademicRecordController#justifyMyAbsence` |
 | POST | `/me/avatar` | `PersonController#uploadAvatar` |
+| POST | `/me/calendar/feed/token` | `MeCalendarFeedController#rotateMyCalendarFeedToken` |
 | POST | `/me/exam-board-registrations` | `MeExamBoardRegistrationController#register` |
 | POST | `/me/exam-board-registrations/{id}/withdraw` | `MeExamBoardRegistrationController#withdraw` |
 | POST | `/me/invoices/{id}/bank-transfer-receipts` | `MeInvoiceController#uploadReceipt` |

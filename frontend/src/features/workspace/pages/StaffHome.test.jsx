@@ -229,4 +229,50 @@ describe('StaffHome', () => {
     expect(recorder.duplicates()).toEqual([]);
     expect(requests.filter((request) => request.startsWith('GET /commission-closures'))).toHaveLength(1);
   });
+
+  it('administrativo cards link to their pending destinations', async () => {
+    serve();
+    renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
+    const destinations = {
+      'Egresos por verificar': '/administrativo/egresos-por-verificar',
+      'Constancias solicitadas': '/administrativo/constancias',
+      'Solicitudes de ingreso': '/administrativo/solicitudes-de-ingreso',
+      Justificaciones: '/administrativo/solicitudes-de-asistencia?tab=justificaciones',
+      'Cambios de asistencia': '/administrativo/solicitudes-de-asistencia?tab=correcciones',
+      'Cierres a aprobar': '/administrativo/cierres-de-comision?status=TEACHER_CONFIRMED',
+    };
+    for (const [title, href] of Object.entries(destinations)) {
+      expect(within(await readyCard(title)).getByRole('link', { name: title })).toHaveAttribute('href', href);
+    }
+  });
+
+  it('director cards link to their pending destinations', async () => {
+    serve();
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    expect(within(await readyCard('Cierres sin acta')).getByRole('link', { name: 'Cierres sin acta' })).toHaveAttribute('href', '/director/cierres-de-comision?status=TEACHER_CONFIRMED');
+    expect(within(await readyCard('Facturación por autorizar')).getByRole('link', { name: 'Facturación por autorizar' })).toHaveAttribute('href', '/director/aprobaciones/facturacion');
+  });
+
+  it('administrativo failing card shows retry and keeps the all-clear message hidden', async () => {
+    serve({ empty: true, failing: ['/regular-certificate-requests'] });
+    renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
+    const alert = await screen.findByRole('alert');
+    const failed = alert.closest('article');
+    expect(failed).toHaveAccessibleName('Constancias solicitadas');
+    expect(alert).toHaveTextContent('No pudimos cargar esta tarjeta');
+    expect(await screen.findByText(/Cierres a aprobar.*sin pendientes/)).not.toHaveTextContent('Constancias solicitadas');
+    expect(screen.queryByText('Todo al día')).not.toBeInTheDocument();
+    serve({ empty: true });
+    await userEvent.click(within(failed).getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByText('Todo al día')).toBeInTheDocument();
+  });
+
+  it('director failing card is not counted as settled', async () => {
+    serve({ empty: true, failing: ['/commission-closures'] });
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar esta tarjeta');
+    expect(screen.getByRole('article', { name: 'Cierres sin acta' })).toBeInTheDocument();
+    expect(await screen.findByText(/Mesas de examen.*sin pendientes/)).not.toHaveTextContent('Cierres sin acta');
+    expect(screen.queryByText('Todo al día')).not.toBeInTheDocument();
+  });
 });

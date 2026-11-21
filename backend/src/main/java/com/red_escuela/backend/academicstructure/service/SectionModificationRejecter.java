@@ -5,6 +5,8 @@ import com.red_escuela.backend.academicstructure.exception.SectionModificationNo
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.SectionModificationProposalRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.events.SectionModificationRejectedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,15 +18,18 @@ public class SectionModificationRejecter {
 
     private final SubjectSectionRepository sectionRepository;
     private final SectionModificationProposalRepository proposalRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public SectionModificationRejecter(
             SubjectSectionRepository sectionRepository,
             SectionModificationProposalRepository proposalRepository,
+            ApplicationEventPublisher eventPublisher,
             Clock clock
     ) {
         this.sectionRepository = sectionRepository;
         this.proposalRepository = proposalRepository;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
@@ -39,5 +44,6 @@ public class SectionModificationRejecter {
         proposalRepository.save(proposal);
         section.setPendingApproval(false);
         sectionRepository.save(section);
+        eventPublisher.publishEvent(SectionModificationRejectedEvent.rejectedFor(proposal));
     }
 }
