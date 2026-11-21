@@ -33,7 +33,7 @@ export function PermissionModuleSection({ module, grid, roles, permissions, open
           aria-expanded={open}
           aria-controls={panelId}
           onClick={onToggleOpen}
-          className="h-auto min-h-14 w-full justify-start gap-2.5 rounded-none px-3 py-2 text-left whitespace-normal"
+          className="h-auto min-h-14 w-full justify-start gap-2.5 rounded-none px-3 py-2 text-left whitespace-normal aria-expanded:bg-transparent hover:bg-row-hover"
         >
           <ChevronRight className={cn('size-4 shrink-0 text-ink-faint transition-transform motion-reduce:transition-none', open && 'rotate-90')} aria-hidden="true" />
           <span className="flex min-w-0 flex-col gap-0.5">
