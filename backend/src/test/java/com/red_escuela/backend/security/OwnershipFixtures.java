@@ -4,6 +4,10 @@ import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
+import com.red_escuela.backend.announcement.entity.Announcement;
+import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
+import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
+import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -77,6 +81,7 @@ final class OwnershipFixtures {
     private Long courseSectionEnrollmentId;
     private Long sectionId;
     private Long attendanceId;
+    private Long announcementId;
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
@@ -123,6 +128,8 @@ final class OwnershipFixtures {
             case COURSE_SECTION_ENROLLMENT_INSTRUCTOR -> courseSectionEnrollmentId;
             case COURSE_SECTION_INSTRUCTOR -> courseSectionId;
             case AUTHORIZATION_REQUEST -> authorizationRequestId;
+            case ATTENDANCE_STUDENT -> attendanceId;
+            case ANNOUNCEMENT_INSTRUCTOR -> announcementId;
         };
     }
 
@@ -269,6 +276,7 @@ final class OwnershipFixtures {
         persistClosure(closureObservationSectionId);
         closureObservationEnrollmentId = persistClosureEnrollment(ownerStudent, programEnrollment, closureObservationSectionId);
         authorizationRequestId = persistAuthorizationRequest(ownerAdministrativePerson);
+        announcementId = persistAnnouncement(section, instructorPerson);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term, instructor);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
         programPlanOptionId = persistPlanOption(ownerPerson, program, null);
@@ -461,6 +469,25 @@ final class OwnershipFixtures {
         entityManager.persist(option);
         entityManager.flush();
         return option.getId();
+    }
+
+    private Long persistAnnouncement(SubjectSection section, Person author) {
+        LocalDateTime now = LocalDateTime.now();
+        Announcement announcement = Announcement.builder()
+                .subjectSection(section)
+                .createdBy(author)
+                .title("Aviso matriz")
+                .body("Aviso de la matriz de autorizacion")
+                .category(AnnouncementCategory.REMINDER)
+                .audienceSpec(AudienceSpec.wholeSection())
+                .audienceLabel("Toda la comision")
+                .status(AnnouncementStatus.SENT)
+                .sentAt(now)
+                .createdAt(now)
+                .build();
+        entityManager.persist(announcement);
+        entityManager.flush();
+        return announcement.getId();
     }
 
     private Long persistNotification(Person recipient) {
