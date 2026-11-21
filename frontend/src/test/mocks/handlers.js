@@ -414,6 +414,7 @@ export const handlers = [
   http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
   http.get(`${API}/students/:id/documents`, () => HttpResponse.json([])),
   http.get(`${API}/terms`, () => HttpResponse.json([])),
+  http.get(`${API}/holidays`, () => HttpResponse.json([])),
   http.get(`${API}/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/programs/:id/elective-groups`, () => HttpResponse.json([])),
   http.get(`${API}/elective-groups`, () => HttpResponse.json([])),
