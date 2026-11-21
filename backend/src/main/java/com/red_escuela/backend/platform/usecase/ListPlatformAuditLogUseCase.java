@@ -5,5 +5,5 @@ import com.red_escuela.backend.shared.audit.AuditLogView;
 import com.red_escuela.backend.shared.pagination.PageResponse;
 
 public interface ListPlatformAuditLogUseCase {
-    PageResponse<AuditLogView> list(AuditLogFilter filter, int page, int size);
+    PageResponse<AuditLogView> list(AuditLogFilter filter, String actorName, int page, int size);
 }

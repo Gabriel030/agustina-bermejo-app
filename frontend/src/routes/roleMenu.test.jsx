@@ -5,7 +5,7 @@ import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
 const LEGACY_REDIRECT_PATHS = ['listas-de-espera'];
-const PENDING_SCREENS = { alumno: ['opciones'], administrativo: [], director: [] };
+const PENDING_SCREENS = { alumno: [], administrativo: [], director: [] };
 
 describe('role menu manifest', () => {
   it('defines a manifest entry for every configured role', () => {
@@ -63,7 +63,7 @@ describe('role menu manifest', () => {
 
   it('drops groups left without visible items', () => {
     const withoutAcademic = menuItemsFor('director').filter(
-      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias'].some((slug) => item.to.endsWith(slug)),
+      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'egresos', 'plantilla-de-certificados'].some((slug) => item.to.endsWith(slug)),
     );
     expect(groupMenuItems('director', withoutAcademic).map((group) => group.id)).not.toContain('academic');
   });

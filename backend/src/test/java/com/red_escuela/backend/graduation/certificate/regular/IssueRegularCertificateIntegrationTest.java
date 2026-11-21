@@ -50,6 +50,11 @@ import jakarta.persistence.EntityManagerFactory;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateRequestResponse;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListRegularCertificateRequestsUseCase;
 import com.red_escuela.backend.shared.persistence.QueryCountAssertions;
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateSettings;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateSettingsUpdater;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,6 +86,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -117,6 +123,8 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
     private EntityManagerFactory entityManagerFactory;
     @Autowired
     private RegularCertificateExpirer expirer;
+    @Autowired
+    private RegularCertificateSettingsUpdater settingsUpdater;
     @Autowired
     private RegularStudentCertificateRepository certificateRepository;
     @Autowired
@@ -176,12 +184,17 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
     @AfterEach
     void restoreBillingModeAndSecurity() {
         SecurityContextHolder.clearContext();
+        jdbc.update("update regular_certificate_settings set validity_days = 30, exception_validity_days = 7, evidence_required = false");
         setBillingMode("FULL");
     }
 
     private void setBillingMode(String mode) {
         jdbc.update("update platform_feature set enabled = ?, mode = ? where code = 'BILLING'", !"OFF".equals(mode), mode);
         snapshotHolder.refresh();
+    }
+
+    private Person persistDirector() {
+        return transactions.execute(status -> persistPerson("DIRECTOR"));
     }
 
     private Person persistPerson(String roleName) {
@@ -230,7 +243,7 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
     }
 
     private RegularCertificateResponse issue(boolean confirmed, String evidence) {
-        return issueUseCase.issue(new IssueRegularCertificateRequest(RegularityKind.PROGRAM, enrollmentId, confirmed, evidence));
+        return issueUseCase.issue(new IssueRegularCertificateRequest(RegularityKind.PROGRAM, enrollmentId, confirmed, evidence, null));
     }
 
     private RegularCertificateResponse issueConfirmed() {
@@ -473,5 +486,115 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
             assertThat(response.studentName()).isNotBlank();
             assertThat(response.programName()).isNotBlank();
         });
+    }
+
+    private long currentSettingsVersion() {
+        return jdbc.queryForObject("select version from regular_certificate_settings", Long.class);
+    }
+
+    private String pdfText(byte[] content) throws Exception {
+        try (var document = Loader.loadPDF(content)) {
+            return new PDFTextStripper().getText(document);
+        }
+    }
+
+    @Test
+    void issuedCertificateKeepsItsSnapshotWhenSettingsChangeAfterwards() throws Exception {
+        RegularCertificateResponse response = issueConfirmed();
+        String originalValidUntil = response.expiresAt().toLocalDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        settingsUpdater.update(RegularCertificateSettings.of(90, 14, true), currentSettingsVersion());
+        jdbc.update("update regular_student_certificate set pdf_path = 'missing/file.pdf' where id = ?", response.id());
+
+        RegularCertificatePdf regenerated = pdfUseCase.pdfOf(response.id());
+
+        RegularStudentCertificate stored = certificateRepository.findById(response.id()).orElseThrow();
+        assertThat(stored.getValidityDays()).isEqualTo(30);
+        assertThat(stored.getExpiresAt()).isEqualTo(response.expiresAt());
+        assertThat(pdfText(regenerated.content())).contains(originalValidUntil);
+    }
+
+    @Test
+    void newCertificatesUseTheSettingsInForceAtIssueTime() {
+        settingsUpdater.update(RegularCertificateSettings.of(90, 14, false), currentSettingsVersion());
+
+        RegularCertificateResponse response = issueConfirmed();
+
+        assertThat(response.expiresAt()).isEqualTo(response.issuedAt().plusDays(90));
+        assertThat(certificateRepository.findById(response.id()).orElseThrow().getValidityDays()).isEqualTo(90);
+    }
+
+    @Test
+    void issuingWithoutEvidenceFailsWithBadRequestWhenEvidenceIsRequiredInOffAndMirrorModes() throws Exception {
+        settingsUpdater.update(RegularCertificateSettings.of(30, 7, true), currentSettingsVersion());
+        for (String mode : new String[]{"OFF", "MIRROR"}) {
+            setBillingMode(mode);
+            mockMvc.perform(post("/regular-certificates").header("Authorization", "Bearer " + staffToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"kind\":\"PROGRAM\",\"enrollmentId\":" + enrollmentId + ",\"standingConfirmed\":true}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("STANDING_EVIDENCE_REQUIRED"));
+        }
+        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).isEmpty();
+    }
+
+    @Test
+    void settingsEndpointsEnforceRangeAndVersion() throws Exception {
+        String directorToken = jwtService.generateAccessToken(persistDirector());
+        String current = "{\"validityDays\":%d,\"exceptionValidityDays\":%d,\"evidenceRequired\":false,\"version\":%d}";
+        long version = currentSettingsVersion();
+
+        mockMvc.perform(put("/certificate-settings/regular").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(current.formatted(0, 7, version)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/certificate-settings/regular").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(current.formatted(181, 7, version)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/certificate-settings/regular").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(current.formatted(30, 0, version)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/certificate-settings/regular").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(current.formatted(1, 180, version)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.validityDays").value(1))
+                .andExpect(jsonPath("$.exceptionValidityDays").value(180))
+                .andExpect(jsonPath("$.version").value(version + 1));
+        mockMvc.perform(put("/certificate-settings/regular").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(current.formatted(180, 7, version)))
+                .andExpect(status().isConflict());
+        mockMvc.perform(get("/certificate-settings/regular").header("Authorization", "Bearer " + staffToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.validityDays").value(1));
+    }
+
+    @Test
+    void twoConcurrentEditsOnTheSameVersionLetOnlyOneWin() throws Exception {
+        long version = currentSettingsVersion();
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        try {
+            List<Future<Boolean>> results = new ArrayList<>();
+            for (int days : new int[]{40, 50}) {
+                results.add(pool.submit(() -> {
+                    SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(staff.getId().toString(), null));
+                    barrier.await();
+                    try {
+                        settingsUpdater.update(RegularCertificateSettings.of(days, 7, false), version);
+                        return true;
+                    } catch (ObjectOptimisticLockingFailureException e) {
+                        return false;
+                    } finally {
+                        SecurityContextHolder.clearContext();
+                    }
+                }));
+            }
+            long winners = 0;
+            for (Future<Boolean> result : results) {
+                winners += result.get() ? 1 : 0;
+            }
+            assertThat(winners).isEqualTo(1);
+            assertThat(currentSettingsVersion()).isEqualTo(version + 1);
+        } finally {
+            pool.shutdownNow();
+        }
     }
 }

@@ -19,13 +19,19 @@ public class GraduationSnapshotFactory {
     private final Clock clock;
     private final String signerName;
     private final String signerTitle;
+    private final String secondSignerName;
+    private final String secondSignerTitle;
 
     public GraduationSnapshotFactory(Clock clock,
                                      @Value("${app.certificate.default-signer-name}") String signerName,
-                                     @Value("${app.certificate.default-signer-title}") String signerTitle) {
+                                     @Value("${app.certificate.default-signer-title}") String signerTitle,
+                                     @Value("${app.certificate.second-signer-name}") String secondSignerName,
+                                     @Value("${app.certificate.second-signer-title}") String secondSignerTitle) {
         this.clock = clock;
         this.signerName = signerName;
         this.signerTitle = signerTitle;
+        this.secondSignerName = secondSignerName;
+        this.secondSignerTitle = secondSignerTitle;
     }
 
     public CertificateSnapshot create(Student student, String titleKind, String titleName, String programLevel,
@@ -42,7 +48,7 @@ public class GraduationSnapshotFactory {
                 graduationDate,
                 LocalDate.now(clock),
                 student.getInstitution().getName(),
-                List.of(new SignatorySnapshot(signerName, signerTitle)),
+                List.of(new SignatorySnapshot(signerName, signerTitle), new SignatorySnapshot(secondSignerName, secondSignerTitle)),
                 BuiltInCertificateTemplate.BUILT_IN_V1);
     }
 }

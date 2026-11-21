@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Camera, Eye, EyeOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { SEX_LABEL } from '@/lib/person';
@@ -495,7 +496,7 @@ function TabDatosPropiosForm({ perfil }) {
   );
 }
 
-function TabSeguridad() {
+export function TabSeguridad() {
   const { data: sesiones, isLoading: cargandoSesiones } = useSesionesActivas();
   const revocar = useRevocarTodasLasSesiones();
   const cambiarContrasena = useCambiarContrasena();
@@ -542,6 +543,7 @@ function TabSeguridad() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <CampoFormulario label="Contraseña actual">
               <InputContrasena
+                aria-label="Contraseña actual"
                 value={pass.actual}
                 onChange={(e) => setPass((p) => ({ ...p, actual: e.target.value }))}
                 required
@@ -550,6 +552,7 @@ function TabSeguridad() {
             <div />
             <CampoFormulario label="Nueva contraseña">
               <InputContrasena
+                aria-label="Nueva contraseña"
                 value={pass.nueva}
                 onChange={(e) => setPass((p) => ({ ...p, nueva: e.target.value }))}
                 required
@@ -558,6 +561,7 @@ function TabSeguridad() {
             </CampoFormulario>
             <CampoFormulario label="Confirmar nueva contraseña">
               <InputContrasena
+                aria-label="Confirmar nueva contraseña"
                 value={pass.confirmar}
                 onChange={(e) => setPass((p) => ({ ...p, confirmar: e.target.value }))}
                 required
@@ -618,6 +622,8 @@ function TabSeguridad() {
 
 
 export function MiPerfil() {
+  const { roles } = useAuth();
+  const isStudent = roles.includes('ALUMNO');
   return (
     <PageContainer>
       <div>
@@ -628,25 +634,38 @@ export function MiPerfil() {
       <InstallPrompt />
 
       <GlassCard className="flex flex-col gap-6 p-5 sm:p-7">
+        {isStudent && (
+          <Link
+            to="/alumno/opciones"
+            className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3 text-size-14 font-medium text-ink"
+          >
+            Seguridad, notificaciones y apariencia
+            <span className="text-brand">Ir a Opciones</span>
+          </Link>
+        )}
         <Tabs defaultValue="datos">
           <TabsList variant="segmented" className="mb-6">
             <TabsTrigger value="datos">Mis datos</TabsTrigger>
-            <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
-            <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
+            {!isStudent && <TabsTrigger value="seguridad">Seguridad</TabsTrigger>}
+            {!isStudent && <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>}
             <TabsTrigger value="legales">Mis aceptaciones</TabsTrigger>
           </TabsList>
           <TabsContent value="datos">
             <TabDatosPropios />
           </TabsContent>
-          <TabsContent value="seguridad">
-            <TabSeguridad />
-          </TabsContent>
-          <TabsContent value="notificaciones">
-            <div className="flex flex-col gap-8">
-              <NotificationMatrix />
-              <ContactConsentMatrix />
-            </div>
-          </TabsContent>
+          {!isStudent && (
+            <TabsContent value="seguridad">
+              <TabSeguridad />
+            </TabsContent>
+          )}
+          {!isStudent && (
+            <TabsContent value="notificaciones">
+              <div className="flex flex-col gap-8">
+                <NotificationMatrix />
+                <ContactConsentMatrix />
+              </div>
+            </TabsContent>
+          )}
           <TabsContent value="legales">
             <LegalAcceptancesTab />
           </TabsContent>

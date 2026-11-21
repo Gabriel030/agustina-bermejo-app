@@ -21,7 +21,7 @@ class GraduationCertificateTest {
     void issuedCertificateIsValid() {
         GraduationCertificate certificate = GraduationCertificate.issue(GraduationCertificateKind.COURSE, 42L, 7L,
                 new CertificateCode("7QK3M9XH2VBN4T8R5W6YZ0A1B2"), snapshot, "a".repeat(64), "7QK3M9XH2VBN4T8R5W6YZ0A1B2.pdf",
-                LocalDateTime.of(2026, 11, 5, 10, 0), 3L);
+                LocalDateTime.of(2026, 11, 5, 10, 0), 3L, null, null);
 
         assertThat(certificate.getStatus()).isEqualTo(GraduationCertificateStatus.VALID);
         assertThat(certificate.getCourseEnrollmentId()).isEqualTo(42L);

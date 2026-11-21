@@ -27,6 +27,8 @@ import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationEx
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Service;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -45,6 +47,8 @@ import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 
 @Service
 public class CourseEnrollmentService {
+    private static final String ACTIVE_COURSE_ENROLLMENT_INDEX = "uk_course_enrollment_student_course_active";
+
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final StudentFinder studentFinder;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
@@ -111,7 +115,15 @@ public class CourseEnrollmentService {
         enrollment.setCourse(courseCatalogFinder.findCourseEntity(registration.courseId()));
         enrollment.setStatus(calculateStatusByCourseCapacity(registration.courseId()));
         enrollment.setEnrollmentDate(now);
-        CourseEnrollment savedEnrollment = courseEnrollmentRepository.save(enrollment);
+        CourseEnrollment savedEnrollment;
+        try {
+            savedEnrollment = courseEnrollmentRepository.saveAndFlush(enrollment);
+        } catch (DataIntegrityViolationException violation) {
+            if (!violatesActiveCourseEnrollmentIndex(violation)) {
+                throw violation;
+            }
+            throw new AlreadyEnrolledInCourseException(student.getId(), registration.courseId());
+        }
 
         for (CourseSectionView elegida : resueltas) {
             courseSubjectSectionEnrollmentRepository.save(
@@ -119,6 +131,11 @@ public class CourseEnrollmentService {
         }
 
         return savedEnrollment;
+    }
+
+    private static boolean violatesActiveCourseEnrollmentIndex(DataIntegrityViolationException violation) {
+        return violation.getCause() instanceof ConstraintViolationException constraint
+                && ACTIVE_COURSE_ENROLLMENT_INDEX.equals(constraint.getConstraintName());
     }
 
     CourseRegistrationView validateCanRequestAsStudent(Student student, Long courseId) {

@@ -409,7 +409,7 @@ export function SolicitudDeIngresoDetalle() {
         >
           <Button
             type="button"
-            variant="gradient"
+            variant="primary"
             aria-disabled={blockReason ? 'true' : undefined}
             aria-describedby="approve-hint"
             disabled={busy}
@@ -432,7 +432,7 @@ export function SolicitudDeIngresoDetalle() {
         title={`¿Aprobar la solicitud de ${application.studentFullName ?? 'esta persona'}?`}
         description="Esta acción no se puede deshacer. Al confirmar:"
         confirmLabel="Aprobar"
-        confirmVariant="gradient"
+        confirmVariant="primary"
         pending={approve.isPending}
         onConfirm={handleApprove}
       >

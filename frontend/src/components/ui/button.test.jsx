@@ -3,19 +3,19 @@ import { describe, expect, it } from 'vitest';
 import { Button } from './button';
 
 describe('Button', () => {
-  it('gradient and primary variants share the same token classes', () => {
-    render(
-      <>
-        <Button variant="gradient">Uno</Button>
-        <Button variant="primary">Dos</Button>
-      </>,
+  it('primary variant applies the CTA token classes', () => {
+    render(<Button variant="primary">Guardar</Button>);
+    expect(screen.getByRole('button', { name: 'Guardar' })).toHaveClass(
+      'bg-(image:--btn-primary-bg)',
+      'rounded-(--r-btn-primary)',
     );
-    ['Uno', 'Dos'].forEach((name) => {
-      expect(screen.getByRole('button', { name })).toHaveClass(
-        'bg-(image:--btn-primary-bg)',
-        'rounded-(--r-btn-primary)',
-      );
-    });
+  });
+
+  it('retired gradient variant no longer applies the CTA token classes', () => {
+    render(<Button variant="gradient">Guardar</Button>);
+    const button = screen.getByRole('button', { name: 'Guardar' });
+    expect(button).not.toHaveClass('bg-(image:--btn-primary-bg)');
+    expect(button).not.toHaveClass('rounded-(--r-btn-primary)');
   });
 
   it('loading disables the button', () => {

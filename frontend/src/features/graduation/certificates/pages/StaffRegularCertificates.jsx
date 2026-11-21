@@ -36,7 +36,7 @@ const dialogCopy = {
     titulo: 'Confirmar y emitir',
     placeholder: 'Por ejemplo: comprobante de pago de octubre revisado',
     confirmarLabel: 'Confirmar y emitir',
-    confirmarVariant: 'gradient',
+    confirmarVariant: 'primary',
   },
   reject: {
     titulo: 'Rechazar pedido',
@@ -117,7 +117,7 @@ function pendingColumns({ onAction }) {
         const name = row.original.studentName ?? 'el alumno';
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button size="sm" variant="gradient" aria-label={`Confirmar y emitir la constancia de ${name}`} onClick={() => onAction('emit', row.original)}>
+            <Button size="sm" variant="primary" aria-label={`Confirmar y emitir la constancia de ${name}`} onClick={() => onAction('emit', row.original)}>
               Confirmar y emitir
             </Button>
             <DropdownMenu>

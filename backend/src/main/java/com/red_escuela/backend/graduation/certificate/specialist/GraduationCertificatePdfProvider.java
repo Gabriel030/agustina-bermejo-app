@@ -4,7 +4,9 @@ import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateP
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
-import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateResolver;
+import com.red_escuela.backend.graduation.certificate.engine.BuiltInCertificateTemplate;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateAssets;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateNotFoundException;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
@@ -23,17 +25,19 @@ public class GraduationCertificatePdfProvider {
     private final GraduationCertificateRepository repository;
     private final CertificateFileStore fileStore;
     private final CertificatePdfRenderer renderer;
-    private final CertificateTemplateResolver templateResolver;
+    private final BuiltInCertificateTemplate builtInTemplate;
+    private final CertificateTemplateRenderSource templateSource;
     private final CertificateVerificationUrl verificationUrl;
     private final CertificateDigest digest;
 
     public GraduationCertificatePdfProvider(GraduationCertificateRepository repository, CertificateFileStore fileStore,
-                                            CertificatePdfRenderer renderer, CertificateTemplateResolver templateResolver,
+                                            CertificatePdfRenderer renderer, BuiltInCertificateTemplate builtInTemplate, CertificateTemplateRenderSource templateSource,
                                             CertificateVerificationUrl verificationUrl, CertificateDigest digest) {
         this.repository = repository;
         this.fileStore = fileStore;
         this.renderer = renderer;
-        this.templateResolver = templateResolver;
+        this.builtInTemplate = builtInTemplate;
+        this.templateSource = templateSource;
         this.verificationUrl = verificationUrl;
         this.digest = digest;
     }
@@ -49,8 +53,11 @@ public class GraduationCertificatePdfProvider {
         }
         log.warn("El PDF del certificado {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getId());
         CertificateCode code = certificate.certificateCode();
-        byte[] regenerated = renderer.render(templateResolver.resolve(certificate.getKind(), null), certificate.getSnapshot(),
-                code, verificationUrl.of(code));
+        CertificateAssets assets = certificate.getTemplateVersionId() == null
+                ? new CertificateAssets(null, null, certificate.getRegistryNumber(), null)
+                : templateSource.assetsOf(templateSource.byId(certificate.getTemplateVersionId()), certificate.getRegistryNumber());
+        byte[] regenerated = renderer.render(builtInTemplate.resolve(certificate.getKind(), null), certificate.getSnapshot(),
+                code, verificationUrl.of(code), assets);
         String path = fileStore.save(code.value(), regenerated);
         certificate.replacePdf(digest.sha256(regenerated), path);
         return new GraduationCertificatePdf(certificate.getCode(), regenerated);

@@ -329,7 +329,7 @@ export function DocenteConfiguracionEvaluacion() {
               Guardar borrador
             </Button>
             <Button
-              variant="gradient"
+              variant="primary"
               onClick={enviar}
               disabled={
                 !formularioCompleto || hayFechasInvalidas || !config.canSubmit || guardarBorrador.isPending || enviarAAprobacion.isPending

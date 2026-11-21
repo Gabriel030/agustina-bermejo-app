@@ -1,8 +1,29 @@
 import { http, HttpResponse } from 'msw';
 import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
 import { backupStatusForPlatformAdmin } from '@/test/fixtures/backupStatus';
+import {
+  certificateTemplate,
+  certificateTemplateImage,
+  certificateTemplateVersion,
+  eligibleGraduate,
+  graduationCertificateBatch,
+  graduationCertificateDetail,
+  graduationCertificateSummary,
+  ownGraduationCertificate,
+  springPage,
+} from '@/test/fixtures/certificates';
+import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
+
+import { permissionCatalog, permissionDiscrepancy, permissionGrid } from '@/test/fixtures/permissions';
 
 const API = 'http://localhost:8080';
+
+const pdfResponse = () =>
+  new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } });
+const pngResponse = () =>
+  new HttpResponse(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { headers: { 'Content-Type': 'image/png' } });
+const draftVersion = () =>
+  certificateTemplateVersion({ id: 2, versionNumber: 4, status: 'DRAFT', basedOnVersionNumber: 3, publishedAt: null, publishedBy: null });
 
 const personResponse = (overrides = {}) => ({
   id: 1,
@@ -35,6 +56,85 @@ const personResponse = (overrides = {}) => ({
 export const handlers = [
   http.get(`${API}/regular-certificate-requests`, () => HttpResponse.json([])),
   http.get(`${API}/graduation-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/graduation-certificates/eligible`, () => HttpResponse.json(springPage([eligibleGraduate()]))),
+  http.get(`${API}/graduation-certificates`, () => HttpResponse.json(springPage([graduationCertificateSummary()]))),
+  http.get(`${API}/graduation-certificates/:id`, ({ params }) =>
+    HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) })),
+  ),
+  http.post(`${API}/graduation-certificates/preview`, () => pdfResponse()),
+  http.post(`${API}/graduation-certificates/batch`, () => HttpResponse.json(graduationCertificateBatch())),
+  http.post(`${API}/graduation-certificates/:id/revoke`, ({ params }) =>
+    HttpResponse.json(
+      graduationCertificateDetail({
+        id: Number(params.id),
+        status: 'REVOKED',
+        revokedAt: '2026-11-21T09:00:00',
+        revocationReason: 'Error en los datos del alumno',
+      }),
+    ),
+  ),
+  http.post(`${API}/graduation-certificates/:id/reissue`, ({ params }) =>
+    HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) + 1, replacesCertificateId: Number(params.id) })),
+  ),
+  http.get(`${API}/me/certificates`, () => HttpResponse.json([ownGraduationCertificate()])),
+  http.get(`${API}/me/certificates/:id/pdf`, () => pdfResponse()),
+  http.get(`${API}/certificate-signatories`, ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const active = params.get('active');
+    const documentType = params.get('documentType');
+    const query = (params.get('q') ?? '').toLowerCase();
+    const content = signatoryList().filter(
+      (signatory) =>
+        (active === null || String(signatory.active) === active) &&
+        (documentType === null || signatory.allowedDocumentTypes.includes(documentType)) &&
+        (query === '' || `${signatory.name} ${signatory.role}`.toLowerCase().includes(query)),
+    );
+    return HttpResponse.json(springPage(content));
+  }),
+  http.post(`${API}/certificate-signatories`, async ({ request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(
+      signatoryDetail({ id: 5, hasSignature: false, usedInTemplates: [], ...body }),
+      { status: 201 },
+    );
+  }),
+  http.get(`${API}/certificate-signatories/:id/signature`, () => pngResponse()),
+  http.put(`${API}/certificate-signatories/:id/signature`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id), hasSignature: true })),
+  ),
+  http.delete(`${API}/certificate-signatories/:id/signature`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id), hasSignature: false })),
+  ),
+  http.post(`${API}/certificate-signatories/:id/deactivate`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id), active: false })),
+  ),
+  http.post(`${API}/certificate-signatories/:id/activate`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id), active: true })),
+  ),
+  http.get(`${API}/certificate-signatories/:id`, ({ params }) =>
+    HttpResponse.json(signatoryDetail({ id: Number(params.id) })),
+  ),
+  http.put(`${API}/certificate-signatories/:id`, async ({ params, request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(signatoryDetail({ id: Number(params.id), ...body }));
+  }),
+  http.get(`${API}/certificate-templates/:kind`, () => HttpResponse.json(certificateTemplate())),
+  http.get(`${API}/certificate-templates/:kind/versions`, () =>
+    HttpResponse.json([{ versionNumber: 3, publishedAt: '2026-11-18T09:05:00', publishedBy: 'Director Prueba' }]),
+  ),
+  http.get(`${API}/certificate-templates/:kind/versions/:number`, ({ params }) =>
+    HttpResponse.json(certificateTemplateVersion({ versionNumber: Number(params.number) })),
+  ),
+  http.put(`${API}/certificate-templates/:kind/draft`, () => HttpResponse.json(draftVersion())),
+  http.delete(`${API}/certificate-templates/:kind/draft`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API}/certificate-templates/:kind/publish`, () =>
+    HttpResponse.json(certificateTemplateVersion({ id: 2, versionNumber: 4, basedOnVersionNumber: 3 })),
+  ),
+  http.post(`${API}/certificate-templates/:kind/images`, () =>
+    HttpResponse.json(certificateTemplateImage(), { status: 201 }),
+  ),
+  http.get(`${API}/certificate-templates/:kind/images/:id`, () => pngResponse()),
+  http.post(`${API}/certificate-templates/:kind/preview`, () => pdfResponse()),
   http.get(`${API}/regular-certificates`, () => HttpResponse.json([])),
   http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
   http.get(`${API}/institution/academic-settings`, () =>
@@ -368,4 +468,11 @@ export const handlers = [
     HttpResponse.json({ allowed: true, blockedBy: null, parts: [] }),
   ),
   http.get(`${API}/backups/status`, () => HttpResponse.json(backupStatusForPlatformAdmin())),
+  http.post(`${API}/subject-sections/:id/modification-request/preview`, () => HttpResponse.json({ conflicts: [] })),
+  http.get(`${API}/permissions/catalog`, () => HttpResponse.json(permissionCatalog())),
+  http.get(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
+  http.put(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
+  http.get(`${API}/permissions/discrepancies`, () =>
+    HttpResponse.json({ items: [permissionDiscrepancy()], page: 0, size: 50, totalElements: 1 }),
+  ),
 ];

@@ -177,7 +177,7 @@ function FormAgregarCorrelativa({ programId, programSubjectId, onCancel }) {
         <Button variant="outline" size="sm" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button variant="gradient" size="sm" loading={addPrerequisite.isPending} onClick={handleAgregar}>
+        <Button variant="primary" size="sm" loading={addPrerequisite.isPending} onClick={handleAgregar}>
           Agregar
         </Button>
       </div>
@@ -227,7 +227,7 @@ function FormAgregarCorequisito({ programId, programSubjectId, onCancel }) {
         <Button variant="outline" size="sm" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button variant="gradient" size="sm" loading={addCorequisite.isPending} onClick={handleAgregar}>
+        <Button variant="primary" size="sm" loading={addCorequisite.isPending} onClick={handleAgregar}>
           Agregar
         </Button>
       </div>

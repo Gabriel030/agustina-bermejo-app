@@ -177,7 +177,7 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
         GraduationCertificate duplicate = GraduationCertificate.issue(GraduationCertificateKind.PROGRAM, enrollment.getId(),
                 enrollment.getStudent().getId(), new CertificateCode("00000000000000000000000001"),
                 repository.findById(first.id()).orElseThrow().getSnapshot(), "b".repeat(64), "00000000000000000000000001.pdf",
-                LocalDateTime.now(), enrollment.getStudent().getPerson().getId());
+                LocalDateTime.now(), enrollment.getStudent().getPerson().getId(), null, null);
 
         assertThatThrownBy(() -> repository.saveAndFlush(duplicate)).isInstanceOf(DataIntegrityViolationException.class);
     }

@@ -2,6 +2,7 @@ package com.red_escuela.backend.graduation.certificate.source;
 
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
+import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateBlockedByDebtException;
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateNotEligibleException;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
 import com.red_escuela.backend.enrollment.api.CourseSectionOutcomeFinder;
@@ -59,7 +60,7 @@ public class CourseGraduationSource implements GraduationSource {
             throw new GraduationCertificateNotEligibleException("hay módulos del curso sin aprobar");
         }
         if (graduationDebtCheck.hasDebt(enrollment.getStudent().getId())) {
-            throw new GraduationCertificateNotEligibleException("el alumno tiene deuda pendiente");
+            throw new GraduationCertificateBlockedByDebtException();
         }
     }
 

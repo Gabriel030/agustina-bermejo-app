@@ -202,7 +202,7 @@ function SuccessScreen({ student, offerLabel, waitlisted, rolBase, studentId, au
       {auditName && <p className="text-xs text-ink-faint">Inscripción registrada por {auditName}</p>}
       <div className="flex flex-wrap justify-center gap-2">
         <Button variant="outline" onClick={() => navigate(`/${rolBase}/alumnos/nuevo`)}>Dar de alta a otro alumno</Button>
-        <Button variant="gradient" onClick={() => navigate(`/${rolBase}/alumnos/${studentId}`)}>Ir al legajo</Button>
+        <Button variant="primary" onClick={() => navigate(`/${rolBase}/alumnos/${studentId}`)}>Ir al legajo</Button>
       </div>
     </GlassCard>
   );
@@ -384,7 +384,7 @@ export function InscribirAlumno() {
             {auditName && <p className="text-xs text-ink-faint">Se registra a nombre de {auditName}</p>}
             <div className="flex flex-wrap justify-between gap-2">
               <Button variant="ghost" disabled={isBusy} onClick={() => setReviewing(false)}>Volver a editar</Button>
-              <Button variant="gradient" disabled={isBusy} onClick={confirm}>
+              <Button variant="primary" disabled={isBusy} onClick={confirm}>
                 {isBusy ? 'Inscribiendo…' : 'Confirmar inscripción'}
               </Button>
             </div>
@@ -436,7 +436,7 @@ export function InscribirAlumno() {
                   <div className="flex justify-between gap-2"><dt className="text-ink-faint">Cohorte</dt><dd className="text-ink">{cohort?.label ?? '—'}</dd></div>
                 )}
               </dl>
-              <Button variant="gradient" disabled={!ready} onClick={() => setReviewing(true)}>Revisar inscripción</Button>
+              <Button variant="primary" disabled={!ready} onClick={() => setReviewing(true)}>Revisar inscripción</Button>
             </GlassCard>
           </div>
         )}

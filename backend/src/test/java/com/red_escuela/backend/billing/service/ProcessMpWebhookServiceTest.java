@@ -49,6 +49,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -555,7 +556,8 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         UUID publicReference = UUID.randomUUID();
         jdbc.update("insert into gateway_checkout (public_reference, invoice_id, gateway, amount, currency, gateway_preference_id, created_at, expires_at) "
-                + "values (?, ?, 'MERCADO_PAGO', 10000, 'ARS', 'pref-expired', now() - interval '50 hours', now() - interval '2 hours')", publicReference, invoice.getId());
+                + "values (?, ?, 'MERCADO_PAGO', 10000, 'ARS', 'pref-expired', ?, ?)", publicReference, invoice.getId(),
+                java.sql.Timestamp.valueOf(ApplicationTime.now().minusHours(50)), java.sql.Timestamp.valueOf(ApplicationTime.now().minusHours(2)));
         String mpPaymentId = String.valueOf(System.nanoTime());
         ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
                         new ReportedGatewayAllocation(publicReference, ars(BigDecimal.valueOf(10000))), 1)),

@@ -103,7 +103,7 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
             <Button type="button" variant="outline" onClick={onBack}>
               Cancelar
             </Button>
-            <Button type="button" variant="gradient" disabled={!form.ready} onClick={() => setStep('confirm')}>
+            <Button type="button" variant="primary" disabled={!form.ready} onClick={() => setStep('confirm')}>
               Revisar cambios
             </Button>
           </div>
@@ -122,7 +122,7 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
             <Button type="button" variant="outline" disabled={correct.isPending} onClick={() => setStep('data')}>
               Volver
             </Button>
-            <Button type="button" variant="gradient" disabled={correct.isPending} onClick={confirm}>
+            <Button type="button" variant="primary" disabled={correct.isPending} onClick={confirm}>
               {correct.isPending ? 'Confirmando…' : 'Confirmar corrección'}
             </Button>
           </div>

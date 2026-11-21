@@ -14,6 +14,8 @@ import { useCiclos, useCicloSecciones } from '@/features/academic-structure/hook
 import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { ResumeCycleButton } from '@/features/academic-structure/components/ResumeCycleButton';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
+import { SectionScheduleRequestAction } from '@/features/academic-structure/components/SectionScheduleRequestAction';
+import { SectionPendingScheduleNotice } from '@/features/academic-structure/components/SectionPendingScheduleNotice';
 
 const CICLO_STATUS_CONFIG = {
   DRAFT: { label: 'En construcción', tone: 'neutral' },
@@ -37,7 +39,8 @@ function formatHora(t) {
   return t?.slice(0, 5) ?? '—';
 }
 
-function FilaSeccion({ seccion, cicloId }) {
+function FilaSeccion({ seccion, ciclo }) {
+  const cicloId = ciclo.id;
   const basePath = useRoleBasePath();
   const cfg = SECCION_STATUS_CONFIG[seccion.status] ?? { label: seccion.status, tone: 'neutral' };
   const titular = seccion.instructors?.find((i) => i.role === 'LEAD');
@@ -73,14 +76,16 @@ function FilaSeccion({ seccion, cicloId }) {
           <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
         </div>
       </div>
-      <div className="mt-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         <Button variant="outline" size="sm" asChild>
           <Link to={`${basePath}/oferta-academica/ciclos/${cicloId}/comisiones/${seccion.id}/inscriptos`}>
             <ClipboardList className="mr-1.5 h-3.5 w-3.5" />
             Inscriptos
           </Link>
         </Button>
+        {basePath !== '/director' && <SectionScheduleRequestAction section={seccion} cycle={ciclo} />}
       </div>
+      <SectionPendingScheduleNotice section={seccion} />
     </div>
   );
 }
@@ -126,7 +131,7 @@ function PanelCiclo({ ciclo }) {
         <EmptyState title="Este ciclo aún no tiene comisiones." className="py-6" />
       ) : (
         <div className="flex flex-col gap-2">
-          {secciones.map((s) => <FilaSeccion key={s.id} seccion={s} cicloId={ciclo.id} />)}
+          {secciones.map((s) => <FilaSeccion key={s.id} seccion={s} ciclo={ciclo} />)}
         </div>
       )}
     </GlassCard>
@@ -197,7 +202,7 @@ export function PreceptorDetalleCarrera() {
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-xl font-bold text-ink">{programa?.name}</h1>
             {basePath !== '/director' && (
-              <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
+              <Button variant="primary" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
                 Iniciar alta de ciclo
               </Button>
             )}

@@ -115,7 +115,7 @@ export function AdministrativoHolidays() {
       action={
         <Button
           type="button"
-          variant={panelOpen ? 'outline' : 'gradient'}
+          variant={panelOpen ? 'outline' : 'primary'}
           onClick={() => openCreate(defaultNewHolidayDate(year, month, today))}
         >
           <Plus />
@@ -205,7 +205,7 @@ export function AdministrativoHolidays() {
                 selectedId={selectedHoliday?.id ?? null}
                 onSelect={openEdit}
                 emptyAction={
-                  <Button type="button" variant="gradient" onClick={() => openCreate(defaultNewHolidayDate(year, month, today))}>
+                  <Button type="button" variant="primary" onClick={() => openCreate(defaultNewHolidayDate(year, month, today))}>
                     Cargar el primer feriado
                   </Button>
                 }

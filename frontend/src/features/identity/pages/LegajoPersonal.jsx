@@ -142,7 +142,7 @@ export function LegajoPersonal() {
                           <span className="text-size-14 font-medium text-ink">Resetear contraseña</span>
                           <span className="text-size-12 text-ink-faint">Envía un link de recuperación al email del personal.</span>
                         </div>
-                        <Button variant="gradient" size="sm" onClick={() => setResetOpen(true)}>
+                        <Button variant="primary" size="sm" onClick={() => setResetOpen(true)}>
                           Resetear contraseña
                         </Button>
                       </div>
@@ -170,7 +170,7 @@ export function LegajoPersonal() {
                             <span className="text-size-14 font-medium text-ink">Reactivar</span>
                             <span className="text-size-12 text-ink-faint">Restaura el acceso al sistema para este miembro del personal.</span>
                           </div>
-                          <Button variant="gradient" size="sm" onClick={() => setReactivarOpen(true)}>
+                          <Button variant="primary" size="sm" onClick={() => setReactivarOpen(true)}>
                             Reactivar
                           </Button>
                         </div>

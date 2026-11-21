@@ -100,7 +100,7 @@ export function JustificarFaltaDialog({ sectionEnrollmentId, absence, studentNam
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button variant="gradient" onClick={submit} disabled={!canSubmit}>
+          <Button variant="primary" onClick={submit} disabled={!canSubmit}>
             {justify.isPending ? 'Justificando…' : 'Justificar inasistencia'}
           </Button>
         </DialogFooter>

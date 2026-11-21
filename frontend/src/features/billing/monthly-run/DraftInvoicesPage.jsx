@@ -241,7 +241,7 @@ export function DraftInvoicesPage() {
               </Button>
               <Button
                 type="button"
-                variant="gradient"
+                variant="primary"
                 disabled={!hasSelection || !canAct}
                 onClick={() => {
                   setApproveError(null);
@@ -261,7 +261,7 @@ export function DraftInvoicesPage() {
         title={`¿Emitir ${countText(summary.count)}?`}
         description="Se emiten con la fecha de hoy y los alumnos las ven en su cuenta corriente. No se puede deshacer: una corrección posterior es una nota de crédito."
         confirmLabel="Emitir"
-        confirmVariant="gradient"
+        confirmVariant="primary"
         pending={approve.isPending}
         onConfirm={handleApprove}
       >

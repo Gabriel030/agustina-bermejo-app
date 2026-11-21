@@ -165,7 +165,7 @@ export function AdvanceEnrollmentFeePage() {
             <Button variant="ghost" onClick={() => navigate(detailPath)} disabled={mutation.isPending}>
               Cancelar
             </Button>
-            <Button variant="gradient" size="lg" onClick={generate} loading={mutation.isPending}>
+            <Button variant="primary" size="lg" onClick={generate} loading={mutation.isPending}>
               {mutation.isPending ? 'Generando…' : 'Continuar al pago'}
               {!mutation.isPending && <ArrowRight size={16} />}
             </Button>
@@ -193,7 +193,7 @@ export function AdvanceEnrollmentFeePage() {
             ]}
           />
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="gradient" size="lg" onClick={payNow}>
+            <Button variant="primary" size="lg" onClick={payNow}>
               Pagar ahora
             </Button>
             <Button variant="outline" size="lg" onClick={() => navigate(detailPath)}>

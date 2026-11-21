@@ -23,6 +23,14 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     Optional<PasswordResetToken> findByExchangeTokenHashAndExchangeExpiresAtAfter(
             String exchangeTokenHash, LocalDateTime now);
 
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            update password_reset_token set exchange_token_hash = null
+            where exchange_token_hash = :exchangeTokenHash and exchange_expires_at > :now
+            """, nativeQuery = true)
+    int consumeExchangeToken(@Param("exchangeTokenHash") String exchangeTokenHash,
+                             @Param("now") LocalDateTime now);
+
     @Query(value = """
             insert into password_reset_failure (person_id, source_hash, failures, window_start)
             values (:personId, :sourceHash, 1, :now)

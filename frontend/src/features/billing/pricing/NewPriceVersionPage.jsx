@@ -295,7 +295,7 @@ export function NewPriceVersionPage() {
         <Button asChild variant="outline">
           <Link to={`${listPath}/${priceId}`}>Cancelar</Link>
         </Button>
-        <Button variant="gradient" onClick={submit} disabled={!canSubmit} loading={publish.isPending}>
+        <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={publish.isPending}>
           {isDirector ? 'Publicar cambio' : 'Enviar propuesta'}
         </Button>
       </div>

@@ -248,7 +248,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
             <Button variant="outline" className="rounded-xl" onClick={() => cerrarModal(false)}>
               Cancelar
             </Button>
-            <OfflineAwareButton variant="gradient" onClick={confirmarJustificacion} disabled={!archivo || justificar.isPending}>
+            <OfflineAwareButton variant="primary" onClick={confirmarJustificacion} disabled={!archivo || justificar.isPending}>
               {justificar.isPending ? 'Subiendo…' : 'Justificar'}
             </OfflineAwareButton>
           </DialogFooter>

@@ -22,3 +22,4 @@ deploy/.env.staging
 
 __pycache__/
 *.pyc
+.claude/worktrees/

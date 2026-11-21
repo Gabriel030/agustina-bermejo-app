@@ -2,6 +2,7 @@ package com.red_escuela.backend.platform.usecase;
 
 import com.red_escuela.backend.platform.specialist.PlatformAuditActorNameResolver;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.audit.ActorNameTerm;
 import com.red_escuela.backend.shared.audit.AuditLogFilter;
 import com.red_escuela.backend.shared.audit.AuditLogView;
 import com.red_escuela.backend.shared.audit.service.AuditLogReader;
@@ -19,7 +20,10 @@ public class ListPlatformAuditLogService implements ListPlatformAuditLogUseCase 
     }
 
     @Override
-    public PageResponse<AuditLogView> list(AuditLogFilter filter, int page, int size) {
-        return auditLogReader.search(filter, page, size, platformAuditActorNameResolver::resolve);
+    public PageResponse<AuditLogView> list(AuditLogFilter filter, String actorName, int page, int size) {
+        AuditLogFilter effectiveFilter = ActorNameTerm.parse(actorName)
+                .map(term -> filter.restrictedToActors(platformAuditActorNameResolver.findPersonIdsByName(term, ActorNameTerm.MAX_MATCHES)))
+                .orElse(filter);
+        return auditLogReader.search(effectiveFilter, page, size, platformAuditActorNameResolver::resolve);
     }
 }

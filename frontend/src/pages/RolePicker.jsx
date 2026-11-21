@@ -92,7 +92,7 @@ export function RolePicker() {
             </label>
           </div>
           <div className="flex flex-col gap-2">
-            <Button type="submit" variant="gradient" className="w-full">
+            <Button type="submit" variant="primary" className="w-full">
               Entrar como {roleLabel(selected)}
             </Button>
             <Button type="button" variant="ghost" className="w-full" onClick={logout}>

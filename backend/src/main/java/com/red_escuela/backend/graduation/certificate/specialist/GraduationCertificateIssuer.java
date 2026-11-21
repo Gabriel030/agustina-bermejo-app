@@ -5,13 +5,15 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
-import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateResolver;
+import com.red_escuela.backend.graduation.certificate.engine.BuiltInCertificateTemplate;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateAlreadyIssuedException;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.source.GraduationSource;
+import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -31,7 +33,9 @@ public class GraduationCertificateIssuer {
 
     private final Map<GraduationCertificateKind, GraduationSource> sources = new EnumMap<>(GraduationCertificateKind.class);
     private final GraduationCertificateRepository repository;
-    private final CertificateTemplateResolver templateResolver;
+    private final BuiltInCertificateTemplate builtInTemplate;
+    private final CertificateTemplateRenderSource templateSource;
+    private final CertificateRegistryNumberAssigner registryNumberAssigner;
     private final CertificatePdfRenderer renderer;
     private final CertificateFileStore fileStore;
     private final CertificateVerificationUrl verificationUrl;
@@ -41,12 +45,15 @@ public class GraduationCertificateIssuer {
     private final SecureRandom random = new SecureRandom();
 
     public GraduationCertificateIssuer(List<GraduationSource> graduationSources, GraduationCertificateRepository repository,
-                                       CertificateTemplateResolver templateResolver, CertificatePdfRenderer renderer,
+                                       BuiltInCertificateTemplate builtInTemplate, CertificateTemplateRenderSource templateSource,
+                                       CertificateRegistryNumberAssigner registryNumberAssigner, CertificatePdfRenderer renderer,
                                        CertificateFileStore fileStore, CertificateVerificationUrl verificationUrl,
                                        CertificateDigest digest, CurrentActorFinder currentActorFinder, Clock clock) {
         graduationSources.forEach(source -> sources.put(source.kind(), source));
         this.repository = repository;
-        this.templateResolver = templateResolver;
+        this.builtInTemplate = builtInTemplate;
+        this.templateSource = templateSource;
+        this.registryNumberAssigner = registryNumberAssigner;
         this.renderer = renderer;
         this.fileStore = fileStore;
         this.verificationUrl = verificationUrl;
@@ -63,19 +70,31 @@ public class GraduationCertificateIssuer {
             throw new GraduationCertificateAlreadyIssuedException();
         }
         CertificateCode code = newUniqueCode();
-        CertificateSnapshot snapshot = source.snapshotOf(enrollmentId);
+        CertificateTemplateVersion templateVersion = templateSource.currentPublished(kind);
+        CertificateSnapshot snapshot = templateSource.snapshotWith(source.snapshotOf(enrollmentId), templateVersion);
+        String registryNumber = registryNumberAssigner.next(kind);
         String url = verificationUrl.of(code);
-        byte[] pdf = renderer.render(templateResolver.resolve(kind, source.titleIdOf(enrollmentId)), snapshot, code, url);
+        byte[] pdf = renderer.render(builtInTemplate.resolve(kind, null), snapshot, code, url,
+                templateSource.assetsOf(templateVersion, registryNumber));
         String path = fileStore.save(code.value(), pdf);
         try {
             GraduationCertificate saved = repository.saveAndFlush(GraduationCertificate.issue(kind, enrollmentId,
                     source.studentIdOf(enrollmentId), code, snapshot, digest.sha256(pdf), path,
-                    LocalDateTime.now(clock), currentActorFinder.currentPersonId()));
+                    LocalDateTime.now(clock), currentActorFinder.currentPersonId(), registryNumber, templateVersion.getId()));
             return toResponse(saved, url);
         } catch (DataIntegrityViolationException e) {
             fileStore.deleteIfRolledBack(path);
-            throw new GraduationCertificateAlreadyIssuedException();
+            if (violatesValidCertificateUniqueness(e)) {
+                throw new GraduationCertificateAlreadyIssuedException();
+            }
+            throw e;
         }
+    }
+
+    private boolean violatesValidCertificateUniqueness(DataIntegrityViolationException e) {
+        String message = e.getMostSpecificCause().getMessage();
+        return message != null && (message.contains("uq_graduation_certificate_program_valid")
+                || message.contains("uq_graduation_certificate_course_valid"));
     }
 
     private boolean alreadyIssued(GraduationCertificateKind kind, Long enrollmentId) {
