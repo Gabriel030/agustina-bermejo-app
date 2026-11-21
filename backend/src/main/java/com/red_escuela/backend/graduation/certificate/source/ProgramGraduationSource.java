@@ -2,6 +2,7 @@ package com.red_escuela.backend.graduation.certificate.source;
 
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
+import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateBlockedByDebtException;
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateNotEligibleException;
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -34,7 +35,7 @@ public class ProgramGraduationSource implements GraduationSource {
             throw new GraduationCertificateNotEligibleException("la inscripción a la carrera no está completada");
         }
         if (graduationDebtCheck.hasDebt(enrollment.getStudent().getId())) {
-            throw new GraduationCertificateNotEligibleException("el alumno tiene deuda pendiente");
+            throw new GraduationCertificateBlockedByDebtException();
         }
     }
 
