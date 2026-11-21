@@ -10,6 +10,7 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Locale;
 import java.util.Set;
 
 public final class PersonSpecifications {
@@ -32,8 +33,10 @@ public final class PersonSpecifications {
 
     public static Specification<Person> withFullNameContaining(String term) {
         return (root, query, cb) -> {
-            var pattern = LikePatterns.contains(term.toLowerCase());
-            var fullName = cb.lower(cb.concat(cb.concat(root.get("name"), " "), root.get("lastname")));
+            var pattern = LikePatterns.contains(term.toLowerCase(Locale.ROOT));
+            var name = cb.coalesce(root.<String>get("name"), "");
+            var lastname = cb.coalesce(root.<String>get("lastname"), "");
+            var fullName = cb.lower(cb.concat(cb.concat(name, " "), lastname));
             return cb.like(cb.function("unaccent", String.class, fullName),
                     cb.function("unaccent", String.class, cb.literal(pattern)), LikePatterns.ESCAPE_CHARACTER);
         };
