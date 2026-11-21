@@ -2,7 +2,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { StatusPill } from '@/components/StatusPill';
 import { auditActionLabel, auditActionTone, auditEntityLabel, auditRoleLabel, auditRoleTone } from '@/lib/auditLabels';
 import { formatDateTime } from '@/lib/billing';
-import { auditActorName, formatAuditValue, MASK } from '@/features/audit/lib/auditPayload';
+import { auditActorName, diffAuditValues, formatAuditValue, MASK } from '@/features/audit/lib/auditPayload';
+import { AuditChangeSummary } from '@/features/audit/components/AuditChangeSummary';
 
 function ValueBlock({ title, value }) {
   return (
@@ -18,6 +19,7 @@ function ValueBlock({ title, value }) {
 export function AuditDetailSheet({ event, onClose }) {
   const before = formatAuditValue(event?.beforeValue);
   const after = formatAuditValue(event?.afterValue);
+  const changes = event ? diffAuditValues(event.beforeValue, event.afterValue) : null;
 
   return (
     <Sheet open={Boolean(event)} onOpenChange={(open) => !open && onClose()}>
@@ -44,6 +46,7 @@ export function AuditDetailSheet({ event, onClose }) {
                 <dt className="text-ink-faint">Motivo</dt>
                 <dd>{event.reason || <span className="text-ink-faint">Sin motivo registrado</span>}</dd>
               </dl>
+              {changes && <AuditChangeSummary changes={changes} />}
               <div className="grid gap-3 md:grid-cols-2">
                 <ValueBlock title="Antes" value={before} />
                 <ValueBlock title="Después" value={after} />

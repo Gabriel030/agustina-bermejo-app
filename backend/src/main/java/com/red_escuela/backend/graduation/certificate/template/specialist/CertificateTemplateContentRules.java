@@ -31,8 +31,8 @@ public class CertificateTemplateContentRules {
                 blankToNull(content.dictationText()),
                 blankToNull(content.qrLabel()),
                 blankToNull(content.footerLegend()),
-                normalize(content.firstSigner()),
-                normalize(content.secondSigner()),
+                null,
+                null,
                 content.signatory1Id(),
                 content.signatory2Id());
     }
@@ -65,30 +65,18 @@ public class CertificateTemplateContentRules {
 
     public void requirePublishable(CertificateTemplateContent content) {
         require(content.title(), "el título");
-        requireSigner(content.firstSigner(), "del primer firmante");
-        requireSigner(content.secondSigner(), "del segundo firmante");
-    }
-
-    private void requireSigner(CertificateTemplateSigner signer, String label) {
-        require(signer == null ? null : signer.name(), "el nombre " + label);
-        require(signer.role(), "el cargo " + label);
+        if (content.signatory1Id() == null) {
+            throw new TemplateIncompleteException("el firmante 1");
+        }
+        if (content.signatory2Id() == null) {
+            throw new TemplateIncompleteException("el firmante 2");
+        }
     }
 
     private void require(String value, String label) {
         if (value == null || value.isBlank()) {
             throw new TemplateIncompleteException(label);
         }
-    }
-
-    private CertificateTemplateSigner normalize(CertificateTemplateSigner signer) {
-        if (signer == null) {
-            return null;
-        }
-        String name = blankToNull(signer.name());
-        String role = blankToNull(signer.role());
-        return name == null && role == null && signer.signatureImageId() == null
-                ? null
-                : new CertificateTemplateSigner(name, role, signer.signatureImageId());
     }
 
     private String blankToNull(String value) {

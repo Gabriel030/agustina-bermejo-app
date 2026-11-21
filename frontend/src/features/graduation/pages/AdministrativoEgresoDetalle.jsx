@@ -188,7 +188,7 @@ export function AdministrativoEgresoDetalle() {
 
       {!readOnly && (
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="gradient" disabled={verify.isPending} onClick={handleVerify}>
+          <Button variant="primary" disabled={verify.isPending} onClick={handleVerify}>
             {verify.isPending ? 'Verificando…' : 'Verificar deuda'}
           </Button>
           <Button variant="outline" disabled={busy} onClick={() => setRejectOpen(true)}>Rechazar egreso</Button>

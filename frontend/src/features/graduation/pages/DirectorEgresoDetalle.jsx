@@ -183,7 +183,7 @@ export function DirectorEgresoDetalle() {
           <div className="flex justify-end gap-2">
             <Button variant="outline" disabled={deciding} onClick={() => setModalRechazo(true)}>Rechazar</Button>
             <Button
-              variant="gradient"
+              variant="primary"
               disabled={deciding || cargandoProgreso || !meetsRequirements}
               onClick={() => setModalAprobacion(true)}
             >

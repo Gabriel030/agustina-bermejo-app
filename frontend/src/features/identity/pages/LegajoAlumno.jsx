@@ -103,7 +103,7 @@ export function LegajoAlumno() {
               )}
               {legajo.minor && <StatusPill tone="accent">Menor de edad</StatusPill>}
               {legajo.status !== 'DELETED' && (
-                <Button asChild variant="gradient" className="ml-auto">
+                <Button asChild variant="primary" className="ml-auto">
                   <Link to={`/${rolBase}/alumnos/${id}/inscribir`}>Inscribir</Link>
                 </Button>
               )}

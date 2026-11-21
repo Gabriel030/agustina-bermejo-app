@@ -77,7 +77,7 @@ export function RevokeReissueDialog({ action, certificate, pending, onClose, onC
               <Button variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button variant="gradient" disabled={problem !== null} onClick={continueToConfirm}>
+              <Button variant="primary" disabled={problem !== null} onClick={continueToConfirm}>
                 Continuar
               </Button>
             </DialogFooter>
@@ -122,7 +122,7 @@ export function RevokeReissueDialog({ action, certificate, pending, onClose, onC
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="gradient" onClick={onClose}>
+              <Button variant="primary" onClick={onClose}>
                 Cerrar
               </Button>
             </DialogFooter>

@@ -70,7 +70,7 @@ function ReviewSheet({ open, changes, failure, saving, onClose, onConfirm, onDro
           <Button type="button" variant="outline" disabled={saving} onClick={onClose}>
             Volver
           </Button>
-          <Button type="button" variant="gradient" loading={saving} disabled={!changes.length} onClick={onConfirm}>
+          <Button type="button" variant="primary" loading={saving} disabled={!changes.length} onClick={onConfirm}>
             Guardar las notas
           </Button>
         </SheetFooter>
@@ -200,7 +200,7 @@ export function ExamBoardGradesSection({ mesa, rows, role, canWithdraw, onWithdr
           <Button type="button" variant="outline" onClick={() => setDiscarding(true)}>
             Descartar
           </Button>
-          <Button type="button" variant="gradient" disabled={invalid || !changes.length} onClick={() => setReviewing(true)}>
+          <Button type="button" variant="primary" disabled={invalid || !changes.length} onClick={() => setReviewing(true)}>
             Revisar y guardar
           </Button>
         </StickyActionBar>

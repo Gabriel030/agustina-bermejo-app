@@ -274,7 +274,7 @@ function RegistrationWizard({ onRegisterAnother }) {
             <Button type="button" variant="ghost" onClick={retroceder} disabled={isMutating}>
               {currentStep === 0 ? 'Cancelar' : 'Atrás'}
             </Button>
-            <Button type="button" variant="gradient" onClick={avanzar} disabled={isMutating}>
+            <Button type="button" variant="primary" onClick={avanzar} disabled={isMutating}>
               {currentStep === REVIEW_STEP ? 'Confirmar alta' : 'Siguiente'}
             </Button>
           </div>

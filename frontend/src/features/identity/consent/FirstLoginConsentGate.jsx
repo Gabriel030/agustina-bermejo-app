@@ -57,7 +57,7 @@ export function FirstLoginConsentGate({ children }) {
         <p id="first-login-hint" className="text-size-12 text-ink-soft">
           {accepted ? '' : 'Marcá la casilla para poder continuar.'}
         </p>
-        <Button variant="gradient" aria-describedby="first-login-hint" disabled={!accepted} loading={update.isPending} onClick={submit}>
+        <Button variant="primary" aria-describedby="first-login-hint" disabled={!accepted} loading={update.isPending} onClick={submit}>
           Continuar
         </Button>
         <Button variant="ghost" onClick={logout}>

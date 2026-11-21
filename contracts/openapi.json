@@ -13648,8 +13648,6 @@
             "type" : "string"
           },
           "role" : {
-            "maxLength" : 80,
-            "minLength" : 0,
             "type" : "string"
           }
         },
@@ -20294,6 +20292,13 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -67669,6 +67674,13 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         }, {
           "in" : "query",

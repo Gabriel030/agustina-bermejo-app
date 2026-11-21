@@ -33,7 +33,7 @@ function PublishDialog({ column, students, pending, onCancel, onConfirm }) {
       title={`Publicar ${label}`}
       description={`Vas a publicar ${loaded === 1 ? '1 nota' : `${loaded} notas`}. Los alumnos las van a ver y la columna queda bloqueada: no se puede cargar ni editar. Esto no se puede deshacer desde acá.`}
       confirmLabel="Publicar"
-      confirmVariant="gradient"
+      confirmVariant="primary"
       pending={pending}
       onConfirm={onConfirm}
     >
@@ -190,7 +190,7 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
           )}
           {invalid && <span className="text-danger"> · hay notas fuera de 1 a 10</span>}
         </span>
-        <Button variant="gradient" disabled={!count || invalid} onClick={() => runJobs(jobs)}>
+        <Button variant="primary" disabled={!count || invalid} onClick={() => runJobs(jobs)}>
           {count ? `Guardar ${count} ${count === 1 ? 'nota' : 'notas'}` : 'Guardar notas'}
         </Button>
       </div>

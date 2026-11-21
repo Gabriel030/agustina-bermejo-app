@@ -129,7 +129,7 @@ export function StaffGraduationCertificates() {
             <span className="text-size-13 text-ink-faint">
               {selected.size} seleccionados · máximo {BATCH_LIMIT}
             </span>
-            <Button type="button" variant="gradient" disabled={selected.size === 0} onClick={() => setIssuance(selectedRows)}>
+            <Button type="button" variant="primary" disabled={selected.size === 0} onClick={() => setIssuance(selectedRows)}>
               Emitir seleccionados
             </Button>
           </div>

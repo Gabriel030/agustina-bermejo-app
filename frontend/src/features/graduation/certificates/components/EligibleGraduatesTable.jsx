@@ -75,7 +75,7 @@ function eligibleColumns({ selected, canSelectMore, onToggle, onPreview, onIssue
               <Eye aria-hidden="true" />
               Vista previa
             </Button>
-            <Button size="sm" variant="gradient" disabled={blocked} aria-label={`Emitir certificado de ${name}`} onClick={() => onIssue(row.original)}>
+            <Button size="sm" variant="primary" disabled={blocked} aria-label={`Emitir certificado de ${name}`} onClick={() => onIssue(row.original)}>
               Emitir
             </Button>
           </div>

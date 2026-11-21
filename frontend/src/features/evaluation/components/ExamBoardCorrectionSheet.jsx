@@ -88,7 +88,7 @@ function CorrectionSteps({ row, saving, failure, onClose, onConfirm }) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="button" variant="gradient" disabled={!form.ready} onClick={() => setStep('confirm')}>
+            <Button type="button" variant="primary" disabled={!form.ready} onClick={() => setStep('confirm')}>
               Revisar cambios
             </Button>
           </div>
@@ -107,7 +107,7 @@ function CorrectionSteps({ row, saving, failure, onClose, onConfirm }) {
             <Button type="button" variant="outline" disabled={saving} onClick={() => setStep('data')}>
               Volver
             </Button>
-            <Button type="button" variant="gradient" loading={saving} onClick={() => onConfirm(form)}>
+            <Button type="button" variant="primary" loading={saving} onClick={() => onConfirm(form)}>
               Confirmar corrección
             </Button>
           </div>

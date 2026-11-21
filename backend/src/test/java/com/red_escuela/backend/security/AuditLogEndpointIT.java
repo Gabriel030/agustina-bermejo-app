@@ -1,5 +1,7 @@
 package com.red_escuela.backend.security;
 
+import com.red_escuela.backend.identity.api.PersonNameFinder;
+import com.red_escuela.backend.shared.audit.ActorNameTerm;
 import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditLogEntry;
@@ -15,6 +17,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class AuditLogEndpointIT extends AuthorizationMatrixSupport {
 
+    @Autowired
+    private PersonNameFinder personNameFinder;
     @Autowired
     private AuditLogRepository auditLogRepository;
     @Autowired
@@ -227,6 +232,127 @@ class AuditLogEndpointIT extends AuthorizationMatrixSupport {
         mockMvc.perform(get("/audit-log")).andExpect(status().is4xxClientError());
         mockMvc.perform(get("/platform/audit-log").header("Authorization", "Bearer " + fixtures.tokenFor(MatrixRole.PLATFORM_ADMIN)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void actorNameMatchesPartiallyIgnoringCaseAndAccents() throws Exception {
+        renameAdministrative();
+
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "jose"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(3));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "  ALVAR  "))
+                .andExpect(jsonPath("$.totalElements").value(3));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "sé Álv"))
+                .andExpect(jsonPath("$.totalElements").value(3));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "matriz"))
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void actorNameWithoutMatchesReturnsAnEmptyPage() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "zzzz"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.items").isEmpty());
+    }
+
+    @Test
+    void actorNameCombinesWithActionDateRangeAndActorPersonIdAsAnd() throws Exception {
+        renameAdministrative();
+
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "jose").param("action", "STAFF_CREATED")
+                        .param("from", "2026-11-12").param("to", "2026-11-12").param("actorRole", "ADMINISTRATIVO")
+                        .param("entityType", "PERSON"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].action").value("STAFF_CREATED"));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "jose").param("from", "2026-11-13"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "jose")
+                        .param("actorPersonId", String.valueOf(administrativeId)))
+                .andExpect(jsonPath("$.totalElements").value(3));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "jose")
+                        .param("actorPersonId", String.valueOf(directorId)))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void actorNameShorterThanTwoCharactersReturns400() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "j"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(directorGet("/audit-log").param("actorName", " j "))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "x".repeat(101)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(directorGet("/audit-log").param("actorName", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(6));
+    }
+
+    @Test
+    void actorNameLikeWildcardsAreTakenLiterally() throws Exception {
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "%%"))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "__"))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "\\\\"))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void actorWithNullLastNameOrNullNameIsFound() throws Exception {
+        jdbcTemplate.update("update person set name = 'Zoe', last_name = null where id = ?", administrativeId);
+        jdbcTemplate.update("update person set name = null, last_name = 'Quispe' where id = ?", directorId);
+
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "zoe"))
+                .andExpect(jsonPath("$.totalElements").value(3));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "quispe"))
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void matchedPersonIdsAreCappedAtTheLimitOrderedById() {
+        List<Long> all = personNameFinder.findInstitutePersonIdsByNameContaining("matriz", 1000);
+        List<Long> capped = personNameFinder.findInstitutePersonIdsByNameContaining("matriz", 2);
+
+        assertThat(all.size()).isGreaterThan(2);
+        assertThat(capped).isEqualTo(all.subList(0, 2)).isSorted();
+        assertThat(ActorNameTerm.MAX_MATCHES).isEqualTo(200);
+    }
+
+    @Test
+    void directorActorNameSearchDoesNotReachPlatformUsers() throws Exception {
+        Long platformAdminId = personId(MatrixRole.PLATFORM_ADMIN);
+        save(platformAdminId, "PLATFORM_ADMIN", LocalDateTime.of(2026, 11, 15, 8, 0), AuditAction.STAFF_CREATED, null, null);
+
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "PLATFORM_ADMIN"))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(directorGet("/audit-log").param("actorName", "matriz"))
+                .andExpect(jsonPath("$.totalElements").value(5));
+    }
+
+    @Test
+    void platformActorNameSearchIsRestrictedToPlatformUsers() throws Exception {
+        Long platformAdminId = personId(MatrixRole.PLATFORM_ADMIN);
+        save(platformAdminId, "PLATFORM_ADMIN", LocalDateTime.of(2026, 11, 15, 8, 0), AuditAction.STAFF_CREATED, null, null);
+        renameAdministrative();
+        String token = "Bearer " + fixtures.tokenFor(MatrixRole.PLATFORM_ADMIN);
+
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", token).param("actorName", "platform_admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].actorName").value("Matriz PLATFORM_ADMIN"));
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", token).param("actorName", "jose"))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", token).param("actorName", "matriz")
+                        .param("action", "STAFF_CREATED"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", token).param("actorName", "m"))
+                .andExpect(status().isBadRequest());
+    }
+
+    private void renameAdministrative() {
+        jdbcTemplate.update("update person set name = 'José', last_name = 'Álvarez' where id = ?", administrativeId);
     }
 
     private MockHttpServletRequestBuilder directorGet(String path) {

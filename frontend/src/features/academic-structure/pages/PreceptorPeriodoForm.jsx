@@ -139,7 +139,7 @@ function TermForm({ initial, term }) {
           <Button type="button" variant="outline" onClick={() => { setReviewing(false); setSubmitError(null); }}>
             Volver
           </Button>
-          <Button type="button" variant="gradient" disabled={!diffRows.length || isPending} onClick={handleConfirm}>
+          <Button type="button" variant="primary" disabled={!diffRows.length || isPending} onClick={handleConfirm}>
             Confirmar cambios
           </Button>
         </div>
@@ -210,7 +210,7 @@ function TermForm({ initial, term }) {
           <Button type="button" variant="outline" onClick={() => navigate(backPath)}>
             Cancelar
           </Button>
-          <Button type="submit" variant="gradient" disabled={isPending}>
+          <Button type="submit" variant="primary" disabled={isPending}>
             {editing ? 'Revisar cambios' : 'Crear período'}
           </Button>
         </div>
