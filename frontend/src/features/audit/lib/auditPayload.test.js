@@ -16,6 +16,32 @@ describe('formatAuditValue', () => {
   it('returns no text for null', () => {
     expect(formatAuditValue(null).text).toBeNull();
   });
+
+  it.each(['pwd', 'passwd', 'authorization', 'cbu', 'cuit', 'dni', 'cvv', 'pin', 'card', 'credential', 'credentials', 'privateKey', 'cardNumber', 'api-key', 'hash', 'otp', 'secret', 'token', 'password'])(
+    'masks the %s key',
+    (key) => {
+      const result = formatAuditValue(`{"${key}":"abc123"}`);
+      expect(result.masked).toBe(true);
+      expect(result.text).not.toContain('abc123');
+    },
+  );
+
+  it('does not mask a key that only contains a token segment as substring', () => {
+    const result = formatAuditValue('{"pinned":true}');
+    expect(result.masked).toBe(false);
+  });
+
+  it('masks sensitive keys inside an embedded json string', () => {
+    const result = formatAuditValue('{"payload":"{\\"pwd\\":\\"abc\\"}"}');
+    expect(result.masked).toBe(true);
+    expect(result.text).not.toContain('abc');
+  });
+
+  it('masks key=value pairs in plain text', () => {
+    const result = formatAuditValue('login ok password=abc');
+    expect(result.masked).toBe(true);
+    expect(result.text).toBe(`login ok password=${MASK}`);
+  });
 });
 
 describe('diffAuditValues', () => {

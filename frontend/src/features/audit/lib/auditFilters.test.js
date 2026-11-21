@@ -29,4 +29,16 @@ describe('actorSearchFor', () => {
   it('sends nothing for an empty field', () => {
     expect(actorSearchFor('')).toEqual({ actorPersonId: '', actorName: '' });
   });
+
+  it('keeps a numeric id with leading zeros as person id', () => {
+    expect(actorSearchFor('0012')).toEqual({ actorPersonId: '0012', actorName: '' });
+  });
+
+  it('sends a digit string that overflows a safe integer as name text, not as person id', () => {
+    expect(actorSearchFor('12345678901234567890')).toEqual({ actorPersonId: '', actorName: '12345678901234567890' });
+  });
+
+  it('sends a mixed letters and digits entry as name text', () => {
+    expect(actorSearchFor('Ana2')).toEqual({ actorPersonId: '', actorName: 'Ana2' });
+  });
 });

@@ -7,8 +7,10 @@ export const isAuditRangeInvalid = (filters) => Boolean(filters.from && filters.
 
 export const actorSearchInput = (typedText, debouncedText) => (typedText.trim() === '' ? '' : debouncedText);
 
+const isActorPersonId = (text) => /^\d{1,18}$/.test(text) && Number.isSafeInteger(Number(text));
+
 export const actorSearchFor = (text) => {
   const trimmed = text.trim();
-  if (/^\d+$/.test(trimmed)) return { actorPersonId: trimmed, actorName: '' };
+  if (isActorPersonId(trimmed)) return { actorPersonId: trimmed, actorName: '' };
   return { actorPersonId: '', actorName: trimmed.length >= ACTOR_NAME_MIN_LENGTH ? trimmed : '' };
 };
