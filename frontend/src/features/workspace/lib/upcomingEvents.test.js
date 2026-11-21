@@ -42,7 +42,7 @@ describe('upcomingEvents', () => {
       },
       NOW,
     );
-    expect(events.map((event) => event.title)).toEqual(['Mesa de Didáctica', 'Día del último día']);
+    expect(events.map((event) => event.title)).toEqual(['Didáctica', 'Día del último día']);
   });
 
   it('keeps an event that happens today and drops one from yesterday', () => {
@@ -62,15 +62,15 @@ describe('upcomingEvents', () => {
       },
       NOW,
     );
-    expect(events.map((event) => [event.date, event.kind])).toEqual([
+    expect(events.map((event) => [event.date, event.type])).toEqual([
       ['2026-11-10', 'holiday'],
-      ['2026-11-15', 'enrollmentStart'],
+      ['2026-11-15', 'enrollment'],
       ['2026-11-20', 'exam'],
-      ['2026-11-30', 'enrollmentEnd'],
+      ['2026-11-30', 'enrollment'],
     ]);
   });
 
-  it('breaks ties between events on the same day by kind, then title', () => {
+  it('breaks ties between events on the same day by type, then title', () => {
     const events = upcomingEvents(
       {
         boards: [board(4, '2026-11-12', 'Zoología')],
@@ -78,7 +78,7 @@ describe('upcomingEvents', () => {
       },
       NOW,
     );
-    expect(events.map((event) => event.title)).toEqual(['Mesa de Zoología', 'Alfa', 'Bravo']);
+    expect(events.map((event) => event.title)).toEqual(['Zoología', 'Alfa', 'Bravo']);
   });
 
   it('keeps the same order whatever the input order of same-day events', () => {
@@ -87,11 +87,19 @@ describe('upcomingEvents', () => {
     expect(backward).toEqual(forward);
   });
 
-  it('labels term events with the translated period type', () => {
+  it('labels term events with the translated period type and their pill type', () => {
     const events = upcomingEvents({ terms: [term(1, { startDate: '2026-11-25T00:00:00' })] }, NOW);
-    expect(events.map((event) => [event.date, event.kind, event.title])).toEqual([
-      ['2026-11-25', 'termStart', 'Inicio del período: Primer cuatrimestre'],
-      ['2026-11-30', 'enrollmentEnd', 'Cierran inscripciones: Primer cuatrimestre'],
+    expect(events.map((event) => [event.date, event.type, event.title])).toEqual([
+      ['2026-11-25', 'start', 'Primer cuatrimestre'],
+      ['2026-11-30', 'enrollment', 'Cierra inscripción · Primer cuatrimestre'],
+    ]);
+  });
+
+  it('titles the opening and the closing of enrollment apart', () => {
+    const events = upcomingEvents({ terms: [term(1, { enrollmentStart: '2026-11-10T00:00:00', enrollmentEnd: '2026-11-20T00:00:00' })] }, NOW);
+    expect(events.filter((event) => event.type === 'enrollment').map((event) => [event.date, event.title])).toEqual([
+      ['2026-11-10', 'Abre inscripción · Primer cuatrimestre'],
+      ['2026-11-20', 'Cierra inscripción · Primer cuatrimestre'],
     ]);
   });
 
@@ -100,6 +108,39 @@ describe('upcomingEvents', () => {
     const events = upcomingEvents({ holidays }, NOW);
     expect(events).toHaveLength(5);
     expect(events.map((event) => event.date)).toEqual(['2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09', '2026-11-10']);
+  });
+
+  it('routes each event type to the destination of the given role', () => {
+    const events = upcomingEvents(
+      {
+        boards: [board(1, '2026-11-10')],
+        holidays: [holiday(2, '2026-11-11', 'Feriado')],
+        terms: [term(3, { startDate: '2026-11-12T00:00:00', endDate: '2026-11-13T00:00:00', enrollmentStart: '2026-11-14T00:00:00', enrollmentEnd: '2026-11-15T00:00:00' })],
+        role: 'administrativo',
+      },
+      NOW,
+    );
+    expect(events.map((event) => [event.type, event.to])).toEqual([
+      ['exam', '/administrativo/mesas-de-examen'],
+      ['holiday', '/administrativo/feriados'],
+      ['start', '/administrativo/periodos'],
+      ['close', '/administrativo/cierres-de-comision'],
+      ['enrollment', '/administrativo/mesas-de-examen'],
+    ]);
+  });
+
+  it('has no destination for holidays when the role has no holidays screen', () => {
+    const events = upcomingEvents({ holidays: [holiday(1, '2026-11-11', 'Feriado')], role: 'director' }, NOW);
+    expect(events).toEqual([expect.objectContaining({ type: 'holiday', to: null })]);
+  });
+
+  it('routes exam and closure events to the director screens', () => {
+    const events = upcomingEvents({ boards: [board(1, '2026-11-10')], terms: [term(2, { endDate: '2026-11-12T00:00:00' })], role: 'director' }, NOW);
+    expect(events.map((event) => [event.type, event.to])).toEqual([
+      ['exam', '/director/mesas-de-examen'],
+      ['close', '/director/cierres-de-comision'],
+      ['enrollment', '/director/mesas-de-examen'],
+    ]);
   });
 
   it('returns an empty list when nothing falls inside the window', () => {
