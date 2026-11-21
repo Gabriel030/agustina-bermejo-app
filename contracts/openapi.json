@@ -10683,11 +10683,40 @@
         "required" : [ "modules" ],
         "type" : "object"
       },
+      "PermissionDiscrepancyModuleSummary" : {
+        "properties" : {
+          "lastSeenAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "legacyAllowedGridDenied" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "legacyDeniedGridAllowed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "module" : {
+            "type" : "string"
+          },
+          "total" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "lastSeenAt", "legacyAllowedGridDenied", "legacyDeniedGridAllowed", "module", "total" ],
+        "type" : "object"
+      },
       "PermissionDiscrepancyResponse" : {
         "properties" : {
           "count" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "direction" : {
+            "enum" : [ "LEGACY_ALLOWED_GRID_DENIED", "LEGACY_DENIED_GRID_ALLOWED" ],
+            "type" : "string"
           },
           "lastSeenAt" : {
             "format" : "date-time",
@@ -10704,6 +10733,18 @@
           }
         },
         "required" : [ "count", "lastSeenAt", "module", "permissionCode", "role" ],
+        "type" : "object"
+      },
+      "PermissionDiscrepancySummaryResponse" : {
+        "properties" : {
+          "modules" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionDiscrepancyModuleSummary"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "modules" ],
         "type" : "object"
       },
       "PermissionGridChange" : {
@@ -10744,6 +10785,26 @@
           }
         },
         "required" : [ "editable", "modes", "roles" ],
+        "type" : "object"
+      },
+      "PermissionModeChange" : {
+        "properties" : {
+          "mode" : {
+            "enum" : [ "LEGACY", "SHADOW", "ENFORCE" ],
+            "type" : "string"
+          },
+          "module" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "role" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "mode", "module", "role" ],
         "type" : "object"
       },
       "PermissionModuleModeResponse" : {
@@ -15306,6 +15367,25 @@
           "changes" : {
             "items" : {
               "$ref" : "#/components/schemas/PermissionGridChange"
+            },
+            "maxItems" : 200,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "changes", "reason" ],
+        "type" : "object"
+      },
+      "UpdatePermissionModesRequest" : {
+        "properties" : {
+          "changes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionModeChange"
             },
             "maxItems" : 200,
             "minItems" : 0,
@@ -64989,6 +65069,13 @@
         "operationId" : "Permission_listDiscrepancies",
         "parameters" : [ {
           "in" : "query",
+          "name" : "module",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -65012,6 +65099,124 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PageResponsePermissionDiscrepancyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "permission-controller" ]
+      }
+    },
+    "/permissions/discrepancies/summary" : {
+      "get" : {
+        "operationId" : "Permission_getDiscrepancySummary",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PermissionDiscrepancySummaryResponse"
                 }
               }
             },
@@ -65245,6 +65450,134 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/UpdatePermissionGridRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PermissionGridResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "permission-controller" ]
+      }
+    },
+    "/permissions/modes" : {
+      "put" : {
+        "operationId" : "Permission_updateModes",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePermissionModesRequest"
               }
             }
           },

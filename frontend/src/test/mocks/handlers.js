@@ -13,7 +13,7 @@ import {
   springPage,
 } from '@/test/fixtures/certificates';
 
-import { permissionCatalog, permissionDiscrepancy, permissionGrid } from '@/test/fixtures/permissions';
+import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
 const API = 'http://localhost:8080';
 
@@ -430,6 +430,8 @@ export const handlers = [
   http.get(`${API}/permissions/catalog`, () => HttpResponse.json(permissionCatalog())),
   http.get(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
   http.put(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
+  http.put(`${API}/permissions/modes`, () => HttpResponse.json(permissionGrid())),
+  http.get(`${API}/permissions/discrepancies/summary`, () => HttpResponse.json(permissionDiscrepancySummary())),
   http.get(`${API}/permissions/discrepancies`, () =>
     HttpResponse.json({ items: [permissionDiscrepancy()], page: 0, size: 50, totalElements: 1 }),
   ),

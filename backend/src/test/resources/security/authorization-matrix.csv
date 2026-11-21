@@ -289,8 +289,10 @@ POST,/payments/{paymentId}/chargebacks,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/payments/{paymentId}/chargebacks/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/permissions/catalog,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/permissions/discrepancies,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+GET,/permissions/discrepancies/summary,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/permissions/grid,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 PUT,/permissions/grid,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""x"",""changes"":[{""role"":""DOCENTE"",""permissionCode"":""announcement.create"",""granted"":true}]}"
+PUT,/permissions/modes,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""x"",""changes"":[{""role"":""DOCENTE"",""module"":""announcement"",""mode"":""SHADOW""}]}"
 PUT,/platform/features/{code},DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/platform/features/{code}/preview,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/platform/features,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,

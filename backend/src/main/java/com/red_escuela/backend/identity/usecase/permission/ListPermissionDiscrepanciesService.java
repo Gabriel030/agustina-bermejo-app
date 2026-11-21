@@ -15,7 +15,7 @@ public class ListPermissionDiscrepanciesService implements ListPermissionDiscrep
     }
 
     @Override
-    public PageResponse<PermissionDiscrepancyResponse> list(int page, int size) {
-        return reader.read(page, size);
+    public PageResponse<PermissionDiscrepancyResponse> list(String module, int page, int size) {
+        return reader.read(module, page, size);
     }
 }
