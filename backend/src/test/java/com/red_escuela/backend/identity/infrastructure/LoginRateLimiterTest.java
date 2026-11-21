@@ -101,4 +101,19 @@ class LoginRateLimiterTest {
 
         assertThat(limiter.tryConsumeRegisterForUser("10.0.0.1", "luis")).isTrue();
     }
+
+    @Test
+    void aSaturatedUserKeyMapDisablesTheUserLimitInsteadOfSharingAnOverflowBucketAndTheIpLimitStillApplies() {
+        LoginRateLimiter limiter = new LoginRateLimiter(5, 5, 3, 3, 2, 2, 2, 2, 2, clock);
+        limiter.tryConsumeRegisterForUser("10.0.0.1", "a");
+        limiter.tryConsumeRegisterForUser("10.0.0.2", "b");
+
+        for (int i = 0; i < 10; i++) {
+            assertThat(limiter.tryConsumeRegisterForUser("10.0.0." + (10 + i), "legit" + i)).isTrue();
+        }
+
+        assertThat(limiter.tryConsumeRegister("10.0.0.50")).isTrue();
+        assertThat(limiter.tryConsumeRegister("10.0.0.50")).isTrue();
+        assertThat(limiter.tryConsumeRegister("10.0.0.50")).isFalse();
+    }
 }

@@ -78,7 +78,11 @@ public class LoginRateLimiter {
 
     public boolean tryConsumeRegisterForUser(String ip, String username) {
         String normalizedUsername = username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
-        return registerUserLimiter.tryConsume(ip + "|" + normalizedUsername).allowed();
+        String key = ip + "|" + normalizedUsername;
+        if (!registerUserLimiter.canTrack(key)) {
+            return true;
+        }
+        return registerUserLimiter.tryConsume(key).allowed();
     }
 
     @Scheduled(cron = "0 */10 * * * *", zone = "${app.timezone}")

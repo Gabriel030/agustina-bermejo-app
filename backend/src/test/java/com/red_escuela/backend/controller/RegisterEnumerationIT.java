@@ -124,4 +124,13 @@ class RegisterEnumerationIT extends AbstractIntegrationTest {
 
         assertThat(owner.getResponse().getStatus()).isNotEqualTo(429);
     }
+
+    @Test
+    void validationFailureDoesNotEchoTheEnteredValues() throws Exception {
+        MvcResult result = register("echo-probe-user", "echo-probe-not-an-email", institutionId(), "10.1.0.8");
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(400);
+        assertThat(result.getResponse().getContentAsString())
+                .doesNotContain("echo-probe-not-an-email").doesNotContain("echo-probe-user");
+    }
 }
