@@ -64,7 +64,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `Command` + `Popover` [ui] | Combobox con búsqueda | compound |
 | `Switch` [ui] | Interruptor (CLI de shadcn, con tokens: gradiente al activarse, `neutral-bg` apagado); lo usa la matriz de notificaciones de Mi perfil y los filtros de recordatorios | `checked`, `onCheckedChange`, `disabled` |
 | `Checkbox` [ui] | Casilla (la usa `ColumnFilter`); en el archivo generado por la CLI se corrigió el import de `cn` y el estado `data-[state=checked]` | `checked`, `onCheckedChange` |
-| `Buscador` [domain: catalogo] | Campo de búsqueda de listados | `value`, `onChange`, `placeholder` |
+| `Buscador` | Campo de búsqueda de listados (catálogo, grilla de permisos) | `value`, `onChange`, `placeholder`, `ariaLabel`, `className` |
 | Formularios con validación / wizards | React Hook Form + Zod (patrón: `NuevoAlumno.jsx`) | — |
 
 ## 4b. Acciones

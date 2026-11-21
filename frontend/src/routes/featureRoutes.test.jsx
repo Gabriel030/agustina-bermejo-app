@@ -27,6 +27,7 @@ describe('feature routes', () => {
         'identity',
         'institution',
         'notifications',
+        'permissions',
         'platform',
         'workspace',
       ].sort(),

@@ -1,0 +1,219 @@
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Lock, SearchX } from 'lucide-react';
+import { toast } from 'sonner';
+import { describeMutationFailure } from '@/api/mutationErrorPolicy';
+import { EmptyState } from '@/components/EmptyState';
+import { GlassCard } from '@/components/GlassCard';
+import { LoadErrorState } from '@/components/LoadErrorState';
+import { PageContainer } from '@/components/PageContainer';
+import { Skeleton } from '@/components/Skeleton';
+import { Button } from '@/components/ui/button';
+import { PendingChangesBar } from '@/features/permissions/components/PendingChangesBar';
+import { GRID_COLUMNS, PermissionModuleSection } from '@/features/permissions/components/PermissionModuleSection';
+import { PermissionModeLegend } from '@/features/permissions/components/PermissionModeLegend';
+import { PermissionToolbar } from '@/features/permissions/components/PermissionToolbar';
+import { ReviewChangesDialog } from '@/features/permissions/components/ReviewChangesDialog';
+import { usePermissionCatalog, usePermissionGridData } from '@/features/permissions/hooks/usePermissionGrid';
+import { usePermissionDraft } from '@/features/permissions/hooks/usePermissionDraft';
+import { useSavePermissionChanges } from '@/features/permissions/hooks/useSavePermissionChanges';
+import { GRID_ROLES, describeChangeCount, permissionMatches } from '@/features/permissions/lib/permissionGrid';
+
+const PAGE_TITLE = 'Roles y permisos';
+const PAGE_DESCRIPTION = 'Definí qué puede hacer cada rol en cada módulo. Cada cambio pide un motivo y queda en el registro de auditoría.';
+
+function PermissionsSkeleton() {
+  return (
+    <GlassCard className="p-0" role="status" aria-busy="true" aria-label="Cargando permisos">
+      {Array.from({ length: 6 }, (_, index) => (
+        <div key={index} className="flex items-center gap-3.5 border-b border-border p-4 last:border-b-0">
+          <Skeleton className="h-4 w-4" />
+          <div className="flex flex-1 flex-col gap-2">
+            <Skeleton className={index % 2 ? "h-3.5 w-2/5" : "h-3.5 w-1/3"} />
+            <Skeleton className="h-2.5 w-1/5" />
+          </div>
+          <Skeleton className="h-4 w-15" />
+          <Skeleton className="h-4 w-15" />
+        </div>
+      ))}
+    </GlassCard>
+  );
+}
+
+function PermissionsGrid({ catalog, grid }) {
+  const [query, setQuery] = useState('');
+  const [moduleFilter, setModuleFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState([]);
+  const [openModules, setOpenModules] = useState(() => new Set());
+  const [reviewing, setReviewing] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const draft = usePermissionDraft(grid);
+  const save = useSavePermissionChanges();
+
+  const catalogIndex = useMemo(() => new Map(catalog.modules.flatMap((module) => module.permissions.map((permission) => [permission.code, { ...permission, module: module.module }]))), [catalog]);
+  const total = catalogIndex.size;
+  const searching = query.trim() !== '';
+  const roles = roleFilter.length ? GRID_ROLES.filter((role) => roleFilter.includes(role.id)) : GRID_ROLES;
+
+  const visibleModules = catalog.modules
+    .filter((module) => !moduleFilter || module.module === moduleFilter)
+    .map((module) => ({ module, permissions: module.permissions.filter((permission) => permissionMatches(module, permission, query)) }))
+    .filter((entry) => entry.permissions.length > 0);
+  const shown = visibleModules.reduce((sum, entry) => sum + entry.permissions.length, 0);
+  const allOpen = openModules.size >= catalog.modules.length;
+  const moduleCount = new Set(draft.changes.map((change) => catalogIndex.get(change.permissionCode)?.module)).size;
+
+  const toggleOpen = (module) =>
+    setOpenModules((current) => {
+      const next = new Set(current);
+      if (next.has(module)) next.delete(module);
+      else next.add(module);
+      return next;
+    });
+  const toggleRole = (roleId) => setRoleFilter((current) => (current.includes(roleId) ? current.filter((id) => id !== roleId) : [...current, roleId]));
+  const clearFilters = () => {
+    setQuery('');
+    setModuleFilter('');
+    setRoleFilter([]);
+  };
+
+  const closeReview = () => {
+    setReviewing(false);
+    setSaveError('');
+  };
+
+  const confirmSave = async (reason) => {
+    const count = draft.changes.length;
+    setSaveError('');
+    try {
+      await save.mutateAsync({ reason, changes: draft.changes, onChunkSaved: draft.settle });
+      closeReview();
+      toast.success(`Guardamos ${describeChangeCount(count)}. Quedaron en la auditoría.`);
+    } catch (error) {
+      setSaveError(describeMutationFailure(error));
+    }
+  };
+
+  return (
+    <>
+      <PermissionModeLegend />
+      <PermissionToolbar
+        modules={catalog.modules}
+        query={query}
+        onQueryChange={setQuery}
+        moduleFilter={moduleFilter}
+        onModuleFilterChange={setModuleFilter}
+        roleFilter={roleFilter}
+        onToggleRole={toggleRole}
+        onClearRoles={() => setRoleFilter([])}
+        allOpen={allOpen}
+        onToggleAll={() => setOpenModules(allOpen ? new Set() : new Set(catalog.modules.map((module) => module.module)))}
+        shown={shown}
+        total={total}
+      />
+      <GlassCard className="overflow-clip p-0" style={{ '--role-count': roles.length }} role="region" aria-label="Permisos por módulo y rol">
+        <div className={`hidden border-b border-border bg-table-head text-size-12 font-bold text-ink-soft ${GRID_COLUMNS}`}>
+          <div className="px-4 py-2.5">Módulo y permiso</div>
+          {roles.map((role) => (
+            <div key={role.id} className="px-2 py-2.5 text-center">
+              {role.label}
+            </div>
+          ))}
+        </div>
+        {visibleModules.length ? (
+          visibleModules.map(({ module, permissions }) => (
+            <PermissionModuleSection
+              key={module.module}
+              module={module}
+              grid={grid}
+              roles={roles}
+              permissions={permissions}
+              open={searching || openModules.has(module.module)}
+              onToggleOpen={() => toggleOpen(module.module)}
+              draft={draft}
+            />
+          ))
+        ) : (
+          <EmptyState
+            icon={<SearchX className="mx-auto size-6 text-ink-faint" aria-hidden="true" />}
+            title="No hay permisos que coincidan"
+            description="Probá con otra palabra o quitá los filtros de módulo y rol."
+            action={
+              <Button type="button" variant="outline" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
+            }
+            className="py-12"
+          />
+        )}
+      </GlassCard>
+      {draft.changes.length > 0 && (
+        <PendingChangesBar changeCount={draft.changes.length} moduleCount={moduleCount} onDiscard={draft.discard} onReview={() => setReviewing(true)} />
+      )}
+      {reviewing && draft.changes.length > 0 && (
+        <ReviewChangesDialog
+          open
+          onClose={closeReview}
+          changes={draft.changes}
+          catalogIndex={catalogIndex}
+          grid={grid}
+          saving={save.isPending}
+          errorMessage={saveError}
+          onConfirm={confirmSave}
+        />
+      )}
+    </>
+  );
+}
+
+export function PermissionsPage() {
+  const catalogQuery = usePermissionCatalog();
+  const gridQuery = usePermissionGridData();
+  const error = catalogQuery.error ?? gridQuery.error;
+  const loading = catalogQuery.isLoading || gridQuery.isLoading;
+
+  let body;
+  if (error?.status === 403) {
+    body = (
+      <GlassCard className="flex flex-1 flex-col p-12" role="alert">
+        <EmptyState
+          icon={<Lock className="mx-auto size-6 text-ink-soft" aria-hidden="true" />}
+          title="No tenés acceso a esta pantalla"
+          description="Solo el Director puede ver y editar la grilla de permisos. Si creés que es un error, pedíselo a quien administra tu institución."
+          action={
+            <Button asChild variant="outline">
+              <Link to="/">Volver al inicio</Link>
+            </Button>
+          }
+        />
+      </GlassCard>
+    );
+  } else if (loading) {
+    body = <PermissionsSkeleton />;
+  } else if (error) {
+    body = (
+      <LoadErrorState
+        error={error}
+        resource="los permisos"
+        onRetry={() => {
+          catalogQuery.refetch();
+          gridQuery.refetch();
+        }}
+      />
+    );
+  } else if (!catalogQuery.data.modules.length) {
+    body = (
+      <GlassCard className="flex flex-1 flex-col p-12">
+        <EmptyState icon="🗂️" title="Todavía no hay permisos cargados" description="El catálogo de permisos está vacío. Cuando el sistema lo cargue, vas a poder asignarlos desde acá." />
+      </GlassCard>
+    );
+  } else {
+    body = <PermissionsGrid catalog={catalogQuery.data} grid={gridQuery.data} />;
+  }
+
+  return (
+    <PageContainer title={PAGE_TITLE} description={PAGE_DESCRIPTION} className="pb-28">
+      {body}
+    </PageContainer>
+  );
+}
