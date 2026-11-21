@@ -239,7 +239,7 @@ export function SignatoryForm({ signatory, canEdit, onClose }) {
       {editable && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="gradient" loading={saving} disabled={!changed} onClick={save}>
+            <Button type="button" variant="primary" loading={saving} disabled={!changed} onClick={save}>
               {isNew ? 'Crear firmante' : 'Guardar cambios'}
             </Button>
             <Button type="button" variant="outline" disabled={saving} onClick={onClose}>

@@ -37,7 +37,7 @@ export function CertificateSignatories() {
   }
 
   const action = isDirector && !creating && !signatories.isError && (
-    <Button type="button" variant="gradient" onClick={startCreating}>
+    <Button type="button" variant="primary" onClick={startCreating}>
       <Plus aria-hidden="true" className="size-4" />
       Nuevo firmante
     </Button>
@@ -76,7 +76,7 @@ export function CertificateSignatories() {
             }
             action={
               isDirector && (
-                <Button type="button" variant="gradient" onClick={startCreating}>
+                <Button type="button" variant="primary" onClick={startCreating}>
                   Crear el primer firmante
                 </Button>
               )
