@@ -349,6 +349,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   REGULAR_ENROLLMENT_NOT_FOUND: 'No encontramos la inscripción.',
   SECTION_CODE_ALREADY_EXISTS: 'Ya existe una comisión con ese código.',
   SECTION_MODIFICATION_ALREADY_PENDING: 'Ya hay una modificación de la comisión pendiente de aprobación.',
+  SECTION_MODIFICATION_CYCLE_CLOSED: 'El ciclo ya cerró y no se puede modificar el horario de sus comisiones.',
   SECTION_MODIFICATION_NOT_PENDING: 'La modificación de la comisión no está pendiente.',
   SECTION_SCHEDULE_CONFLICT: 'La comisión se superpone con otra en el horario.',
   STAFF_PASSWORD_RESET_BLOCKED: 'No se puede restablecer la contraseña de este usuario.',

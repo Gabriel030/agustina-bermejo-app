@@ -599,6 +599,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_FULL` | no | `SectionFullException` | enrollment |
 | `SECTION_HAS_ACTIVE_ENROLLMENTS` | no | `SectionHasActiveEnrollmentsException` | academicstructure |
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
+| `SECTION_MODIFICATION_CYCLE_CLOSED` | no | `SectionModificationCycleClosedException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
 | `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
@@ -948,6 +949,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/students/{studentId}/refund-requests/preview` | `RefundPreviewController#previewRefundOnBehalfOfStudent` |
 | POST | `/subject-sections/{id}/modification-request` | `AcademicOfferingCycleController#requestSectionModification` |
 | POST | `/subject-sections/{id}/modification-request/approve` | `AcademicOfferingCycleController#approveSectionModification` |
+| POST | `/subject-sections/{id}/modification-request/preview` | `SectionModificationPreviewController#previewSectionModification` |
 | POST | `/subject-sections/{id}/modification-request/reject` | `AcademicOfferingCycleController#rejectSectionModification` |
 | POST | `/subject-sections/{sectionId}/announcements` | `AnnouncementController#createForSubjectSection` |
 | POST | `/subject-sections/{sectionId}/audience-preview` | `AnnouncementController#previewForSubjectSection` |

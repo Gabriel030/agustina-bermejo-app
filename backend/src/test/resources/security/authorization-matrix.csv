@@ -446,6 +446,7 @@ POST,/students/{studentId}/refund-requests/preview,DENY,DENY,DENY,DENY,ALLOW,ALL
 GET,/students/{studentId}/refunds,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/students/{studentId}/student-discounts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/subject-sections/{id}/modification-request,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
+POST,/subject-sections/{id}/modification-request/preview,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/subject-sections/{id}/modification-request/approve,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/subject-sections/{id}/modification-request/reject,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/subject-sections/{sectionId}/announcements,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,section-instructor,
