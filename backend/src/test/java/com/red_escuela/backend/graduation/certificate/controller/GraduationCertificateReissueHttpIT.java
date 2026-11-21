@@ -1,6 +1,7 @@
 package com.red_escuela.backend.graduation.certificate.controller;
 
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateStatus;
 import com.jayway.jsonpath.JsonPath;
@@ -69,6 +70,27 @@ class GraduationCertificateReissueHttpIT extends GraduationCertificateOperations
         postJson(BASE + "/" + id + "/reissue", director, VALID_REASON)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GRADUATION_CERTIFICATE_NOT_REVOCABLE"));
+    }
+
+    @Test
+    void reissueOfAGraduateThatIsNoLongerEligibleIsAConflict() throws Exception {
+        ProgramEnrollment enrollment = completedEnrollment();
+        Long id = issueCertificate(enrollment);
+        enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        postJson(BASE + "/" + id + "/reissue", director, VALID_REASON)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GRADUATION_CERTIFICATE_NOT_ELIGIBLE"));
+    }
+
+    @Test
+    void reasonThatIsTooShortAfterTrimmingIsRejected() throws Exception {
+        Long id = issueCertificate(completedEnrollment());
+
+        postJson(BASE + "/" + id + "/reissue", director, "{\"reason\":\"   corto   \"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("REVOCATION_REASON_INVALID"));
     }
 
     @Test

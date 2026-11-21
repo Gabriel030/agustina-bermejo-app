@@ -159,4 +159,22 @@ class GraduationCertificateReissueConcurrencyIT extends AbstractIntegrationTest 
         assertThatThrownBy(() -> jdbc.update("update graduation_certificate set replaces_id = ? where id = ?", firstId, thirdId))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    void databaseRejectsACertificateThatReplacesItself() throws Exception {
+        Long id = issueOriginal();
+
+        assertThatThrownBy(() -> jdbc.update("update graduation_certificate set replaces_id = id where id = ?", id))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void databaseRejectsRevokedStatusWithoutRevocationFields() throws Exception {
+        Long id = issueOriginal();
+
+        assertThatThrownBy(() -> jdbc.update("update graduation_certificate set status = 'REVOKED', revoked_at = now() where id = ?", id))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update("update graduation_certificate set status = 'REVOKED', revoked_at = now(), revoked_by_id = ? where id = ?", staffId, id))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
 }
