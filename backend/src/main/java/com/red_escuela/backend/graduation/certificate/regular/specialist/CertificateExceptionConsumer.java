@@ -21,6 +21,12 @@ public class CertificateExceptionConsumer {
         this.clock = clock;
     }
 
+    @Transactional(readOnly = true)
+    public void requireUsable(Long exceptionId, Long studentId, RegularityKind kind, Long enrollmentId) {
+        repository.findById(exceptionId).orElseThrow(CertificateExceptionNotFoundException::new)
+                .requireUsableFor(studentId, kind, enrollmentId, LocalDateTime.now(clock));
+    }
+
     @Transactional
     public void consume(Long exceptionId, Long certificateId, Long studentId, RegularityKind kind, Long enrollmentId, Long actorId) {
         CertificateExceptionApproval approval = repository.findByIdForUpdate(exceptionId)
