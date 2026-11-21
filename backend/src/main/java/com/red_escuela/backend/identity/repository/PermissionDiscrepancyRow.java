@@ -10,6 +10,8 @@ public interface PermissionDiscrepancyRow {
 
     String getPermissionCode();
 
+    String getDirection();
+
     long getOccurrences();
 
     Instant getLastSeenAt();
