@@ -30,4 +30,12 @@ class NoStoreResponseFilterTest {
             assertThat(call(uri).getHeader("Cache-Control")).as(uri).isNull();
         }
     }
+
+    @Test
+    void calendarJsonEndpointIsLeftForTheControllerToCacheButFeedAndExportStayNoStore() throws Exception {
+        assertThat(call("/me/calendar").getHeader("Cache-Control")).isNull();
+        for (String uri : new String[] {"/me/calendar/feed", "/me/calendar/feed/token", "/me/calendar/export.ics"}) {
+            assertThat(call(uri).getHeader("Cache-Control")).as(uri).isEqualTo("no-store");
+        }
+    }
 }
