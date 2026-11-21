@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -51,6 +51,10 @@ describe('CertificateTemplateEditor', () => {
     auth.roles = ['DIRECTOR'];
     URL.createObjectURL = vi.fn(() => 'blob:logo');
     URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    server.events.removeAllListeners();
   });
 
   it('shows the published content and keeps save disabled until something changes', async () => {
@@ -183,6 +187,31 @@ describe('CertificateTemplateEditor', () => {
     expect(await screen.findByText('La imagen debe ser un PNG de hasta 2 MB.')).toBeInTheDocument();
   });
 
+  it('clears a previous upload error when the logo is removed', async () => {
+    const user = userEvent.setup({ delay: null, applyAccept: false });
+    renderPage();
+
+    await findTitleField();
+    await user.upload(screen.getByLabelText('Archivo del logo'), new File(['x'], 'logo.jpg', { type: 'image/jpeg' }));
+    expect(await screen.findByText('La imagen debe ser un PNG de hasta 2 MB.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Quitar logo' }));
+
+    expect(screen.queryByText('La imagen debe ser un PNG de hasta 2 MB.')).not.toBeInTheDocument();
+  });
+
+  it('ignores surrounding spaces when checking the length limit', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderPage();
+
+    const title = await findTitleField();
+    await user.clear(title);
+    await user.click(title);
+    await user.paste(`${'a'.repeat(80)}   `);
+
+    expect(screen.queryByText(/Admite hasta 80 caracteres/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeEnabled();
+  });
+
   it('removes the logo from the draft', async () => {
     const user = userEvent.setup({ delay: null });
     const saved = captureDraftSave();
@@ -209,7 +238,6 @@ describe('CertificateTemplateEditor', () => {
       'Lic. Marcos Ledesma · Director Académico',
     ]);
     expect(requests.some((url) => url.includes('documentType=GRADUATION_APPROVAL') && url.includes('active=true'))).toBe(true);
-    server.events.removeAllListeners();
   });
 
   it('shows name and role of the chosen signatory', async () => {
@@ -309,6 +337,23 @@ describe('CertificateTemplateEditor', () => {
     await waitFor(() => expect(kinds).toEqual(['PROGRAM', 'COURSE']));
   });
 
+  it('edits and saves the course template with kind COURSE', async () => {
+    const user = userEvent.setup({ delay: null });
+    const saved = captureDraftSave();
+    renderPage();
+
+    await findTitleField();
+    await user.click(screen.getByRole('tab', { name: 'Curso' }));
+    const title = await screen.findByLabelText('Título del certificado');
+    await user.clear(title);
+    await user.type(title, 'Certificado de curso');
+    await user.click(screen.getByRole('button', { name: 'Guardar borrador' }));
+
+    await waitFor(() => expect(saved.bodies).toHaveLength(1));
+    expect(saved.bodies[0].kind).toBe('COURSE');
+    expect(saved.bodies[0].body.content.title).toBe('Certificado de curso');
+  });
+
   it('shows the empty state when the template was never configured', async () => {
     server.use(
       http.get(`${API}/certificate-templates/:kind`, () => HttpResponse.json(certificateTemplate({ published: null, draft: null }))),
@@ -343,7 +388,7 @@ describe('CertificateTemplateEditor', () => {
     expect(await findTitleField()).toBeInTheDocument();
   });
 
-  it('shows the permission error when the template is forbidden', async () => {
+  it('shows the generic load error state when the template request returns 403', async () => {
     server.use(
       http.get(`${API}/certificate-templates/:kind`, () => HttpResponse.json(errorBody('FORBIDDEN'), { status: 403 })),
     );

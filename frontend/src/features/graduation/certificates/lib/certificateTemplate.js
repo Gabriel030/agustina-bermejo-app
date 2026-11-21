@@ -89,7 +89,7 @@ export function fieldError(field, value) {
 export function validateForm(form) {
   const errors = {};
   TEXT_FIELDS.forEach((field) => {
-    const message = fieldError(field, form[field.name]);
+    const message = fieldError(field, form[field.name].trim());
     if (message) errors[field.name] = message;
   });
   if (form.signatory1Id != null && form.signatory1Id === form.signatory2Id) {

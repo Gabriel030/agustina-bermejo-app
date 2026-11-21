@@ -60,7 +60,10 @@ export function TemplateLogoField({ kind, logoImageId, readOnly, onChange }) {
                 {hasLogo ? 'Reemplazar logo' : 'Subir logo'}
               </Button>
               {hasLogo && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => {
+                    setError(null);
+                    onChange(null);
+                  }}>
                   <Trash2 className="size-4" aria-hidden="true" />
                   Quitar logo
                 </Button>

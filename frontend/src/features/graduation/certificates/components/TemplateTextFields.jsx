@@ -14,7 +14,7 @@ export function TemplateTextFields({ form, readOnly, onChange }) {
       </div>
       {TEXT_FIELDS.map((field) => {
         const value = form[field.name];
-        const error = fieldError(field, value);
+        const error = fieldError(field, value.trim());
         const errorId = `${field.name}-error`;
         const Control = field.multiline ? Textarea : Input;
         return (

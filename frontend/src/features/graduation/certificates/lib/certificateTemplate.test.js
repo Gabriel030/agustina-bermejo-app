@@ -35,6 +35,12 @@ describe('certificateTemplate lib', () => {
     expect(validateForm(emptyForm())).toEqual({});
   });
 
+  it('validates the length on the trimmed value', () => {
+    const form = { ...emptyForm(), title: `${'a'.repeat(80)}  ` };
+    expect(validateForm(form).title).toBeUndefined();
+    expect(validateForm({ ...form, title: 'a'.repeat(81) }).title).toBeDefined();
+  });
+
   it('accepts a PNG of up to 2 MB and rejects the rest', () => {
     expect(validateLogoFile({ type: 'image/png', size: 2 * 1024 * 1024 })).toBeNull();
     expect(validateLogoFile({ type: 'image/png', size: 2 * 1024 * 1024 + 1 })).not.toBeNull();
