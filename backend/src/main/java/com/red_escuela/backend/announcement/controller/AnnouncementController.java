@@ -23,6 +23,7 @@ import com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncement
 import com.red_escuela.backend.announcement.usecase.audience.ListAudienceSegmentsUseCase;
 import com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceCommand;
 import com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceUseCase;
+import com.red_escuela.backend.shared.permission.PermissionGate;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -53,6 +54,7 @@ public class AnnouncementController {
     private final ListAnnouncementRecipientsUseCase listAnnouncementRecipients;
     private final ListAnnouncementReadReceiptsUseCase listAnnouncementReadReceipts;
     private final CountAnnouncementReadsUseCase countAnnouncementReads;
+    private final PermissionGate permissionGate;
 
     public AnnouncementController(CreateAnnouncementUseCase createAnnouncement,
                                   UpdateAnnouncementUseCase updateAnnouncement,
@@ -63,7 +65,8 @@ public class AnnouncementController {
                                   PreviewAudienceUseCase previewAudience,
                                   ListAnnouncementRecipientsUseCase listAnnouncementRecipients,
                                   ListAnnouncementReadReceiptsUseCase listAnnouncementReadReceipts,
-                                  CountAnnouncementReadsUseCase countAnnouncementReads) {
+                                  CountAnnouncementReadsUseCase countAnnouncementReads,
+                                  PermissionGate permissionGate) {
         this.createAnnouncement = createAnnouncement;
         this.updateAnnouncement = updateAnnouncement;
         this.deleteAnnouncement = deleteAnnouncement;
@@ -73,6 +76,7 @@ public class AnnouncementController {
         this.previewAudience = previewAudience;
         this.listAnnouncementRecipients = listAnnouncementRecipients;
         this.listAnnouncementReadReceipts = listAnnouncementReadReceipts;
+        this.permissionGate = permissionGate;
         this.countAnnouncementReads = countAnnouncementReads;
     }
 
@@ -154,7 +158,7 @@ public class AnnouncementController {
     @GetMapping("/announcements/{id}/recipients")
     @RequiresPermission(code = "announcement.view_recipients", legacyRoles = "ROLE_DOCENTE,ROLE_PRECEPTOR,ROLE_DIRECTOR")
     public List<AnnouncementRecipientResponse> recipients(@PathVariable Long id) {
-        return isInstructor() ? listAnnouncementRecipients.list(id) : listAnnouncementReadReceipts.list(id);
+        return canViewReadReceipts() ? listAnnouncementReadReceipts.list(id) : listAnnouncementRecipients.list(id);
     }
 
     @DeleteMapping("/announcements/{id}")
@@ -164,9 +168,9 @@ public class AnnouncementController {
         deleteAnnouncement.delete(id);
     }
 
-    private boolean isInstructor() {
-        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_DOCENTE"));
+    private boolean canViewReadReceipts() {
+        return permissionGate.allows(SecurityContextHolder.getContext().getAuthentication(),
+                "announcement.view_read_receipts", "ROLE_PRECEPTOR,ROLE_DIRECTOR");
     }
 
     private AnnouncementResponse toResponse(Announcement announcement) {

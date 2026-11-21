@@ -59,6 +59,8 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
         jdbcTemplate.update("delete from role_permission where role = 'DOCENTE' and permission_id = (select id from permission where code = 'announcement.update')");
         jdbcTemplate.update("insert into role_permission (role, permission_id) select 'DOCENTE', id from permission where code = 'announcement.update'");
         jdbcTemplate.update("delete from role_permission where role in ('PRECEPTOR', 'ADMINISTRATIVO') and permission_id in (select id from permission where code in ('announcement.update', 'audit.read'))");
+        jdbcTemplate.update("delete from role_permission where role in ('DOCENTE', 'PRECEPTOR') and permission_id = (select id from permission where code = 'announcement.view_read_receipts')");
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'PRECEPTOR', id from permission where code = 'announcement.view_read_receipts'");
         discrepancyAccumulator.flush();
         jdbcTemplate.update("delete from permission_discrepancy_counter");
         jdbcTemplate.update("delete from audit_log where action = 'PERMISSION_GRID_CHANGED'");
@@ -203,6 +205,38 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
         assertThat(isForbiddenByTheGate(AUDIT_LOG_KEY, "", MatrixRole.ADMINISTRATIVO)).isTrue();
         discrepancyAccumulator.flush();
         assertThat(jdbcTemplate.queryForObject("select count(*) from permission_discrepancy_counter", Integer.class)).isZero();
+    }
+
+    private int recipientsStatusOf(Long announcementId, MatrixRole role) throws Exception {
+        return statusOf(HttpMethod.GET, "/announcements/" + announcementId + "/recipients", null, role);
+    }
+
+    @Test
+    void recipientsBranchFollowsTheOldRoleRulesInLegacyAndShadowModes() throws Exception {
+        for (String mode : List.of("LEGACY", "SHADOW")) {
+            jdbcTemplate.update("delete from permission_module_mode");
+            if (!mode.equals("LEGACY")) {
+                setPilotMode(mode);
+            }
+            Long announcementId = seedSectionWithoutInstructorAndOneAnnouncement().announcementId();
+            assertThat(recipientsStatusOf(announcementId, MatrixRole.PRECEPTOR)).as(mode + " preceptor").isEqualTo(200);
+            assertThat(recipientsStatusOf(announcementId, MatrixRole.DIRECTOR)).as(mode + " director").isEqualTo(200);
+            assertThat(recipientsStatusOf(announcementId, MatrixRole.DOCENTE)).as(mode + " docente").isNotEqualTo(200);
+        }
+    }
+
+    @Test
+    void recipientsBranchFollowsTheReadReceiptsPermissionInEnforceMode() throws Exception {
+        setPilotMode("ENFORCE");
+        Long announcementId = seedSectionWithoutInstructorAndOneAnnouncement().announcementId();
+        assertThat(recipientsStatusOf(announcementId, MatrixRole.PRECEPTOR)).as("default preceptor").isEqualTo(200);
+        assertThat(recipientsStatusOf(announcementId, MatrixRole.DOCENTE)).as("default docente").isNotEqualTo(200);
+
+        setGrant("DOCENTE", "announcement.view_read_receipts", true);
+        setGrant("PRECEPTOR", "announcement.view_read_receipts", false);
+
+        assertThat(recipientsStatusOf(announcementId, MatrixRole.DOCENTE)).as("docente with receipts permission").isEqualTo(200);
+        assertThat(recipientsStatusOf(announcementId, MatrixRole.PRECEPTOR)).as("preceptor without receipts permission").isNotEqualTo(200);
     }
 
     private record SeededSection(Long sectionId, Long announcementId) {
