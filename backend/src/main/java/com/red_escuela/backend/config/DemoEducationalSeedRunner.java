@@ -17,9 +17,11 @@ import org.springframework.web.client.RestClientResponseException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @Profile("local & demo")
@@ -267,7 +269,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     }
 
     private void recordAttendance(DemoApiClient api, long sectionId, long sectionEnrollmentId) {
-        List<LocalDate> classDates = recentWeekdaysBefore(ApplicationTime.today(), CLASS_COUNT);
+        List<LocalDate> classDates = recentClassDaysBefore(ApplicationTime.today(), CLASS_COUNT, holidayDates(api));
         for (int index = 0; index < classDates.size(); index++) {
             String status = index == 1 || index == 3 ? "ABSENT" : "PRESENT";
             Map<String, Object> entry = Map.of("enrollmentId", sectionEnrollmentId, "status", status);
@@ -275,11 +277,23 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         }
     }
 
-    static List<LocalDate> recentWeekdaysBefore(LocalDate today, int count) {
+    private Set<LocalDate> holidayDates(DemoApiClient api) {
+        Set<LocalDate> holidays = new HashSet<>();
+        for (JsonNode holiday : api.get(ADMIN, "/holidays")) {
+            String date = holiday.path("date").asString("");
+            if (!date.isBlank()) {
+                holidays.add(LocalDate.parse(date));
+            }
+        }
+        return holidays;
+    }
+
+    static List<LocalDate> recentClassDaysBefore(LocalDate today, int count, Set<LocalDate> holidays) {
         List<LocalDate> dates = new ArrayList<>();
         LocalDate day = today.minusDays(1);
         while (dates.size() < count) {
-            if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            boolean weekend = day.getDayOfWeek() == DayOfWeek.SATURDAY || day.getDayOfWeek() == DayOfWeek.SUNDAY;
+            if (!weekend && !holidays.contains(day)) {
                 dates.add(0, day);
             }
             day = day.minusDays(1);
