@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScheduledJobCoverageTest {
 
     private static final Set<String> PER_INSTANCE_SWEEPS = Set.of(
+            "com.red_escuela.backend.academicrecord.specialist.CalendarFeedRateLimiter.evictIdleEntries",
             "com.red_escuela.backend.config.RequestRateLimitFilter.evictIdleClients",
             "com.red_escuela.backend.identity.infrastructure.LoginRateLimiter.evictIdleClients");
 
