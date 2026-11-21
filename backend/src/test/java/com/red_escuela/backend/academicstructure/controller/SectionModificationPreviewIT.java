@@ -51,6 +51,7 @@ class SectionModificationPreviewIT extends AbstractIntegrationTest {
     private Person preceptor;
     private Person student;
     private SubjectSection section;
+    private SubjectSection morningSection;
     private SubjectSection occupyingSection;
     private Long ownClassroomId;
     private Long occupiedClassroomId;
@@ -67,6 +68,8 @@ class SectionModificationPreviewIT extends AbstractIntegrationTest {
         cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
         section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
         occupyingSection = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
+        morningSection = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
+        morningSection.setShift(com.red_escuela.backend.academicstructure.domain.SectionShift.MORNING);
         var busyInstructorSection = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
         var own = fixtures.classroom(30);
         var occupied = fixtures.classroom(30);
@@ -178,31 +181,54 @@ class SectionModificationPreviewIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void requestAndPreviewAgreeOnWhatIsAConflict() throws Exception {
-        var scenarios = new String[][]{
-                {slot(occupiedClassroomId, "TUESDAY", "11:00", "13:00")},
-                {slot(smallClassroomId, "FRIDAY", "10:00", "12:00")},
-                {slot(ownClassroomId, "WEDNESDAY", "10:00", "12:00")},
-                {slot(ownClassroomId, "THURSDAY", "10:00", "12:00"), slot(ownClassroomId, "THURSDAY", "11:00", "13:00")},
-                {slot(occupiedClassroomId, "TUESDAY", "12:00", "14:00")},
-                {slot(ownClassroomId, "THURSDAY", "10:00", "12:00"), slot(ownClassroomId, "THURSDAY", "12:00", "14:00")},
-        };
+    void requestErrorCodeMatchesTheTypeOfTheFirstPreviewConflictForTheSameDraft() throws Exception {
+        var errorCodeByType = java.util.Map.of(
+                "SLOT_OUTSIDE_SHIFT", "SLOT_OUTSIDE_SHIFT",
+                "CLASSROOM_CAPACITY_EXCEEDED", "SECTION_CAPACITY_EXCEEDS_CLASSROOM",
+                "CLASSROOM_OCCUPIED", "SECTION_SCHEDULE_CONFLICT",
+                "INSTRUCTOR_BUSY", "INSTRUCTOR_SCHEDULE_CONFLICT",
+                "SLOTS_OVERLAP", "SECTION_SCHEDULE_CONFLICT");
+        record Scenario(Long sectionId, String json, String expectedType) {}
+        var scenarios = java.util.List.of(
+                new Scenario(morningSection.getId(), body(slot(freeClassroomId, "FRIDAY", "18:00", "20:00")), "SLOT_OUTSIDE_SHIFT"),
+                new Scenario(section.getId(), body(slot(smallClassroomId, "FRIDAY", "10:00", "12:00")), "CLASSROOM_CAPACITY_EXCEEDED"),
+                new Scenario(section.getId(), body(slot(occupiedClassroomId, "TUESDAY", "11:00", "13:00")), "CLASSROOM_OCCUPIED"),
+                new Scenario(section.getId(), body(slot(ownClassroomId, "WEDNESDAY", "10:00", "12:00")), "INSTRUCTOR_BUSY"),
+                new Scenario(section.getId(), body(slot(ownClassroomId, "THURSDAY", "10:00", "12:00"), slot(ownClassroomId, "THURSDAY", "11:00", "13:00")), "SLOTS_OVERLAP"),
+                new Scenario(section.getId(), body(slot(occupiedClassroomId, "TUESDAY", "12:00", "14:00")), null),
+                new Scenario(section.getId(), body(slot(ownClassroomId, "THURSDAY", "10:00", "12:00"), slot(ownClassroomId, "THURSDAY", "12:00", "14:00")), null));
         for (var scenario : scenarios) {
-            var json = body(scenario);
-            var previewResult = preview(section.getId(), json).andExpect(status().isOk()).andReturn();
-            boolean hasConflicts = !previewResult.getResponse().getContentAsString().contains("\"conflicts\":[]");
-            if (hasConflicts) {
-                request(section.getId(), json).andExpect(status().is4xxClientError());
-            } else {
-                request(section.getId(), json).andExpect(status().isNoContent());
+            var previewBody = preview(scenario.sectionId(), scenario.json()).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            var requestResult = request(scenario.sectionId(), scenario.json()).andReturn().getResponse();
+            if (scenario.expectedType() == null) {
+                org.assertj.core.api.Assertions.assertThat(previewBody).contains("\"conflicts\":[]");
+                org.assertj.core.api.Assertions.assertThat(requestResult.getStatus()).isEqualTo(204);
                 entityManager.flush();
                 proposalRepository.deleteAll();
                 entityManager.flush();
                 entityManager.createQuery("update SubjectSection s set s.pendingApproval = false where s.id = :id")
-                        .setParameter("id", section.getId()).executeUpdate();
+                        .setParameter("id", scenario.sectionId()).executeUpdate();
                 entityManager.clear();
+            } else {
+                String firstType = com.jayway.jsonpath.JsonPath.read(previewBody, "$.conflicts[0].type");
+                String errorCode = com.jayway.jsonpath.JsonPath.read(requestResult.getContentAsString(), "$.code");
+                org.assertj.core.api.Assertions.assertThat(firstType).isEqualTo(scenario.expectedType());
+                org.assertj.core.api.Assertions.assertThat(errorCode).isEqualTo(errorCodeByType.get(firstType));
             }
         }
+    }
+
+    @Test
+    void sectionWithoutCycleIsConflictInRequestAndPreview() throws Exception {
+        var orphan = fixtures.section(fixtures.subject(), section.getTerm(), StatusType.ACTIVE, null);
+        fixtures.flushAndClear();
+        var json = body(slot(freeClassroomId, "FRIDAY", "10:00", "12:00"));
+        request(orphan.getId(), json)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SECTION_MODIFICATION_CYCLE_CLOSED"));
+        preview(orphan.getId(), json)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SECTION_MODIFICATION_CYCLE_CLOSED"));
     }
 
     @Test
