@@ -167,7 +167,7 @@ export function ContactConsentMatrix() {
             <Button size="sm" variant="ghost" onClick={() => setPending({})} disabled={saving}>
               Cancelar
             </Button>
-            <Button size="sm" variant="gradient" onClick={save} loading={saving}>
+            <Button size="sm" variant="primary" onClick={save} loading={saving}>
               Guardar
             </Button>
           </div>

@@ -271,7 +271,7 @@ export function Registrarse() {
               type="submit"
               disabled={enviando || !institutionId || !acceptedInstitutionalNotices}
               aria-describedby="register-submit-hint"
-              variant="gradient"
+              variant="primary"
               className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
             >
               {enviando ? 'Creando cuenta…' : 'Crear cuenta'}

@@ -116,7 +116,7 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
               </div>
             ) : (
               <div className="flex flex-col items-end gap-1">
-                <Button variant="gradient" onClick={() => inscribirseA(mesa.id)} disabled={inscribirme.isPending || bloqueadaPorOtra || ineligibilityText != null}>
+                <Button variant="primary" onClick={() => inscribirseA(mesa.id)} disabled={inscribirme.isPending || bloqueadaPorOtra || ineligibilityText != null}>
                   {bloqueadaPorOtra ? 'Ya estás inscripto a otro llamado' : inscribirme.isPending ? 'Inscribiendo…' : 'Inscribirme a este llamado'}
                 </Button>
                 {ineligibilityText && <span className="max-w-xs text-right text-size-11 font-medium text-danger">{ineligibilityText}</span>}

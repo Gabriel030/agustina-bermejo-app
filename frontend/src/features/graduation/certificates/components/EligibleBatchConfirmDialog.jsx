@@ -10,7 +10,7 @@ export function EligibleBatchConfirmDialog({ rows, pending, onCancel, onConfirm 
       title={issuanceTitle(count)}
       description={issuanceDescription(rows ?? [])}
       confirmLabel={count === 1 ? 'Confirmar y emitir' : `Confirmar y emitir ${count}`}
-      confirmVariant="gradient"
+      confirmVariant="primary"
       pending={pending}
       onConfirm={onConfirm}
     />
