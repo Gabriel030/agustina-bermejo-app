@@ -26,7 +26,7 @@ function StaffHome({ roleLabel, cards, upcoming }) {
             <p className="mt-0.5 text-size-13-5 font-medium text-ink-faint">{roleLabel}</p>
           </div>
           {pending.length > 0 && (
-            <Button asChild variant="gradient">
+            <Button asChild variant="primary">
               <Link to={pending[0].to}>Empezar por lo más urgente</Link>
             </Button>
           )}

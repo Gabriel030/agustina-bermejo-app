@@ -165,11 +165,11 @@ export function BroadcastWizard() {
           </Button>
         )}
         {state.step < 4 ? (
-          <Button type="button" variant="gradient" disabled={!canAdvance} onClick={() => goTo(state.step + 1)}>
+          <Button type="button" variant="primary" disabled={!canAdvance} onClick={() => goTo(state.step + 1)}>
             Siguiente
           </Button>
         ) : (
-          <Button type="button" variant="gradient" onClick={emptyAudience ? chooseAnotherSegment : () => setConfirming(true)}>
+          <Button type="button" variant="primary" onClick={emptyAudience ? chooseAnotherSegment : () => setConfirming(true)}>
             {emptyAudience ? 'Elegir otro segmento' : 'Confirmar envío'}
           </Button>
         )}
@@ -193,7 +193,7 @@ export function BroadcastWizard() {
             <Button variant="outline" autoFocus onClick={() => setConfirming(false)}>
               Volver
             </Button>
-            <Button variant="gradient" loading={create.isPending || confirm.isPending} onClick={confirmBroadcast}>
+            <Button variant="primary" loading={create.isPending || confirm.isPending} onClick={confirmBroadcast}>
               Enviar
             </Button>
           </DialogFooter>

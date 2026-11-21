@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { AUDIT_ACTION_CODES } from '@/lib/auditLabels';
 import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -74,7 +75,69 @@ describe('AuditLogPage', () => {
     await user.click(screen.getByRole('checkbox', { name: /Alta de personal/ }));
     await waitFor(() => expect(actions.at(-1)).not.toContain('STAFF_CREATED'));
     expect(actions.at(-1)).toContain('STUDENT_WITHDRAWN');
-    expect(actions.at(-1).length).toBe(23);
+    expect(actions.at(-1).length).toBe(AUDIT_ACTION_CODES.length - 1);
+  });
+
+  it('actor name filter sends actorName once the text has two characters', async () => {
+    const names = [];
+    server.use(
+      http.get(AUDIT_URL, ({ request }) => {
+        names.push(new URL(request.url).searchParams.get('actorName'));
+        return HttpResponse.json(pageOf([event(1)]));
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Baja voluntaria');
+    await user.type(screen.getByRole('searchbox', { name: 'Actor: nombre o ID' }), 'M');
+    await user.type(screen.getByRole('searchbox', { name: 'Actor: nombre o ID' }), 'a');
+    await waitFor(() => expect(names.at(-1)).toBe('Ma'));
+    expect(names).not.toContain('M');
+    expect(screen.queryByRole('searchbox', { name: 'ID de actor' })).not.toBeInTheDocument();
+  });
+
+  it('actor field sends actorPersonId when the text is only digits', async () => {
+    const params = [];
+    server.use(
+      http.get(AUDIT_URL, ({ request }) => {
+        params.push(Object.fromEntries(new URL(request.url).searchParams));
+        return HttpResponse.json(pageOf([event(1)]));
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Baja voluntaria');
+    await user.type(screen.getByRole('searchbox', { name: 'Actor: nombre o ID' }), '12');
+    await waitFor(() => expect(params.at(-1)).toMatchObject({ actorPersonId: '12' }));
+    expect(params.at(-1)).not.toHaveProperty('actorName');
+  });
+
+  it('clearing the actor field drops the actor filter from the query', async () => {
+    const names = [];
+    server.use(
+      http.get(AUDIT_URL, ({ request }) => {
+        names.push(new URL(request.url).searchParams.get('actorName'));
+        return HttpResponse.json(pageOf([event(1)]));
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Baja voluntaria');
+    await user.type(screen.getByRole('searchbox', { name: 'Actor: nombre o ID' }), 'Ma');
+    await waitFor(() => expect(names.at(-1)).toBe('Ma'));
+    const countBeforeClear = names.length;
+    await user.click(screen.getByRole('button', { name: /Limpiar filtros/ }));
+    await waitFor(() => expect(names.length).toBeGreaterThan(countBeforeClear));
+    expect(names.slice(countBeforeClear)).toEqual([null]);
+    expect(screen.getByRole('searchbox', { name: 'Actor: nombre o ID' })).toHaveValue('');
+  });
+
+  it('actor column shows the name and the id below it', async () => {
+    server.use(http.get(AUDIT_URL, () => HttpResponse.json(pageOf([event(1)]))));
+    renderPage();
+    const row = (await screen.findByText('Baja voluntaria')).closest('tr');
+    expect(within(row).getByText('Marcela Quiroga')).toBeInTheDocument();
+    expect(within(row).getByText('#7')).toBeInTheDocument();
   });
 
   it('role filter narrows the list', async () => {
@@ -156,6 +219,21 @@ describe('AuditLogPage', () => {
     expect(dialog).not.toHaveTextContent('abc123');
     expect(within(dialog).getByText('texto { roto')).toBeInTheDocument();
     expect(within(dialog).getByText(/no es JSON válido/)).toBeInTheDocument();
+  });
+
+  it('detail counts the changed fields and highlights the new value', async () => {
+    server.use(
+      http.get(AUDIT_URL, () =>
+        HttpResponse.json(pageOf([event(1, { beforeValue: '{"status":"ACTIVE","section":"A"}', afterValue: '{"status":"WITHDRAWN","section":"A"}' })])),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByText('Baja voluntaria'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('1 campo cambió')).toBeInTheDocument();
+    expect(within(dialog).getByText('WITHDRAWN')).toHaveClass('bg-warning-bg');
+    expect(within(dialog).getByText('ACTIVE')).not.toHaveClass('bg-warning-bg');
   });
 
   it('queries the platform endpoint when configured for it', async () => {

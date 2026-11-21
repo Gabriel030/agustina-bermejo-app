@@ -155,7 +155,7 @@ export function ReviewEmailChangePage({ mode = 'review' }) {
               title="¿No pediste cambiar tu email?"
               description="Si no fuiste vos, cancelá el cambio y tu cuenta seguirá con el mismo correo."
               action={
-                <Button variant="gradient" className="h-11 w-full" loading={submitting === 'cancel'} disabled={submitting !== null} onClick={() => submit('cancel')}>
+                <Button variant="primary" className="h-11 w-full" loading={submitting === 'cancel'} disabled={submitting !== null} onClick={() => submit('cancel')}>
                   Cancelar el cambio
                 </Button>
               }
@@ -182,7 +182,7 @@ export function ReviewEmailChangePage({ mode = 'review' }) {
                 ]}
               />
               <div className="flex w-full flex-col gap-2.5">
-                <Button variant="gradient" className="h-11 w-full" disabled={submitting !== null} onClick={() => setPhase('confirm')}>
+                <Button variant="primary" className="h-11 w-full" disabled={submitting !== null} onClick={() => setPhase('confirm')}>
                   Revisar y aprobar
                 </Button>
                 <Button variant="outline" className="h-11 w-full" loading={submitting === 'cancel'} disabled={submitting !== null} onClick={() => submit('cancel')}>
@@ -215,7 +215,7 @@ export function ReviewEmailChangePage({ mode = 'review' }) {
                 ]}
               />
               <div className="flex w-full flex-col gap-2.5">
-                <Button variant="gradient" className="h-11 w-full" loading={submitting === 'approve'} disabled={submitting !== null} onClick={() => submit('approve')}>
+                <Button variant="primary" className="h-11 w-full" loading={submitting === 'approve'} disabled={submitting !== null} onClick={() => submit('approve')}>
                   Aprobar cambio
                 </Button>
                 <Button variant="outline" className="h-11 w-full" disabled={submitting !== null} onClick={() => setPhase('review')}>

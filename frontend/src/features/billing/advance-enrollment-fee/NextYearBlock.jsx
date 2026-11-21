@@ -55,7 +55,7 @@ export function NextYearBlock({ enrollmentId }) {
             icon={Receipt}
             title={title}
             action={
-              <Button variant="gradient" size="lg" onClick={goToConfirmation}>
+              <Button variant="primary" size="lg" onClick={goToConfirmation}>
                 {year ? `Pagar la matrícula ${year}` : 'Pagar la matrícula'}
               </Button>
             }

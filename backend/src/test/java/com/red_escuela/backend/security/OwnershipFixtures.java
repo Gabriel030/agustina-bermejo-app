@@ -16,6 +16,9 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionApproval;
+import com.red_escuela.backend.graduation.certificate.regular.entity.OrganismKind;
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.config.TestSubjectCodes;
@@ -26,6 +29,10 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.announcement.entity.Announcement;
+import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
+import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
+import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
@@ -77,6 +84,7 @@ final class OwnershipFixtures {
     private Long courseSectionEnrollmentId;
     private Long sectionId;
     private Long attendanceId;
+    private Long announcementId;
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
@@ -93,6 +101,7 @@ final class OwnershipFixtures {
     private String ownerAdministrativeToken;
     private String strangerAdministrativeToken;
     private Long authorizationRequestId;
+    private Long certificateExceptionId;
     private Long closureConfirmSectionId;
     private Long closureObservationSectionId;
     private Long closureObservationEnrollmentId;
@@ -123,6 +132,9 @@ final class OwnershipFixtures {
             case COURSE_SECTION_ENROLLMENT_INSTRUCTOR -> courseSectionEnrollmentId;
             case COURSE_SECTION_INSTRUCTOR -> courseSectionId;
             case AUTHORIZATION_REQUEST -> authorizationRequestId;
+            case ATTENDANCE_STUDENT -> attendanceId;
+            case ANNOUNCEMENT_INSTRUCTOR -> announcementId;
+            case CERTIFICATE_EXCEPTION -> certificateExceptionId;
         };
     }
 
@@ -269,6 +281,8 @@ final class OwnershipFixtures {
         persistClosure(closureObservationSectionId);
         closureObservationEnrollmentId = persistClosureEnrollment(ownerStudent, programEnrollment, closureObservationSectionId);
         authorizationRequestId = persistAuthorizationRequest(ownerAdministrativePerson);
+        announcementId = persistAnnouncement(section, instructorPerson);
+        certificateExceptionId = persistCertificateException(ownerAdministrativePerson, ownerStudent, programEnrollment);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term, instructor);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
         programPlanOptionId = persistPlanOption(ownerPerson, program, null);
@@ -343,6 +357,14 @@ final class OwnershipFixtures {
         entityManager.persist(enrollment);
         entityManager.flush();
         return enrollment.getId();
+    }
+
+    private Long persistCertificateException(Person requester, Student student, ProgramEnrollment enrollment) {
+        CertificateExceptionApproval approval = CertificateExceptionApproval.request(RegularityKind.PROGRAM, enrollment.getId(), student.getId(),
+                OrganismKind.COURT, "Causa matriz", "El alumno presentó un reclamo formal ante el organismo", requester.getId(), LocalDateTime.now());
+        entityManager.persist(approval);
+        entityManager.flush();
+        return approval.getId();
     }
 
     private Long persistAuthorizationRequest(Person requester) {
@@ -461,6 +483,25 @@ final class OwnershipFixtures {
         entityManager.persist(option);
         entityManager.flush();
         return option.getId();
+    }
+
+    private Long persistAnnouncement(SubjectSection section, Person author) {
+        LocalDateTime now = LocalDateTime.now();
+        Announcement announcement = Announcement.builder()
+                .subjectSection(section)
+                .createdBy(author)
+                .title("Aviso matriz")
+                .body("Aviso de la matriz de autorizacion")
+                .category(AnnouncementCategory.REMINDER)
+                .audienceSpec(AudienceSpec.wholeSection())
+                .audienceLabel("Toda la comision")
+                .status(AnnouncementStatus.SENT)
+                .sentAt(now)
+                .createdAt(now)
+                .build();
+        entityManager.persist(announcement);
+        entityManager.flush();
+        return announcement.getId();
     }
 
     private Long persistNotification(Person recipient) {

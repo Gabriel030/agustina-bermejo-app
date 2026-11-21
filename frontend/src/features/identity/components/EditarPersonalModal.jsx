@@ -115,7 +115,7 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
           <Button variant="outline" onClick={confirming ? () => setConfirming(false) : handleClose} disabled={isPending}>
             {confirming ? 'Volver a editar' : 'Cancelar'}
           </Button>
-          <Button variant="gradient" onClick={handleConfirmar} disabled={isPending}>
+          <Button variant="primary" onClick={handleConfirmar} disabled={isPending}>
             {isPending ? 'Guardando...' : confirming ? 'Confirmar y enviar enlace' : 'Guardar cambios'}
           </Button>
         </DialogFooter>

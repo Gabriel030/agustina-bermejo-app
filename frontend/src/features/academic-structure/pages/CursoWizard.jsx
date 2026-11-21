@@ -145,7 +145,7 @@ function Paso1Datos({ state, dispatch }) {
       )}
 
       <div className="flex justify-end">
-        <Button variant="gradient" onClick={handleContinuar}>
+        <Button variant="primary" onClick={handleContinuar}>
           Continuar
         </Button>
       </div>
@@ -242,7 +242,7 @@ function Paso2Detalle({ state, dispatch }) {
         <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'datos' })}>
           Atrás
         </Button>
-        <Button variant="gradient" loading={createCourse.isPending} onClick={handleCrear}>
+        <Button variant="primary" loading={createCourse.isPending} onClick={handleCrear}>
           Crear curso
         </Button>
       </div>

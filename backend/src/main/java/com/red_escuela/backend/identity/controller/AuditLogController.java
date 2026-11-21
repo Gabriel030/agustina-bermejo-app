@@ -6,7 +6,7 @@ import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditLogFilter;
 import com.red_escuela.backend.shared.audit.AuditLogView;
 import com.red_escuela.backend.shared.pagination.PageResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,17 +27,18 @@ public class AuditLogController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "audit.read", legacyRoles = "ROLE_DIRECTOR")
     public PageResponse<AuditLogView> listAuditLog(@RequestParam(required = false) List<AuditAction> action,
                                                    @RequestParam(required = false) AuditEntityType entityType,
                                                    @RequestParam(required = false) Long entityId,
                                                    @RequestParam(required = false) Long actorPersonId,
+                                                   @RequestParam(required = false) String actorName,
                                                    @RequestParam(required = false) List<String> actorRole,
                                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                                                    @RequestParam(defaultValue = "0") int page,
                                                    @RequestParam(defaultValue = "50") int size) {
         return listAuditLogUseCase.list(
-                new AuditLogFilter(action, entityType, entityId, actorPersonId, actorRole, from, to), page, size);
+                new AuditLogFilter(action, entityType, entityId, actorPersonId, actorRole, from, to), actorName, page, size);
     }
 }

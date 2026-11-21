@@ -110,7 +110,7 @@ export function DocenteComisionDetalle() {
           <Link to={`/docente/mis-comisiones/${sectionId}/cierre${sufijoTipo}`}>Cierre</Link>
         </Button>
         {tab === 'avisos' && !cerrada && (
-          <Button variant="gradient" onClick={irANuevoAviso}>
+          <Button variant="primary" onClick={irANuevoAviso}>
             Nuevo aviso
           </Button>
         )}

@@ -246,7 +246,7 @@ export function GrantDiscountPage() {
               <Button asChild variant="outline">
                 <Link to={studentPath}>Cancelar</Link>
               </Button>
-              <Button type="submit" variant="gradient" loading={mutation.isPending}>
+              <Button type="submit" variant="primary" loading={mutation.isPending}>
                 {isDirector ? 'Otorgar descuento' : 'Enviar al director'}
               </Button>
             </div>

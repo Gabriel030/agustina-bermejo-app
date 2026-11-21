@@ -15,7 +15,7 @@ export function ModalMotivo({
   descripcion,
   placeholder = 'Motivo del rechazo',
   confirmarLabel = 'Rechazar',
-  confirmarVariant = 'gradient',
+  confirmarVariant = 'primary',
   maxLength = DEFAULT_MAX_REASON_LENGTH,
   minLength = 0,
   showCounter = false,

@@ -130,7 +130,7 @@ export function VerifyCertificate() {
               title="No pudimos verificar"
               message="Es un problema de conexión. Probá de nuevo."
             >
-              <Button type="button" variant="gradient" className="mt-3 h-11 px-[18px]" onClick={() => query.refetch()}>
+              <Button type="button" variant="primary" className="mt-3 h-11 px-[18px]" onClick={() => query.refetch()}>
                 Reintentar
               </Button>
             </CertificateVerdict>

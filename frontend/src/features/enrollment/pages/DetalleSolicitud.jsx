@@ -224,7 +224,7 @@ export function DetalleSolicitud() {
                 </Button>
               </div>
             ) : (
-              <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${invoice.id}/seleccion`, { state: originState })}>
+              <Button variant="primary" onClick={() => navigate(`/alumno/pagos/${invoice.id}/seleccion`, { state: originState })}>
                 Pagar matrícula
               </Button>
             )}

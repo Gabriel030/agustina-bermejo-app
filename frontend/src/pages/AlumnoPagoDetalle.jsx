@@ -104,7 +104,7 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                     {pagable && (
                       <Button
                         size="sm"
-                        variant="gradient"
+                        variant="primary"
                         onClick={(event) => {
                           event.stopPropagation();
                           navigate(`/alumno/pagos/${inv.id}/seleccion`, { state: originState });

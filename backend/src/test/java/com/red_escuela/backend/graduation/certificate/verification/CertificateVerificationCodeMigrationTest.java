@@ -135,8 +135,9 @@ class CertificateVerificationCodeMigrationTest {
             migrate(dataSource);
             jdbc.execute("alter table graduation_certificate disable trigger all");
             String insert = "insert into graduation_certificate (code, kind, program_enrollment_id, student_id, status, graduation_date, "
-                    + "issued_at, issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path) values (?, 'PROGRAM', ?, 1, 'REVOKED', "
-                    + "'2026-07-15', now(), 1, '{}'::jsonb, 'B', repeat('a', 64), 'x.pdf')";
+                    + "issued_at, issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path, revoked_at, revoked_by_id, revocation_reason) "
+                    + "values (?, 'PROGRAM', ?, 1, 'REVOKED', '2026-07-15', now(), 1, '{}'::jsonb, 'B', repeat('a', 64), 'x.pdf', "
+                    + "now(), 1, 'motivo de prueba')";
             jdbc.update(insert, "7QK3M9XH2VBN4T8R5W6YZ0A1B2", 1);
 
             assertThatThrownBy(() -> jdbc.update(insert, "7QK3M9XH2VBN4T8R5W6YZ0A1B2", 2))

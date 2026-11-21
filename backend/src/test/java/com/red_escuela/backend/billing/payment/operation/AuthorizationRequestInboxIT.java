@@ -75,7 +75,6 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
         assertThat(missing.getStatus()).isEqualTo(404);
         assertThat(foreign.getContentAsString()).isEmpty();
         assertThat(missing.getContentAsString()).isEmpty();
-        assertThat(foreign.getContentAsString()).doesNotContain("code");
     }
 
     private int decisionStatus(String action, long requestId, String token) throws Exception {

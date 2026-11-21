@@ -86,7 +86,7 @@ export function ChangeSectionSheet({ row, onClose, onSubmit, pending, serverErro
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="button" variant="gradient" disabled={!target} onClick={() => setStep('confirm')}>
+              <Button type="button" variant="primary" disabled={!target} onClick={() => setStep('confirm')}>
                 Continuar
               </Button>
             </div>
@@ -132,7 +132,7 @@ export function ChangeSectionSheet({ row, onClose, onSubmit, pending, serverErro
               <Button type="button" variant="outline" disabled={pending} onClick={() => setStep('choose')}>
                 Volver
               </Button>
-              <Button type="button" variant="gradient" loading={pending} onClick={submit}>
+              <Button type="button" variant="primary" loading={pending} onClick={submit}>
                 Confirmar el cambio
               </Button>
             </div>

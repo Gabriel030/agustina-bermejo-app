@@ -210,7 +210,7 @@ function CarreraEditarDatosForm({ id, program }) {
             >
               Cancelar
             </Button>
-            <Button variant="gradient" loading={updateProgram.isPending} onClick={handleGuardar}>
+            <Button variant="primary" loading={updateProgram.isPending} onClick={handleGuardar}>
               Guardar cambios
             </Button>
           </div>

@@ -28,7 +28,7 @@ export function StudentDiscountsSection({ studentId, enrollment, roleBase }) {
           <h3 id="student-discounts-heading" className="font-heading text-base font-semibold text-ink">Descuentos</h3>
           <InfoTip>No se acumulan: en cada cuota se aplica el descuento que deja el menor precio. Si uno pierde ese mes, no se corre al siguiente.</InfoTip>
         </div>
-        <Button asChild variant="gradient" size="sm">
+        <Button asChild variant="primary" size="sm">
           <Link to={grantPath}>
             <Plus aria-hidden="true" />
             {grantLabel}

@@ -160,7 +160,7 @@ export function AlumnoMateriaDetalle() {
             <Button variant="outline" className="rounded-xl" onClick={() => setModalBajaAbierto(false)}>
               Cancelar
             </Button>
-            <Button variant="gradient" onClick={confirmarBaja} disabled={darseDeBaja.isPending}>
+            <Button variant="primary" onClick={confirmarBaja} disabled={darseDeBaja.isPending}>
               {darseDeBaja.isPending ? 'Dando de baja…' : 'Sí, darme de baja'}
             </Button>
           </DialogFooter>

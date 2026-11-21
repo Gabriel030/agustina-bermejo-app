@@ -487,17 +487,17 @@ export function AdministrativoSubjects() {
 
   const accionBoton =
     section === 'carreras' ? (
-      <Button variant="gradient" onClick={() => navigate('/administrativo/gestion-academica/carreras/nueva')}>
+      <Button variant="primary" onClick={() => navigate('/administrativo/gestion-academica/carreras/nueva')}>
         <Plus className="mr-2 h-4 w-4" />
         Nueva carrera
       </Button>
     ) : section === 'cursos' ? (
-      <Button variant="gradient" onClick={() => navigate('/administrativo/gestion-academica/cursos/nueva')}>
+      <Button variant="primary" onClick={() => navigate('/administrativo/gestion-academica/cursos/nueva')}>
         <Plus className="mr-2 h-4 w-4" />
         Nuevo curso
       </Button>
     ) : section === 'oferta' ? null : (
-      <Button variant="gradient" onClick={() => navigate('/administrativo/gestion-academica/nueva')}>
+      <Button variant="primary" onClick={() => navigate('/administrativo/gestion-academica/nueva')}>
         <Plus className="mr-2 h-4 w-4" />
         Nueva materia
       </Button>
