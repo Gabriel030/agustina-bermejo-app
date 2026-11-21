@@ -26,6 +26,7 @@ public class RevokeCalendarFeedTokenTransaction {
 
     @Transactional
     public void revoke(Long studentId) {
+        repository.lockStudentFeedTokens(RotateCalendarFeedTokenTransaction.LOCK_NAMESPACE, studentId);
         repository.findByStudentIdAndRevokedAtIsNull(studentId).ifPresent(active -> {
             active.setRevokedAt(LocalDateTime.now(clock));
             repository.save(active);

@@ -22,4 +22,8 @@ public interface CalendarFeedTokenRepository extends JpaRepository<CalendarFeedT
             + "and (t.lastUsedAt is null or t.lastUsedAt < :staleBefore)")
     int touchLastUsedAt(@Param("id") Long id, @Param("now") LocalDateTime now,
                         @Param("staleBefore") LocalDateTime staleBefore);
+
+    @Query(value = "select 1 from (select pg_advisory_xact_lock(:namespace, cast(:studentId as integer))) as lock",
+            nativeQuery = true)
+    int lockStudentFeedTokens(@Param("namespace") int namespace, @Param("studentId") Long studentId);
 }

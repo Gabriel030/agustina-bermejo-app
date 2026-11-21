@@ -130,4 +130,56 @@ class IcsCalendarWriterTest {
         assertThat(ics).contains("DESCRIPTION:Anatomía\\nComisión A\r\n");
         assertThat(ics).doesNotContain("ATTENDEE").doesNotContain("ORGANIZER");
     }
+
+    private static final String HOSTILE = "x\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nATTENDEE:mailto:a@b.c"
+            + "\u2028END:VEVENT\u2029BEGIN:VEVENT\u0085ORGANIZER:mailto:a@b.c";
+
+    private static CalendarEvent hostileEvent(String title, String subject, String section, String place, String reason) {
+        return new CalendarEvent("class-COURSE-7-2026-11-23-18:00", CalendarEventType.CLASS, LocalDate.of(2026, 11, 23),
+                LocalTime.of(18, 0), LocalTime.of(20, 0), title, subject, section, place, CalendarEventStatus.SCHEDULED, reason, null);
+    }
+
+    private static void assertStructureIsIntact(String ics) {
+        assertThat(ics.lines().filter("BEGIN:VEVENT"::equals).count()).isEqualTo(1);
+        assertThat(ics.lines().filter("END:VEVENT"::equals).count()).isEqualTo(1);
+        assertThat(ics.lines().filter(line -> line.startsWith("ATTENDEE") || line.startsWith("ORGANIZER"))).isEmpty();
+        assertThat(ics).doesNotContain("\u0085").doesNotContain("\u2028").doesNotContain("\u2029");
+    }
+
+    @Test
+    void hostileLocationCannotInjectLinesOrEvents() {
+        String ics = render(hostileEvent("Clase", "Anatomía", "Comisión A", HOSTILE, null));
+
+        assertStructureIsIntact(ics);
+        assertThat(ics.replace("\r\n ", "")).contains("LOCATION:x\\nEND:VEVENT\\nBEGIN:VEVENT\\nATTENDEE:mailto:a@b.c\\nEND:VEVENT");
+    }
+
+    @Test
+    void hostileDescriptionPartsCannotInjectLinesOrEvents() {
+        assertStructureIsIntact(render(hostileEvent("Clase", HOSTILE, "Comisión A", "Aula 3", null)));
+        assertStructureIsIntact(render(hostileEvent("Clase", "Anatomía", HOSTILE, "Aula 3", null)));
+        assertStructureIsIntact(render(hostileEvent("Clase", "Anatomía", "Comisión A", "Aula 3", HOSTILE)));
+    }
+
+    @Test
+    void hostileSummaryWithUnicodeLineSeparatorsCannotInjectLinesOrEvents() {
+        assertStructureIsIntact(render(hostileEvent(HOSTILE, "Anatomía", "Comisión A", "Aula 3", null)));
+    }
+
+    @Test
+    void unicodeLineSeparatorsAreEscapedAsNewlines() {
+        assertThat(IcsCalendarWriter.escapeText("a\u0085b\u2028c\u2029d")).isEqualTo("a\\nb\\nc\\nd");
+    }
+
+    @Test
+    void otherControlCharactersAreDropped() {
+        assertThat(IcsCalendarWriter.escapeText("a\u0000b\tc\u007fd\u009fe\u001be")).isEqualTo("abcdee");
+    }
+
+    @Test
+    void nullTitleIsWrittenAsEmptySummary() {
+        String ics = render(hostileEvent(null, "Anatomía", "Comisión A", "Aula 3", null));
+
+        assertThat(ics).contains("SUMMARY:\r\n");
+    }
 }

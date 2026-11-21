@@ -104,6 +104,9 @@ public class IcsCalendarWriter {
     }
 
     static String escapeText(String value) {
+        if (value == null) {
+            return "";
+        }
         StringBuilder escaped = new StringBuilder(value.length() + 8);
         for (int index = 0; index < value.length(); index++) {
             char current = value.charAt(index);
@@ -111,7 +114,7 @@ public class IcsCalendarWriter {
                 case '\\' -> escaped.append("\\\\");
                 case ';' -> escaped.append("\\;");
                 case ',' -> escaped.append("\\,");
-                case '\n' -> escaped.append("\\n");
+                case '\n', '\u0085', '\u2028', '\u2029' -> escaped.append("\\n");
                 case '\r' -> {
                     if (index + 1 < value.length() && value.charAt(index + 1) == '\n') {
                         index++;
@@ -119,7 +122,7 @@ public class IcsCalendarWriter {
                     escaped.append("\\n");
                 }
                 default -> {
-                    if (current >= 0x20 && current != 0x7f) {
+                    if (!Character.isISOControl(current)) {
                         escaped.append(current);
                     }
                 }

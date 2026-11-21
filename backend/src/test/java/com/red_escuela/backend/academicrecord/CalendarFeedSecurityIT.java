@@ -371,6 +371,20 @@ class CalendarFeedSecurityIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void ipBlockedByMissesStillServesValidTokensButKeepsRejectingMisses() throws Exception {
+        Actor owner = newStudent();
+        String token = rotateToken(owner);
+        String attacker = uniqueClient();
+        for (int attempt = 0; attempt < 40; attempt++) {
+            fetchFeed(UNKNOWN_TOKEN, attacker);
+        }
+        fetchFeed(UNKNOWN_TOKEN, attacker).andExpect(status().isTooManyRequests());
+
+        fetchFeed(token, attacker).andExpect(status().isOk());
+        fetchFeed(UNKNOWN_TOKEN, attacker).andExpect(status().isTooManyRequests());
+    }
+
+    @Test
     void validTokenFetchesDoNotConsumeTheClientMissBudget() throws Exception {
         Actor owner = newStudent();
         String token = rotateToken(owner);

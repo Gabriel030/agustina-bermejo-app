@@ -24,11 +24,11 @@ public class PublicCalendarFeedTokenResolver {
     }
 
     public ActiveCalendarFeedToken resolveStudentToken(String rawToken, String clientAddress) {
-        rateLimiter.assertClientIsNotBlocked(clientAddress);
         String candidate = CalendarFeedTokenFactory.isWellFormed(rawToken) ? rawToken : NEVER_ISSUED_TOKEN;
         String tokenHash = CalendarFeedTokenHasher.hash(candidate);
         ActiveCalendarFeedToken active = tokenReader.findActiveByHash(tokenHash).orElse(null);
         if (active == null) {
+            rateLimiter.assertClientIsNotBlocked(clientAddress);
             rateLimiter.chargeMiss(clientAddress);
             throw new CalendarFeedNotFoundException();
         }

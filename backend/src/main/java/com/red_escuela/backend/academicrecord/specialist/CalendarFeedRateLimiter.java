@@ -2,6 +2,8 @@ package com.red_escuela.backend.academicrecord.specialist;
 
 import com.red_escuela.backend.shared.exception.RequestRateLimitExceededException;
 import com.red_escuela.backend.shared.ratelimit.KeyedRateLimiter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,11 +15,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 public class CalendarFeedRateLimiter {
 
+    private static final Logger log = LoggerFactory.getLogger(CalendarFeedRateLimiter.class);
     private static final Duration IDLE_WINDOW = Duration.ofMinutes(30);
+    private static final Duration SATURATION_WARNING_INTERVAL = Duration.ofMinutes(10);
 
     private final KeyedRateLimiter tokenLimiter;
     private final KeyedRateLimiter missLimiter;
@@ -25,6 +30,7 @@ public class CalendarFeedRateLimiter {
     private final int missCost;
     private final int maxTrackedKeys;
     private final Clock clock;
+    private final AtomicReference<Instant> lastSaturationWarning = new AtomicReference<>();
 
     public CalendarFeedRateLimiter(
             Clock clock,
@@ -57,6 +63,9 @@ public class CalendarFeedRateLimiter {
 
     public void chargeMiss(String clientAddress) {
         String key = keyOf(clientAddress);
+        if (!missLimiter.canTrack(key)) {
+            warnAboutSaturatedMissKeys();
+        }
         for (int attempt = 0; attempt < missCost; attempt++) {
             KeyedRateLimiter.Decision decision = missLimiter.tryConsume(key);
             if (!decision.allowed()) {
@@ -86,10 +95,23 @@ public class CalendarFeedRateLimiter {
             Instant now = clock.instant();
             blockedUntilByClient.values().removeIf(existing -> !existing.isAfter(now));
             if (blockedUntilByClient.size() >= maxTrackedKeys) {
+                warnAboutSaturatedMissKeys();
                 return;
             }
         }
         blockedUntilByClient.merge(key, blockedUntil, (current, candidate) -> candidate.isAfter(current) ? candidate : current);
+    }
+
+    private void warnAboutSaturatedMissKeys() {
+        Instant now = clock.instant();
+        Instant previous = lastSaturationWarning.get();
+        if (previous != null && previous.plus(SATURATION_WARNING_INTERVAL).isAfter(now)) {
+            return;
+        }
+        if (lastSaturationWarning.compareAndSet(previous, now)) {
+            log.warn("Calendar feed miss tracking reached {} keys: new clients share the overflow bucket and IP blocking may not apply",
+                    maxTrackedKeys);
+        }
     }
 
     private static Duration secondsUntil(Instant now, Instant target) {

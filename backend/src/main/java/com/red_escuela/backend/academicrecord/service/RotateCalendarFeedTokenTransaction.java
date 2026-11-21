@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 @Service
 public class RotateCalendarFeedTokenTransaction {
 
+    static final int LOCK_NAMESPACE = 0x0CA1FEED;
+
     private final CalendarFeedTokenRepository repository;
     private final CalendarFeedTokenFactory tokenFactory;
     private final CalendarFeedLocator locator;
@@ -35,6 +37,7 @@ public class RotateCalendarFeedTokenTransaction {
 
     @Transactional
     public CalendarFeedTokenResponse rotate(Long studentId) {
+        repository.lockStudentFeedTokens(LOCK_NAMESPACE, studentId);
         LocalDateTime now = LocalDateTime.now(clock);
         repository.findByStudentIdAndRevokedAtIsNull(studentId).ifPresent(previous -> {
             previous.setRevokedAt(now);

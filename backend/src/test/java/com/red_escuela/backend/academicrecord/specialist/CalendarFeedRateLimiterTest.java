@@ -2,8 +2,14 @@ package com.red_escuela.backend.academicrecord.specialist;
 
 import com.red_escuela.backend.shared.exception.RequestRateLimitExceededException;
 import com.red_escuela.backend.shared.time.MutableClock;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 
@@ -81,5 +87,42 @@ class CalendarFeedRateLimiterTest {
 
         assertThatThrownBy(() -> limiter.assertClientIsNotBlocked("2001:db8:1:2:ffff::9"))
                 .isInstanceOf(RequestRateLimitExceededException.class);
+    }
+
+    @Test
+    void saturatedMissKeysWarnOnlyOncePerInterval() {
+        CalendarFeedRateLimiter small = new CalendarFeedRateLimiter(clock, 3, 1, 6, 6, 1, 2);
+        Logger logger = (Logger) LoggerFactory.getLogger(CalendarFeedRateLimiter.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            for (int index = 0; index < 10; index++) {
+                small.chargeMiss("203.0.113." + (10 + index));
+            }
+            assertThat(appender.list).filteredOn(event -> event.getLevel() == Level.WARN).hasSize(1);
+
+            clock.advance(Duration.ofMinutes(11));
+            small.chargeMiss("203.0.113.99");
+
+            assertThat(appender.list).filteredOn(event -> event.getLevel() == Level.WARN).hasSize(2);
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @Test
+    void unsaturatedMissKeysDoNotWarn() {
+        Logger logger = (Logger) LoggerFactory.getLogger(CalendarFeedRateLimiter.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            limiter.chargeMiss("203.0.113.50");
+
+            assertThat(appender.list).isEmpty();
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 }
