@@ -1,6 +1,5 @@
 import { useMesas } from '@/features/evaluation';
-import { useTerminos } from '@/features/academic-structure';
-import { useHolidays } from '@/features/academic-structure/hooks/useHolidays';
+import { useHolidays, useTerminos } from '@/features/academic-structure';
 import { toCard } from '@/features/workspace/lib/homeCards';
 import { upcomingEvents, upcomingWindow } from '@/features/workspace/lib/upcomingEvents';
 

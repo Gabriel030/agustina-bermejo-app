@@ -1,4 +1,4 @@
-import { TERM_TYPE_LABELS } from '@/features/academic-structure/lib/terms';
+import { TERM_TYPE_LABELS } from '@/features/academic-structure';
 
 const WINDOW_DAYS = 30;
 const MAX_EVENTS = 5;

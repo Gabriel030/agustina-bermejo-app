@@ -18,13 +18,33 @@ const API = 'http://localhost:8080';
 const daysAgo = (days) => new Date(Date.now() - days * 86400000).toISOString();
 const tomorrow = () => new Date(Date.now() + 86400000).toISOString();
 
+const inDays = (days) => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+const at = (date) => `${date}T12:00:00.000Z`;
+const holiday = (id, date, name) => ({ id, date, name, type: 'NATIONAL', description: name });
+const term = (id, overrides = {}) => ({
+  id,
+  type: 'FIRST_SEMESTER',
+  status: 'ACTIVE',
+  year: 2026,
+  description: null,
+  enrollmentOpen: false,
+  enrollmentOverride: null,
+  startDate: at(inDays(200)),
+  endDate: at(inDays(260)),
+  enrollmentStart: at(inDays(200)),
+  enrollmentEnd: at(inDays(201)),
+  ...overrides,
+});
+
 const SOURCES = {
+  '/holidays': () => contractList('/holidays', []),
+  '/terms': () => contractList('/terms', []),
   '/graduation-requests': () => contractList('/graduation-requests', [{ requestedAt: daysAgo(9) }, { requestedAt: daysAgo(2) }]),
   '/academic-offering-cycles': () => contractList('/academic-offering-cycles', [{ submittedAt: daysAgo(7) }]),
   '/section-evaluation-configs': () => contractList('/section-evaluation-configs', [{ submittedAt: daysAgo(3) }]),
   '/director-approval-requests': () => contractList('/director-approval-requests', [{ requestedAt: daysAgo(4) }]),
   '/commission-closures': () => contractList('/commission-closures', [{ statusDate: daysAgo(6) }]),
-  '/exam-boards': () => contractList('/exam-boards', [{ examDate: tomorrow(), status: 'SCHEDULED' }]),
+  '/exam-boards': () => contractList('/exam-boards', [{ id: 1, examDate: tomorrow(), status: 'SCHEDULED', subjectName: 'Didáctica' }]),
   '/authorization-requests': () => contractList('/authorization-requests', [{ requestedAt: daysAgo(5), amount: null }]),
   '/regular-certificate-requests': () => contractList('/regular-certificate-requests', [{ requestedAt: daysAgo(3) }]),
   '/program-enrollment-applications/pending': () => contractList('/program-enrollment-applications/pending', [{ requestedAt: daysAgo(5), admissionInvoice: null }]),
@@ -32,16 +52,18 @@ const SOURCES = {
   '/attendance/change-requests': () => contractList('/attendance/change-requests', [{ createdAt: daysAgo(1) }]),
 };
 
-function serve({ billing = 'FULL', empty = false, failing = [] } = {}) {
+function serve({ billing = 'FULL', empty = false, failing = [], boards, holidays = [], terms = [] } = {}) {
   const handlers = Object.entries(SOURCES).map(([path, build]) =>
     http.get(`${API}${path}`, () => {
       if (failing.includes(path)) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+      if (path === '/holidays' && !empty) return HttpResponse.json(contractList(path, holidays));
+      if (path === '/terms' && !empty) return HttpResponse.json(contractList(path, terms));
+      if (path === '/exam-boards' && boards) return HttpResponse.json(contractList(path, boards));
       return HttpResponse.json(empty ? contractList(path, []) : build());
     }),
   );
   server.use(http.get(`${API}/me/modules`, () => HttpResponse.json(contractObject('/me/modules', { billing: { mode: billing } }))), ...handlers);
 }
-
 async function readyCard(title) {
   return waitFor(() => {
     const element = screen.getByRole('article', { name: title });
@@ -98,6 +120,49 @@ describe('StaffHome', () => {
     renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
     expect(await screen.findByText('Todo al día')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Empezar por lo más urgente' })).not.toBeInTheDocument();
+  });
+
+  it('upcoming card lists at most five events of the next 30 days in date order', async () => {
+    serve({
+      boards: [],
+      holidays: [
+        ...[1, 2, 3, 4, 5, 6].map((days) => holiday(days, inDays(days), `Feriado ${days}`)),
+        holiday(7, inDays(45), 'Feriado lejano'),
+      ],
+      terms: [term(8, { startDate: at(inDays(90)), endDate: at(inDays(120)), enrollmentStart: at(inDays(91)), enrollmentEnd: at(inDays(92)) })],
+    });
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    const upcoming = await readyCard('Próximos 30 días');
+    expect(within(upcoming).getByText('5')).toBeInTheDocument();
+    expect(within(upcoming).getByText('Feriado 1')).toBeInTheDocument();
+    expect(within(upcoming).getByText('Feriado 5')).toBeInTheDocument();
+    expect(within(upcoming).queryByText('Feriado 6')).not.toBeInTheDocument();
+    expect(within(upcoming).queryByText('Feriado lejano')).not.toBeInTheDocument();
+    expect(within(upcoming).queryByText(/Inicio del período/)).not.toBeInTheDocument();
+  });
+
+  it('upcoming card shows a specific empty text when nothing falls in the window', async () => {
+    serve({ boards: [], holidays: [holiday(1, inDays(45), 'Feriado lejano')] });
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    const upcoming = await readyCard('Próximos 30 días');
+    expect(within(upcoming).getByText('Sin eventos en los próximos 30 días.')).toBeInTheDocument();
+    expect(within(upcoming).queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('upcoming card reports a failed source instead of an empty calendar', async () => {
+    serve({ failing: ['/holidays'] });
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No pudimos cargar los próximos eventos');
+    expect(alert.closest('article')).toHaveAccessibleName('Próximos 30 días');
+    expect(screen.queryByText(/Sin eventos/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Todo al día')).not.toBeInTheDocument();
+  });
+
+  it('administrativo sees the upcoming events card', async () => {
+    serve({ holidays: [holiday(1, inDays(2), 'Feriado de prueba')] });
+    renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
+    expect(await readyCard('Próximos 30 días')).toHaveTextContent('Feriado de prueba');
   });
 
   it('administrativo does not see director cards', async () => {
