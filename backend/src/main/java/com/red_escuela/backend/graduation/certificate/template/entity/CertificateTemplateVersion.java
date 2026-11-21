@@ -129,7 +129,7 @@ public class CertificateTemplateVersion {
     public CertificateTemplateContent content() {
         return new CertificateTemplateContent(instituteName, logoImageId, title, introText, approvalText, dictationText, qrLabel,
                 footerLegend, signer(firstSignerName, firstSignerRole, firstSignerSignatureImageId),
-                signer(secondSignerName, secondSignerRole, secondSignerSignatureImageId));
+                signer(secondSignerName, secondSignerRole, secondSignerSignatureImageId), null, null);
     }
 
     public void publishAs(int number, Long actorId, String actorName, LocalDateTime now) {

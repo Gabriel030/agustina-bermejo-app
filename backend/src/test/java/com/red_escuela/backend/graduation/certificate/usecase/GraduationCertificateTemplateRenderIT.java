@@ -124,7 +124,7 @@ class GraduationCertificateTemplateRenderIT extends AbstractIntegrationTest {
     private void publishNewVersion(String title, String signerName) {
         saveDraft.save(GraduationCertificateKind.PROGRAM, new CertificateTemplateContent("INSTITUTO NUEVO", null, title, "Por la presente",
                 "ha aprobado {titleKind}", "Dictada por la institución", "VALIDÁ ESTE DOCUMENTO", "Leyenda nueva {registryNumber}",
-                new CertificateTemplateSigner(signerName, "Rectora", null), new CertificateTemplateSigner("Luis Firmante", "Secretario", null)));
+                new CertificateTemplateSigner(signerName, "Rectora", null), new CertificateTemplateSigner("Luis Firmante", "Secretario", null), null, null));
         publish.publish(GraduationCertificateKind.PROGRAM);
         entityManager.flush();
     }
