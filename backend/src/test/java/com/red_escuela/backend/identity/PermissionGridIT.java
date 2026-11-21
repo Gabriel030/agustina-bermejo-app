@@ -149,7 +149,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void onlyTheReviewedPermissionsAreFixedToTheDirector() {
+    void noPermissionIsFixedToTheDirectorUntilMoneyModulesAreSeeded() {
         List<String> fixed = jdbcTemplate.queryForList("select code from permission where fixed_to_director order by code", String.class);
         assertThat(fixed).isEmpty();
         Integer delegated = jdbcTemplate.queryForObject("select count(*) from role_permission rp join permission p on p.id = rp.permission_id where p.fixed_to_director", Integer.class);

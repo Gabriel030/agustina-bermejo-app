@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class PermissionSnapshotCache {
@@ -13,6 +14,7 @@ public class PermissionSnapshotCache {
 
     private final PermissionPolicyStore store;
     private final Clock clock;
+    private final AtomicLong generation = new AtomicLong();
     private volatile Entry entry;
 
     public PermissionSnapshotCache(PermissionPolicyStore store, Clock clock) {
@@ -31,13 +33,17 @@ public class PermissionSnapshotCache {
             if (held != null && now.isBefore(held.expiresAt())) {
                 return held.snapshot();
             }
+            long loadedAt = generation.get();
             Entry fresh = new Entry(store.load(), now.plus(TTL));
-            entry = fresh;
+            if (generation.get() == loadedAt) {
+                entry = fresh;
+            }
             return fresh.snapshot();
         }
     }
 
     public void invalidate() {
+        generation.incrementAndGet();
         entry = null;
     }
 
