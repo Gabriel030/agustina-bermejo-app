@@ -1,0 +1,99 @@
+package com.red_escuela.backend.graduation.certificate.template.specialist;
+
+import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateContent;
+import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateSigner;
+import com.red_escuela.backend.graduation.certificate.template.exception.TemplateIncompleteException;
+import com.red_escuela.backend.graduation.certificate.template.exception.TemplateUnknownMarkerException;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Component
+public class CertificateTemplateContentRules {
+
+    static final Set<String> ALLOWED_MARKERS = Set.of("holder", "documentType", "documentNumber", "titleKind", "titleName", "hours",
+            "graduationDate", "issuedOn", "registryNumber");
+
+    private static final Pattern MARKER = Pattern.compile("\\{([^{}]*)}");
+
+    public CertificateTemplateContent normalize(CertificateTemplateContent content) {
+        return new CertificateTemplateContent(
+                blankToNull(content.instituteName()),
+                content.logoImageId(),
+                blankToNull(content.title()),
+                blankToNull(content.introText()),
+                blankToNull(content.approvalText()),
+                blankToNull(content.dictationText()),
+                blankToNull(content.qrLabel()),
+                blankToNull(content.footerLegend()),
+                normalize(content.firstSigner()),
+                normalize(content.secondSigner()));
+    }
+
+    public void requireKnownMarkers(CertificateTemplateContent content) {
+        List<String> texts = new ArrayList<>(List.of(
+                orEmpty(content.instituteName()), orEmpty(content.title()), orEmpty(content.introText()),
+                orEmpty(content.approvalText()), orEmpty(content.dictationText()), orEmpty(content.qrLabel()),
+                orEmpty(content.footerLegend())));
+        for (CertificateTemplateSigner signer : Arrays.asList(content.firstSigner(), content.secondSigner())) {
+            if (signer != null) {
+                texts.add(orEmpty(signer.name()));
+                texts.add(orEmpty(signer.role()));
+            }
+        }
+        for (String text : texts) {
+            Matcher matcher = MARKER.matcher(text);
+            while (matcher.find()) {
+                if (!ALLOWED_MARKERS.contains(matcher.group(1))) {
+                    throw new TemplateUnknownMarkerException(matcher.group(1));
+                }
+            }
+            String remainder = MARKER.matcher(text).replaceAll("");
+            int stray = Math.max(remainder.indexOf('{'), remainder.indexOf('}'));
+            if (stray >= 0) {
+                throw new TemplateUnknownMarkerException(String.valueOf(remainder.charAt(stray)));
+            }
+        }
+    }
+
+    public void requirePublishable(CertificateTemplateContent content) {
+        require(content.title(), "el título");
+        requireSigner(content.firstSigner(), "del primer firmante");
+        requireSigner(content.secondSigner(), "del segundo firmante");
+    }
+
+    private void requireSigner(CertificateTemplateSigner signer, String label) {
+        require(signer == null ? null : signer.name(), "el nombre " + label);
+        require(signer.role(), "el cargo " + label);
+    }
+
+    private void require(String value, String label) {
+        if (value == null || value.isBlank()) {
+            throw new TemplateIncompleteException(label);
+        }
+    }
+
+    private CertificateTemplateSigner normalize(CertificateTemplateSigner signer) {
+        if (signer == null) {
+            return null;
+        }
+        String name = blankToNull(signer.name());
+        String role = blankToNull(signer.role());
+        return name == null && role == null && signer.signatureImageId() == null
+                ? null
+                : new CertificateTemplateSigner(name, role, signer.signatureImageId());
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.strip();
+    }
+
+    private String orEmpty(String value) {
+        return value == null ? "" : value;
+    }
+}

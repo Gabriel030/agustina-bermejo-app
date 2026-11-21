@@ -227,9 +227,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_NOT_REGULAR` | no | `StudentNotRegularException` | evaluation |
 | `SUBJECT_NOT_IN_PROGRAM_PLAN` | no | `SubjectNotInProgramPlanException` | enrollment |
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
-| `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_SUBJECT_REQUIRED` | no | `TemplateSubjectRequiredException` | notification |
-| `TEMPLATE_UNKNOWN_MARKER` | no | `TemplateUnknownMarkerException` | graduation |
 | `TERM_DATES_REQUIRED` | no | `TermDatesRequiredException` | shared |
 | `TERM_ENROLLMENT_WINDOW_REQUIRED` | no | `TermEnrollmentWindowRequiredException` | shared |
 | `UNKNOWN_AUDIENCE_SEGMENT` | no | `UnknownAudienceSegmentException` | announcement |
@@ -470,6 +468,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADE_ITEM_NOT_RECOVERABLE` | no | `GradeItemNotRecoverableException` | evaluation |
 | `GRADE_ITEM_PUBLISHED_LOCKED` | no | `GradeItemPublishedLockedException` | evaluation |
 | `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
+| `GRADUATION_CERTIFICATE_BLOCKED_BY_DEBT` | no | `GraduationCertificateBlockedByDebtException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_AVAILABLE` | no | `GraduationCertificateNotAvailableException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_REVOCABLE` | no | `GraduationCertificateNotRevocableException` | graduation |
@@ -641,8 +640,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `GRADUATION_CERTIFICATE_OPERATION_PENDING` | no | `GraduationCertificateOperationPendingException` | graduation |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
+| `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
+| `TEMPLATE_UNKNOWN_MARKER` | no | `TemplateUnknownMarkerException` | graduation |
 | `UNKNOWN_TEMPLATE_VARIABLE` | no | `UnknownTemplateVariableException` | notification |
 
 ### HTTP 429

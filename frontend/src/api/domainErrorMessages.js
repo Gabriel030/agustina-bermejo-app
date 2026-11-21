@@ -289,6 +289,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   RECOVERY_QUOTA_EXCEEDED: 'Se alcanzó el tope de recuperatorios de la materia.',
   GRADUATION_CERTIFICATE_ALREADY_ISSUED: 'El certificado de egreso ya fue emitido.',
   GRADUATION_CERTIFICATE_NOT_ELIGIBLE: 'No se puede emitir el certificado de egreso en este estado.',
+  GRADUATION_CERTIFICATE_BLOCKED_BY_DEBT: 'El alumno tiene deuda pendiente: no se puede emitir el certificado de egreso.',
   GRADUATION_CERTIFICATE_REVOKED: 'El certificado fue revocado y ya no se puede descargar.',
   GRADUATION_CERTIFICATE_NOT_REVOCABLE: 'Solo se puede revocar o reemitir un certificado vigente.',
   GRADUATION_CERTIFICATE_NOT_AVAILABLE: 'El certificado todavía no fue emitido.',
