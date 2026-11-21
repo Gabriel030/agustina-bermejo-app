@@ -13546,8 +13546,6 @@
             "type" : "string"
           },
           "role" : {
-            "maxLength" : 80,
-            "minLength" : 0,
             "type" : "string"
           }
         },

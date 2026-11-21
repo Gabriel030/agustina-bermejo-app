@@ -85,6 +85,12 @@ public class CertificateTemplateVersion {
     @Column(name = "second_signer_signature_image_id")
     private Long secondSignerSignatureImageId;
 
+    @Column(name = "signatory1_id")
+    private Long signatory1Id;
+
+    @Column(name = "signatory2_id")
+    private Long signatory2Id;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
@@ -123,13 +129,15 @@ public class CertificateTemplateVersion {
         this.secondSignerName = content.secondSigner() == null ? null : content.secondSigner().name();
         this.secondSignerRole = content.secondSigner() == null ? null : content.secondSigner().role();
         this.secondSignerSignatureImageId = content.secondSigner() == null ? null : content.secondSigner().signatureImageId();
+        this.signatory1Id = content.signatory1Id();
+        this.signatory2Id = content.signatory2Id();
         this.updatedAt = now;
     }
 
     public CertificateTemplateContent content() {
         return new CertificateTemplateContent(instituteName, logoImageId, title, introText, approvalText, dictationText, qrLabel,
                 footerLegend, signer(firstSignerName, firstSignerRole, firstSignerSignatureImageId),
-                signer(secondSignerName, secondSignerRole, secondSignerSignatureImageId), null, null);
+                signer(secondSignerName, secondSignerRole, secondSignerSignatureImageId), signatory1Id, signatory2Id);
     }
 
     public void publishAs(int number, Long actorId, String actorName, LocalDateTime now) {

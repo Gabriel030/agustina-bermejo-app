@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -50,11 +51,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     private static final String BASE = "/certificate-templates/PROGRAM";
-    private static final String DRAFT_BODY = """
+    private static final String DRAFT_TEMPLATE = """
             {"content":{"instituteName":"INSTITUTO NUEVO","title":"CERTIFICADO NUEVO","introText":"Se certifica que",
             "approvalText":"ha aprobado {titleKind} {titleName}","qrLabel":"QR","footerLegend":"Leyenda nueva",
-            "firstSigner":{"name":"Ana Gómez","role":"Secretaria Legal"},
-            "secondSigner":{"name":"Luis Pérez","role":"Director Académico"}}}
+            "signatory1Id":%SIG1%,"signatory2Id":%SIG2%}}
             """;
 
     @Autowired
@@ -69,12 +69,28 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     private String director;
     private String administrative;
     private String student;
+    private String draftBody;
+    private int firstSignatoryId;
+    private int secondSignatoryId;
 
     @BeforeEach
     void createUsers() {
         director = tokenFor("DIRECTOR", 1);
         administrative = tokenFor("ADMINISTRATIVO", 2);
         student = tokenFor("ALUMNO", 3);
+        firstSignatoryId = createSignatory("Ana Gómez", "Secretaria Legal");
+        secondSignatoryId = createSignatory("Luis Pérez", "Director Académico");
+        draftBody = DRAFT_TEMPLATE.replace("%SIG1%", String.valueOf(firstSignatoryId)).replace("%SIG2%", String.valueOf(secondSignatoryId));
+    }
+
+    private int createSignatory(String name, String role) {
+        try {
+            String body = "{\"name\":\"" + name + "\",\"role\":\"" + role + "\",\"allowedDocumentTypes\":[\"GRADUATION_APPROVAL\"]}";
+            return JsonPath.read(send(post("/certificate-signatories").contentType(MediaType.APPLICATION_JSON).content(body), director)
+                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id");
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private String tokenFor(String roleName, int index) {
@@ -124,7 +140,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void publishingCreatesNextVersionAndLeavesPreviousUntouched() throws Exception {
-        saveDraft(director, DRAFT_BODY).andExpect(status().isOk());
+        saveDraft(director, draftBody).andExpect(status().isOk());
 
         send(post(BASE + "/publish"), director)
                 .andExpect(status().isOk())
@@ -150,7 +166,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void editingDraftDoesNotChangePublishedVersion() throws Exception {
-        saveDraft(director, DRAFT_BODY)
+        saveDraft(director, draftBody)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.basedOnVersionNumber").value(1));
@@ -164,7 +180,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void unknownMarkerIsRejectedWithUnprocessableEntity() throws Exception {
-        saveDraft(director, DRAFT_BODY.replace("{titleName}", "{nickname}"))
+        saveDraft(director, draftBody.replace("{titleName}", "{nickname}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("TEMPLATE_UNKNOWN_MARKER"));
     }
@@ -172,7 +188,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     @Test
     void unbalancedBracesAreRejectedAsUnknownMarker() throws Exception {
         for (String broken : new String[]{"{holder", "holder}", "{{holder}", "{holder}}", "{}"}) {
-            saveDraft(director, DRAFT_BODY.replace("{titleName}", broken))
+            saveDraft(director, draftBody.replace("{titleName}", broken))
                     .andExpect(status().isUnprocessableEntity())
                     .andExpect(jsonPath("$.code").value("TEMPLATE_UNKNOWN_MARKER"));
         }
@@ -207,29 +223,80 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void publishingWithReferencedLogoAndSignaturesKeepsTheReferences() throws Exception {
+    void publishingCopiesTheSignatorySignatureIntoTheVersionSnapshot() throws Exception {
         int logoId = JsonPath.read(upload(director, "LOGO", png(BufferedImage.TYPE_INT_RGB), "image/png")
                 .andReturn().getResponse().getContentAsString(), "$.id");
-        int signatureId = JsonPath.read(upload(director, "SIGNATURE", png(BufferedImage.TYPE_INT_ARGB), "image/png")
-                .andReturn().getResponse().getContentAsString(), "$.id");
-        String body = DRAFT_BODY.replace("\"instituteName\"", "\"logoImageId\":" + logoId + ",\"instituteName\"")
-                .replace("\"name\":\"Ana Gómez\"", "\"name\":\"Ana Gómez\",\"signatureImageId\":" + signatureId);
-        saveDraft(director, body).andExpect(status().isOk());
+        mockMvc.perform(multipart(HttpMethod.PUT, "/certificate-signatories/" + firstSignatoryId + "/signature")
+                        .file(new MockMultipartFile("file", "firma.png", "image/png", png(BufferedImage.TYPE_INT_ARGB)))
+                        .header("Authorization", "Bearer " + director))
+                .andExpect(status().isOk());
+        saveDraft(director, draftBody.replace("\"instituteName\"", "\"logoImageId\":" + logoId + ",\"instituteName\""))
+                .andExpect(status().isOk());
 
-        send(post(BASE + "/publish"), director)
+        MvcResult published = send(post(BASE + "/publish"), director)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.versionNumber").value(2))
                 .andExpect(jsonPath("$.content.logoImageId").value(logoId))
-                .andExpect(jsonPath("$.content.firstSigner.signatureImageId").value(signatureId));
-        send(get(BASE + "/versions/2"), administrative)
-                .andExpect(jsonPath("$.content.firstSigner.signatureImageId").value(signatureId));
+                .andExpect(jsonPath("$.content.signatory1Id").value(firstSignatoryId))
+                .andExpect(jsonPath("$.content.signatory2Id").value(secondSignatoryId))
+                .andExpect(jsonPath("$.content.firstSigner.name").value("Ana Gómez"))
+                .andExpect(jsonPath("$.content.secondSigner.signatureImageId").doesNotExist())
+                .andReturn();
+        int snapshotImageId = JsonPath.read(published.getResponse().getContentAsString(), "$.content.firstSigner.signatureImageId");
+        send(get(BASE + "/images/" + snapshotImageId), administrative).andExpect(status().isOk());
         send(post(BASE + "/preview").contentType(MediaType.APPLICATION_JSON).content("{\"source\":\"PUBLISHED\"}"), administrative)
                 .andExpect(status().isOk());
     }
 
     @Test
+    void editingOrDeactivatingTheSignatoryDoesNotChangeThePublishedSnapshot() throws Exception {
+        saveDraft(director, draftBody).andExpect(status().isOk());
+        send(post(BASE + "/publish"), director).andExpect(status().isOk());
+
+        send(put("/certificate-signatories/" + firstSignatoryId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Nombre Cambiado\",\"role\":\"Otro cargo\",\"allowedDocumentTypes\":[\"GRADUATION_APPROVAL\"]}"), director)
+                .andExpect(status().isOk());
+        send(post("/certificate-signatories/" + firstSignatoryId + "/deactivate"), director).andExpect(status().isOk());
+
+        send(get(BASE + "/versions/2"), administrative)
+                .andExpect(jsonPath("$.content.firstSigner.name").value("Ana Gómez"))
+                .andExpect(jsonPath("$.content.firstSigner.role").value("Secretaria Legal"));
+        send(post(BASE + "/preview").contentType(MediaType.APPLICATION_JSON).content("{\"source\":\"PUBLISHED\"}"), administrative)
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void signatoryWithoutPermissionForTheDocumentTypeIsConflict() throws Exception {
+        int other = JsonPath.read(send(post("/certificate-signatories").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Sin Permiso\",\"role\":\"Cargo\",\"allowedDocumentTypes\":[\"EXAM_CERTIFICATE\"]}"), director)
+                .andReturn().getResponse().getContentAsString(), "$.id");
+
+        saveDraft(director, draftBody.replace("\"signatory2Id\":" + secondSignatoryId, "\"signatory2Id\":" + other))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SIGNATORY_NOT_ALLOWED_FOR_DOCUMENT_TYPE"));
+    }
+
+    @Test
+    void inactiveRepeatedOrMissingSignatoriesAreRejected() throws Exception {
+        saveDraft(director, draftBody.replace("\"signatory2Id\":" + secondSignatoryId, "\"signatory2Id\":" + firstSignatoryId))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("SIGNATORY_DUPLICATED_IN_TEMPLATE"));
+        saveDraft(director, draftBody.replace("\"signatory2Id\":" + secondSignatoryId, "\"signatory2Id\":987654321"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SIGNATORY_NOT_FOUND"));
+
+        saveDraft(director, draftBody).andExpect(status().isOk());
+        send(post("/certificate-signatories/" + secondSignatoryId + "/deactivate"), director).andExpect(status().isOk());
+        send(post(BASE + "/publish"), director)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SIGNATORY_INACTIVE"));
+        saveDraft(director, draftBody).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("SIGNATORY_INACTIVE"));
+        assertThat(publishedVersionNumber()).isEqualTo(1);
+    }
+
+    @Test
     void everyAllowedMarkerIsAccepted() throws Exception {
-        saveDraft(director, DRAFT_BODY.replace("{titleKind} {titleName}",
+        saveDraft(director, draftBody.replace("{titleKind} {titleName}",
                 "{holder} {documentType} {documentNumber} {titleKind} {titleName} {hours} {graduationDate} {issuedOn} {registryNumber}"))
                 .andExpect(status().isOk());
     }
@@ -239,6 +306,8 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
         send(post(BASE + "/publish"), director)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("TEMPLATE_NOTHING_TO_PUBLISH"));
+        saveDraft(director, draftBody).andExpect(status().isOk());
+        send(post(BASE + "/publish"), director).andExpect(status().isOk());
         Object publishedContent = JsonPath.read(
                 send(get(BASE), director).andReturn().getResponse().getContentAsString(), "$.published.content");
         saveDraft(director, "{\"content\":" + new ObjectMapper().writeValueAsString(publishedContent) + "}")
@@ -250,18 +319,17 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void publishingWithoutTitleOrCompleteSignersIsRejected() throws Exception {
-        saveDraft(director, DRAFT_BODY.replace("\"title\":\"CERTIFICADO NUEVO\",", "")).andExpect(status().isOk());
+        saveDraft(director, draftBody.replace("\"title\":\"CERTIFICADO NUEVO\",", "")).andExpect(status().isOk());
         send(post(BASE + "/publish"), director)
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("TEMPLATE_INCOMPLETE"));
 
-        saveDraft(director, DRAFT_BODY.replace("\"role\":\"Director Académico\"", "\"role\":\" \"")).andExpect(status().isOk());
+        saveDraft(director, draftBody.replaceAll(",\\s*\"signatory2Id\":\\d+", "")).andExpect(status().isOk());
         send(post(BASE + "/publish"), director)
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("TEMPLATE_INCOMPLETE"));
 
-        saveDraft(director, DRAFT_BODY.replaceAll(",\\s*\"secondSigner\":\\{[^}]*}", ""))
-                .andExpect(status().isOk());
+        saveDraft(director, draftBody.replaceAll(",\\s*\"signatory1Id\":\\d+", "")).andExpect(status().isOk());
         send(post(BASE + "/publish"), director)
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("TEMPLATE_INCOMPLETE"));
@@ -270,7 +338,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void discardingDraftReturnsToLastPublishedVersion() throws Exception {
-        saveDraft(director, DRAFT_BODY).andExpect(status().isOk());
+        saveDraft(director, draftBody).andExpect(status().isOk());
 
         send(delete(BASE + "/draft"), director).andExpect(status().isNoContent());
 
@@ -325,7 +393,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
         MvcResult served = send(get(BASE + "/images/" + imageId), administrative).andExpect(status().isOk()).andReturn();
         assertThat(served.getResponse().getContentType()).isEqualTo("image/png");
         assertThat(served.getResponse().getContentAsByteArray()).isEqualTo(png(BufferedImage.TYPE_INT_RGB));
-        saveDraft(director, DRAFT_BODY.replace("\"instituteName\"", "\"logoImageId\":" + imageId + ",\"instituteName\""))
+        saveDraft(director, draftBody.replace("\"instituteName\"", "\"logoImageId\":" + imageId + ",\"instituteName\""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.logoImageId").value(imageId));
     }
@@ -342,8 +410,10 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     void draftCannotReferenceImageOfAnotherPurposeOrMissingImage() throws Exception {
         MvcResult logo = upload(director, "LOGO", png(BufferedImage.TYPE_INT_ARGB), "image/png").andReturn();
         int logoId = JsonPath.read(logo.getResponse().getContentAsString(), "$.id");
+        MvcResult signature = upload(director, "SIGNATURE", png(BufferedImage.TYPE_INT_ARGB), "image/png").andReturn();
+        int signatureId = JsonPath.read(signature.getResponse().getContentAsString(), "$.id");
 
-        saveDraft(director, DRAFT_BODY.replace("\"name\":\"Ana Gómez\"", "\"name\":\"Ana Gómez\",\"signatureImageId\":" + logoId))
+        saveDraft(director, draftBody.replace("\"instituteName\"", "\"logoImageId\":" + signatureId + ",\"instituteName\""))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TEMPLATE_IMAGE_NOT_FOUND"));
         send(get(BASE + "/images/987654321"), director)
@@ -370,7 +440,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void administrativeCanOnlyRead() throws Exception {
-        saveDraft(administrative, DRAFT_BODY).andExpect(status().isForbidden());
+        saveDraft(administrative, draftBody).andExpect(status().isForbidden());
         send(delete(BASE + "/draft"), administrative).andExpect(status().isForbidden());
         send(post(BASE + "/publish"), administrative).andExpect(status().isForbidden());
         upload(administrative, "LOGO", png(BufferedImage.TYPE_INT_ARGB), "image/png").andExpect(status().isForbidden());
@@ -381,7 +451,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     @Test
     void studentIsForbiddenEverywhere() throws Exception {
         send(get(BASE), student).andExpect(status().isForbidden());
-        saveDraft(student, DRAFT_BODY).andExpect(status().isForbidden());
+        saveDraft(student, draftBody).andExpect(status().isForbidden());
         send(delete(BASE + "/draft"), student).andExpect(status().isForbidden());
         send(post(BASE + "/publish"), student).andExpect(status().isForbidden());
         upload(student, "LOGO", png(BufferedImage.TYPE_INT_ARGB), "image/png").andExpect(status().isForbidden());
@@ -393,7 +463,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
     void publishedPreviewIsAvailableToAdministrativeAndDraftPreviewOnlyToDirector() throws Exception {
         String published = "{\"source\":\"PUBLISHED\"}";
         String draft = "{\"source\":\"DRAFT\"}";
-        saveDraft(director, DRAFT_BODY).andExpect(status().isOk());
+        saveDraft(director, draftBody).andExpect(status().isOk());
 
         MvcResult pdf = send(post(BASE + "/preview").contentType(MediaType.APPLICATION_JSON).content(published), administrative)
                 .andExpect(status().isOk())
@@ -418,7 +488,7 @@ class CertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void courseAndProgramTemplatesAreIndependent() throws Exception {
-        saveDraft(director, DRAFT_BODY).andExpect(status().isOk());
+        saveDraft(director, draftBody).andExpect(status().isOk());
 
         send(get("/certificate-templates/COURSE"), director)
                 .andExpect(jsonPath("$.draft").doesNotExist())

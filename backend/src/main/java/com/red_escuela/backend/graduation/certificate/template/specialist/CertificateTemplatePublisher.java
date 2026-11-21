@@ -1,6 +1,7 @@
 package com.red_escuela.backend.graduation.certificate.template.specialist;
 
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
+import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateContent;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateVersionResponse;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplateVersionStatus;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplate;
@@ -22,14 +23,17 @@ public class CertificateTemplatePublisher {
     private final CertificateTemplateVersionRepository versionRepository;
     private final CertificateTemplateContentRules rules;
     private final CurrentActorFinder currentActorFinder;
+    private final CertificateTemplateSignatories signatories;
     private final Clock clock;
 
     public CertificateTemplatePublisher(CertificateTemplateFinder templateFinder, CertificateTemplateVersionRepository versionRepository,
-                                        CertificateTemplateContentRules rules, CurrentActorFinder currentActorFinder, Clock clock) {
+                                        CertificateTemplateContentRules rules, CurrentActorFinder currentActorFinder, CertificateTemplateSignatories signatories,
+                                        Clock clock) {
         this.templateFinder = templateFinder;
         this.versionRepository = versionRepository;
         this.rules = rules;
         this.currentActorFinder = currentActorFinder;
+        this.signatories = signatories;
         this.clock = clock;
     }
 
@@ -41,13 +45,16 @@ public class CertificateTemplatePublisher {
         CertificateTemplateVersion latest = versionRepository
                 .findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
                 .orElse(null);
-        if (latest != null && latest.content().equals(draft.content())) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        CertificateTemplateContent snapshot = signatories.applyTo(template.getId(), draft.content());
+        if (latest != null && latest.content().equals(snapshot)) {
             throw new TemplateNothingToPublishException();
         }
-        rules.requirePublishable(draft.content());
+        rules.requirePublishable(snapshot);
+        draft.replaceContent(snapshot, now);
         Person actor = currentActorFinder.currentPerson();
         int number = latest == null ? 1 : latest.getVersionNumber() + 1;
-        draft.publishAs(number, actor.getId(), actor.getLastname() + ", " + actor.getName(), LocalDateTime.now(clock));
+        draft.publishAs(number, actor.getId(), actor.getLastname() + ", " + actor.getName(), now);
         return CertificateTemplateResponses.of(versionRepository.saveAndFlush(draft));
     }
 }

@@ -20,24 +20,28 @@ public class CertificateTemplateDraftSaver {
     private final CertificateTemplateVersionRepository versionRepository;
     private final CertificateTemplateContentRules rules;
     private final CertificateTemplateImageReferences imageReferences;
+    private final CertificateTemplateSignatories signatories;
     private final Clock clock;
 
     public CertificateTemplateDraftSaver(CertificateTemplateFinder templateFinder, CertificateTemplateVersionRepository versionRepository,
                                          CertificateTemplateContentRules rules, CertificateTemplateImageReferences imageReferences,
-                                         Clock clock) {
+                                         CertificateTemplateSignatories signatories, Clock clock) {
         this.templateFinder = templateFinder;
         this.versionRepository = versionRepository;
         this.rules = rules;
         this.imageReferences = imageReferences;
+        this.signatories = signatories;
         this.clock = clock;
     }
 
     @Transactional
     public CertificateTemplateVersionResponse save(GraduationCertificateKind kind, CertificateTemplateContent requested) {
-        CertificateTemplateContent content = rules.normalize(requested);
+        CertificateTemplateContent normalized = rules.normalize(requested);
+        CertificateTemplateContent content = normalized;
         rules.requireKnownMarkers(content);
         CertificateTemplate template = templateFinder.findForUpdate(kind);
-        imageReferences.requireExisting(template.getId(), content);
+        imageReferences.requireExisting(template.getId(), normalized);
+        content = signatories.applyTo(template.getId(), normalized);
         LocalDateTime now = LocalDateTime.now(clock);
         CertificateTemplateVersion draft = versionRepository.findByTemplateIdAndStatus(template.getId(), TemplateVersionStatus.DRAFT)
                 .orElse(null);
