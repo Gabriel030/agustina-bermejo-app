@@ -31,7 +31,7 @@ Resumen al 21-nov-2026: 15 hallazgos (A2-A9 y B1-B7): 13 cerrados (A2, A3, A4, A
 ## Seguimientos E24
 
 - #956: 24-D, validación de archivos por contenido en los flujos viejos. Cerrado el 21-nov-2026 (verificado: #970, #1079 y `UploadedFileSizeLimitHttpIT` existen en develop).
-- G6: usuarios enumerables por `/auth/register` y la bandeja de autorizaciones. Rebanada propia, separada de S2.
+- G6: usuarios enumerables por `/auth/register`. Mitigado el 21-nov-2026 (#1146): `UsernameAlreadyExistsException` ya no repite el usuario/email ingresado (mensaje fijo `identity/exception/UsernameAlreadyExistsException.java`); `POST /auth/register` tiene además un límite por clave combinada IP + usuario normalizado (`identity/infrastructure/LoginRateLimiter.java`, `tryConsumeRegisterForUser`, `auth.rate-limit.register-user.*`), sin permitir que un tercero bloquee al dueño de la cuenta desde otra IP. Tests: `controller/RegisterEnumerationIT.java`, `identity/infrastructure/LoginRateLimiterTest.java`. **Riesgo residual aceptado por el Coordinador (opción a)**: el 409 `USERNAME_ALREADY_EXISTS` sigue confirmando que el usuario existe (UX del alumno); no hay tiempo constante. `POST /auth/google/register` no suma clave por usuario: el email sale del token de Google verificado, por lo que solo se confirma la existencia del propio email del solicitante; mantiene el límite por IP. Bandeja de autorizaciones: cerrada con evidencia (alcance `scope.onlyRequestedBy` + filtro con AND, detalle ajeno = 404 vía `requireMayRead`); queda como opcional un IT que lo fije.
 - G8: rotación de secretos (JWT, base, credenciales); falta procedimiento y prueba.
 - 24.3b: bulkhead para Mercado Pago y Brevo. Baja prioridad.
 - Sentry: DSN vacío por defecto.

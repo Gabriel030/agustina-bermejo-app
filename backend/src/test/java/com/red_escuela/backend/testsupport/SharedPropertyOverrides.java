@@ -21,6 +21,8 @@ import java.lang.annotation.Target;
         "auth.rate-limit.login.refill-per-minute=2",
         "auth.rate-limit.forgot-password.capacity=2",
         "auth.rate-limit.forgot-password.refill-per-minute=2",
+        "auth.rate-limit.register-user.capacity=2",
+        "auth.rate-limit.register-user.refill-per-minute=2",
         "management.security.user=scraper",
         "management.security.password=local-test"
 })
