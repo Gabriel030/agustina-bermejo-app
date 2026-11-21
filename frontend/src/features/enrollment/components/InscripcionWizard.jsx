@@ -345,7 +345,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
                 ? 'Tu comprobante queda en revisión. Como el curso estaba completo, si te falta lugar vas a quedar en lista de espera. Te avisamos cuando haya novedades.'
                 : 'Tu comprobante queda en revisión. Cuando lo aprueben, vas a quedar inscripto en el curso.'}
         </div>
-        <Button onClick={() => navigate('/catalogo?tab=mis-solicitudes')} variant="gradient" className="mt-2 px-6">
+        <Button onClick={() => navigate('/catalogo?tab=mis-solicitudes')} variant="primary" className="mt-2 px-6">
           Ir a mis solicitudes
         </Button>
       </PageContainer>
@@ -549,7 +549,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
                 disabled={faltantesDeDocumentacion().length > 0}
                 aria-describedby="motivo-documentacion"
                 loading={state.enviando}
-                variant="gradient"
+                variant="primary"
                 className="px-6"
               >
                 Confirmar solicitud
@@ -559,7 +559,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
                 onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'pago' })}
                 disabled={faltantesDeDocumentacion().length > 0}
                 aria-describedby="motivo-documentacion"
-                variant="gradient"
+                variant="primary"
                 className="px-6"
               >
                 Continuar →
@@ -625,7 +625,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
               disabled={faltantesDeSolicitud().length > 0}
               aria-describedby="motivo-solicitud"
               loading={state.enviando}
-              variant="gradient"
+              variant="primary"
             >
               Enviar comprobante
             </Button>
@@ -646,7 +646,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
             <Button variant="outline" onClick={() => setModalConfirmarAbierto(false)} className="rounded-xl">
               Cancelar
             </Button>
-            <Button onClick={enviarSolicitud} variant="gradient">
+            <Button onClick={enviarSolicitud} variant="primary">
               Sí, confirmar
             </Button>
           </DialogFooter>

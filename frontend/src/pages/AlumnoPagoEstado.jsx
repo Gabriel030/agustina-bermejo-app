@@ -51,7 +51,7 @@ export function AlumnoPagoEstado() {
         </div>
 
         <div className="flex flex-col gap-3 w-full">
-          <Button variant="gradient" onClick={() => navigate('/alumno/pagos')} className="flex items-center gap-2">
+          <Button variant="primary" onClick={() => navigate('/alumno/pagos')} className="flex items-center gap-2">
             <ArrowLeft size={16} />
             Volver a Mis pagos
           </Button>

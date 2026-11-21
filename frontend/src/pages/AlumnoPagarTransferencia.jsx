@@ -90,7 +90,7 @@ function PasoDatos({ config, amount, onNext }) {
           : 'Realizá la transferencia por el monto exacto de la cuota y luego subí el comprobante en el siguiente paso.'}
       </p>
 
-      <Button variant="gradient" onClick={onNext}>
+      <Button variant="primary" onClick={onNext}>
         Ya transferí — subir comprobante
       </Button>
     </div>
@@ -298,7 +298,7 @@ function PasoEstado({ invoiceId, onResend }) {
 
       {rejected ? (
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
-          <Button variant="gradient" onClick={onResend}>
+          <Button variant="primary" onClick={onResend}>
             Corregir y reenviar
           </Button>
           <Button variant="outline" onClick={goToOrigin}>
@@ -306,7 +306,7 @@ function PasoEstado({ invoiceId, onResend }) {
           </Button>
         </div>
       ) : (
-        <Button variant="gradient" onClick={goToOrigin}>
+        <Button variant="primary" onClick={goToOrigin}>
           {originLabel}
         </Button>
       )}

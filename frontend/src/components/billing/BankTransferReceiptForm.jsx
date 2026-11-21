@@ -251,7 +251,7 @@ export function BankTransferReceiptForm({
             Cancelar
           </Button>
         )}
-        <Button type="submit" variant="gradient" loading={isPending}>
+        <Button type="submit" variant="primary" loading={isPending}>
           {isPending ? 'Enviando…' : copy.submit}
         </Button>
       </GlassCard>

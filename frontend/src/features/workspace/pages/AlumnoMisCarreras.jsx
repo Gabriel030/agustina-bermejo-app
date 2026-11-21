@@ -106,7 +106,7 @@ export function AlumnoMisCarreras() {
             title="Todavía no estás matriculado en ninguna carrera"
             description="Elegí una carrera en el Catálogo para solicitar tu alta."
             action={
-              <Button asChild variant="gradient">
+              <Button asChild variant="primary">
                 <Link to="/catalogo?tab=carreras">Ir al Catálogo</Link>
               </Button>
             }

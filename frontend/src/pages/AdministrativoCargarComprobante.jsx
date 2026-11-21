@@ -154,7 +154,7 @@ function ReviewStep({ student, draft, uploaderName, state, onBack, onSend, onVie
         <Button type="button" variant="ghost" onClick={onBack} disabled={state.sending}>
           Volver a editar
         </Button>
-        <Button type="button" variant="gradient" onClick={onSend} loading={state.sending}>
+        <Button type="button" variant="primary" onClick={onSend} loading={state.sending}>
           {state.sending ? 'Cargando…' : state.unconfirmed ? 'Reintentar' : 'Cargar comprobante'}
         </Button>
       </GlassCard>
@@ -211,7 +211,7 @@ function ResultStep({ student, draft, uploaderName, onBackToAccount, onGoToRecei
         <Button type="button" variant="outline" onClick={onBackToAccount}>
           Volver al estado de cuenta
         </Button>
-        <Button type="button" variant="gradient" onClick={onGoToReceipts}>
+        <Button type="button" variant="primary" onClick={onGoToReceipts}>
           Ir a Comprobantes
         </Button>
       </div>
