@@ -36,7 +36,7 @@ function GenerateDialog({ open, onOpenChange, enrollmentId, advance, concept }) 
       title={`Generar la ${concept.toLowerCase()}`}
       description={`Se genera la factura por ${formatMoney(advance.amount)}, con vencimiento el ${formatDate(advance.dueDate)}. Todavía no se cobra.`}
       confirmLabel="Generar la factura"
-      confirmVariant="gradient"
+      confirmVariant="primary"
       pending={mutation.isPending}
       onConfirm={confirm}
     >

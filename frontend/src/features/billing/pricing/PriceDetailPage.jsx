@@ -185,7 +185,7 @@ export function PriceDetailPage() {
       <UpcomingList price={price} />
 
       <div className="flex flex-wrap gap-2">
-        <Button asChild={!hasProposal} variant="gradient" disabled={hasProposal}>
+        <Button asChild={!hasProposal} variant="primary" disabled={hasProposal}>
           {hasProposal ? <span>{ctaLabel}</span> : <Link to={`${listPath}/${price.priceId}/nueva-version`}>{ctaLabel}</Link>}
         </Button>
         {isDirector && price.nextScheduledVersion && (

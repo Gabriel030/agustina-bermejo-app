@@ -73,7 +73,7 @@ function TermsEditor({ initialText }) {
         </p>
       )}
       <div className="flex justify-end">
-        <Button variant="gradient" disabled={!valid} onClick={() => setConfirming(true)}>
+        <Button variant="primary" disabled={!valid} onClick={() => setConfirming(true)}>
           Publicar nueva versión
         </Button>
       </div>

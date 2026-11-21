@@ -54,7 +54,7 @@ export function MonthlyRunPage() {
       title="Emisión mensual"
       description="Estado de la corrida de cada período, reintentos y recuperación manual"
       action={
-        <Button type="button" variant="gradient" disabled={isRunning || simulation.isPending} onClick={runSimulation}>
+        <Button type="button" variant="primary" disabled={isRunning || simulation.isPending} onClick={runSimulation}>
           <FlaskConical aria-hidden="true" />
           Simular emisión
         </Button>

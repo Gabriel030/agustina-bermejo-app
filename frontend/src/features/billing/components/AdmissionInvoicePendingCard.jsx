@@ -52,7 +52,7 @@ function SolicitudPendiente({ solicitud, principal }) {
     <div className={`flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${fase === 'OVERDUE' ? 'bg-warning-bg' : 'bg-neutral-bg'}`}>
       <div className="text-size-13 text-ink-soft">{textoDeVencimiento(solicitud)}</div>
       <Button
-        variant={principal ? 'gradient' : 'outline'}
+        variant={principal ? 'primary' : 'outline'}
         onClick={() => navigate(`/alumno/pagos/${admissionInvoice.id}/seleccion`, { state: originState })}
       >
         Pagar matrícula
