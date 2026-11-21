@@ -3,7 +3,7 @@ import { useHolidays, useTerminos } from '@/features/academic-structure';
 import { toCard } from '@/features/workspace/lib/homeCards';
 import { upcomingEvents, upcomingWindow } from '@/features/workspace/lib/upcomingEvents';
 
-const UPCOMING_CARD = { id: 'upcomingEvents', title: 'Próximos 30 días', icon: 'calendar' };
+const UPCOMING_CARD = { id: 'upcomingEvents', title: 'Próximos eventos', icon: 'calendar' };
 
 function withoutDuplicateHolidays(holidays) {
   return [...new Map(holidays.map((holiday) => [holiday.id, holiday])).values()];
@@ -13,7 +13,7 @@ function asLoadingWhenPending(query) {
   return query.isPending ? { ...query, isLoading: true } : query;
 }
 
-export function useUpcomingEvents() {
+export function useUpcomingEvents(role) {
   const now = new Date();
   const { from, to } = upcomingWindow(now);
   const boards = useMesas('SCHEDULED');
@@ -28,9 +28,10 @@ export function useUpcomingEvents() {
         boards: boards.data ?? [],
         holidays: withoutDuplicateHolidays([...(holidaysOfStartYear.data ?? []), ...(holidaysOfEndYear.data ?? [])]),
         terms: terms.data ?? [],
+        role,
       },
       now,
     );
-    return { count: events.length, events };
+    return { events };
   });
 }

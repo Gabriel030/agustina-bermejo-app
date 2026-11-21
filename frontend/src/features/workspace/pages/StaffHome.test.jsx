@@ -132,20 +132,20 @@ describe('StaffHome', () => {
       terms: [term(8, { startDate: at(inDays(90)), endDate: at(inDays(120)), enrollmentStart: at(inDays(91)), enrollmentEnd: at(inDays(92)) })],
     });
     renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
-    const upcoming = await readyCard('Próximos 30 días');
-    expect(within(upcoming).getByText('5')).toBeInTheDocument();
+    const upcoming = await readyCard('Próximos eventos');
+    expect(within(upcoming).getAllByRole('listitem')).toHaveLength(5);
     expect(within(upcoming).getByText('Feriado 1')).toBeInTheDocument();
     expect(within(upcoming).getByText('Feriado 5')).toBeInTheDocument();
     expect(within(upcoming).queryByText('Feriado 6')).not.toBeInTheDocument();
     expect(within(upcoming).queryByText('Feriado lejano')).not.toBeInTheDocument();
-    expect(within(upcoming).queryByText(/Inicio del período/)).not.toBeInTheDocument();
+    expect(within(upcoming).queryByText('Primer cuatrimestre')).not.toBeInTheDocument();
   });
 
   it('upcoming card shows a specific empty text when nothing falls in the window', async () => {
     serve({ boards: [], holidays: [holiday(1, inDays(45), 'Feriado lejano')] });
     renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
-    const upcoming = await readyCard('Próximos 30 días');
-    expect(within(upcoming).getByText('Sin eventos en los próximos 30 días.')).toBeInTheDocument();
+    const upcoming = await readyCard('Próximos eventos');
+    expect(within(upcoming).getByText('No hay eventos próximos')).toBeInTheDocument();
     expect(within(upcoming).queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -154,15 +154,15 @@ describe('StaffHome', () => {
     renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('No pudimos cargar los próximos eventos');
-    expect(alert.closest('article')).toHaveAccessibleName('Próximos 30 días');
-    expect(screen.queryByText(/Sin eventos/)).not.toBeInTheDocument();
+    expect(alert.closest('article')).toHaveAccessibleName('Próximos eventos');
+    expect(screen.queryByText('No hay eventos próximos')).not.toBeInTheDocument();
     expect(screen.queryByText('Todo al día')).not.toBeInTheDocument();
   });
 
   it('administrativo sees the upcoming events card', async () => {
     serve({ holidays: [holiday(1, inDays(2), 'Feriado de prueba')] });
     renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
-    expect(await readyCard('Próximos 30 días')).toHaveTextContent('Feriado de prueba');
+    expect(await readyCard('Próximos eventos')).toHaveTextContent('Feriado de prueba');
   });
 
   it('administrativo does not see director cards', async () => {

@@ -67,9 +67,9 @@ function StaffHome({ roleLabel, cards, upcoming }) {
 }
 
 export function DirectorInicio() {
-  return <StaffHome roleLabel="Director" cards={useDirectorHomeCards()} upcoming={useUpcomingEvents()} />;
+  return <StaffHome roleLabel="Director" cards={useDirectorHomeCards()} upcoming={useUpcomingEvents('director')} />;
 }
 
 export function AdministrativoInicio() {
-  return <StaffHome roleLabel="Administrativo" cards={useAdministrativoHomeCards()} upcoming={useUpcomingEvents()} />;
+  return <StaffHome roleLabel="Administrativo" cards={useAdministrativoHomeCards()} upcoming={useUpcomingEvents('administrativo')} />;
 }

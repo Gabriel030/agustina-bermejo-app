@@ -41,7 +41,7 @@ function term(id, overrides = {}) {
 function renderUpcomingEvents() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  return renderHook(() => useUpcomingEvents(), { wrapper }).result;
+  return renderHook(() => useUpcomingEvents('director'), { wrapper }).result;
 }
 
 function serve({ boards = [], holidays = [], terms = [], failing = [], repeatHolidaysForEveryYear = false } = {}) {
@@ -79,12 +79,13 @@ describe('useUpcomingEvents', () => {
       terms: [term(3, { enrollmentStart: at('2026-11-20') })],
     });
     const card = await settledCard(renderUpcomingEvents());
-    expect(card).toMatchObject({ id: 'upcomingEvents', title: 'Próximos 30 días', state: 'ready', count: 3 });
+    expect(card).toMatchObject({ id: 'upcomingEvents', title: 'Próximos eventos', state: 'ready' });
     expect(card.events.map((event) => event.title)).toEqual([
-      'Mesa de Didáctica',
+      'Didáctica',
       'Feriado de prueba',
-      'Abren inscripciones: Primer cuatrimestre',
+      'Primer cuatrimestre',
     ]);
+    expect(card.events.map((event) => event.to)).toEqual(['/director/mesas-de-examen', null, '/director/mesas-de-examen']);
   });
 
   it('keeps an event on day 30 of the window and drops one on day 31', async () => {
@@ -92,7 +93,7 @@ describe('useUpcomingEvents', () => {
       boards: [board(1, '2026-12-05', 'Día 30'), board(2, '2026-12-06', 'Día 31')],
     });
     const card = await settledCard(renderUpcomingEvents());
-    expect(card.events.map((event) => event.title)).toEqual(['Mesa de Día 30']);
+    expect(card.events.map((event) => event.title)).toEqual(['Día 30']);
   });
 
   it('shows at most five events even when more fall inside the window', async () => {
@@ -100,7 +101,7 @@ describe('useUpcomingEvents', () => {
       holidays: [1, 2, 3, 4, 5, 6].map((day) => holiday(day, `2026-11-${String(day + 9).padStart(2, '0')}`, `Feriado ${day}`)),
     });
     const card = await settledCard(renderUpcomingEvents());
-    expect(card.count).toBe(5);
+    expect(card.events).toHaveLength(5);
     expect(card.events.map((event) => event.title)).toEqual(['Feriado 1', 'Feriado 2', 'Feriado 3', 'Feriado 4', 'Feriado 5']);
   });
 

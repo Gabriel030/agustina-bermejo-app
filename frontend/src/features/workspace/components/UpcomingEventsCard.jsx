@@ -1,23 +1,87 @@
-import { RefreshCw, TriangleAlert } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronRight, RefreshCw, TriangleAlert } from 'lucide-react';
 import { Skeleton } from '@/components/Skeleton';
+import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { parsearFecha } from '@/lib/comisiones';
+import { cn } from '@/lib/utils';
 import { CardFrame, InfoTip } from '@/features/workspace/components/HomeTaskCard';
 
-const UPCOMING_TIP = 'Mesas de examen programadas, feriados, inicio y fin de período, y apertura y cierre de inscripciones en los próximos 30 días.';
-const EVENT_DATE_FORMAT = { day: 'numeric', month: 'short' };
+const UPCOMING_TIP = 'Lo que viene en el calendario: mesas de examen, feriados, cierres de período e inscripciones.';
 
-function shortDate(isoDate) {
-  return parsearFecha(isoDate).toLocaleDateString('es-AR', EVENT_DATE_FORMAT);
+const EVENT_TYPE_PILL = {
+  exam: { tone: 'accent', label: 'Mesa de examen' },
+  holiday: { tone: 'neutral', label: 'Feriado' },
+  close: { tone: 'warning', label: 'Cierre de período' },
+  enrollment: { tone: 'success', label: 'Inscripción' },
+  start: { tone: 'neutral', label: 'Inicio de período' },
+};
+
+const EVENT_ROW_CLASS = 'grid grid-cols-[2.75rem_minmax(0,1fr)_auto] min-[521px]:grid-cols-[2.75rem_minmax(0,1fr)_auto_auto] items-center gap-3 border-t border-border px-1 py-2';
+
+function eventDateParts(isoDate) {
+  const date = parsearFecha(isoDate);
+  const day = String(date.getDate()).padStart(2, '0');
+  const weekday = date.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '');
+  const month = date.toLocaleDateString('es-AR', { month: 'short' }).replace('.', '');
+  return { day, weekdayMonth: `${weekday} ${month}` };
+}
+
+function EventDateBlock({ isoDate }) {
+  const { day, weekdayMonth } = eventDateParts(isoDate);
+  return (
+    <time dateTime={isoDate} className="grid h-11 w-11 place-items-center rounded-control bg-neutral-bg text-center leading-tight">
+      <span className="font-heading text-size-15 font-bold tabular-nums text-ink">{day}</span>
+      <span className="text-size-10 font-extrabold uppercase text-ink-faint">{weekdayMonth}</span>
+    </time>
+  );
+}
+
+function EventRowContent({ event }) {
+  const pill = EVENT_TYPE_PILL[event.type];
+  return (
+    <>
+      <EventDateBlock isoDate={event.date} />
+      <span className="min-w-0 truncate text-size-13-5 font-semibold text-ink">{event.title}</span>
+      <StatusPill tone={pill.tone} className="hidden min-[521px]:inline-flex">
+        {pill.label}
+      </StatusPill>
+      {event.to ? <ChevronRight className="h-4 w-4 text-ink-faint" aria-hidden="true" /> : <span className="w-4" aria-hidden="true" />}
+    </>
+  );
+}
+
+function UpcomingEventRow({ event }) {
+  if (!event.to) {
+    return (
+      <li className={EVENT_ROW_CLASS}>
+        <EventRowContent event={event} />
+      </li>
+    );
+  }
+  return (
+    <li>
+      <Link to={event.to} className={cn(EVENT_ROW_CLASS, 'rounded-control transition-colors hover:bg-neutral-bg/60 focus-visible:outline-2 focus-visible:outline-primary')}>
+        <EventRowContent event={event} />
+      </Link>
+    </li>
+  );
 }
 
 function UpcomingEventsLoading({ card }) {
   return (
     <CardFrame card={card} tone="neutral">
-      <div className="col-span-2 flex flex-col gap-2" aria-busy="true">
-        <Skeleton className="mt-2 h-4 w-1/3" />
-        <Skeleton className="h-8 w-1/5" />
-        <Skeleton className="h-3.5 w-full" />
+      <div className="col-span-2 flex flex-col" aria-busy="true">
+        <h3 className="flex min-h-9 items-center font-heading text-size-15 font-semibold text-ink">{card.title}</h3>
+        {[0, 1, 2].map((row) => (
+          <div key={row} className={EVENT_ROW_CLASS}>
+            <Skeleton className="h-11 w-11 rounded-control" />
+            <Skeleton className="h-3.5 w-3/5" />
+          </div>
+        ))}
+      </div>
+      <div className="col-start-3 flex h-9 items-center">
+        <InfoTip text={UPCOMING_TIP} />
       </div>
     </CardFrame>
   );
@@ -45,28 +109,20 @@ function UpcomingEventsError({ card }) {
 
 function UpcomingEventsReady({ card }) {
   return (
-    <CardFrame card={card} tone="neutral" className="sm:col-span-2">
-      <div className="flex min-w-0 flex-col gap-2">
+    <CardFrame card={card} tone="neutral">
+      <div className="col-span-2 flex min-w-0 flex-col">
         <h3 className="flex min-h-9 items-center font-heading text-size-15 font-semibold leading-tight text-ink">{card.title}</h3>
         {card.events.length === 0 ? (
-          <p className="text-size-13-5 font-medium text-ink-soft">Sin eventos en los próximos 30 días.</p>
+          <div className="flex flex-col items-center gap-1 py-6 text-center">
+            <p className="font-semibold text-ink">No hay eventos próximos</p>
+            <p className="text-size-13 text-ink-faint">Cuando se programe algo, lo vas a ver acá.</p>
+          </div>
         ) : (
-          <>
-            <div className="flex min-h-8 items-baseline gap-1.5">
-              <span className="font-heading text-3xl font-semibold leading-none tabular-nums text-ink">{card.count}</span>
-              <span className="text-size-13 text-ink-faint">{card.count === 1 ? 'evento' : 'eventos'}</span>
-            </div>
-            <ol className="flex flex-col">
-              {card.events.map((event) => (
-                <li key={event.id} className="flex min-h-10 items-center gap-3 border-t border-border text-size-13-5 font-medium text-ink">
-                  <time dateTime={event.date} className="w-14 shrink-0 font-semibold tabular-nums text-ink-soft">
-                    {shortDate(event.date)}
-                  </time>
-                  <span className="min-w-0">{event.title}</span>
-                </li>
-              ))}
-            </ol>
-          </>
+          <ol className="flex flex-col">
+            {card.events.map((event) => (
+              <UpcomingEventRow key={event.id} event={event} />
+            ))}
+          </ol>
         )}
       </div>
       <div className="col-start-3 flex h-9 items-center">
