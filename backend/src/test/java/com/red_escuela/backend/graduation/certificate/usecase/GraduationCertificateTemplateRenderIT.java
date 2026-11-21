@@ -233,7 +233,7 @@ class GraduationCertificateTemplateRenderIT extends AbstractIntegrationTest {
         assertThat(valid.titleName()).isEqualTo(stored.getSnapshot().titleName());
         assertThat(valid.registryNumber()).isEqualTo(stored.getRegistryNumber());
 
-        jdbc.update("update graduation_certificate set status = 'REVOKED', revoked_at = now() where id = ?", stored.getId());
+        jdbc.update("update graduation_certificate set status = 'REVOKED', revoked_at = now(), revoked_by_id = issued_by_id, revocation_reason = 'revocado por la prueba' where id = ?", stored.getId());
         entityManager.clear();
 
         assertThat(verifyUseCase.verify(stored.getCode(), "client-" + UUID.randomUUID()).status()).isEqualTo(PublicCertificateStatus.REVOKED);
