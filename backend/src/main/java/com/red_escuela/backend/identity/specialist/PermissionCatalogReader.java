@@ -27,7 +27,7 @@ public class PermissionCatalogReader {
         Map<String, List<PermissionResponse>> byModule = new LinkedHashMap<>();
         for (Permission permission : permissionRepository.findAllByOrderByModuleAscCodeAsc()) {
             byModule.computeIfAbsent(permission.getModule(), key -> new ArrayList<>())
-                    .add(new PermissionResponse(permission.getCode(), permission.getDescription(), permission.isFixedToDirector()));
+                    .add(new PermissionResponse(permission.getCode(), permission.getDescription(), permission.isFixedToDirector(), false));
         }
         return new PermissionCatalogResponse(byModule.entrySet().stream()
                 .map(entry -> new PermissionModuleResponse(entry.getKey(), List.copyOf(entry.getValue())))
