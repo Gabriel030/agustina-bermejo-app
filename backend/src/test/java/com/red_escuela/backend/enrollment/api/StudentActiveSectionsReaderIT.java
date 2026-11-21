@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleSta
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -21,6 +22,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +60,7 @@ class StudentActiveSectionsReaderIT extends AbstractIntegrationTest {
     @BeforeEach
     void seedStudentsAndEnrollments() {
         fixtures = new CycleTestFixtures(entityManager);
-        term = fixtures.term(2100 + (int) (System.nanoTime() % 50));
+        term = fixtures.term(2100 + Math.floorMod(System.nanoTime(), 50));
         institution = new Institution();
         institution.setName("Instituto de prueba");
         entityManager.persist(institution);
@@ -134,8 +136,8 @@ class StudentActiveSectionsReaderIT extends AbstractIntegrationTest {
         assertThat(reader.listActiveSectionsOfStudent(student.getId()))
                 .extracting(ActiveSectionView::kind, ActiveSectionView::sectionId)
                 .containsExactlyInAnyOrder(
-                        org.assertj.core.groups.Tuple.tuple(SectionKind.PROGRAM, program.getId()),
-                        org.assertj.core.groups.Tuple.tuple(SectionKind.COURSE, course.getId()));
+                        Tuple.tuple(SectionKind.PROGRAM, program.getId()),
+                        Tuple.tuple(SectionKind.COURSE, course.getId()));
     }
 
     @Test
@@ -158,7 +160,7 @@ class StudentActiveSectionsReaderIT extends AbstractIntegrationTest {
         return created;
     }
 
-    private ProgramEnrollment programEnrollment(Student owner, com.red_escuela.backend.academicstructure.entity.Program program) {
+    private ProgramEnrollment programEnrollment(Student owner, Program program) {
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(owner);
         enrollment.setProgram(program);

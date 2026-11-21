@@ -5,6 +5,7 @@ import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleSta
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
@@ -27,6 +28,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,9 +107,7 @@ class StudentExamBoardReaderIT extends AbstractIntegrationTest {
     @Test
     void registeredCourseBoardIsReturnedAndCanceledBoardKeepsItsStatus() {
         CourseSubjectSection section = courseSectionEnrollment(student, courseEnrollment, EnrollmentStatus.IN_PROGRESS);
-        CourseSubjectSectionEnrollment enrollment = entityManager.createQuery(
-                "select e from CourseSubjectSectionEnrollment e where e.courseSubjectSection = :section",
-                CourseSubjectSectionEnrollment.class).setParameter("section", section).getSingleResult();
+        CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentOf(section);
         ExamBoard board = courseBoard(section.getCourseSubject(), FROM.atTime(10, 0), ExamBoardStatus.CANCELED, null, null);
         register(board, null, enrollment, ExamBoardRegistrationStatus.REGISTERED);
         entityManager.flush();
@@ -120,6 +120,22 @@ class StudentExamBoardReaderIT extends AbstractIntegrationTest {
         assertThat(views.get(0).registrationStatus()).isEqualTo("REGISTERED");
         assertThat(views.get(0).registrationOpen()).isFalse();
         assertThat(views.get(0).subjectName()).isEqualTo(section.getCourseSubject().getName());
+    }
+
+    @Test
+    void registeredStatusWinsOverWithdrawnWhenBothRegistrationsTargetTheSameBoard() {
+        Subject subject = fixtures.subject();
+        SubjectSectionEnrollment withdrawnEnrollment = programEnrollmentIn(student, programEnrollment, subject, EnrollmentStatus.IN_PROGRESS);
+        SubjectSectionEnrollment registeredEnrollment = programEnrollmentIn(student, programEnrollment, subject, EnrollmentStatus.IN_PROGRESS);
+        ExamBoard board = programBoard(subject, FROM.atTime(9, 0), ExamBoardStatus.SCHEDULED, NOW.minusDays(1), NOW.plusDays(1));
+        register(board, withdrawnEnrollment, null, ExamBoardRegistrationStatus.WITHDRAWN);
+        register(board, registeredEnrollment, null, ExamBoardRegistrationStatus.REGISTERED);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(reader.listForStudent(student.getId(), FROM, TO)).containsExactly(
+                new StudentExamBoardView(board.getId(), subject.getName(), FROM.atTime(9, 0), "Aula 1",
+                        "SCHEDULED", "REGISTERED", true));
     }
 
     @Test
@@ -144,7 +160,7 @@ class StudentExamBoardReaderIT extends AbstractIntegrationTest {
 
         assertThat(reader.listForStudent(student.getId(), FROM, TO))
                 .extracting(StudentExamBoardView::boardId, StudentExamBoardView::registrationStatus, StudentExamBoardView::registrationOpen)
-                .containsExactly(org.assertj.core.groups.Tuple.tuple(board.getId(), null, true));
+                .containsExactly(Tuple.tuple(board.getId(), null, true));
     }
 
     @Test
@@ -235,6 +251,27 @@ class StudentExamBoardReaderIT extends AbstractIntegrationTest {
         assertThat(reader.listForStudent(otherStudent.getId(), FROM, TO)).hasSize(1);
     }
 
+    @Test
+    void courseBoardsAndRegistrationsOfAnotherStudentAreNotOffered() {
+        CourseEnrollment otherCourseEnrollment = courseEnrollment(otherStudent);
+        CourseSubjectSection otherSection = courseSectionEnrollment(otherStudent, otherCourseEnrollment, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment otherEnrollment = courseSubjectSectionEnrollmentOf(otherSection);
+        ExamBoard board = courseBoard(otherSection.getCourseSubject(), FROM.atTime(9, 0), ExamBoardStatus.SCHEDULED,
+                NOW.minusDays(1), NOW.plusDays(1));
+        register(board, null, otherEnrollment, ExamBoardRegistrationStatus.REGISTERED);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(reader.listForStudent(student.getId(), FROM, TO)).isEmpty();
+        assertThat(reader.listForStudent(otherStudent.getId(), FROM, TO)).hasSize(1);
+    }
+
+    private CourseSubjectSectionEnrollment courseSubjectSectionEnrollmentOf(CourseSubjectSection section) {
+        return entityManager.createQuery(
+                "select e from CourseSubjectSectionEnrollment e where e.courseSubjectSection = :section",
+                CourseSubjectSectionEnrollment.class).setParameter("section", section).getSingleResult();
+    }
+
     private Student student() {
         Student created = new Student();
         created.setPerson(fixtures.person());
@@ -244,7 +281,7 @@ class StudentExamBoardReaderIT extends AbstractIntegrationTest {
         return created;
     }
 
-    private ProgramEnrollment programEnrollment(Student owner, com.red_escuela.backend.academicstructure.entity.Program program) {
+    private ProgramEnrollment programEnrollment(Student owner, Program program) {
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(owner);
         enrollment.setProgram(program);

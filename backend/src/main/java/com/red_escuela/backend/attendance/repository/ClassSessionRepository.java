@@ -1,10 +1,12 @@
 package com.red_escuela.backend.attendance.repository;
 
 import com.red_escuela.backend.attendance.entity.ClassSession;
+import com.red_escuela.backend.attendance.entity.ClassSessionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,11 +18,11 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
     Optional<ClassSession> findByCourseSubjectSectionIdAndClassDate(Long courseSubjectSectionId, LocalDate classDate);
 
     List<ClassSession> findBySubjectSectionIdInAndStatusAndClassDateBetween(
-            java.util.Collection<Long> sectionIds, com.red_escuela.backend.attendance.entity.ClassSessionStatus status,
+            Collection<Long> sectionIds, ClassSessionStatus status,
             LocalDate from, LocalDate to);
 
     List<ClassSession> findByCourseSubjectSectionIdInAndStatusAndClassDateBetween(
-            java.util.Collection<Long> sectionIds, com.red_escuela.backend.attendance.entity.ClassSessionStatus status,
+            Collection<Long> sectionIds, ClassSessionStatus status,
             LocalDate from, LocalDate to);
 
     List<ClassSession> findBySubjectSectionId(Long subjectSectionId);
