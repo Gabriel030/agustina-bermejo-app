@@ -646,6 +646,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `DIRECTOR_PERMISSIONS_NOT_EDITABLE` | no | `DirectorPermissionsNotEditableException` | identity |
 | `DUPLICATE_PERMISSION_GRID_CHANGE` | no | `DuplicatePermissionGridChangeException` | identity |
+| `DUPLICATE_PERMISSION_MODE_CHANGE` | no | `DuplicatePermissionModeChangeException` | identity |
 | `GRADUATION_CERTIFICATE_OPERATION_PENDING` | no | `GraduationCertificateOperationPendingException` | graduation |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
 | `SIGNATORY_DUPLICATED_IN_TEMPLATE` | no | `SignatoryDuplicatedInTemplateException` | graduation |
@@ -656,6 +657,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
 | `TEMPLATE_UNKNOWN_MARKER` | no | `TemplateUnknownMarkerException` | graduation |
 | `UNKNOWN_PERMISSION_CODE` | no | `UnknownPermissionCodeException` | identity |
+| `UNKNOWN_PERMISSION_MODULE` | no | `UnknownPermissionModuleException` | identity |
 | `UNKNOWN_PERMISSION_ROLE` | no | `UnknownPermissionRoleException` | identity |
 | `UNKNOWN_TEMPLATE_VARIABLE` | no | `UnknownTemplateVariableException` | notification |
 

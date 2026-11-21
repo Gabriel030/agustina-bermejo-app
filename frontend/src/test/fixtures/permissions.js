@@ -33,7 +33,14 @@ export const permissionDiscrepancy = (overrides = {}) => ({
   role: 'ADMINISTRATIVO',
   module: 'announcement',
   permissionCode: 'announcement.delete',
+  direction: 'LEGACY_DENIED_GRID_ALLOWED',
   count: 3,
   lastSeenAt: '2026-11-21T12:00:00Z',
   ...overrides,
+});
+
+export const permissionDiscrepancySummary = () => ({
+  modules: [
+    { module: 'announcement', legacyAllowedGridDenied: 1, legacyDeniedGridAllowed: 2, total: 3, lastSeenAt: '2026-11-21T12:00:00Z' },
+  ],
 });

@@ -20,14 +20,14 @@ public class PermissionDiscrepancyReader {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PermissionDiscrepancyResponse> read(int page, int size) {
+    public PageResponse<PermissionDiscrepancyResponse> read(String module, int page, int size) {
         accumulator.flush();
         int boundedPage = Math.max(page, 0);
         int boundedSize = Math.min(Math.max(size, 1), PageResponse.MAX_SIZE);
-        var result = counterRepository.findPageOrderedByLastSeen(PageRequest.of(boundedPage, boundedSize));
+        var result = counterRepository.findPageOrderedByLastSeen(module, PageRequest.of(boundedPage, boundedSize));
         return new PageResponse<>(result.getContent().stream()
                 .map(row -> new PermissionDiscrepancyResponse(row.getRole(), row.getModule(), row.getPermissionCode(),
-                        row.getOccurrences(), row.getLastSeenAt()))
+                        null, row.getOccurrences(), row.getLastSeenAt()))
                 .toList(), boundedPage, boundedSize, result.getTotalElements());
     }
 }
