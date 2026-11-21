@@ -19828,6 +19828,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "actorName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "actorRole",
           "required" : false,
           "schema" : {
@@ -64724,6 +64731,13 @@
           "schema" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         }, {
           "in" : "query",
