@@ -425,4 +425,5 @@ export const handlers = [
     HttpResponse.json({ allowed: true, blockedBy: null, parts: [] }),
   ),
   http.get(`${API}/backups/status`, () => HttpResponse.json(backupStatusForPlatformAdmin())),
+  http.post(`${API}/subject-sections/:id/modification-request/preview`, () => HttpResponse.json({ conflicts: [] })),
 ];

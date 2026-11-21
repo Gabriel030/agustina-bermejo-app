@@ -13555,6 +13555,35 @@
         "required" : [ "name", "role" ],
         "type" : "object"
       },
+      "SectionModificationConflictResponse" : {
+        "properties" : {
+          "conflictingSectionLabel" : {
+            "type" : "string"
+          },
+          "slotIndex" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "enum" : [ "SLOT_OUTSIDE_SHIFT", "CLASSROOM_CAPACITY_EXCEEDED", "CLASSROOM_OCCUPIED", "INSTRUCTOR_BUSY", "SLOTS_OVERLAP" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "conflictingSectionLabel", "slotIndex", "type" ],
+        "type" : "object"
+      },
+      "SectionModificationPreviewResponse" : {
+        "properties" : {
+          "conflicts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SectionModificationConflictResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "conflicts" ],
+        "type" : "object"
+      },
       "SectionOccupancy" : {
         "properties" : {
           "available" : {
@@ -87443,6 +87472,143 @@
           }
         },
         "tags" : [ "academic-offering-cycle-controller" ]
+      }
+    },
+    "/subject-sections/{id}/modification-request/preview" : {
+      "post" : {
+        "operationId" : "SectionModificationPreview_previewSectionModification",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifySectionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SectionModificationPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "section-modification-preview-controller" ]
       }
     },
     "/subject-sections/{id}/modification-request/reject" : {
