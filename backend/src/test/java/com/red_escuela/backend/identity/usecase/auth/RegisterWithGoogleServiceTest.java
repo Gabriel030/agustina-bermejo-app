@@ -80,7 +80,9 @@ class RegisterWithGoogleServiceTest {
         when(googleIdTokenService.verify(ID_TOKEN)).thenReturn(PROFILE);
         when(personRepository.findByEmail(EmailAddress.of(PROFILE.email()))).thenReturn(Optional.of(new Person()));
 
-        assertThatThrownBy(() -> service.register(command)).isInstanceOf(UsernameAlreadyExistsException.class);
+        assertThatThrownBy(() -> service.register(command))
+                .isInstanceOf(UsernameAlreadyExistsException.class)
+                .message().doesNotContain(PROFILE.email());
         verifyNoInteractions(institutionRepository, personFactory, studentRepository, authTokenIssuer);
     }
 
@@ -101,7 +103,9 @@ class RegisterWithGoogleServiceTest {
                 .thenReturn(new Person());
         when(studentRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
 
-        assertThatThrownBy(() -> service.register(command)).isInstanceOf(UsernameAlreadyExistsException.class);
+        assertThatThrownBy(() -> service.register(command))
+                .isInstanceOf(UsernameAlreadyExistsException.class)
+                .message().doesNotContain(PROFILE.email());
         verify(authTokenIssuer, never()).issueTokens(any());
     }
 
