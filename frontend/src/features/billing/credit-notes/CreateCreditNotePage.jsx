@@ -342,7 +342,7 @@ export function CreateCreditNotePage() {
             <Button asChild variant="outline">
               <Link to={backPath}>Cancelar</Link>
             </Button>
-            <Button type="button" variant="gradient" disabled={draft.blocked || creditPending} onClick={() => setStep('confirm')}>
+            <Button type="button" variant="primary" disabled={draft.blocked || creditPending} onClick={() => setStep('confirm')}>
               Revisar la nota
             </Button>
           </>
@@ -351,7 +351,7 @@ export function CreateCreditNotePage() {
             <Button type="button" variant="outline" onClick={() => setStep('amounts')} disabled={mutation.isPending}>
               Volver a editar
             </Button>
-            <Button type="button" variant="gradient" loading={mutation.isPending} disabled={creditPending} onClick={handleSubmit}>
+            <Button type="button" variant="primary" loading={mutation.isPending} disabled={creditPending} onClick={handleSubmit}>
               {confirmLabel}
             </Button>
           </>

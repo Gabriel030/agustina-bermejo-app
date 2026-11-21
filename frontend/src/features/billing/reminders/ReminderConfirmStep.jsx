@@ -163,7 +163,7 @@ export function ReminderConfirmStep({ kind, scope, base, draft, isDirector, onBa
         <Button variant="outline" onClick={onBack} disabled={submitting}>
           Volver a los cambios
         </Button>
-        <Button variant="gradient" onClick={submit} disabled={!canSubmit} loading={submitting}>
+        <Button variant="primary" onClick={submit} disabled={!canSubmit} loading={submitting}>
           {isDirector ? 'Publicar cambio' : 'Enviar propuesta'}
         </Button>
       </div>

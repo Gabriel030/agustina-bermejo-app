@@ -11,7 +11,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 function CreateButton({ to, label, size }) {
   return (
-    <Button asChild variant="gradient" size={size}>
+    <Button asChild variant="primary" size={size}>
       <Link to={to}>
         <Plus />
         {label}

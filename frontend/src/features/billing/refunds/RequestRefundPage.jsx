@@ -291,7 +291,7 @@ export function RequestRefundPage() {
         <Button asChild variant="outline">
           <Link to={studentPath}>Cancelar</Link>
         </Button>
-        <Button type="submit" form="refund-request-form" variant="gradient" loading={mutation.isPending}>
+        <Button type="submit" form="refund-request-form" variant="primary" loading={mutation.isPending}>
           {isDirector ? 'Registrar reembolso' : 'Pedir reembolso'}
         </Button>
       </GlassCard>

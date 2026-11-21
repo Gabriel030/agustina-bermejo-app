@@ -86,7 +86,7 @@ function CashDialog({ studentId, request, keyFor, onClose }) {
           <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
             Cancelar
           </Button>
-          <Button variant="gradient" onClick={confirm} loading={mutation.isPending} disabled={tooLong}>
+          <Button variant="primary" onClick={confirm} loading={mutation.isPending} disabled={tooLong}>
             {unknownOutcome ? 'Reintentar cobro' : 'Cobrar y confirmar el año'}
           </Button>
         </DialogFooter>
