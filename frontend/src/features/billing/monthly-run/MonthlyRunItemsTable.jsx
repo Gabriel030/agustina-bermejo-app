@@ -60,7 +60,7 @@ function RowMenu({ item, monthlyRunId }) {
           <MoreHorizontal aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-dialog-bg backdrop-blur-[28px] backdrop-saturate-[1.6]">
+      <DropdownMenuContent align="end" className="bg-dialog-bg backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)">
         <DropdownMenuItem disabled={retryItem.isPending} onSelect={handleRetry}>
           <RotateCw aria-hidden="true" /> Reintentar ahora
         </DropdownMenuItem>

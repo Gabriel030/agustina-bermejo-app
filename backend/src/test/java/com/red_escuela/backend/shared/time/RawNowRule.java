@@ -18,7 +18,7 @@ public final class RawNowRule {
             "java.time.LocalDate", "java.time.LocalDateTime", "java.time.LocalTime", "java.time.YearMonth",
             "java.time.Instant", "java.time.ZonedDateTime", "java.time.OffsetDateTime");
     private static final Set<String> GUARDED_PACKAGES = Set.of(
-            ROOT + ".billing", ROOT + ".enrollment", ROOT + ".graduation");
+            ROOT + ".billing", ROOT + ".enrollment", ROOT + ".graduation", ROOT + ".notification");
     private static final Set<String> GUARDED_CLASSES = Set.of(
             ROOT + ".evaluation.service.ExamBoardRegistrationManager",
             ROOT + ".evaluation.service.ExamBoardManager");

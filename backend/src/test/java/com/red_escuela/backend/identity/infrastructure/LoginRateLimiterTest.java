@@ -33,7 +33,7 @@ class LoginRateLimiterTest {
     };
 
     private LoginRateLimiter newLimiter() {
-        return new LoginRateLimiter(5, 5, 3, 3, 5, 5, clock);
+        return new LoginRateLimiter(5, 5, 3, 3, 5, 5, 2, 2, 100, clock);
     }
 
     @Test
@@ -72,5 +72,48 @@ class LoginRateLimiterTest {
         limiter.evictIdleClients();
 
         assertThat(limiter.tryConsumeLogin("10.0.0.1")).isFalse();
+    }
+
+    @Test
+    void registerAttemptsForTheSameUserFromTheSameIpAreCutAfterTheCapacity() {
+        LoginRateLimiter limiter = newLimiter();
+
+        assertThat(limiter.tryConsumeRegisterForUser("10.0.0.1", "Maria")).isTrue();
+        assertThat(limiter.tryConsumeRegisterForUser("10.0.0.1", " maria ")).isTrue();
+        assertThat(limiter.tryConsumeRegisterForUser("10.0.0.1", "MARIA")).isFalse();
+    }
+
+    @Test
+    void aThirdPartyExhaustingItsQuotaForAUserDoesNotBlockTheOwnerFromAnotherIp() {
+        LoginRateLimiter limiter = newLimiter();
+        limiter.tryConsumeRegisterForUser("10.0.0.66", "maria");
+        limiter.tryConsumeRegisterForUser("10.0.0.66", "maria");
+        assertThat(limiter.tryConsumeRegisterForUser("10.0.0.66", "maria")).isFalse();
+
+        assertThat(limiter.tryConsumeRegisterForUser("10.0.0.7", "maria")).isTrue();
+    }
+
+    @Test
+    void differentUsersFromTheSameIpHaveIndependentQuotas() {
+        LoginRateLimiter limiter = newLimiter();
+        limiter.tryConsumeRegisterForUser("10.0.0.1", "ana");
+        limiter.tryConsumeRegisterForUser("10.0.0.1", "ana");
+
+        assertThat(limiter.tryConsumeRegisterForUser("10.0.0.1", "luis")).isTrue();
+    }
+
+    @Test
+    void aSaturatedUserKeyMapDisablesTheUserLimitInsteadOfSharingAnOverflowBucketAndTheIpLimitStillApplies() {
+        LoginRateLimiter limiter = new LoginRateLimiter(5, 5, 3, 3, 2, 2, 2, 2, 2, clock);
+        limiter.tryConsumeRegisterForUser("10.0.0.1", "a");
+        limiter.tryConsumeRegisterForUser("10.0.0.2", "b");
+
+        for (int i = 0; i < 10; i++) {
+            assertThat(limiter.tryConsumeRegisterForUser("10.0.0." + (10 + i), "legit" + i)).isTrue();
+        }
+
+        assertThat(limiter.tryConsumeRegister("10.0.0.50")).isTrue();
+        assertThat(limiter.tryConsumeRegister("10.0.0.50")).isTrue();
+        assertThat(limiter.tryConsumeRegister("10.0.0.50")).isFalse();
     }
 }
