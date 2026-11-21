@@ -60,7 +60,7 @@ class PermissionGateCoverageTest {
             assertThat(preAuthorize.value()).isEqualTo("hasRole('DIRECTOR')");
             checked++;
         }
-        assertThat(checked).isEqualTo(4);
+        assertThat(checked).isEqualTo(6);
     }
 
     @Test
