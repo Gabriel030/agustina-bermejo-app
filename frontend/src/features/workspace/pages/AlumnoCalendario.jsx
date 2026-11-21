@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
+import { CalendarEventDetail } from '@/features/workspace/components/calendar/CalendarEventDetail';
+import { CalendarExportPanel } from '@/features/workspace/components/calendar/CalendarExportPanel';
 import { CalendarDayAgenda } from '@/features/workspace/components/calendar/CalendarDayAgenda';
 import { CalendarFilters } from '@/features/workspace/components/calendar/CalendarFilters';
 import { CalendarMonthGrid, CalendarWeekColumns, CalendarWeekStrip } from '@/features/workspace/components/calendar/CalendarGrid';
@@ -11,20 +13,18 @@ import { CalendarLegend } from '@/features/workspace/components/calendar/Calenda
 import { CalendarMonthAgenda } from '@/features/workspace/components/calendar/CalendarMonthAgenda';
 import { CalendarLoadError, CalendarNoEnrollmentsBanner, CalendarSkeleton } from '@/features/workspace/components/calendar/CalendarStates';
 import { CalendarToolbar } from '@/features/workspace/components/calendar/CalendarToolbar';
+import { useReturnFocus } from '@/features/workspace/hooks/useReturnFocus';
 import { useStudentCalendarState } from '@/features/workspace/hooks/useStudentCalendarState';
 import { formatDayLong, formatMonthTitle, formatUpdatedAt, formatWeekTitle } from '@/features/workspace/lib/studentCalendar';
 
-function CalendarHeaderAction({ updatedLabel }) {
+function CalendarHeaderAction({ updatedLabel, onOpenExport }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       {updatedLabel && <span className="text-size-12 text-ink-soft tabular-nums">{updatedLabel}</span>}
-      <Button variant="primary" disabled aria-describedby="calendar-export-soon" className="max-md:min-h-11">
+      <Button variant="primary" onClick={onOpenExport} className="max-md:min-h-11">
         <CalendarPlus aria-hidden="true" />
         Agregar a mi calendario
       </Button>
-      <span id="calendar-export-soon" className="sr-only">
-        Disponible próximamente
-      </span>
     </div>
   );
 }
@@ -73,7 +73,15 @@ export function AlumnoCalendario() {
   const state = useStudentCalendarState();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { query, view, isDesktop } = state;
-  const onSelectEvent = (event) => state.selectDay(event.date);
+  const [detailEvent, setDetailEvent] = useState(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const detailFocus = useReturnFocus();
+  const exportFocus = useReturnFocus();
+  const onSelectEvent = (event) => {
+    detailFocus.remember();
+    state.selectDay(event.date);
+    setDetailEvent(event);
+  };
   const showDayBlock = view !== 'agenda';
   const title = view === 'week' ? formatWeekTitle(state.selectedDate) : formatMonthTitle(state.selectedDate);
 
@@ -116,7 +124,10 @@ export function AlumnoCalendario() {
   }
 
   return (
-    <PageContainer title="Calendario" action={<CalendarHeaderAction updatedLabel={formatUpdatedAt(state.generatedAt, state.todayKey)} />}>
+    <PageContainer title="Calendario" action={<CalendarHeaderAction updatedLabel={formatUpdatedAt(state.generatedAt, state.todayKey)} onOpenExport={() => {
+          exportFocus.remember();
+          setExportOpen(true);
+        }} />}>
       <CalendarToolbar view={view} title={title} onChangeView={state.setView} onToday={state.goToToday} onShift={state.shift} />
       {!isDesktop && (
         <div className="flex flex-col gap-3">
@@ -139,6 +150,8 @@ export function AlumnoCalendario() {
         </div>
       )}
       {content}
+      <CalendarEventDetail event={detailEvent} onClose={() => setDetailEvent(null)} onCloseAutoFocus={detailFocus.restore} isDesktop={isDesktop} />
+      <CalendarExportPanel open={exportOpen} onOpenChange={setExportOpen} onCloseAutoFocus={exportFocus.restore} isDesktop={isDesktop} />
     </PageContainer>
   );
 }

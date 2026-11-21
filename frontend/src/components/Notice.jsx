@@ -7,9 +7,9 @@ const TONES = {
   danger: 'bg-danger-bg text-ink',
 };
 
-export function Notice({ tone = 'neutral', title, children, className }) {
+export function Notice({ tone = 'neutral', title, children, className, role = 'note' }) {
   return (
-    <div role="note" className={cn('rounded-xl px-3 py-2.5 text-size-12-5 leading-snug', TONES[tone], className)}>
+    <div role={role} className={cn('rounded-xl px-3 py-2.5 text-size-12-5 leading-snug', TONES[tone], className)}>
       {title && <b className="font-bold">{title} </b>}
       {children}
     </div>
