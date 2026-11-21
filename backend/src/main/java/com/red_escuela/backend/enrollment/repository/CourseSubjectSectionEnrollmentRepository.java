@@ -32,6 +32,15 @@ public interface CourseSubjectSectionEnrollmentRepository extends JpaRepository<
 
     List<CourseSubjectSectionEnrollment> findByStudentIdAndCourseEnrollmentIdOrderByIdAsc(Long studentId, Long courseEnrollmentId);
 
+    @Query("""
+            select e from CourseSubjectSectionEnrollment e
+            join fetch e.courseSubjectSection cs join fetch cs.courseSubject
+            where e.student.id = :studentId and e.status in :statuses
+            order by cs.id
+            """)
+    List<CourseSubjectSectionEnrollment> findWithSectionByStudentIdAndStatusIn(
+            @Param("studentId") Long studentId, @Param("statuses") List<EnrollmentStatus> statuses);
+
     List<CourseSubjectSectionEnrollment> findByCourseSubjectSectionIdAndStatusIn(
             Long courseSubjectSectionId, List<EnrollmentStatus> statuses);
 
