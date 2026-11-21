@@ -32,7 +32,9 @@ public class CertificateTemplateContentRules {
                 blankToNull(content.qrLabel()),
                 blankToNull(content.footerLegend()),
                 normalize(content.firstSigner()),
-                normalize(content.secondSigner()));
+                normalize(content.secondSigner()),
+                content.signatory1Id(),
+                content.signatory2Id());
     }
 
     public void requireKnownMarkers(CertificateTemplateContent content) {

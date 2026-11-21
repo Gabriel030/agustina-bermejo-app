@@ -184,6 +184,7 @@ begin
       ('grade_item_audit', 'grade_item_type', array['EXAM', 'FINAL', 'TP']),
       ('grade_item_audit', 'kind', array['CORRECTION', 'FINAL_REVERT', 'RECOVERY', 'SYSTEM_REVERT']),
       ('grade_item_audit', 'section_kind', array['COURSE', 'PROGRAM']),
+      ('graduation_certificate_registry_counter', 'kind', array['COURSE', 'PROGRAM']),
       ('graduation_request', 'status', array['ADMIN_VERIFIED', 'APPROVED', 'REJECTED', 'REQUESTED']),
       ('holiday', 'type', array['BRIDGE', 'MUNICIPAL', 'NATIONAL', 'NON_WORKING_DAY', 'OTHER', 'PROVINCIAL']),
       ('identity_contact_change_log', 'change_type', array['DOCUMENT_CHANGED', 'EMAIL_CHANGE_CONFIRMED', 'EMAIL_CHANGE_REQUESTED']),

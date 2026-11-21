@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { springPage } from '@/test/fixtures/certificates';
 import { errorBody } from '@/test/fixtures/errors';
 
 const API = 'http://localhost:8080';
@@ -37,4 +38,36 @@ export const publishNothingHandler = http.post(`${API}/certificate-templates/:ki
 
 export const publishIncompleteHandler = http.post(`${API}/certificate-templates/:kind/publish`, () =>
   certificateErrorResponse(422, 'TEMPLATE_INCOMPLETE'),
+);
+
+export const signatoryNotFoundHandler = http.get(`${API}/certificate-signatories/:id`, () =>
+  certificateErrorResponse(404, 'SIGNATORY_NOT_FOUND'),
+);
+
+export const signatoryListForbiddenHandler = http.get(`${API}/certificate-signatories`, () =>
+  certificateErrorResponse(403, 'FORBIDDEN'),
+);
+
+export const signatoryListEmptyHandler = http.get(`${API}/certificate-signatories`, () =>
+  HttpResponse.json(springPage([])),
+);
+
+export const signatoryRoleInvalidHandler = http.post(`${API}/certificate-signatories`, () =>
+  certificateErrorResponse(422, 'SIGNATORY_ROLE_INVALID'),
+);
+
+export const signatorySignatureInvalidHandler = http.put(`${API}/certificate-signatories/:id/signature`, () =>
+  certificateErrorResponse(422, 'SIGNATORY_SIGNATURE_INVALID'),
+);
+
+export const saveDraftSignatoryInactiveHandler = http.put(`${API}/certificate-templates/:kind/draft`, () =>
+  certificateErrorResponse(409, 'SIGNATORY_INACTIVE'),
+);
+
+export const saveDraftSignatoryNotAllowedHandler = http.put(`${API}/certificate-templates/:kind/draft`, () =>
+  certificateErrorResponse(409, 'SIGNATORY_NOT_ALLOWED_FOR_DOCUMENT_TYPE'),
+);
+
+export const saveDraftSignatoryDuplicatedHandler = http.put(`${API}/certificate-templates/:kind/draft`, () =>
+  certificateErrorResponse(422, 'SIGNATORY_DUPLICATED_IN_TEMPLATE'),
 );

@@ -123,7 +123,7 @@ export function graduationCertificateBatch(overrides = {}) {
         certificate: graduationCertificateSummary({ holderFullName: 'Gómez, Tomás' }),
         errorCode: null,
       },
-      { enrollmentId: 12, kind: 'PROGRAM', outcome: 'FAILED', certificate: null, errorCode: 'GRADUATION_CERTIFICATE_NOT_ELIGIBLE' },
+      { enrollmentId: 12, kind: 'PROGRAM', outcome: 'FAILED', certificate: null, errorCode: 'GRADUATION_CERTIFICATE_BLOCKED_BY_DEBT' },
     ],
     ...overrides,
   };
@@ -157,6 +157,8 @@ export function certificateTemplateContent(overrides = {}) {
     footerLegend: 'Certificado emitido por el Instituto Agustina Bermejo. Verificá su autenticidad escaneando el código QR.',
     firstSigner: { name: 'Dra. Lucía Fernández', role: 'Secretaria Legal', signatureImageId: 2 },
     secondSigner: { name: 'Lic. Marcos Ledesma', role: 'Director Académico', signatureImageId: 3 },
+    signatory1Id: 1,
+    signatory2Id: 2,
     ...overrides,
   };
 }
