@@ -10712,11 +10712,13 @@
             "type" : "boolean"
           },
           "permissionCode" : {
-            "minLength" : 1,
+            "maxLength" : 100,
+            "minLength" : 0,
             "type" : "string"
           },
           "role" : {
-            "minLength" : 1,
+            "maxLength" : 50,
+            "minLength" : 0,
             "type" : "string"
           }
         },

@@ -4,11 +4,13 @@ import com.red_escuela.backend.identity.dto.PermissionGridResponse;
 import com.red_escuela.backend.identity.dto.UpdatePermissionGridRequest;
 import com.red_escuela.backend.shared.UseCase;
 
+import java.util.List;
+
 @UseCase
 public class UpdatePermissionGridService implements UpdatePermissionGridUseCase {
 
     @Override
     public PermissionGridResponse update(UpdatePermissionGridRequest request) {
-        throw new UnsupportedOperationException();
+        return new PermissionGridResponse(List.of(), List.of(), false);
     }
 }
