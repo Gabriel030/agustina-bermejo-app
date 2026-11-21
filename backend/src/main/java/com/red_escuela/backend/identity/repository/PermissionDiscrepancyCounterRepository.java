@@ -30,7 +30,8 @@ public interface PermissionDiscrepancyCounterRepository extends JpaRepository<Pe
             select c.role as role, c.module as module, p.code as permissionCode,
                    c.occurrences as occurrences, c.lastSeenAt as lastSeenAt
             from PermissionDiscrepancyCounter c join Permission p on p.id = c.permissionId
+            where (:module is null or c.module = :module)
             order by c.lastSeenAt desc, c.id desc
-            """, countQuery = "select count(c) from PermissionDiscrepancyCounter c")
-    Page<PermissionDiscrepancyRow> findPageOrderedByLastSeen(Pageable pageable);
+            """, countQuery = "select count(c) from PermissionDiscrepancyCounter c where (:module is null or c.module = :module)")
+    Page<PermissionDiscrepancyRow> findPageOrderedByLastSeen(@Param("module") String module, Pageable pageable);
 }
