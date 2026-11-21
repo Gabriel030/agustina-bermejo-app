@@ -85,6 +85,7 @@ export function MyCertificates() {
   const closePreview = useCallback(() => {
     revokePreviewUrl();
     setPreview(null);
+    setActionError(null);
   }, [revokePreviewUrl]);
 
   async function fetchPdf(certificate) {
@@ -113,6 +114,11 @@ export function MyCertificates() {
     setPreview({ url: previewUrl.current, certificate });
   }
 
+  function retry() {
+    setActionError(null);
+    refetch();
+  }
+
   let content;
   if (isLoading) {
     content = (
@@ -122,7 +128,7 @@ export function MyCertificates() {
       </div>
     );
   } else if (isError || !data) {
-    content = <LoadErrorState error={error} onRetry={refetch} resource="tus certificados" />;
+    content = <LoadErrorState error={error} onRetry={retry} resource="tus certificados" />;
   } else if (data.length === 0) {
     content = (
       <GlassCard className="p-4">

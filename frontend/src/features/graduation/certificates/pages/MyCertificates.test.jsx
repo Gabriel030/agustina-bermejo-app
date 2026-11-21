@@ -7,7 +7,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { axe } from '@/test/axe';
 import { errorBody } from '@/test/fixtures/errors';
 import { ownGraduationCertificate } from '@/test/fixtures/certificates';
-import { revokedOwnCertificatePdfHandler } from '@/test/mocks/certificateErrorHandlers';
+import { revokedOwnCertificatePdfHandler, unavailableOwnCertificatePdfHandler } from '@/test/mocks/certificateErrorHandlers';
 import { routes } from '@/features/graduation/routes';
 import { MyCertificates } from '@/features/graduation/certificates/pages/MyCertificates';
 
@@ -30,7 +30,13 @@ function listReturns(certificates) {
 }
 
 describe('MyCertificates', () => {
+  let clickedLinks;
+
   beforeEach(() => {
+    clickedLinks = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function recordClick() {
+      clickedLinks.push({ download: this.download, href: this.href });
+    });
     URL.createObjectURL = vi.fn(() => 'blob:certificate');
     URL.revokeObjectURL = vi.fn();
   });
@@ -100,10 +106,20 @@ describe('MyCertificates', () => {
   it('downloads the PDF through an object URL that is released', async () => {
     const user = userEvent.setup({ delay: null });
     listReturns([validCertificate]);
+    server.use(
+      http.get(`${API}/me/certificates/:id/pdf`, () =>
+        new HttpResponse('%PDF-1.4', {
+          headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="certificado.pdf"' },
+        }),
+      ),
+    );
     renderWithProviders(<MyCertificates />);
     await user.click(await screen.findByRole('button', { name: 'Descargar' }));
     await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalled());
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:certificate');
+    expect(clickedLinks).toHaveLength(1);
+    expect(clickedLinks[0].download).toBe('certificado.pdf');
+    expect(clickedLinks[0].href).toBe('blob:certificate');
   });
 
   it('opens the preview in a dialog and releases the object URL when it closes', async () => {
@@ -128,6 +144,69 @@ describe('MyCertificates', () => {
     await user.click(await screen.findByRole('button', { name: 'Descargar' }));
     expect(await screen.findByText('El certificado fue revocado y ya no se puede descargar.')).toBeInTheDocument();
     expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the list after the PDF fails', async () => {
+    const user = userEvent.setup({ delay: null });
+    let listRequests = 0;
+    server.use(
+      http.get(`${API}/me/certificates`, () => {
+        listRequests += 1;
+        return HttpResponse.json([validCertificate]);
+      }),
+      revokedOwnCertificatePdfHandler,
+    );
+    renderWithProviders(<MyCertificates />);
+    await user.click(await screen.findByRole('button', { name: 'Descargar' }));
+    await screen.findByText('El certificado fue revocado y ya no se puede descargar.');
+    await waitFor(() => expect(listRequests).toBe(2));
+  });
+
+  it('shows the translated message when the certificate is not issued yet', async () => {
+    const user = userEvent.setup({ delay: null });
+    listReturns([validCertificate]);
+    server.use(unavailableOwnCertificatePdfHandler);
+    renderWithProviders(<MyCertificates />);
+    await user.click(await screen.findByRole('button', { name: 'Descargar' }));
+    expect(await screen.findByText('El certificado todavía no fue emitido.')).toBeInTheDocument();
+  });
+
+  it('clears the previous error when a new preview opens and when it closes', async () => {
+    const user = userEvent.setup({ delay: null });
+    listReturns([validCertificate]);
+    server.use(revokedOwnCertificatePdfHandler);
+    renderWithProviders(<MyCertificates />);
+    await user.click(await screen.findByRole('button', { name: 'Vista previa' }));
+    await screen.findByRole('alert');
+
+    server.resetHandlers();
+    listReturns([validCertificate]);
+    await user.click(await screen.findByRole('button', { name: 'Vista previa' }));
+    await screen.findByTitle('Vista previa del certificado de Tecnicatura en Administración');
+    expect(screen.queryByText('El certificado fue revocado y ya no se puede descargar.')).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByTitle('Vista previa del certificado de Tecnicatura en Administración')).not.toBeInTheDocument());
+    expect(screen.queryByText('El certificado fue revocado y ya no se puede descargar.')).not.toBeInTheDocument();
+  });
+
+  it('drops the stale PDF error when the list is retried after failing to refresh', async () => {
+    const user = userEvent.setup({ delay: null });
+    let listRequests = 0;
+    server.use(
+      http.get(`${API}/me/certificates`, () => {
+        listRequests += 1;
+        if (listRequests === 1) return HttpResponse.json([validCertificate]);
+        if (listRequests === 2) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+        return HttpResponse.json([validCertificate]);
+      }),
+      revokedOwnCertificatePdfHandler,
+    );
+    renderWithProviders(<MyCertificates />);
+    await user.click(await screen.findByRole('button', { name: 'Descargar' }));
+    await user.click(await screen.findByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByRole('heading', { name: 'Tecnicatura en Administración' })).toBeInTheDocument();
+    expect(screen.queryByText('El certificado fue revocado y ya no se puede descargar.')).not.toBeInTheDocument();
   });
 
   it('shows the translated message when the certificate is not found', async () => {
