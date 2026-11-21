@@ -2,9 +2,9 @@ import { Buscador } from '@/components/Buscador';
 import { ChoiceChip } from '@/components/ChoiceChip';
 import { Button } from '@/components/ui/button';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { EDITABLE_ROLES, moduleLabel } from '@/features/permissions/lib/permissionGrid';
+import { moduleLabel } from '@/features/permissions/lib/permissionGrid';
 
-export function PermissionToolbar({ modules, query, onQueryChange, moduleFilter, onModuleFilterChange, roleFilter, onToggleRole, onClearRoles, allOpen, onToggleAll, shown, total }) {
+export function PermissionToolbar({ modules, filterableRoles, query, onQueryChange, moduleFilter, onModuleFilterChange, roleFilter, onToggleRole, onClearRoles, allOpen, onToggleAll, shown, total }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2.5">
@@ -23,7 +23,7 @@ export function PermissionToolbar({ modules, query, onQueryChange, moduleFilter,
       </div>
       <div role="group" aria-label="Filtrar por rol" className="flex flex-wrap items-center gap-1.5">
         <span className="text-size-12 text-ink-faint">Mostrar solo:</span>
-        {EDITABLE_ROLES.map((role) => (
+        {filterableRoles.map((role) => (
           <ChoiceChip key={role.id} selected={roleFilter.includes(role.id)} onClick={() => onToggleRole(role.id)} aria-pressed={roleFilter.includes(role.id)} className="min-h-10">
             {role.label}
           </ChoiceChip>

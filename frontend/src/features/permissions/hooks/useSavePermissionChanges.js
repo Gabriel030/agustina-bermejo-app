@@ -7,9 +7,11 @@ export function useSavePermissionChanges() {
   const queryClient = useQueryClient();
   return useMutation({
     meta: { handlesOwnError: true },
-    mutationFn: async ({ reason, changes, onChunkSaved }) => {
+    mutationFn: async ({ reason, changes, sensitiveConfirmed, isSensitive, onChunkSaved }) => {
       for (const chunk of chunkChanges(changes)) {
-        const grid = await apiFetch('/permissions/grid', { method: 'PUT', body: JSON.stringify({ reason, changes: chunk }) });
+        const body = { reason, changes: chunk };
+        if (sensitiveConfirmed && chunk.some(isSensitive)) body.sensitiveConfirmed = true;
+        const grid = await apiFetch('/permissions/grid', { method: 'PUT', body: JSON.stringify(body) });
         queryClient.setQueryData(PERMISSION_GRID_KEY, grid);
         onChunkSaved(chunk);
       }

@@ -19,7 +19,7 @@ function bigCatalog(count) {
     modules: [
       {
         module: 'announcement',
-        permissions: Array.from({ length: count }, (_, index) => ({ code: `announcement.perm${index}`, description: `Permiso ${index}`, fixedToDirector: false })),
+        permissions: Array.from({ length: count }, (_, index) => ({ code: `announcement.perm${index}`, description: `Permiso ${index}`, fixedToDirector: false, sensitive: false })),
       },
     ],
   };
@@ -115,15 +115,105 @@ describe('PermissionsPage', () => {
     expect(screen.queryByRole('region', { name: 'Cambios sin guardar' })).not.toBeInTheDocument();
   });
 
-  it('keeps director-only permissions locked and labeled', async () => {
+  it('shows sensitive permissions with a keyboard reachable pill and keeps them editable', async () => {
     const user = userEvent.setup();
     renderWithProviders(<PermissionsPage />);
     await openModule(user, /Facturación/);
 
-    expect(screen.queryByRole('checkbox', { name: /Revocar la aprobación de un pago/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Revocar la aprobación de un pago — Docente: bloqueado, solo el Director' })).toBeInTheDocument();
-    expect(screen.getAllByText('Solo Director').length).toBeGreaterThan(0);
-    expect(screen.getByText(/mueven plata/)).toBeInTheDocument();
+    expect(screen.getByText('1 sensibles', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === 'Los permisos sensibles se pueden delegar; cada cambio se audita como evento destacado.')).toBeInTheDocument();
+    const pill = screen.getByLabelText('Permiso sensible: requiere confirmación reforzada');
+    expect(pill).toHaveAttribute('tabindex', '0');
+    expect(pill).toHaveTextContent('Sensible');
+    expect(screen.queryByText('Solo Director')).not.toBeInTheDocument();
+    const checkbox = screen.getByRole('checkbox', { name: 'Revocar la aprobación de un pago — Docente' });
+    await user.click(checkbox);
+    expect(checkbox).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('separates sensitive changes in the review and requires the acknowledgement', async () => {
+    const user = userEvent.setup();
+    const bodies = recordPuts();
+    renderWithProviders(<PermissionsPage />);
+    await user.click(await screen.findByRole('button', { name: /Avisos/ }));
+    await user.click(screen.getByRole('checkbox', { name: 'Eliminar avisos — Preceptor' }));
+    await user.click(await screen.findByRole('button', { name: /Facturación/ }));
+    await user.click(screen.getByRole('checkbox', { name: 'Revocar la aprobación de un pago — Docente' }));
+
+    const dialog = await openReview(user);
+    expect(within(dialog).getByText('Confirmación reforzada: 1 permiso sensible')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Se registra como evento destacado en la auditoría/)).toBeInTheDocument();
+    const confirm = within(dialog).getByRole('button', { name: 'Guardar 2 cambios' });
+    await user.type(within(dialog).getByLabelText('Motivo del cambio (obligatorio)'), VALID_REASON);
+    expect(confirm).toBeDisabled();
+
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Entiendo que delego un permiso sensible' }));
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0].sensitiveConfirmed).toBe(true);
+  });
+
+  it('does not send sensitiveConfirmed when no sensitive permission changes', async () => {
+    const user = userEvent.setup();
+    const bodies = recordPuts();
+    renderWithProviders(<PermissionsPage />);
+    await openModule(user);
+    await user.click(screen.getByRole('checkbox', { name: 'Eliminar avisos — Preceptor' }));
+    const dialog = await openReview(user);
+    expect(within(dialog).queryByText(/Confirmación reforzada/)).not.toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText('Motivo del cambio'), VALID_REASON);
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar 1 cambio' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).not.toHaveProperty('sensitiveConfirmed');
+  });
+
+  it('shows the confirmation error without closing the dialog or losing changes', async () => {
+    const user = userEvent.setup();
+    recordPuts([HttpResponse.json(errorBody('SENSITIVE_PERMISSION_CONFIRMATION_REQUIRED'), { status: 422 })]);
+    renderWithProviders(<PermissionsPage />);
+    await openModule(user, /Facturación/);
+    await user.click(screen.getByRole('checkbox', { name: 'Revocar la aprobación de un pago — Docente' }));
+    const dialog = await openReview(user);
+    await user.type(within(dialog).getByLabelText('Motivo del cambio (obligatorio)'), VALID_REASON);
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Entiendo que delego un permiso sensible' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar 1 cambio' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Cambiar un permiso sensible exige una confirmación reforzada.');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Cambios sin guardar' })).toHaveTextContent('1 cambio sin guardar');
+  });
+
+  it('shows the Subdirector column only when the backend returns that role', async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderWithProviders(<PermissionsPage />);
+    await openModule(user);
+    expect(screen.queryByRole('checkbox', { name: /Subdirector/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Subdirector' })).not.toBeInTheDocument();
+    unmount();
+
+    const grid = permissionGrid();
+    grid.roles.splice(1, 0, { role: 'SUBDIRECTOR', permissionCodes: ['announcement.create'] });
+    server.use(http.get(`${API}/permissions/grid`, () => HttpResponse.json(grid)));
+    renderWithProviders(<PermissionsPage />);
+    await openModule(user);
+    expect(screen.getByRole('checkbox', { name: 'Crear avisos — Subdirector' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('button', { name: 'Subdirector' })).toBeInTheDocument();
+  });
+
+  it('shows the read-only mode without checkboxes or change bar when the grid is not editable', async () => {
+    const user = userEvent.setup();
+    server.use(http.get(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid({ editable: false }))));
+    renderWithProviders(<PermissionsPage />);
+    await openModule(user);
+
+    expect(screen.getByText('Estás viendo la grilla en modo lectura.')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Crear avisos — Administrativo: tiene el permiso' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Eliminar avisos — Preceptor: no lo tiene' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Cambios sin guardar' })).not.toBeInTheDocument();
   });
 
   it('requires a reason of at least 10 characters and sends the right body', async () => {
@@ -184,7 +274,7 @@ describe('PermissionsPage', () => {
   }, 30000);
 
   it.each([
-    [403, 'PERMISSION_FIXED_TO_DIRECTOR', 'Ese permiso es exclusivo del Director y no se puede delegar.'],
+    [403, 'PERMISSION_GRID_FORBIDDEN', 'No se guardó nada. No tenés permiso para cambiar la grilla. Solo el Director puede editarla; si creés que es un error, pedíselo a él.'],
     [422, 'UNKNOWN_PERMISSION_CODE', 'El permiso indicado no existe en el catálogo.'],
   ])('shows the translated %i error and keeps the changes', async (status, code, message) => {
     const user = userEvent.setup();
@@ -252,5 +342,6 @@ describe('PermissionsPage', () => {
     server.use(http.get(`${API}/permissions/grid`, () => HttpResponse.json(errorBody('FORBIDDEN'), { status: 403 })));
     renderWithProviders(<PermissionsPage />);
     expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
+    expect(screen.getByText(/el Subdirector puede verla sin editarla/)).toBeInTheDocument();
   });
 });

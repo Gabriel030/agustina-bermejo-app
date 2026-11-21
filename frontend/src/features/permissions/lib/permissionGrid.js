@@ -6,12 +6,19 @@ export const DIRECTOR_ROLE = 'DIRECTOR';
 
 export const GRID_ROLES = [
   { id: 'DIRECTOR', label: 'Director' },
+  { id: 'SUBDIRECTOR', label: 'Subdirector' },
   { id: 'ADMINISTRATIVO', label: 'Administrativo' },
   { id: 'PRECEPTOR', label: 'Preceptor' },
   { id: 'DOCENTE', label: 'Docente' },
 ];
 
-export const EDITABLE_ROLES = GRID_ROLES.filter((role) => role.id !== DIRECTOR_ROLE);
+export const SENSITIVE_TOOLTIP = 'Permiso sensible: requiere confirmación reforzada';
+export const GRID_FORBIDDEN_CODE = 'PERMISSION_GRID_FORBIDDEN';
+
+export function rolesPresentIn(grid) {
+  const present = new Set(grid.roles.map((entry) => entry.role));
+  return GRID_ROLES.filter((role) => present.has(role.id));
+}
 
 export const PERMISSION_MODES = {
   LEGACY: {

@@ -17,7 +17,7 @@ import { ReviewChangesDialog } from '@/features/permissions/components/ReviewCha
 import { usePermissionCatalog, usePermissionGridData } from '@/features/permissions/hooks/usePermissionGrid';
 import { usePermissionDraft } from '@/features/permissions/hooks/usePermissionDraft';
 import { useSavePermissionChanges } from '@/features/permissions/hooks/useSavePermissionChanges';
-import { GRID_ROLES, describeChangeCount, permissionMatches } from '@/features/permissions/lib/permissionGrid';
+import { DIRECTOR_ROLE, GRID_FORBIDDEN_CODE, describeChangeCount, permissionMatches, rolesPresentIn } from '@/features/permissions/lib/permissionGrid';
 
 const PAGE_TITLE = 'Roles y permisos';
 const PAGE_DESCRIPTION = 'Definí qué puede hacer cada rol en cada módulo. Cada cambio pide un motivo y queda en el registro de auditoría.';
@@ -46,14 +46,17 @@ function PermissionsGrid({ catalog, grid }) {
   const [roleFilter, setRoleFilter] = useState([]);
   const [openModules, setOpenModules] = useState(() => new Set());
   const [reviewing, setReviewing] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saveError, setSaveError] = useState(null);
   const draft = usePermissionDraft(grid);
   const save = useSavePermissionChanges();
 
   const catalogIndex = useMemo(() => new Map(catalog.modules.flatMap((module) => module.permissions.map((permission) => [permission.code, { ...permission, module: module.module }]))), [catalog]);
   const total = catalogIndex.size;
   const searching = query.trim() !== '';
-  const roles = roleFilter.length ? GRID_ROLES.filter((role) => roleFilter.includes(role.id)) : GRID_ROLES;
+  const gridRoles = useMemo(() => rolesPresentIn(grid), [grid]);
+  const filterableRoles = gridRoles.filter((role) => role.id !== DIRECTOR_ROLE);
+  const roles = roleFilter.length ? gridRoles.filter((role) => roleFilter.includes(role.id)) : gridRoles;
+  const editable = grid.editable !== false;
 
   const visibleModules = catalog.modules
     .filter((module) => !moduleFilter || module.module === moduleFilter)
@@ -79,26 +82,45 @@ function PermissionsGrid({ catalog, grid }) {
 
   const closeReview = () => {
     setReviewing(false);
-    setSaveError('');
+    setSaveError(null);
   };
 
-  const confirmSave = async (reason) => {
+  const confirmSave = async (reason, sensitiveConfirmed) => {
     const count = draft.changes.length;
-    setSaveError('');
+    setSaveError(null);
     try {
-      await save.mutateAsync({ reason, changes: draft.changes, onChunkSaved: draft.settle });
+      await save.mutateAsync({
+        reason,
+        changes: draft.changes,
+        sensitiveConfirmed,
+        isSensitive: (change) => Boolean(catalogIndex.get(change.permissionCode)?.sensitive),
+        onChunkSaved: draft.settle,
+      });
       closeReview();
       toast.success(`Guardamos ${describeChangeCount(count)}. Quedaron en la auditoría.`);
     } catch (error) {
-      setSaveError(describeMutationFailure(error));
+      setSaveError(
+        error?.code === GRID_FORBIDDEN_CODE
+          ? { title: 'No se guardó nada.', message: 'No tenés permiso para cambiar la grilla. Solo el Director puede editarla; si creés que es un error, pedíselo a él.' }
+          : { title: 'No pudimos guardar todo.', message: describeMutationFailure(error) },
+      );
     }
   };
 
   return (
     <>
+      {!editable && (
+        <div role="status" className="flex items-start gap-2.5 rounded-card bg-warning-bg px-3.5 py-3 text-size-13 text-warning-ink">
+          <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <p>
+            <b>Estás viendo la grilla en modo lectura.</b> Solo el Director edita la grilla; el Subdirector y el resto de los roles pueden verla, no cambiarla. Si necesitás un cambio, pedíselo al Director.
+          </p>
+        </div>
+      )}
       <PermissionModeLegend />
       <PermissionToolbar
         modules={catalog.modules}
+        filterableRoles={filterableRoles}
         query={query}
         onQueryChange={setQuery}
         moduleFilter={moduleFilter}
@@ -129,6 +151,7 @@ function PermissionsGrid({ catalog, grid }) {
               roles={roles}
               permissions={permissions}
               open={searching || openModules.has(module.module)}
+              editable={editable}
               onToggleOpen={() => toggleOpen(module.module)}
               draft={draft}
             />
@@ -147,10 +170,10 @@ function PermissionsGrid({ catalog, grid }) {
           />
         )}
       </GlassCard>
-      {draft.changes.length > 0 && (
+      {editable && draft.changes.length > 0 && (
         <PendingChangesBar changeCount={draft.changes.length} moduleCount={moduleCount} onDiscard={draft.discard} onReview={() => setReviewing(true)} />
       )}
-      {reviewing && draft.changes.length > 0 && (
+      {editable && reviewing && draft.changes.length > 0 && (
         <ReviewChangesDialog
           open
           onClose={closeReview}
@@ -158,7 +181,7 @@ function PermissionsGrid({ catalog, grid }) {
           catalogIndex={catalogIndex}
           grid={grid}
           saving={save.isPending}
-          errorMessage={saveError}
+          error={saveError}
           onConfirm={confirmSave}
         />
       )}
@@ -179,7 +202,7 @@ export function PermissionsPage() {
         <EmptyState
           icon={<Lock className="mx-auto size-6 text-ink-soft" aria-hidden="true" />}
           title="No tenés acceso a esta pantalla"
-          description="Solo el Director puede ver y editar la grilla de permisos. Si creés que es un error, pedíselo a quien administra tu institución."
+          description="Esta pantalla es para el Director, y el Subdirector puede verla sin editarla. Si creés que es un error, pedíselo a quien administra tu institución."
           action={
             <Button asChild variant="outline">
               <Link to="/">Volver al inicio</Link>

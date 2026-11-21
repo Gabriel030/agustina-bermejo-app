@@ -1,10 +1,9 @@
-import { Check, Lock } from 'lucide-react';
+import { Check, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { DIRECTOR_ROLE, roleLabel } from '@/features/permissions/lib/permissionGrid';
 
-export function PermissionCell({ permission, role, granted, changed, onToggle }) {
+export function PermissionCell({ permission, role, granted, changed, editable, onToggle }) {
   const label = `${permission.description} — ${roleLabel(role)}`;
   let control;
   if (role === DIRECTOR_ROLE) {
@@ -13,19 +12,11 @@ export function PermissionCell({ permission, role, granted, changed, onToggle })
         <Check className="size-4" aria-hidden="true" />
       </span>
     );
-  } else if (permission.fixedToDirector) {
+  } else if (!editable) {
     control = (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button type="button" variant="subtle" aria-label={`${label}: bloqueado, solo el Director`} className="size-11">
-            <Lock className="size-4" aria-hidden="true" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="text-size-12 text-ink-soft">
-          <b className="text-ink">Acción que mueve plata</b>
-          Queda fija al Director y no se puede delegar. Si hace falta, el Director la autoriza en cada operación.
-        </PopoverContent>
-      </Popover>
+      <span role="img" aria-label={`${label}: ${granted ? 'tiene el permiso' : 'no lo tiene'}`} className={cn('grid min-h-11 min-w-11 place-items-center', granted ? 'text-success' : 'text-ink-faint')}>
+        {granted ? <Check className="size-4" aria-hidden="true" /> : <Minus className="size-4" aria-hidden="true" />}
+      </span>
     );
   } else {
     control = (

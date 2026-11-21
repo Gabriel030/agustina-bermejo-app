@@ -16,7 +16,7 @@ export function PendingChangesBar({ changeCount, moduleCount, onDiscard, onRevie
           <Button type="button" variant="ghost" onClick={onDiscard}>
             Descartar
           </Button>
-          <Button type="button" variant="gradient" onClick={onReview}>
+          <Button type="button" variant="primary" onClick={onReview}>
             Revisar y guardar
           </Button>
         </div>
