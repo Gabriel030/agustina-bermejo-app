@@ -23,6 +23,17 @@ const ACTIONS = {
   WAITLIST_PRIORITIZED_BY_STAFF: ['Priorizado en lista de espera', 'accent'],
   WAITLIST_REMOVED_BY_STAFF: ['Quitado de lista de espera', 'danger'],
   WAITLIST_EXPIRED: ['Lista de espera vencida', 'neutral'],
+  BROADCAST_CONFIRMED: ['Difusión confirmada', 'success'],
+  BROADCAST_CANCELLED: ['Difusión cancelada', 'danger'],
+  BROADCAST_RECIPIENT_DATA_ANONYMIZED: ['Datos de destinatarios anonimizados', 'warning'],
+  BROADCAST_RECIPIENTS_PURGED: ['Destinatarios de difusión eliminados', 'warning'],
+  BROADCAST_COMPLETED: ['Difusión completada', 'success'],
+  WHATSAPP_API_ENABLED: ['WhatsApp API habilitada', 'success'],
+  WHATSAPP_API_DISABLED: ['WhatsApp API deshabilitada', 'warning'],
+  GATEWAY_PAYMENT_AMOUNT_MISMATCH: ['Pago con monto distinto al esperado', 'danger'],
+  GATEWAY_PAYMENT_CHECKOUT_EXPIRED: ['Checkout de pago vencido', 'neutral'],
+  GATEWAY_PAYMENT_UNMATCHED: ['Pago sin comprobante asociado', 'warning'],
+  GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT: ['Pago duplicado para un checkout', 'danger'],
 };
 
 const ENTITIES = {
