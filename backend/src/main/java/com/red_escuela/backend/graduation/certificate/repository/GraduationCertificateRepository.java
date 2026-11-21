@@ -4,7 +4,9 @@ import com.red_escuela.backend.graduation.certificate.entity.GraduationCertifica
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,6 +17,12 @@ import java.util.Set;
 public interface GraduationCertificateRepository extends JpaRepository<GraduationCertificate, Long> {
 
     Optional<GraduationCertificate> findByCode(String code);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from GraduationCertificate c where c.id = :id")
+    Optional<GraduationCertificate> findByIdForUpdate(@Param("id") Long id);
+
+    Optional<GraduationCertificate> findByReplacesId(Long replacesId);
 
     boolean existsByCode(String code);
 

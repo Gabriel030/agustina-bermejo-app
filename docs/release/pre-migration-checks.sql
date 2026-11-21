@@ -221,6 +221,7 @@ begin
       ('payment', 'refunded_amount_currency', array['ARS', 'USD']),
       ('payment_checkout_item', 'outstanding_at_selection_currency', array['ARS', 'USD']),
       ('payment_plan_option', 'cadence', array['ANNUAL_UPFRONT', 'MONTHLY']),
+      ('permission_module_mode', 'mode', array['ENFORCE', 'LEGACY', 'SHADOW']),
       ('person', 'auth_provider', array['GOOGLE', 'LOCAL']),
       ('person', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
       ('platform_feature', 'code', array['ANALYTICS', 'BILLING', 'BILLING_NOTIFICATIONS', 'EXTERNAL_BILLING', 'FISCAL_INVOICING', 'PAYMENT_METHOD_BANK_TRANSFER', 'PAYMENT_METHOD_CASH', 'PAYMENT_METHOD_GATEWAY']),

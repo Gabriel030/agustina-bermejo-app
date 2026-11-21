@@ -13985,6 +13985,35 @@
         "required" : [ "name", "role" ],
         "type" : "object"
       },
+      "SectionModificationConflictResponse" : {
+        "properties" : {
+          "conflictingSectionLabel" : {
+            "type" : "string"
+          },
+          "slotIndex" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "enum" : [ "SLOT_OUTSIDE_SHIFT", "CLASSROOM_CAPACITY_EXCEEDED", "CLASSROOM_OCCUPIED", "INSTRUCTOR_BUSY", "SLOTS_OVERLAP" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "conflictingSectionLabel", "slotIndex", "type" ],
+        "type" : "object"
+      },
+      "SectionModificationPreviewResponse" : {
+        "properties" : {
+          "conflicts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SectionModificationConflictResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "conflicts" ],
+        "type" : "object"
+      },
       "SectionOccupancy" : {
         "properties" : {
           "available" : {
@@ -20267,7 +20296,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED" ],
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED" ],
               "type" : "string"
             },
             "type" : "array"
@@ -20277,7 +20306,7 @@
           "name" : "entityType",
           "required" : false,
           "schema" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION" ],
             "type" : "string"
           }
         }, {
@@ -67777,7 +67806,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED" ],
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED" ],
               "type" : "string"
             },
             "type" : "array"
@@ -67787,7 +67816,7 @@
           "name" : "entityType",
           "required" : false,
           "schema" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION" ],
             "type" : "string"
           }
         }, {
@@ -90531,6 +90560,143 @@
           }
         },
         "tags" : [ "academic-offering-cycle-controller" ]
+      }
+    },
+    "/subject-sections/{id}/modification-request/preview" : {
+      "post" : {
+        "operationId" : "SectionModificationPreview_previewSectionModification",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifySectionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SectionModificationPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "section-modification-preview-controller" ]
       }
     },
     "/subject-sections/{id}/modification-request/reject" : {

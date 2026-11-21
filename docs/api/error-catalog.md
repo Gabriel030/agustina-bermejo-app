@@ -599,6 +599,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_FULL` | no | `SectionFullException` | enrollment |
 | `SECTION_HAS_ACTIVE_ENROLLMENTS` | no | `SectionHasActiveEnrollmentsException` | academicstructure |
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
+| `SECTION_MODIFICATION_CYCLE_CLOSED` | no | `SectionModificationCycleClosedException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
 | `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
@@ -643,6 +644,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `DIRECTOR_PERMISSIONS_NOT_EDITABLE` | no | `DirectorPermissionsNotEditableException` | identity |
+| `DUPLICATE_PERMISSION_GRID_CHANGE` | no | `DuplicatePermissionGridChangeException` | identity |
 | `GRADUATION_CERTIFICATE_OPERATION_PENDING` | no | `GraduationCertificateOperationPendingException` | graduation |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
 | `SIGNATORY_DUPLICATED_IN_TEMPLATE` | no | `SignatoryDuplicatedInTemplateException` | graduation |
@@ -652,6 +655,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
 | `TEMPLATE_UNKNOWN_MARKER` | no | `TemplateUnknownMarkerException` | graduation |
+| `UNKNOWN_PERMISSION_CODE` | no | `UnknownPermissionCodeException` | identity |
+| `UNKNOWN_PERMISSION_ROLE` | no | `UnknownPermissionRoleException` | identity |
 | `UNKNOWN_TEMPLATE_VARIABLE` | no | `UnknownTemplateVariableException` | notification |
 
 ### HTTP 429
@@ -949,6 +954,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/students/{studentId}/refund-requests/preview` | `RefundPreviewController#previewRefundOnBehalfOfStudent` |
 | POST | `/subject-sections/{id}/modification-request` | `AcademicOfferingCycleController#requestSectionModification` |
 | POST | `/subject-sections/{id}/modification-request/approve` | `AcademicOfferingCycleController#approveSectionModification` |
+| POST | `/subject-sections/{id}/modification-request/preview` | `SectionModificationPreviewController#previewSectionModification` |
 | POST | `/subject-sections/{id}/modification-request/reject` | `AcademicOfferingCycleController#rejectSectionModification` |
 | POST | `/subject-sections/{sectionId}/announcements` | `AnnouncementController#createForSubjectSection` |
 | POST | `/subject-sections/{sectionId}/audience-preview` | `AnnouncementController#previewForSubjectSection` |

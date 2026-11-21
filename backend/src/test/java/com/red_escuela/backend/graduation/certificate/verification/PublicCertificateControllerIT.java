@@ -72,10 +72,11 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
         transactions.executeWithoutResult(tx -> {
             jdbc.execute("SET LOCAL session_replication_role = replica");
             jdbc.update("insert into graduation_certificate (code, kind, program_enrollment_id, student_id, status, graduation_date, "
-                    + "issued_at, issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path, registry_number, revoked_at) "
+                    + "issued_at, issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path, registry_number, revoked_at, revoked_by_id, revocation_reason) "
                     + "values (?, 'PROGRAM', ?, 987654, ?, '2026-07-15', '2026-11-05 10:00:00', 1, ?::jsonb, 'BUILT_IN_V1', "
-                    + "repeat('a', 64), 'x.pdf', ?, ?)", code, ThreadLocalRandom.current().nextLong(1_000_000, 9_000_000), status,
-                    SNAPSHOT, registryNumber, "REVOKED".equals(status) ? java.sql.Timestamp.valueOf("2026-11-09 08:00:00") : null);
+                    + "repeat('a', 64), 'x.pdf', ?, ?, ?, ?)", code, ThreadLocalRandom.current().nextLong(1_000_000, 9_000_000), status,
+                    SNAPSHOT, registryNumber, "REVOKED".equals(status) ? java.sql.Timestamp.valueOf("2026-11-09 08:00:00") : null,
+                    "REVOKED".equals(status) ? 1L : null, "REVOKED".equals(status) ? "error de carga" : null);
         });
         return code;
     }
