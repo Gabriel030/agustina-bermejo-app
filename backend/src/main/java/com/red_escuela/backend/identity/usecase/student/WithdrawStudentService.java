@@ -1,33 +1,18 @@
 package com.red_escuela.backend.identity.usecase.student;
 
-import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.exception.StudentNotFoundException;
-import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.identity.specialist.SessionRevoker;
+import com.red_escuela.backend.identity.service.WithdrawStudentTransaction;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class WithdrawStudentService implements WithdrawStudentUseCase {
+    private final WithdrawStudentTransaction withdrawStudentTransaction;
 
-    private final StudentRepository studentRepository;
-    private final SessionRevoker sessionRevoker;
-
-    public WithdrawStudentService(StudentRepository studentRepository, SessionRevoker sessionRevoker) {
-        this.studentRepository = studentRepository;
-        this.sessionRevoker = sessionRevoker;
+    public WithdrawStudentService(WithdrawStudentTransaction withdrawStudentTransaction) {
+        this.withdrawStudentTransaction = withdrawStudentTransaction;
     }
 
     @Override
-    @Transactional
     public void withdraw(WithdrawStudentCommand command) {
-        Student student = studentRepository.findById(command.studentId())
-                .orElseThrow(() -> new StudentNotFoundException(command.studentId()));
-        student.getPerson().setStatus(StatusType.DELETED);
-        student.setWithdrawalReason(command.request().reason());
-        student.setWithdrawalDetail(command.request().detail());
-        studentRepository.save(student);
-        sessionRevoker.revokeAllSessions(student.getPerson());
+        withdrawStudentTransaction.withdraw(command.studentId(), command.request());
     }
 }
