@@ -100,7 +100,7 @@
   --btn-primary-shadow-hover: none;
   --btn-lift-y: 0px;
   --card-lift-y: 0px;
-  --seg-indicator-bg: var(--accent);
+  --seg-indicator-bg: linear-gradient(var(--accent), var(--accent));
   --seg-indicator-shadow: none;
   --nav-indicator-bg: var(--accent-soft);
   --nav-active-fg: var(--accent);
