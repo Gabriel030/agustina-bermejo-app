@@ -104,7 +104,7 @@ export function CompleteRefundDialog({ studentId, refund, onClose }) {
             <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
               Cancelar
             </Button>
-            <Button type="submit" variant="gradient" loading={mutation.isPending}>
+            <Button type="submit" variant="primary" loading={mutation.isPending}>
               Marcar como hecho
             </Button>
           </DialogFooter>

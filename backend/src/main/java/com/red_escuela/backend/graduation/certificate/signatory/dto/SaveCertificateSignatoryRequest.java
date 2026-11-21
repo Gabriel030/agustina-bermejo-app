@@ -7,6 +7,6 @@ import java.util.List;
 
 public record SaveCertificateSignatoryRequest(
         @NotBlank @Size(max = 80) String name,
-        @NotBlank @Size(max = 80) String role,
+        String role,
         @NotNull List<SignatoryDocumentType> allowedDocumentTypes) {
 }

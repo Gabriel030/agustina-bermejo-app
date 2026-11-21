@@ -18,6 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -79,10 +80,15 @@ public class GlobalExceptionHandler {
         return new ErrorCodeResponse(ErrorCodeResponse.INVALID_PARAMETER_TYPE_CODE);
     }
 
-    @ExceptionHandler({
-            BadRequestException.class,
-            MaxUploadSizeExceededException.class
-    })
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorCodeResponse> handleMaxUploadSize(MaxUploadSizeExceededException exception, HttpServletRequest request) {
+        if ("PUT".equals(request.getMethod()) && request.getRequestURI().matches(".*/certificate-signatories/[^/]+/signature")) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(new ErrorCodeResponse("SIGNATORY_SIGNATURE_INVALID"));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorCodeResponse.of(exception));
+    }
+
+    @ExceptionHandler(BadRequestException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorCodeResponse handleBadRequest(Exception exception) {
         ErrorCodeResponse response = ErrorCodeResponse.of(exception);

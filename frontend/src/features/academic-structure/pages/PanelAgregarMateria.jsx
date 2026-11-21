@@ -275,7 +275,7 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
                 Cancelar
               </Button>
               <Button
-                variant="gradient"
+                variant="primary"
                 loading={addProgramSubject.isPending}
                 disabled={electiveWithoutGroups || (category === 'ELECTIVE' && electiveGroupsFailed)}
                 onClick={handleAgregar}

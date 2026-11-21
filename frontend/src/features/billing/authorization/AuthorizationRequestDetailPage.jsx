@@ -284,7 +284,7 @@ export function AuthorizationRequestDetailPage() {
               Volver
             </Button>
           )}
-          <Button type="button" variant="gradient" loading={approve.isPending} onClick={handleApprove}>
+          <Button type="button" variant="primary" loading={approve.isPending} onClick={handleApprove}>
             {confirming ? 'Confirmar aprobación' : approveLabel}
           </Button>
         </ActionBar>

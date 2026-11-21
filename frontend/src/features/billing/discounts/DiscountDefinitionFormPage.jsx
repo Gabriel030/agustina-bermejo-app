@@ -293,7 +293,7 @@ export function DiscountDefinitionFormPage({ mode }) {
               <Button asChild variant="outline">
                 <Link to={listPath}>Cancelar</Link>
               </Button>
-              <Button type="submit" variant="gradient" loading={mutation.isPending}>
+              <Button type="submit" variant="primary" loading={mutation.isPending}>
                 {submitLabel}
               </Button>
             </div>

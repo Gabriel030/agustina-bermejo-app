@@ -18,7 +18,7 @@ import {
   termTypeLabel,
 } from '@/features/academic-structure/lib/terms';
 
-function CreateTermButton({ onClick, variant = 'gradient' }) {
+function CreateTermButton({ onClick, variant = 'primary' }) {
   return (
     <Button type="button" variant={variant} onClick={onClick}>
       <Plus />

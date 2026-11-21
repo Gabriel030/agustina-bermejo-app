@@ -16,7 +16,7 @@ export function ReactivarPersonalModal({ open, onClose, nombre, onConfirmar, isP
           <Button variant="outline" onClick={onClose} disabled={isPending}>
             Cancelar
           </Button>
-          <Button variant="gradient" onClick={onConfirmar} disabled={isPending}>
+          <Button variant="primary" onClick={onConfirmar} disabled={isPending}>
             {isPending ? 'Reactivando...' : 'Confirmar reactivación'}
           </Button>
         </DialogFooter>

@@ -191,7 +191,7 @@ export function PadronAlumnos() {
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold text-ink">Padrón de alumnos</h1>
           {STAFF_REGISTRATION_ROLES.includes(rolBase) && (
-            <Button variant="gradient" onClick={() => navigate(`/${rolBase}/alumnos/nuevo`)}>Nuevo alumno</Button>
+            <Button variant="primary" onClick={() => navigate(`/${rolBase}/alumnos/nuevo`)}>Nuevo alumno</Button>
           )}
         </div>
 

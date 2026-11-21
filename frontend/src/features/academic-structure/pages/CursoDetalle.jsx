@@ -242,7 +242,7 @@ export function CursoDetalle() {
         <div className="flex items-center justify-between">
           <h2 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Temario</h2>
           {!modulesUnavailable && (
-            <Button variant="gradient" size="sm" onClick={() => setPanelOpen(true)}>
+            <Button variant="primary" size="sm" onClick={() => setPanelOpen(true)}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               Agregar módulo
             </Button>

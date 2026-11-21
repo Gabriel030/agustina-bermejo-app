@@ -2,6 +2,7 @@ package com.red_escuela.backend.graduation.certificate.regular.specialist;
 
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.entity.StandingBasis;
+import com.red_escuela.backend.graduation.certificate.regular.exception.NoDebtToExceptException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceInvalidException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceRequiredException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingNotConfirmedException;
@@ -47,8 +48,23 @@ public class RegularStandingGate {
         return resolveFromManualConfirmation(mode, confirmation);
     }
 
+    public void requireDebtToExcept(Long studentId, RegularityKind kind, Long enrollmentId) {
+        if (billingModeGate.currentMode() == BillingMode.FULL && isSettled(studentId, kind, enrollmentId)) {
+            throw new NoDebtToExceptException();
+        }
+    }
+
+    public StandingResolution resolveByException(Long studentId, RegularityKind kind, Long enrollmentId) {
+        requireDebtToExcept(studentId, kind, enrollmentId);
+        return new StandingResolution(StandingBasis.EXCEPTION_APPROVED, billingModeGate.currentMode(), null, null, null);
+    }
+
+    private boolean isSettled(Long studentId, RegularityKind kind, Long enrollmentId) {
+        return overdueDebtProbe.isEnrollmentFeePaid(kind, enrollmentId) && !overdueDebtProbe.hasOverdueDebt(studentId);
+    }
+
     private StandingResolution resolveFromBilling(Long studentId, RegularityKind kind, Long enrollmentId, BillingMode mode) {
-        if (!overdueDebtProbe.isEnrollmentFeePaid(kind, enrollmentId) || overdueDebtProbe.hasOverdueDebt(studentId)) {
+        if (!isSettled(studentId, kind, enrollmentId)) {
             throw new StudentHasDebtException();
         }
         return new StandingResolution(StandingBasis.BILLING_VERIFIED, mode, null, null, null);

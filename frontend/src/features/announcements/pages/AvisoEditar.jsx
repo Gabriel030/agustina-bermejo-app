@@ -210,7 +210,7 @@ export function AvisoEditar() {
         </Button>
         <Button
           type="button"
-          variant="gradient"
+          variant="primary"
           loading={editarAviso.isPending}
           disabled={!valores.title.trim() || !valores.body.trim()}
           onClick={programado || !notificar ? guardar : () => setConfirmarRenotificar(true)}
@@ -231,7 +231,7 @@ export function AvisoEditar() {
             <Button type="button" variant="outline" onClick={() => setConfirmarRenotificar(false)}>
               Seguir editando
             </Button>
-            <Button type="button" variant="gradient" onClick={guardar}>
+            <Button type="button" variant="primary" onClick={guardar}>
               Guardar y avisar
             </Button>
           </DialogFooter>

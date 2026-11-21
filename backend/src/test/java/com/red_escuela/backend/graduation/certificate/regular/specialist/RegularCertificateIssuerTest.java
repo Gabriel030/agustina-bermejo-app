@@ -8,6 +8,7 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertifi
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityReason;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityVerdict;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateChannel;
+import com.red_escuela.backend.graduation.certificate.regular.exception.ExceptionAlreadyConsumedException;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateSettings;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
@@ -52,6 +53,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -75,9 +77,10 @@ class RegularCertificateIssuerTest {
     private final CertificateVerificationUrl verificationUrl = mock(CertificateVerificationUrl.class);
     private final CurrentActorFinder currentActorFinder = mock(CurrentActorFinder.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+    private final CertificateExceptionConsumer exceptionConsumer = mock(CertificateExceptionConsumer.class);
     private final Clock clock = Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
     private final IssueRegularCertificateCommand command = new IssueRegularCertificateCommand(RegularityKind.PROGRAM,
-            ENROLLMENT_ID, true, "Recibo 1234 en el sistema contable", RegularCertificateChannel.STAFF);
+            ENROLLMENT_ID, true, "Recibo 1234 en el sistema contable", RegularCertificateChannel.STAFF, null);
     private final CertificateSnapshot snapshot = new CertificateSnapshot("PEREZ, ANA", "DNI", "30111222", "la carrera",
             "Tecnicatura", null, null, NOW.toLocalDate(), NOW.toLocalDate(), "Instituto", List.of(),
             RegularCertificateTemplate.REGULAR_BUILT_IN_V1);
@@ -94,7 +97,7 @@ class RegularCertificateIssuerTest {
     private RegularCertificateIssuer issuer(int validityDays) {
         return new RegularCertificateIssuer(certificateRepository, requestRepository, regularityEvaluator, standingGate,
                 factsFinder, template, renderer, fileStore, verificationUrl, new CertificateDigest(), currentActorFinder,
-                eventPublisher, new SimpleMeterRegistry(), clock, settingsFinderOf(validityDays));
+                eventPublisher, new SimpleMeterRegistry(), clock, settingsFinderOf(validityDays), exceptionConsumer);
     }
 
     @BeforeEach
@@ -271,6 +274,50 @@ class RegularCertificateIssuerTest {
     }
 
     @Test
+    void exceptionIssuanceUsesTheExceptionStandingLinksItAndConsumesItWithTheCertificateId() {
+        IssueRegularCertificateCommand withException = new IssueRegularCertificateCommand(RegularityKind.PROGRAM, ENROLLMENT_ID, false, null,
+                RegularCertificateChannel.STAFF, 55L);
+        when(standingGate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID))
+                .thenReturn(new StandingResolution(StandingBasis.EXCEPTION_APPROVED, BillingMode.FULL, null, null, null));
+        when(certificateRepository.saveAndFlush(any(RegularStudentCertificate.class))).thenAnswer(invocation -> {
+            RegularStudentCertificate certificate = invocation.getArgument(0);
+            assertThat(certificate.getStandingBasis()).isEqualTo(StandingBasis.EXCEPTION_APPROVED);
+            assertThat(certificate.getExceptionId()).isEqualTo(55L);
+            return RegularStudentCertificate.builder().id(77L).code(certificate.getCode()).kind(certificate.getKind())
+                    .studentId(certificate.getStudentId()).status(certificate.getStatus()).issuedAt(certificate.getIssuedAt())
+                    .expiresAt(certificate.getExpiresAt()).standingBasis(certificate.getStandingBasis())
+                    .billingModeAtIssue(certificate.getBillingModeAtIssue()).snapshot(certificate.getSnapshot())
+                    .programEnrollmentId(certificate.getProgramEnrollmentId()).build();
+        });
+
+        issuer(30).issue(withException);
+
+        verify(exceptionConsumer).consume(55L, 77L, STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID, ACTOR_ID);
+        verify(standingGate, never()).resolve(any(), any(), any(), any());
+    }
+
+    @Test
+    void failingExceptionConsumptionRemovesTheStoredFileAndPropagates() {
+        IssueRegularCertificateCommand withException = new IssueRegularCertificateCommand(RegularityKind.PROGRAM, ENROLLMENT_ID, false, null,
+                RegularCertificateChannel.STAFF, 55L);
+        when(standingGate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID))
+                .thenReturn(new StandingResolution(StandingBasis.EXCEPTION_APPROVED, BillingMode.FULL, null, null, null));
+        doThrow(new ExceptionAlreadyConsumedException()).when(exceptionConsumer).consume(any(), any(), any(), any(), any(), any());
+
+        assertThatThrownBy(() -> issuer(30).issue(withException)).isInstanceOf(ExceptionAlreadyConsumedException.class);
+
+        verify(fileStore).deleteIfRolledBack("certificates/x.pdf");
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void issuanceWithoutExceptionNeverTouchesTheConsumer() {
+        issuer(30).issue(command);
+
+        verify(exceptionConsumer, never()).consume(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
     void uniqueIndexConflictRemovesTheStoredFileAndReportsConcurrentIssue() {
         when(certificateRepository.saveAndFlush(any(RegularStudentCertificate.class))).thenThrow(new DataIntegrityViolationException("uq"));
 
@@ -288,7 +335,8 @@ class RegularCertificateIssuerTest {
         assertThat(transactional.noRollbackFor()).containsExactlyInAnyOrder(NotRegularException.class,
                 RegularCertificateAlreadyIssuedException.class, com.red_escuela.backend.graduation.certificate.regular.exception.StudentHasDebtException.class,
                 StandingNotConfirmedException.class, com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceInvalidException.class,
-                com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceRequiredException.class);
+                com.red_escuela.backend.graduation.certificate.regular.exception.StandingEvidenceRequiredException.class,
+                com.red_escuela.backend.graduation.certificate.regular.exception.NoDebtToExceptException.class);
         assertThat(transactional.noRollbackFor()).doesNotContain(ConcurrentRegularCertificateIssueException.class);
     }
 

@@ -159,6 +159,13 @@ public class CertificateExceptionApproval {
     public void consume(Long certificateId, Long expectedStudentId, RegularityKind expectedKind, Long expectedEnrollmentId, Long actorId,
                         LocalDateTime now) {
         Objects.requireNonNull(certificateId);
+        requireUsableFor(expectedStudentId, expectedKind, expectedEnrollmentId, now);
+        moveTo(CertificateExceptionEvent.CONSUME, StatusChangeActor.ofPerson(actorId), now, null);
+        this.consumedAt = now;
+        this.consumedCertificateId = certificateId;
+    }
+
+    public void requireUsableFor(Long expectedStudentId, RegularityKind expectedKind, Long expectedEnrollmentId, LocalDateTime now) {
         if (!studentId.equals(expectedStudentId) || kind != expectedKind || !enrollmentId().equals(expectedEnrollmentId)) {
             throw new ExceptionTargetMismatchException();
         }
@@ -168,9 +175,6 @@ public class CertificateExceptionApproval {
         if (status != CertificateExceptionStatus.APPROVED || !isValidAt(now)) {
             throw new ExceptionNotApprovedException();
         }
-        moveTo(CertificateExceptionEvent.CONSUME, StatusChangeActor.ofPerson(actorId), now, null);
-        this.consumedAt = now;
-        this.consumedCertificateId = certificateId;
     }
 
     public void expire(LocalDateTime now) {

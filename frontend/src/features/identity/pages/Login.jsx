@@ -152,7 +152,7 @@ export function Login() {
           <m.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <Button
               type="submit"
-              variant="gradient"
+              variant="primary"
               disabled={enviando || cooldown.active}
               className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
             >
@@ -183,7 +183,7 @@ export function Login() {
                 </Button>
                 <Button
                   type="button"
-                  variant="gradient"
+                  variant="primary"
                   className="flex-1"
                   disabled={registrandoConGoogle || !institutionId}
                   onClick={handleRegistrarseConGoogle}

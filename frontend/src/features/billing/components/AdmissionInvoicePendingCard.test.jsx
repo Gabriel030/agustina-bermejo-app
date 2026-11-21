@@ -87,7 +87,7 @@ describe('AdmissionInvoicePendingCard', () => {
     const botones = await screen.findAllByRole('button', { name: 'Pagar matrícula' });
     expect(botones).toHaveLength(2);
     expect(screen.getAllByText(/Vencimiento:/)[0]).toHaveTextContent('Carrera próxima');
-    expect(botones[0]).toHaveAttribute('data-variant', 'gradient');
+    expect(botones[0]).toHaveAttribute('data-variant', 'primary');
     expect(botones[1]).toHaveAttribute('data-variant', 'outline');
   });
 
@@ -105,7 +105,7 @@ describe('AdmissionInvoicePendingCard', () => {
     ]);
 
     const boton = await screen.findByRole('button', { name: 'Pagar matrícula' });
-    expect(boton).toHaveAttribute('data-variant', 'gradient');
+    expect(boton).toHaveAttribute('data-variant', 'primary');
     const filas = screen.getAllByText(/Carrera/).map((nodo) => nodo.textContent);
     expect(filas[0]).toContain('Carrera a pagar');
     expect(screen.getByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).toBeInTheDocument();

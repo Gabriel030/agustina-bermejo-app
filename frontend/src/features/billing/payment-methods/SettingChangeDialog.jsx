@@ -51,7 +51,7 @@ export function SettingChangeDialog({ entry, onClose, onRefresh }) {
       title={dialogTitle(entry)}
       description="Revisá qué cambia. Queda en la auditoría con tu motivo."
       confirmLabel={stale ? 'Recargar y reintentar' : 'Confirmar'}
-      confirmVariant="gradient"
+      confirmVariant="primary"
       pending={mutation.isPending}
       confirmDisabled={stale ? false : blocked || !reasonValid}
       onConfirm={confirm}

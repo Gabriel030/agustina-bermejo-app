@@ -59,7 +59,7 @@ export function BajaComunicaciones() {
                   No pudimos procesar la baja. Intentá de nuevo.
                 </p>
               )}
-              <Button variant="gradient" onClick={() => confirm.mutate()} loading={confirm.isPending}>
+              <Button variant="primary" onClick={() => confirm.mutate()} loading={confirm.isPending}>
                 Confirmar baja
               </Button>
             </>

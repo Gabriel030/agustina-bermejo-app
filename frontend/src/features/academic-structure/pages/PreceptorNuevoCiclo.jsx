@@ -180,7 +180,7 @@ function CreatedCyclePeriod({ state, dispatch }) {
         <ReadOnlyField label="Período académico" value={state.termName} />
         <ReadOnlyField label={state.tipo === 'programa' ? 'Carrera' : 'Curso'} value={state.entityName} />
       </div>
-      <Button variant="gradient" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'comisiones' })}>
+      <Button variant="primary" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'comisiones' })}>
         Continuar
       </Button>
     </GlassCard>
@@ -293,7 +293,7 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
         </p>
       )}
 
-      <Button variant="gradient" onClick={handleContinuar} disabled={createCiclo.isPending || listaFailed}>
+      <Button variant="primary" onClick={handleContinuar} disabled={createCiclo.isPending || listaFailed}>
         {createCiclo.isPending ? 'Creando…' : 'Crear borrador y continuar'}
       </Button>
     </GlassCard>
@@ -456,7 +456,7 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
 
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => { setAbierto(false); setError(null); }}>Cancelar</Button>
-        <Button variant="gradient" size="sm" onClick={handleAgregar} disabled={lookupsFailed || addSeccion.isPending || asignarInstructor.isPending || !isAttendanceRegimeValid(regime)}>
+        <Button variant="primary" size="sm" onClick={handleAgregar} disabled={lookupsFailed || addSeccion.isPending || asignarInstructor.isPending || !isAttendanceRegimeValid(regime)}>
           {addSeccion.isPending || asignarInstructor.isPending ? 'Guardando…' : 'Agregar comisión'}
         </Button>
       </div>
@@ -564,7 +564,7 @@ function Paso2Comisiones({ state, dispatch }) {
           Volver
         </Button>
         <Button
-          variant="gradient"
+          variant="primary"
           onClick={() => dispatch({ type: 'IR_A_RESUMEN' })}
           disabled={sections.length === 0}
         >
@@ -634,7 +634,7 @@ function Paso3Resumen({ state, dispatch }) {
         <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'comisiones' })}>
           Volver a comisiones
         </Button>
-        <Button variant="gradient" onClick={handleSubmit} disabled={submitCiclo.isPending}>
+        <Button variant="primary" onClick={handleSubmit} disabled={submitCiclo.isPending}>
           {submitCiclo.isPending ? 'Enviando…' : 'Enviar a aprobación'}
         </Button>
       </div>

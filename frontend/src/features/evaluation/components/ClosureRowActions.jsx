@@ -45,7 +45,7 @@ export function ClosureRowActions({ row, sheet, pending, onGrant, onRevoke }) {
           title={`Quitar la excepción de ${name}`}
           description="Vuelve a Promoción condicionada y, al cerrar el acta, va a final. Queda en la auditoría."
           confirmLabel="Quitar excepción"
-          confirmVariant="gradient"
+          confirmVariant="primary"
           pending={pending}
           onConfirm={async () => {
             const done = await onRevoke(row);

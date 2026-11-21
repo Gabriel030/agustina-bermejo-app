@@ -96,7 +96,7 @@ function ModalAsignarTribunal({ open, onClose, onAsignar, asignando }) {
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cerrar</Button>
           <Button
-            variant="gradient"
+            variant="primary"
             disabled={!instructorId || asignando}
             onClick={() => {
               onAsignar(Number(instructorId));
@@ -237,7 +237,7 @@ function DetalleMesa({ mesaId, role }) {
             <Button variant="outline" size="sm" disabled={soloLectura} onClick={() => setModalTribunal(true)}>
               Asignar tribunal
             </Button>
-            <Button variant="gradient" size="sm" disabled={soloLectura || cerrando || examenPendiente} onClick={() => setConfirmarCierre(true)}>
+            <Button variant="primary" size="sm" disabled={soloLectura || cerrando || examenPendiente} onClick={() => setConfirmarCierre(true)}>
               Cerrar acta
             </Button>
           </div>}
@@ -289,7 +289,7 @@ function DetalleMesa({ mesaId, role }) {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmarCierre(false)}>Volver</Button>
-            <Button variant="gradient" disabled={cerrando} onClick={confirmarCerrarActa}>Cerrar acta</Button>
+            <Button variant="primary" disabled={cerrando} onClick={confirmarCerrarActa}>Cerrar acta</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

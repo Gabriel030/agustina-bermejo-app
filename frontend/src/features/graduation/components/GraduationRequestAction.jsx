@@ -27,7 +27,7 @@ export function GraduationRequestAction({ carreraId }) {
 
   return (
     <>
-      <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setOpen(true)}>
+      <Button variant="primary" className="w-full sm:w-auto" onClick={() => setOpen(true)}>
         {label}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

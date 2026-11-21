@@ -58,6 +58,12 @@ GET,/billing/metrics/{panel},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/cancel-email-change,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/email-change-preview,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/approve-email-change,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
+GET,/certificate-exceptions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/certificate-exceptions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1,""organismKind"":""COURT"",""organismReference"":""Causa 1/2026"",""reason"":""El alumno presentó un reclamo formal ante el organismo""}"
+GET,/certificate-exceptions/{id},DENY,DENY,DENY,DENY,OWNER,ALLOW,DENY,certificate-exception,
+POST,/certificate-exceptions/{id}/approve,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/certificate-exceptions/{id}/reject,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/certificate-exceptions/{id}/withdraw,DENY,DENY,DENY,DENY,OWNER,ALLOW,DENY,certificate-exception,
 POST,/chargebacks/{chargebackId}/reversal,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/chargebacks/{chargebackId}/reversal/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/classrooms,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
@@ -287,6 +293,10 @@ POST,/payments/{paymentId}/approval-revocation,DENY,DENY,DENY,DENY,DENY,ALLOW,DE
 POST,/payments/{paymentId}/approval-revocation/preview,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/payments/{paymentId}/chargebacks,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/payments/{paymentId}/chargebacks/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/permissions/catalog,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+GET,/permissions/discrepancies,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+GET,/permissions/grid,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+PUT,/permissions/grid,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""x"",""changes"":[{""role"":""DOCENTE"",""permissionCode"":""announcement.create"",""granted"":true}]}"
 PUT,/platform/features/{code},DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/platform/features/{code}/preview,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/platform/features,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,,
@@ -578,5 +588,14 @@ POST,/certificate-templates/{kind}/publish,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/certificate-templates/{kind}/images,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/certificate-templates/{kind}/images/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/certificate-templates/{kind}/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""source"":""PUBLISHED""}"
+GET,/certificate-signatories,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/certificate-signatories,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""name"":""Dra. Firmante"",""role"":""Secretaria Legal"",""allowedDocumentTypes"":[""GRADUATION_APPROVAL""]}"
+GET,/certificate-signatories/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+PUT,/certificate-signatories/{id},DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""name"":""Dra. Firmante"",""role"":""Secretaria Legal"",""allowedDocumentTypes"":[""GRADUATION_APPROVAL""]}"
+POST,/certificate-signatories/{id}/deactivate,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+POST,/certificate-signatories/{id}/activate,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+PUT,/certificate-signatories/{id}/signature,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+DELETE,/certificate-signatories/{id}/signature,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+GET,/certificate-signatories/{id}/signature,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/me/certificates,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/certificates/{id}/pdf,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
