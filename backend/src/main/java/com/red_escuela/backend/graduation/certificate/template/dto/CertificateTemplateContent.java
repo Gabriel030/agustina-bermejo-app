@@ -15,5 +15,7 @@ public record CertificateTemplateContent(
         @Nullable @Size(max = 160) String qrLabel,
         @Nullable @Size(max = 240) String footerLegend,
         @Valid @Schema(nullable = true) CertificateTemplateSigner firstSigner,
-        @Valid @Schema(nullable = true) CertificateTemplateSigner secondSigner) {
+        @Valid @Schema(nullable = true) CertificateTemplateSigner secondSigner,
+        @Nullable Long signatory1Id,
+        @Nullable Long signatory2Id) {
 }

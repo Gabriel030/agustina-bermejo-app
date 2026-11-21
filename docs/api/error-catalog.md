@@ -257,6 +257,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXCEPTION_WITHDRAW_NOT_ALLOWED` | no | `ExceptionWithdrawNotAllowedException` | graduation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
+| `PERMISSION_FIXED_TO_DIRECTOR` | no | `PermissionFixedToDirectorException` | identity |
+| `PERMISSION_GRID_FORBIDDEN` | no | `PermissionGridForbiddenException` | identity |
 | `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
 | `ROLE_NOT_ASSIGNABLE_BY_ACTOR` | no | `RoleNotAssignableByActorException` | identity |
 
@@ -349,6 +351,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_INSTRUCTOR_NOT_FOUND` | no | `SectionInstructorNotFoundException` | academicstructure |
 | `SECTION_NOT_FOUND` | no | `SectionNotFoundException` | academicstructure |
 | `SESSION_NOT_FOUND` | no | `SessionNotFoundException` | identity |
+| `SIGNATORY_NOT_FOUND` | no | `SignatoryNotFoundException` | graduation |
 | `STUDENT_DISCOUNT_NOT_FOUND` | no | `StudentDiscountNotFoundException` | billing |
 | `STUDENT_NOT_FOUND` | no | `StudentNotFoundException` | identity |
 | `SUBJECT_NOT_FOUND` | no | `SubjectNotFoundException` | academicstructure |
@@ -601,6 +604,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
 | `SEGMENT_NOT_AVAILABLE` | no | `SegmentNotAvailableException` | notification |
+| `SIGNATORY_INACTIVE` | no | `SignatoryInactiveException` | graduation |
+| `SIGNATORY_NOT_ALLOWED_FOR_DOCUMENT_TYPE` | no | `SignatoryNotAllowedForDocumentTypeException` | graduation |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
@@ -640,6 +645,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `GRADUATION_CERTIFICATE_OPERATION_PENDING` | no | `GraduationCertificateOperationPendingException` | graduation |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
+| `SIGNATORY_DUPLICATED_IN_TEMPLATE` | no | `SignatoryDuplicatedInTemplateException` | graduation |
+| `SIGNATORY_ROLE_INVALID` | no | `SignatoryRoleInvalidException` | graduation |
+| `SIGNATORY_SIGNATURE_INVALID` | no | `SignatorySignatureInvalidException` | graduation |
 | `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
@@ -760,6 +768,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/broadcasts/{id}/cancel` | `BroadcastLifecycleController#cancelBroadcast` |
 | POST | `/broadcasts/{id}/confirm` | `BroadcastLifecycleController#confirmBroadcast` |
 | POST | `/cancel-email-change` | `CancelEmailChangeController#cancelEmailChange` |
+| POST | `/certificate-signatories` | `CertificateSignatoryController#create` |
+| POST | `/certificate-signatories/{id}/activate` | `CertificateSignatoryController#activate` |
+| POST | `/certificate-signatories/{id}/deactivate` | `CertificateSignatoryController#deactivate` |
 | POST | `/certificate-templates/{kind}/images` | `CertificateTemplateController#uploadImage` |
 | POST | `/certificate-templates/{kind}/preview` | `CertificateTemplateController#preview` |
 | POST | `/certificate-templates/{kind}/publish` | `CertificateTemplateController#publish` |
