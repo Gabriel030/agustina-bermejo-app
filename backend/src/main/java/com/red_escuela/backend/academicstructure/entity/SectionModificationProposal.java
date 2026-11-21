@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -41,6 +42,10 @@ public class SectionModificationProposal {
     @Column(name = "replaces_schedule", nullable = false)
     private boolean replacesSchedule;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requested_by_person_id")
+    private Person requestedBy;
+
     @Column(name = "requested_at", nullable = false)
     private LocalDateTime requestedAt;
 
@@ -55,11 +60,12 @@ public class SectionModificationProposal {
     private List<ProposedSlot> slots = new ArrayList<>();
 
     public static SectionModificationProposal pending(
-            SubjectSection section, boolean replacesSchedule, List<ProposedSlot> slots, LocalDateTime requestedAt) {
+            SubjectSection section, boolean replacesSchedule, List<ProposedSlot> slots, Person requestedBy, LocalDateTime requestedAt) {
         var proposal = new SectionModificationProposal();
         proposal.subjectSection = section;
         proposal.status = SectionModificationStatus.PENDING;
         proposal.replacesSchedule = replacesSchedule;
+        proposal.requestedBy = requestedBy;
         proposal.requestedAt = requestedAt;
         proposal.slots = new ArrayList<>(slots);
         return proposal;

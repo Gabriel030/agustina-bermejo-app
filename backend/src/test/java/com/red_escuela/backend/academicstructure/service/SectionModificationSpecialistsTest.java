@@ -25,6 +25,12 @@ import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionModificationProposalRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.events.SectionModificationApprovedEvent;
+import com.red_escuela.backend.academicstructure.events.SectionModificationRejectedEvent;
+import com.red_escuela.backend.academicstructure.events.SectionModificationRequestedEvent;
+import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import com.red_escuela.backend.identity.entity.Person;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,6 +77,10 @@ class SectionModificationSpecialistsTest {
     private SectionConflictChecker conflictChecker;
     @Mock
     private SectionShiftSlotGuard shiftSlotGuard;
+    @Mock
+    private CurrentActorFinder currentActorFinder;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private SubjectSection section;
     private Term term;
@@ -83,6 +93,10 @@ class SectionModificationSpecialistsTest {
         section.setId(SECTION_ID);
         section.setCapacity(30);
         section.setTerm(term);
+        var subject = new Subject();
+        subject.setName("Algebra");
+        section.setSubject(subject);
+        section.setName("Comision A");
         var cycle = new AcademicOfferingCycle();
         cycle.setStatus(AcademicOfferingCycleStatus.APPROVED);
         section.setAcademicOfferingCycle(cycle);
@@ -90,15 +104,15 @@ class SectionModificationSpecialistsTest {
 
     private SectionModificationRequester requester() {
         var detector = new SectionModificationConflictDetector(classroomRepository, conflictChecker, shiftSlotGuard);
-        return new SectionModificationRequester(sectionRepository, slotRepository, classroomRepository, proposalRepository, detector, new SectionCycleApprovalGuard(), CLOCK);
+        return new SectionModificationRequester(sectionRepository, slotRepository, classroomRepository, proposalRepository, detector, new SectionCycleApprovalGuard(), currentActorFinder, eventPublisher, CLOCK);
     }
 
     private SectionModificationApprover approver() {
-        return new SectionModificationApprover(sectionRepository, slotRepository, proposalRepository, conflictChecker, classroomRepository, new SectionCycleApprovalGuard(), CLOCK);
+        return new SectionModificationApprover(sectionRepository, slotRepository, proposalRepository, conflictChecker, classroomRepository, new SectionCycleApprovalGuard(), eventPublisher, CLOCK);
     }
 
     private SectionModificationRejecter rejecter() {
-        return new SectionModificationRejecter(sectionRepository, proposalRepository, CLOCK);
+        return new SectionModificationRejecter(sectionRepository, proposalRepository, eventPublisher, CLOCK);
     }
 
     private Classroom classroom(int capacity) {
@@ -112,8 +126,14 @@ class SectionModificationSpecialistsTest {
         return new ScheduleSlotRequest(CLASSROOM_ID, DayOfWeek.MONDAY, start, end);
     }
 
+    private Person requesterPerson() {
+        var person = new Person();
+        person.setId(55L);
+        return person;
+    }
+
     private SectionModificationProposal pendingProposal(boolean replacesSchedule, List<ProposedSlot> slots) {
-        return SectionModificationProposal.pending(section, replacesSchedule, slots, NOW);
+        return SectionModificationProposal.pending(section, replacesSchedule, slots, requesterPerson(), NOW);
     }
 
     @Test
@@ -121,9 +141,16 @@ class SectionModificationSpecialistsTest {
         when(sectionRepository.findById(SECTION_ID)).thenReturn(Optional.of(section));
         when(slotRepository.findBySubjectSectionId(SECTION_ID)).thenReturn(List.of());
         when(classroomRepository.findById(CLASSROOM_ID)).thenReturn(Optional.of(classroom(30)));
+        when(currentActorFinder.currentPerson()).thenReturn(requesterPerson());
 
         requester().requestModification(SECTION_ID, new ModifySectionRequest(List.of(slotRequest(LocalTime.of(18, 0), LocalTime.of(22, 0)))));
 
+        var published = ArgumentCaptor.forClass(SectionModificationRequestedEvent.class);
+        verify(eventPublisher).publishEvent(published.capture());
+        assertThat(published.getValue().sectionId()).isEqualTo(SECTION_ID);
+        assertThat(published.getValue().subjectName()).isEqualTo("Algebra");
+        assertThat(published.getValue().sectionName()).isEqualTo("Comision A");
+        assertThat(published.getValue().requestedByPersonId()).isEqualTo(55L);
         var saved = ArgumentCaptor.forClass(SectionModificationProposal.class);
         verify(proposalRepository).save(saved.capture());
         assertThat(saved.getValue().getStatus()).isEqualTo(SectionModificationStatus.PENDING);
@@ -291,6 +318,10 @@ class SectionModificationSpecialistsTest {
         assertThat(proposal.getResolvedAt()).isEqualTo(NOW);
         assertThat(section.isPendingApproval()).isFalse();
         verify(slotRepository, never()).deleteAll(any());
+        var published = ArgumentCaptor.forClass(SectionModificationApprovedEvent.class);
+        verify(eventPublisher).publishEvent(published.capture());
+        assertThat(published.getValue().requestedByPersonId()).isEqualTo(55L);
+        assertThat(published.getValue().subjectName()).isEqualTo("Algebra");
     }
 
     @Test
@@ -346,6 +377,10 @@ class SectionModificationSpecialistsTest {
         assertThat(proposal.getResolvedAt()).isEqualTo(NOW);
         assertThat(section.isPendingApproval()).isFalse();
         verifyNoInteractions(slotRepository);
+        var published = ArgumentCaptor.forClass(SectionModificationRejectedEvent.class);
+        verify(eventPublisher).publishEvent(published.capture());
+        assertThat(published.getValue().rejectionReason()).isEqualTo("classroom reserved for exams");
+        assertThat(published.getValue().requestedByPersonId()).isEqualTo(55L);
     }
 
     @Test
