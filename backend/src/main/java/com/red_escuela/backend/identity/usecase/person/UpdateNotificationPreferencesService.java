@@ -9,7 +9,8 @@ public class UpdateNotificationPreferencesService implements UpdateNotificationP
 
     private final NotificationPreferencesUpdateTransaction notificationPreferencesUpdateTransaction;
 
-    public UpdateNotificationPreferencesService(NotificationPreferencesUpdateTransaction notificationPreferencesUpdateTransaction) {
+    public UpdateNotificationPreferencesService(
+            NotificationPreferencesUpdateTransaction notificationPreferencesUpdateTransaction) {
         this.notificationPreferencesUpdateTransaction = notificationPreferencesUpdateTransaction;
     }
 
