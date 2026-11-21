@@ -468,6 +468,7 @@ export const handlers = [
     HttpResponse.json({ allowed: true, blockedBy: null, parts: [] }),
   ),
   http.get(`${API}/backups/status`, () => HttpResponse.json(backupStatusForPlatformAdmin())),
+  http.get(`${API}/section-modification-requests/pending`, () => HttpResponse.json([])),
   http.post(`${API}/subject-sections/:id/modification-request/preview`, () => HttpResponse.json({ conflicts: [] })),
   http.get(`${API}/permissions/catalog`, () => HttpResponse.json(permissionCatalog())),
   http.get(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
