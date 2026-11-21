@@ -28,6 +28,36 @@ export function useDiscardTemplateDraft(kind) {
   });
 }
 
+export function useTemplateVersions(kind) {
+  return useQuery({
+    queryKey: [...TEMPLATE_KEY, kind, 'versions'],
+    queryFn: () => apiFetch(`/certificate-templates/${kind}/versions`),
+  });
+}
+
+export function useTemplateVersion(kind, number) {
+  return useQuery({
+    queryKey: [...TEMPLATE_KEY, kind, 'versions', number],
+    queryFn: () => apiFetch(`/certificate-templates/${kind}/versions/${number}`),
+    enabled: number != null,
+  });
+}
+
+export function usePublishTemplate(kind) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch(`/certificate-templates/${kind}/publish`, { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...TEMPLATE_KEY, kind] }),
+  });
+}
+
+export function usePreviewTemplate(kind) {
+  return useMutation({
+    mutationFn: (source) =>
+      apiFetchBlob(`/certificate-templates/${kind}/preview`, { method: 'POST', body: JSON.stringify({ source }) }),
+  });
+}
+
 export function useUploadTemplateLogo(kind) {
   return useMutation({
     mutationFn: (file) => {
