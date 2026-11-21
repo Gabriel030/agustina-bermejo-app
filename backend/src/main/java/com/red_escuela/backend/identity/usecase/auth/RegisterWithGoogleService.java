@@ -44,7 +44,7 @@ public class RegisterWithGoogleService implements RegisterWithGoogleUseCase {
         var profile = googleIdTokenService.verify(command.idToken());
 
         if (personRepository.findByEmail(EmailAddress.of(profile.email())).isPresent()) {
-            throw new UsernameAlreadyExistsException(profile.email());
+            throw new UsernameAlreadyExistsException();
         }
 
         Institution institution = institutionRepository.findById(command.institutionId())
@@ -62,7 +62,7 @@ public class RegisterWithGoogleService implements RegisterWithGoogleUseCase {
 
             return authTokenIssuer.issueTokens(person);
         } catch (DataIntegrityViolationException e) {
-            throw new UsernameAlreadyExistsException(profile.email());
+            throw new UsernameAlreadyExistsException();
         }
     }
 }

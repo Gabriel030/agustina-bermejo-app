@@ -13,6 +13,7 @@ import { routes as platform } from '@/features/platform/routes';
 import { routes as institution } from '@/features/institution/routes';
 import { routes as dataImport } from '@/features/data-import/routes';
 import { routes as audit } from '@/features/audit/routes';
+import { routes as permissions } from '@/features/permissions/routes';
 import { routes as backups } from '@/features/backups/routes';
 
 export const FEATURE_ROUTES = {
@@ -31,6 +32,7 @@ export const FEATURE_ROUTES = {
   institution,
   'data-import': dataImport,
   audit,
+  permissions,
   backups,
 };
 

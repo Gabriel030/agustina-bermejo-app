@@ -198,6 +198,17 @@ dc logs --since 1h postgres             # base de datos
 dc stats --no-stream                    # memoria y CPU por contenedor
 ```
 
+## Enlace de calendario: el token viaja en la URL
+
+`GET /api/public/calendar/<token>.ics` es el feed suscribible del calendario del alumno: el token (256 bits) es la única credencial y va en el path. Estado verificado en este repositorio:
+
+- El `frontend/Caddyfile` **no define la directiva `log`**: Caddy no escribe access log por defecto, así que el path (y el token) no queda guardado en el proxy. Si alguien agrega `log` o un `access_log`, hay que enmascarar el path `/api/public/calendar/*` (filtro `replace` sobre `request>uri`) antes de habilitarlo.
+- El backend no activa el access log de Tomcat ni loguea URIs de pedidos; el nivel raíz es INFO (WARN en un perfil) y el de `com.red_escuela.backend` INFO, sin DEBUG de Spring MVC. Hay un test (`CalendarFeedSecurityIT.tokenNeverAppearsInApplicationLogs`) que falla si el token aparece en un log de aplicación.
+- Si el servidor está detrás de otro proxy o balanceador (CDN, WAF), ese componente puede guardar el path: configurar el enmascarado ahí.
+- Un token filtrado se invalida regenerándolo o revocándolo desde la cuenta del alumno; el servidor deja de aceptar el token anterior de inmediato. Esto no cuenta la caché del cliente: la respuesta lleva `Cache-Control: private, max-age=900` y el feed declara `REFRESH-INTERVAL` de 1 h, así que un cliente (navegador, Google, Apple) puede seguir mostrando o pidiendo el feed viejo entre 15 minutos y 1 hora después de revocar.
+- El límite por IP de pedidos con token inexistente (los que dan 404) usa la IP del cliente: requiere `FORWARD_HEADERS_STRATEGY=native` con `TRUSTED_PROXIES_REGEX` cubriendo la red del proxy (ver `docs/context/overload-protection.md`). Sin eso todos los clientes comparten la IP del proxy y los pedidos inválidos de un atacante bloquean los pedidos inexistentes de todos. Los pedidos con token válido nunca se cortan por IP, solo por el límite del propio token (120 por hora).
+- Si no hay ningún bean `MyCalendarProvider`, el feed y la exportación responden 503 y el arranque deja un WARN `No MyCalendarProvider bean is registered`.
+
 ## Problemas típicos
 
 - **Caddy no saca el certificado:** el DNS todavía no apunta al servidor o hay un firewall

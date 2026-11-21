@@ -79,6 +79,9 @@ export const TIPO_NOTIFICACION_LABEL = {
   OFFER_CYCLE_SUBMITTED: 'Oferta enviada a aprobación',
   OFFER_CYCLE_APPROVED: 'Oferta aprobada',
   OFFER_CYCLE_REJECTED: 'Oferta rechazada',
+  SECTION_MODIFICATION_REQUESTED: 'Pedido de cambio de horario',
+  SECTION_MODIFICATION_APPROVED: 'Cambio de horario aprobado',
+  SECTION_MODIFICATION_REJECTED: 'Cambio de horario rechazado',
 };
 
 export const TONO_NOTIFICACION = {
@@ -162,6 +165,9 @@ export const TONO_NOTIFICACION = {
   OFFER_CYCLE_SUBMITTED: 'warning',
   OFFER_CYCLE_APPROVED: 'success',
   OFFER_CYCLE_REJECTED: 'danger',
+  SECTION_MODIFICATION_REQUESTED: 'warning',
+  SECTION_MODIFICATION_APPROVED: 'success',
+  SECTION_MODIFICATION_REJECTED: 'danger',
 };
 
 export const ETIQUETA_NOTIFICACION_DESCONOCIDA = 'Notificación';
