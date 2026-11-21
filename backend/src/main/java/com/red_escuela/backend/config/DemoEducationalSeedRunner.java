@@ -17,9 +17,11 @@ import org.springframework.web.client.RestClientResponseException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @Profile("local & demo")
@@ -241,15 +243,16 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     private record FinalExamBoard(String ownerKey, long ownerId, String registrationKey, long enrollmentId, long termId, long instructorId) {
     }
 
-    private static String finalExamDate() {
-        return ApplicationTime.today().minusDays(1).atStartOfDay().toString() + ":00";
+    private String finalExamDate(DemoApiClient api) {
+        LocalDate examDay = recentClassDaysBefore(ApplicationTime.today(), 1, holidayDates(api)).get(0);
+        return examDay.atStartOfDay().toString() + ":00";
     }
 
     private long createFinalExamBoard(DemoApiClient api, FinalExamBoard board) {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put(board.ownerKey(), board.ownerId());
         request.put("termId", board.termId());
-        request.put("examDate", finalExamDate());
+        request.put("examDate", finalExamDate(api));
         long examBoardId = api.post(ADMIN, "/exam-boards", request).get("id").asLong();
         api.post(ADMIN, "/exam-boards/" + examBoardId + "/tribunal", Map.of("instructorId", board.instructorId()));
         api.post(ADMIN, "/exam-boards/" + examBoardId + "/registrations",
@@ -262,12 +265,12 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         api.post(TEACHER, gradeItemsPath, Map.of("type", "EXAM", "sequenceNumber", 2, "date", "2026-08-12T00:00:00", "score", 8));
         api.post(TEACHER, publishPath, Map.of("gradeType", "EXAM", "sequenceNumber", 1));
         api.post(TEACHER, publishPath, Map.of("gradeType", "EXAM", "sequenceNumber", 2));
-        api.post(TEACHER, gradeItemsPath, Map.of("type", "FINAL", "date", finalExamDate(), "score", 8,
+        api.post(TEACHER, gradeItemsPath, Map.of("type", "FINAL", "date", finalExamDate(api), "score", 8,
                 "examBoardId", createFinalExamBoard(api, board)));
     }
 
     private void recordAttendance(DemoApiClient api, long sectionId, long sectionEnrollmentId) {
-        List<LocalDate> classDates = recentWeekdaysBefore(ApplicationTime.today(), CLASS_COUNT);
+        List<LocalDate> classDates = recentClassDaysBefore(ApplicationTime.today(), CLASS_COUNT, holidayDates(api));
         for (int index = 0; index < classDates.size(); index++) {
             String status = index == 1 || index == 3 ? "ABSENT" : "PRESENT";
             Map<String, Object> entry = Map.of("enrollmentId", sectionEnrollmentId, "status", status);
@@ -275,11 +278,23 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         }
     }
 
-    static List<LocalDate> recentWeekdaysBefore(LocalDate today, int count) {
+    private Set<LocalDate> holidayDates(DemoApiClient api) {
+        Set<LocalDate> holidays = new HashSet<>();
+        for (JsonNode holiday : api.get(ADMIN, "/holidays")) {
+            String date = holiday.path("date").asString("");
+            if (!date.isBlank()) {
+                holidays.add(LocalDate.parse(date));
+            }
+        }
+        return holidays;
+    }
+
+    static List<LocalDate> recentClassDaysBefore(LocalDate today, int count, Set<LocalDate> holidays) {
         List<LocalDate> dates = new ArrayList<>();
         LocalDate day = today.minusDays(1);
         while (dates.size() < count) {
-            if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            boolean weekend = day.getDayOfWeek() == DayOfWeek.SATURDAY || day.getDayOfWeek() == DayOfWeek.SUNDAY;
+            if (!weekend && !holidays.contains(day)) {
                 dates.add(0, day);
             }
             day = day.minusDays(1);

@@ -14,6 +14,8 @@ import {
 } from '@/test/fixtures/certificates';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 
+import { permissionCatalog, permissionDiscrepancy, permissionGrid } from '@/test/fixtures/permissions';
+
 const API = 'http://localhost:8080';
 
 const pdfResponse = () =>
@@ -466,4 +468,10 @@ export const handlers = [
     HttpResponse.json({ allowed: true, blockedBy: null, parts: [] }),
   ),
   http.get(`${API}/backups/status`, () => HttpResponse.json(backupStatusForPlatformAdmin())),
+  http.get(`${API}/permissions/catalog`, () => HttpResponse.json(permissionCatalog())),
+  http.get(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
+  http.put(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
+  http.get(`${API}/permissions/discrepancies`, () =>
+    HttpResponse.json({ items: [permissionDiscrepancy()], page: 0, size: 50, totalElements: 1 }),
+  ),
 ];
