@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.specialist;
 
+import com.red_escuela.backend.identity.domain.PermissionDiscrepancyDirection;
 import com.red_escuela.backend.shared.permission.PermissionDiscrepancySink;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -33,10 +34,16 @@ public class PermissionDiscrepancyAccumulator implements PermissionDiscrepancySi
 
     @Override
     public void record(String role, String permission, boolean legacyDecision, boolean permissionDecision) {
-        pending.computeIfAbsent(new PermissionDiscrepancyKey(role, permission), key -> new AtomicLong()).incrementAndGet();
+        pending.computeIfAbsent(new PermissionDiscrepancyKey(role, permission, directionOf(legacyDecision)), key -> new AtomicLong()).incrementAndGet();
         if (!clock.instant().isBefore(lastFlushAt.plus(FLUSH_INTERVAL))) {
             flush();
         }
+    }
+
+    private static PermissionDiscrepancyDirection directionOf(boolean legacyDecision) {
+        return legacyDecision
+                ? PermissionDiscrepancyDirection.LEGACY_ALLOWED_GRID_DENIED
+                : PermissionDiscrepancyDirection.LEGACY_DENIED_GRID_ALLOWED;
     }
 
     @PreDestroy

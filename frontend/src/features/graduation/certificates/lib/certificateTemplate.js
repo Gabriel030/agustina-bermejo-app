@@ -117,3 +117,26 @@ export function statusOf({ template, dirty }) {
 export function baselineOf(template) {
   return formFromContent((template.draft ?? template.published)?.content);
 }
+
+export const SYSTEM_DATA = [
+  { marker: 'holder', label: 'Titular', example: 'Pérez, Camila' },
+  { marker: 'documentType', label: 'Tipo de documento', example: 'DNI' },
+  { marker: 'documentNumber', label: 'Número de documento', example: '38.512.774' },
+  { marker: 'titleKind', label: 'Tipo de título', example: 'Tecnicatura' },
+  { marker: 'titleName', label: 'Nombre del título', example: 'Tecnicatura en Administración' },
+  { marker: 'hours', label: 'Carga horaria', example: '1.200' },
+  { marker: 'graduationDate', label: 'Fecha de egreso', example: '20/11/2026' },
+  { marker: 'issuedOn', label: 'Fecha de emisión', example: '21/11/2026' },
+  { marker: 'registryNumber', label: 'Número de registro', example: '2026-0412' },
+];
+
+export function previewSourceOf({ isDirector, template }) {
+  if (isDirector && template.draft) return 'DRAFT';
+  return template.published ? 'PUBLISHED' : null;
+}
+
+export function canPublish({ template, dirty, form, signatories }) {
+  if (!template.draft || dirty) return false;
+  const ids = (signatories ?? []).map((signatory) => signatory.id);
+  return ids.includes(form.signatory1Id) && ids.includes(form.signatory2Id);
+}

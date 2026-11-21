@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.specialist;
 
+import com.red_escuela.backend.identity.domain.PermissionModuleMode;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.audit.AuditAction;
@@ -48,6 +49,13 @@ public class IdentityAuditRecorder {
         auditTrail.record(new AuditRecord(action, AuditEntityType.PERMISSION, permissionId,
                 subject + ":" + (granted ? "DENIED" : "GRANTED"), subject + ":" + (granted ? "GRANTED" : "DENIED"),
                 reason));
+    }
+
+    public void recordPermissionModeChanged(Long modeSettingId, String role, String module,
+                                            PermissionModuleMode previous, PermissionModuleMode current, String reason) {
+        auditTrail.record(new AuditRecord(AuditAction.PERMISSION_GRID_CHANGED, AuditEntityType.PERMISSION,
+                modeSettingId, "Cambio de modo " + role + "/" + module + ": " + previous.name(),
+                "Cambio de modo " + role + "/" + module + ": " + current.name(), reason));
     }
 
     public void recordPasswordChanged(Person person) {
