@@ -71,7 +71,7 @@ class SectionModificationRequestsPendingListIT extends AbstractIntegrationTest {
     void persistScenario() {
         fixtures = new CycleTestFixtures(entityManager);
         director = persistPerson("pending.director", "94000001", "DIRECTOR");
-        term = fixtures.term(2040 + (int) (System.nanoTime() % 50));
+        term = fixtures.term(2040 + (int) Math.floorMod(System.nanoTime(), 50L));
         approvedCycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
         classroom = fixtures.classroom(30);
     }

@@ -42,7 +42,7 @@ public interface SectionModificationProposalRepository extends JpaRepository<Sec
             left join fetch p.slots ps
             left join fetch ps.classroom
             where p.status = com.red_escuela.backend.academicstructure.entity.SectionModificationStatus.PENDING
-              and c.status =com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.APPROVED
+              and c.status = com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.APPROVED
             order by p.requestedAt asc, p.id asc
             """)
     List<SectionModificationProposal> findPendingOfApprovedCyclesOrderByRequestedAt();
