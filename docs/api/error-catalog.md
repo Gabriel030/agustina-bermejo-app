@@ -769,6 +769,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/broadcasts/{id}/confirm` | `BroadcastLifecycleController#confirmBroadcast` |
 | POST | `/cancel-email-change` | `CancelEmailChangeController#cancelEmailChange` |
 | POST | `/certificate-exceptions` | `CertificateExceptionController#request` |
+| POST | `/certificate-exceptions/direct` | `CertificateExceptionController#createDirect` |
 | POST | `/certificate-exceptions/{id}/approve` | `CertificateExceptionController#approve` |
 | POST | `/certificate-exceptions/{id}/reject` | `CertificateExceptionController#reject` |
 | POST | `/certificate-exceptions/{id}/withdraw` | `CertificateExceptionController#withdraw` |

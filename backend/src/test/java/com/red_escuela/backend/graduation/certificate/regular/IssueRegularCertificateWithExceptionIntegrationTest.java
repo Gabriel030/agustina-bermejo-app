@@ -501,4 +501,76 @@ class IssueRegularCertificateWithExceptionIntegrationTest extends AbstractIntegr
         mockMvc.perform(post("/certificate-exceptions/" + id + "/withdraw").header("Authorization", "Bearer " + staffToken))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("WITHDRAWN"));
     }
+
+    private String directBody(Long forEnrollmentId, String reason) {
+        return "{\"kind\":\"PROGRAM\",\"enrollmentId\":" + forEnrollmentId + ",\"organismKind\":\"COURT\",\"organismReference\":\"Causa 77\","
+                + "\"reason\":\"" + reason + "\"}";
+    }
+
+    @Test
+    void directorCreatesAnApprovedExceptionThatIsAuditedAndConsumedByTheIssuance() throws Exception {
+        String created = mockMvc.perform(post("/certificate-exceptions/direct").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(directBody(enrollmentId, REQUEST_REASON)))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("APPROVED"))
+                .andExpect(jsonPath("$.createdByDirector").value(true)).andExpect(jsonPath("$.decidedById").value(director.getId()))
+                .andReturn().getResponse().getContentAsString();
+        Long id = Long.valueOf(created.replaceAll(".*\"id\":(\\d+).*", "$1"));
+
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where action = 'CERTIFICATE_EXCEPTION_DIRECT_CREATED' and entity_id = ?",
+                Integer.class, id)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from certificate_exception_status_change where approval_id = ? and event = 'DIRECT_APPROVE'",
+                Integer.class, id)).isEqualTo(1);
+        actAs(staff);
+        assertThat(issueWith(id).standingBasis()).isEqualTo(StandingBasis.EXCEPTION_APPROVED);
+        assertThat(exceptionStatus(id)).isEqualTo("CONSUMED");
+        assertThatThrownBy(() -> issueWith(id)).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void administrativeCannotCreateADirectException() throws Exception {
+        mockMvc.perform(post("/certificate-exceptions/direct").header("Authorization", "Bearer " + staffToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(directBody(enrollmentId, REQUEST_REASON)))
+                .andExpect(status().isForbidden());
+
+        assertThat(jdbc.queryForObject("select count(*) from certificate_exception_approval where program_enrollment_id = ?", Integer.class,
+                enrollmentId)).isZero();
+    }
+
+    @Test
+    void directCreationWithAShortReasonIsABadRequest() throws Exception {
+        mockMvc.perform(post("/certificate-exceptions/direct").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(directBody(enrollmentId, "motivo corto")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void directCreationInFullBillingWithoutDebtIsRefusedWithNoDebtToExcept() throws Exception {
+        Long settledEnrollmentId = newEnrollmentOfAnotherStudent();
+
+        mockMvc.perform(post("/certificate-exceptions/direct").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(directBody(settledEnrollmentId, REQUEST_REASON)))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("NO_DEBT_TO_EXCEPT"));
+    }
+
+    @Test
+    void directExceptionExpiresWithTheClockAndASecondOpenOneIsRefused() throws Exception {
+        mockMvc.perform(post("/certificate-exceptions/direct").header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(directBody(enrollmentId, REQUEST_REASON))).andExpect(status().isCreated());
+        mockMvc.perform(post("/certificate-exceptions/direct").header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(directBody(enrollmentId, REQUEST_REASON))).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CERTIFICATE_EXCEPTION_ALREADY_OPEN"));
+        Long id = jdbc.queryForObject("select id from certificate_exception_approval where program_enrollment_id = ?", Long.class, enrollmentId);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 10, 10, 0).plusDays(7));
+
+        assertThat(dueExpirer.expireIfDue(id)).isTrue();
+        assertThat(exceptionStatus(id)).isEqualTo("EXPIRED");
+    }
+
+    @Test
+    void databaseRefusesADirectorCreationWhoseDeciderIsNotTheRequester() {
+        Long id = approvedExceptionId();
+
+        assertThatThrownBy(() -> jdbc.update("update certificate_exception_approval set created_by_director = true where id = ?", id))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
 }

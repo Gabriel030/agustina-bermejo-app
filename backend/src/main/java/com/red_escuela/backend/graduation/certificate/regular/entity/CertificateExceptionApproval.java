@@ -44,6 +44,7 @@ public class CertificateExceptionApproval {
     public static final int DECISION_REASON_MAX_LENGTH = 500;
     public static final int REFERENCE_MAX_LENGTH = 200;
     public static final String EXPIRATION_PROCESS = "ExpireCertificateExceptionsJob";
+    public static final String DIRECTOR_CREATION_REASON = "Creada y aprobada por el Director";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -97,6 +98,9 @@ public class CertificateExceptionApproval {
     @Column(name = "valid_until")
     private LocalDateTime validUntil;
 
+    @Column(name = "created_by_director", nullable = false, updatable = false)
+    private boolean createdByDirector;
+
     @Column(name = "consumed_at")
     private LocalDateTime consumedAt;
 
@@ -128,6 +132,37 @@ public class CertificateExceptionApproval {
         approval.requestedById = requestedById;
         approval.requestedAt = now;
         approval.moveTo(CertificateExceptionEvent.REQUEST, StatusChangeActor.ofPerson(requestedById), now, approval.reason);
+        return approval;
+    }
+
+    public static CertificateExceptionApproval createApprovedByDirector(RegularityKind kind, Long enrollmentId, Long studentId,
+                                                                        OrganismKind organismKind, String rawReference, String rawReason,
+                                                                        Long directorId, ValidityDays validity, LocalDateTime now) {
+        Objects.requireNonNull(kind);
+        Objects.requireNonNull(enrollmentId);
+        Objects.requireNonNull(studentId);
+        Objects.requireNonNull(directorId);
+        Objects.requireNonNull(validity);
+        Objects.requireNonNull(now);
+        if (organismKind == null) {
+            throw new OrganismKindRequiredException();
+        }
+        CertificateExceptionApproval approval = new CertificateExceptionApproval();
+        approval.studentId = studentId;
+        approval.kind = kind;
+        approval.programEnrollmentId = kind == RegularityKind.PROGRAM ? enrollmentId : null;
+        approval.courseEnrollmentId = kind == RegularityKind.COURSE ? enrollmentId : null;
+        approval.organismKind = organismKind;
+        approval.organismReference = boundedText(rawReference, 1, REFERENCE_MAX_LENGTH, OrganismReferenceInvalidException::new);
+        approval.reason = boundedText(rawReason, REASON_MIN_LENGTH, REASON_MAX_LENGTH, CertificateExceptionReasonInvalidException::new);
+        approval.requestedById = directorId;
+        approval.requestedAt = now;
+        approval.createdByDirector = true;
+        approval.moveTo(CertificateExceptionEvent.DIRECT_APPROVE, StatusChangeActor.ofPerson(directorId), now, DIRECTOR_CREATION_REASON);
+        approval.decidedById = directorId;
+        approval.decidedAt = now;
+        approval.decisionReason = DIRECTOR_CREATION_REASON;
+        approval.validUntil = now.plusDays(validity.value());
         return approval;
     }
 
