@@ -11,5 +11,6 @@ public enum AuditEntityType {
     BROADCAST,
     INSTITUTE_SETTING,
     INVOICE,
-    GATEWAY_PAYMENT
+    GATEWAY_PAYMENT,
+    PERMISSION
 }
