@@ -1,7 +1,7 @@
 import { AlertTriangle, ChevronDown, ChevronRight, Info, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/StatusPill';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { PermissionCell } from '@/features/permissions/components/PermissionCell';
 import { DIRECTOR_ROLE, PERMISSION_MODES, SENSITIVE_TOOLTIP, modeFor, moduleLabel, pluralize, roleLabel } from '@/features/permissions/lib/permissionGrid';
@@ -54,7 +54,7 @@ export function PermissionModuleSection({ module, grid, roles, permissions, open
             <span className="text-size-12 text-ink-faint">
               {total} permisos
               {permissions.length !== total && ` · ${permissions.length} coinciden`}
-              {sensitiveCount > 0 && ` · ${sensitiveCount} sensibles`}
+              {sensitiveCount > 0 && ` · ${pluralize(sensitiveCount, 'sensible', 'sensibles')}`}
             </span>
           </span>
           {discrepancyCount > 0 && (
@@ -104,8 +104,7 @@ export function PermissionModuleSection({ module, grid, roles, permissions, open
                 <span className="flex flex-wrap items-center gap-2 text-size-13 font-semibold text-ink">
                   {permission.description}
                   {permission.sensitive && (
-                    <TooltipProvider>
-                      <Tooltip>
+                    <Tooltip>
                         <TooltipTrigger asChild>
                           <span tabIndex={0} aria-label={SENSITIVE_TOOLTIP} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
                             <StatusPill tone="warning">
@@ -114,8 +113,7 @@ export function PermissionModuleSection({ module, grid, roles, permissions, open
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>{SENSITIVE_TOOLTIP}</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    </Tooltip>
                   )}
                 </span>
                 <code className="text-size-11 text-ink-faint">{permission.code}</code>

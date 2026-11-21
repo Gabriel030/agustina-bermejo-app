@@ -120,7 +120,7 @@ describe('PermissionsPage', () => {
     renderWithProviders(<PermissionsPage />);
     await openModule(user, /^Facturación/);
 
-    expect(screen.getByText('1 sensibles', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('1 sensible', { exact: false })).toBeInTheDocument();
     expect(screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === 'Los permisos sensibles se pueden delegar; cada cambio se audita como evento destacado.')).toBeInTheDocument();
     const pill = screen.getByLabelText('Permiso sensible: requiere confirmación reforzada');
     expect(pill).toHaveAttribute('tabindex', '0');
@@ -309,6 +309,7 @@ describe('PermissionsPage', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Guardar 201 cambios' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('El permiso indicado no existe en el catálogo.');
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Se guardaron 200 cambios; quedan 1.');
     expect(screen.getByRole('region', { name: 'Cambios sin guardar' })).toHaveTextContent('1 cambio sin guardar');
   }, 30000);
 

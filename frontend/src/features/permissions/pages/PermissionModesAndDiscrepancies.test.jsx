@@ -187,6 +187,40 @@ describe('permission mode dialog', () => {
     await waitFor(() => expect(summaryReads.value).toBe(2));
   });
 
+  it('blocks activating while the discrepancy summary is loading', async () => {
+    const user = userEvent.setup();
+    server.use(http.get(`${API}/permissions/discrepancies/summary`, () => new Promise(() => {})));
+    renderWithProviders(<PermissionsPage />);
+    const dialog = await openModeDialog(user);
+
+    await user.click(within(dialog).getByRole('radio', { name: /Activo/ }));
+    await writeReason(user, dialog);
+    expect(within(dialog).getByText('Estamos verificando las discrepancias de este módulo…')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Cambiar modo' })).toBeDisabled();
+  });
+
+  it('blocks activating when the summary failed and recovers on retry', async () => {
+    const user = userEvent.setup();
+    let failing = true;
+    server.use(
+      http.get(`${API}/permissions/discrepancies/summary`, () =>
+        failing ? HttpResponse.json(errorBody('INTERNAL_ERROR', { retryable: true }), { status: 500 }) : HttpResponse.json(permissionDiscrepancySummary()),
+      ),
+    );
+    renderWithProviders(<PermissionsPage />);
+    const dialog = await openModeDialog(user);
+
+    await user.click(within(dialog).getByRole('radio', { name: /Activo/ }));
+    await writeReason(user, dialog);
+    expect(await within(dialog).findByText('No pudimos verificar las discrepancias. Reintentá antes de pasar a Activo.', {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Cambiar modo' })).toBeDisabled();
+
+    failing = false;
+    await user.click(within(dialog).getByRole('button', { name: 'Reintentar' }));
+    await within(dialog).findByRole('checkbox', { name: /Entiendo que 3 accesos/ });
+    expect(within(dialog).queryByText('No pudimos verificar las discrepancias. Reintentá antes de pasar a Activo.')).not.toBeInTheDocument();
+  }, 20000);
+
   it('shows the discrepancy pill on the module in the grid', async () => {
     renderWithProviders(<PermissionsPage />);
     expect(await screen.findByText('3 discrepancias')).toBeInTheDocument();

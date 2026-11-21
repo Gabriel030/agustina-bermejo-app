@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { TabCount } from '@/components/TabCount';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { PermissionDiscrepanciesTab } from '@/features/permissions/components/PermissionDiscrepanciesTab';
 import { PermissionModeDialog } from '@/features/permissions/components/PermissionModeDialog';
 import { PendingChangesBar } from '@/features/permissions/components/PendingChangesBar';
@@ -114,6 +115,7 @@ function PermissionsGrid({ catalog, grid }) {
 
   const confirmSave = async (reason, sensitiveConfirmed) => {
     const count = draft.changes.length;
+    let savedCount = 0;
     setSaveError(null);
     try {
       await save.mutateAsync({
@@ -121,7 +123,10 @@ function PermissionsGrid({ catalog, grid }) {
         changes: draft.changes,
         sensitiveConfirmed,
         isSensitive: (change) => Boolean(catalogIndex.get(change.permissionCode)?.sensitive),
-        onChunkSaved: draft.settle,
+        onChunkSaved: (chunk) => {
+          savedCount += chunk.length;
+          draft.settle(chunk);
+        },
       });
       closeReview();
       toast.success(`Guardamos ${describeChangeCount(count)}. Quedaron en la auditoría.`);
@@ -129,13 +134,20 @@ function PermissionsGrid({ catalog, grid }) {
       setSaveError(
         error?.code === GRID_FORBIDDEN_CODE
           ? { title: 'No se guardó nada.', message: 'No tenés permiso para cambiar la grilla. Solo el Director puede editarla; si creés que es un error, pedíselo a él.' }
-          : { title: 'No pudimos guardar todo.', message: describeMutationFailure(error) },
+          : {
+              title: 'No pudimos guardar todo.',
+              message:
+                savedCount > 0
+                  ? `Se guardaron ${describeChangeCount(savedCount)}; quedan ${count - savedCount}. ${describeMutationFailure(error)}`
+                  : describeMutationFailure(error),
+            },
       );
     }
   };
 
   return (
     <>
+      <TooltipProvider>
       <Tabs value={tab} onValueChange={setTab} className="gap-4">
         {editable && (
           <TabsList variant="segmented">
@@ -224,6 +236,7 @@ function PermissionsGrid({ catalog, grid }) {
           </TabsContent>
         )}
       </Tabs>
+      </TooltipProvider>
       {editable && draft.changes.length > 0 && (
         <PendingChangesBar changeCount={draft.changes.length} moduleCount={moduleCount} onDiscard={draft.discard} onReview={() => setReviewing(true)} />
       )}
@@ -233,6 +246,8 @@ function PermissionsGrid({ catalog, grid }) {
           module={modeTarget.module}
           currentMode={modeFor(grid, modeTarget.role, modeTarget.module)}
           discrepancyCount={discrepancyCountFor(summary, modeTarget.module)}
+          discrepancyStatus={summaryQuery.error ? 'error' : summary ? 'ready' : 'loading'}
+          onRetryDiscrepancies={() => summaryQuery.refetch()}
           hasUnsavedChanges={hasUnsavedChangesFor(modeTarget)}
           onClose={() => setModeTarget(null)}
         />

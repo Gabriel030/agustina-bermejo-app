@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useChangePermissionMode } from '@/features/permissions/hooks/useChangePermissionMode';
 import { MAX_REASON_LENGTH, MIN_REASON_LENGTH, MODE_OPTIONS, PERMISSION_MODES, moduleLabel, pluralize, roleLabel } from '@/features/permissions/lib/permissionGrid';
 
-export function PermissionModeDialog({ role, module, currentMode, discrepancyCount, hasUnsavedChanges, onClose }) {
+export function PermissionModeDialog({ role, module, currentMode, discrepancyCount, discrepancyStatus, onRetryDiscrepancies, hasUnsavedChanges, onClose }) {
   const [selected, setSelected] = useState(currentMode);
   const [reason, setReason] = useState('');
   const [touched, setTouched] = useState(false);
@@ -22,6 +22,7 @@ export function PermissionModeDialog({ role, module, currentMode, discrepancyCou
   const reasonTooShort = trimmed.length < MIN_REASON_LENGTH;
   const needsAcknowledgement = selected === 'ENFORCE' && discrepancyCount > 0;
   const unchanged = selected === currentMode;
+  const verifying = selected === 'ENFORCE' && discrepancyStatus !== 'ready';
   const roleName = roleLabel(role);
   const moduleName = moduleLabel(module);
 
@@ -82,6 +83,19 @@ export function PermissionModeDialog({ role, module, currentMode, discrepancyCou
               </p>
             </div>
           )}
+          {verifying && (
+            <div role={discrepancyStatus === 'error' ? 'alert' : 'status'} className="flex flex-wrap items-center gap-2.5 rounded-control bg-warning-bg px-3.5 py-3 text-size-13 text-warning-ink">
+              <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+              <p className="flex-1">
+                {discrepancyStatus === 'error' ? 'No pudimos verificar las discrepancias. Reintentá antes de pasar a Activo.' : 'Estamos verificando las discrepancias de este módulo…'}
+              </p>
+              {discrepancyStatus === 'error' && (
+                <Button type="button" variant="outline" className="min-h-11" onClick={onRetryDiscrepancies}>
+                  Reintentar
+                </Button>
+              )}
+            </div>
+          )}
           {hasUnsavedChanges && (
             <div className="flex items-start gap-2.5 rounded-control bg-warning-bg px-3.5 py-3 text-size-13 text-warning-ink">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -138,7 +152,7 @@ export function PermissionModeDialog({ role, module, currentMode, discrepancyCou
             variant="primary"
             className="min-h-11"
             loading={change.isPending}
-            disabled={unchanged || reasonTooShort || (needsAcknowledgement && !acknowledged)}
+            disabled={unchanged || verifying || reasonTooShort || (needsAcknowledgement && !acknowledged)}
             onClick={confirm}
           >
             Cambiar modo
