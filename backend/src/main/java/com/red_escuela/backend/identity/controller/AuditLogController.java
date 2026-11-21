@@ -32,12 +32,13 @@ public class AuditLogController {
                                                    @RequestParam(required = false) AuditEntityType entityType,
                                                    @RequestParam(required = false) Long entityId,
                                                    @RequestParam(required = false) Long actorPersonId,
+                                                   @RequestParam(required = false) String actorName,
                                                    @RequestParam(required = false) List<String> actorRole,
                                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                                                    @RequestParam(defaultValue = "0") int page,
                                                    @RequestParam(defaultValue = "50") int size) {
         return listAuditLogUseCase.list(
-                new AuditLogFilter(action, entityType, entityId, actorPersonId, actorRole, from, to), page, size);
+                new AuditLogFilter(action, entityType, entityId, actorPersonId, actorRole, from, to), actorName, page, size);
     }
 }
