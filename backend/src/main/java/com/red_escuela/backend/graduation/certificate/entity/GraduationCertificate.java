@@ -87,6 +87,15 @@ public class GraduationCertificate {
     @Column(name = "revoked_at")
     private LocalDateTime revokedAt;
 
+    @Column(name = "revoked_by_id")
+    private Long revokedById;
+
+    @Column(name = "revocation_reason", length = 500)
+    private String revocationReason;
+
+    @Column(name = "replaces_id")
+    private Long replacesId;
+
     public static GraduationCertificate issue(GraduationCertificateKind kind, Long enrollmentId, Long studentId,
                                               CertificateCode code, CertificateSnapshot snapshot, String pdfSha256,
                                               String pdfPath, LocalDateTime issuedAt, Long issuedById, String registryNumber,
@@ -108,6 +117,25 @@ public class GraduationCertificate {
                 .registryNumber(registryNumber)
                 .templateVersionId(templateVersionId)
                 .build();
+    }
+
+    public boolean isRevocable() {
+        return status == GraduationCertificateStatus.VALID;
+    }
+
+    public void revoke(String reason, Long revokedById, LocalDateTime revokedAt) {
+        this.status = GraduationCertificateStatus.REVOKED;
+        this.revocationReason = reason;
+        this.revokedById = revokedById;
+        this.revokedAt = revokedAt;
+    }
+
+    public void markAsReplacing(Long revokedCertificateId) {
+        this.replacesId = revokedCertificateId;
+    }
+
+    public Long enrollmentId() {
+        return kind == GraduationCertificateKind.PROGRAM ? programEnrollmentId : courseEnrollmentId;
     }
 
     public void replacePdf(String newSha256, String newPath) {
