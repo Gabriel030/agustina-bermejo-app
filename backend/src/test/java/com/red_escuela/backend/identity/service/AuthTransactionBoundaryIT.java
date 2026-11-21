@@ -5,11 +5,14 @@ import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
+import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.specialist.SessionRevoker;
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
 import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
 import com.red_escuela.backend.identity.usecase.auth.ResetPasswordCommand;
 import com.red_escuela.backend.identity.usecase.auth.ResetPasswordUseCase;
+import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand;
+import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeUseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -45,6 +48,9 @@ class AuthTransactionBoundaryIT extends AbstractIntegrationTest {
 
     @Autowired
     private ResetPasswordUseCase resetPasswordUseCase;
+
+    @Autowired
+    private VerifyResetCodeUseCase verifyResetCodeUseCase;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -135,5 +141,25 @@ class AuthTransactionBoundaryIT extends AbstractIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "select exchange_token_hash from password_reset_token where person_id = ?", String.class, personId))
                 .isEqualTo(TokenHashUtil.sha256Hex(EXCHANGE_TOKEN));
+    }
+
+    @Test
+    void wrongResetCodeStillPersistsTheAttemptCounter() {
+        Long personId = persistPerson();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            PasswordResetToken token = new PasswordResetToken();
+            token.setPerson(entityManager.getReference(Person.class, personId));
+            token.setTokenHash(TokenHashUtil.sha256Hex("123456"));
+            token.setExpiresAt(ApplicationTime.now().plusMinutes(30));
+            token.setCreatedAt(ApplicationTime.now());
+            entityManager.persist(token);
+        });
+
+        assertThatThrownBy(() -> verifyResetCodeUseCase.verify(
+                new VerifyResetCodeCommand(USERNAME + "@example.com", "000000", "127.0.0.1")))
+                .isInstanceOf(InvalidPasswordResetTokenException.class);
+
+        assertThat(jdbcTemplate.queryForObject(
+                "select attempts from password_reset_token where person_id = ?", Integer.class, personId)).isEqualTo(1);
     }
 }

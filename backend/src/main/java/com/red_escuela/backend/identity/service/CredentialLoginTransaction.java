@@ -1,21 +1,21 @@
 package com.red_escuela.backend.identity.service;
 
 import com.red_escuela.backend.identity.dto.AuthTokens;
-import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.LoginAttempt;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
-import com.red_escuela.backend.identity.specialist.DummyPasswordHash;
 import com.red_escuela.backend.identity.repository.LoginAttemptRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
-import org.springframework.stereotype.Service;
-import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.identity.specialist.DummyPasswordHash;
 import com.red_escuela.backend.shared.domain.DocumentType;
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.InvalidEmailAddressException;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
