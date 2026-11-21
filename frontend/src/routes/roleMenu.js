@@ -36,6 +36,7 @@ const approvals = { slug: 'aprobaciones', label: 'Aprobaciones', icon: CheckCirc
 export const ROLE_MENU = {
   alumno: [
     inicio,
+    { slug: 'calendario', label: 'Calendario', icon: CalendarDays },
     { slug: 'mis-cursos', label: 'Mis cursos', icon: BookOpen },
     { slug: 'mis-carreras', label: 'Mis carreras', icon: GraduationCap },
     { slug: 'pagos', label: 'Pagos', icon: CreditCard },
