@@ -89,12 +89,6 @@ public class GraduationCertificate {
 
     public static GraduationCertificate issue(GraduationCertificateKind kind, Long enrollmentId, Long studentId,
                                               CertificateCode code, CertificateSnapshot snapshot, String pdfSha256,
-                                              String pdfPath, LocalDateTime issuedAt, Long issuedById) {
-        return issue(kind, enrollmentId, studentId, code, snapshot, pdfSha256, pdfPath, issuedAt, issuedById, null, null);
-    }
-
-    public static GraduationCertificate issue(GraduationCertificateKind kind, Long enrollmentId, Long studentId,
-                                              CertificateCode code, CertificateSnapshot snapshot, String pdfSha256,
                                               String pdfPath, LocalDateTime issuedAt, Long issuedById, String registryNumber,
                                               Long templateVersionId) {
         return GraduationCertificate.builder()

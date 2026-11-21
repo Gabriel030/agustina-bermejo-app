@@ -92,7 +92,7 @@ class VerificationSourcesTest {
         GraduationCertificateRepository repository = mock(GraduationCertificateRepository.class);
         GraduationVerificationSource source = new GraduationVerificationSource(repository);
         GraduationCertificate valid = GraduationCertificate.issue(GraduationCertificateKind.PROGRAM, 42L, 7L, CODE, snapshot,
-                "a".repeat(64), "x.pdf", LocalDateTime.of(2026, 11, 5, 10, 0), 3L);
+                "a".repeat(64), "x.pdf", LocalDateTime.of(2026, 11, 5, 10, 0), 3L, null, null);
         when(repository.findByCode(CODE.value())).thenReturn(Optional.of(valid));
 
         PublicCertificateView view = source.findByCode(CODE, LocalDateTime.of(2040, 1, 1, 0, 0)).orElseThrow();

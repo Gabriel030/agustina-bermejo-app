@@ -53,7 +53,7 @@ public class CertificateTemplatePreviewer {
     }
 
     private String sampleRegistryNumber() {
-        return String.format("%07d/%d", 1, LocalDate.now(clock).getYear());
+        return String.format("%07d/%d", 0, LocalDate.now(clock).getYear());
     }
 
     private CertificateSnapshot sampleSnapshot(GraduationCertificateKind kind) {

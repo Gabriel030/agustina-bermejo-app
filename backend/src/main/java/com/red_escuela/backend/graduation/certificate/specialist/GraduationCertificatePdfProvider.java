@@ -54,7 +54,7 @@ public class GraduationCertificatePdfProvider {
         log.warn("El PDF del certificado {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getId());
         CertificateCode code = certificate.certificateCode();
         CertificateAssets assets = certificate.getTemplateVersionId() == null
-                ? new CertificateAssets(null, null, certificate.getRegistryNumber())
+                ? new CertificateAssets(null, null, certificate.getRegistryNumber(), null)
                 : templateSource.assetsOf(templateSource.byId(certificate.getTemplateVersionId()), certificate.getRegistryNumber());
         byte[] regenerated = renderer.render(builtInTemplate.resolve(certificate.getKind(), null), certificate.getSnapshot(),
                 code, verificationUrl.of(code), assets);

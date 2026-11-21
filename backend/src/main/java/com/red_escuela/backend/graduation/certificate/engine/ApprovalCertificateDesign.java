@@ -123,14 +123,22 @@ public class ApprovalCertificateDesign {
     }
 
     private static String dictationLine(String template, CertificateSnapshot snapshot, String registry) {
+        String fallback = hoursLine(snapshot.hours(), snapshot.institutionName());
         if (template == null || template.isBlank()) {
-            return hoursLine(snapshot.hours(), snapshot.institutionName());
+            return fallback;
         }
-        String expanded = CertificateMarkers.expand(template, snapshot, registry);
+        String expanded = CertificateMarkers.expand(template, snapshot, registry).strip()
+                .replaceAll("[\\s:,;\\-–]+$", "");
+        if (expanded.isEmpty()) {
+            return fallback;
+        }
         if (snapshot.hours() == null || CertificateMarkers.mentionsHours(template)) {
             return expanded;
         }
-        return "con una duración de " + snapshot.hours() + " horas, " + expanded.substring(0, 1).toLowerCase() + expanded.substring(1);
+        String body = CertificateMarkers.startsWithMarker(template)
+                ? expanded
+                : expanded.substring(0, 1).toLowerCase() + expanded.substring(1);
+        return "con una duración de " + snapshot.hours() + " horas, " + body;
     }
 
     private static PDImageXObject imageOrNull(PDDocument document, byte[] bytes, String name) {

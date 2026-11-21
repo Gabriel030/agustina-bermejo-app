@@ -14,7 +14,11 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import jakarta.persistence.EntityManager;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateRegistryNumberAssigner;
+import com.red_escuela.backend.graduation.certificate.template.dto.TemplatePreviewSource;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplatePreviewer;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -45,6 +49,12 @@ class GraduationCertificateRegistryConcurrencyIT extends AbstractIntegrationTest
     private IssueGraduationCertificateUseCase issueUseCase;
     @Autowired
     private GraduationCertificateRepository repository;
+    @Autowired
+    private CertificateRegistryNumberAssigner assigner;
+    @Autowired
+    private CertificateTemplatePreviewer templatePreviewer;
+    @Autowired
+    private JdbcTemplate jdbc;
 
     private ProgramEnrollment seedEnrollment(CycleTestFixtures fixtures, Institution institution) {
         Student student = new Student();
@@ -60,6 +70,37 @@ class GraduationCertificateRegistryConcurrencyIT extends AbstractIntegrationTest
         enrollment.setCompletionDate(LocalDateTime.of(2026, 7, 15, 10, 0));
         entityManager.persist(enrollment);
         return enrollment;
+    }
+
+    private int counterValue() {
+        List<Integer> values = jdbc.queryForList("select last_number from graduation_certificate_registry_counter where kind = 'PROGRAM' and registry_year = ?",
+                Integer.class, LocalDateTime.now().getYear());
+        return values.isEmpty() ? 0 : values.get(0);
+    }
+
+    @Test
+    void rolledBackAssignmentReleasesTheNumberWithoutLeavingAGap() {
+        String committed = transactionTemplate.execute(status -> assigner.next(GraduationCertificateKind.PROGRAM));
+        String rolledBack = transactionTemplate.execute(status -> {
+            String number = assigner.next(GraduationCertificateKind.PROGRAM);
+            status.setRollbackOnly();
+            return number;
+        });
+        String reused = transactionTemplate.execute(status -> assigner.next(GraduationCertificateKind.PROGRAM));
+
+        assertThat(rolledBack).isEqualTo(reused);
+        assertThat(Integer.parseInt(reused.substring(0, 7))).isEqualTo(Integer.parseInt(committed.substring(0, 7)) + 1);
+    }
+
+    @Test
+    void previewsDoNotConsumeTheRegistryCounter() {
+        transactionTemplate.executeWithoutResult(status -> assigner.next(GraduationCertificateKind.PROGRAM));
+        int before = counterValue();
+
+        templatePreviewer.preview(GraduationCertificateKind.PROGRAM, TemplatePreviewSource.PUBLISHED);
+        templatePreviewer.preview(GraduationCertificateKind.PROGRAM, TemplatePreviewSource.PUBLISHED);
+
+        assertThat(counterValue()).isEqualTo(before);
     }
 
     @Test
@@ -99,7 +140,9 @@ class GraduationCertificateRegistryConcurrencyIT extends AbstractIntegrationTest
                 numbers.add(stored.getRegistryNumber());
             }
             int year = LocalDateTime.now().getYear();
-            assertThat(numbers).containsExactlyInAnyOrder("0000001/" + year, "0000002/" + year);
+            List<Integer> sequence = numbers.stream().map(number -> Integer.parseInt(number.substring(0, 7))).sorted().toList();
+            assertThat(numbers).allMatch(number -> number.endsWith("/" + year)).doesNotHaveDuplicates();
+            assertThat(sequence.get(1)).isEqualTo(sequence.get(0) + 1);
         } finally {
             executor.shutdownNow();
         }

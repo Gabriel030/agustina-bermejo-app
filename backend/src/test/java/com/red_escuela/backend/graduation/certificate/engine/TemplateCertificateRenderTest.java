@@ -91,4 +91,40 @@ class TemplateCertificateRenderTest {
 
         assertThat(text).contains("CERTIFICADO DE APROBACIÓN", "Se certifica que", "ha aprobado la Tecnicatura en");
     }
+
+    private CertificateAssets dictation(String text) {
+        return assets(new CertificateTexts(null, null, null, null, text, null, null), null, List.of());
+    }
+
+    private CertificateSnapshot withHours(Integer hours) {
+        return snapshot("PÉREZ, ANA", "Enfermería", hours);
+    }
+
+    @Test
+    void dictationThatExpandsToNothingFallsBackToTheDefaultLineWithoutFailing() throws Exception {
+        String text = textOf(renderer.render(definition, withHours(null), CODE, URL, dictation("{hours}")));
+
+        assertThat(text).contains("Dictada y evaluada por Instituto de prueba");
+    }
+
+    @Test
+    void hoursMarkerWithNullHoursDoesNotLeaveADanglingLabel() throws Exception {
+        String text = textOf(renderer.render(definition, withHours(null), CODE, URL, dictation("Carga horaria: {hours}")));
+
+        assertThat(text).doesNotContain("Carga horaria:");
+    }
+
+    @Test
+    void dictationStartingWithADataMarkerKeepsItsCapitalization() throws Exception {
+        String text = textOf(renderer.render(definition, withHours(120), CODE, URL, dictation("{titleName} dictada por la institución")));
+
+        assertThat(text).contains("con una duración de 120 horas, Enfermería dictada por la institución");
+    }
+
+    @Test
+    void dictationWithLiteralHoursIsNotPrefixedWithTheDuration() throws Exception {
+        String text = textOf(renderer.render(definition, withHours(120), CODE, URL, dictation("Dictada en 60 horas reloj")));
+
+        assertThat(text).contains("Dictada en 60 horas reloj").doesNotContain("con una duración de");
+    }
 }

@@ -12,8 +12,14 @@ public final class CertificateMarkers {
     private CertificateMarkers() {
     }
 
+    private static final Pattern LITERAL_HOURS = Pattern.compile("\\d+\\s*horas", Pattern.CASE_INSENSITIVE);
+
     public static boolean mentionsHours(String text) {
-        return text != null && text.contains("{hours}");
+        return text != null && (text.contains("{hours}") || LITERAL_HOURS.matcher(text).find());
+    }
+
+    public static boolean startsWithMarker(String text) {
+        return text != null && text.stripLeading().startsWith("{");
     }
 
     public static String expand(String text, CertificateSnapshot snapshot, String registryNumber) {

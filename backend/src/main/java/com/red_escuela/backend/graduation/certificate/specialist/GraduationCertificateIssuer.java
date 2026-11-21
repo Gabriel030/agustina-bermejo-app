@@ -84,8 +84,17 @@ public class GraduationCertificateIssuer {
             return toResponse(saved, url);
         } catch (DataIntegrityViolationException e) {
             fileStore.deleteIfRolledBack(path);
-            throw new GraduationCertificateAlreadyIssuedException();
+            if (violatesValidCertificateUniqueness(e)) {
+                throw new GraduationCertificateAlreadyIssuedException();
+            }
+            throw e;
         }
+    }
+
+    private boolean violatesValidCertificateUniqueness(DataIntegrityViolationException e) {
+        String message = e.getMostSpecificCause().getMessage();
+        return message != null && (message.contains("uq_graduation_certificate_program_valid")
+                || message.contains("uq_graduation_certificate_course_valid"));
     }
 
     private boolean alreadyIssued(GraduationCertificateKind kind, Long enrollmentId) {
