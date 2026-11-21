@@ -47,7 +47,8 @@ public class GraduationCertificateCatalog {
                 certificate.getRegistryNumber(), certificate.getKind(), certificate.getStatus(), snapshot.holderFullName(),
                 snapshot.documentTypeLabel(), snapshot.documentNumber(), snapshot.titleName(), snapshot.hours(),
                 certificate.getGraduationDate(), certificate.getIssuedAt(), verificationUrl.of(certificate.certificateCode()),
-                null, certificate.getRevokedAt(), null, null, null);
+                null, certificate.getRevokedAt(), certificate.getRevocationReason(), certificate.getReplacesId(),
+                repository.findByReplacesId(certificate.getId()).map(GraduationCertificate::getId).orElse(null));
     }
 
     public GraduationCertificateSummaryResponse summaryOf(Long id) {

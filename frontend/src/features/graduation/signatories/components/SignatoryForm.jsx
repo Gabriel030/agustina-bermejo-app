@@ -91,7 +91,9 @@ export function SignatoryForm({ signatory, canEdit, onClose }) {
           try {
             await upload.mutateAsync({ id: created.id, file: stagedFile });
           } catch (error) {
-            reportFailure(error);
+            toast.error(`Creado, pero la firma no se subió. ${describeError(error).message} Podés reintentar desde la edición del firmante.`);
+            onClose();
+            return;
           }
         }
         toast.success('Firmante creado.');
@@ -218,7 +220,7 @@ export function SignatoryForm({ signatory, canEdit, onClose }) {
         ))}
         {lost.length > 0 && (
           <Notice tone="warning" className="mt-2">
-            Está elegido en {lost.map((usage) => usage.templateName).join(', ')}. Si le quitás el permiso, esas plantillas quedan sin este firmante hasta que elijas otro.
+            Está elegido en {[...new Set(lost.map((usage) => usage.templateName))].join(', ')}. Si le quitás el permiso, esas plantillas quedan sin este firmante hasta que elijas otro.
           </Notice>
         )}
       </fieldset>

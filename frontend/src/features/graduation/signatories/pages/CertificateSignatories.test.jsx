@@ -71,15 +71,49 @@ describe('CertificateSignatories', () => {
     expect(screen.getAllByText('Inactivo')).toHaveLength(1);
   });
 
-  it('shows the signature only when a signatory is opened', async () => {
+  it('requests the signature only when a signatory is opened', async () => {
     const user = userEvent.setup();
+    const signatureRequests = capture('get', '/certificate-signatories/:id/signature', () =>
+      new HttpResponse(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { headers: { 'Content-Type': 'image/png' } }),
+    );
     renderPage();
     await screen.findByText('Dra. Lucía Fernández');
     expect(screen.queryByAltText('Firma de Dra. Lucía Fernández')).not.toBeInTheDocument();
+    expect(signatureRequests).toHaveLength(0);
 
     await openSignatory(user, 'Dra. Lucía Fernández');
 
     expect(await screen.findByAltText('Firma de Dra. Lucía Fernández')).toHaveAttribute('src', 'blob:signature');
+    expect(signatureRequests).toHaveLength(1);
+    expect(signatureRequests[0].params.id).toBe('1');
+  });
+
+  it('reports that the signatory was created but the signature was not uploaded', async () => {
+    const user = userEvent.setup({ delay: null });
+    capture('post', '/certificate-signatories', ({ body }) => HttpResponse.json(signatoryDetail({ id: 5, ...body }), { status: 201 }));
+    server.use(signatorySignatureInvalidHandler);
+    renderPage();
+    await screen.findByText('Dra. Lucía Fernández');
+
+    await user.click(screen.getByRole('button', { name: 'Nuevo firmante' }));
+    await user.type(screen.getByLabelText('Nombre y apellido'), 'Ing. Sofía Maidana');
+    await user.type(screen.getByLabelText('Rol o cargo'), 'Rectora');
+    await user.upload(screen.getByLabelText('Archivo de firma'), pngFile());
+    await user.click(screen.getByRole('button', { name: 'Crear firmante' }));
+
+    expect(await screen.findByText(/Creado, pero la firma no se subió/)).toBeInTheDocument();
+    expect(screen.queryByText('Firmante creado.')).not.toBeInTheDocument();
+  });
+
+  it('lists each template once in the warning when the signatory is used in several versions', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderPage();
+    await openSignatory(user, 'Lic. Marcos Ledesma');
+    await screen.findByRole('button', { name: 'Guardar cambios' });
+
+    await user.click(screen.getByRole('checkbox', { name: 'Certificado de egreso' }));
+
+    expect(screen.getByText(/Está elegido en Certificado de egreso de carrera\. Si le quitás/)).toBeInTheDocument();
   });
 
   it('shows where the signatory is used and which document types they may sign', async () => {
@@ -105,7 +139,7 @@ describe('CertificateSignatories', () => {
   });
 
   it('creates a signatory with the typed name, role and permissions', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = capture('post', '/certificate-signatories', ({ body }) => HttpResponse.json(signatoryDetail({ id: 5, ...body }), { status: 201 }));
     renderPage();
     await screen.findByText('Dra. Lucía Fernández');
@@ -130,7 +164,7 @@ describe('CertificateSignatories', () => {
   });
 
   it('uploads a staged signature right after creating the signatory', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const uploads = capture('put', '/certificate-signatories/:id/signature');
     renderPage();
     await screen.findByText('Dra. Lucía Fernández');
@@ -166,7 +200,7 @@ describe('CertificateSignatories', () => {
   });
 
   it('edits the name and role and sends them with the current permissions', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = capture('put', '/certificate-signatories/:id', ({ params, body }) =>
       HttpResponse.json(signatoryDetail({ id: Number(params.id), ...body })),
     );
@@ -191,7 +225,7 @@ describe('CertificateSignatories', () => {
   });
 
   it('changes the permissions per document type and warns about templates that lose the signatory', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = capture('put', '/certificate-signatories/:id', ({ params, body }) =>
       HttpResponse.json(signatoryDetail({ id: Number(params.id), ...body })),
     );

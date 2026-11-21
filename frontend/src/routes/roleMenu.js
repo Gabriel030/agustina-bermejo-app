@@ -23,6 +23,7 @@ const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicit
 const waitlists = { slug: 'inscripciones/listas-de-espera', label: 'Listas de espera', icon: ListOrdered };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const graduationCertificates = { slug: 'egresos', label: 'Egresos', icon: GraduationCap };
+const certificateTemplate = { slug: 'plantilla-de-certificados', label: 'Plantilla de certificados', icon: FileSignature };
 const graduationSignatories = { slug: 'firmantes', label: 'Firmantes', icon: PenLine };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const closures = { slug: 'cierres-de-comision', label: 'Cierres de comisión', icon: FileSignature };
@@ -74,6 +75,7 @@ export const ROLE_MENU = {
     approvals,
     graduationVerification,
     graduationCertificates,
+    certificateTemplate,
     graduationSignatories,
     financial,
     certificates,
@@ -92,6 +94,7 @@ export const ROLE_MENU = {
     personal,
     approvals,
     graduationCertificates,
+    certificateTemplate,
     graduationSignatories,
     academicManagement,
     { slug: 'esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
@@ -134,7 +137,7 @@ const MENU_GROUPS = {
     {
       id: 'academic',
       label: 'Académico',
-      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'egresos', 'firmantes'],
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'egresos', 'plantilla-de-certificados', 'firmantes'],
     },
     {
       id: 'billing',
