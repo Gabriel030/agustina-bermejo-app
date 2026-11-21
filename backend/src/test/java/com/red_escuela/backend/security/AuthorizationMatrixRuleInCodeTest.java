@@ -52,7 +52,7 @@ class AuthorizationMatrixRuleInCodeTest extends AuthorizationMatrixSupport {
     }
 
     @Test
-    void everyPublicRowIsBackedByAnHttpPermitRule() {
+    void publicRowHandlersHaveNoPreAuthorize() {
         List<String> publicRows = AuthorizationMatrixFile.read().stream()
                 .filter(row -> row.anonymous() == AccessExpectation.PUBLIC)
                 .map(AuthorizationMatrixRow::key)
