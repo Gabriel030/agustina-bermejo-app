@@ -1,8 +1,3 @@
-com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleService.create(com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService.createSection(java.lang.Long, com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest) declares @Transactional
-com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementService.create(com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementCommand) declares @Transactional
-com.red_escuela.backend.announcement.usecase.broadcast.DeleteAnnouncementService.delete(java.lang.Long) declares @Transactional
-com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementService.update(com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.changerequest.ApproveAttendanceChangeRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestService.reject(com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.ApproveAttendanceJustificationService.approve(java.lang.Long) declares @Transactional
