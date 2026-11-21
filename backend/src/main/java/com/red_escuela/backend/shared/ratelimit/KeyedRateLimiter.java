@@ -47,6 +47,14 @@ public final class KeyedRateLimiter {
         buckets.values().removeIf(tracked -> tracked.lastAccessBefore(threshold));
     }
 
+    public boolean canTrack(String key) {
+        if (buckets.containsKey(key) || buckets.size() < maxTrackedKeys) {
+            return true;
+        }
+        evictIdle();
+        return buckets.size() < maxTrackedKeys;
+    }
+
     public int trackedKeys() {
         return buckets.size();
     }
