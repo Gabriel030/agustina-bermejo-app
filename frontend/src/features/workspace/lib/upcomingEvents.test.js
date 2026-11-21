@@ -91,7 +91,15 @@ describe('upcomingEvents', () => {
     const events = upcomingEvents({ terms: [term(1, { startDate: '2026-11-25T00:00:00' })] }, NOW);
     expect(events.map((event) => [event.date, event.type, event.title])).toEqual([
       ['2026-11-25', 'start', 'Primer cuatrimestre'],
-      ['2026-11-30', 'enrollment', 'Primer cuatrimestre'],
+      ['2026-11-30', 'enrollment', 'Cierra inscripción · Primer cuatrimestre'],
+    ]);
+  });
+
+  it('titles the opening and the closing of enrollment apart', () => {
+    const events = upcomingEvents({ terms: [term(1, { enrollmentStart: '2026-11-10T00:00:00', enrollmentEnd: '2026-11-20T00:00:00' })] }, NOW);
+    expect(events.filter((event) => event.type === 'enrollment').map((event) => [event.date, event.title])).toEqual([
+      ['2026-11-10', 'Abre inscripción · Primer cuatrimestre'],
+      ['2026-11-20', 'Cierra inscripción · Primer cuatrimestre'],
     ]);
   });
 

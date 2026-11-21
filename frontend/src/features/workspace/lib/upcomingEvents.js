@@ -57,8 +57,8 @@ function termEvents(terms) {
     return [
       { id: `term-start-${term.id}`, type: 'start', date: dateOnly(term.startDate), title: label },
       { id: `term-end-${term.id}`, type: 'close', date: dateOnly(term.endDate), title: label },
-      { id: `enrollment-start-${term.id}`, type: 'enrollment', date: dateOnly(term.enrollmentStart), title: label },
-      { id: `enrollment-end-${term.id}`, type: 'enrollment', date: dateOnly(term.enrollmentEnd), title: label },
+      { id: `enrollment-start-${term.id}`, type: 'enrollment', date: dateOnly(term.enrollmentStart), title: `Abre inscripción · ${label}` },
+      { id: `enrollment-end-${term.id}`, type: 'enrollment', date: dateOnly(term.enrollmentEnd), title: `Cierra inscripción · ${label}` },
     ];
   });
 }

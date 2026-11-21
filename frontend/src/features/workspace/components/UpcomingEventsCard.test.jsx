@@ -26,6 +26,23 @@ describe('UpcomingEventsCard', () => {
     expect(screen.queryByText('No hay eventos próximos')).not.toBeInTheDocument();
   });
 
+  it('announces the loading state to screen readers', () => {
+    renderCard({ ...definition, state: 'loading' });
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando próximos eventos');
+    expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('keeps the event type in the accessible name of the row when the pill is hidden on small screens', () => {
+    renderCard({
+      ...definition,
+      state: 'ready',
+      events: [{ id: 'exam-1', type: 'exam', date: '2026-11-10', title: 'Didáctica', to: '/director/mesas-de-examen' }],
+    });
+    const link = screen.getByRole('link', { name: /Didáctica/ });
+    expect(link).toHaveAccessibleName(/Mesa de examen/);
+    expect(within(link).getByText('Mesa de examen')).toHaveClass('max-[520px]:sr-only', 'min-[521px]:not-sr-only');
+  });
+
   it('shows an alert and retries the failed sources when the card errors', async () => {
     const retry = vi.fn();
     renderCard({ ...definition, state: 'error', retry });

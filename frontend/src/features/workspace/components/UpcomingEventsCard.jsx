@@ -43,7 +43,7 @@ function EventRowContent({ event }) {
     <>
       <EventDateBlock isoDate={event.date} />
       <span className="min-w-0 truncate text-size-13-5 font-semibold text-ink">{event.title}</span>
-      <StatusPill tone={pill.tone} className="hidden min-[521px]:inline-flex">
+      <StatusPill tone={pill.tone} className="max-[520px]:sr-only min-[521px]:not-sr-only">
         {pill.label}
       </StatusPill>
       {event.to ? <ChevronRight className="h-4 w-4 text-ink-faint" aria-hidden="true" /> : <span className="w-4" aria-hidden="true" />}
@@ -71,7 +71,8 @@ function UpcomingEventRow({ event }) {
 function UpcomingEventsLoading({ card }) {
   return (
     <CardFrame card={card} tone="neutral">
-      <div className="col-span-2 flex flex-col" aria-busy="true">
+      <div className="col-span-2 flex flex-col" role="status" aria-busy="true">
+        <span className="sr-only">Cargando próximos eventos</span>
         <h3 className="flex min-h-9 items-center font-heading text-size-15 font-semibold text-ink">{card.title}</h3>
         {[0, 1, 2].map((row) => (
           <div key={row} className={EVENT_ROW_CLASS}>

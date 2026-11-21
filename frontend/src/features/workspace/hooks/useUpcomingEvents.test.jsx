@@ -46,24 +46,32 @@ function renderUpcomingEvents() {
 
 function serve({ boards = [], holidays = [], terms = [], failing = [], repeatHolidaysForEveryYear = false } = {}) {
   const requestedHolidayYears = [];
+  const requestedPaths = [];
   server.use(
     http.get(`${API}/exam-boards`, () => {
+      requestedPaths.push('/exam-boards');
       if (failing.includes('exam-boards')) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
       return HttpResponse.json(contractList('/exam-boards', boards));
     }),
     http.get(`${API}/holidays`, ({ request }) => {
       const year = Number(new URL(request.url).searchParams.get('year'));
       requestedHolidayYears.push(year);
+      requestedPaths.push('/holidays');
       if (failing.includes('holidays')) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
       const ofYear = repeatHolidaysForEveryYear ? holidays : holidays.filter((item) => item.date.startsWith(`${year}-`));
       return HttpResponse.json(contractList('/holidays', ofYear));
     }),
     http.get(`${API}/terms`, () => {
+      requestedPaths.push('/terms');
       if (failing.includes('terms')) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
       return HttpResponse.json(contractList('/terms', terms));
     }),
   );
-  return requestedHolidayYears;
+  return { requestedHolidayYears, requestedPaths };
+}
+
+function countOf(paths, path) {
+  return paths.filter((requested) => requested === path).length;
 }
 
 async function settledCard(result) {
@@ -83,7 +91,7 @@ describe('useUpcomingEvents', () => {
     expect(card.events.map((event) => event.title)).toEqual([
       'Didáctica',
       'Feriado de prueba',
-      'Primer cuatrimestre',
+      'Abre inscripción · Primer cuatrimestre',
     ]);
     expect(card.events.map((event) => event.to)).toEqual(['/director/mesas-de-examen', null, '/director/mesas-de-examen']);
   });
@@ -126,15 +134,30 @@ describe('useUpcomingEvents', () => {
     expect(card.state).toBe('ready');
   });
 
+  it('retry asks again for every failed source and leaves the healthy one alone', async () => {
+    const failing = ['exam-boards', 'holidays'];
+    const { requestedPaths } = serve({ failing, boards: [board(1, '2026-11-10')], holidays: [holiday(2, '2026-11-11', 'Feriado de prueba')] });
+    const result = renderUpcomingEvents();
+    expect((await settledCard(result)).state).toBe('error');
+    const before = { boards: countOf(requestedPaths, '/exam-boards'), holidays: countOf(requestedPaths, '/holidays'), terms: countOf(requestedPaths, '/terms') };
+    failing.splice(0);
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.state).toBe('ready'));
+    expect(result.current.events.map((event) => event.title)).toEqual(['Didáctica', 'Feriado de prueba']);
+    expect(countOf(requestedPaths, '/exam-boards') - before.boards).toBe(1);
+    expect(countOf(requestedPaths, '/holidays') - before.holidays).toBe(1);
+    expect(countOf(requestedPaths, '/terms') - before.terms).toBe(0);
+  });
+
   it('requests the holidays of a single year when the window stays inside it', async () => {
-    const requestedHolidayYears = serve();
+    const { requestedHolidayYears } = serve();
     await settledCard(renderUpcomingEvents());
     expect(requestedHolidayYears).toEqual([2026]);
   });
 
   it('requests both years and merges holidays when the window crosses a year boundary', async () => {
     vi.setSystemTime(new Date('2026-12-20T12:00:00-03:00'));
-    const requestedHolidayYears = serve({ holidays: [holiday(1, '2027-01-01', 'Año nuevo')] });
+    const { requestedHolidayYears } = serve({ holidays: [holiday(1, '2027-01-01', 'Año nuevo')] });
     const card = await settledCard(renderUpcomingEvents());
     expect(requestedHolidayYears.sort()).toEqual([2026, 2027]);
     expect(card.events.map((event) => event.title)).toEqual(['Año nuevo']);
@@ -147,14 +170,14 @@ describe('useUpcomingEvents', () => {
     expect(card.events.map((event) => event.title)).toEqual(['Navidad']);
   });
 
-  it('stays in loading, never ready, while a source is paused without data', async () => {
+  it('stays in loading, never empty nor error, when offline without cached data', async () => {
     serve({ boards: [board(1, '2026-11-10')] });
     onlineManager.setOnline(false);
     try {
       const result = renderUpcomingEvents();
       await act(() => Promise.resolve());
       expect(result.current.state).toBe('loading');
-      expect(result.current).not.toHaveProperty('count');
+      expect(result.current).not.toHaveProperty('events');
     } finally {
       onlineManager.setOnline(true);
     }

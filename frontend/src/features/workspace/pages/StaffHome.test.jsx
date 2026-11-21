@@ -18,7 +18,13 @@ const API = 'http://localhost:8080';
 const daysAgo = (days) => new Date(Date.now() - days * 86400000).toISOString();
 const tomorrow = () => new Date(Date.now() + 86400000).toISOString();
 
-const inDays = (days) => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+const inDays = (days) => {
+  const date = new Date(Date.now());
+  date.setDate(date.getDate() + days);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+};
 const at = (date) => `${date}T12:00:00.000Z`;
 const holiday = (id, date, name) => ({ id, date, name, type: 'NATIONAL', description: name });
 const term = (id, overrides = {}) => ({
@@ -64,6 +70,7 @@ function serve({ billing = 'FULL', empty = false, failing = [], boards, holidays
   );
   server.use(http.get(`${API}/me/modules`, () => HttpResponse.json(contractObject('/me/modules', { billing: { mode: billing } }))), ...handlers);
 }
+
 async function readyCard(title) {
   return waitFor(() => {
     const element = screen.getByRole('article', { name: title });
