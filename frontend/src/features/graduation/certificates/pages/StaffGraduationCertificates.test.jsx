@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -7,6 +7,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { axe } from '@/test/axe';
 import { errorBody } from '@/test/fixtures/errors';
 import { eligibleGraduate, graduationCertificateBatch, springPage } from '@/test/fixtures/certificates';
+import { BATCH_LIMIT } from '@/features/graduation/certificates/lib/staffGraduationCertificates';
 import { certificateErrorResponse } from '@/test/mocks/certificateErrorHandlers';
 import { StaffGraduationCertificates } from '@/features/graduation/certificates/pages/StaffGraduationCertificates';
 
@@ -84,6 +85,7 @@ describe('StaffGraduationCertificates', () => {
       { enrollmentId: 12, kind: 'PROGRAM' },
     ]);
     expect(screen.getByText('Pérez, Ana:')).toBeInTheDocument();
+    expect(screen.getByText('El alumno tiene deuda pendiente: no se puede emitir el certificado de egreso.')).toBeInTheDocument();
   });
 
   it('shows the domain message when the preview is rejected', async () => {
@@ -106,6 +108,43 @@ describe('StaffGraduationCertificates', () => {
 
     const frame = await screen.findByTitle('Vista previa del certificado de Gómez, Tomás');
     expect(frame).toHaveAttribute('src', 'blob:preview');
+  });
+
+  it('does not send the batch when the confirmation is cancelled', async () => {
+    const user = userEvent.setup();
+    const batchRequested = vi.fn();
+    eligibleList([pendingRow]);
+    server.use(
+      http.post(`${API}/graduation-certificates/batch`, () => {
+        batchRequested();
+        return HttpResponse.json(graduationCertificateBatch());
+      }),
+    );
+    renderPage();
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Seleccionar a Gómez, Tomás' }));
+    await user.click(screen.getByRole('button', { name: 'Emitir seleccionados' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(batchRequested).not.toHaveBeenCalled();
+  });
+
+  it('stops selecting at the batch limit', async () => {
+    const user = userEvent.setup();
+    const rows = Array.from({ length: BATCH_LIMIT + 1 }, (_, index) =>
+      eligibleGraduate({ enrollmentId: index + 1, studentFullName: `Alumno ${index + 1}`, status: 'PENDING' }),
+    );
+    eligibleList(rows);
+    renderPage();
+
+    for (let index = 1; index <= BATCH_LIMIT; index += 1) {
+      await user.click(await screen.findByRole('checkbox', { name: `Seleccionar a Alumno ${index}` }));
+    }
+
+    expect(screen.getByRole('checkbox', { name: `Seleccionar a Alumno ${BATCH_LIMIT + 1}` })).toBeDisabled();
+    expect(screen.getByText(`${BATCH_LIMIT} seleccionados · máximo ${BATCH_LIMIT}`)).toBeInTheDocument();
   });
 
   it('has no accessibility violations', async () => {

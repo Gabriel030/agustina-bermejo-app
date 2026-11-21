@@ -66,23 +66,24 @@ export function StaffGraduationCertificates() {
     });
   }, []);
 
+  const closePreview = useCallback(() => {
+    if (preview) URL.revokeObjectURL(preview.url);
+    setPreview(null);
+  }, [preview]);
+
   const openPreview = useCallback(
     async (row) => {
       setActionError(null);
       try {
         const { blob } = await previewCertificate.mutateAsync(batchItemOf(row));
+        if (preview) URL.revokeObjectURL(preview.url);
         setPreview({ url: URL.createObjectURL(blob), row });
       } catch (error) {
         setActionError(describeError(error).message);
       }
     },
-    [previewCertificate],
+    [previewCertificate, preview],
   );
-
-  const closePreview = useCallback(() => {
-    if (preview) URL.revokeObjectURL(preview.url);
-    setPreview(null);
-  }, [preview]);
 
   const confirmIssuance = useCallback(async () => {
     const rowsToIssue = issuance;
@@ -101,57 +102,52 @@ export function StaffGraduationCertificates() {
   const selectedRows = [...selected.values()];
 
   const panel = (
-    <>
-        {batchResult && (
-          <EligibleBatchResult response={batchResult.response} rows={batchResult.rows} onDismiss={() => setBatchResult(null)} />
-        )}
+    <div className="flex flex-col gap-4">
+      {batchResult && (
+        <EligibleBatchResult response={batchResult.response} rows={batchResult.rows} onDismiss={() => setBatchResult(null)} />
+      )}
 
-        {actionError && (
-          <p role="alert" className="text-size-14 font-medium text-danger">
-            {actionError}
-          </p>
-        )}
+      {actionError && (
+        <p role="alert" className="text-size-14 font-medium text-danger">
+          {actionError}
+        </p>
+      )}
 
-        <GlassCard className="flex flex-col gap-3 p-3 md:p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <Input
-              type="search"
-              aria-label="Buscar por nombre o documento"
-              placeholder="Buscar por nombre o documento"
-              value={query}
-              onChange={(event) => changeQuery(event.target.value)}
-              className="md:max-w-xs"
-            />
-            <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end">
-              <span className="text-size-13 text-ink-faint">
-                {selected.size} seleccionados · máximo {BATCH_LIMIT}
-              </span>
-              <Button
-                type="button"
-                variant="gradient"
-                disabled={selected.size === 0}
-                onClick={() => setIssuance(selectedRows)}
-              >
-                Emitir seleccionados
-              </Button>
-            </div>
-          </div>
-
-          <EligibleGraduatesTable
-            rows={rows}
-            query={query}
-            isLoading={eligible.isPending}
-            isError={eligible.isError}
-            onRetry={eligible.refetch}
-            selected={selected}
-            canSelectMore={canSelectMore}
-            onToggle={toggleRow}
-            onPreview={openPreview}
-            onIssue={(row) => setIssuance([row])}
+      <GlassCard className="flex flex-col gap-3 p-3 md:p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <Input
+            type="search"
+            aria-label="Buscar por nombre o documento"
+            placeholder="Buscar por nombre o documento"
+            value={query}
+            onChange={(event) => changeQuery(event.target.value)}
+            className="md:max-w-xs"
           />
-          <Paginador page={page} totalPages={totalPages} onChange={setPage} />
-        </GlassCard>
-    </>
+          <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end">
+            <span className="text-size-13 text-ink-faint">
+              {selected.size} seleccionados · máximo {BATCH_LIMIT}
+            </span>
+            <Button type="button" variant="gradient" disabled={selected.size === 0} onClick={() => setIssuance(selectedRows)}>
+              Emitir seleccionados
+            </Button>
+          </div>
+        </div>
+
+        <EligibleGraduatesTable
+          rows={rows}
+          query={query}
+          isLoading={eligible.isPending}
+          isError={eligible.isError}
+          onRetry={eligible.refetch}
+          selected={selected}
+          canSelectMore={canSelectMore}
+          onToggle={toggleRow}
+          onPreview={openPreview}
+          onIssue={(row) => setIssuance([row])}
+        />
+        <Paginador page={page} totalPages={totalPages} onChange={setPage} />
+      </GlassCard>
+    </div>
   );
 
   return (
@@ -165,11 +161,10 @@ export function StaffGraduationCertificates() {
           ))}
         </TabsList>
         {KIND_TABS.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value} className="mt-0 flex flex-col gap-4">
-            {tab.value === kind && panel}
-          </TabsContent>
+          <TabsContent key={tab.value} value={tab.value} className="hidden" />
         ))}
       </Tabs>
+      {panel}
 
       <EligibleBatchConfirmDialog
         rows={issuance}
