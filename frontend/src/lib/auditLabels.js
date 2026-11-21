@@ -42,6 +42,8 @@ const ACTIONS = {
   CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED: ['Firma de certificado cargada', 'neutral'],
   CERTIFICATE_SIGNATORY_SIGNATURE_DELETED: ['Firma de certificado eliminada', 'warning'],
   PERMISSION_GRID_CHANGED: ['Grilla de permisos modificada', 'accent'],
+  CALENDAR_FEED_TOKEN_ROTATED: ['Enlace de calendario generado', 'accent'],
+  CALENDAR_FEED_TOKEN_REVOKED: ['Enlace de calendario revocado', 'warning'],
   GRADUATION_CERTIFICATE_DOWNLOADED: ['Certificado de egreso descargado', 'accent'],
   GRADUATION_CERTIFICATE_PDF_MISMATCH: ['PDF de certificado de egreso con hash distinto', 'warning'],
 };
