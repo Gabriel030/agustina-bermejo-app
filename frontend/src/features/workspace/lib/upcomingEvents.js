@@ -53,6 +53,6 @@ export function upcomingEvents({ boards = [], holidays = [], terms = [] }, now =
   const { from, to } = upcomingWindow(now);
   return [...examEvents(boards), ...holidayEvents(holidays), ...termEvents(terms)]
     .filter((event) => event.date >= from && event.date <= to)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind) || a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
     .slice(0, MAX_EVENTS);
 }

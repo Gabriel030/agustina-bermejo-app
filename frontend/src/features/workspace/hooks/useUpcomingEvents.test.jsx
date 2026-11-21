@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { contractList } from '@/test/fixtures/fromContract';
@@ -44,7 +44,7 @@ function renderUpcomingEvents() {
   return renderHook(() => useUpcomingEvents(), { wrapper }).result;
 }
 
-function serve({ boards = [], holidays = [], terms = [], failing = [] } = {}) {
+function serve({ boards = [], holidays = [], terms = [], failing = [], repeatHolidaysForEveryYear = false } = {}) {
   const requestedHolidayYears = [];
   server.use(
     http.get(`${API}/exam-boards`, () => {
@@ -55,7 +55,8 @@ function serve({ boards = [], holidays = [], terms = [], failing = [] } = {}) {
       const year = Number(new URL(request.url).searchParams.get('year'));
       requestedHolidayYears.push(year);
       if (failing.includes('holidays')) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
-      return HttpResponse.json(contractList('/holidays', holidays.filter((item) => item.date.startsWith(`${year}-`))));
+      const ofYear = repeatHolidaysForEveryYear ? holidays : holidays.filter((item) => item.date.startsWith(`${year}-`));
+      return HttpResponse.json(contractList('/holidays', ofYear));
     }),
     http.get(`${API}/terms`, () => {
       if (failing.includes('terms')) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
@@ -136,5 +137,25 @@ describe('useUpcomingEvents', () => {
     const card = await settledCard(renderUpcomingEvents());
     expect(requestedHolidayYears.sort()).toEqual([2026, 2027]);
     expect(card.events.map((event) => event.title)).toEqual(['Año nuevo']);
+  });
+
+  it('shows a holiday once when both year queries return it', async () => {
+    vi.setSystemTime(new Date('2026-12-20T12:00:00-03:00'));
+    serve({ holidays: [holiday(9, '2026-12-25', 'Navidad')], repeatHolidaysForEveryYear: true });
+    const card = await settledCard(renderUpcomingEvents());
+    expect(card.events.map((event) => event.title)).toEqual(['Navidad']);
+  });
+
+  it('stays in loading, never ready, while a source is paused without data', async () => {
+    serve({ boards: [board(1, '2026-11-10')] });
+    onlineManager.setOnline(false);
+    try {
+      const result = renderUpcomingEvents();
+      await act(() => Promise.resolve());
+      expect(result.current.state).toBe('loading');
+      expect(result.current).not.toHaveProperty('count');
+    } finally {
+      onlineManager.setOnline(true);
+    }
   });
 });

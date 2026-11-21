@@ -70,6 +70,23 @@ describe('upcomingEvents', () => {
     ]);
   });
 
+  it('breaks ties between events on the same day by kind, then title', () => {
+    const events = upcomingEvents(
+      {
+        boards: [board(4, '2026-11-12', 'Zoología')],
+        holidays: [holiday(2, '2026-11-12', 'Bravo'), holiday(1, '2026-11-12', 'Alfa')],
+      },
+      NOW,
+    );
+    expect(events.map((event) => event.title)).toEqual(['Mesa de Zoología', 'Alfa', 'Bravo']);
+  });
+
+  it('keeps the same order whatever the input order of same-day events', () => {
+    const forward = upcomingEvents({ holidays: [holiday(1, '2026-11-12', 'Alfa'), holiday(2, '2026-11-12', 'Bravo')] }, NOW);
+    const backward = upcomingEvents({ holidays: [holiday(2, '2026-11-12', 'Bravo'), holiday(1, '2026-11-12', 'Alfa')] }, NOW);
+    expect(backward).toEqual(forward);
+  });
+
   it('labels term events with the translated period type', () => {
     const events = upcomingEvents({ terms: [term(1, { startDate: '2026-11-25T00:00:00' })] }, NOW);
     expect(events.map((event) => [event.date, event.kind, event.title])).toEqual([
