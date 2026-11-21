@@ -61,6 +61,15 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
             """)
     List<SubjectSectionEnrollment> findWithSectionByProgramEnrollmentId(@Param("programEnrollmentId") Long programEnrollmentId);
 
+    @Query("""
+            select e from SubjectSectionEnrollment e
+            join fetch e.subjectSection ss join fetch ss.subject
+            where e.student.id = :studentId and e.status in :statuses
+            order by ss.id
+            """)
+    List<SubjectSectionEnrollment> findWithSectionByStudentIdAndStatusIn(
+            @Param("studentId") Long studentId, @Param("statuses") List<EnrollmentStatus> statuses);
+
     List<SubjectSectionEnrollment> findBySubjectSectionIdAndStatusIn(Long subjectSectionId, List<EnrollmentStatus> statuses);
 
     @Query("""

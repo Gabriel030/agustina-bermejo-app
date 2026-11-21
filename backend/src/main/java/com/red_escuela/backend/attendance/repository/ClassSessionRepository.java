@@ -15,6 +15,14 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
 
     Optional<ClassSession> findByCourseSubjectSectionIdAndClassDate(Long courseSubjectSectionId, LocalDate classDate);
 
+    List<ClassSession> findBySubjectSectionIdInAndStatusAndClassDateBetween(
+            java.util.Collection<Long> sectionIds, com.red_escuela.backend.attendance.entity.ClassSessionStatus status,
+            LocalDate from, LocalDate to);
+
+    List<ClassSession> findByCourseSubjectSectionIdInAndStatusAndClassDateBetween(
+            java.util.Collection<Long> sectionIds, com.red_escuela.backend.attendance.entity.ClassSessionStatus status,
+            LocalDate from, LocalDate to);
+
     List<ClassSession> findBySubjectSectionId(Long subjectSectionId);
 
     List<ClassSession> findByCourseSubjectSectionId(Long courseSubjectSectionId);

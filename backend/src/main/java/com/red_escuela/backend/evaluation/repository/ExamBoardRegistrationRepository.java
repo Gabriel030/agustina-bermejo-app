@@ -22,6 +22,26 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
     List<ExamBoardRegistration> findByExamBoardIdAndIdInForUpdate(
             @Param("examBoardId") Long examBoardId, @Param("ids") java.util.Collection<Long> ids);
 
+    @Query("""
+            select r from ExamBoardRegistration r join fetch r.examBoard b join fetch b.subject
+            where r.programSubjectSectionEnrollment.student.id = :studentId
+              and b.examDate >= :start and b.examDate < :endExclusive
+            order by b.examDate, b.id, r.id
+            """)
+    List<ExamBoardRegistration> findProgramRegistrationsOfStudentBetween(
+            @Param("studentId") Long studentId, @Param("start") java.time.LocalDateTime start,
+            @Param("endExclusive") java.time.LocalDateTime endExclusive);
+
+    @Query("""
+            select r from ExamBoardRegistration r join fetch r.examBoard b join fetch b.courseSubject
+            where r.courseSubjectSectionEnrollment.student.id = :studentId
+              and b.examDate >= :start and b.examDate < :endExclusive
+            order by b.examDate, b.id, r.id
+            """)
+    List<ExamBoardRegistration> findCourseRegistrationsOfStudentBetween(
+            @Param("studentId") Long studentId, @Param("start") java.time.LocalDateTime start,
+            @Param("endExclusive") java.time.LocalDateTime endExclusive);
+
     List<ExamBoardRegistration> findByProgramSubjectSectionEnrollmentId(Long enrollmentId);
 
     List<ExamBoardRegistration> findByCourseSubjectSectionEnrollmentId(Long enrollmentId);

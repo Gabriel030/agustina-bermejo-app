@@ -19,6 +19,36 @@ public interface ExamBoardRepository extends JpaRepository<ExamBoard, Long> {
     @Query("select b from ExamBoard b where b.id = :id")
     Optional<ExamBoard> findByIdForUpdate(@Param("id") Long id);
 
+    @Query("""
+            select b from ExamBoard b join fetch b.subject s
+            where b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED
+              and b.examDate >= :start and b.examDate < :endExclusive
+              and (b.registrationStart is null or b.registrationStart <= :now)
+              and (b.registrationEnd is null or b.registrationEnd >= :now)
+              and s.id in (select e.subjectSection.subject.id from SubjectSectionEnrollment e
+                           where e.student.id = :studentId and e.status in :statuses)
+            order by b.examDate, b.id
+            """)
+    List<ExamBoard> findOpenProgramBoardsForStudent(
+            @Param("studentId") Long studentId, @Param("statuses") java.util.Collection<com.red_escuela.backend.enrollment.entity.EnrollmentStatus> statuses,
+            @Param("start") java.time.LocalDateTime start, @Param("endExclusive") java.time.LocalDateTime endExclusive,
+            @Param("now") java.time.LocalDateTime now);
+
+    @Query("""
+            select b from ExamBoard b join fetch b.courseSubject cs
+            where b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED
+              and b.examDate >= :start and b.examDate < :endExclusive
+              and (b.registrationStart is null or b.registrationStart <= :now)
+              and (b.registrationEnd is null or b.registrationEnd >= :now)
+              and cs.id in (select e.courseSubjectSection.courseSubject.id from CourseSubjectSectionEnrollment e
+                            where e.student.id = :studentId and e.status in :statuses)
+            order by b.examDate, b.id
+            """)
+    List<ExamBoard> findOpenCourseBoardsForStudent(
+            @Param("studentId") Long studentId, @Param("statuses") java.util.Collection<com.red_escuela.backend.enrollment.entity.EnrollmentStatus> statuses,
+            @Param("start") java.time.LocalDateTime start, @Param("endExclusive") java.time.LocalDateTime endExclusive,
+            @Param("now") java.time.LocalDateTime now);
+
     List<ExamBoard> findBySubjectIdAndTermId(Long subjectId, Long termId);
 
     List<ExamBoard> findByCourseSubjectIdAndTermId(Long courseSubjectId, Long termId);
