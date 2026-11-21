@@ -75,6 +75,7 @@ class SectionModificationConcurrencyIT extends AbstractIntegrationTest {
             AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
             SubjectSection first = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
             SubjectSection second = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
+            authenticateAsRequester();
             fixtures.slot(first, fixtures.classroom(30), DayOfWeek.MONDAY, START, END);
             fixtures.slot(second, fixtures.classroom(30), DayOfWeek.MONDAY, START, END);
             sharedClassroomId = fixtures.classroom(30).getId();
@@ -82,6 +83,29 @@ class SectionModificationConcurrencyIT extends AbstractIntegrationTest {
             firstSectionId = first.getId();
             secondSectionId = second.getId();
         });
+    }
+
+    private void authenticateAsRequester() {
+        var address = new com.red_escuela.backend.shared.domain.Address();
+        entityManager.persist(address);
+        var person = new com.red_escuela.backend.identity.entity.Person();
+        var key = "mod" + System.nanoTime();
+        person.setName("Solicitante");
+        person.setLastname(key);
+        person.setDni(key);
+        person.setUsername(key);
+        person.setEmail(key + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        entityManager.persist(person);
+        entityManager.flush();
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(String.valueOf(person.getId()), null, java.util.List.of()));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void clearAuthentication() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 
     private ModifySectionRequest tuesdayInSharedClassroom() {

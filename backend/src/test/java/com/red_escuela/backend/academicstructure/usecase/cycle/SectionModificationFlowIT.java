@@ -65,6 +65,7 @@ class SectionModificationFlowIT extends AbstractIntegrationTest {
             var term = fixtures.term(2040 + (int) (System.nanoTime() % 50));
             var cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
             SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
+            authenticateAsRequester();
             Classroom current = fixtures.classroom(30);
             Classroom proposed = fixtures.classroom(30);
             fixtures.slot(section, current, DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(20, 0));
@@ -73,6 +74,29 @@ class SectionModificationFlowIT extends AbstractIntegrationTest {
             currentClassroomId = current.getId();
             proposedClassroomId = proposed.getId();
         });
+    }
+
+    private void authenticateAsRequester() {
+        var address = new com.red_escuela.backend.shared.domain.Address();
+        entityManager.persist(address);
+        var person = new com.red_escuela.backend.identity.entity.Person();
+        var key = "mod" + System.nanoTime();
+        person.setName("Solicitante");
+        person.setLastname(key);
+        person.setDni(key);
+        person.setUsername(key);
+        person.setEmail(key + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        entityManager.persist(person);
+        entityManager.flush();
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(String.valueOf(person.getId()), null, java.util.List.of()));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void clearAuthentication() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 
     private ModifySectionRequest tuesdayInProposedClassroom() {
