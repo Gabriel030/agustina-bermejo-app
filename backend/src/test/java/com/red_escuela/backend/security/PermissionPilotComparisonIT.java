@@ -279,6 +279,23 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
         assertDirectorWhoDoesNotTeachTheSectionGetsRealSuccess("ENFORCE");
     }
 
+    @Test
+    void directorGetsNotFoundForSectionsAndAnnouncementsThatDoNotExist() throws Exception {
+        String createBody = "{\"title\":\"Aviso\",\"body\":\"Cuerpo\",\"category\":\"REMINDER\",\"urgent\":false,\"scheduledFor\":\"2099-01-01T10:00:00\"}";
+        String updateBody = "{\"title\":\"Nuevo\",\"body\":\"Cuerpo\",\"category\":\"REMINDER\",\"urgent\":false}";
+        String previewBody = "{\"key\":\"ALL\"}";
+        for (String kind : List.of("subject-sections", "course-sections")) {
+            String section = "/" + kind + "/987654321";
+            assertThat(statusOf(HttpMethod.POST, section + "/announcements", createBody, MatrixRole.DIRECTOR)).as(kind + " create " + lastResponseBody).isEqualTo(404);
+            assertThat(statusOf(HttpMethod.GET, section + "/announcements", null, MatrixRole.DIRECTOR)).as(kind + " list " + lastResponseBody).isEqualTo(404);
+            assertThat(statusOf(HttpMethod.GET, section + "/audience-segments", null, MatrixRole.DIRECTOR)).as(kind + " segments " + lastResponseBody).isEqualTo(404);
+            assertThat(statusOf(HttpMethod.POST, section + "/audience-preview", previewBody, MatrixRole.DIRECTOR)).as(kind + " preview " + lastResponseBody).isEqualTo(404);
+        }
+        assertThat(statusOf(HttpMethod.PUT, "/announcements/987654321", updateBody, MatrixRole.DIRECTOR)).as("update " + lastResponseBody).isEqualTo(404);
+        assertThat(statusOf(HttpMethod.DELETE, "/announcements/987654321", null, MatrixRole.DIRECTOR)).as("delete " + lastResponseBody).isEqualTo(404);
+        assertThat(statusOf(HttpMethod.GET, "/announcements/987654321/recipients", null, MatrixRole.DIRECTOR)).as("recipients " + lastResponseBody).isEqualTo(404);
+    }
+
     private AuthorizationMatrixRow rowOf(String key) {
         return pilotRows().stream().filter(row -> row.key().equals(key)).findFirst().orElseThrow();
     }
