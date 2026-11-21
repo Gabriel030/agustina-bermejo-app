@@ -42,6 +42,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 |---|---|---|
 | [release/migration-smoke.md](release/migration-smoke.md) | Pasos para probar la cadena de migraciones de master (V110) a develop sobre Postgres en Docker | vigente |
 | [release/institution-sms-credential.md](release/institution-sms-credential.md) | Qué hacer si `institution.sms_password` tenía una credencial cargada antes de V214 | vigente |
+| [release/permission-modes-runbook.md](release/permission-modes-runbook.md) | Modos LEGACY/SHADOW/ENFORCE de la grilla de permisos: rollback sin deploy, lectura de discrepancias y criterio para salir de SHADOW | vigente |
 | [deploy/README.md](deploy/README.md) | Runbook de despliegue de producción: primer despliegue, actualización con migraciones, rollback, secretos y logs | vigente |
 | [security/plan-produccion.md](security/plan-produccion.md) | Seguridad de producción (Épica 29, bloque G): diagnóstico de sesión, CSP, auditoría y matriz de autorización; planes de cookie HttpOnly, CSP con nonce y audit log | vigente |
 | [security/audit-2026-11-03-status.md](security/audit-2026-11-03-status.md) | Estado de los hallazgos de la auditoría del 3-nov-2026: 12 cerrados y 4 abiertos (parciales) | vigente |

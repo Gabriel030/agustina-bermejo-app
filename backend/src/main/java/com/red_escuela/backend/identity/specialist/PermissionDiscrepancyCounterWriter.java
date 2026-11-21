@@ -36,7 +36,7 @@ public class PermissionDiscrepancyCounterWriter {
         occurrencesByKey.forEach((key, occurrences) -> {
             Permission permission = permissionByCode.get(key.permission());
             if (permission != null) {
-                counterRepository.addOccurrences(key.role(), permission.getModule(), permission.getId(), occurrences, seenAt);
+                counterRepository.addOccurrences(key.role(), permission.getModule(), permission.getId(), key.direction().name(), occurrences, seenAt);
             } else {
                 log.warn("Discrepancia de un permiso que no está en el catálogo: {}", key.permission());
             }

@@ -36,6 +36,9 @@ public class PermissionDiscrepancyCounter {
     @Column(name = "permission_id", nullable = false)
     private Long permissionId;
 
+    @Column(name = "direction", nullable = false)
+    private String direction;
+
     @Column(name = "occurrences", nullable = false)
     private long occurrences;
 
