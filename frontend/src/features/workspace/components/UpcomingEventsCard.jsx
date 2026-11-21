@@ -17,7 +17,7 @@ const EVENT_TYPE_PILL = {
   start: { tone: 'neutral', label: 'Inicio de período' },
 };
 
-const EVENT_ROW_CLASS = 'grid grid-cols-[2.75rem_minmax(0,1fr)_auto] min-[521px]:grid-cols-[2.75rem_minmax(0,1fr)_auto_auto] items-center gap-3 border-t border-border px-1 py-2';
+const EVENT_ROW_CLASS = 'grid grid-cols-[3.5rem_minmax(0,1fr)_auto] min-[521px]:grid-cols-[3.5rem_minmax(0,1fr)_auto_auto] items-center gap-3 border-t border-border px-1 py-2';
 
 function eventDateParts(isoDate) {
   const date = parsearFecha(isoDate);
@@ -30,7 +30,7 @@ function eventDateParts(isoDate) {
 function EventDateBlock({ isoDate }) {
   const { day, weekdayMonth } = eventDateParts(isoDate);
   return (
-    <time dateTime={isoDate} className="grid h-11 w-11 place-items-center rounded-control bg-neutral-bg text-center leading-tight">
+    <time dateTime={isoDate} className="grid h-11 w-14 place-items-center rounded-control bg-neutral-bg text-center leading-tight">
       <span className="font-heading text-size-15 font-bold tabular-nums text-ink">{day}</span>
       <span className="text-size-10 font-extrabold uppercase text-ink-faint">{weekdayMonth}</span>
     </time>
@@ -75,7 +75,7 @@ function UpcomingEventsLoading({ card }) {
         <h3 className="flex min-h-9 items-center font-heading text-size-15 font-semibold text-ink">{card.title}</h3>
         {[0, 1, 2].map((row) => (
           <div key={row} className={EVENT_ROW_CLASS}>
-            <Skeleton className="h-11 w-11 rounded-control" />
+            <Skeleton className="h-11 w-14 rounded-control" />
             <Skeleton className="h-3.5 w-3/5" />
           </div>
         ))}
