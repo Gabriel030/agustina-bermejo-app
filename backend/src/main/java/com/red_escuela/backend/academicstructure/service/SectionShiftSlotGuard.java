@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.repository.ShiftRangeRepository
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
+import java.util.Optional;
 
 @Service
 public class SectionShiftSlotGuard {
@@ -17,12 +18,17 @@ public class SectionShiftSlotGuard {
     }
 
     public void ensureInsideShift(SectionShift shift, LocalTime start, LocalTime end) {
+        findViolation(shift, start, end).ifPresent(violation -> {
+            throw violation;
+        });
+    }
+
+    public Optional<SlotOutsideShiftException> findViolation(SectionShift shift, LocalTime start, LocalTime end) {
         if (shift == null) {
-            return;
+            return Optional.empty();
         }
-        var range = shiftRangeRepository.findById(shift).orElse(null);
-        if (range != null && !range.contains(start, end)) {
-            throw new SlotOutsideShiftException(shift, start, end, range.getStartTime(), range.getEndTime());
-        }
+        return shiftRangeRepository.findById(shift)
+                .filter(range -> !range.contains(start, end))
+                .map(range -> new SlotOutsideShiftException(shift, start, end, range.getStartTime(), range.getEndTime()));
     }
 }

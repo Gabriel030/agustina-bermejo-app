@@ -7,7 +7,6 @@ import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.exception.ClassroomNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionModificationAlreadyPendingException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionModificationProposalRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,8 +27,8 @@ public class SectionModificationRequester {
     private final SectionScheduleSlotRepository slotRepository;
     private final ClassroomRepository classroomRepository;
     private final SectionModificationProposalRepository proposalRepository;
-    private final SectionConflictChecker conflictChecker;
-    private final SectionShiftSlotGuard shiftSlotGuard;
+    private final SectionModificationConflictDetector conflictDetector;
+    private final SectionCycleApprovalGuard cycleApprovalGuard;
     private final Clock clock;
 
     public SectionModificationRequester(
@@ -38,16 +36,16 @@ public class SectionModificationRequester {
             SectionScheduleSlotRepository slotRepository,
             ClassroomRepository classroomRepository,
             SectionModificationProposalRepository proposalRepository,
-            SectionConflictChecker conflictChecker,
-            SectionShiftSlotGuard shiftSlotGuard,
+            SectionModificationConflictDetector conflictDetector,
+            SectionCycleApprovalGuard cycleApprovalGuard,
             Clock clock
     ) {
         this.sectionRepository = sectionRepository;
         this.slotRepository = slotRepository;
         this.classroomRepository = classroomRepository;
         this.proposalRepository = proposalRepository;
-        this.conflictChecker = conflictChecker;
-        this.shiftSlotGuard = shiftSlotGuard;
+        this.conflictDetector = conflictDetector;
+        this.cycleApprovalGuard = cycleApprovalGuard;
         this.clock = clock;
     }
 
@@ -55,6 +53,7 @@ public class SectionModificationRequester {
     public void requestModification(Long sectionId, ModifySectionRequest request) {
         var section = sectionRepository.findById(sectionId)
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
+        cycleApprovalGuard.ensureCycleIsApproved(section);
         if (section.isPendingApproval()) {
             throw new SectionModificationAlreadyPendingException(sectionId);
         }
@@ -64,18 +63,16 @@ public class SectionModificationRequester {
             Set<Long> currentSlotIds = slotRepository.findBySubjectSectionId(sectionId).stream()
                     .map(SectionScheduleSlot::getId)
                     .collect(Collectors.toSet());
-            for (var slotReq : request.slots()) {
-                shiftSlotGuard.ensureInsideShift(section.getShift(), slotReq.startTime(), slotReq.endTime());
+            for (int index = 0; index < request.slots().size(); index++) {
+                conflictDetector.detectForSlot(section, request.slots(), index, currentSlotIds).stream()
+                        .findFirst()
+                        .ifPresent(conflict -> {
+                            throw conflict.exception().get();
+                        });
+                var slotReq = request.slots().get(index);
                 var classroom = classroomRepository.findById(slotReq.classroomId())
                         .orElseThrow(() -> new ClassroomNotFoundException(slotReq.classroomId()));
-                classroom.ensureCanHost(section.getCapacity());
-                conflictChecker.checkClassroomAvailabilityIgnoringSlots(
-                        section.getTerm(), slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime(), currentSlotIds);
-                conflictChecker.checkSectionInstructorsAvailability(
-                        section.getTerm(), sectionId, slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime(), currentSlotIds);
-                var proposed = new ProposedSlot(classroom, slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
-                ensureNoOverlapWith(proposedSlots, proposed);
-                proposedSlots.add(proposed);
+                proposedSlots.add(new ProposedSlot(classroom, slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime()));
             }
         }
 
@@ -83,17 +80,5 @@ public class SectionModificationRequester {
                 section, request.slots() != null, proposedSlots, LocalDateTime.now(clock)));
         section.setPendingApproval(true);
         sectionRepository.save(section);
-    }
-
-    private void ensureNoOverlapWith(List<ProposedSlot> accepted, ProposedSlot candidate) {
-        boolean overlaps = accepted.stream().anyMatch(other ->
-                other.getClassroom().getId().equals(candidate.getClassroom().getId())
-                        && other.getDayOfWeek() == candidate.getDayOfWeek()
-                        && other.getStartTime().isBefore(candidate.getEndTime())
-                        && other.getEndTime().isAfter(candidate.getStartTime()));
-        if (overlaps) {
-            throw new SectionScheduleConflictException(
-                    candidate.getClassroom().getId(), candidate.getDayOfWeek(), candidate.getStartTime(), candidate.getEndTime());
-        }
     }
 }
