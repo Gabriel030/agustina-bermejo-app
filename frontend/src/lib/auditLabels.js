@@ -41,6 +41,7 @@ const ACTIONS = {
   CERTIFICATE_SIGNATORY_ACTIVATED: ['Firmante de certificado activado', 'success'],
   CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED: ['Firma de certificado cargada', 'neutral'],
   CERTIFICATE_SIGNATORY_SIGNATURE_DELETED: ['Firma de certificado eliminada', 'warning'],
+  PERMISSION_GRID_CHANGED: ['Grilla de permisos modificada', 'accent'],
 };
 
 const ENTITIES = {
@@ -56,6 +57,7 @@ const ENTITIES = {
   INVOICE: 'Factura',
   GATEWAY_PAYMENT: 'Pago en línea',
   CERTIFICATE_SIGNATORY: 'Firmante de certificado',
+  PERMISSION: 'Permiso',
 };
 
 const ROLES = {
