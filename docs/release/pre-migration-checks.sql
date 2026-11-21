@@ -316,12 +316,5 @@ where status in ('ENROLLED', 'IN_PROGRESS', 'WAITLISTED')
 group by student_id, course_id
 having count(*) > 1;
 
-\echo
-\echo [V278] Certificados de egreso REVOKED con campos de revocacion nulos (revoked_at, revoked_by_id, revocation_reason); V278 agrega un CHECK y ABORTA si hay filas (completar los campos antes):
-select id, revoked_at, revoked_by_id, revocation_reason
-from graduation_certificate
-where status = 'REVOKED'
-  and (revoked_at is null or revoked_by_id is null or revocation_reason is null);
-
 rollback;
 \echo ===== fin =====
