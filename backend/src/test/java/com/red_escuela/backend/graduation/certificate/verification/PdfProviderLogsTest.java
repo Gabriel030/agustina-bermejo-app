@@ -6,7 +6,8 @@ import ch.qos.logback.core.read.ListAppender;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
-import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateResolver;
+import com.red_escuela.backend.graduation.certificate.engine.BuiltInCertificateTemplate;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
@@ -63,10 +64,10 @@ class PdfProviderLogsTest {
                 .snapshot(snapshot).pdfPath("x.pdf").pdfSha256("0".repeat(64)).issuedAt(LocalDateTime.now()).build();
         when(repository.findById(42L)).thenReturn(Optional.of(certificate));
         when(fileStore.load("x.pdf")).thenReturn(Optional.empty());
-        when(renderer.render(any(), any(), any(), any())).thenReturn(new byte[] {1});
+        when(renderer.render(any(), any(), any(), any(), any())).thenReturn(new byte[] {1});
         when(digest.sha256(any())).thenReturn("h");
         GraduationCertificatePdfProvider provider = new GraduationCertificatePdfProvider(repository, fileStore, renderer,
-                mock(CertificateTemplateResolver.class), url, digest);
+                new BuiltInCertificateTemplate(), mock(CertificateTemplateRenderSource.class), url, digest);
 
         String logs = capture(() -> provider.pdfOf(42L));
 

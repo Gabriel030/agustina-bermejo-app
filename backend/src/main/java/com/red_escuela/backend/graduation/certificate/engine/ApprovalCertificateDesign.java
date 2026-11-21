@@ -96,24 +96,52 @@ public class ApprovalCertificateDesign {
         paper(content, page);
         frames(content, page);
         guilloche(content, height);
+        CertificateTexts texts = assets.texts();
+        String registry = assets.registrationNumber();
         logo(document, content, fonts, height, assets);
-        text(content, height, fonts.sans(), INSTITUTION, "INSTITUTO AGUSTINA BERMEJO", 13, 9, GOLD_DARK, Align.CENTER);
-        text(content, height, fonts.serifBold(), TITLE, HEADLINE, 44, 24, NAVY, Align.CENTER);
-        text(content, height, fonts.sans(), CERTIFIES, CERTIFIES_TEXT, 17, 10, MUTED, Align.CENTER);
+        text(content, height, fonts.sans(), INSTITUTION, expandedOr(texts.instituteName(), "INSTITUTO AGUSTINA BERMEJO", snapshot, registry), 13, 9, GOLD_DARK, Align.CENTER);
+        text(content, height, fonts.serifBold(), TITLE, expandedOr(texts.title(), HEADLINE, snapshot, registry), 44, 24, NAVY, Align.CENTER);
+        text(content, height, fonts.sans(), CERTIFIES, expandedOr(texts.intro(), CERTIFIES_TEXT, snapshot, registry), 17, 10, MUTED, Align.CENTER);
         text(content, height, fonts.serifBold(), HOLDER, snapshot.holderFullName(), 46, 22, NAVY, Align.CENTER);
         text(content, height, fonts.sans(), DOCUMENT, documentLine(snapshot), 16, 10, INK, Align.CENTER);
-        text(content, height, fonts.sans(), APPROVED, "ha aprobado " + snapshot.titleKind(), 17, 10, MUTED, Align.CENTER);
+        text(content, height, fonts.sans(), APPROVED, expandedOr(texts.approval(), "ha aprobado " + snapshot.titleKind(), snapshot, registry), 17, 10, MUTED, Align.CENTER);
         text(content, height, fonts.serifBold(), PROGRAM, snapshot.titleName(), 34, 16, NAVY, Align.CENTER);
-        text(content, height, fonts.sans(), HOURS_LINE, hoursLine(snapshot.hours(), snapshot.institutionName()), 15, 9, INK, Align.CENTER);
+        text(content, height, fonts.sans(), HOURS_LINE, dictationLine(texts.dictation(), snapshot, registry), 15, 9, INK, Align.CENTER);
         text(content, height, fonts.sans(), DATE_LINE, dateLine(snapshot.issuedOn()), 15, 9, INK, Align.CENTER);
         signatories(document, content, fonts, height, snapshot.signatories(), assets.signatureImages());
         qrPainter.paint(content, pdfRect(QR, height));
-        text(content, height, fonts.sans(), QR_LABEL, QR_LABEL_TEXT, 9, 6, MUTED, Align.CENTER);
+        text(content, height, fonts.sans(), QR_LABEL, expandedOr(texts.qrLabel(), QR_LABEL_TEXT, snapshot, registry), 9, 6, MUTED, Align.CENTER);
         text(content, height, fonts.sansBold(), CODE, code.formatted(), 12, 7, NAVY, Align.CENTER);
         if (assets.registrationNumber() != null && !assets.registrationNumber().isBlank()) {
             text(content, height, fonts.sans(), REGISTRATION, "REG. DE CERTIF. N°: " + assets.registrationNumber(), 12, 7, INK, Align.LEFT);
         }
-        text(content, height, fonts.sans(), LEGEND, LEGEND_TEXT, 10, 7, MUTED, Align.RIGHT);
+        text(content, height, fonts.sans(), LEGEND, expandedOr(texts.legend(), LEGEND_TEXT, snapshot, registry), 10, 7, MUTED, Align.RIGHT);
+    }
+
+    private static String expandedOr(String template, String fallback, CertificateSnapshot snapshot, String registry) {
+        return template == null || template.isBlank() ? fallback : CertificateMarkers.expand(template, snapshot, registry);
+    }
+
+    private static String dictationLine(String template, CertificateSnapshot snapshot, String registry) {
+        if (template == null || template.isBlank()) {
+            return hoursLine(snapshot.hours(), snapshot.institutionName());
+        }
+        String expanded = CertificateMarkers.expand(template, snapshot, registry);
+        if (snapshot.hours() == null || CertificateMarkers.mentionsHours(template)) {
+            return expanded;
+        }
+        return "con una duración de " + snapshot.hours() + " horas, " + expanded.substring(0, 1).toLowerCase() + expanded.substring(1);
+    }
+
+    private static PDImageXObject imageOrNull(PDDocument document, byte[] bytes, String name) {
+        if (bytes == null) {
+            return null;
+        }
+        try {
+            return PDImageXObject.createFromByteArray(document, bytes, name);
+        } catch (IOException | RuntimeException e) {
+            return null;
+        }
     }
 
     private void paper(PDPageContentStream content, PDRectangle page) throws IOException {
@@ -184,8 +212,8 @@ public class ApprovalCertificateDesign {
         float radius = box.width() / 2;
         float cx = box.x() + radius;
         float cy = box.y() + radius;
-        if (assets.logo() != null) {
-            PDImageXObject image = PDImageXObject.createFromByteArray(document, assets.logo(), "logo");
+        PDImageXObject image = imageOrNull(document, assets.logo(), "logo");
+        if (image != null) {
             content.saveGraphicsState();
             circlePath(content, cx, cy, radius - 2 * PX);
             content.clip();
@@ -219,8 +247,9 @@ public class ApprovalCertificateDesign {
         for (int i = 0; i < Math.min(slots.size(), signatories.size()); i++) {
             Rect slot = slots.get(i);
             SignatorySnapshot signatory = signatories.get(i);
-            if (i < images.size() && images.get(i) != null) {
-                signatureImage(document, content, pageHeight, new Rect(slot.x() + 25, slot.y() + 2, 200, 46), images.get(i));
+            PDImageXObject signature = i < images.size() ? imageOrNull(document, images.get(i), "signature") : null;
+            if (signature != null) {
+                signatureImage(content, pageHeight, new Rect(slot.x() + 25, slot.y() + 2, 200, 46), signature);
             }
             float lineY = pageHeight - (slot.y() + 50) * PX;
             content.setStrokingColor(GOLD);
@@ -241,9 +270,8 @@ public class ApprovalCertificateDesign {
         return new Rect(slot.x(), slot.y() + 74, slot.width(), 18);
     }
 
-    private void signatureImage(PDDocument document, PDPageContentStream content, float pageHeight, Rect box, byte[] bytes)
+    private void signatureImage(PDPageContentStream content, float pageHeight, Rect box, PDImageXObject image)
             throws IOException {
-        PDImageXObject image = PDImageXObject.createFromByteArray(document, bytes, "signature");
         float scale = Math.min(box.width() * PX / image.getWidth(), box.height() * PX / image.getHeight());
         float width = image.getWidth() * scale;
         float height = image.getHeight() * scale;
