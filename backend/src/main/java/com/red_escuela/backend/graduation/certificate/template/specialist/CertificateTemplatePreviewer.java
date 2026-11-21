@@ -6,6 +6,7 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
+import com.red_escuela.backend.graduation.certificate.preview.PreviewWatermarker;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplatePreviewSource;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
@@ -27,13 +28,13 @@ public class CertificateTemplatePreviewer {
     private final BuiltInCertificateTemplate builtInTemplate;
     private final CertificatePdfRenderer renderer;
     private final CertificateVerificationUrl verificationUrl;
-    private final PreviewWatermark watermark;
+    private final PreviewWatermarker watermark;
     private final SecureRandom random = new SecureRandom();
     private final Clock clock;
 
     public CertificateTemplatePreviewer(CertificateTemplateRenderSource renderSource, BuiltInCertificateTemplate builtInTemplate,
                                         CertificatePdfRenderer renderer, CertificateVerificationUrl verificationUrl,
-                                        PreviewWatermark watermark, Clock clock) {
+                                        PreviewWatermarker watermark, Clock clock) {
         this.renderSource = renderSource;
         this.builtInTemplate = builtInTemplate;
         this.renderer = renderer;
@@ -48,7 +49,7 @@ public class CertificateTemplatePreviewer {
         CertificateSnapshot snapshot = renderSource.snapshotWith(sampleSnapshot(kind), version);
         byte[] pdf = renderer.render(builtInTemplate.resolve(kind, null), snapshot, code, verificationUrl.of(code),
                 renderSource.assetsOf(version, sampleRegistryNumber()));
-        return new GraduationCertificatePdf(code.value(), watermark.stamp(pdf));
+        return new GraduationCertificatePdf(code.value(), watermark.apply(pdf));
     }
 
     private String sampleRegistryNumber() {
