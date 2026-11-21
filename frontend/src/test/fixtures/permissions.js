@@ -3,13 +3,13 @@ export const permissionCatalog = () => ({
     {
       module: 'announcement',
       permissions: [
-        { code: 'announcement.create', description: 'Crear avisos', fixedToDirector: false },
-        { code: 'announcement.delete', description: 'Eliminar avisos', fixedToDirector: false },
+        { code: 'announcement.create', description: 'Crear avisos', fixedToDirector: false, sensitive: false },
+        { code: 'announcement.delete', description: 'Eliminar avisos', fixedToDirector: false, sensitive: false },
       ],
     },
     {
       module: 'billing',
-      permissions: [{ code: 'billing.payment.revoke', description: 'Revocar la aprobación de un pago', fixedToDirector: true }],
+      permissions: [{ code: 'billing.payment.revoke', description: 'Revocar la aprobación de un pago', fixedToDirector: false, sensitive: true }],
     },
   ],
 });

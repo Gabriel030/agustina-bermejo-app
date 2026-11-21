@@ -189,6 +189,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   NOT_OWN_SECTION: 'Esa comisión no es tuya.',
   NOT_SECTION_INSTRUCTOR: 'No sos docente de esta comisión.',
   NOT_SECTION_LEAD_INSTRUCTOR: 'Solo el docente a cargo de la comisión puede hacer esto.',
+  SENSITIVE_PERMISSION_CONFIRMATION_REQUIRED: 'Cambiar un permiso sensible exige una confirmación reforzada.',
   PERMISSION_FIXED_TO_DIRECTOR: 'Ese permiso es exclusivo del Director y no se puede delegar.',
   PERMISSION_GRID_FORBIDDEN: 'Solo el Director puede editar la grilla de permisos.',
   UNKNOWN_PERMISSION_MODULE: 'El módulo indicado no existe en la grilla de permisos.',

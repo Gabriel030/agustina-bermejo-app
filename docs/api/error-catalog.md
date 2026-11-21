@@ -649,6 +649,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `DUPLICATE_PERMISSION_MODE_CHANGE` | no | `DuplicatePermissionModeChangeException` | identity |
 | `GRADUATION_CERTIFICATE_OPERATION_PENDING` | no | `GraduationCertificateOperationPendingException` | graduation |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
+| `SENSITIVE_PERMISSION_CONFIRMATION_REQUIRED` | no | `SensitivePermissionConfirmationRequiredException` | identity |
 | `SIGNATORY_DUPLICATED_IN_TEMPLATE` | no | `SignatoryDuplicatedInTemplateException` | graduation |
 | `SIGNATORY_ROLE_INVALID` | no | `SignatoryRoleInvalidException` | graduation |
 | `SIGNATORY_SIGNATURE_INVALID` | no | `SignatorySignatureInvalidException` | graduation |

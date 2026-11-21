@@ -11066,9 +11066,12 @@
           },
           "fixedToDirector" : {
             "type" : "boolean"
+          },
+          "sensitive" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "code", "description", "fixedToDirector" ],
+        "required" : [ "code", "description", "fixedToDirector", "sensitive" ],
         "type" : "object"
       },
       "PersonResponse" : {
@@ -15693,6 +15696,9 @@
             "maxLength" : 500,
             "minLength" : 0,
             "type" : "string"
+          },
+          "sensitiveConfirmed" : {
+            "type" : "boolean"
           }
         },
         "required" : [ "changes", "reason" ],
