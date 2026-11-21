@@ -10,7 +10,7 @@ import { useConfigsPendientes } from '@/features/evaluation';
 import { useEgresosPendientes } from '@/features/graduation';
 import { useExcepcionesPendientes } from '@/features/enrollment';
 import { useAuthorizationRequests } from '@/features/billing';
-import { usePendingOfferCycles } from '@/features/academic-structure';
+import { usePendingOfferCycles, SectionScheduleApprovalsPanel } from '@/features/academic-structure';
 import { ageLabel } from '@/lib/aprobaciones';
 import { TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
 
@@ -119,6 +119,8 @@ export function DirectorAprobaciones() {
           </StatCard>
         </Link>
       </div>
+
+      <SectionScheduleApprovalsPanel />
 
       <SeccionPreview
         titulo="Operaciones de facturación"
