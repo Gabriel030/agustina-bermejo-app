@@ -19,6 +19,8 @@ enum OwnershipKind {
     COURSE_SECTION_ENROLLMENT_INSTRUCTOR("course-section-enrollment-instructor", MatrixRole.DOCENTE, 404),
     COURSE_SECTION_INSTRUCTOR("course-section-instructor", MatrixRole.DOCENTE, 404),
     AUTHORIZATION_REQUEST("authorization-request", MatrixRole.ADMINISTRATIVO, 404),
+    ATTENDANCE_STUDENT("attendance-student", MatrixRole.ALUMNO, 404),
+    ANNOUNCEMENT_INSTRUCTOR("announcement-instructor", MatrixRole.DOCENTE, 404),
     CERTIFICATE_EXCEPTION("certificate-exception", MatrixRole.ADMINISTRATIVO, 404);
 
     private final String label;

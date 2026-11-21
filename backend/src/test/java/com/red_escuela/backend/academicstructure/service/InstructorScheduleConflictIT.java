@@ -69,6 +69,7 @@ class InstructorScheduleConflictIT extends AbstractIntegrationTest {
     private Instructor teacher;
     private Classroom roomA;
     private Classroom roomB;
+    private com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle approvedCycle;
 
     @BeforeEach
     void seed() {
@@ -77,6 +78,7 @@ class InstructorScheduleConflictIT extends AbstractIntegrationTest {
         teacher = fixtures.instructor();
         roomA = fixtures.classroom(30);
         roomB = fixtures.classroom(30);
+        approvedCycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
     }
 
     private AssignInstructorRequest assignment(Instructor instructor) {
@@ -84,14 +86,14 @@ class InstructorScheduleConflictIT extends AbstractIntegrationTest {
     }
 
     private SubjectSection teachingSection(Term sectionTerm, StatusType status, Classroom room, DayOfWeek day, LocalTime start, LocalTime end) {
-        SubjectSection section = fixtures.section(fixtures.subject(), sectionTerm, status, null);
+        SubjectSection section = fixtures.section(fixtures.subject(), sectionTerm, status, approvedCycle);
         fixtures.slot(section, room, day, start, end);
         fixtures.assignLead(section, teacher);
         return section;
     }
 
     private SubjectSection candidateSection(Classroom room, DayOfWeek day, LocalTime start, LocalTime end) {
-        SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, null);
+        SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, approvedCycle);
         fixtures.slot(section, room, day, start, end);
         return section;
     }

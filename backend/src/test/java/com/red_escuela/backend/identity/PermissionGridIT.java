@@ -41,6 +41,12 @@ class PermissionGridIT extends AbstractIntegrationTest {
             return "ok";
         }
 
+        @GetMapping("/grid-probe/docente-legacy")
+        @RequiresPermission(code = "announcement.create", legacyRoles = "ROLE_DOCENTE")
+        String docenteLegacy() {
+            return "ok";
+        }
+
         @GetMapping("/grid-probe/fixed")
         @RequiresPermission(code = "announcement.fixed_probe", legacyRoles = "ROLE_DIRECTOR,ROLE_DOCENTE")
         String fixed() {
@@ -120,6 +126,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items[0].role").value("DOCENTE"))
                 .andExpect(jsonPath("$.items[0].module").value("announcement"))
                 .andExpect(jsonPath("$.items[0].permissionCode").value("announcement.create"))
+                .andExpect(jsonPath("$.items[0].direction").value("LEGACY_DENIED_GRID_ALLOWED"))
                 .andExpect(jsonPath("$.items[0].count").value(2));
     }
 

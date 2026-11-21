@@ -3,11 +3,14 @@ package com.red_escuela.backend.academicstructure.service;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.dto.ModifySectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
+import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
+import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Classroom;
 import com.red_escuela.backend.academicstructure.entity.ProposedSlot;
 import com.red_escuela.backend.academicstructure.entity.SectionModificationProposal;
 import com.red_escuela.backend.academicstructure.entity.SectionModificationStatus;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
+import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.ClassroomNotFoundException;
@@ -80,14 +83,18 @@ class SectionModificationSpecialistsTest {
         section.setId(SECTION_ID);
         section.setCapacity(30);
         section.setTerm(term);
+        var cycle = new AcademicOfferingCycle();
+        cycle.setStatus(AcademicOfferingCycleStatus.APPROVED);
+        section.setAcademicOfferingCycle(cycle);
     }
 
     private SectionModificationRequester requester() {
-        return new SectionModificationRequester(sectionRepository, slotRepository, classroomRepository, proposalRepository, conflictChecker, shiftSlotGuard, CLOCK);
+        var detector = new SectionModificationConflictDetector(classroomRepository, conflictChecker, shiftSlotGuard);
+        return new SectionModificationRequester(sectionRepository, slotRepository, classroomRepository, proposalRepository, detector, new SectionCycleApprovalGuard(), CLOCK);
     }
 
     private SectionModificationApprover approver() {
-        return new SectionModificationApprover(sectionRepository, slotRepository, proposalRepository, conflictChecker, classroomRepository, CLOCK);
+        return new SectionModificationApprover(sectionRepository, slotRepository, proposalRepository, conflictChecker, classroomRepository, new SectionCycleApprovalGuard(), CLOCK);
     }
 
     private SectionModificationRejecter rejecter() {
@@ -155,7 +162,7 @@ class SectionModificationSpecialistsTest {
 
         requester().requestModification(SECTION_ID, new ModifySectionRequest(List.of(slotRequest(LocalTime.of(18, 0), LocalTime.of(22, 0)))));
 
-        verify(conflictChecker).checkClassroomAvailabilityIgnoringSlots(
+        verify(conflictChecker).findClassroomOccupyingSlotsIgnoring(
                 term, CLASSROOM_ID, DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(22, 0), Set.of(99L));
     }
 
@@ -190,15 +197,15 @@ class SectionModificationSpecialistsTest {
         section.setShift(SectionShift.MORNING);
         when(sectionRepository.findById(SECTION_ID)).thenReturn(Optional.of(section));
         when(slotRepository.findBySubjectSectionId(SECTION_ID)).thenReturn(List.of());
-        doThrow(new SlotOutsideShiftException(SectionShift.MORNING, LocalTime.of(18, 0), LocalTime.of(22, 0), LocalTime.of(8, 0), LocalTime.of(12, 30)))
-                .when(shiftSlotGuard).ensureInsideShift(SectionShift.MORNING, LocalTime.of(18, 0), LocalTime.of(22, 0));
+        when(shiftSlotGuard.findViolation(SectionShift.MORNING, LocalTime.of(18, 0), LocalTime.of(22, 0)))
+                .thenReturn(Optional.of(new SlotOutsideShiftException(SectionShift.MORNING, LocalTime.of(18, 0), LocalTime.of(22, 0), LocalTime.of(8, 0), LocalTime.of(12, 30))));
         var request = new ModifySectionRequest(List.of(slotRequest(LocalTime.of(18, 0), LocalTime.of(22, 0))));
 
         assertThatThrownBy(() -> requester().requestModification(SECTION_ID, request))
                 .isInstanceOf(SlotOutsideShiftException.class);
 
         verify(proposalRepository, never()).save(any());
-        verify(conflictChecker, never()).checkClassroomAvailabilityIgnoringSlots(any(), any(), any(), any(), any(), any());
+        verify(conflictChecker, never()).findClassroomOccupyingSlotsIgnoring(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -227,8 +234,15 @@ class SectionModificationSpecialistsTest {
         when(sectionRepository.findById(SECTION_ID)).thenReturn(Optional.of(section));
         when(slotRepository.findBySubjectSectionId(SECTION_ID)).thenReturn(List.of());
         when(classroomRepository.findById(CLASSROOM_ID)).thenReturn(Optional.of(classroom(30)));
-        doThrow(new SectionScheduleConflictException(CLASSROOM_ID, DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(22, 0)))
-                .when(conflictChecker).checkClassroomAvailabilityIgnoringSlots(any(), any(), any(), any(), any(), any());
+        var occupying = new SectionScheduleSlot();
+        occupying.setId(1L);
+        var occupyingSubject = new Subject();
+        occupyingSubject.setName("Algebra");
+        var occupyingSection = new SubjectSection();
+        occupyingSection.setName("B");
+        occupyingSection.setSubject(occupyingSubject);
+        occupying.setSubjectSection(occupyingSection);
+        when(conflictChecker.findClassroomOccupyingSlotsIgnoring(any(), any(), any(), any(), any(), any())).thenReturn(List.of(occupying));
 
         assertThatThrownBy(() -> requester().requestModification(SECTION_ID, new ModifySectionRequest(List.of(slotRequest(LocalTime.of(18, 0), LocalTime.of(22, 0))))))
                 .isInstanceOf(SectionScheduleConflictException.class);
@@ -247,6 +261,21 @@ class SectionModificationSpecialistsTest {
 
         assertThat(section.isPendingApproval()).isTrue();
         verify(sectionRepository, never()).save(any());
+    }
+
+    @Test
+    void approvingAPendingProposalOfAClosedCycleIsConflictAndKeepsItPending() {
+        section.setPendingApproval(true);
+        section.getAcademicOfferingCycle().setStatus(AcademicOfferingCycleStatus.CLOSED);
+        var proposal = pendingProposal(true, List.of());
+        when(sectionRepository.findById(SECTION_ID)).thenReturn(Optional.of(section));
+        when(proposalRepository.findFirstBySubjectSectionIdAndStatus(SECTION_ID, SectionModificationStatus.PENDING)).thenReturn(Optional.of(proposal));
+
+        assertThatThrownBy(() -> approver().approveModification(SECTION_ID))
+                .isInstanceOf(com.red_escuela.backend.academicstructure.exception.SectionModificationCycleClosedException.class);
+
+        assertThat(proposal.isPending()).isTrue();
+        verify(slotRepository, never()).deleteAll(any());
     }
 
     @Test

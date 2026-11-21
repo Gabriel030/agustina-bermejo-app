@@ -93,10 +93,28 @@ public class SectionConflictChecker {
         }
     }
 
-    public void checkClassroomAvailabilityIgnoringSlots(Term term, Long classroomId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime, Set<Long> ignoredSlotIds) {
-        boolean conflicts = occupyingSlots(term, dayOfWeek, startTime, endTime).stream()
+    public List<SectionScheduleSlot> findClassroomOccupyingSlotsIgnoring(Term term, Long classroomId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime, Set<Long> ignoredSlotIds) {
+        return occupyingSlots(term, dayOfWeek, startTime, endTime).stream()
                 .filter(slot -> !ignoredSlotIds.contains(slot.getId()))
-                .anyMatch(slot -> slot.getClassroom().getId().equals(classroomId));
+                .filter(slot -> slot.getClassroom().getId().equals(classroomId))
+                .toList();
+    }
+
+    public List<InstructorOccupation> findSectionInstructorsOccupations(Term term, Long subjectSectionId, DayOfWeek dayOfWeek,
+                                                                        LocalTime startTime, LocalTime endTime, Set<Long> ignoredSlotIds) {
+        return subjectInstructorRepository.findBySectionId(subjectSectionId).stream()
+                .flatMap(link -> slotRepository.findInstructorOccupyingSlots(
+                                link.getInstructor().getId(), term.getId(), term.getStartDate(), term.getEndDate(), dayOfWeek, startTime, endTime)
+                        .stream()
+                        .filter(slot -> !ignoredSlotIds.contains(slot.getId()))
+                        .map(slot -> new InstructorOccupation(link.getInstructor().getId(), slot)))
+                .toList();
+    }
+
+    public record InstructorOccupation(Long instructorId, SectionScheduleSlot slot) {}
+
+    public void checkClassroomAvailabilityIgnoringSlots(Term term, Long classroomId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime, Set<Long> ignoredSlotIds) {
+        boolean conflicts = !findClassroomOccupyingSlotsIgnoring(term, classroomId, dayOfWeek, startTime, endTime, ignoredSlotIds).isEmpty();
         if (conflicts) {
             throw new SectionScheduleConflictException(classroomId, dayOfWeek, startTime, endTime);
         }

@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,17 +24,20 @@ class PermissionGateCoverageTest {
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "academicrecord", "academicstructure", "announcement", "attendance", "billing", "dataimport", "enrollment", "evaluation",
+            "academicrecord", "academicstructure", "attendance", "billing", "dataimport", "enrollment", "evaluation",
             "graduation", "identity", "notification", "platform");
 
     private static final Set<String> CONTROLLERS_FIXED_BY_ROLE = Set.of(
             ROOT + ".identity.controller.PermissionController");
 
+    private static final Set<String> CONTROLLERS_WITHOUT_ROLE_RULE = Set.of(
+            ROOT + ".announcement.controller.MeAnnouncementController");
+
     @Test
     void everyProtectedEndpointUsesTheGateOrIsExempt() throws Exception {
         List<String> uncovered = new ArrayList<>();
         for (Class<?> controller : controllers()) {
-            if (CONTROLLERS_FIXED_BY_ROLE.contains(controller.getName()) || MODULES_PENDING_MIGRATION.contains(moduleOf(controller))) {
+            if (CONTROLLERS_FIXED_BY_ROLE.contains(controller.getName()) || CONTROLLERS_WITHOUT_ROLE_RULE.contains(controller.getName()) || MODULES_PENDING_MIGRATION.contains(moduleOf(controller))) {
                 continue;
             }
             for (Method method : controller.getDeclaredMethods()) {
@@ -60,15 +65,15 @@ class PermissionGateCoverageTest {
             assertThat(preAuthorize.value()).isEqualTo("hasRole('DIRECTOR')");
             checked++;
         }
-        assertThat(checked).isEqualTo(4);
+        assertThat(checked).isEqualTo(6);
     }
 
     @Test
     void exemptListsOnlyNameExistingModulesAndControllers() throws Exception {
-        for (String controllerName : CONTROLLERS_FIXED_BY_ROLE) {
+        for (String controllerName : Stream.concat(CONTROLLERS_FIXED_BY_ROLE.stream(), CONTROLLERS_WITHOUT_ROLE_RULE.stream()).toList()) {
             assertThat(Class.forName(controllerName)).isNotNull();
         }
-        Set<String> present = new java.util.HashSet<>();
+        Set<String> present = new HashSet<>();
         controllers().forEach(controller -> present.add(moduleOf(controller)));
         assertThat(present).containsAll(MODULES_PENDING_MIGRATION);
     }
