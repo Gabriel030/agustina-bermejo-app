@@ -34,6 +34,12 @@ public class IdentityAuditRecorder {
                 reason));
     }
 
+    public void recordPermissionSensitiveChanged(Long permissionId, String role, boolean granted, String reason) {
+        auditTrail.record(new AuditRecord(AuditAction.PERMISSION_SENSITIVE_CHANGED, AuditEntityType.PERMISSION,
+                permissionId, role + ":" + (granted ? "DENIED" : "GRANTED"), role + ":" + (granted ? "GRANTED" : "DENIED"),
+                reason));
+    }
+
     public void recordPasswordChanged(Person person) {
         auditTrail.record(new AuditRecord(AuditAction.PASSWORD_CHANGED, AuditEntityType.PERSON,
                 person.getId(), null, null, null));

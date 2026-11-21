@@ -10,11 +10,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PermissionSnapshotTest {
 
     private static final Set<String> ALL = Set.of("announcement.create", "billing.refund");
-    private static final Set<String> FIXED = Set.of("billing.refund");
 
     private final PermissionSnapshot snapshot = new PermissionSnapshot(
             Map.of("DOCENTE", Set.of("announcement.create", "billing.refund"), "DIRECTOR", Set.of()),
-            Map.of(), FIXED, ALL);
+            Map.of(), ALL);
 
     @Test
     void directorAlwaysHoldsEveryPermissionEvenWithoutGrantRows() {
@@ -23,8 +22,8 @@ class PermissionSnapshotTest {
     }
 
     @Test
-    void gateIgnoresGrantsOfFixedPermissionsToOtherRoles() {
-        assertThat(snapshot.grants("DOCENTE", "billing.refund")).isFalse();
+    void gateHonorsGrantsOfEveryPermissionToOtherRoles() {
+        assertThat(snapshot.grants("DOCENTE", "billing.refund")).isTrue();
         assertThat(snapshot.grants("DOCENTE", "announcement.create")).isTrue();
     }
 

@@ -6,8 +6,8 @@ import com.red_escuela.backend.identity.entity.Permission;
 import com.red_escuela.backend.identity.entity.RolePermission;
 import com.red_escuela.backend.identity.exception.DirectorPermissionsNotEditableException;
 import com.red_escuela.backend.identity.exception.DuplicatePermissionGridChangeException;
-import com.red_escuela.backend.identity.exception.PermissionFixedToDirectorException;
 import com.red_escuela.backend.identity.exception.PermissionGridForbiddenException;
+import com.red_escuela.backend.identity.exception.SensitivePermissionConfirmationRequiredException;
 import com.red_escuela.backend.identity.exception.UnknownPermissionCodeException;
 import com.red_escuela.backend.identity.exception.UnknownPermissionRoleException;
 import com.red_escuela.backend.identity.repository.PermissionRepository;
@@ -51,7 +51,7 @@ public class PermissionGridEditor {
         }
         Map<String, Permission> permissionByCode = permissionRepository.findAll().stream()
                 .collect(Collectors.toMap(Permission::getCode, Function.identity()));
-        validate(request.changes(), gridRoles.names(), permissionByCode);
+        validate(request.changes(), gridRoles.names(), permissionByCode, Boolean.TRUE.equals(request.sensitiveConfirmed()));
         for (PermissionGridChange change : request.changes()) {
             applyChange(change, permissionByCode.get(change.permissionCode()), request.reason());
         }
@@ -59,7 +59,7 @@ public class PermissionGridEditor {
     }
 
     private void validate(List<PermissionGridChange> changes, List<String> knownRoles,
-                          Map<String, Permission> permissionByCode) {
+                          Map<String, Permission> permissionByCode, boolean sensitiveConfirmed) {
         Set<String> seen = new HashSet<>();
         for (PermissionGridChange change : changes) {
             if (!knownRoles.contains(change.role())) {
@@ -72,11 +72,11 @@ public class PermissionGridEditor {
             if (!seen.add(change.role() + "|" + change.permissionCode())) {
                 throw new DuplicatePermissionGridChangeException(change.role(), change.permissionCode());
             }
-            if (permission.isFixedToDirector()) {
-                throw new PermissionFixedToDirectorException(permission.getCode());
-            }
             if (PermissionGridRoles.DIRECTOR.equals(change.role())) {
                 throw new DirectorPermissionsNotEditableException();
+            }
+            if (permission.isSensitive() && !sensitiveConfirmed) {
+                throw new SensitivePermissionConfirmationRequiredException(permission.getCode());
             }
         }
     }
@@ -86,10 +86,18 @@ public class PermissionGridEditor {
         if (change.granted() && existing.isEmpty()) {
             rolePermissionRepository.save(RolePermission.builder()
                     .role(change.role()).permissionId(permission.getId()).build());
-            auditRecorder.recordPermissionGridChanged(permission.getId(), change.role(), true, reason);
+            recordChange(permission, change.role(), true, reason);
         } else if (!change.granted() && existing.isPresent()) {
             rolePermissionRepository.delete(existing.get());
-            auditRecorder.recordPermissionGridChanged(permission.getId(), change.role(), false, reason);
+            recordChange(permission, change.role(), false, reason);
+        }
+    }
+
+    private void recordChange(Permission permission, String role, boolean granted, String reason) {
+        if (permission.isSensitive()) {
+            auditRecorder.recordPermissionSensitiveChanged(permission.getId(), role, granted, reason);
+        } else {
+            auditRecorder.recordPermissionGridChanged(permission.getId(), role, granted, reason);
         }
     }
 
