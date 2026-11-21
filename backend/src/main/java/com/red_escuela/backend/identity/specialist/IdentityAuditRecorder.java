@@ -28,6 +28,12 @@ public class IdentityAuditRecorder {
                 person.getId(), null, initialRole, null));
     }
 
+    public void recordPermissionGridChanged(Long permissionId, String role, boolean granted, String reason) {
+        auditTrail.record(new AuditRecord(AuditAction.PERMISSION_GRID_CHANGED, AuditEntityType.PERMISSION,
+                permissionId, role + ":" + (granted ? "DENIED" : "GRANTED"), role + ":" + (granted ? "GRANTED" : "DENIED"),
+                reason));
+    }
+
     public void recordPasswordChanged(Person person) {
         auditTrail.record(new AuditRecord(AuditAction.PASSWORD_CHANGED, AuditEntityType.PERSON,
                 person.getId(), null, null, null));
