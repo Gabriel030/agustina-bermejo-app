@@ -73,7 +73,7 @@ export function CohortesSection({ programId }) {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">Cohortes de ingreso</h2>
-        <Button variant="gradient" size="sm" disabled={isError} onClick={() => setDialogOpen(true)}>
+        <Button variant="primary" size="sm" disabled={isError} onClick={() => setDialogOpen(true)}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           Nueva cohorte
         </Button>

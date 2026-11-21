@@ -138,7 +138,7 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
           <Button variant="outline" onClick={() => setStep('changes')} disabled={update.isPending}>
             Volver a los cambios
           </Button>
-          <Button variant="gradient" onClick={save} disabled={rows.length === 0} loading={update.isPending}>
+          <Button variant="primary" onClick={save} disabled={rows.length === 0} loading={update.isPending}>
             Guardar cambios
           </Button>
         </div>
@@ -276,7 +276,7 @@ export function YearBillingConfigPage({ template, title, term, onClose }) {
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button variant="gradient" onClick={review} disabled={rows.length === 0 || Boolean(openingError)}>
+        <Button variant="primary" onClick={review} disabled={rows.length === 0 || Boolean(openingError)}>
           Revisar cambios
         </Button>
       </div>

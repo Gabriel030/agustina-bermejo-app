@@ -150,7 +150,7 @@ export function HolidayPanelContent({ holiday, initialDate, findByDate, titleId,
         )}
         <span className="flex-1" />
         <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-        <Button type="submit" variant="gradient" loading={saving}>
+        <Button type="submit" variant="primary" loading={saving}>
           {editing ? 'Guardar cambios' : 'Agregar feriado'}
         </Button>
       </div>

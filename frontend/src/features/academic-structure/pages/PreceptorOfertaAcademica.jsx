@@ -137,7 +137,7 @@ export function PreceptorOfertaAcademica() {
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold text-ink">Oferta académica</h1>
           {basePath !== '/director' && (
-            <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
+            <Button variant="primary" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
               <Plus className="mr-1.5 h-4 w-4" />
               Iniciar alta de ciclo
             </Button>

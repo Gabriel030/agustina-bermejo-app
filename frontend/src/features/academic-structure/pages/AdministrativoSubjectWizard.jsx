@@ -298,7 +298,7 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
             Cuando esté lista, enviala a aprobación del director.
           </p>
         </div>
-        <Button variant="gradient" onClick={onSubmit} disabled={isSubmitting} className="mt-2">
+        <Button variant="primary" onClick={onSubmit} disabled={isSubmitting} className="mt-2">
           {isSubmitting ? 'Enviando…' : 'Enviar a aprobación'}
         </Button>
       </div>
@@ -364,7 +364,7 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
             Revisá los datos en los pasos anteriores y volvé a enviarla.
           </p>
         </div>
-        <Button variant="gradient" onClick={onSubmit} disabled={isSubmitting} className="mt-2">
+        <Button variant="primary" onClick={onSubmit} disabled={isSubmitting} className="mt-2">
           {isSubmitting ? 'Enviando…' : 'Volver a enviar a aprobación'}
         </Button>
       </div>
@@ -517,7 +517,7 @@ function WizardForm({ isEdit, existingSubject }) {
            <div className="flex gap-3">
             {isLastEditableStep && (
               <Button
-                variant="gradient"
+                variant="primary"
                 onClick={handleSave}
                 disabled={!allValid || isSaving || state.savedStatus === 'PENDING_APPROVAL'}
               >
@@ -565,7 +565,7 @@ function SubjectLoadFailure({ notFound, onRetry }) {
           action={
             <div className="flex gap-3">
               {!notFound && (
-                <Button variant="gradient" onClick={onRetry}>
+                <Button variant="primary" onClick={onRetry}>
                   Reintentar
                 </Button>
               )}

@@ -131,7 +131,7 @@ export function PanelModulo({ open, onClose, courseId }) {
             <Button variant="outline" size="sm" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button variant="gradient" size="sm" loading={addModule.isPending} onClick={handleAgregar}>
+            <Button variant="primary" size="sm" loading={addModule.isPending} onClick={handleAgregar}>
               Agregar
             </Button>
           </div>
