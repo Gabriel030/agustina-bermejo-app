@@ -1,32 +1,44 @@
-import { AlertTriangle, ChevronRight, Info, Shield } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, Info, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/StatusPill';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { PermissionCell } from '@/features/permissions/components/PermissionCell';
-import { DIRECTOR_ROLE, PERMISSION_MODES, SENSITIVE_TOOLTIP, modeFor, moduleLabel, roleLabel } from '@/features/permissions/lib/permissionGrid';
+import { DIRECTOR_ROLE, PERMISSION_MODES, SENSITIVE_TOOLTIP, modeFor, moduleLabel, pluralize, roleLabel } from '@/features/permissions/lib/permissionGrid';
 
 export const GRID_COLUMNS = 'md:grid md:grid-cols-[minmax(260px,1fr)_repeat(var(--role-count),108px)] md:items-center';
 
-function ModeIndicator({ mode, role, module }) {
+function ModeIndicator({ mode, role, module, onChangeMode }) {
   const config = PERMISSION_MODES[mode];
+  const pill = (
+    <StatusPill tone={config.tone} dot>
+      <span className="sr-only">{`Modo de ${roleLabel(role)} en ${moduleLabel(module)}: `}</span>
+      {config.label}
+      {onChangeMode && <ChevronDown className="size-3" aria-hidden="true" />}
+    </StatusPill>
+  );
+  if (!onChangeMode) return <span title={config.description}>{pill}</span>;
   return (
-    <span title={`${config.description} Cambiarlo estará disponible próximamente.`}>
-      <StatusPill tone={config.tone} dot>
-        <span className="sr-only">{`Modo de ${roleLabel(role)} en ${moduleLabel(module)}: `}</span>
-        {config.label}
-      </StatusPill>
-    </span>
+    <Button
+      type="button"
+      variant="ghost"
+      title={`${config.description} Tocá para cambiar.`}
+      aria-label={`Modo de ${roleLabel(role)} en ${moduleLabel(module)}: ${config.label}. Cambiar`}
+      onClick={() => onChangeMode(role, module)}
+      className="h-auto min-h-11 rounded-full p-0 hover:bg-transparent"
+    >
+      {pill}
+    </Button>
   );
 }
 
-export function PermissionModuleSection({ module, grid, roles, permissions, open, editable, onToggleOpen, draft }) {
+export function PermissionModuleSection({ module, grid, roles, permissions, open, editable, highlighted, discrepancyCount, onToggleOpen, onChangeMode, draft }) {
   const total = module.permissions.length;
   const sensitiveCount = module.permissions.filter((permission) => permission.sensitive).length;
   const panelId = `permission-module-${module.module}`;
 
   return (
-    <section className="border-b border-border last:border-b-0" aria-label={moduleLabel(module.module)}>
+    <section id={`permission-section-${module.module}`} className={cn('border-b border-border last:border-b-0', highlighted && 'outline-2 -outline-offset-2 outline-brand')} aria-label={moduleLabel(module.module)}>
       <div className={cn(GRID_COLUMNS, open && 'border-b border-border md:sticky md:top-0 md:z-1 md:bg-surface')}>
         <Button
           type="button"
@@ -45,6 +57,11 @@ export function PermissionModuleSection({ module, grid, roles, permissions, open
               {sensitiveCount > 0 && ` · ${sensitiveCount} sensibles`}
             </span>
           </span>
+          {discrepancyCount > 0 && (
+            <span className="ml-auto" title="Diferencias entre la regla vieja y la grilla">
+              <StatusPill tone="warning">{pluralize(discrepancyCount, 'discrepancia', 'discrepancias')}</StatusPill>
+            </span>
+          )}
         </Button>
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 pb-3 pl-12 pr-3 md:contents">
           {roles.map((role) => {
@@ -65,7 +82,7 @@ export function PermissionModuleSection({ module, grid, roles, permissions, open
                   {granted}
                   <small className="font-medium text-ink-faint"> de {total}</small>
                 </span>
-                <ModeIndicator mode={modeFor(grid, role.id, module.module)} role={role.id} module={module.module} />
+                <ModeIndicator mode={modeFor(grid, role.id, module.module)} role={role.id} module={module.module} onChangeMode={editable ? onChangeMode : undefined} />
               </div>
             );
           })}

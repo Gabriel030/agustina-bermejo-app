@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Lock, SearchX } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,16 +8,21 @@ import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
+import { TabCount } from '@/components/TabCount';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PermissionDiscrepanciesTab } from '@/features/permissions/components/PermissionDiscrepanciesTab';
+import { PermissionModeDialog } from '@/features/permissions/components/PermissionModeDialog';
 import { PendingChangesBar } from '@/features/permissions/components/PendingChangesBar';
 import { GRID_COLUMNS, PermissionModuleSection } from '@/features/permissions/components/PermissionModuleSection';
 import { PermissionModeLegend } from '@/features/permissions/components/PermissionModeLegend';
 import { PermissionToolbar } from '@/features/permissions/components/PermissionToolbar';
 import { ReviewChangesDialog } from '@/features/permissions/components/ReviewChangesDialog';
 import { usePermissionCatalog, usePermissionGridData } from '@/features/permissions/hooks/usePermissionGrid';
+import { usePermissionDiscrepancySummary } from '@/features/permissions/hooks/usePermissionDiscrepancies';
 import { usePermissionDraft } from '@/features/permissions/hooks/usePermissionDraft';
 import { useSavePermissionChanges } from '@/features/permissions/hooks/useSavePermissionChanges';
-import { DIRECTOR_ROLE, GRID_FORBIDDEN_CODE, describeChangeCount, permissionMatches, rolesPresentIn } from '@/features/permissions/lib/permissionGrid';
+import { DIRECTOR_ROLE, GRID_FORBIDDEN_CODE, describeChangeCount, discrepancyCountFor, modeFor, permissionMatches, rolesPresentIn } from '@/features/permissions/lib/permissionGrid';
 
 const PAGE_TITLE = 'Roles y permisos';
 const PAGE_DESCRIPTION = 'Definí qué puede hacer cada rol en cada módulo. Cada cambio pide un motivo y queda en el registro de auditoría.';
@@ -47,6 +52,9 @@ function PermissionsGrid({ catalog, grid }) {
   const [openModules, setOpenModules] = useState(() => new Set());
   const [reviewing, setReviewing] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [tab, setTab] = useState('grid');
+  const [modeTarget, setModeTarget] = useState(null);
+  const [highlighted, setHighlighted] = useState(null);
   const draft = usePermissionDraft(grid);
   const save = useSavePermissionChanges();
 
@@ -57,6 +65,25 @@ function PermissionsGrid({ catalog, grid }) {
   const filterableRoles = gridRoles.filter((role) => role.id !== DIRECTOR_ROLE);
   const roles = roleFilter.length ? gridRoles.filter((role) => roleFilter.includes(role.id)) : gridRoles;
   const editable = grid.editable !== false;
+  const summaryQuery = usePermissionDiscrepancySummary({ enabled: editable });
+  const summary = summaryQuery.data;
+  const totalOccurrences = summary?.modules.reduce((sum, entry) => sum + entry.total, 0) ?? 0;
+
+  useEffect(() => {
+    if (!highlighted) return undefined;
+    document.getElementById(`permission-section-${highlighted}`)?.scrollIntoView?.({ block: 'start' });
+    const timer = setTimeout(() => setHighlighted(null), 3000);
+    return () => clearTimeout(timer);
+  }, [highlighted]);
+
+  const showModuleInGrid = (module) => {
+    setQuery('');
+    setModuleFilter('');
+    setOpenModules((current) => new Set(current).add(module));
+    setTab('grid');
+    setHighlighted(module);
+  };
+  const hasUnsavedChangesFor = (target) => draft.changes.some((change) => change.role === target.role && catalogIndex.get(change.permissionCode)?.module === target.module);
 
   const visibleModules = catalog.modules
     .filter((module) => !moduleFilter || module.module === moduleFilter)
@@ -109,69 +136,106 @@ function PermissionsGrid({ catalog, grid }) {
 
   return (
     <>
-      {!editable && (
-        <div role="status" className="flex items-start gap-2.5 rounded-card bg-warning-bg px-3.5 py-3 text-size-13 text-warning-ink">
-          <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <p>
-            <b>Estás viendo la grilla en modo lectura.</b> Solo el Director edita la grilla; el Subdirector y el resto de los roles pueden verla, no cambiarla. Si necesitás un cambio, pedíselo al Director.
-          </p>
-        </div>
-      )}
-      <PermissionModeLegend />
-      <PermissionToolbar
-        modules={catalog.modules}
-        filterableRoles={filterableRoles}
-        query={query}
-        onQueryChange={setQuery}
-        moduleFilter={moduleFilter}
-        onModuleFilterChange={setModuleFilter}
-        roleFilter={roleFilter}
-        onToggleRole={toggleRole}
-        onClearRoles={() => setRoleFilter([])}
-        allOpen={allOpen}
-        onToggleAll={() => setOpenModules(allOpen ? new Set() : new Set(catalog.modules.map((module) => module.module)))}
-        shown={shown}
-        total={total}
-      />
-      <GlassCard className="overflow-clip p-0" style={{ '--role-count': roles.length }} role="region" aria-label="Permisos por módulo y rol">
-        <div className={`hidden border-b border-border bg-table-head text-size-12 font-bold text-ink-soft ${GRID_COLUMNS}`}>
-          <div className="px-4 py-2.5">Módulo y permiso</div>
-          {roles.map((role) => (
-            <div key={role.id} className="px-2 py-2.5 text-center">
-              {role.label}
-            </div>
-          ))}
-        </div>
-        {visibleModules.length ? (
-          visibleModules.map(({ module, permissions }) => (
-            <PermissionModuleSection
-              key={module.module}
-              module={module}
-              grid={grid}
-              roles={roles}
-              permissions={permissions}
-              open={searching || openModules.has(module.module)}
-              editable={editable}
-              onToggleOpen={() => toggleOpen(module.module)}
-              draft={draft}
-            />
-          ))
-        ) : (
-          <EmptyState
-            icon={<SearchX className="mx-auto size-6 text-ink-faint" aria-hidden="true" />}
-            title="No hay permisos que coincidan"
-            description="Probá con otra palabra o quitá los filtros de módulo y rol."
-            action={
-              <Button type="button" variant="outline" onClick={clearFilters}>
-                Limpiar filtros
-              </Button>
-            }
-            className="py-12"
-          />
+      <Tabs value={tab} onValueChange={setTab} className="gap-4">
+        {editable && (
+          <TabsList variant="segmented">
+            <TabsTrigger value="grid">Permisos</TabsTrigger>
+            <TabsTrigger value="discrepancies">
+              Discrepancias
+              <TabCount count={totalOccurrences} />
+            </TabsTrigger>
+          </TabsList>
         )}
-      </GlassCard>
+        <TabsContent value="grid" forceMount className="flex flex-col gap-4 data-[state=inactive]:hidden">
+          {!editable && (
+            <div role="status" className="flex items-start gap-2.5 rounded-card bg-warning-bg px-3.5 py-3 text-size-13 text-warning-ink">
+              <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <p>
+                <b>Estás viendo la grilla en modo lectura.</b> Solo el Director edita la grilla; el Subdirector y el resto de los roles pueden verla, no cambiarla. Si necesitás un cambio, pedíselo al Director.
+              </p>
+            </div>
+          )}
+          <PermissionModeLegend />
+          <PermissionToolbar
+            modules={catalog.modules}
+            filterableRoles={filterableRoles}
+            query={query}
+            onQueryChange={setQuery}
+            moduleFilter={moduleFilter}
+            onModuleFilterChange={setModuleFilter}
+            roleFilter={roleFilter}
+            onToggleRole={toggleRole}
+            onClearRoles={() => setRoleFilter([])}
+            allOpen={allOpen}
+            onToggleAll={() => setOpenModules(allOpen ? new Set() : new Set(catalog.modules.map((module) => module.module)))}
+            shown={shown}
+            total={total}
+          />
+          <GlassCard className="overflow-clip p-0" style={{ '--role-count': roles.length }} role="region" aria-label="Permisos por módulo y rol">
+            <div className={`hidden border-b border-border bg-table-head text-size-12 font-bold text-ink-soft ${GRID_COLUMNS}`}>
+              <div className="px-4 py-2.5">Módulo y permiso</div>
+              {roles.map((role) => (
+                <div key={role.id} className="px-2 py-2.5 text-center">
+                  {role.label}
+                </div>
+              ))}
+            </div>
+            {visibleModules.length ? (
+              visibleModules.map(({ module, permissions }) => (
+                <PermissionModuleSection
+                  key={module.module}
+                  module={module}
+                  grid={grid}
+                  roles={roles}
+                  permissions={permissions}
+                  open={searching || openModules.has(module.module)}
+                  editable={editable}
+                  highlighted={highlighted === module.module}
+                  discrepancyCount={discrepancyCountFor(summary, module.module)}
+                  onToggleOpen={() => toggleOpen(module.module)}
+                  onChangeMode={(role, target) => setModeTarget({ role, module: target })}
+                  draft={draft}
+                />
+              ))
+            ) : (
+              <EmptyState
+                icon={<SearchX className="mx-auto size-6 text-ink-faint" aria-hidden="true" />}
+                title="No hay permisos que coincidan"
+                description="Probá con otra palabra o quitá los filtros de módulo y rol."
+                action={
+                  <Button type="button" variant="outline" onClick={clearFilters}>
+                    Limpiar filtros
+                  </Button>
+                }
+                className="py-12"
+              />
+            )}
+          </GlassCard>
+        </TabsContent>
+        {editable && (
+          <TabsContent value="discrepancies">
+            {summaryQuery.isLoading ? (
+              <PermissionsSkeleton />
+            ) : summaryQuery.error ? (
+              <LoadErrorState error={summaryQuery.error} resource="las discrepancias" onRetry={() => summaryQuery.refetch()} />
+            ) : (
+              <PermissionDiscrepanciesTab summary={summary} catalogIndex={catalogIndex} onShowInGrid={showModuleInGrid} />
+            )}
+          </TabsContent>
+        )}
+      </Tabs>
       {editable && draft.changes.length > 0 && (
         <PendingChangesBar changeCount={draft.changes.length} moduleCount={moduleCount} onDiscard={draft.discard} onReview={() => setReviewing(true)} />
+      )}
+      {editable && modeTarget && (
+        <PermissionModeDialog
+          role={modeTarget.role}
+          module={modeTarget.module}
+          currentMode={modeFor(grid, modeTarget.role, modeTarget.module)}
+          discrepancyCount={discrepancyCountFor(summary, modeTarget.module)}
+          hasUnsavedChanges={hasUnsavedChangesFor(modeTarget)}
+          onClose={() => setModeTarget(null)}
+        />
       )}
       {editable && reviewing && draft.changes.length > 0 && (
         <ReviewChangesDialog

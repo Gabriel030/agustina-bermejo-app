@@ -85,6 +85,23 @@ export function chunkChanges(changes, size = MAX_CHANGES_PER_CALL) {
   return chunks;
 }
 
+export const MODE_OPTIONS = ['LEGACY', 'SHADOW', 'ENFORCE'];
+
+export const DISCREPANCY_DIRECTIONS = {
+  LEGACY_ALLOWED_GRID_DENIED: { label: 'La regla vieja permitía y la grilla negaría', tone: 'warning' },
+  LEGACY_DENIED_GRID_ALLOWED: { label: 'La regla vieja negaba y la grilla permitiría', tone: 'accent' },
+};
+
+export const DISCREPANCY_PAGE_SIZE = 20;
+
+export function discrepancyCountFor(summary, module) {
+  return summary?.modules.find((entry) => entry.module === module)?.total ?? 0;
+}
+
+export function pluralize(count, singular, plural) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 export function describeChangeCount(count) {
   return `${count} ${count === 1 ? 'cambio' : 'cambios'}`;
 }

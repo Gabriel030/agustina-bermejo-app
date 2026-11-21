@@ -37,7 +37,7 @@ function recordPuts(responses = []) {
   return bodies;
 }
 
-async function openModule(user, name = /Avisos/) {
+async function openModule(user, name = /^Avisos/) {
   await user.click(await screen.findByRole('button', { name }));
 }
 
@@ -55,7 +55,7 @@ describe('PermissionsPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<PermissionsPage />);
 
-    const avisos = await screen.findByRole('button', { name: /Avisos/ });
+    const avisos = await screen.findByRole('button', { name: /^Avisos/ });
     expect(avisos).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Crear avisos')).not.toBeInTheDocument();
     expect(screen.getByText('3 de 3 permisos')).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe('PermissionsPage', () => {
 
   it('shows the mode of each role and the legend', async () => {
     renderWithProviders(<PermissionsPage />);
-    await screen.findByRole('button', { name: /Avisos/ });
+    await screen.findByRole('button', { name: /^Avisos/ });
     expect(screen.getByText('Modo de Administrativo en Avisos:', { exact: false })).toBeInTheDocument();
     expect(screen.getByText('¿Qué significan Legado, Sombra y Activo?')).toBeInTheDocument();
   });
@@ -75,7 +75,7 @@ describe('PermissionsPage', () => {
   it('expands matching modules while searching', async () => {
     const user = userEvent.setup();
     renderWithProviders(<PermissionsPage />);
-    await screen.findByRole('button', { name: /Avisos/ });
+    await screen.findByRole('button', { name: /^Avisos/ });
 
     await user.type(screen.getByRole('searchbox', { name: 'Buscar permisos' }), 'revocar');
 
@@ -118,7 +118,7 @@ describe('PermissionsPage', () => {
   it('shows sensitive permissions with a keyboard reachable pill and keeps them editable', async () => {
     const user = userEvent.setup();
     renderWithProviders(<PermissionsPage />);
-    await openModule(user, /Facturación/);
+    await openModule(user, /^Facturación/);
 
     expect(screen.getByText('1 sensibles', { exact: false })).toBeInTheDocument();
     expect(screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === 'Los permisos sensibles se pueden delegar; cada cambio se audita como evento destacado.')).toBeInTheDocument();
@@ -135,9 +135,9 @@ describe('PermissionsPage', () => {
     const user = userEvent.setup();
     const bodies = recordPuts();
     renderWithProviders(<PermissionsPage />);
-    await user.click(await screen.findByRole('button', { name: /Avisos/ }));
+    await user.click(await screen.findByRole('button', { name: /^Avisos/ }));
     await user.click(screen.getByRole('checkbox', { name: 'Eliminar avisos — Preceptor' }));
-    await user.click(await screen.findByRole('button', { name: /Facturación/ }));
+    await user.click(await screen.findByRole('button', { name: /^Facturación/ }));
     await user.click(screen.getByRole('checkbox', { name: 'Revocar la aprobación de un pago — Docente' }));
 
     const dialog = await openReview(user);
@@ -174,7 +174,7 @@ describe('PermissionsPage', () => {
     const user = userEvent.setup();
     recordPuts([HttpResponse.json(errorBody('SENSITIVE_PERMISSION_CONFIRMATION_REQUIRED'), { status: 422 })]);
     renderWithProviders(<PermissionsPage />);
-    await openModule(user, /Facturación/);
+    await openModule(user, /^Facturación/);
     await user.click(screen.getByRole('checkbox', { name: 'Revocar la aprobación de un pago — Docente' }));
     const dialog = await openReview(user);
     await user.type(within(dialog).getByLabelText('Motivo del cambio (obligatorio)'), VALID_REASON);
@@ -335,7 +335,7 @@ describe('PermissionsPage', () => {
     expect(await screen.findByText('No pudimos cargar los permisos')).toBeInTheDocument();
     failing = false;
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
-    expect(await screen.findByRole('button', { name: /Avisos/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^Avisos/ })).toBeInTheDocument();
   });
 
   it('shows the no-access state for a 403', async () => {
