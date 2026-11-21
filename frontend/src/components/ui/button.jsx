@@ -29,8 +29,6 @@ const buttonVariants = cva(
           "rounded-xl border-border bg-surface hover:bg-neutral-bg",
         // CTA principal del sistema de diseño (Vidrio Líquido) — antes repetido a
         // mano en cada pantalla (Catálogo, Detalle, wizard, Mis carreras...).
-        gradient:
-          "rounded-(--r-btn-primary) border-(--btn-primary-border) bg-(image:--btn-primary-bg) font-semibold text-on-accent shadow-(--btn-primary-shadow) hover:translate-y-(--btn-lift-y) hover:bg-(image:--btn-primary-bg-hover) hover:shadow-(--btn-primary-shadow-hover) active:translate-y-0",
         primary:
           "rounded-(--r-btn-primary) border-(--btn-primary-border) bg-(image:--btn-primary-bg) font-semibold text-on-accent shadow-(--btn-primary-shadow) hover:translate-y-(--btn-lift-y) hover:bg-(image:--btn-primary-bg-hover) hover:shadow-(--btn-primary-shadow-hover) active:translate-y-0",
       },
