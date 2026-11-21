@@ -50,6 +50,18 @@ class GraduationCertificateRevokeHttpIT extends GraduationCertificateOperationsS
     }
 
     @Test
+    void reasonThatIsTooShortAfterTrimmingIsRejected() throws Exception {
+        Long id = issueCertificate(completedEnrollment());
+
+        for (String reason : new String[] {"          ", "   corto   "}) {
+            postJson(BASE + "/" + id + "/revoke", director, "{\"reason\":\"" + reason + "\"}")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("REVOCATION_REASON_INVALID"));
+        }
+        assertThat(repository.findById(id).orElseThrow().getStatus()).isEqualTo(GraduationCertificateStatus.VALID);
+    }
+
+    @Test
     void administrativeCannotRevokeAndTheCertificateStaysValid() throws Exception {
         Long id = issueCertificate(completedEnrollment());
 
