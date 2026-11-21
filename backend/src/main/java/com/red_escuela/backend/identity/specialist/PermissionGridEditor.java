@@ -95,7 +95,7 @@ public class PermissionGridEditor {
 
     private void recordChange(Permission permission, String role, boolean granted, String reason) {
         if (permission.isSensitive()) {
-            auditRecorder.recordPermissionSensitiveChanged(permission.getId(), role, granted, reason);
+            auditRecorder.recordPermissionSensitiveChanged(permission.getId(), permission.getCode(), role, granted, reason);
         } else {
             auditRecorder.recordPermissionGridChanged(permission.getId(), role, granted, reason);
         }

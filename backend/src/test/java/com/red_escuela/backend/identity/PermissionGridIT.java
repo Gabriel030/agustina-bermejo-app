@@ -173,6 +173,16 @@ class PermissionGridIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void revokingSensitivePermissionWithoutConfirmationIsRejectedAndChangesNothing() throws Exception {
+        enforceAuditModule();
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", true, true))).isEqualTo(200);
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", false, false))).isEqualTo(422);
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", false, false).replace("\"sensitiveConfirmed\":false,", ""))).isEqualTo(422);
+        assertThat(readAuditLogAs("ADMINISTRATIVO")).isEqualTo(200);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from audit_log where action = 'PERMISSION_SENSITIVE_CHANGED'", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
     void unconfirmedSensitiveChangeRejectsTheWholeRequestIncludingNonSensitiveChanges() throws Exception {
         String mixed = "{\"reason\":\"Cambio mixto\",\"changes\":[{\"role\":\"PRECEPTOR\",\"permissionCode\":\"announcement.read\",\"granted\":true},"
                 + "{\"role\":\"ADMINISTRATIVO\",\"permissionCode\":\"audit.read\",\"granted\":true}]}";
@@ -188,11 +198,11 @@ class PermissionGridIT extends AbstractIntegrationTest {
         List<java.util.Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "select before_value, after_value, reason, actor_role from audit_log where action = 'PERMISSION_SENSITIVE_CHANGED' order by id");
         assertThat(rows).hasSize(2);
-        assertThat(rows.get(0).get("before_value")).isEqualTo("ADMINISTRATIVO:DENIED");
-        assertThat(rows.get(0).get("after_value")).isEqualTo("ADMINISTRATIVO:GRANTED");
+        assertThat(rows.get(0).get("before_value")).isEqualTo("audit.read:ADMINISTRATIVO:DENIED");
+        assertThat(rows.get(0).get("after_value")).isEqualTo("audit.read:ADMINISTRATIVO:GRANTED");
         assertThat(rows.get(0).get("reason")).isEqualTo("Delegar auditoria por ausencia");
         assertThat(rows.get(0).get("actor_role")).isEqualTo("DIRECTOR");
-        assertThat(rows.get(1).get("after_value")).isEqualTo("ADMINISTRATIVO:DENIED");
+        assertThat(rows.get(1).get("after_value")).isEqualTo("audit.read:ADMINISTRATIVO:DENIED");
         assertThat(jdbcTemplate.queryForObject("select count(*) from audit_log where action = 'PERMISSION_GRID_CHANGED'", Integer.class)).isZero();
     }
 
