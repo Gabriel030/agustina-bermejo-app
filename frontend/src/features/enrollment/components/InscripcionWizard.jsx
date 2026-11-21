@@ -634,7 +634,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
       )}
 
       <Dialog open={modalConfirmarAbierto} onOpenChange={setModalConfirmarAbierto}>
-        <DialogContent className="max-w-sm rounded-xl border border-border bg-surface p-6 text-ink backdrop-blur-[28px] backdrop-saturate-[1.6]">
+        <DialogContent className="max-w-sm rounded-xl border border-border bg-surface p-6 text-ink backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)">
           <DialogHeader>
             <div className="font-heading text-base font-bold text-ink">Confirmar solicitud</div>
           </DialogHeader>
