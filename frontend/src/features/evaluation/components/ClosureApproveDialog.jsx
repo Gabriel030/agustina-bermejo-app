@@ -81,7 +81,7 @@ export function ClosureApproveDialog({ open, sheet, pending, onClose, onApprove 
               <Button type="button" variant="outline" onClick={close}>
                 Cancelar
               </Button>
-              <Button type="button" variant="gradient" onClick={goToReview}>
+              <Button type="button" variant="primary" onClick={goToReview}>
                 Continuar
               </Button>
             </DialogFooter>
@@ -100,7 +100,7 @@ export function ClosureApproveDialog({ open, sheet, pending, onClose, onApprove 
               <Button type="button" variant="outline" disabled={pending} onClick={() => setStep('location')}>
                 Volver
               </Button>
-              <Button type="button" variant="gradient" loading={pending} onClick={approve}>
+              <Button type="button" variant="primary" loading={pending} onClick={approve}>
                 {withoutTeacher ? 'Cerrar el acta' : 'Aprobar y cerrar'}
               </Button>
             </DialogFooter>

@@ -101,7 +101,7 @@ function ValidDetails({ certificate, onDownload, downloading }) {
         </div>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button variant="gradient" className="w-full sm:w-auto" loading={downloading} onClick={() => onDownload(certificate.id)}>
+        <Button variant="primary" className="w-full sm:w-auto" loading={downloading} onClick={() => onDownload(certificate.id)}>
           <Download aria-hidden="true" />
           Descargar PDF
         </Button>
@@ -168,7 +168,7 @@ export function RegularCertificateCard({ carreraId }) {
         {summary && <p className="text-sm text-ink-soft">{summary}</p>}
         {canRequestRegular(view) && (
           <div>
-            <Button variant="gradient" className="w-full sm:w-auto" loading={requestCertificate.isPending} onClick={request}>
+            <Button variant="primary" className="w-full sm:w-auto" loading={requestCertificate.isPending} onClick={request}>
               {view === REGULAR_VIEW.EXPIRED ? 'Pedir una nueva' : 'Pedir constancia'}
             </Button>
           </div>

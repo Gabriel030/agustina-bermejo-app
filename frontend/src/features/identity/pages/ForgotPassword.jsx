@@ -120,7 +120,7 @@ export function ForgotPassword() {
               <Button
                 type="submit"
                 disabled={enviando}
-                variant="gradient"
+                variant="primary"
                 className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
               >
                 {enviando ? 'Enviando…' : 'Enviar código de recuperación'}
@@ -159,7 +159,7 @@ export function ForgotPassword() {
               <Button
                 type="submit"
                 disabled={enviando}
-                variant="gradient"
+                variant="primary"
                 className="w-full rounded-2xl py-6 text-size-14-5 font-bold"
               >
                 {enviando ? 'Verificando…' : 'Continuar'}

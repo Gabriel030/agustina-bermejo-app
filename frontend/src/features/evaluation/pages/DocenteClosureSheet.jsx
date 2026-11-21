@@ -30,7 +30,7 @@ function ConfirmBar({ sheet, onConfirm, pending }) {
           {reason ?? 'Confirmás que revisaste notas, asistencia y resultado sugerido. El Administrativo aprueba y emite el acta.'}
         </p>
       </div>
-      <Button type="button" variant="gradient" disabled={!sheet.availability.canConfirm} aria-describedby="closure-confirm-hint" onClick={() => setOpen(true)}>
+      <Button type="button" variant="primary" disabled={!sheet.availability.canConfirm} aria-describedby="closure-confirm-hint" onClick={() => setOpen(true)}>
         Confirmar cierre
       </Button>
       <ConfirmActionDialog
@@ -39,7 +39,7 @@ function ConfirmBar({ sheet, onConfirm, pending }) {
         title="Confirmar el cierre"
         description={`Confirmás que revisaste notas, asistencia y resultado sugerido de los ${activeStudents(sheet).length} alumnos.`}
         confirmLabel="Confirmar cierre"
-        confirmVariant="gradient"
+        confirmVariant="primary"
         pending={pending}
         onConfirm={async () => {
           const done = await onConfirm();
