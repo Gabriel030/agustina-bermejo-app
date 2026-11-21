@@ -527,6 +527,21 @@ class IssueRegularCertificateWithExceptionIntegrationTest extends AbstractIntegr
     }
 
     @Test
+    void directExceptionDoesNotSkipTheAcademicRegularityCheck() throws Exception {
+        String created = mockMvc.perform(post("/certificate-exceptions/direct").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(directBody(enrollmentId, REQUEST_REASON)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        Long id = Long.valueOf(created.replaceAll(".*\"id\":(\\d+).*", "$1"));
+        recordAttendance(0, 10);
+        actAs(staff);
+
+        assertThatThrownBy(() -> issueWith(id)).isInstanceOf(NotRegularException.class);
+
+        assertThat(exceptionStatus(id)).isEqualTo("APPROVED");
+        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).isEmpty();
+    }
+
+    @Test
     void administrativeCannotCreateADirectException() throws Exception {
         mockMvc.perform(post("/certificate-exceptions/direct").header("Authorization", "Bearer " + staffToken)
                         .contentType(MediaType.APPLICATION_JSON).content(directBody(enrollmentId, REQUEST_REASON)))
