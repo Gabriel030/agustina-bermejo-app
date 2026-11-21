@@ -89,21 +89,22 @@ class SecretsRotationTest {
     void productionBootFailsWithoutJwtSecret() {
         productionRunner
                 .withPropertyValues("broadcast.unsubscribe.secret=" + UNSUBSCRIBE_SECRET)
-                .run(context -> assertThat(context).hasFailed());
+                .run(context -> assertThat(context).getFailure().hasStackTraceContaining("jwt.secret"));
     }
 
     @Test
     void productionBootFailsWithoutUnsubscribeSecret() {
         productionRunner
                 .withPropertyValues("jwt.secret=" + NEW_JWT_SECRET)
-                .run(context -> assertThat(context).hasFailed());
+                .run(context -> assertThat(context).getFailure()
+                        .hasStackTraceContaining("broadcast.unsubscribe.secret es obligatorio en el perfil prod"));
     }
 
     @Test
     void productionBootFailsWithAJwtSecretShorterThanTheMinimum() {
         productionRunner
                 .withPropertyValues("jwt.secret=short", "broadcast.unsubscribe.secret=" + UNSUBSCRIBE_SECRET)
-                .run(context -> assertThat(context).hasFailed());
+                .run(context -> assertThat(context).getFailure().hasStackTraceContaining("jwt.secret debe tener al menos"));
     }
 
     @Test
