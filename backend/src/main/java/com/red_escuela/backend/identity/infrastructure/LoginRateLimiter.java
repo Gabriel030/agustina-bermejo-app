@@ -3,6 +3,7 @@ package com.red_escuela.backend.identity.infrastructure;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
+import com.red_escuela.backend.shared.ratelimit.KeyedRateLimiter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +13,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -29,6 +31,7 @@ public class LoginRateLimiter {
     private final int forgotPasswordRefillPerMinute;
     private final int registerCapacity;
     private final int registerRefillPerMinute;
+    private final KeyedRateLimiter registerUserLimiter;
     private final Clock clock;
 
     @Autowired
@@ -38,19 +41,26 @@ public class LoginRateLimiter {
             @Value("${auth.rate-limit.forgot-password.capacity}") int forgotPasswordCapacity,
             @Value("${auth.rate-limit.forgot-password.refill-per-minute}") int forgotPasswordRefillPerMinute,
             @Value("${auth.rate-limit.register.capacity}") int registerCapacity,
-            @Value("${auth.rate-limit.register.refill-per-minute}") int registerRefillPerMinute) {
+            @Value("${auth.rate-limit.register.refill-per-minute}") int registerRefillPerMinute,
+            @Value("${auth.rate-limit.register-user.capacity}") int registerUserCapacity,
+            @Value("${auth.rate-limit.register-user.refill-per-minute}") int registerUserRefillPerMinute,
+            @Value("${auth.rate-limit.register-user.max-tracked-keys:10000}") int registerUserMaxTrackedKeys) {
         this(loginCapacity, loginRefillPerMinute, forgotPasswordCapacity, forgotPasswordRefillPerMinute,
-                registerCapacity, registerRefillPerMinute, Clock.systemUTC());
+                registerCapacity, registerRefillPerMinute, registerUserCapacity, registerUserRefillPerMinute,
+                registerUserMaxTrackedKeys, Clock.systemUTC());
     }
 
     LoginRateLimiter(int loginCapacity, int loginRefillPerMinute, int forgotPasswordCapacity,
-                     int forgotPasswordRefillPerMinute, int registerCapacity, int registerRefillPerMinute, Clock clock) {
+                     int forgotPasswordRefillPerMinute, int registerCapacity, int registerRefillPerMinute, int registerUserCapacity,
+                     int registerUserRefillPerMinute, int registerUserMaxTrackedKeys, Clock clock) {
         this.loginCapacity = loginCapacity;
         this.loginRefillPerMinute = loginRefillPerMinute;
         this.forgotPasswordCapacity = forgotPasswordCapacity;
         this.forgotPasswordRefillPerMinute = forgotPasswordRefillPerMinute;
         this.registerCapacity = registerCapacity;
         this.registerRefillPerMinute = registerRefillPerMinute;
+        this.registerUserLimiter = new KeyedRateLimiter(registerUserCapacity, registerUserRefillPerMinute,
+                registerUserMaxTrackedKeys, IDLE_EVICTION_WINDOW, clock);
         this.clock = clock;
     }
 
@@ -66,8 +76,18 @@ public class LoginRateLimiter {
         return consume(registerBuckets, ip, () -> newBucket(registerCapacity, registerRefillPerMinute));
     }
 
+    public boolean tryConsumeRegisterForUser(String ip, String username) {
+        String normalizedUsername = username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
+        String key = ip + "|" + normalizedUsername;
+        if (!registerUserLimiter.canTrack(key)) {
+            return true;
+        }
+        return registerUserLimiter.tryConsume(key).allowed();
+    }
+
     @Scheduled(cron = "0 */10 * * * *", zone = "${app.timezone}")
     public void evictIdleClients() {
+        registerUserLimiter.evictIdle();
         Instant threshold = clock.instant().minus(IDLE_EVICTION_WINDOW);
         for (ConcurrentHashMap<String, TrackedBucket> buckets : allBuckets()) {
             buckets.values().removeIf(tracked -> tracked.lastAccessBefore(threshold));
@@ -75,7 +95,7 @@ public class LoginRateLimiter {
     }
 
     int trackedClients() {
-        return allBuckets().stream().mapToInt(ConcurrentHashMap::size).sum();
+        return allBuckets().stream().mapToInt(ConcurrentHashMap::size).sum() + registerUserLimiter.trackedKeys();
     }
 
     private List<ConcurrentHashMap<String, TrackedBucket>> allBuckets() {
