@@ -1,4 +1,4 @@
-import { PenLine, Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup } from 'lucide-react';
+import { PenLine, Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup, Award } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -37,6 +37,7 @@ export const ROLE_MENU = {
     inicio,
     { slug: 'mis-cursos', label: 'Mis cursos', icon: BookOpen },
     { slug: 'mis-carreras', label: 'Mis carreras', icon: GraduationCap },
+    { slug: 'mis-certificados', label: 'Mis certificados', icon: Award },
     { slug: 'pagos', label: 'Pagos', icon: CreditCard },
     { to: '/catalogo', label: 'Catálogo', icon: LayoutGrid },
     { slug: 'opciones', label: 'Opciones', icon: Settings },
