@@ -24,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -58,6 +59,8 @@ class SectionModificationNotificationIT extends AbstractIntegrationTest {
     private NotificationRepository notificationRepository;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private Person requester;
     private Person otherPreceptor;
@@ -169,6 +172,39 @@ class SectionModificationNotificationIT extends AbstractIntegrationTest {
 
         await().pollDelay(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(10))
                 .untilAsserted(() -> assertThat(of(requester, NotificationType.SECTION_MODIFICATION_APPROVED)).hasSize(1));
+    }
+
+    @Test
+    void approvingAHistoricalRequestWithoutRequesterNotifiesNobodyAndDrainsTheListener() throws Exception {
+        requestModification(sectionId).andExpect(status().isNoContent());
+        jdbcTemplate.update("update section_modification_proposal set requested_by_person_id = null where subject_section_id = ?", sectionId);
+
+        mockMvc.perform(post("/subject-sections/{id}/modification-request/approve", sectionId).header("Authorization", bearer(director)))
+                .andExpect(status().isNoContent());
+
+        awaitAsserted(() -> assertThat(pendingListenerPublications("notifyApproval")).isZero());
+        assertThat(of(requester, NotificationType.SECTION_MODIFICATION_APPROVED)).isEmpty();
+        assertThat(of(director, NotificationType.SECTION_MODIFICATION_APPROVED)).isEmpty();
+    }
+
+    @Test
+    void rejectingAHistoricalRequestWithoutRequesterNotifiesNobodyAndDrainsTheListener() throws Exception {
+        requestModification(sectionId).andExpect(status().isNoContent());
+        jdbcTemplate.update("update section_modification_proposal set requested_by_person_id = null where subject_section_id = ?", sectionId);
+
+        mockMvc.perform(post("/subject-sections/{id}/modification-request/reject", sectionId).header("Authorization", bearer(director))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"aula reservada\"}"))
+                .andExpect(status().isNoContent());
+
+        awaitAsserted(() -> assertThat(pendingListenerPublications("notifyRejection")).isZero());
+        assertThat(of(requester, NotificationType.SECTION_MODIFICATION_REJECTED)).isEmpty();
+        assertThat(of(director, NotificationType.SECTION_MODIFICATION_REJECTED)).isEmpty();
+    }
+
+    private Long pendingListenerPublications(String listenerMethod) {
+        return jdbcTemplate.queryForObject(
+                "select count(*) from event_publication where listener_id like ? and serialized_event ~ ?",
+                Long.class, "%" + listenerMethod + "%", "\"sectionId\":" + sectionId + "[,}]");
     }
 
     private List<Notification> of(Person person, NotificationType type) {

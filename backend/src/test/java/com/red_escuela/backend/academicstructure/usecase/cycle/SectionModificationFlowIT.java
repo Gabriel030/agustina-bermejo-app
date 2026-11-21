@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
+import com.red_escuela.backend.academicstructure.RequesterAuthentication;
 import com.red_escuela.backend.academicstructure.dto.ModifySectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
@@ -15,6 +16,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.exception.ConflictException;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,7 +67,7 @@ class SectionModificationFlowIT extends AbstractIntegrationTest {
             var term = fixtures.term(2040 + (int) (System.nanoTime() % 50));
             var cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
             SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
-            authenticateAsRequester();
+            RequesterAuthentication.authenticateNewRequester(entityManager);
             Classroom current = fixtures.classroom(30);
             Classroom proposed = fixtures.classroom(30);
             fixtures.slot(section, current, DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(20, 0));
@@ -76,27 +78,9 @@ class SectionModificationFlowIT extends AbstractIntegrationTest {
         });
     }
 
-    private void authenticateAsRequester() {
-        var address = new com.red_escuela.backend.shared.domain.Address();
-        entityManager.persist(address);
-        var person = new com.red_escuela.backend.identity.entity.Person();
-        var key = "mod" + System.nanoTime();
-        person.setName("Solicitante");
-        person.setLastname(key);
-        person.setDni(key);
-        person.setUsername(key);
-        person.setEmail(key + "@example.com");
-        person.setAddress(address);
-        person.setStatus(StatusType.ACTIVE);
-        entityManager.persist(person);
-        entityManager.flush();
-        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
-                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(String.valueOf(person.getId()), null, java.util.List.of()));
-    }
-
-    @org.junit.jupiter.api.AfterEach
+    @AfterEach
     void clearAuthentication() {
-        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        RequesterAuthentication.clear();
     }
 
     private ModifySectionRequest tuesdayInProposedClassroom() {
