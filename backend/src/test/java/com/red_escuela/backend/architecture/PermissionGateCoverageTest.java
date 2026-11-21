@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,10 +70,10 @@ class PermissionGateCoverageTest {
 
     @Test
     void exemptListsOnlyNameExistingModulesAndControllers() throws Exception {
-        for (String controllerName : java.util.stream.Stream.concat(CONTROLLERS_FIXED_BY_ROLE.stream(), CONTROLLERS_WITHOUT_ROLE_RULE.stream()).toList()) {
+        for (String controllerName : Stream.concat(CONTROLLERS_FIXED_BY_ROLE.stream(), CONTROLLERS_WITHOUT_ROLE_RULE.stream()).toList()) {
             assertThat(Class.forName(controllerName)).isNotNull();
         }
-        Set<String> present = new java.util.HashSet<>();
+        Set<String> present = new HashSet<>();
         controllers().forEach(controller -> present.add(moduleOf(controller)));
         assertThat(present).containsAll(MODULES_PENDING_MIGRATION);
     }

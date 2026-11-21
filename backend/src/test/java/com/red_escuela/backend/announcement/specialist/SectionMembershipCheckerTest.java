@@ -9,10 +9,14 @@ import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
@@ -20,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +39,33 @@ class SectionMembershipCheckerTest {
 
     private SectionMembershipChecker membership() {
         return new SectionMembershipChecker(sectionTeachingFinder, sectionEnrollmentFinder, currentInstructorIdFinder);
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void authenticateAs(String role) {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("7", "n/a", role));
+    }
+
+    @Test
+    void directorPassesTheCurrentInstructorCheckWithoutBeingAnInstructor() {
+        authenticateAs("ROLE_DIRECTOR");
+
+        assertThatCode(() -> membership().requireCurrentInstructorOf(SectionType.COURSE, 1L)).doesNotThrowAnyException();
+        verifyNoInteractions(currentInstructorIdFinder, sectionTeachingFinder);
+    }
+
+    @Test
+    void instructorOfAnotherSectionStillFailsTheCurrentInstructorCheck() {
+        authenticateAs("ROLE_DOCENTE");
+        when(currentInstructorIdFinder.currentInstructorId()).thenReturn(2L);
+        when(sectionTeachingFinder.teaches(SectionKind.COURSE, 1L, 2L)).thenReturn(false);
+
+        assertThatThrownBy(() -> membership().requireCurrentInstructorOf(SectionType.COURSE, 1L))
+                .isInstanceOf(NotSectionInstructorException.class);
     }
 
     @Test
