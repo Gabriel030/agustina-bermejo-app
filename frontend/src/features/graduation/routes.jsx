@@ -7,6 +7,7 @@ const AdministrativoEgresoDetalle = lazyPage(() => import('@/features/graduation
 const StaffRegularCertificates = lazyPage(() => import('@/features/graduation/certificates/pages/StaffRegularCertificates'), 'StaffRegularCertificates');
 const StaffGraduationCertificates = lazyPage(() => import('@/features/graduation/certificates/pages/StaffGraduationCertificates'), 'StaffGraduationCertificates');
 const CertificateTemplateEditor = lazyPage(() => import('@/features/graduation/certificates/pages/CertificateTemplateEditor'), 'CertificateTemplateEditor');
+const CertificateSignatories = lazyPage(() => import('@/features/graduation/signatories/pages/CertificateSignatories'), 'CertificateSignatories');
 const VerifyCertificate = lazyPage(() => import('@/features/graduation/certificates/pages/VerifyCertificate'), 'VerifyCertificate');
 
 export const routes = {
@@ -18,6 +19,7 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'constancias', element: <StaffRegularCertificates /> },
     { roles: ['administrativo', 'director'], path: 'egresos', element: <StaffGraduationCertificates /> },
     { roles: ['administrativo', 'director'], path: 'plantilla-de-certificados', element: <CertificateTemplateEditor /> },
+    { roles: ['administrativo', 'director'], path: 'firmantes', element: <CertificateSignatories /> },
     { roles: ['administrativo'], path: 'egresos-por-verificar', element: <AdministrativoEgresosPorVerificar /> },
     { roles: ['administrativo'], path: 'egresos-por-verificar/:id', element: <AdministrativoEgresoDetalle /> },
   ],

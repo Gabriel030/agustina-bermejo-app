@@ -10,28 +10,39 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 
 @Repository
 public interface PermissionDiscrepancyCounterRepository extends JpaRepository<PermissionDiscrepancyCounter, Long> {
 
     @Modifying
     @Query(value = """
-            insert into permission_discrepancy_counter (role, module, permission_id, occurrences, last_seen_at)
-            values (:role, :module, :permissionId, :occurrences, :seenAt)
-            on conflict (role, permission_id) do update
+            insert into permission_discrepancy_counter (role, module, permission_id, direction, occurrences, last_seen_at)
+            values (:role, :module, :permissionId, :direction, :occurrences, :seenAt)
+            on conflict (role, permission_id, direction) do update
             set occurrences = permission_discrepancy_counter.occurrences + excluded.occurrences,
                 last_seen_at = greatest(permission_discrepancy_counter.last_seen_at, excluded.last_seen_at)
             """, nativeQuery = true)
     void addOccurrences(@Param("role") String role, @Param("module") String module,
-                        @Param("permissionId") Long permissionId, @Param("occurrences") long occurrences,
+                        @Param("permissionId") Long permissionId, @Param("direction") String direction,
+                        @Param("occurrences") long occurrences,
                         @Param("seenAt") Instant seenAt);
 
     @Query(value = """
             select c.role as role, c.module as module, p.code as permissionCode,
-                   c.occurrences as occurrences, c.lastSeenAt as lastSeenAt
+                   c.direction as direction, c.occurrences as occurrences, c.lastSeenAt as lastSeenAt
             from PermissionDiscrepancyCounter c join Permission p on p.id = c.permissionId
             where (:module is null or c.module = :module)
             order by c.lastSeenAt desc, c.id desc
             """, countQuery = "select count(c) from PermissionDiscrepancyCounter c where (:module is null or c.module = :module)")
     Page<PermissionDiscrepancyRow> findPageOrderedByLastSeen(@Param("module") String module, Pageable pageable);
+
+    @Query("""
+            select c.module as module, c.direction as direction, sum(c.occurrences) as occurrences,
+                   max(c.lastSeenAt) as lastSeenAt
+            from PermissionDiscrepancyCounter c
+            group by c.module, c.direction
+            order by c.module
+            """)
+    List<PermissionDiscrepancyDirectionTotalRow> sumByModuleAndDirection();
 }
