@@ -30,10 +30,10 @@ Resumen al 21-nov-2026: 15 hallazgos (A2-A9 y B1-B7): 13 cerrados (A2, A3, A4, A
 
 ## Seguimientos E24
 
-- #956: 24-D, validación de archivos por contenido en los flujos viejos. Abierto (verificado el 21-nov-2026).
-- G6: usuarios enumerables por `/auth/register` y la bandeja de autorizaciones. Cierre en S2 (matriz completa, G5/G6).
+- #956: 24-D, validación de archivos por contenido en los flujos viejos. Cerrado el 21-nov-2026 (verificado: #970, #1079 y `UploadedFileSizeLimitHttpIT` existen en develop).
+- G6: usuarios enumerables por `/auth/register` y la bandeja de autorizaciones. Rebanada propia, separada de S2.
 - G8: rotación de secretos (JWT, base, credenciales); falta procedimiento y prueba.
 - 24.3b: bulkhead para Mercado Pago y Brevo. Baja prioridad.
 - Sentry: DSN vacío por defecto.
-- De #991 (no cerrados, se llevan a S2 G5/G6): caso positivo del dueño contra un cierre real; filas OWNER para pedidos de autorización y comisiones de curso; dos asserts flojos en `AuthorizationRequestInboxIT` y `CreditNoteIssuingFlowIT`; `GET /authorization-requests/{id}` sin test HTTP de ownership.
+- De #991 (no cerrados, se llevan a S2, que es G5 + A7 + estos pendientes): caso positivo del dueño contra un cierre real; filas OWNER para pedidos de autorización y comisiones de curso; dos asserts flojos en `AuthorizationRequestInboxIT` y `CreditNoteIssuingFlowIT`; `GET /authorization-requests/{id}` sin test HTTP de ownership.
 - De A7 (S2): filas `ownership` de `POST /attendance/{id}/justify` y `/announcements/{id}`.
