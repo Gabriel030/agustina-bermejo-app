@@ -35,3 +35,46 @@ export function auditActorName(event) {
   if (event.actorName) return event.actorName;
   return event.actorPersonId ? `Persona #${event.actorPersonId}` : 'Sistema';
 }
+
+function parseRawPayload(raw) {
+  if (raw == null || raw === '') return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function flattenPayload(value, path = []) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.entries(value).flatMap(([key, inner]) => flattenPayload(inner, [...path, key]));
+  }
+  return [[path.join('.'), { value, sensitive: path.some((segment) => SENSITIVE_KEY.test(segment)) }]];
+}
+
+function showPayloadLeaf({ value, sensitive }) {
+  if (value === undefined || value === null) return '—';
+  if (sensitive) return MASK;
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
+}
+
+export function diffAuditValues(beforeRaw, afterRaw) {
+  const before = parseRawPayload(beforeRaw);
+  const after = parseRawPayload(afterRaw);
+  if (before === null || after === null) return null;
+  const beforeLeaves = new Map(flattenPayload(before));
+  const afterLeaves = new Map(flattenPayload(after));
+  const fields = [...new Set([...beforeLeaves.keys(), ...afterLeaves.keys()])];
+  const changes = fields
+    .filter((field) => JSON.stringify(beforeLeaves.get(field)?.value) !== JSON.stringify(afterLeaves.get(field)?.value))
+    .map((field) => {
+      const leafBefore = beforeLeaves.get(field) ?? { value: undefined, sensitive: false };
+      const leafAfter = afterLeaves.get(field) ?? { value: undefined, sensitive: false };
+      return {
+        field: field || 'valor',
+        before: showPayloadLeaf(leafBefore),
+        after: showPayloadLeaf(leafAfter),
+      };
+    });
+  return { count: changes.length, changes };
+}

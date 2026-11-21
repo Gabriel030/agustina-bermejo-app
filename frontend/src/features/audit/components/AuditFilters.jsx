@@ -67,12 +67,12 @@ export function AuditFilters({ filters, onChange, onClear }) {
           onChange={(event) => set({ entityId: event.target.value.replace(/\D/g, '') })}
         />
         <Input
-          className="md:w-36"
-          aria-label="ID de actor"
-          placeholder="ID de actor"
-          inputMode="numeric"
-          value={filters.actorPersonId}
-          onChange={(event) => set({ actorPersonId: event.target.value.replace(/\D/g, '') })}
+          className="md:w-56"
+          aria-label="Actor (nombre)"
+          placeholder="Actor (nombre)"
+          type="search"
+          value={filters.actorName}
+          onChange={(event) => set({ actorName: event.target.value })}
         />
         <div className="flex items-center gap-2 text-ink-faint">
           <Input type="date" aria-label="Desde" className="w-fit" value={filters.from} max={filters.to || undefined} onChange={(event) => set({ from: event.target.value })} />

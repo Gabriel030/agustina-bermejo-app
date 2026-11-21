@@ -8,13 +8,16 @@ import { Paginador } from '@/components/Paginador';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { auditActionLabel, auditActionTone, auditEntityLabel, auditRoleLabel, auditRoleTone } from '@/lib/auditLabels';
 import { formatDate } from '@/lib/billing';
 import { auditActorName } from '@/features/audit/lib/auditPayload';
 import { AuditDetailSheet } from '@/features/audit/components/AuditDetailSheet';
 import { AuditFilters } from '@/features/audit/components/AuditFilters';
-import { EMPTY_AUDIT_FILTERS, hasAuditFilters, isAuditRangeInvalid } from '@/features/audit/lib/auditFilters';
+import { EMPTY_AUDIT_FILTERS, hasAuditFilters, isAuditRangeInvalid, normalizeActorName } from '@/features/audit/lib/auditFilters';
 import { useAuditLog } from '@/features/audit/hooks/useAuditLog';
+
+const ACTOR_NAME_DEBOUNCE_MS = 300;
 
 const timeOf = (value) => (value?.includes('T') ? `${value.split('T')[1].slice(0, 5)} h` : '');
 
@@ -31,7 +34,18 @@ const COLUMNS = [
     ),
     enableSorting: false,
   },
-  { id: 'actor', header: 'Actor', accessorFn: auditActorName, enableSorting: false },
+  {
+    id: 'actor',
+    header: 'Actor',
+    accessorFn: auditActorName,
+    cell: ({ row }) => (
+      <span>
+        {auditActorName(row.original)}
+        {row.original.actorPersonId && <span className="block text-size-12 text-ink-faint tabular-nums">#{row.original.actorPersonId}</span>}
+      </span>
+    ),
+    enableSorting: false,
+  },
   {
     id: 'actorRole',
     header: 'Rol',
@@ -73,7 +87,9 @@ export function AuditLogPage({ endpoint, deniedAudience }) {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(null);
   const rangeInvalid = isAuditRangeInvalid(filters);
-  const query = useAuditLog(endpoint, rangeInvalid ? { ...filters, from: '', to: '' } : filters, page);
+  const actorNameQuery = useDebouncedValue(normalizeActorName(filters.actorName), ACTOR_NAME_DEBOUNCE_MS);
+  const queryFilters = { ...filters, actorName: actorNameQuery, ...(rangeInvalid ? { from: '', to: '' } : {}) };
+  const query = useAuditLog(endpoint, queryFilters, page);
 
   const changeFilters = (next) => {
     setFilters(next);
