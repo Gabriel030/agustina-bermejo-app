@@ -278,7 +278,7 @@ class GraduationCertificateStaffHttpIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].code").value(code))
                 .andExpect(jsonPath("$.content[0].holderDocumentNumber").value(documentNumber))
-                .andExpect(jsonPath("$.content[0].registryNumber").doesNotExist());
+                .andExpect(jsonPath("$.content[0].registryNumber", org.hamcrest.Matchers.matchesPattern("^\\d{7}/\\d{4}$")));
         send(get(BASE).param("status", "REVOKED"), director)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(0));

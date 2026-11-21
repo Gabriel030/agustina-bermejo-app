@@ -78,15 +78,19 @@ public class GraduationCertificate {
     @Column(name = "pdf_path", nullable = false, length = 300)
     private String pdfPath;
 
-    @Column(name = "registry_number", length = 20)
+    @Column(name = "registry_number", length = 20, updatable = false)
     private String registryNumber;
+
+    @Column(name = "template_version_id", updatable = false)
+    private Long templateVersionId;
 
     @Column(name = "revoked_at")
     private LocalDateTime revokedAt;
 
     public static GraduationCertificate issue(GraduationCertificateKind kind, Long enrollmentId, Long studentId,
                                               CertificateCode code, CertificateSnapshot snapshot, String pdfSha256,
-                                              String pdfPath, LocalDateTime issuedAt, Long issuedById) {
+                                              String pdfPath, LocalDateTime issuedAt, Long issuedById, String registryNumber,
+                                              Long templateVersionId) {
         return GraduationCertificate.builder()
                 .code(code.value())
                 .kind(kind)
@@ -101,6 +105,8 @@ public class GraduationCertificate {
                 .templateRef(snapshot.templateRef())
                 .pdfSha256(pdfSha256)
                 .pdfPath(pdfPath)
+                .registryNumber(registryNumber)
+                .templateVersionId(templateVersionId)
                 .build();
     }
 

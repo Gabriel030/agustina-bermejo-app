@@ -191,7 +191,7 @@ class ApprovalCertificateDesignTest {
     @Test
     void registrationNumberStaysInsideItsBox() throws IOException {
         CertificateSnapshot snapshot = snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal");
-        byte[] pdf = renderer.render(template, snapshot, CODE, URL, new CertificateAssets(null, List.of(), "0001234/2026"));
+        byte[] pdf = renderer.render(template, snapshot, CODE, URL, new CertificateAssets(null, List.of(), "0001234/2026", null));
         String expected = "REG. DE CERTIF. N°: 0001234/2026";
 
         List<Word> lines = linesNear(wordsOf(pdf), ApprovalCertificateDesign.REGISTRATION, expected);
