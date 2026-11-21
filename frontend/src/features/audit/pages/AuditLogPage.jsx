@@ -14,10 +14,10 @@ import { formatDate } from '@/lib/billing';
 import { auditActorName } from '@/features/audit/lib/auditPayload';
 import { AuditDetailSheet } from '@/features/audit/components/AuditDetailSheet';
 import { AuditFilters } from '@/features/audit/components/AuditFilters';
-import { EMPTY_AUDIT_FILTERS, hasAuditFilters, isAuditRangeInvalid, normalizeActorName } from '@/features/audit/lib/auditFilters';
+import { actorSearchFor, actorSearchInput, EMPTY_AUDIT_FILTERS, hasAuditFilters, isAuditRangeInvalid } from '@/features/audit/lib/auditFilters';
 import { useAuditLog } from '@/features/audit/hooks/useAuditLog';
 
-const ACTOR_NAME_DEBOUNCE_MS = 300;
+const ACTOR_SEARCH_DEBOUNCE_MS = 300;
 
 const timeOf = (value) => (value?.includes('T') ? `${value.split('T')[1].slice(0, 5)} h` : '');
 
@@ -87,8 +87,17 @@ export function AuditLogPage({ endpoint, deniedAudience }) {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(null);
   const rangeInvalid = isAuditRangeInvalid(filters);
-  const actorNameQuery = useDebouncedValue(normalizeActorName(filters.actorName), ACTOR_NAME_DEBOUNCE_MS);
-  const queryFilters = { ...filters, actorName: actorNameQuery, ...(rangeInvalid ? { from: '', to: '' } : {}) };
+  const debouncedActor = useDebouncedValue(filters.actor, ACTOR_SEARCH_DEBOUNCE_MS);
+  const actorSearch = actorSearchFor(actorSearchInput(filters.actor, debouncedActor));
+  const queryFilters = {
+    actions: filters.actions,
+    roles: filters.roles,
+    entityType: filters.entityType,
+    entityId: filters.entityId,
+    from: rangeInvalid ? '' : filters.from,
+    to: rangeInvalid ? '' : filters.to,
+    ...actorSearch,
+  };
   const query = useAuditLog(endpoint, queryFilters, page);
 
   const changeFilters = (next) => {

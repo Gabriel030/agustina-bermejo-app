@@ -11,7 +11,7 @@ function backendAuditActions() {
   return body
     .split(',')
     .map((constant) => constant.trim())
-    .filter((constant) => /^[A-Z_]+$/.test(constant));
+    .filter((constant) => /^[A-Z][A-Z0-9_]*$/.test(constant));
 }
 
 describe('auditLabels', () => {

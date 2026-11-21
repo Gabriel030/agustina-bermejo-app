@@ -36,32 +36,38 @@ export function auditActorName(event) {
   return event.actorPersonId ? `Persona #${event.actorPersonId}` : 'Sistema';
 }
 
+const INVALID_PAYLOAD = Symbol('invalidPayload');
+
 function parseRawPayload(raw) {
   if (raw == null || raw === '') return {};
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return parsed === null ? {} : parsed;
   } catch {
-    return null;
+    return INVALID_PAYLOAD;
   }
 }
 
+const isSensitivePath = (path) => path.some((segment) => SENSITIVE_KEY.test(segment));
+
 function flattenPayload(value, path = []) {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return Object.entries(value).flatMap(([key, inner]) => flattenPayload(inner, [...path, key]));
+  if (value && typeof value === 'object') {
+    const entries = Array.isArray(value) ? value.map((inner, index) => [String(index), inner]) : Object.entries(value);
+    return entries.flatMap(([key, inner]) => flattenPayload(inner, [...path, key]));
   }
-  return [[path.join('.'), { value, sensitive: path.some((segment) => SENSITIVE_KEY.test(segment)) }]];
+  return [[path.join('.'), { value, sensitive: isSensitivePath(path) }]];
 }
 
 function showPayloadLeaf({ value, sensitive }) {
   if (value === undefined || value === null) return '—';
   if (sensitive) return MASK;
-  return typeof value === 'object' ? JSON.stringify(value) : String(value);
+  return typeof value === 'object' ? JSON.stringify(maskSensitive(value).value) : String(value);
 }
 
 export function diffAuditValues(beforeRaw, afterRaw) {
   const before = parseRawPayload(beforeRaw);
   const after = parseRawPayload(afterRaw);
-  if (before === null || after === null) return null;
+  if (before === INVALID_PAYLOAD || after === INVALID_PAYLOAD) return null;
   const beforeLeaves = new Map(flattenPayload(before));
   const afterLeaves = new Map(flattenPayload(after));
   const fields = [...new Set([...beforeLeaves.keys(), ...afterLeaves.keys()])];

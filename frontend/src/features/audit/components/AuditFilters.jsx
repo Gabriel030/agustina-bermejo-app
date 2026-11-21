@@ -68,11 +68,11 @@ export function AuditFilters({ filters, onChange, onClear }) {
         />
         <Input
           className="md:w-56"
-          aria-label="Actor (nombre)"
-          placeholder="Actor (nombre)"
+          aria-label="Actor: nombre o ID"
+          placeholder="Actor: nombre o ID"
           type="search"
-          value={filters.actorName}
-          onChange={(event) => set({ actorName: event.target.value })}
+          value={filters.actor}
+          onChange={(event) => set({ actor: event.target.value })}
         />
         <div className="flex items-center gap-2 text-ink-faint">
           <Input type="date" aria-label="Desde" className="w-fit" value={filters.from} max={filters.to || undefined} onChange={(event) => set({ from: event.target.value })} />

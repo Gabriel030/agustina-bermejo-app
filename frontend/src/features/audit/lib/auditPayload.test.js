@@ -47,4 +47,39 @@ describe('diffAuditValues', () => {
   it('reports zero changes for identical payloads', () => {
     expect(diffAuditValues('{"status":"ACTIVE"}', '{"status":"ACTIVE"}')).toEqual({ count: 0, changes: [] });
   });
+
+  it('masks sensitive values inside objects nested in arrays', () => {
+    const diff = diffAuditValues('{"users":[{"password":"abc"}]}', '{"users":[{"password":"def"}]}');
+    expect(diff.count).toBe(1);
+    expect(diff.changes).toEqual([{ field: 'users.0.password', before: MASK, after: MASK }]);
+    expect(JSON.stringify(diff)).not.toContain('abc');
+    expect(JSON.stringify(diff)).not.toContain('def');
+  });
+
+  it('masks sensitive values inside arrays of objects nested in objects', () => {
+    const diff = diffAuditValues('{"account":{"tokens":[{"apiKey":"abc"},{"apiKey":"xyz"}]}}', '{"account":{"tokens":[{"apiKey":"def"},{"apiKey":"xyz"}]}}');
+    expect(diff.changes).toEqual([{ field: 'account.tokens.0.apiKey', before: MASK, after: MASK }]);
+    expect(JSON.stringify(diff)).not.toContain('abc');
+    expect(JSON.stringify(diff)).not.toContain('def');
+  });
+
+  it('masks every item of a sensitive array', () => {
+    const diff = diffAuditValues('{"otps":["111"]}', '{"otps":["222","333"]}');
+    expect(diff.changes.map((change) => change.after)).toEqual([MASK, MASK]);
+    expect(JSON.stringify(diff)).not.toContain('222');
+  });
+
+  it('lists array items that changed by index', () => {
+    const diff = diffAuditValues('{"roles":["DIRECTOR","DOCENTE"]}', '{"roles":["DIRECTOR","PRECEPTOR"]}');
+    expect(diff.changes).toEqual([{ field: 'roles.1', before: 'DOCENTE', after: 'PRECEPTOR' }]);
+  });
+
+  it('treats a json null payload as an empty object', () => {
+    expect(diffAuditValues('null', '{"status":"ACTIVE"}')).toEqual({ count: 1, changes: [{ field: 'status', before: '—', after: 'ACTIVE' }] });
+    expect(diffAuditValues('null', 'null')).toEqual({ count: 0, changes: [] });
+  });
+
+  it('still rejects text that is not json', () => {
+    expect(diffAuditValues('null', 'texto libre')).toBeNull();
+  });
 });
