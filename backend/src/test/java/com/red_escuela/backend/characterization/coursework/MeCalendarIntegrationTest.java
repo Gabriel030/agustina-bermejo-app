@@ -338,8 +338,35 @@ class MeCalendarIntegrationTest extends CourseworkCharacterizationSupport {
         MockHttpServletResponse export = getAs(person, "/me/calendar/export.ics").andReturn().getResponse();
 
         assertThat(calendar.getHeaders("Cache-Control")).containsExactly("private, max-age=60");
+        assertThat(calendar.getHeaders("Vary")).contains("Authorization");
         assertThat(feed.getHeader("Cache-Control")).isEqualTo("no-store");
         assertThat(export.getHeader("Cache-Control")).isEqualTo("no-store");
+    }
+
+    @Test
+    void calendarErrorResponsesStayNoStore() throws Exception {
+        Person person = persistPerson("calerr.student", "7710011", "ALUMNO");
+        persistStudent(person);
+
+        MockHttpServletResponse invalidRange = getAs(person, "/me/calendar?from=2026-03-05&to=2026-03-01").andReturn().getResponse();
+        MockHttpServletResponse missingParams = getAs(person, "/me/calendar").andReturn().getResponse();
+        MockHttpServletResponse unauthenticated = mockMvc.perform(get("/me/calendar" + MARCH_APRIL)).andReturn().getResponse();
+
+        assertThat(invalidRange.getStatus()).isEqualTo(400);
+        assertThat(invalidRange.getHeaders("Cache-Control")).containsExactly("no-store");
+        assertThat(missingParams.getHeaders("Cache-Control")).containsExactly("no-store");
+        assertThat(unauthenticated.getStatus()).isIn(401, 403);
+        assertThat(unauthenticated.getHeaders("Cache-Control")).containsExactly("no-store");
+    }
+
+    @Test
+    void scheduleSlotsMustAlwaysEndAfterTheyStart() {
+        Classroom classroom = studentWithProgramSection("calslot", "7710012");
+        addProgramSlot(classroom.section(), DayOfWeek.MONDAY, "Aula 9");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbcTemplate.update(
+                "update section_schedule_slot set end_time = start_time where subject_section_id = ?",
+                classroom.section().getId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @Test

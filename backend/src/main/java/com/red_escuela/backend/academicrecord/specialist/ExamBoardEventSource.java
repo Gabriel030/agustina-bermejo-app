@@ -17,6 +17,7 @@ public class ExamBoardEventSource implements CalendarEventSource {
 
     private static final String BOARD_SCHEDULED = "SCHEDULED";
     private static final String BOARD_CANCELED = "CANCELED";
+    private static final String REGISTRATION_REGISTERED = "REGISTERED";
     private static final String REGISTRATION_WITHDRAWN = "WITHDRAWN";
     private static final String EXAM_BOARDS_LINK = "/alumno/mis-carreras";
 
@@ -43,7 +44,9 @@ public class ExamBoardEventSource implements CalendarEventSource {
             return hadRegistration ? Optional.of(CalendarEventStatus.CANCELED) : Optional.empty();
         }
         if (hadRegistration) {
-            return Optional.of(CalendarEventStatus.REGISTERED);
+            boolean upcomingRegistration = REGISTRATION_REGISTERED.equals(view.registrationStatus())
+                    && BOARD_SCHEDULED.equals(view.boardStatus()) && !view.examDateTime().isBefore(now);
+            return Optional.of(upcomingRegistration ? CalendarEventStatus.REGISTERED : CalendarEventStatus.SCHEDULED);
         }
         boolean open = BOARD_SCHEDULED.equals(view.boardStatus()) && view.registrationOpen()
                 && !view.examDateTime().isBefore(now);

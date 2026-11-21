@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +25,15 @@ import java.util.stream.Collectors;
 
 @Component
 public class ClassEventSource implements CalendarEventSource {
+
+    private static final Comparator<SectionSlotView> SLOT_ORDER = Comparator
+            .comparing(SectionSlotView::dayOfWeek)
+            .thenComparing(SectionSlotView::startTime)
+            .thenComparing(SectionSlotView::classroomName, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(SectionSlotView::endTime);
+
+    private record NumberedSlot(SectionSlotView slot, int ordinal) {
+    }
 
     private final SectionScheduleFinder scheduleFinder;
     private final TermPeriodFinder termPeriodFinder;
@@ -69,15 +80,15 @@ public class ClassEventSource implements CalendarEventSource {
             }
             LocalDate start = latest(query.from(), period.startDate().toLocalDate());
             LocalDate end = earliest(query.to(), period.endDate().toLocalDate());
-            List<SectionSlotView> slots = slotsBySection.getOrDefault(section.sectionId(), List.of());
+            List<NumberedSlot> slots = numberSlots(slotsBySection.getOrDefault(section.sectionId(), List.of()));
             for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
                 if (holidayDates.contains(day)) {
                     continue;
                 }
-                for (SectionSlotView slot : slots) {
-                    if (slot.dayOfWeek() == day.getDayOfWeek()) {
+                for (NumberedSlot numbered : slots) {
+                    if (numbered.slot().dayOfWeek() == day.getDayOfWeek()) {
                         boolean isCanceled = canceled.contains(new CanceledClassView(section.sectionId(), day));
-                        events.add(toEvent(kind, section, slot, day, isCanceled));
+                        events.add(toEvent(kind, section, numbered, day, isCanceled));
                     }
                 }
             }
@@ -85,9 +96,22 @@ public class ClassEventSource implements CalendarEventSource {
         return events;
     }
 
-    private CalendarEvent toEvent(SectionKind kind, ActiveSectionView section, SectionSlotView slot, LocalDate day,
+    private static List<NumberedSlot> numberSlots(List<SectionSlotView> slots) {
+        List<SectionSlotView> ordered = slots.stream().sorted(SLOT_ORDER).toList();
+        Map<String, Integer> seen = new HashMap<>();
+        List<NumberedSlot> numbered = new ArrayList<>();
+        for (SectionSlotView slot : ordered) {
+            int ordinal = seen.merge(slot.dayOfWeek() + "-" + slot.startTime(), 1, Integer::sum) - 1;
+            numbered.add(new NumberedSlot(slot, ordinal));
+        }
+        return numbered;
+    }
+
+    private CalendarEvent toEvent(SectionKind kind, ActiveSectionView section, NumberedSlot numbered, LocalDate day,
                                   boolean canceled) {
-        String id = "class-" + kind.name().toLowerCase() + "-" + section.sectionId() + "-" + day + "-" + slot.startTime();
+        SectionSlotView slot = numbered.slot();
+        String id = "class-" + kind.name().toLowerCase() + "-" + section.sectionId() + "-" + day + "-" + slot.startTime()
+                + (numbered.ordinal() == 0 ? "" : "-" + numbered.ordinal());
         return new CalendarEvent(id, CalendarEventType.CLASS, day, slot.startTime(), slot.endTime(), section.subjectName(),
                 section.subjectName(), section.sectionName(), slot.classroomName(),
                 canceled ? CalendarEventStatus.CANCELED : CalendarEventStatus.SCHEDULED, null, null);

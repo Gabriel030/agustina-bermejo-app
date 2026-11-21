@@ -11,6 +11,7 @@ import com.red_escuela.backend.academicrecord.usecase.RevokeMyCalendarFeedTokenU
 import com.red_escuela.backend.academicrecord.usecase.RotateMyCalendarFeedTokenUseCase;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -58,12 +59,14 @@ public class MeCalendarFeedController {
     @GetMapping
     public ResponseEntity<MyCalendarResponse> myCalendar(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            HttpServletResponse servletResponse) {
         MyCalendarResponse response = currentStudentService.findCurrentStudent()
                 .map(Student::getId)
                 .map(studentId -> readCalendarUseCase.read(studentId, from, to))
                 .orElseGet(() -> readCalendarUseCase.readEmpty(from, to));
-        return ResponseEntity.ok().header(HttpHeaders.CACHE_CONTROL, "private, max-age=60").body(response);
+        servletResponse.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=60");
+        return ResponseEntity.ok().header(HttpHeaders.VARY, HttpHeaders.AUTHORIZATION).body(response);
     }
 
     @GetMapping("/feed")
