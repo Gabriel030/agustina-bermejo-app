@@ -13,13 +13,13 @@ export function CalendarToolbar({ view, title, onChangeView, onToday, onShift })
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={onToday}>
+        <Button variant="outline" onClick={onToday} className="max-md:min-h-11">
           Hoy
         </Button>
-        <Button variant="outline" size="icon" aria-label={`${unitLabel} anterior`} onClick={() => onShift(-1)}>
+        <Button variant="outline" size="icon" className="max-md:size-11" aria-label={`${unitLabel} anterior`} onClick={() => onShift(-1)}>
           <ChevronLeft aria-hidden="true" />
         </Button>
-        <Button variant="outline" size="icon" aria-label={`${unitLabel} siguiente`} onClick={() => onShift(1)}>
+        <Button variant="outline" size="icon" className="max-md:size-11" aria-label={`${unitLabel} siguiente`} onClick={() => onShift(1)}>
           <ChevronRight aria-hidden="true" />
         </Button>
         <h2 aria-live="polite" className="font-heading text-lg font-bold text-ink first-letter:uppercase">

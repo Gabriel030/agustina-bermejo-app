@@ -17,7 +17,7 @@ function CalendarHeaderAction({ updatedLabel }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       {updatedLabel && <span className="text-size-12 text-ink-soft tabular-nums">{updatedLabel}</span>}
-      <Button variant="primary" disabled title="Próximamente">
+      <Button variant="primary" disabled title="Próximamente" className="max-md:min-h-11">
         <CalendarPlus aria-hidden="true" />
         Agregar a mi calendario
       </Button>
@@ -41,13 +41,13 @@ function CalendarBody({ state, onSelectEvent }) {
   return <CalendarMonthGrid days={state.gridDays} monthKey={monthKey} compact={!isDesktop} {...common} />;
 }
 
-function SelectedDayBlock({ state, onSelectEvent }) {
+function SelectedDayBlock({ state, onSelectEvent, stacked = false }) {
   return (
     <section aria-labelledby="calendar-selected-day" className="flex flex-col gap-3">
       <h2 id="calendar-selected-day" className="font-heading text-size-14 font-semibold text-ink first-letter:uppercase">
         {formatDayLong(state.selectedKey, state.todayKey)}
       </h2>
-      <CalendarDayAgenda events={state.selectedDayEvents} onSelectEvent={onSelectEvent} />
+      <CalendarDayAgenda events={state.selectedDayEvents} onSelectEvent={onSelectEvent} stacked={stacked} />
     </section>
   );
 }
@@ -99,7 +99,7 @@ export function AlumnoCalendario() {
               </GlassCard>
               {showDayBlock && (
                 <GlassCard className="p-4">
-                  <SelectedDayBlock state={state} onSelectEvent={onSelectEvent} />
+                  <SelectedDayBlock state={state} onSelectEvent={onSelectEvent} stacked />
                 </GlassCard>
               )}
             </aside>

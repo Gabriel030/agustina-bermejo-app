@@ -1,7 +1,7 @@
 import { EmptyState } from '@/components/EmptyState';
 import { CalendarAgendaRow } from '@/features/workspace/components/calendar/CalendarAgendaRow';
 
-export function CalendarDayAgenda({ events, onSelectEvent }) {
+export function CalendarDayAgenda({ events, onSelectEvent, stacked = false }) {
   if (events.length === 0) {
     return <EmptyState icon="🗓️" title="Sin eventos este día" description="Elegí otro día o revisá los filtros." className="py-6" />;
   }
@@ -9,7 +9,7 @@ export function CalendarDayAgenda({ events, onSelectEvent }) {
     <ul className="flex flex-col gap-2">
       {events.map((event) => (
         <li key={event.id}>
-          <CalendarAgendaRow event={event} onSelectEvent={onSelectEvent} />
+          <CalendarAgendaRow event={event} onSelectEvent={onSelectEvent} stacked={stacked} />
         </li>
       ))}
     </ul>

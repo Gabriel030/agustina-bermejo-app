@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
-import { offlineQuery } from '@/api/offlineQuery';
 import { STALE_TIME } from '@/api/cachePolicy';
 
 export function toCalendarView(response) {
@@ -24,12 +23,10 @@ export function toCalendarView(response) {
 }
 
 export function useMyCalendar(from, to) {
-  return useQuery(
-    offlineQuery('N1', {
-      queryKey: ['me', 'calendar', from, to],
-      queryFn: async () => toCalendarView(await apiFetch(`/me/calendar?from=${from}&to=${to}`)),
-      staleTime: STALE_TIME.MEDIUM,
-      refetchOnWindowFocus: true,
-    }),
-  );
+  return useQuery({
+    queryKey: ['me', 'calendar', from, to],
+    queryFn: async () => toCalendarView(await apiFetch(`/me/calendar?from=${from}&to=${to}`)),
+    staleTime: STALE_TIME.MEDIUM,
+    refetchOnWindowFocus: true,
+  });
 }

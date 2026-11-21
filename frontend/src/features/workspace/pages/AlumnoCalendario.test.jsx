@@ -20,7 +20,7 @@ afterEach(() => {
   window.matchMedia = originalMatchMedia;
 });
 
-function useViewport(desktop) {
+function setViewport(desktop) {
   window.matchMedia = () => ({ matches: desktop, addEventListener() {}, removeEventListener() {} });
 }
 
@@ -36,7 +36,7 @@ function respondWith(events) {
 }
 
 async function renderDesktop() {
-  useViewport(true);
+  setViewport(true);
   renderWithProviders(<AlumnoCalendario />);
   await screen.findByRole('button', { name: 'sábado 21 de noviembre, hoy, sin eventos' });
 }
@@ -73,7 +73,7 @@ describe('AlumnoCalendario', () => {
     it('limits a day to three events and links the rest as "+N más"', async () => {
       const crowded = [1, 2, 3, 4, 5].map((n) => classEvent({ id: `c-${n}`, title: `Materia ${n}`, subjectName: `Materia ${n}` }));
       respondWith(crowded);
-      useViewport(true);
+      setViewport(true);
       renderWithProviders(<AlumnoCalendario />);
 
       expect(await screen.findByRole('button', { name: '+2 más' })).toBeInTheDocument();
@@ -104,7 +104,7 @@ describe('AlumnoCalendario', () => {
     it('requests the visible grid of the next month and comes back with "Hoy"', async () => {
       const user = userEvent.setup();
       const requestedFrom = respondWith([classEvent()]);
-      useViewport(true);
+      setViewport(true);
       renderWithProviders(<AlumnoCalendario />);
       await screen.findByRole('heading', { name: 'noviembre de 2026' });
 
@@ -161,7 +161,7 @@ describe('AlumnoCalendario', () => {
     it('explains an empty month in the agenda view', async () => {
       const user = userEvent.setup();
       respondWith([classEvent({ id: 'dec', date: '2026-12-15' })]);
-      useViewport(true);
+      setViewport(true);
       renderWithProviders(<AlumnoCalendario />);
       await screen.findByRole('heading', { name: 'noviembre de 2026' });
 
@@ -175,7 +175,7 @@ describe('AlumnoCalendario', () => {
   describe('mobile', () => {
     it('opens on the week strip with the agenda of the selected day below', async () => {
       const user = userEvent.setup();
-      useViewport(false);
+      setViewport(false);
       renderWithProviders(<AlumnoCalendario />);
 
       expect(await screen.findByRole('heading', { name: '16 al 22 de noviembre de 2026' })).toBeInTheDocument();
@@ -189,7 +189,7 @@ describe('AlumnoCalendario', () => {
 
     it('reveals the filters behind a "Filtros" button and flags an active filter', async () => {
       const user = userEvent.setup();
-      useViewport(false);
+      setViewport(false);
       renderWithProviders(<AlumnoCalendario />);
       await screen.findByRole('heading', { name: '16 al 22 de noviembre de 2026' });
       expect(screen.queryByRole('button', { name: /^Clases/ })).not.toBeInTheDocument();
@@ -203,7 +203,7 @@ describe('AlumnoCalendario', () => {
 
     it('uses the compact month grid with the day agenda below', async () => {
       const user = userEvent.setup();
-      useViewport(false);
+      setViewport(false);
       renderWithProviders(<AlumnoCalendario />);
       await screen.findByRole('heading', { name: '16 al 22 de noviembre de 2026' });
 
@@ -253,7 +253,7 @@ describe('AlumnoCalendario', () => {
   describe('states', () => {
     it('shows a busy skeleton while loading', async () => {
       server.use(calendarHandler(() => new Promise(() => {})));
-      useViewport(true);
+      setViewport(true);
       renderWithProviders(<AlumnoCalendario />);
 
       const skeleton = await screen.findByLabelText('Cargando calendario');
@@ -269,7 +269,7 @@ describe('AlumnoCalendario', () => {
           return attempts === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json(calendarResponse());
         }),
       );
-      useViewport(true);
+      setViewport(true);
       renderWithProviders(<AlumnoCalendario />);
 
       const alert = await screen.findByRole('alert');
@@ -283,7 +283,7 @@ describe('AlumnoCalendario', () => {
 
     it('shows the no-enrollments banner when only holidays come back', async () => {
       respondWith([holidayEvent()]);
-      useViewport(true);
+      setViewport(true);
       renderWithProviders(<AlumnoCalendario />);
 
       const banner = await screen.findByRole('status');

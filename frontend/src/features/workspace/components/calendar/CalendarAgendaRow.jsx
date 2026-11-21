@@ -8,7 +8,7 @@ import {
   isCanceled,
 } from '@/features/workspace/components/calendar/calendarEventMeta';
 
-export function CalendarAgendaRow({ event, onSelectEvent }) {
+export function CalendarAgendaRow({ event, onSelectEvent, stacked = false }) {
   const meta = eventMeta(event);
   const pill = eventStatusPill(event);
   const place = [event.sectionName, event.place].filter(Boolean).join(' · ');
@@ -17,7 +17,8 @@ export function CalendarAgendaRow({ event, onSelectEvent }) {
       aria-label={eventAriaLabel(event)}
       onClick={() => onSelectEvent(event)}
       className={cn(
-        'grid min-h-11 w-full grid-cols-[4.5rem_1fr] items-center gap-x-3 gap-y-1 rounded-control border-l-[3px] bg-neutral-bg/40 px-3 py-2 text-left hover:bg-neutral-bg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand sm:grid-cols-[4.5rem_1fr_auto]',
+        'grid min-h-11 w-full grid-cols-[4.5rem_1fr] items-center gap-x-3 gap-y-1 rounded-control border-l-[3px] bg-neutral-bg/40 px-3 py-2 text-left hover:bg-neutral-bg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand',
+        !stacked && 'sm:grid-cols-[4.5rem_1fr_auto]',
         meta.bar,
       )}
     >
@@ -40,7 +41,7 @@ export function CalendarAgendaRow({ event, onSelectEvent }) {
         </span>
         {place && <span className="truncate text-size-12 text-ink-soft">{place}</span>}
       </span>
-      <StatusPill tone={pill.tone} className="col-start-2 sm:col-start-3">
+      <StatusPill tone={pill.tone} className={cn('col-start-2', !stacked && 'sm:col-start-3')}>
         {pill.label}
       </StatusPill>
     </Button>
