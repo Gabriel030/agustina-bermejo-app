@@ -13,6 +13,7 @@ import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateR
 import com.red_escuela.backend.graduation.certificate.dto.IssueGraduationCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
+import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateRegistryNumberAssigner;
@@ -49,6 +50,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -194,7 +196,8 @@ class GraduationCertificateTemplateRenderIT extends AbstractIntegrationTest {
     @Test
     void builtInCertificatesWithoutTemplateVersionRegenerateWithTheBuiltInWording() throws Exception {
         GraduationCertificateResponse response = issue();
-        jdbc.update("update graduation_certificate set template_version_id = null, registry_number = null where id = ?", response.id());
+        jdbc.update("update graduation_certificate set template_version_id = null, registry_number = null, render_engine_version = null where id = ?",
+                response.id());
         entityManager.clear();
         GraduationCertificate legacy = repository.findById(response.id()).orElseThrow();
         fileStore.deleteIfRolledBack(legacy.getPdfPath());
@@ -205,6 +208,18 @@ class GraduationCertificateTemplateRenderIT extends AbstractIntegrationTest {
 
         assertThat(text).contains("CERTIFICADO DE APROBACIÓN", "Se certifica que").doesNotContain("DIPLOMA NUEVO", "REG. DE CERTIF.");
         assertThat(repository.findById(response.id()).orElseThrow().getRegistryNumber()).isNull();
+    }
+
+    @Test
+    void certificateWithEngineVersionWhoseTemplateVersionChangedIsNotServedAsADifferentPdf() {
+        GraduationCertificateResponse response = issue();
+        jdbc.update("update graduation_certificate set template_version_id = null, registry_number = null where id = ?", response.id());
+        entityManager.clear();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        fileStore.deleteIfRolledBack(stored.getPdfPath());
+        entityManager.clear();
+
+        assertThatThrownBy(() -> pdfUseCase.pdfOf(response.id())).isInstanceOf(CertificatePdfIntegrityMismatchException.class);
     }
 
     @Test

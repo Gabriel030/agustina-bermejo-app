@@ -402,6 +402,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CASH_PAYMENT_PREVIEW_OUTDATED` | no | `CashPaymentPreviewOutdatedException` | billing |
 | `CERTIFICATE_EXCEPTION_ALREADY_OPEN` | no | `CertificateExceptionAlreadyOpenException` | graduation |
 | `CERTIFICATE_EXPIRED` | no | `CertificateExpiredException` | graduation |
+| `CERTIFICATE_PDF_INTEGRITY_MISMATCH` | no | `CertificatePdfIntegrityMismatchException` | graduation |
 | `CERTIFICATE_REVOKED` | no | `CertificateRevokedException` | graduation |
 | `CHANNEL_NOT_AVAILABLE` | no | `ChannelNotAvailableException` | notification |
 | `CHANNEL_NOT_ENABLED` | no | `ChannelNotEnabledException` | notification |
