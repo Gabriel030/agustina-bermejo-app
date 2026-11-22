@@ -20,6 +20,7 @@ import {
 
 const ROLE_HINTS = {
   DIRECTOR: 'Gestión general de la institución',
+  SUBDIRECTOR: 'Todo lo de Administrativo, y ver los permisos',
   ADMINISTRATIVO: 'Alumnos, inscripciones y cobros',
   PRECEPTOR: 'Asistencia y seguimiento de cursos',
   DOCENTE: 'Tus comisiones, notas y asistencia',

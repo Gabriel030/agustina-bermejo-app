@@ -291,7 +291,7 @@ function TabFacturacion() {
   const [showCashPayment, setShowCashPayment] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
   const { usuario } = useAuth();
-  const canCollect = (usuario?.roles ?? []).some((role) => role === 'ADMINISTRATIVO' || role === 'DIRECTOR');
+  const canCollect = (usuario?.roles ?? []).some((role) => ['ADMINISTRATIVO', 'SUBDIRECTOR', 'DIRECTOR'].includes(role));
 
   const { data: legajo, isError: legajoFailed } = useLegajoAlumno(studentId);
   const selectedStudent = legajo ?? (pickedStudent && String(pickedStudent.id) === studentId ? pickedStudent : null);

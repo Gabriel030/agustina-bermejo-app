@@ -163,7 +163,7 @@ function PermissionsGrid({ catalog, grid }) {
             <div role="status" className="flex items-start gap-2.5 rounded-card bg-warning-bg px-3.5 py-3 text-size-13 text-warning-ink">
               <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <p>
-                <b>Estás viendo la grilla en modo lectura.</b> Solo el Director edita la grilla; el Subdirector y el resto de los roles pueden verla, no cambiarla. Si necesitás un cambio, pedíselo al Director.
+                <b>Estás viendo la grilla en modo lectura.</b> Solo el Director puede modificar los permisos. El Subdirector y el resto de los roles pueden verlos, no cambiarlos. Si necesitás un cambio, pedíselo al Director.
               </p>
             </div>
           )}
