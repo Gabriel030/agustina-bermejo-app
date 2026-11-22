@@ -31,7 +31,7 @@ function RoleOption({ role, checked, onSelect }) {
   return (
     <label
       className={cn(
-        'flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition-colors focus-within:ring-3 focus-within:ring-ring/50',
+        'flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition-colors focus-within:ring-3 focus-within:ring-ring',
         checked ? 'border-brand bg-accent-soft' : 'border-border bg-surface hover:bg-neutral-bg/60',
       )}
     >

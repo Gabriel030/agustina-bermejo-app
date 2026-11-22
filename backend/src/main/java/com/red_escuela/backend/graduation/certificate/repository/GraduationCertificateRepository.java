@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,6 +24,8 @@ public interface GraduationCertificateRepository extends JpaRepository<Graduatio
     Optional<GraduationCertificate> findByIdForUpdate(@Param("id") Long id);
 
     Optional<GraduationCertificate> findByReplacesId(Long replacesId);
+
+    List<GraduationCertificate> findByStudentIdOrderByIssuedAtDescIdDesc(Long studentId);
 
     boolean existsByCode(String code);
 

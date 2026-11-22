@@ -302,7 +302,6 @@ export const DOMAIN_ERROR_MESSAGES = {
   GRADUATION_CERTIFICATE_REVOKED: 'El certificado fue revocado y ya no se puede descargar.',
   GRADUATION_CERTIFICATE_NOT_REVOCABLE: 'Solo se puede revocar o reemitir un certificado vigente.',
   GRADUATION_CERTIFICATE_NOT_AVAILABLE: 'El certificado todavía no fue emitido.',
-  GRADUATION_CERTIFICATE_OPERATION_PENDING: 'Esta operación de certificados todavía no está disponible.',
   TEMPLATE_UNKNOWN_MARKER: 'La plantilla usa un marcador que no existe.',
   TEMPLATE_INCOMPLETE: 'La plantilla está incompleta: completá todos los campos antes de publicar.',
   TEMPLATE_NOTHING_TO_DISCARD: 'No hay cambios para descartar.',
