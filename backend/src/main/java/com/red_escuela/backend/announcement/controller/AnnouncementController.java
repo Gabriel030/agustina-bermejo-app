@@ -111,13 +111,17 @@ public class AnnouncementController {
     @GetMapping("/subject-sections/{sectionId}/announcements/read-receipts")
     @RequiresPermission(code = "announcement.view_read_receipts", legacyRoles = "ROLE_PRECEPTOR,ROLE_DIRECTOR")
     public List<AnnouncementResponse> listReadReceiptsForSubjectSection(@PathVariable Long sectionId) {
-        return listStaffSectionAnnouncements.listForProgramSection(sectionId);
+        return isLegacyStaff()
+                ? listStaffSectionAnnouncements.listForProgramSection(sectionId)
+                : listStaffSectionAnnouncements.listForProgramSectionAsInstructor(sectionId);
     }
 
     @GetMapping("/course-sections/{sectionId}/announcements/read-receipts")
     @RequiresPermission(code = "announcement.view_read_receipts", legacyRoles = "ROLE_PRECEPTOR,ROLE_DIRECTOR")
     public List<AnnouncementResponse> listReadReceiptsForCourseSection(@PathVariable Long sectionId) {
-        return listStaffSectionAnnouncements.listForCourseSection(sectionId);
+        return isLegacyStaff()
+                ? listStaffSectionAnnouncements.listForCourseSection(sectionId)
+                : listStaffSectionAnnouncements.listForCourseSectionAsInstructor(sectionId);
     }
 
     @GetMapping("/subject-sections/{sectionId}/audience-segments")

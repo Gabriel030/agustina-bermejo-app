@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.enrollment.service.ApproveProgramEnrollmentApplicationTransaction;
 import com.red_escuela.backend.billing.invoice.exception.OutstandingDebtBlocksReenrollmentException;
 import com.red_escuela.backend.billing.invoice.service.ProgramAdmissionInvoiceIssuer;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
@@ -42,8 +43,9 @@ class ApproveProgramEnrollmentApplicationDebtTest {
         when(finder.findLockedOrThrow(anyLong())).thenReturn(application);
         doThrow(new OutstandingDebtBlocksReenrollmentException(List.of(new PolicyViolation("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT", "deuda"))))
                 .when(enrollmentService).verifyStudentHasNoOutstandingDebt(7L);
-        ApproveProgramEnrollmentApplicationService useCase = new ApproveProgramEnrollmentApplicationService(finder, roleGranter, issuer, enrollmentService,
-                mock(ApplicationEventPublisher.class));
+        ApproveProgramEnrollmentApplicationService useCase = new ApproveProgramEnrollmentApplicationService(
+                new ApproveProgramEnrollmentApplicationTransaction(finder, roleGranter, issuer, enrollmentService,
+                        mock(ApplicationEventPublisher.class)));
 
         assertThatThrownBy(() -> useCase.approve(new ApproveProgramEnrollmentApplicationCommand(1L, mock(Person.class))))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);

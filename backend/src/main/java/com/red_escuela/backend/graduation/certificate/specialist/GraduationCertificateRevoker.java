@@ -21,16 +21,19 @@ public class GraduationCertificateRevoker {
     private final GraduationCertificateRepository repository;
     private final CurrentActorFinder currentActorFinder;
     private final Clock clock;
+    private final GraduationCertificateEventPublisher eventPublisher;
 
-    public GraduationCertificateRevoker(GraduationCertificateRepository repository, CurrentActorFinder currentActorFinder, Clock clock) {
+    public GraduationCertificateRevoker(GraduationCertificateRepository repository, CurrentActorFinder currentActorFinder, Clock clock,
+                                      GraduationCertificateEventPublisher eventPublisher) {
         this.repository = repository;
         this.currentActorFinder = currentActorFinder;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
     public void revoke(Long certificateId, String reason) {
-        revokeLocked(certificateId, reason);
+        eventPublisher.revoked(revokeLocked(certificateId, reason));
     }
 
     GraduationCertificate revokeLocked(Long certificateId, String rawReason) {

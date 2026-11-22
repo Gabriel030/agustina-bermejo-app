@@ -16,10 +16,10 @@ docker compose -f perf/docker-compose.perf.yml up -d
 ACTUATOR_USER=perf ACTUATOR_PASSWORD=perf JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES_ACTIVE=local,demo,perf SERVER_PORT=8461 DB_URL=jdbc:postgresql://localhost:5461/perf ./mvnw -q spring-boot:run
 ```
 
-3. Con el backend ya arrancado (el seed necesita las tablas y los datos demo), cargar el seed ampliado una sola vez:
+3. Con el backend ya arrancado (el seed necesita las tablas y los datos demo), cargar el seed grande (re-ejecutable: limpia y recarga):
 
 ```
-docker exec -i perf-a0-pg psql -U postgres -d perf < perf/seed.sql
+docker exec -i perf-a0-pg psql -U postgres -d perf < perf/seed-large.sql
 ```
 
 4. Medir y verificar presupuestos desde la raiz del repo:
@@ -59,4 +59,6 @@ LOAD_DIRECTOR_VUS=20 LOAD_DURATION=2m BASE_URL=http://localhost:8461 k6 run load
 
 ## Seed grande (33.1)
 
-`perf/seed-large.sql` reemplaza a `seed.sql` (no cargar los dos) y exige el backend `local,demo,perf` ya arrancado: depende de person id 1, `director.demo`, roles 1/2, programas 1/2, term 1, subjects 1..16 y evaluation_scheme 1 del perfil demo. Es re-ejecutable. Resultados y método en `perf/db-baseline.md`; con ese seed correr `PERF_TEACHER=perft12` antes de `measure.py`/`load.py`.
+`perf/seed-large.sql` es el unico seed de rendimiento (`seed.sql` se retiro en E29-F5) y exige el backend `local,demo,perf` ya arrancado: depende de person id 1, `director.demo`, roles 1/2, programas 1/2, term 1, subjects 1..16 y evaluation_scheme 1 del perfil demo. Es re-ejecutable. Resultados y método en `perf/db-baseline.md`; con ese seed correr `PERF_TEACHER=perft12` antes de `measure.py`/`load.py`.
+
+Vigilancia: `PerfSeedIT` (`@NightlyTest`, `backend/src/test/java/com/red_escuela/backend/demo/`) siembra el dataset demo `full`, carga `seed-large.sql` dos veces sobre el esquema Flyway actual y verifica los volumenes. Si una migracion cambia una tabla que toca el seed, el nightly falla.

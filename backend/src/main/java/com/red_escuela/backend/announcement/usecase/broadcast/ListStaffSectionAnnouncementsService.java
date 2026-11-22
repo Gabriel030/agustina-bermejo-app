@@ -24,4 +24,14 @@ public class ListStaffSectionAnnouncementsService implements ListStaffSectionAnn
     public List<AnnouncementResponse> listForCourseSection(Long sectionId) {
         return AnnouncementResponse.fromListing(announcementReader.listForCourseSection(sectionId));
     }
+
+    @Override
+    public List<AnnouncementResponse> listForProgramSectionAsInstructor(Long sectionId) {
+        return AnnouncementResponse.fromListing(announcementReader.listForProgramSectionAsInstructor(sectionId));
+    }
+
+    @Override
+    public List<AnnouncementResponse> listForCourseSectionAsInstructor(Long sectionId) {
+        return AnnouncementResponse.fromListing(announcementReader.listForCourseSectionAsInstructor(sectionId));
+    }
 }
