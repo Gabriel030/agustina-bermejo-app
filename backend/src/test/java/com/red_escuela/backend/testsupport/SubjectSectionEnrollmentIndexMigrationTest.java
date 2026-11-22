@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("migration")
@@ -22,6 +25,17 @@ class SubjectSectionEnrollmentIndexMigrationTest {
             assertThat(jdbc.queryForObject(
                     "select i.indisvalid from pg_index i join pg_class c on c.oid = i.indexrelid where c.relname = 'ix_subject_section_enrollment_section_status'",
                     Boolean.class)).isTrue();
+        }
+    }
+
+    @Test
+    void migrationConfigDisablesTransactionForConcurrentIndexScript() throws IOException {
+        var config = getClass().getClassLoader()
+                .getResource("db/migration/V305__subject_section_enrollment_section_status_index.sql.conf");
+
+        assertThat(config).isNotNull();
+        try (var in = config.openStream()) {
+            assertThat(new String(in.readAllBytes(), StandardCharsets.UTF_8)).contains("executeInTransaction=false");
         }
     }
 
