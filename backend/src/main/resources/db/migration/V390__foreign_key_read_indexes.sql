@@ -3,9 +3,6 @@ create index if not exists ix_grade_item_exam_board on grade_item (exam_board_id
 create index if not exists ix_subject_section_subject on subject_section (subject_id);
 create index if not exists ix_student_document_student on student_document (student_id);
 create index if not exists ix_program_enrollment_program on program_enrollment (program_id);
-create index if not exists ix_invoice_line_exam_board_registration on invoice_line (exam_board_registration_id) where exam_board_registration_id is not null;
-create index if not exists ix_invoice_line_subject on invoice_line (subject_id) where subject_id is not null;
-create index if not exists ix_invoice_line_price_version on invoice_line (price_version_id) where price_version_id is not null;
 create index if not exists ix_exam_board_course_subject_term on exam_board (course_subject_id, term_id);
 create index if not exists ix_payment_plan_option_course on payment_plan_option (course_id);
 create index if not exists ix_payment_plan_option_program on payment_plan_option (program_id);
@@ -35,3 +32,12 @@ create index if not exists ix_graduation_request_program_enrollment on graduatio
 create index if not exists ix_annual_upfront_request_program_enrollment on annual_upfront_request (program_enrollment_id);
 create index if not exists ix_graduation_certificate_program_enrollment on graduation_certificate (program_enrollment_id) where program_enrollment_id is not null;
 create index if not exists ix_graduation_certificate_course_enrollment on graduation_certificate (course_enrollment_id) where course_enrollment_id is not null;
+create index if not exists ix_exam_board_registration_exam_board on exam_board_registration (exam_board_id);
+create index if not exists ix_regular_student_certificate_program_enrollment on regular_student_certificate (program_enrollment_id) where program_enrollment_id is not null;
+create index if not exists ix_regular_student_certificate_course_enrollment on regular_student_certificate (course_enrollment_id) where course_enrollment_id is not null;
+create index if not exists ix_academic_offering_cycle_course on academic_offering_cycle (course_id) where course_id is not null;
+create index if not exists ix_academic_offering_cycle_program on academic_offering_cycle (program_id) where program_id is not null;
+create index if not exists ix_certificate_template_version_template on certificate_template_version (template_id);
+create index if not exists ix_import_batch_institution on import_batch (institution_id);
+create index if not exists ix_program_enrollment_application_student on program_enrollment_application (student_id);
+create index if not exists ix_section_modification_proposal_slot_proposal on section_modification_proposal_slot (proposal_id);
