@@ -61,7 +61,7 @@ function AvatarTribunal({ tribunal }) {
       {visibles.map((t, i) => (
         <div
           key={t.id}
-          className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-gradient-to-br from-brand to-accent-2 text-size-11 font-bold text-on-accent"
+          className="flex h-8 w-8 items-center justify-center rounded-[10px] border-2 border-surface bg-brand text-size-11 font-bold text-on-accent"
           style={{ marginLeft: i === 0 ? 0 : -8 }}
         >
           {iniciales(t.name)}
@@ -228,16 +228,16 @@ function DetalleMesa({ mesaId, role }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="font-heading text-size-16 font-semibold text-ink">Alumnos anotados</div>
           {gestiona && <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" disabled={!modificable || conNotaFinal} onClick={() => setReprogramando(true)}>
+            <Button variant="outline" size="sm" className="min-h-11 md:min-h-8" disabled={!modificable || conNotaFinal} onClick={() => setReprogramando(true)}>
               Reprogramar
             </Button>
-            <Button variant="outline" size="sm" className="text-danger" disabled={!modificable || conNotaFinal} onClick={() => setCancelando(true)}>
+            <Button variant="outline" size="sm" className="min-h-11 md:min-h-8 text-danger" disabled={!modificable || conNotaFinal} onClick={() => setCancelando(true)}>
               Cancelar mesa
             </Button>
-            <Button variant="outline" size="sm" disabled={soloLectura} onClick={() => setModalTribunal(true)}>
+            <Button variant="outline" size="sm" className="min-h-11 md:min-h-8" disabled={soloLectura} onClick={() => setModalTribunal(true)}>
               Asignar tribunal
             </Button>
-            <Button variant="primary" size="sm" disabled={soloLectura || cerrando || examenPendiente} onClick={() => setConfirmarCierre(true)}>
+            <Button variant="primary" size="sm" className="min-h-11 md:min-h-8" disabled={soloLectura || cerrando || examenPendiente} onClick={() => setConfirmarCierre(true)}>
               Cerrar acta
             </Button>
           </div>}
@@ -308,13 +308,10 @@ function BuscadorMesas({ mesas, mesaId, onElegir }) {
   return (
     <Popover open={abierto} onOpenChange={setAbierto}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm text-ink sm:w-[340px]"
-        >
+        <Button type="button" variant="outline" className="min-h-11 w-full justify-between gap-2 px-2.5 font-normal text-ink sm:w-[340px]">
           <span className="truncate">{seleccionada ? opcionMesa(seleccionada) : 'Buscar una mesa por materia...'}</span>
           <ChevronsUpDownIcon className="size-4 shrink-0 text-ink-faint" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[340px] p-0" align="start">
         <Command>
