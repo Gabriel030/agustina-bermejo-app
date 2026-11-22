@@ -19,6 +19,29 @@ import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary,
 
 const API = 'http://localhost:8080';
 
+const graduationProjection = (programEnrollmentId) => ({
+  programEnrollmentId,
+  status: 'PROJECTED',
+  estimatedPeriods: 8,
+  range: { minPeriods: 6, maxPeriods: 8 },
+  estimatedGraduationYear: 2030,
+  periodUnit: 'SEMESTER',
+  method: 'HISTORICAL_PACE_WITH_PREREQUISITES',
+  confidence: 'MEDIUM',
+  basis: {
+    remainingCredits: 66,
+    remainingMandatorySubjects: 16,
+    remainingElectiveSubjects: 2,
+    creditsPerPeriod: 9.0,
+    creditsPerPeriodSource: 'STUDENT_HISTORY',
+    closedPeriods: 6,
+    criticalPathPeriods: 5,
+  },
+  assumptions: [{ code: 'PACE_CONSTANT', message: 'Se asume que mantenés el ritmo de créditos por cuatrimestre.' }],
+  warnings: [],
+  reasons: [],
+});
+
 const curriculumProgress = (programEnrollmentId) => ({
   programEnrollmentId,
   programName: 'Tecnicatura de prueba',
@@ -413,6 +436,12 @@ export const handlers = [
   ),
   http.get(`${API}/program-enrollments/:id/progress/subjects`, ({ params }) =>
     HttpResponse.json(curriculumProgress(Number(params.id))),
+  ),
+  http.get(`${API}/me/program-enrollments/:id/progress/projection`, ({ params }) =>
+    HttpResponse.json(graduationProjection(Number(params.id))),
+  ),
+  http.get(`${API}/program-enrollments/:id/progress/projection`, ({ params }) =>
+    HttpResponse.json(graduationProjection(Number(params.id))),
   ),
   http.get(`${API}/me/program-enrollments/:id/annual-upfront/quote`, () =>
     HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),

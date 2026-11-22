@@ -737,6 +737,45 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void meGraduationProjectionWithAnotherStudentsIdReturns404AndOwnerGets200() throws Exception {
+        Institution institution = persistInstitution();
+        Student owner = persistStudent("50000117", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Student other = persistStudent("50000118", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("Materia117");
+        Program program = persistProgram("Carrera117", 10);
+        persistProgramSubject(program, subject, 10);
+        ProgramEnrollment enrollment = persistProgramEnrollment(owner, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        mockMvc.perform(get("/me/program-enrollments/{id}/progress/projection", enrollment.getId())
+                        .header("Authorization", "Bearer " + tokenForStudent(other)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/me/program-enrollments/{id}/progress/projection", enrollment.getId())
+                        .header("Authorization", "Bearer " + tokenForStudent(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.programEnrollmentId").value(enrollment.getId()))
+                .andExpect(jsonPath("$.periodUnit").value("SEMESTER"));
+    }
+
+    @Test
+    void staffGraduationProjectionAllowsPreceptorAndRejectsDocente() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("50000119", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Program program = persistProgram("Carrera119", 10);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        mockMvc.perform(get("/program-enrollments/{id}/progress/projection", enrollment.getId())
+                        .header("Authorization", "Bearer " + tokenWithRole("preceptor-insc119", "PRECEPTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("NOT_PROJECTABLE"))
+                .andExpect(jsonPath("$.reasons[0]").value("NO_PLAN_SUBJECTS"));
+        mockMvc.perform(get("/program-enrollments/{id}/progress/projection", enrollment.getId())
+                        .header("Authorization", "Bearer " + tokenWithRole("docente-insc119", "DOCENTE")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void enrollmentEndpointsWithoutCorrectRoleReturn403AndMeWithAnyRoleWorks() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000016", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);

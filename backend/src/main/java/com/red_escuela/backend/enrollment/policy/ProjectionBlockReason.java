@@ -1,0 +1,12 @@
+package com.red_escuela.backend.enrollment.policy;
+
+public enum ProjectionBlockReason {
+    NO_PLAN_SUBJECTS,
+    PLAN_WITHOUT_CREDITS,
+    ENROLLMENT_WITHDRAWN,
+    ENROLLMENT_PAUSED,
+    PLAN_WITHOUT_DURATION,
+    CREDITS_UNREACHABLE,
+    PREREQUISITE_CYCLE,
+    REQUIRED_SUBJECT_INACTIVE
+}
