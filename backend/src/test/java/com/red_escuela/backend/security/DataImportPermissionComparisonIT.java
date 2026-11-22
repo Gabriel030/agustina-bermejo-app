@@ -41,8 +41,8 @@ class DataImportPermissionComparisonIT extends AuthorizationMatrixSupport {
         return mappedEndpoints().stream().collect(Collectors.toMap(MappedEndpoint::key, Function.identity(), (first, second) -> first));
     }
 
-    private boolean isForbiddenByTheGate(AuthorizationMatrixRow row, MatrixRole role) throws Exception {
-        int status = statusOf(endpointsByKey().get(row.key()), row.body() == null ? "" : row.body(), role);
+    private boolean isForbiddenByTheGate(Map<String, MappedEndpoint> endpoints, AuthorizationMatrixRow row, MatrixRole role) throws Exception {
+        int status = statusOf(endpoints.get(row.key()), row.body() == null ? "" : row.body(), role);
         return status == 403 || (role == null && status == 401);
     }
 
@@ -55,17 +55,18 @@ class DataImportPermissionComparisonIT extends AuthorizationMatrixSupport {
 
     private void assertDecisionsMatchLegacy(String mode) throws Exception {
         List<AuthorizationMatrixRow> rows = dataImportRows();
+        Map<String, MappedEndpoint> endpoints = endpointsByKey();
         assertThat(rows).hasSize(13);
         List<String> mismatches = new ArrayList<>();
         for (AuthorizationMatrixRow row : rows) {
-            assertThat(endpointsByKey().get(row.key())).as(row.key()).isNotNull();
+            assertThat(endpoints.get(row.key())).as(row.key()).isNotNull();
             for (MatrixRole role : MatrixRole.values()) {
                 boolean expectedDenied = row.byRole().get(role) == AccessExpectation.DENY;
-                if (isForbiddenByTheGate(row, role) != expectedDenied) {
+                if (isForbiddenByTheGate(endpoints, row, role) != expectedDenied) {
                     mismatches.add(mode + " " + role + " " + row.key() + " expected denied=" + expectedDenied);
                 }
             }
-            if (!isForbiddenByTheGate(row, null)) {
+            if (!isForbiddenByTheGate(endpoints, row, null)) {
                 mismatches.add(mode + " ANONYMOUS " + row.key() + " must be denied");
             }
         }
@@ -99,10 +100,11 @@ class DataImportPermissionComparisonIT extends AuthorizationMatrixSupport {
     @Test
     void enforceModeFollowsTheGridWhenAPermissionIsGrantedToAnotherRole() throws Exception {
         setModuleMode("ENFORCE");
+        Map<String, MappedEndpoint> endpoints = endpointsByKey();
         AuthorizationMatrixRow listRow = dataImportRows().stream().filter(row -> row.key().equals("GET /data-imports")).findFirst().orElseThrow();
-        assertThat(isForbiddenByTheGate(listRow, MatrixRole.ADMINISTRATIVO)).isTrue();
+        assertThat(isForbiddenByTheGate(endpoints, listRow, MatrixRole.ADMINISTRATIVO)).isTrue();
         jdbcTemplate.update("insert into role_permission (role, permission_id) select 'ADMINISTRATIVO', id from permission where code = 'dataimport.read'");
         cache.invalidate();
-        assertThat(isForbiddenByTheGate(listRow, MatrixRole.ADMINISTRATIVO)).isFalse();
+        assertThat(isForbiddenByTheGate(endpoints, listRow, MatrixRole.ADMINISTRATIVO)).isFalse();
     }
 }

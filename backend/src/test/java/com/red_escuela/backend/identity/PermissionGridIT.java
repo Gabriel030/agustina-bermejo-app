@@ -286,7 +286,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
         mockMvc.perform(get("/permissions/grid").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.editable").value(true))
-                .andExpect(jsonPath("$.roles[?(@.role=='DIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(24)))
+                .andExpect(jsonPath("$.roles[?(@.role=='DIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(jdbcTemplate.queryForObject("select count(*) from permission", Integer.class))))
                 .andExpect(jsonPath("$.roles[?(@.role=='ADMINISTRATIVO')].permissionCodes").isNotEmpty());
     }
 }
