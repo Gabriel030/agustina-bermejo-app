@@ -27,7 +27,6 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/features/announcements/components/ParametrosDeSegmento.jsx',
   'src/features/announcements/components/SeccionMensaje.jsx',
   'src/features/attendance/components/SeccionAsistencia.jsx',
-  'src/features/attendance/pages/DocenteTomarAsistencia.jsx',
   'src/features/billing/credit-notes/ReasonCards.jsx',
   'src/features/billing/credit-notes/StudentCreditNotesSection.jsx',
   'src/features/billing/dashboard/FinancialDashboardPage.jsx',

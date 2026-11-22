@@ -17,13 +17,10 @@ class AuthorizationMatrixRuleInCodeTest extends AuthorizationMatrixSupport {
     private static final Set<String> RESTRICTED_WITHOUT_HANDLER_ANNOTATION = Set.of(
             "GET /annual-upfront-terms/current",
             "GET /annual-upfront-terms/versions/{versionNumber}",
-            "POST /invoices/{invoiceId}/cancellations",
-            "POST /invoices/{invoiceId}/credit-notes",
             "GET /me/annual-upfront-requests",
             "GET /me/annual-upfront-requests/{id}",
             "GET /me/program-enrollments/{id}/annual-upfront-requests",
-            "GET /me/program-enrollments/{id}/annual-upfront/quote",
-            "POST /students/{studentId}/current-account/allocations");
+            "GET /me/program-enrollments/{id}/annual-upfront/quote");
 
     @Test
     void everyRestrictedMatrixRowHasAnAuthorizationRuleOnItsHandlerOrIsKnownToEnforceItDownstream() {

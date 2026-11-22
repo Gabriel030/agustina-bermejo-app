@@ -73,7 +73,7 @@ public class BankTransferReceiptController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{id}/approve")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.review_bank_transfer_receipt", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public BankTransferReceiptResponse approve(@PathVariable Long id, @Valid @RequestBody(required = false) ApproveBankTransferReceiptRequest request) {
         PaymentVerification verification = request == null ? PaymentVerification.none() : request.toVerification();
         return receiptResponseAssembler.assembleReviewerReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson(), verification));
@@ -81,7 +81,7 @@ public class BankTransferReceiptController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.review_bank_transfer_receipt", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public BankTransferReceiptResponse reject(@PathVariable Long id, @Valid @RequestBody(required = false) RejectPaymentReceiptRequest request) {
         String rejectionReason = request == null ? null : request.rejectionReason();
         return receiptResponseAssembler.assembleReviewerReceiptResponse(

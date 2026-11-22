@@ -87,6 +87,7 @@ export default defineConfig([
     files: [
       'src/context/AuthContext.jsx',
       'src/features/attendance/pages/DocenteTomarAsistencia.jsx',
+      'src/features/attendance/hooks/useTakeAttendanceForm.js',
       'src/features/billing/dashboard/OfferCombobox.jsx',
       'src/pages/AdministrativoFacturacion.jsx',
     ],

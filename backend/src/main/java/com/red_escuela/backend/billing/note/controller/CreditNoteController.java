@@ -46,6 +46,7 @@ public class CreditNoteController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/invoices/{invoiceId}/credit-notes")
+    @RequiresPermission(code = "billing.issue_credit_note", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "400", description = "IDEMPOTENCY_KEY_INVALID: la clave está vacía o tiene más de 100 caracteres"),
             @ApiResponse(responseCode = "409", description = "IDEMPOTENCY_KEY_CONFLICT: la misma clave se usó con otro pedido")})
