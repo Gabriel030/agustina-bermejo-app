@@ -76,8 +76,8 @@ public class AnnouncementController {
         this.previewAudience = previewAudience;
         this.listAnnouncementRecipients = listAnnouncementRecipients;
         this.listAnnouncementReadReceipts = listAnnouncementReadReceipts;
-        this.permissionGate = permissionGate;
         this.countAnnouncementReads = countAnnouncementReads;
+        this.permissionGate = permissionGate;
     }
 
     @PostMapping("/subject-sections/{sectionId}/announcements")
@@ -158,7 +158,10 @@ public class AnnouncementController {
     @GetMapping("/announcements/{id}/recipients")
     @RequiresPermission(code = "announcement.view_recipients", legacyRoles = "ROLE_DOCENTE,ROLE_PRECEPTOR,ROLE_DIRECTOR")
     public List<AnnouncementRecipientResponse> recipients(@PathVariable Long id) {
-        return canViewReadReceipts() ? listAnnouncementReadReceipts.list(id) : listAnnouncementRecipients.list(id);
+        if (!canViewReadReceipts()) {
+            return listAnnouncementRecipients.list(id);
+        }
+        return isLegacyStaff() ? listAnnouncementReadReceipts.list(id) : listAnnouncementReadReceipts.listAsSectionInstructor(id);
     }
 
     @DeleteMapping("/announcements/{id}")
@@ -166,6 +169,11 @@ public class AnnouncementController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         deleteAnnouncement.delete(id);
+    }
+
+    private boolean isLegacyStaff() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_DIRECTOR") || authority.getAuthority().equals("ROLE_PRECEPTOR"));
     }
 
     private boolean canViewReadReceipts() {
