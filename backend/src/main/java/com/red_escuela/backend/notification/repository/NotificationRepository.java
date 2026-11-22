@@ -28,4 +28,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("delete from Notification n where n.relatedEntityType = :type and n.relatedEntityId = :id and n.read = false")
     int deleteUnreadByRelatedEntity(@Param("type") String type, @Param("id") Long id);
+
+    @Modifying
+    @Query("update Notification n set n.read = true where n.recipient.id = :recipientId and n.relatedEntityType = :type and n.relatedEntityId = :id and n.type in :types and n.read = false")
+    int markReadByRecipientAndRelatedEntity(@Param("recipientId") Long recipientId, @Param("type") String type, @Param("id") Long id, @Param("types") java.util.Collection<NotificationType> types);
 }
