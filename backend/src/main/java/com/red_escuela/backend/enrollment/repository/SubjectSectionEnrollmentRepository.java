@@ -120,6 +120,15 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
             """)
     List<CurriculumProgressRow> findCurriculumProgressRows(@Param("programEnrollmentId") Long programEnrollmentId);
 
+    @Query("""
+            select min(e.subjectSection.term.startDate)
+            from SubjectSectionEnrollment e
+            where e.programEnrollment.id = :programEnrollmentId and e.status in :statuses
+            """)
+    Optional<java.time.LocalDateTime> findFirstTermStartOfProgramEnrollment(
+            @Param("programEnrollmentId") Long programEnrollmentId,
+            @Param("statuses") java.util.Collection<EnrollmentStatus> statuses);
+
     List<SubjectSectionEnrollment> findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
             Long programEnrollmentId, Long subjectId, List<EnrollmentStatus> statuses);
 

@@ -8177,6 +8177,72 @@
         "required" : [ "installments", "mustCheckDebt", "totalDue" ],
         "type" : "object"
       },
+      "GraduationProjectionResponse" : {
+        "properties" : {
+          "assumptions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProjectionMessageResponse"
+            },
+            "type" : "array"
+          },
+          "basis" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProjectionBasisResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "confidence" : {
+            "enum" : [ "HIGH", "MEDIUM", "LOW", null ],
+            "type" : [ "string", "null" ]
+          },
+          "estimatedGraduationYear" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "estimatedPeriods" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "method" : {
+            "enum" : [ "HISTORICAL_PACE_WITH_PREREQUISITES", "PLAN_PACE_WITH_PREREQUISITES", null ],
+            "type" : [ "string", "null" ]
+          },
+          "periodUnit" : {
+            "type" : "string"
+          },
+          "programEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "range" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PeriodRangeResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "reasons" : {
+            "items" : {
+              "enum" : [ "NO_PLAN_SUBJECTS", "PLAN_WITHOUT_CREDITS", "ENROLLMENT_WITHDRAWN", "ENROLLMENT_PAUSED", "PLAN_WITHOUT_DURATION", "CREDITS_UNREACHABLE", "PREREQUISITE_CYCLE", "REQUIRED_SUBJECT_INACTIVE" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "status" : {
+            "enum" : [ "PROJECTED", "REQUIREMENTS_MET", "NOT_PROJECTABLE" ],
+            "type" : "string"
+          },
+          "warnings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProjectionMessageResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "assumptions", "basis", "confidence", "estimatedGraduationYear", "estimatedPeriods", "method", "periodUnit", "programEnrollmentId", "range", "reasons", "status", "warnings" ],
+        "type" : "object"
+      },
       "GraduationRequestResponse" : {
         "properties" : {
           "decidedAt" : {
@@ -11603,6 +11669,20 @@
         "required" : [ "amount", "count", "parts" ],
         "type" : "object"
       },
+      "PeriodRangeResponse" : {
+        "properties" : {
+          "maxPeriods" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minPeriods" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "maxPeriods", "minPeriods" ],
+        "type" : "object"
+      },
       "PermissionCatalogResponse" : {
         "properties" : {
           "modules" : {
@@ -12863,6 +12943,51 @@
           }
         },
         "required" : [ "advanceOpeningAfterRegularEmission", "blocksCertificates", "blocksEnrollment", "blocksExamRegistration", "enrollmentFeeCount", "enrollmentFeeLeadMonths", "firstEnrollmentFeeMonth", "id", "lateEnrollmentFeeDueDays", "nextYearPriceMissing", "paysWhilePaused", "programId", "recurringFeeDueDays", "recurringFeeInvoicesCount", "requireEnrollmentFeeForFinalExamOnlyStudents", "secondEnrollmentFeeMonth", "termId", "withdrawSuspendedAtTermEnd" ],
+        "type" : "object"
+      },
+      "ProjectionBasisResponse" : {
+        "properties" : {
+          "closedPeriods" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "creditsPerPeriod" : {
+            "type" : "number"
+          },
+          "creditsPerPeriodSource" : {
+            "enum" : [ "STUDENT_HISTORY", "PLAN_THEORETICAL" ],
+            "type" : "string"
+          },
+          "criticalPathPeriods" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "remainingCredits" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "remainingElectiveSubjects" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "remainingMandatorySubjects" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "closedPeriods", "creditsPerPeriod", "creditsPerPeriodSource", "criticalPathPeriods", "remainingCredits", "remainingElectiveSubjects", "remainingMandatorySubjects" ],
+        "type" : "object"
+      },
+      "ProjectionMessageResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "message" ],
         "type" : "object"
       },
       "PromotionBenefitResponse" : {
@@ -64838,6 +64963,133 @@
         "tags" : [ "me-enrollment-controller" ]
       }
     },
+    "/me/program-enrollments/{id}/progress/projection" : {
+      "get" : {
+        "operationId" : "CurriculumProgress_myGraduationProjection",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GraduationProjectionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "curriculum-progress-controller" ]
+      }
+    },
     "/me/program-enrollments/{id}/progress/subjects" : {
       "get" : {
         "operationId" : "CurriculumProgress_myCurriculumProgress",
@@ -77462,6 +77714,133 @@
           }
         },
         "tags" : [ "program-enrollment-controller" ]
+      }
+    },
+    "/program-enrollments/{id}/progress/projection" : {
+      "get" : {
+        "operationId" : "CurriculumProgress_getGraduationProjection",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GraduationProjectionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "curriculum-progress-controller" ]
       }
     },
     "/program-enrollments/{id}/progress/subjects" : {
