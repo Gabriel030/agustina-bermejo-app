@@ -32,6 +32,7 @@ class EnrollmentPermissionComparisonIT extends AuthorizationMatrixSupport {
         jdbcTemplate.update("delete from permission_module_mode where module = 'enrollment'");
         jdbcTemplate.update("delete from role_permission where role = 'ALUMNO' and permission_id in (select id from permission where module = 'enrollment')");
         jdbcTemplate.update("delete from role_permission where role = 'PRECEPTOR' and permission_id in (select id from permission where code = 'enrollment.manage_waitlist')");
+        jdbcTemplate.update("delete from role_permission where role = 'PRECEPTOR' and permission_id in (select id from permission where code in ('enrollment.create_ad_hoc_invoice', 'enrollment.grant_enrollment_fee_exemption'))");
         cache.invalidate();
     }
 
@@ -143,5 +144,18 @@ class EnrollmentPermissionComparisonIT extends AuthorizationMatrixSupport {
                 assertThat(isForbiddenByTheGate(endpoints, row, MatrixRole.DIRECTOR)).as(row.key()).isFalse();
             }
         }
+    }
+
+    @Test
+    void enforceModeLetsADelegatedRoleIssueAnAdHocInvoiceButNotTheOtherRoles() throws Exception {
+        setModuleMode("ENFORCE");
+        Map<String, MappedEndpoint> endpoints = endpointsByKey();
+        AuthorizationMatrixRow invoiceRow = enrollmentRows().stream().filter(row -> row.key().equals("POST /program-enrollments/{id}/invoices/ad-hoc")).findFirst().orElseThrow();
+        assertThat(isForbiddenByTheGate(endpoints, invoiceRow, MatrixRole.PRECEPTOR)).isTrue();
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'PRECEPTOR', id from permission where code = 'enrollment.create_ad_hoc_invoice'");
+        cache.invalidate();
+        assertThat(isForbiddenByTheGate(endpoints, invoiceRow, MatrixRole.PRECEPTOR)).isFalse();
+        assertThat(isForbiddenByTheGate(endpoints, invoiceRow, MatrixRole.DOCENTE)).isTrue();
+        assertThat(isForbiddenByTheGate(endpoints, invoiceRow, MatrixRole.ALUMNO)).isTrue();
     }
 }

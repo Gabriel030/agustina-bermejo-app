@@ -66,7 +66,7 @@ Endpoint que hoy deniega al Director y pasaría a permitirlo en Activo:
 
 - POST /graduation-requests/{id}/verify-debt (graduation.verify_debt)
 
-Los permisos certificate.* usados por los certificados de egreso y sus plantillas pertenecen al módulo certificate: su modo se configura aparte del de graduation. Las constancias de #1103, las rutas de alumno y las públicas no usan la grilla. Los permisos certificate.revoke, certificate.issue y certificate.templates_manage pasan a ser sensibles.
+Los permisos certificate.* usados por los certificados de egreso y sus plantillas pertenecen al módulo certificate: su modo se configura aparte del de graduation, pero conviene prender graduation y certificate juntos en Activo, porque el egreso y sus certificados se usan en un mismo circuito. Las constancias de #1103, las rutas de alumno y las públicas no usan la grilla. Los permisos certificate.revoke, certificate.issue y certificate.templates_manage pasan a ser sensibles.
 
 ### Identity
 
@@ -123,6 +123,7 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 El resto de los endpoints migrados de academicstructure ya permite al Director y no cambia. Las decisiones exclusivas del Director (aprobar o rechazar ciclos de oferta, materias y pedidos de cambio de horario, ver los pedidos pendientes y definir los rangos de turnos) quedan como permisos sin concesiones a otros roles: el Director las conserva.
 
 Las lecturas abiertas a cualquier usuario autenticado (listados y detalles de carreras, cursos, materias, comisiones, ciclos, aulas, feriados, períodos y rangos de turnos) y GET /me/teaching-sections quedan fuera de la grilla.
+
 ### Evaluation
 
 Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
@@ -140,7 +141,7 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints del alumno (/me/*) y la configuración de evaluación del docente (/me/section-evaluation-configs) quedan fuera de la grilla. El resto de los endpoints migrados de evaluation ya permiten al Director y no cambian.
 
-De esos endpoints, load_grade_item, publish_grades, record_exam_recovery, read_grade_grid, confirm_commission_closure (confirmar y observación) y record_exam_board_final_grades dejan pasar al Director en Activo, pero el handler resuelve el instructor actual y, si el Director no tiene ficha de instructor, falla con InstructorNotFoundException (404): en la práctica sigue sin poder hacer acciones de docente salvo que tenga esa ficha.
+De esos endpoints, load_grade_item, publish_grades, record_exam_recovery, read_grade_grid, confirm_commission_closure (confirmar y observación) y record_exam_board_final_grades dejan pasar al Director en Activo, pero el handler resuelve el instructor actual y, si el Director no tiene ficha de instructor, falla con InstructorNotFoundException (404): en la práctica sigue sin poder hacer acciones de docente salvo que tenga esa ficha. Esto viene de la resolución del instructor actual (currentInstructorId): el Director sin ficha de instructor no pasa en Activo lo que dependa de ella. requireCurrentInstructorOf, en cambio, deja pasar al Director sin ficha, así que no entra en este caso.
 
 ### Billing (tanda A1: lecturas, cobranza y configuración de recordatorios)
 
@@ -152,7 +153,7 @@ manage_reminder_config queda no sensible porque solo propone y valida cambios: l
 
 ## Academicrecord
 
-El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración ni cambio de resultado para el Director en ENFORCE.
+El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración de permisos ni cambio de resultado para el Director en ENFORCE.
 
 ## Notas operativas
 
