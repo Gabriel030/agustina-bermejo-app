@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.configuration.service.BillingActorResolve
 import com.red_escuela.backend.billing.configuration.service.ConfigurationChangeValidator;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,7 +22,6 @@ public class ValidateBillingConfigurationChangeService implements ValidateBillin
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<PolicyViolation> validateChange(ConfigurationTopic topic, ConfigurationValues values, LocalDate effectiveFrom, String changeReason) {
         return validator.collectViolations(new ChangeBillingConfigurationCommand(topic, values, effectiveFrom, changeReason,
                 actorResolver.currentPersonId(), actorResolver.currentActorIsDirector()));

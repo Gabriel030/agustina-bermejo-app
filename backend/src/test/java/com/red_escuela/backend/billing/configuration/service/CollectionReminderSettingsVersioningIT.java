@@ -298,11 +298,7 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-110")
-    void teacherCannotProposeOrConsultAndAdministrativeCannotApprove() {
-        authenticateAs(teacher);
-        assertThatThrownBy(() -> proposeAwaiting(withDailyCap(280), MARCH_FOURTH)).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> history.listVersionHistory(TOPIC)).isInstanceOf(AccessDeniedException.class);
-
+    void administrativeCannotApproveItsOwnProposal() {
         authenticateAs(administrative);
         Long requestId = proposeAwaiting(withDailyCap(280), MARCH_FOURTH);
         assertThatThrownBy(() -> approveRequest.approve(requestId, "me apruebo")).isInstanceOf(AuthorizationRequestAccessDeniedException.class);

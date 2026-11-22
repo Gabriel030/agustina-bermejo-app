@@ -10,7 +10,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseSectionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,27 +34,27 @@ public class CourseSectionController {
 
     @PostMapping("/course-subjects/{id}/sections")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_sections", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public CourseSubjectSectionResponse create(@PathVariable Long id, @Valid @RequestBody CreateSectionRequest request) {
         return CourseSubjectSectionResponse.from(sectionService.create(id, request));
     }
 
     @PutMapping("/course-sections/{id}")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_sections", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public CourseSubjectSectionResponse update(@PathVariable Long id, @RequestBody UpdateSectionRequest request) {
         return CourseSubjectSectionResponse.from(sectionService.update(id, request));
     }
 
     @PostMapping("/course-sections/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_section_status", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public void deactivate(@PathVariable Long id) {
         sectionService.deactivate(id);
     }
 
     @PostMapping("/course-sections/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_section_status", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public void reactivate(@PathVariable Long id) {
         sectionService.reactivate(id);
     }
@@ -71,7 +71,7 @@ public class CourseSectionController {
 
     @PostMapping("/course-sections/{id}/instructors")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.assign_section_instructor", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public SectionInstructorResponse assignInstructor(@PathVariable Long id, @Valid @RequestBody AssignInstructorRequest request) {
         CourseSubjectSectionInstructor assignment = sectionService.assignInstructor(id, request);
         return toResponse(assignment);
@@ -84,7 +84,7 @@ public class CourseSectionController {
 
     @DeleteMapping("/course-sections/{id}/instructors/{assignmentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.remove_section_instructor", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public void removeInstructor(@PathVariable Long id, @PathVariable Long assignmentId) {
         sectionService.removeInstructor(id, assignmentId);
     }

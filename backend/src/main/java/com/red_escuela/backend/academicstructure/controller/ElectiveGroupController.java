@@ -8,7 +8,7 @@ import com.red_escuela.backend.academicstructure.dto.UpdateElectiveGroupRequest;
 import com.red_escuela.backend.academicstructure.service.ElectiveGroupService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,13 +31,13 @@ public class ElectiveGroupController {
 
     @PostMapping("/elective-groups")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ElectiveGroupResponse create(@Valid @RequestBody CreateElectiveGroupRequest request) {
         return ElectiveGroupResponse.from(electiveGroupService.create(request));
     }
 
     @PutMapping("/elective-groups/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ElectiveGroupResponse update(@PathVariable Long id, @RequestBody UpdateElectiveGroupRequest request) {
         return ElectiveGroupResponse.from(electiveGroupService.update(id, request));
     }
@@ -58,14 +58,14 @@ public class ElectiveGroupController {
     }
 
     @PostMapping("/programs/{id}/elective-groups")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ProgramElectiveGroupResponse assignToProgram(@PathVariable Long id, @Valid @RequestBody AssignElectiveGroupRequest request) {
         return ProgramElectiveGroupResponse.from(electiveGroupService.assignToProgram(id, request));
     }
 
     @DeleteMapping("/programs/{id}/elective-groups/{groupId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void removeFromProgram(@PathVariable Long id, @PathVariable Long groupId) {
         electiveGroupService.removeFromProgram(id, groupId);
     }

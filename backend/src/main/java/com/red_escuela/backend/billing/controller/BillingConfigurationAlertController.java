@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.dto.BillingConfigurationAlertResponse;
 import com.red_escuela.backend.billing.service.BillingConfigurationAlertService;
 import com.red_escuela.backend.shared.module.RequiresModule;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,7 +19,7 @@ public class BillingConfigurationAlertController {
     }
 
     @GetMapping("/billing/configuration-alerts")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public List<BillingConfigurationAlertResponse> list() {
         return alertService.listOpen().stream().map(BillingConfigurationAlertResponse::from).toList();
     }

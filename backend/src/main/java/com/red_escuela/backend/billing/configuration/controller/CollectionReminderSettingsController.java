@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.configuration.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
@@ -17,7 +18,6 @@ import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,7 +50,7 @@ public class CollectionReminderSettingsController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/changes")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<?> proposeOrPublishChange(@Valid @RequestBody ChangeCollectionReminderSettingsRequest request) {
         BillingOperationOutcome<ConfigurationVersion> outcome = proposeChangeUseCase.proposeChange(TOPIC, request.values().toSettings(),
                 request.effectiveFrom(), request.changeReason());
@@ -64,14 +64,14 @@ public class CollectionReminderSettingsController {
     }
 
     @PostMapping("/validation")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ConfigurationChangeValidationResponse validateChange(@Valid @RequestBody ChangeCollectionReminderSettingsRequest request) {
         return new ConfigurationChangeValidationResponse(validateChangeUseCase.validateChange(TOPIC, request.values().toSettings(),
                 request.effectiveFrom(), request.changeReason()));
     }
 
     @GetMapping("/versions")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<CollectionReminderSettingsVersionResponse> listVersions() {
         List<ConfigurationVersion> versions = listVersionHistoryUseCase.listVersionHistory(TOPIC);
         Map<Long, String> authorNames = findAuthorNamesUseCase.findAuthorNamesOf(versions);

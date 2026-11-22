@@ -7,7 +7,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseSubjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,13 +30,13 @@ public class CourseSubjectController {
 
     @PostMapping("/courses/{id}/subjects")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_courses", legacyRoles = "ROLE_ADMINISTRATIVO")
     public CourseSubjectResponse addModule(@PathVariable Long id, @Valid @RequestBody CreateCourseSubjectRequest request) {
         return CourseSubjectResponse.from(courseSubjectService.addModule(id, request));
     }
 
     @PutMapping("/course-subjects/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_courses", legacyRoles = "ROLE_ADMINISTRATIVO")
     public CourseSubjectResponse update(@PathVariable Long id, @RequestBody UpdateCourseSubjectRequest request) {
         return CourseSubjectResponse.from(courseSubjectService.update(id, request));
     }
@@ -53,14 +53,14 @@ public class CourseSubjectController {
 
     @PostMapping("/course-subjects/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_course_status", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void deactivate(@PathVariable Long id) {
         courseSubjectService.deactivate(id);
     }
 
     @PostMapping("/course-subjects/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_course_status", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void reactivate(@PathVariable Long id) {
         courseSubjectService.reactivate(id);
     }

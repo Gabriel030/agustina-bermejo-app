@@ -93,7 +93,7 @@ describe('permission mode dialog', () => {
     const user = userEvent.setup();
     const bodies = recordModePuts();
     renderWithProviders(<PermissionsPage />);
-    const dialog = await openModeDialog(user, 'Modo de Docente en Facturación: Legado. Cambiar');
+    const dialog = await openModeDialog(user, 'Modo de Docente en Facturación y cobranza: Legado. Cambiar');
 
     await user.click(within(dialog).getByRole('radio', { name: /Activo/ }));
     expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument();

@@ -1,12 +1,12 @@
 package com.red_escuela.backend.billing.collections.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.collections.domain.OverdueContactFilter;
 import com.red_escuela.backend.billing.collections.domain.OverdueContactReason;
 import com.red_escuela.backend.billing.collections.dto.OverdueContactPageResponse;
 import com.red_escuela.backend.billing.collections.usecase.ListOverdueContactsUseCase;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.domain.Currency;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,7 +23,7 @@ public class OverdueContactListController {
     }
 
     @GetMapping("/contact-list")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_overdue_contacts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public OverdueContactPageResponse list(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
                                            @RequestParam(required = false) Currency currency, @RequestParam(required = false) Integer minDaysOverdue,
                                            @RequestParam(required = false) Integer minOverdueInstallments, @RequestParam(defaultValue = "false") boolean onlyNewlyListed,

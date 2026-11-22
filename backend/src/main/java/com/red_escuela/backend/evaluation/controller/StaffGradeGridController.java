@@ -3,7 +3,7 @@ package com.red_escuela.backend.evaluation.controller;
 import com.red_escuela.backend.evaluation.dto.TeacherGradeGridResponse;
 import com.red_escuela.backend.evaluation.usecase.gradegrid.GetStaffCourseSectionGradeGridUseCase;
 import com.red_escuela.backend.evaluation.usecase.gradegrid.GetStaffProgramSectionGradeGridUseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,13 +21,13 @@ public class StaffGradeGridController {
     }
 
     @GetMapping("/staff/program-sections/{id}/grade-grid")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_grade_oversight", legacyRoles = "ROLE_DIRECTOR")
     public TeacherGradeGridResponse getProgramSectionGradeGrid(@PathVariable Long id) {
         return getStaffProgramSectionGradeGridUseCase.get(id);
     }
 
     @GetMapping("/staff/course-sections/{id}/grade-grid")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_grade_oversight", legacyRoles = "ROLE_DIRECTOR")
     public TeacherGradeGridResponse getCourseSectionGradeGrid(@PathVariable Long id) {
         return getStaffCourseSectionGradeGridUseCase.get(id);
     }

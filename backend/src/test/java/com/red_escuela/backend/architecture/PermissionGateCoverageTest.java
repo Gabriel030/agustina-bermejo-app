@@ -25,7 +25,7 @@ class PermissionGateCoverageTest {
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "academicstructure", "billing", "evaluation");
+            "billing");
 
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
@@ -35,7 +35,8 @@ class PermissionGateCoverageTest {
             ROOT + ".platform.controller.MyPaymentMethodsController",
             ROOT + ".platform.controller.PlatformAuditLogController",
             ROOT + ".platform.controller.PlatformFeatureController",
-            ROOT + ".platform.controller.PlatformProvisioningController");
+            ROOT + ".platform.controller.PlatformProvisioningController",
+            ROOT + ".evaluation.controller.MeSectionEvaluationConfigController");
 
     private static final Set<String> CONTROLLERS_WITHOUT_ROLE_RULE = Set.of(
             ROOT + ".announcement.controller.MeAnnouncementController",
@@ -56,6 +57,7 @@ class PermissionGateCoverageTest {
             ROOT + ".graduation.certificate.approvedsubjects.controller.MeApprovedSubjectsCertificateController",
             ROOT + ".graduation.procedure.controller.MeProcedureController",
             ROOT + ".graduation.procedure.controller.MeOwnDocumentController",
+            ROOT + ".evaluation.controller.MeExamBoardRegistrationController",
             ROOT + ".graduation.certificate.verification.controller.PublicCertificateController",
             ROOT + ".graduation.certificate.verification.controller.PublicDocumentController",
             ROOT + ".enrollment.controller.MeCourseAdmissionPreviewController",
@@ -79,6 +81,66 @@ class PermissionGateCoverageTest {
             "DirectorApprovalRequestController#list", "DirectorApprovalRequestController#get",
             "DirectorApprovalRequestController#approve", "DirectorApprovalRequestController#reject");
 
+
+    private static final Set<String> ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE = Set.of(
+            "AcademicOfferingCycleController#list",
+            "AcademicOfferingCycleController#get",
+            "AcademicOfferingCycleController#getSections",
+            "ClassroomController#list",
+            "ClassroomController#availability",
+            "CourseController#list",
+            "CourseController#get",
+            "CourseController#getPricing",
+            "CourseSectionController#listByCourseSubject",
+            "CourseSectionController#get",
+            "CourseSectionController#listInstructors",
+            "CourseSubjectController#listByCourse",
+            "CourseSubjectController#get",
+            "ElectiveGroupController#list",
+            "ElectiveGroupController#get",
+            "ElectiveGroupController#listByProgram",
+            "HolidayController#list",
+            "MeTeachingSectionController#mine",
+            "ProgramController#list",
+            "ProgramController#get",
+            "ProgramController#getPricing",
+            "ProgramSubjectController#listByProgram",
+            "ProgramSubjectController#get",
+            "ProgramSubjectController#listPrerequisites",
+            "ProgramSubjectController#listCorequisites",
+            "ShiftRangeController#list",
+            "SubjectController#list",
+            "SubjectController#get",
+            "SubjectSectionController#listBySubject",
+            "SubjectSectionController#get",
+            "SubjectSectionController#listInstructors",
+            "TermController#list",
+            "TermController#get");
+
+    private static final Set<String> BILLING_ENDPOINTS_MIGRATED_TO_THE_GRID = Set.of(
+            "CollectionReminderImpactController#getImpact", "OverdueContactListController#list",
+            "EnrollmentPaymentStandingController#getProgramEnrollmentStanding", "EnrollmentPaymentStandingController#getCourseEnrollmentStanding",
+            "EnrollmentPaymentStandingController#listProgramEnrollmentStandingHistory", "EnrollmentPaymentStandingController#listCourseEnrollmentStandingHistory",
+            "CollectionReminderScheduleController#listPolicies", "CollectionReminderScheduleController#listGroupVersions",
+            "CollectionReminderScheduleController#listExceptionVersions", "CollectionReminderScheduleController#proposeGroupChange",
+            "CollectionReminderScheduleController#validateGroupChange", "CollectionReminderScheduleController#proposeExceptionChange",
+            "CollectionReminderScheduleController#validateExceptionChange", "CollectionReminderScheduleController#proposeExceptionRemoval",
+            "CollectionReminderSettingsController#proposeOrPublishChange", "CollectionReminderSettingsController#validateChange",
+            "CollectionReminderSettingsController#listVersions", "BillingMetricsController#getFirstMonth", "BillingMetricsController#getPanel",
+            "StudentBillingOverviewController#billingOverview", "FinancialDashboardController#getDashboard", "FinancialDashboardController#getDebtorsPage",
+            "BillingConfigurationAlertController#list", "LatePaymentSettingsController#current", "BillingRunController#list",
+            "BillingRunController#find", "BillingRunController#listItems", "BillingRunAlertController#list",
+            "MonthlyInvoiceRunController#list", "MonthlyInvoiceRunController#find", "MonthlyInvoiceRunController#listItems",
+            "MonthlyInvoiceRunController#listDraftInvoiceGroups", "MonthlyInvoiceSimulationController#simulateMonthlyInvoices");
+
+    private static final Set<String> BILLING_SERVICES_WITHOUT_ROLE_RULE = Set.of(
+            ROOT + ".billing.reporting.usecase.GetMonthlyBillingMetricsService", ROOT + ".billing.reporting.usecase.GetFirstBillingMonthService",
+            ROOT + ".billing.collections.usecase.GetEnrollmentPaymentStandingService", ROOT + ".billing.collections.usecase.ListOverdueContactsService",
+            ROOT + ".billing.collections.usecase.GetCollectionReminderImpactService", ROOT + ".billing.configuration.usecase.ListReminderSchedulePoliciesService",
+            ROOT + ".billing.configuration.usecase.ListReminderScheduleVersionsService", ROOT + ".billing.configuration.usecase.ProposeReminderScheduleChangeService",
+            ROOT + ".billing.configuration.usecase.ValidateReminderScheduleChangeService", ROOT + ".billing.configuration.usecase.ProposeBillingConfigurationChangeService",
+            ROOT + ".billing.configuration.usecase.ValidateBillingConfigurationChangeService", ROOT + ".billing.configuration.usecase.ListConfigurationVersionHistoryService",
+            ROOT + ".billing.configuration.usecase.FindConfigurationVersionAuthorNamesService");
 
     private static final Set<String> BILLING_A2_MIGRATED_ENDPOINTS = Set.of(
             "AnnualUpfrontQuoteController#quoteForStaff", "AnnualUpfrontRequestViewController#listRequestsOfEnrollmentForStaff",
@@ -157,7 +219,7 @@ class PermissionGateCoverageTest {
                     continue;
                 }
                 String endpoint = controller.getSimpleName() + "#" + method.getName();
-                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint)) {
+                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint) || ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint)) {
                     continue;
                 }
                 if (!usesGate(method, controller)) {
@@ -233,6 +295,64 @@ class PermissionGateCoverageTest {
     }
 
     @Test
+    void academicstructureEndpointsExemptFromTheGridKeepOnlyTheirFixedRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        Set<String> declared = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                declared.add(endpoint);
+                if (!ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint)) {
+                    continue;
+                }
+                if (AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class) != null) {
+                    violations.add(endpoint + " must not use the grid");
+                }
+                PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
+                if (preAuthorize != null && !Set.of("isAuthenticated()", "hasRole('DOCENTE')").contains(preAuthorize.value())) {
+                    violations.add(endpoint + " carries an unexpected rule: " + preAuthorize.value());
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+        assertThat(declared).containsAll(ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE);
+    }
+
+    @Test
+    void billingEndpointsMigratedToTheGridRequireTheGateAndTheirServicesCarryNoRoleRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        Set<String> declared = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                if (!BILLING_ENDPOINTS_MIGRATED_TO_THE_GRID.contains(endpoint) || !moduleOf(controller).equals("billing")) {
+                    continue;
+                }
+                declared.add(endpoint);
+                RequiresPermission requiresPermission = AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class);
+                PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
+                if (requiresPermission == null || !requiresPermission.code().startsWith("billing.") || !usesGate(method, controller)
+                        || preAuthorize == null || !preAuthorize.value().contains(GATE_EXPRESSION)) {
+                    violations.add(endpoint + " must be guarded by @RequiresPermission");
+                }
+            }
+        }
+        assertThat(declared).containsExactlyInAnyOrderElementsOf(BILLING_ENDPOINTS_MIGRATED_TO_THE_GRID);
+        for (String serviceName : BILLING_SERVICES_WITHOUT_ROLE_RULE) {
+            Class<?> service = Class.forName(serviceName);
+            if (AnnotatedElementUtils.findMergedAnnotation(service, PreAuthorize.class) != null) {
+                violations.add(service.getSimpleName() + " must not carry a role rule");
+            }
+            for (Method method : service.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
+                    violations.add(service.getSimpleName() + "#" + method.getName() + " must not carry a role rule");
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
     void billingA2EndpointsUseTheGridGate() throws Exception {
         List<String> violations = new ArrayList<>();
         Set<String> found = new HashSet<>();
@@ -284,6 +404,32 @@ class PermissionGateCoverageTest {
         Set<String> present = new HashSet<>();
         controllers().forEach(controller -> present.add(moduleOf(controller)));
         assertThat(present).containsAll(MODULES_PENDING_MIGRATION);
+    }
+
+    @Test
+    void evaluationClassesOutsideControllersCarryNoRoleAnnotationsThatWouldOverrideTheGrid() throws Exception {
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter((reader, factory) -> true);
+        List<String> annotated = new ArrayList<>();
+        int scanned = 0;
+        for (BeanDefinition definition : scanner.findCandidateComponents(ROOT + ".evaluation")) {
+            Class<?> type = Class.forName(definition.getBeanClassName(), false, PermissionGateCoverageTest.class.getClassLoader());
+            boolean fromMainClasses = type.getProtectionDomain().getCodeSource().getLocation().getPath().endsWith("/classes/");
+            if (!fromMainClasses || type.isAnnotationPresent(RestController.class)) {
+                continue;
+            }
+            scanned++;
+            if (AnnotatedElementUtils.findMergedAnnotation(type, PreAuthorize.class) != null) {
+                annotated.add(type.getSimpleName());
+            }
+            for (Method method : type.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
+                    annotated.add(type.getSimpleName() + "#" + method.getName());
+                }
+            }
+        }
+        assertThat(scanned).isPositive();
+        assertThat(annotated).as("service-level role rules in evaluation override the grid in ENFORCE").isEmpty();
     }
 
     private static boolean usesGate(Method method, Class<?> controller) {
