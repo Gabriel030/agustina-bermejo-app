@@ -116,6 +116,20 @@ class BackupStatusFileParserTest {
         assertRejected(validJson().replace("daily-2026-11-20.dump.age", fileName));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"...", "", "a/b", "../a", "a\\\\b"})
+    void dotOnlyEmptyOrSeparatorFileNamesAreRejected(String fileName) {
+        assertRejected(validJson().replace("daily-2026-11-20.dump.age", fileName));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {".a", "a.", "a..b", "a_b-c.dump.age", "-", "_"})
+    void fileNamesWithDotsInsideOtherCharactersAreAccepted(String fileName) throws IOException {
+        BackupStatusSnapshot snapshot = parse(validJson().replace("daily-2026-11-20.dump.age", fileName));
+
+        assertThat(snapshot.tiers().get(0).fileNames()).contains(fileName);
+    }
+
     @Test
     void fileNameLongerThan128IsRejected() {
         assertRejected(validJson().replace("daily-2026-11-20.dump.age", "a".repeat(129)));
