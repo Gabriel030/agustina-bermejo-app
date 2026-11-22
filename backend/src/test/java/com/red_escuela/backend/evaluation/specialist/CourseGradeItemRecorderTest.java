@@ -411,6 +411,10 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
     void loadingAGradeForAClosedExamBoardFails() {
         Setup s = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
         ExamBoard closed = persistExamBoard(s, ExamBoardStatus.CLOSED);
+        ExamBoardInstructor tribunal = new ExamBoardInstructor();
+        tribunal.setExamBoard(closed);
+        tribunal.setInstructor(s.instructor());
+        entityManager.persist(tribunal);
 
         assertThatThrownBy(() -> load(s, boardRequest(closed.getId())))
                 .isInstanceOf(ExamBoardClosedException.class);
