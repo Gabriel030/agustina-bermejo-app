@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -50,5 +50,32 @@ describe('TabPlanDeEstudio — load failure', () => {
     renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
+
+describe('TabPlanDeEstudio — compact layout', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  beforeEach(() => {
+    vi.mocked(useGrillaDeMaterias).mockReset();
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
+  it('shows each subject as a card with its status label on narrow screens', () => {
+    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    vi.mocked(useGrillaDeMaterias).mockReturnValue(
+      grid({
+        pagina: [
+          { key: 'a', subjectName: 'Bases de Datos', subjectCode: 'BD-204', credits: 8, curricularYear: 2, curricularTerm: 'FIRST', estado: 'bloqueada', programSubjectId: null },
+        ],
+      }),
+    );
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Bases de Datos, Bloqueada' })).toBeInTheDocument();
   });
 });

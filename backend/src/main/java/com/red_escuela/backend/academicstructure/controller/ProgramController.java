@@ -7,6 +7,7 @@ import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.academicstructure.service.ProgramService;
 import com.red_escuela.backend.academicstructure.usecase.SetProgramCatalogVisibilityUseCase;
+import com.red_escuela.backend.shared.module.HidesPricesWhenBillingOff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +26,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import java.util.List;
 
 @RestController
+@HidesPricesWhenBillingOff
 @RequestMapping("/programs")
 public class ProgramController {
 

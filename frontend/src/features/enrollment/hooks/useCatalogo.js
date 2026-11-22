@@ -23,12 +23,12 @@ export function useCurso(id) {
   return useQuery({ queryKey: ['curso', id], queryFn: () => apiFetch(`/courses/${id}`), enabled: !!id });
 }
 
-export function useProgramaPricing(id) {
-  return useQuery({ queryKey: ['programa', id, 'pricing'], queryFn: () => apiFetch(`/programs/${id}/pricing`), enabled: !!id });
+export function useProgramaPricing(id, { enabled = true } = {}) {
+  return useQuery({ queryKey: ['programa', id, 'pricing'], queryFn: () => apiFetch(`/programs/${id}/pricing`), enabled: !!id && enabled });
 }
 
-export function useCursoPricing(id) {
-  return useQuery({ queryKey: ['curso', id, 'pricing'], queryFn: () => apiFetch(`/courses/${id}/pricing`), enabled: !!id });
+export function useCursoPricing(id, { enabled = true } = {}) {
+  return useQuery({ queryKey: ['curso', id, 'pricing'], queryFn: () => apiFetch(`/courses/${id}/pricing`), enabled: !!id && enabled });
 }
 
 export function useOpenProgramCohorts(id) {

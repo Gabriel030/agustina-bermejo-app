@@ -21,4 +21,16 @@ describe('LoadErrorState', () => {
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Volver a la lista' })).toHaveAttribute('href', '/volver');
   });
+
+  it('shows no access and no retry on 403', () => {
+    renderWithProviders(<LoadErrorState error={{ status: 403 }} onRetry={vi.fn()} distinguishForbidden />);
+    expect(screen.getByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the generic failure with retry on 403 unless forbidden is distinguished', () => {
+    renderWithProviders(<LoadErrorState error={{ status: 403 }} onRetry={vi.fn()} resource="la plantilla" />);
+    expect(screen.getByText('No pudimos cargar la plantilla')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
 });
