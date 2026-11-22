@@ -105,6 +105,12 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints del alumno (/me/*) y la configuración de evaluación del docente (/me/section-evaluation-configs) quedan fuera de la grilla. El resto de los endpoints migrados de evaluation ya permiten al Director y no cambian.
 
+De esos endpoints, load_grade_item, publish_grades, record_exam_recovery, read_grade_grid, confirm_commission_closure (confirmar y observación) y record_exam_board_final_grades dejan pasar al Director en Activo, pero el handler resuelve el instructor actual y, si el Director no tiene ficha de instructor, falla con InstructorNotFoundException (404): en la práctica sigue sin poder hacer acciones de docente salvo que tenga esa ficha.
+
+## Academicrecord
+
+El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración ni cambio de resultado para el Director en ENFORCE.
+
 ## Notas operativas
 
 - Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.

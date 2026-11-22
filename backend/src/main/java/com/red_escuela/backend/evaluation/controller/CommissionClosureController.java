@@ -28,13 +28,13 @@ import com.red_escuela.backend.evaluation.usecase.closure.GetClosureStudentPrere
 import com.red_escuela.backend.evaluation.usecase.closure.GetClosureStudentPrerequisitesUseCase;
 import com.red_escuela.backend.evaluation.usecase.closure.RecordClosureObservationCommand;
 import com.red_escuela.backend.evaluation.usecase.closure.RecordClosureObservationUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

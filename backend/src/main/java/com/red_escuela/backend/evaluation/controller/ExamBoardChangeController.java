@@ -7,8 +7,8 @@ import com.red_escuela.backend.evaluation.usecase.examboard.CancelExamBoardComma
 import com.red_escuela.backend.evaluation.usecase.examboard.CancelExamBoardUseCase;
 import com.red_escuela.backend.evaluation.usecase.examboard.RescheduleExamBoardCommand;
 import com.red_escuela.backend.evaluation.usecase.examboard.RescheduleExamBoardUseCase;
-import jakarta.validation.Valid;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

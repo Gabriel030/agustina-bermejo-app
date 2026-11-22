@@ -8,7 +8,6 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.specialist.ExamBoardManager;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,6 +20,7 @@ import java.util.List;
 import java.util.Set;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 

@@ -11,8 +11,8 @@ import com.red_escuela.backend.evaluation.usecase.sectionconfig.GetSectionEvalua
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.ListSectionEvaluationConfigsUseCase;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.RejectSectionEvaluationConfigCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.RejectSectionEvaluationConfigUseCase;
-import jakarta.validation.Valid;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
