@@ -1,6 +1,7 @@
 import { newIdempotencyKey } from '@/api/idempotencyKey';
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Clock } from 'lucide-react';
+import { StickyActionBar } from '@/components/StickyActionBar';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
 import { InvoiceCoverageList } from '@/components/billing/InvoiceCoverageList';
@@ -238,24 +239,19 @@ export function BankTransferReceiptForm({
         )}
       </GlassCard>
 
-      <GlassCard className="sticky bottom-4 z-10 flex items-center justify-between gap-4 p-4">
-        <div className="flex min-w-0 flex-col">
-          <span className="text-lg font-bold tabular-nums text-ink">
-            {formatMoney({ amount: Number.isFinite(amount) ? amount.toFixed(2) : '0.00', currency })}
-          </span>
-          <span className="truncate text-xs text-ink-faint">
-            {summaryLabel} · total elegido {formatMoney({ amount: total.toFixed(2), currency })}
-          </span>
-        </div>
+      <StickyActionBar
+        summary={formatMoney({ amount: Number.isFinite(amount) ? amount.toFixed(2) : '0.00', currency })}
+        hint={`${summaryLabel} · total elegido ${formatMoney({ amount: total.toFixed(2), currency })}`}
+      >
         {staff && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" className="min-h-11" onClick={onCancel}>
             Cancelar
           </Button>
         )}
-        <Button type="submit" variant="primary" loading={isPending}>
+        <Button type="submit" variant="primary" className="min-h-11" loading={isPending}>
           {isPending ? 'Enviando…' : copy.submit}
         </Button>
-      </GlassCard>
+      </StickyActionBar>
     </form>
   );
 }
