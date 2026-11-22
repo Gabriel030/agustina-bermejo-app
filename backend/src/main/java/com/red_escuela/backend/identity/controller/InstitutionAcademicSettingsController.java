@@ -5,7 +5,7 @@ import com.red_escuela.backend.identity.dto.AcademicSettingsResponse;
 import com.red_escuela.backend.identity.usecase.institution.GetAcademicSettingsUseCase;
 import com.red_escuela.backend.identity.usecase.institution.UpdateAcademicSettingsUseCase;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,13 +26,13 @@ public class InstitutionAcademicSettingsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('DIRECTOR','ADMINISTRATIVO','PRECEPTOR','DOCENTE')")
+    @RequiresPermission(code = "identity.read_academic_settings", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO,ROLE_PRECEPTOR,ROLE_DOCENTE")
     public AcademicSettingsResponse get() {
         return getAcademicSettings.get();
     }
 
     @PutMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.update_academic_settings", legacyRoles = "ROLE_DIRECTOR")
     public AcademicSettingsResponse update(@Valid @RequestBody AcademicSettingsRequest request) {
         return updateAcademicSettings.update(request);
     }

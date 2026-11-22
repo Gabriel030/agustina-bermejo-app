@@ -10,6 +10,7 @@ import { reiniciarAvisosMarcados } from '@/features/announcements';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 import { installFixedClock } from '@/test/fixedClock';
+import { studentHomeHandlers } from '@/test/fixtures/studentHome';
 import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION } from '@/lib/notificaciones';
 
 vi.mock('@/context/AuthContext', () => ({
@@ -40,8 +41,7 @@ function unAviso(extra = {}) {
 
 function mockearBase(avisos = []) {
   server.use(
-    http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
-    http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+    ...studentHomeHandlers(),
     http.get(`${API}/me/announcements`, () => HttpResponse.json(avisos)),
   );
 }
@@ -202,8 +202,7 @@ describe('AlumnoInicio — deep link del aviso', () => {
     reiniciarAvisosMarcados();
     let announcements = manyAnnouncements(2);
     server.use(
-      http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
-      http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+      ...studentHomeHandlers(),
       http.get(`${API}/me/announcements`, () => HttpResponse.json(announcements)),
       http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })),
     );
@@ -251,8 +250,7 @@ describe('AlumnoInicio — deep link del aviso', () => {
     });
     let calls = 0;
     server.use(
-      http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
-      http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+      ...studentHomeHandlers(),
       http.get(`${API}/me/announcements`, async () => {
         calls += 1;
         if (calls > 1) await gate;
@@ -453,17 +451,6 @@ describe('AlumnoInicio — cuerpo de los avisos', () => {
   });
 });
 
-describe('AlumnoInicio — cursos', () => {
-  it('un alumno solo en lista de espera no ve cursos en curso sino su lugar en la espera', async () => {
-    mockearBase([]);
-    server.use(http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([{ id: 1, status: 'WAITLISTED' }])));
-    montar();
-
-    expect(await screen.findByText('Estás en lista de espera de 1 curso')).toBeInTheDocument();
-    expect(screen.queryByText(/en curso/)).not.toBeInTheDocument();
-  });
-});
-
 describe('Contrato NotificationType — todo tipo tiene label y tono', () => {
   const TIPOS_BACKEND = [
     'SECTION_EVAL_CONFIG_PROPOSED',
@@ -505,7 +492,7 @@ describe('AlumnoInicio — matrícula de ingreso (D-227)', () => {
     admissionInvoice: { id: 77, total: { amount: '50000.00', currency: 'ARS' }, dueDate: '2099-03-20', paymentStatus: 'PENDING' },
   };
 
-  it('muestra la card de la matrícula impaga y no dice que no hay saldo pendiente', async () => {
+  it('muestra la card de la matrícula impaga sin tarjeta de estado de cuenta', async () => {
     mockearBase([]);
     server.use(
       http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([solicitudAprobada])),
@@ -513,20 +500,7 @@ describe('AlumnoInicio — matrícula de ingreso (D-227)', () => {
     montar();
 
     expect(await screen.findByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).toBeInTheDocument();
-    expect(await screen.findByText('Matrícula de ingreso pendiente')).toBeInTheDocument();
-    expect(screen.queryByText('Pagala para confirmar tu inscripción.')).not.toBeInTheDocument();
-    expect(screen.queryByText('No tenés saldo pendiente.')).not.toBeInTheDocument();
-  });
-
-  it('sin matrículas impagas sigue diciendo que no hay saldo pendiente', async () => {
-    mockearBase([]);
-    server.use(
-      http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
-    );
-    montar();
-
-    expect(await screen.findByText('No tenés saldo pendiente.')).toBeInTheDocument();
-    expect(screen.queryByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).not.toBeInTheDocument();
+    expect(screen.queryByText('Estado de cuenta')).not.toBeInTheDocument();
   });
 });
 

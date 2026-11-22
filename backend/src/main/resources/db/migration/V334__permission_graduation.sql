@@ -17,3 +17,5 @@ from (values
     ('ADMINISTRATIVO', 'graduation.read_certificates')
 ) as grants (role, code)
 join permission on permission.code = grants.code;
+
+update permission set sensitive = true where code in ('certificate.revoke', 'certificate.issue', 'certificate.templates_manage');

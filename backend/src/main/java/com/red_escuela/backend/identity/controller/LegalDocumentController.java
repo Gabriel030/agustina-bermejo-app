@@ -25,7 +25,7 @@ import com.red_escuela.backend.identity.usecase.legal.GetPendingLegalAcceptances
 import com.red_escuela.backend.identity.usecase.legal.ListLegalAcceptancesUseCase;
 import com.red_escuela.backend.shared.pagination.PageResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -81,7 +81,7 @@ public class LegalDocumentController {
     }
 
     @GetMapping("/legal-acceptances")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.read_legal_acceptances", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PageResponse<LegalAcceptanceResponse> listAcceptances(
             @RequestParam(required = false) Long personId,
             @RequestParam(required = false) LegalDocumentType documentType,

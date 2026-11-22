@@ -1,83 +1,124 @@
-import { StablePageHeight } from '@/components/StablePageHeight';
-import { Fragment } from 'react';
-import { useQueries } from '@tanstack/react-query';
+import { Fragment, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { ListFilter } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
+import { ProgressBar } from '@/components/ProgressBar';
+import { Notice } from '@/components/Notice';
+import { Button } from '@/components/ui/button';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption } from '@/components/ui/table';
+import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
+import { PlanStatusFilter } from '@/features/workspace/components/PlanStatusFilter';
 import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
 import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPills';
 import { PlanSubjectCard } from '@/features/workspace/components/PlanSubjectCard';
-import { Paginador } from '@/components/Paginador';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption } from '@/components/ui/table';
-import { EstadoColumnFilter } from '@/components/alumno/EstadoColumnFilter';
-import { AnioColumnFilter } from '@/components/alumno/AnioColumnFilter';
-import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
-import { SortableColumnHeader } from '@/components/alumno/SortableColumnHeader';
+import { PlanBlockedHint } from '@/features/workspace/components/PlanBlockedHint';
+import { ElectiveGroupsSummary } from '@/features/workspace/components/ElectiveGroupsSummary';
+import { GraduationProjectionCard } from '@/features/workspace/components/GraduationProjectionCard';
+import { useCurriculumProgress } from '@/features/enrollment';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { apiFetch } from '@/api/client';
-import { useGrillaDeMaterias } from '@/hooks/useGrillaDeMaterias';
-import { TIPOLOGIA_LABEL } from '@/lib/notas';
+import {
+  buildPlanRows,
+  describeCorequisite,
+  filterPlanRows,
+  formatEarnedCredits,
+  normalizeStatusFilter,
+  formatFinalScore,
+} from '@/features/workspace/lib/curriculumPlan';
 
-// Pestaña "Plan de estudio" de Mis carreras (Épica 2 Fase 2) — materias por año con
-// créditos, correlativas y tipología. Correlativas: solo los
-// requisitos INMEDIATOS/explícitos de cada materia (GET /program-subjects/{id}/prerequisites,
-// dato real) — nunca la cadena completa de materias previas, pedido explícito del
-// usuario ("no voy a poner todas las materias anteriores... sino las que pusimos
-// como requisito específico"). Mismos filtros/agrupamiento por año y estado que el
-// resto de las pestañas de Mis carreras.
-// Criterio de orden propio de esta pestaña (además de Materia/Año/Estado, que
-// ya trae useGrillaDeMaterias) — "Créditos" solo tiene sentido acá.
-const CRITERIOS_EXTRA = [{ id: 'credits', accessor: (f) => f.credits }];
+const COLUMN_COUNT = 5;
 
-// Orden natural del plan de estudio (sin un orden explícito elegido por el
-// usuario) — pedido explícito: año, después cuatrimestre (las cuatrimestrales
-// antes que las anuales del mismo año, y entre las cuatrimestrales 1° antes
-// que 2°), y recién dentro de ese segmento, por código. El orden por estado
-// que usan Materias/Notas no tiene sentido acá: esta pestaña muestra el plan
-// tal cual está diseñado, no el progreso del alumno sobre él.
-const RANGO_CUATRIMESTRE = { FIRST: 0, SECOND: 1, ANNUAL: 2 };
+const WARNING_MESSAGES = {
+  PLAN_WITHOUT_CREDITS: 'El plan no define créditos: el avance se calcula por materias aprobadas.',
+  PLAN_CHANGED_AFTER_ENROLLMENT: 'El plan de estudios cambió desde tu inscripción.',
+};
 
-function compararPlanDeEstudio(a, b) {
-  const porAnio = (a.curricularYear ?? Infinity) - (b.curricularYear ?? Infinity);
-  if (porAnio !== 0) return porAnio;
-  const porCuatrimestre = (RANGO_CUATRIMESTRE[a.curricularTerm] ?? 99) - (RANGO_CUATRIMESTRE[b.curricularTerm] ?? 99);
-  if (porCuatrimestre !== 0) return porCuatrimestre;
-  return (a.subjectCode ?? '').localeCompare(b.subjectCode ?? '');
+function PlanWarnings({ warnings }) {
+  return warnings.map((warning) => (
+    <Notice key={warning.code} tone="warning">
+      {WARNING_MESSAGES[warning.code] ?? warning.message}
+    </Notice>
+  ));
+}
+
+function PlanStatusCell({ row }) {
+  return (
+    <div className="flex flex-col items-start gap-0.5 py-1.5">
+      <span className="inline-flex items-center gap-1">
+        <PlanStatusPill status={row.estado} />
+        {row.estado === 'bloqueada' && <PlanBlockedHint subjectName={row.subjectName} blockedBy={row.blockedBy} />}
+      </span>
+      {row.corequisites.map((corequisite) => (
+        <span key={corequisite.subjectId} className="text-size-12 text-ink-faint">
+          {describeCorequisite(corequisite)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function PlanRowCells({ row }) {
+  return (
+    <>
+      <TableCell className="font-semibold text-ink">
+        <div className="truncate">{row.subjectName}</div>
+        <div className="text-size-12 font-normal text-ink-faint">{row.subjectCode}</div>
+      </TableCell>
+      <TableCell className="text-right tabular-nums">
+        {formatEarnedCredits(row)}
+      </TableCell>
+      <TableCell>
+        <PlanStatusCell row={row} />
+      </TableCell>
+      <TableCell className="text-right tabular-nums">{formatFinalScore(row.finalScore)}</TableCell>
+      <TableCell>
+        {row.courseworkDone ? (
+          <ProgressBar value={100} label="Cursada completa" tone="success" showValue={false} />
+        ) : (
+          <span className="text-ink-faint">—</span>
+        )}
+      </TableCell>
+    </>
+  );
 }
 
 export function TabPlanDeEstudio({ carreraId }) {
   const compact = useMediaQuery('(max-width: 767px)');
-  const {
-    pagina,
-    page,
-    setPage,
-    totalPages,
-    cargando,
-    fallo,
-    recargar,
-    estado,
-    cambiarEstado,
-    anio,
-    cambiarAnio,
-    anios,
-    toggleOrden,
-    estadoDe,
-    hayOrdenExplicito,
-  } = useGrillaDeMaterias(carreraId, CRITERIOS_EXTRA, compararPlanDeEstudio);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusFilter = normalizeStatusFilter(searchParams.get('estado'));
+  const { data: progress, isLoading, isError, error, refetch } = useCurriculumProgress(carreraId);
 
-  const correlativasQueries = useQueries({
-    queries: pagina.map((fila) => ({
-      queryKey: ['program-subjects', fila.programSubjectId, 'prerequisites'],
-      queryFn: () => apiFetch(`/program-subjects/${fila.programSubjectId}/prerequisites`),
-      enabled: !!fila.programSubjectId,
-    })),
-  });
+  const rows = useMemo(() => buildPlanRows(progress?.subjects, progress?.summary.requiredCredits > 0), [progress]);
+  const visibleRows = useMemo(() => filterPlanRows(rows, statusFilter), [rows, statusFilter]);
 
-  let anioAnterior;
+  function changeStatusFilter(next) {
+    if (next === 'todas') searchParams.delete('estado');
+    else searchParams.set('estado', next);
+    setSearchParams(searchParams, { replace: true });
+  }
+
+  const filterEmptyState = (
+    <EmptyState
+      title="Ninguna materia coincide"
+      description="Probá con otro estado."
+      action={
+        <Button variant="outline" className="h-11" onClick={() => changeStatusFilter('todas')}>
+          <ListFilter className="h-4 w-4" aria-hidden="true" />
+          Quitar filtro
+        </Button>
+      }
+    />
+  );
+
+  let previousYear;
 
   return (
     <div className="flex flex-1 flex-col gap-5">
+      <GraduationProjectionCard carreraId={carreraId} />
+      {progress && <PlanWarnings warnings={progress.warnings} />}
       <ul aria-label="Referencia de estados" className="flex flex-wrap gap-1.5">
         {Object.keys(PLAN_STATUS_PILL).map((status) => (
           <li key={status}>
@@ -85,127 +126,112 @@ export function TabPlanDeEstudio({ carreraId }) {
           </li>
         ))}
       </ul>
-      <StablePageHeight resetKey={`${estado}-${anio}`}>
       {compact ? (
-      <div className="flex flex-col gap-2.5">
-        {cargando ? (
-          <>
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
-          </>
-        ) : fallo ? (
-          <LoadErrorState onRetry={recargar} resource="el plan de estudio" bare />
-        ) : pagina.length === 0 ? (
-          <EmptyState title="No hay materias para mostrar" description="Probá con otro filtro." />
-        ) : (
-          pagina.map((fila, i) => <PlanSubjectCard key={fila.key} row={fila} prerequisites={correlativasQueries[i]?.data ?? []} />)
-        )}
-      </div>
+        <div className="flex flex-col gap-2.5">
+          <PlanStatusFilter value={statusFilter} onChange={changeStatusFilter} className="w-full" />
+          {isLoading ? (
+            <>
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+            </>
+          ) : isError ? (
+            <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare />
+          ) : rows.length === 0 ? (
+            <EmptyState title="El plan todavía no tiene materias" description="Cuando se carguen las vas a ver acá." />
+          ) : visibleRows.length === 0 ? (
+            filterEmptyState
+          ) : (
+            visibleRows.map((row) => {
+              const newGroup = row.curricularYear !== previousYear;
+              previousYear = row.curricularYear;
+              return (
+                <Fragment key={row.key}>
+                  {newGroup && (
+                    <h2 className="pt-1 text-size-11 font-bold tracking-wide text-ink-faint uppercase">
+                      {row.curricularYear != null ? `${row.curricularYear}° año` : 'Sin año asignado'}
+                    </h2>
+                  )}
+                  <PlanSubjectCard row={row} />
+                </Fragment>
+              );
+            })
+          )}
+        </div>
       ) : (
-      <GlassCard className="flex flex-col p-1">
-        {/* El header (con los filtros de Año/Estado embebidos) se renderiza SIEMPRE —
-            ver comentario del mismo patrón en TabMaterias.jsx/TabNotas.jsx/TabAsistencia.jsx. */}
-        <div className="overflow-x-auto">
-        <Table className="min-w-[720px]">
-          <TableCaption className="sr-only">Plan de estudio</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Código</TableHead>
-              <TableHead>
-                <SortableColumnHeader label="Materia" sortId="subjectName" sortState={estadoDe('subjectName')} onToggle={toggleOrden} />
-              </TableHead>
-              <TableHead>
-                <SortableColumnHeader
-                  label="Año"
-                  sortId="curricularYear"
-                  sortState={estadoDe('curricularYear')}
-                  onToggle={toggleOrden}
-                  extra={<AnioColumnFilter anios={anios} value={anio} onChange={cambiarAnio} />}
-                />
-              </TableHead>
-              <TableHead>
-                <SortableColumnHeader label="Créditos" sortId="credits" sortState={estadoDe('credits')} onToggle={toggleOrden} />
-              </TableHead>
-              <TableHead>Correlativas</TableHead>
-              <TableHead>Tipología</TableHead>
-              <TableHead>
-                <SortableColumnHeader
-                  label="Estado"
-                  sortId="estado"
-                  sortState={estadoDe('estado')}
-                  onToggle={toggleOrden}
-                  extra={<EstadoColumnFilter value={estado} onChange={cambiarEstado} />}
-                />
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {cargando ? (
-              <TableRow>
-                <TableCell colSpan={7} className="p-4">
-                  <div className="flex flex-col gap-2">
-                    <Skeleton className="h-10" />
-                    <Skeleton className="h-10" />
-                    <Skeleton className="h-10" />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : fallo ? (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <LoadErrorState onRetry={recargar} resource="el plan de estudio" bare />
-                </TableCell>
-              </TableRow>
-            ) : pagina.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <EmptyState title="No hay materias para mostrar" description="Probá con otro filtro." />
-                </TableCell>
-              </TableRow>
-            ) : (
-              pagina.map((fila, i) => {
-                const nuevoGrupo = !hayOrdenExplicito && fila.curricularYear !== anioAnterior;
-                anioAnterior = fila.curricularYear;
-                const query = correlativasQueries[i];
-                const correlativas = query?.data ?? [];
-
-                return (
-                  <Fragment key={fila.key}>
-                    {nuevoGrupo && <AnioGroupHeaderRow anio={fila.curricularYear} colSpan={7} />}
-                    <TableRow className={fila.estado === 'bloqueada' ? 'opacity-60' : ''}>
-                      <TableCell className="font-semibold text-ink-faint">{fila.subjectCode ?? '—'}</TableCell>
-                      <TableCell className="font-semibold text-ink"><div className="max-w-[180px] truncate">{fila.subjectName}</div></TableCell>
-                      <TableCell className="text-ink-faint">{fila.curricularYear ? `${fila.curricularYear}°` : '—'}</TableCell>
-                      <TableCell className="text-ink-faint">{fila.credits ?? '—'}</TableCell>
-                      <TableCell className="whitespace-normal text-ink-faint">
-                        {query?.isLoading ? (
-                          <Skeleton className="h-4 w-24" />
-                        ) : correlativas.length === 0 ? (
-                          'Sin correlativas'
-                        ) : (
-                          // "Nombre + código" — pedido explícito del usuario, para que la
-                          // correlativa quede inequívoca aunque haya materias con nombres
-                          // parecidos.
-                          correlativas.map((c) => `${c.prerequisiteSubjectName} (${c.prerequisiteSubjectCode})`).join(', ')
-                        )}
-                      </TableCell>
-                      <TableCell className="text-ink-faint">{TIPOLOGIA_LABEL[fila.curricularTerm] ?? '—'}</TableCell>
-                      <TableCell>
-                        <PlanStatusPill status={fila.estado} />
+        <GlassCard className="flex flex-col p-1">
+          <div className="overflow-x-auto">
+            <TooltipProvider>
+              <Table className="table-fixed min-w-[720px]">
+                <colgroup>
+                  <col className="w-[30%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[30%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[21%]" />
+                </colgroup>
+                <TableCaption className="sr-only">Plan de estudio por año</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Materia</TableHead>
+                    <TableHead className="text-right">Créditos</TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <span>Estado</span>
+                        <PlanStatusFilter value={statusFilter} onChange={changeStatusFilter} className="h-11 border-none bg-transparent px-2 text-xs font-semibold text-ink-faint shadow-none hover:text-ink" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">Nota</TableHead>
+                    <TableHead>Cursada</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={COLUMN_COUNT} className="p-4">
+                        <div className="flex flex-col gap-2">
+                          <Skeleton className="h-10" />
+                          <Skeleton className="h-10" />
+                          <Skeleton className="h-10" />
+                        </div>
                       </TableCell>
                     </TableRow>
-                  </Fragment>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-        </div>
-      </GlassCard>
+                  ) : isError ? (
+                    <TableRow>
+                      <TableCell colSpan={COLUMN_COUNT}>
+                        <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare />
+                      </TableCell>
+                    </TableRow>
+                  ) : rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={COLUMN_COUNT}>
+                        <EmptyState title="El plan todavía no tiene materias" description="Cuando se carguen las vas a ver acá." />
+                      </TableCell>
+                    </TableRow>
+                  ) : visibleRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={COLUMN_COUNT}>{filterEmptyState}</TableCell>
+                    </TableRow>
+                  ) : (
+                    visibleRows.map((row) => {
+                      const newGroup = row.curricularYear !== previousYear;
+                      previousYear = row.curricularYear;
+                      return (
+                        <Fragment key={row.key}>
+                          {newGroup && <AnioGroupHeaderRow anio={row.curricularYear} colSpan={COLUMN_COUNT} />}
+                          <TableRow>
+                            <PlanRowCells row={row} />
+                          </TableRow>
+                        </Fragment>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </TooltipProvider>
+          </div>
+        </GlassCard>
       )}
-      </StablePageHeight>
-
-      <Paginador page={page} totalPages={totalPages} onChange={setPage} />
+      {progress && <ElectiveGroupsSummary groups={progress.summary.electiveGroups} />}
     </div>
   );
 }

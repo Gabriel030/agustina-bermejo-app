@@ -3,11 +3,13 @@ import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
+import { curriculumProgressHandlers } from '@/test/mocks/handlers';
 import { axe } from '@/test/axe';
 import { installFixedClock } from '@/test/fixedClock';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { renderWithAppCache } from '@/test/renderWithAppCache';
 import { contractList, contractObject } from '@/test/fixtures/fromContract';
+import { studentHomeHandlers } from '@/test/fixtures/studentHome';
 import { calendarHandler } from '@/test/fixtures/studentCalendar';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
@@ -49,8 +51,7 @@ afterEach(() => {
 describe('pilot screens accessibility (jsdom does not measure color contrast, covered by tokens.test.js)', () => {
   it('studentHomeHasNoAxeViolations', async () => {
     server.use(
-      http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
-      http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+      ...studentHomeHandlers(),
       http.get(`${API}/me/announcements`, () => HttpResponse.json([])),
     );
     const { container } = renderWithProviders(
@@ -126,6 +127,7 @@ describe('pilot screens accessibility (jsdom does not measure color contrast, co
       http.get(`${API}/me/regular-certificates/eligibility`, () =>
         HttpResponse.json({ kind: 'PROGRAM', enrollmentId: 5, regular: true, reasons: [], attendanceControlled: true, billingMode: 'FULL', institutionallyRegular: true, paymentStanding: 'VERIFIED' }),
       ),
+      ...curriculumProgressHandlers,
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     const { container } = renderWithProviders(<AlumnoMisCarreras />);
@@ -145,6 +147,7 @@ describe('pilot screens accessibility (jsdom does not measure color contrast, co
       http.get(`${API}/me/section-enrollments/7/attendance/risk`, () =>
         HttpResponse.json({ absencePercent: 0, calculable: false, libre: false, maxAbsencePercent: 25 }),
       ),
+      ...curriculumProgressHandlers,
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     const { container } = renderWithProviders(

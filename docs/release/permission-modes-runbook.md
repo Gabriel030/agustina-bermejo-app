@@ -66,7 +66,15 @@ Endpoint que hoy deniega al Director y pasaría a permitirlo en Activo:
 
 - POST /graduation-requests/{id}/verify-debt (graduation.verify_debt)
 
-Los permisos certificate.* usados por los certificados de egreso y sus plantillas pertenecen al módulo certificate: su modo se configura aparte del de graduation. Las constancias de #1103, las rutas de alumno y las públicas no usan la grilla.
+Los permisos certificate.* usados por los certificados de egreso y sus plantillas pertenecen al módulo certificate: su modo se configura aparte del de graduation. Las constancias de #1103, las rutas de alumno y las públicas no usan la grilla. Los permisos certificate.revoke, certificate.issue y certificate.templates_manage pasan a ser sensibles.
+
+### Identity
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /students/{id}/reset-password (identity.reset_student_password): hoy solo lo permiten Preceptor y Administrativo (discrepancia esperada, #1216).
+
+El resto de los endpoints migrados de identity ya permiten al Director y no cambian.
 
 ## Notas operativas
 
