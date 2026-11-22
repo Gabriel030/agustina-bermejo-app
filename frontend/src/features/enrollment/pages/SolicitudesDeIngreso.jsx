@@ -98,6 +98,7 @@ function buildColumns({ basePath, history }) {
     id: 'requestedAt',
     header: 'Solicitada',
     accessorFn: (application) => application.requestedAt,
+    enableSorting: !history,
     meta: { headerClassName: 'whitespace-nowrap' },
     cell: ({ row }) => <RequestedCell application={row.original} />,
   };
@@ -158,14 +159,25 @@ function buildColumns({ basePath, history }) {
   ];
 }
 
+function keepAvailable(selected, options) {
+  if (!Array.isArray(selected)) return undefined;
+  const available = selected.filter((value) => options.some((option) => option.value === value));
+  return available.length === options.length ? undefined : available;
+}
+
 function PendingList({ basePath }) {
   const navigate = useNavigate();
   const pending = usePendingApplications();
-  const [programs, setPrograms] = useState();
-  const [documentations, setDocumentations] = useState();
+  const [storedPrograms, setPrograms] = useState();
+  const [storedDocumentations, setDocumentations] = useState();
   const columns = useMemo(() => buildColumns({ basePath, history: false }), [basePath]);
   const all = useMemo(() => pending.data ?? [], [pending.data]);
   const options = useMemo(() => pendingFilterOptions(all), [all]);
+  const programs = useMemo(() => keepAvailable(storedPrograms, options.programs), [storedPrograms, options.programs]);
+  const documentations = useMemo(
+    () => keepAvailable(storedDocumentations, options.documentations),
+    [storedDocumentations, options.documentations],
+  );
   const visible = useMemo(
     () => filterPendingApplications(all, { programs, documentations }),
     [all, programs, documentations],
@@ -301,7 +313,6 @@ function HistoryList({ basePath }) {
         columns={columns}
         data={items}
         getRowId={(application) => String(application.id)}
-        initialSorting={[{ id: 'requestedAt', desc: true }]}
         minWidth={860}
         isLoading={history.isLoading}
         isError={history.isError}

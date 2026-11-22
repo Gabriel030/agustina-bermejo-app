@@ -314,6 +314,7 @@ export function SolicitudDeIngresoDetalle() {
   const busy = approve.isPending || reject.isPending;
   const blockReason = check.isLoading ? 'Verificando condiciones…' : approvalBlockReason(check.data);
   const showActions = isPending && !conflict;
+  const awaitingRefresh = conflict && isPending;
   const age = ageLabel(application.requestedAt);
 
   function handleConflict() {
@@ -386,7 +387,7 @@ export function SolicitudDeIngresoDetalle() {
             {cohort ? ` · ${cohort}` : ''}
           </p>
         </div>
-        <StatusPill tone={conflict ? 'success' : status.tone}>{conflict ? APPLICATION_STATUS.APPROVED.label : status.label}</StatusPill>
+        <StatusPill tone={awaitingRefresh ? 'neutral' : status.tone}>{awaitingRefresh ? 'Estado actualizado' : status.label}</StatusPill>
       </div>
 
       <div role="status" aria-live="polite">

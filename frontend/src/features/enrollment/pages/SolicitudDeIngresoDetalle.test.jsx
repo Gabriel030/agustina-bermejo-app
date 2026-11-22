@@ -177,6 +177,30 @@ describe('SolicitudDeIngresoDetalle', () => {
     expect(screen.getByRole('link', { name: 'Volver a la bandeja' })).toBeInTheDocument();
   });
 
+  it.each([
+    ['REJECTED', 'Rechazada'],
+    ['EXPIRED', 'Vencida'],
+  ])('shows the real %s status after a state conflict and never Aprobada', async (status, label) => {
+    let resolved = false;
+    mockReview();
+    server.use(
+      http.get(`${BASE}/51`, () =>
+        HttpResponse.json(reviewApplication(resolved ? { status, decidedByName: 'Marcela Díaz', decidedAt: '2026-11-07T10:00:00' } : {})),
+      ),
+      http.post(`${BASE}/51/approve`, () => {
+        resolved = true;
+        return HttpResponse.json(errorBody('INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE'), { status: 409 });
+      }),
+    );
+    renderDetail();
+    await userEvent.click(await screen.findByRole('button', { name: 'Aprobar solicitud' }));
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Aprobar' }));
+
+    expect(await screen.findByText('Otra persona ya resolvió esta solicitud.')).toBeInTheDocument();
+    expect(await screen.findByText(label)).toBeInTheDocument();
+    expect(screen.queryByText('Aprobada')).not.toBeInTheDocument();
+  });
+
   it('keeps the dialog values and shows the server message when approving fails for another reason', async () => {
     mockReview();
     server.use(
