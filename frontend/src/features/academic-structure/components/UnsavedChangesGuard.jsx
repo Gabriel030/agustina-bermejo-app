@@ -12,7 +12,7 @@ function findInternalAnchor(event) {
   return url;
 }
 
-export function useUnsavedChangesGuard(dirty) {
+export function useUnsavedChangesGuard(dirty, description = 'Tenés cambios sin guardar. Si salís ahora, se pierden.') {
   const navigate = useNavigate();
   const [pendingPath, setPendingPath] = useState(null);
   const dirtyRef = useRef(dirty);
@@ -59,7 +59,7 @@ export function useUnsavedChangesGuard(dirty) {
         if (!open) setPendingPath(null);
       }}
       title="¿Salir sin guardar?"
-      description="Tenés cambios sin guardar. Si salís ahora, se pierden."
+      description={description}
       confirmLabel="Salir sin guardar"
       onConfirm={() => {
         const path = pendingPath;

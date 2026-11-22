@@ -5,7 +5,7 @@ import com.red_escuela.backend.evaluation.dto.TeacherGradeGridResponse;
 import com.red_escuela.backend.evaluation.usecase.gradegrid.GetSectionGradeGridCommand;
 import com.red_escuela.backend.evaluation.usecase.gradegrid.GetTeacherCourseSectionGradeGridUseCase;
 import com.red_escuela.backend.evaluation.usecase.gradegrid.GetTeacherProgramSectionGradeGridUseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,14 +26,14 @@ public class TeacherGradeGridController {
     }
 
     @GetMapping("/program-sections/{id}/grade-grid")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.read_grade_grid", legacyRoles = "ROLE_DOCENTE")
     public TeacherGradeGridResponse getProgramSectionGradeGrid(@PathVariable Long id) {
         Long instructorId = currentInstructorService.resolveCurrentInstructor().getId();
         return getTeacherProgramSectionGradeGridUseCase.get(new GetSectionGradeGridCommand(id, instructorId));
     }
 
     @GetMapping("/course-sections/{id}/grade-grid")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.read_grade_grid", legacyRoles = "ROLE_DOCENTE")
     public TeacherGradeGridResponse getCourseSectionGradeGrid(@PathVariable Long id) {
         Long instructorId = currentInstructorService.resolveCurrentInstructor().getId();
         return getTeacherCourseSectionGradeGridUseCase.get(new GetSectionGradeGridCommand(id, instructorId));

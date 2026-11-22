@@ -1,5 +1,6 @@
 package com.red_escuela.backend.architecture;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.shared.time.RawNowRule;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -27,11 +28,11 @@ class AuthorizationRequestEndpointsGuardTest {
                         return method.isAnnotatedWith(GetMapping.class) || method.isAnnotatedWith(PostMapping.class);
                     }
                 })
-                .should(new ArchCondition<>("declare @PreAuthorize") {
+                .should(new ArchCondition<>("declare @PreAuthorize or @RequiresPermission") {
                     @Override
                     public void check(JavaMethod method, ConditionEvents events) {
-                        if (!method.isAnnotatedWith(PreAuthorize.class)) {
-                            events.add(SimpleConditionEvent.violated(method, method.getFullName() + " no declara @PreAuthorize"));
+                        if (!method.isAnnotatedWith(PreAuthorize.class) && !method.isAnnotatedWith(RequiresPermission.class)) {
+                            events.add(SimpleConditionEvent.violated(method, method.getFullName() + " no declara @PreAuthorize ni @RequiresPermission"));
                         }
                     }
                 });

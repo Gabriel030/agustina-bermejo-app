@@ -2,8 +2,10 @@ package com.red_escuela.backend.notification.specialist;
 
 import com.red_escuela.backend.notification.domain.AnnouncementUpdatedNotification;
 import com.red_escuela.backend.notification.domain.AnnouncementPublishedNotification;
+import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.announcement.events.AnnouncementDeletedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementPublishedEvent;
+import com.red_escuela.backend.announcement.events.AnnouncementReadEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
@@ -47,6 +49,12 @@ public class AnnouncementEventsNotificationListener {
     @ApplicationModuleListener
     public void removeUnreadAnnouncementNotifications(AnnouncementDeletedEvent event) {
         effectGuard.runEffectOnce(DerivedEventIdentity.of(event), REMOVE_UNREAD_ANNOUNCEMENT_NOTIFICATIONS_HANDLER, () -> notificationRepository.deleteUnreadByRelatedEntity(ANNOUNCEMENT_ENTITY_TYPE, event.announcementId()));
+    }
+
+    @ApplicationModuleListener
+    public void markAnnouncementNotificationsAsRead(AnnouncementReadEvent event) {
+        notificationRepository.markReadByRecipientAndRelatedEntity(event.readerPersonId(), ANNOUNCEMENT_ENTITY_TYPE, event.announcementId(),
+                List.of(NotificationType.ANNOUNCEMENT_PUBLISHED, NotificationType.ANNOUNCEMENT_UPDATED));
     }
 
     private List<Person> personsOf(List<Long> personIds) {

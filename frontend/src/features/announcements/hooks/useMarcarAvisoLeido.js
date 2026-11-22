@@ -23,7 +23,7 @@ export function useMarcarAvisoLeido() {
       idsMarcados.delete(id);
       queryClient.invalidateQueries({ queryKey: NOVEDADES_KEY });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me', 'notifications'], refetchType: 'none' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me', 'notifications'] }),
   });
 
   return function marcarLeido(aviso) {

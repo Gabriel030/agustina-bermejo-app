@@ -5,9 +5,9 @@ import com.red_escuela.backend.evaluation.dto.GradeItemResponse;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.evaluation.specialist.GradeItemRecorder;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,7 +30,7 @@ public class GradeItemController {
 
     @PostMapping("/section-enrollments/{id}/grade-items")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.load_grade_item", legacyRoles = "ROLE_DOCENTE")
     public GradeItemResponse loadProgramEnrollmentGrade(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return GradeItemResponse.from(gradeItemService.loadProgramEnrollmentGrade(id, instructor.getId(), request));
@@ -38,20 +38,20 @@ public class GradeItemController {
 
     @PostMapping("/course-section-enrollments/{id}/grade-items")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.load_grade_item", legacyRoles = "ROLE_DOCENTE")
     public GradeItemResponse loadCourseEnrollmentGrade(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return GradeItemResponse.from(gradeItemService.loadCourseEnrollmentGrade(id, instructor.getId(), request));
     }
 
     @GetMapping("/section-enrollments/{id}/grade-items")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_grade_items", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<GradeItemResponse> listProgramEnrollmentGrades(@PathVariable Long id) {
         return gradeItemService.listByProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 
     @GetMapping("/course-section-enrollments/{id}/grade-items")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_grade_items", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<GradeItemResponse> listCourseEnrollmentGrades(@PathVariable Long id) {
         return gradeItemService.listByCourseEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }

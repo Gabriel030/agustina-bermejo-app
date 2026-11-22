@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.payment.dto.RefundEligibilityResponse;
 import com.red_escuela.backend.billing.payment.dto.RefundPreviewResponse;
 import com.red_escuela.backend.billing.payment.dto.RequestRefundRequest;
@@ -39,7 +40,7 @@ public class RefundPreviewController {
     }
 
     @PostMapping("/students/{studentId}/refund-requests/preview")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.preview_refund", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Reparto que el sistema aplicaría; si hay bloqueo, allowed=false y blockedBy con el código de la regla"),
             @ApiResponse(responseCode = "404", description = "STUDENT_NOT_FOUND: el alumno no existe")})
@@ -54,7 +55,7 @@ public class RefundPreviewController {
     }
 
     @GetMapping("/students/{studentId}/refund-eligibility")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.preview_refund", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({@ApiResponse(responseCode = "404", description = "STUDENT_NOT_FOUND: el alumno no existe")})
     public RefundEligibilityResponse describeRefundEligibilityOfStudent(@PathVariable Long studentId,
                                                                         @RequestParam(name = "currency", defaultValue = CURRENCY_DEFAULT) Currency currency) {

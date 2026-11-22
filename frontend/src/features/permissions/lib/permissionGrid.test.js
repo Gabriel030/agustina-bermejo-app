@@ -5,7 +5,18 @@ describe('moduleLabel', () => {
   it('translates every catalog module to Spanish', () => {
     expect(moduleLabel('dataimport')).toBe('Importación de datos');
     expect(moduleLabel('audit')).toBe('Auditoría');
-    expect(moduleLabel('certificate')).toBe('Certificados');
+    expect(moduleLabel('certificate')).toBe('Certificados de egreso');
+    expect(moduleLabel('billing')).toBe('Facturación y cobranza');
+    expect(moduleLabel('academicstructure')).toBe('Estructura académica');
+    expect(moduleLabel('enrollment')).toBe('Inscripciones');
+    expect(moduleLabel('graduation')).toBe('Egreso');
+    expect(moduleLabel('notification')).toBe('Notificaciones');
+    expect(moduleLabel('platform')).toBe('Configuración del instituto');
+    expect(moduleLabel('evaluation')).toBe('Evaluación');
+  });
+
+  it('does not keep a label for the retired academic module', () => {
+    expect(moduleLabel('academic')).toBe('Academic');
   });
 
   it('capitalizes an unknown module as a fallback', () => {

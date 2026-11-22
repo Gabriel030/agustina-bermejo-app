@@ -2,7 +2,7 @@ package com.red_escuela.backend.academicstructure.controller;
 
 import com.red_escuela.backend.academicstructure.dto.InstructorSummaryResponse;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,7 +18,7 @@ public class InstructorController {
     }
 
     @GetMapping("/instructors")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.read_instructors", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<InstructorSummaryResponse> list() {
         return instructorRepository.findAll().stream().map(InstructorSummaryResponse::from).toList();
     }

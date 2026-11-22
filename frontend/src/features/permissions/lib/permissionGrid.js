@@ -43,17 +43,18 @@ export const PERMISSION_MODES = {
 
 const MODULE_LABELS = {
   announcement: 'Avisos',
-  billing: 'Facturación',
+  billing: 'Facturación y cobranza',
+  academicstructure: 'Estructura académica',
   enrollment: 'Inscripciones',
   attendance: 'Asistencia',
   evaluation: 'Evaluación',
-  academic: 'Estructura académica',
   graduation: 'Egreso',
   identity: 'Personas y accesos',
   notification: 'Notificaciones',
   dataimport: 'Importación de datos',
   audit: 'Auditoría',
-  certificate: 'Certificados',
+  certificate: 'Certificados de egreso',
+  platform: 'Configuración del instituto',
 };
 
 export function moduleLabel(module) {

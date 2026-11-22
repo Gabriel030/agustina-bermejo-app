@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.usecase.shift.ListShiftRangesUs
 import com.red_escuela.backend.academicstructure.usecase.shift.UpdateShiftRangesUseCase;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,7 +32,7 @@ public class ShiftRangeController {
     }
 
     @PutMapping("/shift-ranges")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.manage_shift_ranges", legacyRoles = "ROLE_DIRECTOR")
     public List<ShiftRangeResponse> update(@Valid @RequestBody UpdateShiftRangesRequest request) {
         return updateShiftRanges.update(request);
     }

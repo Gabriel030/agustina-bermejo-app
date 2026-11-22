@@ -3,6 +3,7 @@ import { useActiveRole } from '@/hooks/useActiveRole';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
+import { StickyActionBar } from '@/components/StickyActionBar';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
@@ -283,18 +284,14 @@ export function RequestRefundPage() {
         </GlassCard>
       </div>
 
-      <GlassCard className="sticky bottom-4 z-10 flex flex-wrap items-center gap-3 p-3 px-5">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <span className="font-semibold tabular-nums text-ink">{typedAmount}</span>
-          <span className="text-xs text-ink-faint">{isDirector ? 'Se aprueba ahora' : 'Queda pendiente de la dirección'}</span>
-        </div>
-        <Button asChild variant="outline">
+      <StickyActionBar summary={typedAmount} hint={isDirector ? 'Se aprueba ahora' : 'Queda pendiente de la dirección'}>
+        <Button asChild variant="outline" className="min-h-11">
           <Link to={studentPath}>Cancelar</Link>
         </Button>
-        <Button type="submit" form="refund-request-form" variant="primary" loading={mutation.isPending}>
+        <Button type="submit" form="refund-request-form" variant="primary" className="min-h-11" loading={mutation.isPending}>
           {isDirector ? 'Registrar reembolso' : 'Pedir reembolso'}
         </Button>
-      </GlassCard>
+      </StickyActionBar>
       <ConfirmActionDialog
         open={pendingPayload !== null}
         onOpenChange={(open) => {

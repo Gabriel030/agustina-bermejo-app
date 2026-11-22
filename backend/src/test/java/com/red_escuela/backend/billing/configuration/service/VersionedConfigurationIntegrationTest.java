@@ -282,11 +282,7 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-110")
-    void rolesAreEnforced() {
-        authenticateAs(teacher);
-        assertThatThrownBy(() -> propose(ALLOCATION, false, DECEMBER_FIRST)).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> history.listVersionHistory(ALLOCATION)).isInstanceOf(AccessDeniedException.class);
-
+    void administrativeCannotApproveItsOwnProposalNorCancelAScheduledVersion() {
         authenticateAs(administrative);
         Long requestId = propose(ALLOCATION, false, DECEMBER_FIRST);
         assertThatThrownBy(() -> approveRequest.approve(requestId, "me apruebo")).isInstanceOf(AuthorizationRequestAccessDeniedException.class);

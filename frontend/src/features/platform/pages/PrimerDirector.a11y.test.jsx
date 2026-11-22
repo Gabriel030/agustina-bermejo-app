@@ -40,7 +40,7 @@ describe('PrimerDirector accessibility', () => {
     await fillForm(user);
 
     await user.click(screen.getByRole('button', { name: 'Crear Director' }));
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('alertdialog');
 
     expect(await axe(dialog)).toHaveNoViolations();
   });

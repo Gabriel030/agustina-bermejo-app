@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,7 +52,7 @@ public class ClassroomController {
 
     @PostMapping("/classrooms")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_classrooms", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ClassroomResponse create(@Valid @RequestBody CreateClassroomRequest request) {
         return createClassroom.create(request);
     }
@@ -64,7 +65,7 @@ public class ClassroomController {
 
     @PostMapping("/classrooms/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_classrooms", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public void deactivate(@PathVariable Long id) {
         deactivateClassroom.deactivate(id);
     }
@@ -82,7 +83,7 @@ public class ClassroomController {
     }
 
     @GetMapping("/classrooms/{id}/occupancy")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.read_classroom_occupancy", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ClassroomOccupancyResponse occupancy(
             @PathVariable Long id,
             @RequestParam Long termId,

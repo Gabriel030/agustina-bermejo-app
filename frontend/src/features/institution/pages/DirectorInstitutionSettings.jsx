@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { AlertCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChangesTable } from '@/components/ChangesTable';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { PageContainer } from '@/components/PageContainer';
+import { Notice } from '@/components/Notice';
 import { Skeleton } from '@/components/Skeleton';
+import { StickyActionBar } from '@/components/StickyActionBar';
 import { Stepper } from '@/components/Stepper';
 import { StatusPill } from '@/components/StatusPill';
 import { InfoTip } from '@/components/charts/InfoTip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
 import { useInstitutionSettings, useSaveInstitutionSettings } from '../hooks/useInstitutionSettings';
 import { SETTING_FIELDS, SETTING_GROUPS, buildChangeRows, isChanged, toDraft, toPayload, validateField } from '../institutionSettings';
 
@@ -19,9 +23,11 @@ const STEPS = [
   { key: 'confirm', label: 'Confirmar' },
 ];
 
-function SettingRow({ field, value, error, changed, onChange, onBlur }) {
+function SettingRow({ field, saved, value, error, changed, onChange, onBlur }) {
   const Icon = field.icon;
   const inputId = `setting-${field.key}`;
+  const hintId = `${inputId}-hint`;
+  const errorId = `${inputId}-error`;
   return (
     <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
@@ -29,16 +35,31 @@ function SettingRow({ field, value, error, changed, onChange, onBlur }) {
           <Icon className="size-5" aria-hidden="true" />
         </span>
         <div className="flex min-w-0 flex-wrap items-center gap-2 pt-2">
-          <label htmlFor={inputId} className="font-medium text-ink">
+          <label htmlFor={inputId} id={`${inputId}-label`} className="font-medium text-ink">
             {field.label}
           </label>
           <InfoTip label={`Más información sobre ${field.label.toLowerCase()}`}>{field.tip}</InfoTip>
-          {changed && <StatusPill tone="accent">Modificado</StatusPill>}
+          {changed && (
+            <StatusPill tone="accent">
+              <Check className="size-3" aria-hidden="true" />
+              Modificado
+            </StatusPill>
+          )}
         </div>
       </div>
       <div className="flex flex-col gap-1 pl-[3.25rem] sm:items-end sm:pl-0">
         {field.boolean ? (
-          <Switch id={inputId} checked={value} onCheckedChange={onChange} aria-label={field.label} />
+          <>
+            <label htmlFor={inputId} className="flex min-h-11 cursor-pointer items-center gap-3">
+              <Switch id={inputId} checked={value} onCheckedChange={onChange} aria-labelledby={`${inputId}-label`} aria-describedby={hintId} />
+              <span className="min-w-24 text-sm font-semibold text-ink" aria-hidden="true">
+                {value ? 'Activado' : 'Desactivado'}
+              </span>
+            </label>
+            <span id={hintId} className="text-xs text-ink-faint">
+              Hoy: {saved ? 'activado' : 'desactivado'}
+            </span>
+          </>
         ) : (
           <>
             <div className="flex items-center gap-2">
@@ -46,20 +67,22 @@ function SettingRow({ field, value, error, changed, onChange, onBlur }) {
                 id={inputId}
                 type="text"
                 inputMode="numeric"
-                className="h-11 w-24 text-right"
+                autoComplete="off"
+                className="h-11 w-24 text-right tabular-nums"
                 value={value}
                 aria-invalid={error ? 'true' : 'false'}
-                aria-describedby={`${inputId}-hint`}
+                aria-describedby={error ? `${hintId} ${errorId}` : hintId}
                 onChange={(event) => onChange(event.target.value)}
                 onBlur={onBlur}
               />
               <span className="text-sm text-ink-soft">{field.unit}</span>
             </div>
-            <span id={`${inputId}-hint`} className="text-xs text-ink-faint">
-              Entre {field.min} y {field.max}
+            <span id={hintId} className="text-xs tabular-nums text-ink-faint">
+              Entre {field.min} y {field.max} · Hoy: {saved}
             </span>
             {error && (
-              <span role="alert" className="text-xs font-medium text-danger">
+              <span id={errorId} role="alert" className="flex items-center gap-1 text-xs font-medium text-danger">
+                <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
                 {error}
               </span>
             )}
@@ -70,27 +93,47 @@ function SettingRow({ field, value, error, changed, onChange, onBlur }) {
   );
 }
 
-function ChangesBar({ count, invalid, onDiscard, onReview }) {
+function describeBlockReason(invalidCount, changedCount) {
+  if (invalidCount > 0) return `Corregí ${invalidCount} ${invalidCount === 1 ? 'campo' : 'campos'} para poder guardar`;
+  if (changedCount === 0) return 'Cambiá un valor para habilitar Guardar';
+  return 'Vas a revisar qué cambia antes de guardar';
+}
+
+function ChangesBar({ count, invalidCount, onDiscard, onReview }) {
+  const blocked = count === 0 || invalidCount > 0;
   return (
-    <GlassCard className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-      <span className="text-sm font-semibold text-ink" aria-live="polite">
+    <StickyActionBar
+      summary={
+        <span aria-live="polite" aria-atomic="true">
         {count === 0 ? (
-          <span className="font-normal text-ink-faint">Sin cambios por guardar</span>
+          <span className="text-sm font-semibold text-ink-faint">Sin cambios por guardar</span>
         ) : (
-          <StatusPill tone="accent">
+          <StatusPill tone="accent" className="text-size-13">
+            <AlertCircle className="size-3.5" aria-hidden="true" />
             {count} {count === 1 ? 'cambio sin guardar' : 'cambios sin guardar'}
           </StatusPill>
         )}
-      </span>
-      <div className="flex gap-2">
-        <Button variant="ghost" onClick={onDiscard} disabled={count === 0}>
-          Descartar
-        </Button>
-        <Button variant="primary" onClick={onReview} disabled={count === 0 || invalid}>
-          Revisar cambios
-        </Button>
-      </div>
-    </GlassCard>
+        </span>
+      }
+      hint={
+        <span id="settings-bar-reason" aria-live="polite" className={invalidCount > 0 ? 'font-semibold text-danger' : undefined}>
+          {describeBlockReason(invalidCount, count)}
+        </span>
+      }
+    >
+      <Button variant="outline" className="h-11 px-4 aria-disabled:cursor-not-allowed aria-disabled:opacity-50" onClick={onDiscard} aria-disabled={count === 0 ? 'true' : undefined}>
+        Descartar
+      </Button>
+      <Button
+        variant="primary"
+        className="h-11 px-5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+        onClick={onReview}
+        aria-disabled={blocked ? 'true' : undefined}
+        aria-describedby="settings-bar-reason"
+      >
+        Guardar cambios
+      </Button>
+    </StickyActionBar>
   );
 }
 
@@ -113,11 +156,26 @@ function SettingsEditor({ settings }) {
   const [edits, setEdits] = useState({});
   const [touched, setTouched] = useState({});
   const [step, setStep] = useState('changes');
+  const [saveError, setSaveError] = useState(null);
+  const confirmHeadingRef = useRef(null);
+  const refocusFirstField = useRef(false);
 
   const draft = { ...toDraft(settings), ...edits };
   const changedCount = SETTING_FIELDS.filter((field) => isChanged(field, settings, draft)).length;
   const errors = Object.fromEntries(SETTING_FIELDS.map((field) => [field.key, validateField(field, draft[field.key])]));
-  const invalid = Object.values(errors).some(Boolean);
+  const invalidFields = SETTING_FIELDS.filter((field) => errors[field.key]);
+  const { guardDialog } = useUnsavedChangesGuard(
+    changedCount > 0,
+    `Tenés ${changedCount} ${changedCount === 1 ? 'cambio sin guardar' : 'cambios sin guardar'} en los ajustes. Si salís ahora, se pierden.`,
+  );
+
+  useEffect(() => {
+    if (step === 'confirm') confirmHeadingRef.current?.focus();
+    if (step === 'changes' && refocusFirstField.current) {
+      refocusFirstField.current = false;
+      document.getElementById(`setting-${SETTING_FIELDS[0].key}`)?.focus();
+    }
+  }, [step]);
 
   function edit(field, value) {
     setEdits((current) => ({ ...current, [field.key]: value }));
@@ -125,49 +183,89 @@ function SettingsEditor({ settings }) {
   }
 
   function discard() {
+    if (changedCount === 0) return;
     setEdits({});
     setTouched({});
+    toast.success('Cambios descartados');
+  }
+
+  function review() {
+    if (invalidFields.length > 0) {
+      setTouched(Object.fromEntries(SETTING_FIELDS.map((field) => [field.key, true])));
+      document.getElementById(`setting-${invalidFields[0].key}`)?.focus();
+      return;
+    }
+    if (changedCount === 0) return;
+    setSaveError(null);
+    setStep('confirm');
+  }
+
+  function backToChanges() {
+    refocusFirstField.current = true;
+    setSaveError(null);
+    setStep('changes');
   }
 
   async function confirm() {
+    setSaveError(null);
     try {
       await save.mutateAsync(toPayload(draft));
       setEdits({});
       setTouched({});
+      refocusFirstField.current = true;
       setStep('changes');
       toast.success('Ajustes guardados');
     } catch (error) {
-      toast.error(error.message || 'No pudimos guardar los ajustes. Probá de nuevo.');
+      const message = error.message || 'No pudimos guardar los ajustes. Probá de nuevo.';
+      setSaveError(message);
     }
   }
+
+  const stepper = (
+    <Stepper
+      pasos={STEPS}
+      pasoActual={step}
+      pasosVisitados={step === 'confirm' ? ['changes', 'confirm'] : ['changes']}
+      onStepClick={(key) => key === 'changes' && !save.isPending && backToChanges()}
+    />
+  );
 
   if (step === 'confirm') {
     const rows = buildChangeRows(settings, draft);
     return (
       <>
-        <Stepper pasos={STEPS} pasoActual="confirm" pasosVisitados={['changes', 'confirm']} onStepClick={(key) => key === 'changes' && setStep('changes')} />
+        {stepper}
+        {saveError && (
+          <Notice tone="danger" role="alert" className="flex items-start gap-2 px-4 py-3 text-sm">
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden="true" />
+            <span>{saveError} Tus cambios siguen acá.</span>
+          </Notice>
+        )}
         <GlassCard className="flex flex-col gap-4 p-5">
-          <h2 className="font-heading text-lg font-semibold text-ink">Qué cambia</h2>
+          <h2 ref={confirmHeadingRef} tabIndex={-1} className="font-heading text-lg font-semibold text-ink outline-none">
+            Qué cambia
+          </h2>
           <ChangesTable rows={rows} />
         </GlassCard>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <span className="mr-auto text-sm font-semibold text-ink">
-            {changedCount} {changedCount === 1 ? 'ajuste cambia' : 'ajustes cambian'}
-          </span>
-          <Button variant="outline" onClick={() => setStep('changes')} disabled={save.isPending}>
+        <StickyActionBar
+          summary={`${changedCount} ${changedCount === 1 ? 'ajuste cambia' : 'ajustes cambian'}`}
+          hint="Se aplica a toda la institución al guardar."
+        >
+          <Button variant="outline" className="h-11 px-4" onClick={backToChanges} disabled={save.isPending}>
             Volver
           </Button>
-          <Button variant="primary" onClick={confirm} loading={save.isPending}>
+          <Button variant="primary" className="h-11 px-5" onClick={confirm} loading={save.isPending}>
             Confirmar y guardar
           </Button>
-        </div>
+        </StickyActionBar>
+        {guardDialog}
       </>
     );
   }
 
   return (
     <>
-      {changedCount > 0 && <Stepper pasos={STEPS} pasoActual="changes" pasosVisitados={['changes']} />}
+      {stepper}
       <GlassCard className="flex flex-col divide-y divide-border px-5 py-2">
         {SETTING_GROUPS.map((group) => (
           <section key={group.key} aria-labelledby={`group-${group.key}`} className="py-2 first:pt-0 last:pb-0">
@@ -179,6 +277,7 @@ function SettingsEditor({ settings }) {
                 <SettingRow
                   key={field.key}
                   field={field}
+                  saved={settings[field.key]}
                   value={draft[field.key]}
                   error={touched[field.key] ? errors[field.key] : null}
                   changed={isChanged(field, settings, draft)}
@@ -190,7 +289,8 @@ function SettingsEditor({ settings }) {
           </section>
         ))}
       </GlassCard>
-      <ChangesBar count={changedCount} invalid={invalid} onDiscard={discard} onReview={() => setStep('confirm')} />
+      <ChangesBar count={changedCount} invalidCount={invalidFields.length} onDiscard={discard} onReview={review} />
+      {guardDialog}
     </>
   );
 }
@@ -201,7 +301,9 @@ export function DirectorInstitutionSettings() {
   return (
     <PageContainer title="Ajustes del instituto">
       {query.isPending && <LoadingSettings />}
-      {query.isError && <LoadErrorState error={query.error} onRetry={() => query.refetch()} resource="los ajustes" />}
+      {query.isError && (
+        <LoadErrorState error={query.error} onRetry={() => query.refetch()} resource="los ajustes" distinguishForbidden backTo="/director/inicio" backLabel="el inicio" />
+      )}
       {query.data && <SettingsEditor settings={query.data} />}
     </PageContainer>
   );

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.payment.dto.PaymentReversalResponse;
 import com.red_escuela.backend.billing.payment.dto.RegisterChargebackRequest;
 import com.red_escuela.backend.billing.payment.dto.RevokeBankTransferApprovalRequest;
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,7 +35,7 @@ public class PaymentReversalController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/payments/{paymentId}/approval-revocation")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.revoke_payment_approval", legacyRoles = "ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "400", description = "PAYMENT_REJECTION_REASON_REQUIRED, PAYMENT_REJECTION_REASON_TOO_LONG"),
             @ApiResponse(responseCode = "404", description = "PAYMENT_NOT_FOUND"),
@@ -47,7 +47,7 @@ public class PaymentReversalController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/payments/{paymentId}/chargebacks")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.register_chargeback", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "400", description = "CHARGEBACK_REFERENCE_INVALID, CHARGEBACK_DATE_INVALID"),
             @ApiResponse(responseCode = "404", description = "PAYMENT_NOT_FOUND"),
@@ -58,7 +58,7 @@ public class PaymentReversalController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/chargebacks/{chargebackId}/reversal")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.reverse_chargeback", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "404", description = "CHARGEBACK_NOT_FOUND"),
             @ApiResponse(responseCode = "409", description = "CHARGEBACK_ALREADY_REVERSED o ILLEGAL_PAYMENT_STATUS_TRANSITION")})

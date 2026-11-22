@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.usecase.enrollmentfee;
 
+import com.red_escuela.backend.enrollment.service.GrantEnrollmentFeeExemptionTransaction;
+import com.red_escuela.backend.enrollment.service.RevokeEnrollmentFeeExemptionTransaction;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -74,9 +76,11 @@ class EnrollmentFeeExemptionServicesTest {
 
     @BeforeEach
     void setUp() {
-        grantService = new GrantEnrollmentFeeExemptionService(programEnrollmentRepository, templateRepository, termsLookup,
-                exemptionRepository, currentPersonService, eventPublisher, CLOCK);
-        revokeService = new RevokeEnrollmentFeeExemptionService(exemptionRepository, currentPersonService, eventPublisher, CLOCK);
+        grantService = new GrantEnrollmentFeeExemptionService(new GrantEnrollmentFeeExemptionTransaction(
+                programEnrollmentRepository, templateRepository, termsLookup,
+                exemptionRepository, currentPersonService, eventPublisher, CLOCK));
+        revokeService = new RevokeEnrollmentFeeExemptionService(new RevokeEnrollmentFeeExemptionTransaction(
+                exemptionRepository, currentPersonService, eventPublisher, CLOCK));
         Person studentPerson = new Person();
         studentPerson.setId(50L);
         Student student = new Student();

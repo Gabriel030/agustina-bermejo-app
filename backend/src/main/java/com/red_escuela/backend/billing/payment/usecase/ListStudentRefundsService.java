@@ -17,7 +17,6 @@ public class ListStudentRefundsService implements ListStudentRefundsUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<Refund> listRefundsOfStudent(Long studentId) {
         return queryService.findRefundsOfExistingStudent(studentId);
     }
@@ -29,7 +28,6 @@ public class ListStudentRefundsService implements ListStudentRefundsUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<RefundRequestGroup> listRefundRequestsOfStudent(Long studentId) {
         return queryService.findRefundRequestsOfExistingStudent(studentId);
     }

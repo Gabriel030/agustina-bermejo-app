@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.reporting.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.reporting.dto.FirstBillingMonthResponse;
 import com.red_escuela.backend.billing.reporting.dto.MonthlyMetricResponse;
@@ -12,7 +13,6 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +26,6 @@ import java.time.YearMonth;
 @RestController
 @RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing/metrics")
-@PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
 public class BillingMetricsController {
 
     private final GetMonthlyBillingMetricsUseCase getMonthlyBillingMetrics;
@@ -39,11 +38,13 @@ public class BillingMetricsController {
     }
 
     @GetMapping("/first-month")
+    @RequiresPermission(code = "billing.read_billing_metrics", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public FirstBillingMonthResponse getFirstMonth() {
         return FirstBillingMonthResponse.from(getFirstBillingMonth.getFirstBillingMonth());
     }
 
     @GetMapping("/{panel}")
+    @RequiresPermission(code = "billing.read_billing_metrics", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public MonthlyMetricResponse getPanel(@PathVariable String panel,
                                           @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth from,
                                           @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth to,

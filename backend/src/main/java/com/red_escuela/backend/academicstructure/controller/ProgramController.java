@@ -7,9 +7,10 @@ import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.academicstructure.service.ProgramService;
 import com.red_escuela.backend.academicstructure.usecase.SetProgramCatalogVisibilityUseCase;
+import com.red_escuela.backend.shared.module.HidesPricesWhenBillingOff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import java.util.List;
 
 @RestController
+@HidesPricesWhenBillingOff
 @RequestMapping("/programs")
 public class ProgramController {
 
@@ -39,27 +41,27 @@ public class ProgramController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ProgramResponse create(@Valid @RequestBody CreateProgramRequest request) {
         return ProgramResponse.from(programService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ProgramResponse update(@PathVariable Long id, @Valid @RequestBody UpdateProgramRequest request) {
         return ProgramResponse.from(programService.update(id, request));
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_program_status", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void deactivate(@PathVariable Long id) {
         programService.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_program_status", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void reactivate(@PathVariable Long id) {
         programService.reactivate(id);
     }
@@ -71,7 +73,7 @@ public class ProgramController {
     }
 
     @PutMapping("/{id}/catalog-visibility")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_catalog_visibility", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ProgramResponse setCatalogVisibility(@PathVariable Long id,
             @Valid @RequestBody SetCatalogVisibilityRequest request) {
         return setCatalogVisibility.execute(id, request.visible());

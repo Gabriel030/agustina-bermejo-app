@@ -6,7 +6,7 @@ const SRC_DIR = join(import.meta.dirname, '..', '..');
 const SELF_FILE = join(import.meta.dirname, 'noLiteralBlur.test.js');
 const SOURCE_FILE_PATTERN = /\.(jsx?|tsx?)$/;
 const LITERAL_BLUR_PATTERN = /backdrop-(blur|saturate)-\[/;
-const ALLOWED_LITERAL_BLUR_FILES = ['features/attendance/pages/DocenteTomarAsistencia.jsx'];
+const ALLOWED_LITERAL_BLUR_FILES = [];
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

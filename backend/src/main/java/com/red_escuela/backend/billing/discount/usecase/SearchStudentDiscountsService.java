@@ -10,7 +10,6 @@ import com.red_escuela.backend.shared.UseCase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @UseCase
 public class SearchStudentDiscountsService implements SearchStudentDiscountsUseCase {
@@ -25,7 +24,6 @@ public class SearchStudentDiscountsService implements SearchStudentDiscountsUseC
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public StudentDiscountPage searchStudentDiscounts(StudentDiscountSearch search, int page, int size) {
         int boundedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int boundedPage = Math.max(page, 0);

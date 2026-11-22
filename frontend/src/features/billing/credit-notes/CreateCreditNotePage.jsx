@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
+import { StickyActionBar } from '@/components/StickyActionBar';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
@@ -331,32 +332,35 @@ export function CreateCreditNotePage() {
         </GlassCard>
       )}
 
-      <GlassCard className="sticky bottom-4 z-10 flex flex-wrap items-center gap-3 p-3 px-5">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <span className="text-xs text-ink-faint">Total de la nota</span>
-          <span className="font-semibold tabular-nums text-ink">{formatMoney(total)}</span>
-          {step === 'amounts' && draft.blockReason && <span className="text-xs text-ink-soft">{draft.blockReason}</span>}
-        </div>
+      <StickyActionBar
+        summary={formatMoney(total)}
+        hint={
+          <>
+            Total de la nota
+            {step === 'amounts' && draft.blockReason && <span className="block text-ink-soft">{draft.blockReason}</span>}
+          </>
+        }
+      >
         {step === 'amounts' ? (
           <>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="min-h-11">
               <Link to={backPath}>Cancelar</Link>
             </Button>
-            <Button type="button" variant="primary" disabled={draft.blocked || creditPending} onClick={() => setStep('confirm')}>
+            <Button type="button" variant="primary" className="min-h-11" disabled={draft.blocked || creditPending} onClick={() => setStep('confirm')}>
               Revisar la nota
             </Button>
           </>
         ) : (
           <>
-            <Button type="button" variant="outline" onClick={() => setStep('amounts')} disabled={mutation.isPending}>
+            <Button type="button" variant="outline" className="min-h-11" onClick={() => setStep('amounts')} disabled={mutation.isPending}>
               Volver a editar
             </Button>
-            <Button type="button" variant="primary" loading={mutation.isPending} disabled={creditPending} onClick={handleSubmit}>
+            <Button type="button" variant="primary" className="min-h-11" loading={mutation.isPending} disabled={creditPending} onClick={handleSubmit}>
               {confirmLabel}
             </Button>
           </>
         )}
-      </GlassCard>
+      </StickyActionBar>
     </PageContainer>
   );
 }
