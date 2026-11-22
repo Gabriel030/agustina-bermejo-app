@@ -11,6 +11,14 @@ import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
+import com.red_escuela.backend.identity.entity.Institution;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.infrastructure.JwtService;
+import com.red_escuela.backend.identity.repository.RoleRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +59,10 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
     private TransactionTemplate transactionTemplate;
     @Autowired
     private PermissionDiscrepancyAccumulator discrepancyAccumulator;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private JwtService jwtService;
 
     @AfterEach
     void restoreDefaultGrid() {
@@ -59,9 +71,11 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
         jdbcTemplate.update("delete from role_permission where role = 'DOCENTE' and permission_id = (select id from permission where code = 'announcement.update')");
         jdbcTemplate.update("insert into role_permission (role, permission_id) select 'DOCENTE', id from permission where code = 'announcement.update'");
         jdbcTemplate.update("delete from role_permission where role in ('PRECEPTOR', 'ADMINISTRATIVO') and permission_id in (select id from permission where code in ('announcement.update', 'audit.read'))");
+        jdbcTemplate.update("delete from role_permission where role in ('DOCENTE', 'PRECEPTOR') and permission_id = (select id from permission where code = 'announcement.view_read_receipts')");
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'PRECEPTOR', id from permission where code = 'announcement.view_read_receipts'");
         discrepancyAccumulator.flush();
         jdbcTemplate.update("delete from permission_discrepancy_counter");
-        jdbcTemplate.update("delete from audit_log where action = 'PERMISSION_GRID_CHANGED'");
+        jdbcTemplate.update("delete from audit_log where action in ('PERMISSION_GRID_CHANGED', 'PERMISSION_SENSITIVE_CHANGED')");
         cache.invalidate();
     }
 
@@ -91,7 +105,7 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
 
     private void setGrant(String role, String permissionCode, boolean granted) throws Exception {
         String body = "{\"reason\":\"Prueba de comparacion del piloto\",\"changes\":[{\"role\":\"" + role
-                + "\",\"permissionCode\":\"" + permissionCode + "\",\"granted\":" + granted + "}]}";
+                + "\",\"permissionCode\":\"" + permissionCode + "\",\"granted\":" + granted + "}],\"sensitiveConfirmed\":true}";
         int status = mockMvc.perform(put("/permissions/grid").header("Authorization", "Bearer " + fixtures.tokenFor(MatrixRole.DIRECTOR))
                 .contentType(APPLICATION_JSON).content(body)).andReturn().getResponse().getStatus();
         assertThat(status).isEqualTo(200);
@@ -203,6 +217,144 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
         assertThat(isForbiddenByTheGate(AUDIT_LOG_KEY, "", MatrixRole.ADMINISTRATIVO)).isTrue();
         discrepancyAccumulator.flush();
         assertThat(jdbcTemplate.queryForObject("select count(*) from permission_discrepancy_counter", Integer.class)).isZero();
+    }
+
+    private record Teacher(Long personId, String token) {
+    }
+
+    private Teacher teacherWithRoles(String... roleNames) {
+        return transactionTemplate.execute(status -> {
+            CycleTestFixtures cycleFixtures = new CycleTestFixtures(announcementEntityManager);
+            Person person = cycleFixtures.person();
+            for (String roleName : roleNames) {
+                person.getRoles().add(roleRepository.findByName(roleName).orElseThrow());
+            }
+            Instructor instructor = new Instructor();
+            instructor.setPerson(person);
+            announcementEntityManager.persist(instructor);
+            announcementEntityManager.flush();
+            return new Teacher(person.getId(), jwtService.generateAccessToken(person));
+        });
+    }
+
+    private Long seedAnnouncementTaughtBy(Teacher teacher) {
+        return transactionTemplate.execute(status -> {
+            CycleTestFixtures cycleFixtures = new CycleTestFixtures(announcementEntityManager);
+            var term = cycleFixtures.term(2100 + (int) (System.nanoTime() % 800));
+            var cycle = cycleFixtures.programCycle(cycleFixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
+            SubjectSection section = cycleFixtures.section(cycleFixtures.subject(), term, StatusType.ACTIVE, cycle);
+            Instructor instructor = announcementEntityManager.createQuery("select i from Instructor i where i.person.id = :personId", Instructor.class)
+                    .setParameter("personId", teacher.personId()).getSingleResult();
+            cycleFixtures.assignLead(section, instructor);
+            Announcement announcement = Announcement.builder()
+                    .subjectSection(section)
+                    .createdBy(cycleFixtures.person())
+                    .title("Aviso")
+                    .body("Cuerpo")
+                    .category(AnnouncementCategory.REMINDER)
+                    .audienceSpec(AudienceSpec.wholeSection())
+                    .audienceLabel("Toda la comision")
+                    .status(AnnouncementStatus.SENT)
+                    .sentAt(LocalDateTime.now())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            announcementEntityManager.persist(announcement);
+            Institution institution = new Institution();
+            institution.setName("Instituto de prueba");
+            announcementEntityManager.persist(institution);
+            Student student = new Student();
+            student.setPerson(cycleFixtures.person());
+            student.setInstitution(institution);
+            student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
+            announcementEntityManager.persist(student);
+            announcementEntityManager.persist(AnnouncementRecipient.builder()
+                    .announcement(announcement).student(student).readAt(LocalDateTime.now()).build());
+            announcementEntityManager.flush();
+            return announcement.getId();
+        });
+    }
+
+    private int recipientsStatusOf(Long announcementId, MatrixRole role) throws Exception {
+        return statusOf(HttpMethod.GET, "/announcements/" + announcementId + "/recipients", null, role);
+    }
+
+    private int recipientsStatusWithToken(Long announcementId, String token) throws Exception {
+        var response = mockMvc.perform(request(HttpMethod.GET, "/announcements/" + announcementId + "/recipients")
+                .header("Authorization", "Bearer " + token)).andReturn().getResponse();
+        lastResponseBody = response.getContentAsString();
+        return response.getStatus();
+    }
+
+    private boolean lastResponseCarriesReadTimes() {
+        return lastResponseBody.contains("\"readAt\":\"");
+    }
+
+    private void assertReadReceiptsFor(Long announcementId, String token, String label) throws Exception {
+        assertThat(recipientsStatusWithToken(announcementId, token)).as(label + " " + lastResponseBody).isEqualTo(200);
+        assertThat(lastResponseCarriesReadTimes()).as(label + " read receipts " + lastResponseBody).isTrue();
+    }
+
+    private void assertRecipientsFor(Long announcementId, String token, String label) throws Exception {
+        assertThat(recipientsStatusWithToken(announcementId, token)).as(label + " " + lastResponseBody).isEqualTo(200);
+        assertThat(lastResponseBody).as(label + " recipients").contains("\"file\"");
+        assertThat(lastResponseCarriesReadTimes()).as(label + " recipients without read times " + lastResponseBody).isFalse();
+    }
+
+    private void assertOldRoleRules(String mode, Long announcementId, Teacher owner, Teacher stranger) throws Exception {
+        assertReadReceiptsFor(announcementId, fixtures.tokenFor(MatrixRole.PRECEPTOR), mode + " preceptor");
+        assertReadReceiptsFor(announcementId, fixtures.tokenFor(MatrixRole.DIRECTOR), mode + " director");
+        assertRecipientsFor(announcementId, owner.token(), mode + " docente of the section");
+        assertThat(recipientsStatusWithToken(announcementId, stranger.token())).as(mode + " docente of another section").isEqualTo(404);
+    }
+
+    @Test
+    void recipientsBranchFollowsTheOldRoleRulesInLegacyMode() throws Exception {
+        Teacher owner = teacherWithRoles("DOCENTE");
+        Teacher stranger = teacherWithRoles("DOCENTE");
+        assertOldRoleRules("LEGACY", seedAnnouncementTaughtBy(owner), owner, stranger);
+    }
+
+    @Test
+    void recipientsBranchFollowsTheOldRoleRulesInShadowModeEvenWithTheReceiptsGrantedToDocente() throws Exception {
+        setPilotMode("SHADOW");
+        Teacher owner = teacherWithRoles("DOCENTE");
+        Teacher stranger = teacherWithRoles("DOCENTE");
+        Long announcementId = seedAnnouncementTaughtBy(owner);
+        assertOldRoleRules("SHADOW", announcementId, owner, stranger);
+
+        setGrant("DOCENTE", "announcement.view_read_receipts", true);
+
+        assertOldRoleRules("SHADOW granted", announcementId, owner, stranger);
+    }
+
+    @Test
+    void recipientsBranchFollowsTheReadReceiptsPermissionInEnforceMode() throws Exception {
+        setPilotMode("ENFORCE");
+        Teacher owner = teacherWithRoles("DOCENTE");
+        Teacher stranger = teacherWithRoles("DOCENTE");
+        Long announcementId = seedAnnouncementTaughtBy(owner);
+        assertOldRoleRules("ENFORCE default", announcementId, owner, stranger);
+
+        setGrant("DOCENTE", "announcement.view_read_receipts", true);
+
+        assertReadReceiptsFor(announcementId, owner.token(), "docente of the section with the permission");
+        assertThat(recipientsStatusWithToken(announcementId, stranger.token())).as("docente of another section with the permission " + lastResponseBody).isEqualTo(404);
+        assertReadReceiptsFor(announcementId, fixtures.tokenFor(MatrixRole.PRECEPTOR), "preceptor");
+
+        setGrant("PRECEPTOR", "announcement.view_read_receipts", false);
+
+        assertThat(recipientsStatusOf(announcementId, MatrixRole.PRECEPTOR)).as("preceptor without the permission goes through the instructor check " + lastResponseBody).isEqualTo(404);
+    }
+
+    @Test
+    void userWithDocenteAndPreceptorRolesGetsReadReceiptsInLegacyAndEnforceModes() throws Exception {
+        Teacher teacherAndStaff = teacherWithRoles("DOCENTE", "PRECEPTOR");
+        Long announcementId = seedAnnouncementTaughtBy(teacherWithRoles("DOCENTE"));
+        assertReadReceiptsFor(announcementId, teacherAndStaff.token(), "LEGACY");
+
+        setPilotMode("ENFORCE");
+
+        assertReadReceiptsFor(announcementId, teacherAndStaff.token(), "ENFORCE");
     }
 
     private record SeededSection(Long sectionId, Long announcementId) {

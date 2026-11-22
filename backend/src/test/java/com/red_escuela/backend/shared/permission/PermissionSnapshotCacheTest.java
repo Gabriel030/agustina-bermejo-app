@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PermissionSnapshotCacheTest {
 
     private static PermissionSnapshot emptySnapshot() {
-        return new PermissionSnapshot(Map.of(), Map.of(), Set.of(), Set.of());
+        return new PermissionSnapshot(Map.of(), Map.of(), Set.of());
     }
 
     @Test

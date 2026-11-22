@@ -7,4 +7,6 @@ import java.util.List;
 public interface ListAnnouncementReadReceiptsUseCase {
 
     List<AnnouncementRecipientResponse> list(Long announcementId);
+
+    List<AnnouncementRecipientResponse> listAsSectionInstructor(Long announcementId);
 }

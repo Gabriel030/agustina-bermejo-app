@@ -56,6 +56,20 @@ describe('DirectorAprobacionesExcepciones', () => {
     expect(screen.queryByText(/Pedido de anoche/)).not.toBeInTheDocument();
   });
 
+  it('opens the pending list when the URL asks for status PENDING', async () => {
+    server.use(
+      http.get(`${API}/director-approval-requests`, ({ request }) =>
+        new URL(request.url).searchParams.get('status')
+          ? HttpResponse.json([])
+          : HttpResponse.json([exception(16, 'Pedido pendiente', '2026-10-03T09:00:00')]),
+      ),
+    );
+    renderWithProviders(<DirectorAprobacionesExcepciones />, { route: '/director/aprobaciones/excepciones?status=PENDING' });
+
+    expect(await screen.findByText(/Pedido pendiente/)).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Pendientes/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('shows an error instead of "no pending exceptions" when the list fails to load', async () => {
     server.use(http.get(`${API}/director-approval-requests`, () => new HttpResponse(null, { status: 500 })));
 

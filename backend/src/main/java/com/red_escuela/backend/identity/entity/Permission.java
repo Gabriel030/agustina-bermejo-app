@@ -36,4 +36,7 @@ public class Permission {
 
     @Column(name = "fixed_to_director", nullable = false)
     private boolean fixedToDirector;
+
+    @Column(name = "sensitive", nullable = false)
+    private boolean sensitive;
 }

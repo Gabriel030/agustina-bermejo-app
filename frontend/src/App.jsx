@@ -2,7 +2,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createQueryClient } from '@/api/queryClient';
 import { OFFLINE_BUSTER, OFFLINE_MAX_AGE_MS, offlineDehydrateOptions, offlinePersister } from '@/api/offlinePersistence';
-import { LazyMotion } from 'motion/react';
+import { LazyMotion, MotionConfig } from 'motion/react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -32,9 +32,11 @@ export function App() {
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
             <BrowserRouter>
               <AuthProvider>
-                <LazyMotion features={loadMotionFeatures}>
-                  <AppRouter />
-                </LazyMotion>
+                <MotionConfig reducedMotion="user">
+                  <LazyMotion features={loadMotionFeatures}>
+                    <AppRouter />
+                  </LazyMotion>
+                </MotionConfig>
               </AuthProvider>
             </BrowserRouter>
           </PersistQueryClientProvider>

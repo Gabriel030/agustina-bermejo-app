@@ -85,6 +85,7 @@ export function defaultCalendarEvents() {
 export function calendarResponse(overrides = {}) {
   return {
     generatedAt: '2026-11-21T09:30:00',
+    hasActiveEnrollments: true,
     events: defaultCalendarEvents(),
     ...overrides,
   };

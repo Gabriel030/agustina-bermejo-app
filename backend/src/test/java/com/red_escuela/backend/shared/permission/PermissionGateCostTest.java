@@ -63,7 +63,7 @@ class PermissionGateCostTest {
         try (var context = new AnnotationConfigApplicationContext(Config.class)) {
             var store = context.getBean(InMemoryPermissionPolicyStore.class);
             store.replace(new PermissionSnapshot(Map.of("DOCENTE", Set.of("probe.read")),
-                    Map.of(PermissionSnapshot.modeKey("DOCENTE", "probe"), PermissionMode.ENFORCE), Set.of(), Set.of("probe.read")));
+                    Map.of(PermissionSnapshot.modeKey("DOCENTE", "probe"), PermissionMode.ENFORCE), Set.of("probe.read")));
             SecurityContextHolder.getContext().setAuthentication(
                     UsernamePasswordAuthenticationToken.authenticated("u", "p", AuthorityUtils.createAuthorityList("ROLE_DOCENTE")));
             Target target = context.getBean(Target.class);

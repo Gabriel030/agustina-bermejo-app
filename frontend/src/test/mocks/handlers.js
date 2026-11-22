@@ -76,6 +76,19 @@ export const handlers = [
   http.post(`${API}/graduation-certificates/:id/reissue`, ({ params }) =>
     HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) + 1, replacesCertificateId: Number(params.id) })),
   ),
+  http.get(`${API}/me/calendar/feed`, () => HttpResponse.json({ active: true, createdAt: '2026-11-18T10:00:00', lastUsedAt: '2026-11-21T08:00:00' })),
+  http.post(`${API}/me/calendar/feed/token`, () =>
+    HttpResponse.json(
+      { url: 'http://localhost:8080/public/calendar/feed.ics?token=abc123', token: 'abc123', createdAt: '2026-11-21T10:00:00' },
+      { status: 201 },
+    ),
+  ),
+  http.delete(`${API}/me/calendar/feed/token`, () => new HttpResponse(null, { status: 204 })),
+  http.get(`${API}/me/calendar/export.ics`, () =>
+    new HttpResponse('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n', {
+      headers: { 'Content-Type': 'text/calendar', 'Content-Disposition': 'attachment; filename="calendario.ics"' },
+    }),
+  ),
   http.get(`${API}/me/certificates`, () => HttpResponse.json([ownGraduationCertificate()])),
   http.get(`${API}/me/certificates/:id/pdf`, () => pdfResponse()),
   http.get(`${API}/certificate-signatories`, ({ request }) => {
@@ -471,6 +484,8 @@ export const handlers = [
   http.get(`${API}/backups/status`, () => HttpResponse.json(backupStatusForPlatformAdmin())),
   http.get(`${API}/section-modification-requests/pending`, () => HttpResponse.json([])),
   http.post(`${API}/subject-sections/:id/modification-request/preview`, () => HttpResponse.json({ conflicts: [] })),
+  http.post(`${API}/subject-sections/:id/modification-request/approve`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API}/subject-sections/:id/modification-request/reject`, () => new HttpResponse(null, { status: 204 })),
   http.get(`${API}/permissions/catalog`, () => HttpResponse.json(permissionCatalog())),
   http.get(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
   http.put(`${API}/permissions/grid`, () => HttpResponse.json(permissionGrid())),
