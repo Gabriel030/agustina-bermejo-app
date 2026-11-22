@@ -208,7 +208,7 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
                           variant="ghost"
                           size="sm"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="min-h-11 gap-1 px-1 uppercase hover:text-foreground md:min-h-8"
+                          className="min-h-11 gap-1 px-0 text-[length:inherit] font-[weight:inherit] uppercase hover:bg-transparent hover:text-foreground md:min-h-8"
                         >
                           Alumno
                           <SortIcon className="size-3.5" />

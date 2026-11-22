@@ -231,7 +231,7 @@ export function DocenteConfiguracionEvaluacion() {
                   onClick={() => setForm((f) => ({ ...f, tpCount: n }))}
                   className={`min-h-11 min-w-11 rounded-lg px-4 text-sm font-bold ${
                     form.tpCount === n
-                      ? 'bg-brand text-on-accent ring-2 ring-success ring-offset-2'
+                      ? 'bg-brand text-on-accent ring-2 ring-success ring-offset-2 hover:bg-brand hover:text-on-accent'
                       : 'bg-neutral-bg text-ink-faint'
                   } disabled:opacity-60 disabled:ring-0`}
                 >

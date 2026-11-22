@@ -11,7 +11,7 @@ export function GradeReadCell({ label, studentName, cell, onOpen }) {
       variant="ghost"
       aria-label={description}
       onClick={onOpen}
-      className={`min-h-11 min-w-11 justify-end gap-1 rounded-lg px-1.5 text-sm tabular-nums hover:bg-surface ${hasScore && !unpublished ? 'font-semibold text-ink' : 'text-ink-faint'}`}
+      className={`min-h-11 min-w-11 justify-end gap-1 rounded-lg px-1.5 text-sm tabular-nums hover:bg-surface dark:hover:bg-surface ${hasScore && !unpublished ? 'font-semibold text-ink hover:text-ink' : 'text-ink-faint hover:text-ink-faint'}`}
     >
       {hasScore ? formatScore(cell.score) : '—'}
       {cell?.corrected && <span aria-hidden="true" className="size-[7px] rounded-full bg-primary" />}

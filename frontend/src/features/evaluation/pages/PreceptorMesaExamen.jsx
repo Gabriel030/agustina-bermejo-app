@@ -308,7 +308,7 @@ function BuscadorMesas({ mesas, mesaId, onElegir }) {
   return (
     <Popover open={abierto} onOpenChange={setAbierto}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" className="min-h-11 w-full justify-between gap-2 px-2.5 font-normal text-ink sm:w-[340px]">
+        <Button type="button" variant="outline" className="min-h-11 md:min-h-8 w-full justify-between gap-2 border-input bg-transparent px-2.5 font-normal text-ink sm:w-[340px]">
           <span className="truncate">{seleccionada ? opcionMesa(seleccionada) : 'Buscar una mesa por materia...'}</span>
           <ChevronsUpDownIcon className="size-4 shrink-0 text-ink-faint" />
         </Button>
