@@ -30,6 +30,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -82,25 +83,25 @@ public class CertificateTemplateController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public CertificateTemplateResponse get(@PathVariable GraduationCertificateKind kind) {
         return getUseCase.get(kind);
     }
 
     @GetMapping("/versions")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<CertificateTemplateVersionSummaryResponse> versions(@PathVariable GraduationCertificateKind kind) {
         return listVersionsUseCase.list(kind);
     }
 
     @GetMapping("/versions/{number}")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public CertificateTemplateVersionResponse version(@PathVariable GraduationCertificateKind kind, @PathVariable int number) {
         return getVersionUseCase.get(kind, number);
     }
 
     @PutMapping("/draft")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateTemplateVersionResponse saveDraft(@PathVariable GraduationCertificateKind kind,
                                                         @Valid @RequestBody SaveCertificateTemplateDraftRequest request) {
         return saveDraftUseCase.save(kind, request.content());
@@ -108,13 +109,13 @@ public class CertificateTemplateController {
 
     @DeleteMapping("/draft")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public void discardDraft(@PathVariable GraduationCertificateKind kind) {
         discardDraftUseCase.discard(kind);
     }
 
     @PostMapping("/publish")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateTemplateVersionResponse publish(@PathVariable GraduationCertificateKind kind) {
         return publishUseCase.publish(kind);
     }
@@ -122,7 +123,7 @@ public class CertificateTemplateController {
     @Operation(description = "Solo PNG, hasta 2 MB (se valida por magic bytes)")
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateTemplateImageResponse uploadImage(@PathVariable GraduationCertificateKind kind,
                                                         @RequestParam TemplateImagePurpose purpose,
                                                         @RequestPart("file") MultipartFile file) throws IOException {
@@ -132,7 +133,7 @@ public class CertificateTemplateController {
 
     @GetMapping("/images/{id}")
     @ApiResponse(responseCode = "200", content = @Content(mediaType = "image/png", schema = @Schema(type = "string", format = "binary")))
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<byte[]> image(@PathVariable GraduationCertificateKind kind, @PathVariable Long id) {
         CertificateTemplateImageContent image = getImageUseCase.get(kind, id);
         return ResponseEntity.ok()

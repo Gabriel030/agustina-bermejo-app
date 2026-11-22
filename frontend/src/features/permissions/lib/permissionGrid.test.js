@@ -7,6 +7,7 @@ describe('moduleLabel', () => {
     expect(moduleLabel('audit')).toBe('Auditoría');
     expect(moduleLabel('certificate')).toBe('Certificados');
     expect(moduleLabel('enrollment')).toBe('Inscripciones');
+    expect(moduleLabel('graduation')).toBe('Egreso y certificados');
     expect(moduleLabel('notification')).toBe('Notificaciones');
     expect(moduleLabel('platform')).toBe('Configuración del instituto');
   });

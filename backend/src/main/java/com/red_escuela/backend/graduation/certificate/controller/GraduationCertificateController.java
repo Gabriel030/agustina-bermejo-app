@@ -37,7 +37,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -84,7 +84,7 @@ public class GraduationCertificateController {
     }
 
     @GetMapping("/eligible")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.issue", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public Page<EligibleGraduateResponse> eligible(
             @RequestParam(required = false) GraduationCertificateKind kind,
             @RequestParam(required = false) GraduateEligibilityStatus status,
@@ -96,7 +96,7 @@ public class GraduationCertificateController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "graduation.read_certificates", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public Page<GraduationCertificateSummaryResponse> list(
             @RequestParam(required = false) GraduationCertificateKind kind,
             @RequestParam(required = false) GraduationCertificateStatus status,
@@ -108,14 +108,14 @@ public class GraduationCertificateController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "graduation.read_certificates", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public GraduationCertificateDetailResponse get(@PathVariable Long id) {
         return getUseCase.get(id);
     }
 
     @PostMapping("/preview")
     @ApiResponse(responseCode = "200", content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")))
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.issue", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<byte[]> preview(@Valid @RequestBody IssueGraduationCertificateRequest request) {
         GraduationCertificatePdf pdf = previewUseCase.preview(request);
         return ResponseEntity.ok()
@@ -126,20 +126,20 @@ public class GraduationCertificateController {
     }
 
     @PostMapping("/batch")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.issue", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public GraduationCertificateBatchResponse issueBatch(@Valid @RequestBody IssueGraduationCertificateBatchRequest request) {
         return batchUseCase.issueBatch(request);
     }
 
     @PostMapping("/{id}/revoke")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.revoke", legacyRoles = "ROLE_DIRECTOR")
     public GraduationCertificateDetailResponse revoke(@PathVariable Long id,
                                                       @Valid @RequestBody RevokeGraduationCertificateRequest request) {
         return revokeUseCase.revoke(id, request.reason());
     }
 
     @PostMapping("/{id}/reissue")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "graduation.reissue_certificate", legacyRoles = "ROLE_DIRECTOR")
     public GraduationCertificateDetailResponse reissue(@PathVariable Long id,
                                                        @Valid @RequestBody ReissueGraduationCertificateRequest request) {
         return reissueUseCase.reissue(id, request.reason());
@@ -147,13 +147,13 @@ public class GraduationCertificateController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.issue", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public GraduationCertificateResponse issue(@Valid @RequestBody IssueGraduationCertificateRequest request) {
         return issueUseCase.issue(request);
     }
 
     @GetMapping("/{id}/pdf")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.download", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
         GraduationCertificatePdf pdf = pdfUseCase.pdfOf(id);
         return ResponseEntity.ok()

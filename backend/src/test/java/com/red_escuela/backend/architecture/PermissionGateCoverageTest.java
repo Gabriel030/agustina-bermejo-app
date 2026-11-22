@@ -25,8 +25,7 @@ class PermissionGateCoverageTest {
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "academicrecord", "academicstructure", "billing", "evaluation",
-            "graduation");
+            "academicrecord", "academicstructure", "billing", "evaluation");
 
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
@@ -50,6 +49,15 @@ class PermissionGateCoverageTest {
             ROOT + ".notification.controller.MeNotificationController",
             ROOT + ".notification.broadcast.controller.ContactConsentController",
             ROOT + ".notification.broadcast.controller.PublicUnsubscribeController",
+            ROOT + ".graduation.controller.MeCertificateController",
+            ROOT + ".graduation.controller.MeGraduationRequestController",
+            ROOT + ".graduation.certificate.controller.MeGraduationCertificateController",
+            ROOT + ".graduation.certificate.regular.controller.MeRegularCertificateController",
+            ROOT + ".graduation.certificate.approvedsubjects.controller.MeApprovedSubjectsCertificateController",
+            ROOT + ".graduation.procedure.controller.MeProcedureController",
+            ROOT + ".graduation.procedure.controller.MeOwnDocumentController",
+            ROOT + ".graduation.certificate.verification.controller.PublicCertificateController",
+            ROOT + ".graduation.certificate.verification.controller.PublicDocumentController",
             ROOT + ".enrollment.controller.MeCourseAdmissionPreviewController",
             ROOT + ".enrollment.controller.MeCourseEnrollmentController",
             ROOT + ".enrollment.controller.MeEnrollmentChangeController",
@@ -66,6 +74,23 @@ class PermissionGateCoverageTest {
             "DirectorApprovalRequestController#list", "DirectorApprovalRequestController#get",
             "DirectorApprovalRequestController#approve", "DirectorApprovalRequestController#reject");
 
+
+    private static final Set<String> CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS = Set.of(
+            ROOT + ".graduation.certificate.exam.controller.ExamCertificateController",
+            ROOT + ".graduation.certificate.exam.controller.ExamBoardCertificateController",
+            ROOT + ".graduation.certificate.approvedsubjects.controller.ApprovedSubjectsCertificateController",
+            ROOT + ".graduation.certificate.regular.controller.RegularCertificateController",
+            ROOT + ".graduation.certificate.regular.controller.RegularCertificateRequestController",
+            ROOT + ".graduation.certificate.regular.controller.CertificateExceptionController",
+            ROOT + ".graduation.certificate.regular.controller.RegularCertificateSettingsController",
+            ROOT + ".graduation.certificate.template.controller.DocumentCertificateTemplateController",
+            ROOT + ".graduation.certificate.signatory.controller.CertificateSignatoryController",
+            ROOT + ".graduation.documentsettings.controller.DocumentIssuanceSettingsController");
+
+    private static final Set<String> ENDPOINTS_FIXED_BY_CONDITIONAL_ROLE_RULE = Set.of(
+            "CertificateTemplateController#preview");
+
+
     private static final Set<String> LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
             "getCurrentDocuments", "getPendingAcceptances", "acceptCurrentDocuments", "confirmGuardianAcceptance",
             "resendGuardianConfirmation", "getNewsletterPreference", "updateNewsletterPreference");
@@ -74,11 +99,14 @@ class PermissionGateCoverageTest {
     void everyProtectedEndpointUsesTheGateOrIsExempt() throws Exception {
         List<String> uncovered = new ArrayList<>();
         for (Class<?> controller : controllers()) {
-            if (CONTROLLERS_FIXED_BY_ROLE.contains(controller.getName()) || CONTROLLERS_WITHOUT_ROLE_RULE.contains(controller.getName()) || MODULES_PENDING_MIGRATION.contains(moduleOf(controller))) {
+            if (CONTROLLERS_FIXED_BY_ROLE.contains(controller.getName()) || CONTROLLERS_WITHOUT_ROLE_RULE.contains(controller.getName()) || CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS.contains(controller.getName()) || MODULES_PENDING_MIGRATION.contains(moduleOf(controller))) {
                 continue;
             }
             for (Method method : controller.getDeclaredMethods()) {
                 if (AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class) == null) {
+                    continue;
+                }
+                if (ENDPOINTS_FIXED_BY_CONDITIONAL_ROLE_RULE.contains(controller.getSimpleName() + "#" + method.getName())) {
                     continue;
                 }
                 if (controller.getName().equals(LEGAL_DOCUMENT_CONTROLLER) && LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(method.getName())) {
@@ -162,7 +190,7 @@ class PermissionGateCoverageTest {
 
     @Test
     void exemptListsOnlyNameExistingModulesAndControllers() throws Exception {
-        for (String controllerName : Stream.concat(CONTROLLERS_FIXED_BY_ROLE.stream(), CONTROLLERS_WITHOUT_ROLE_RULE.stream()).toList()) {
+        for (String controllerName : Stream.of(CONTROLLERS_FIXED_BY_ROLE, CONTROLLERS_WITHOUT_ROLE_RULE, CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS).flatMap(Set::stream).toList()) {
             assertThat(Class.forName(controllerName)).isNotNull();
         }
         Set<String> present = new HashSet<>();
