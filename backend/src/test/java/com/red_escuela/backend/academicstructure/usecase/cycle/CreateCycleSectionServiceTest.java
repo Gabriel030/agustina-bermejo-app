@@ -34,6 +34,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseSubjectSection
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.service.CreateCycleSectionTransaction;
 import com.red_escuela.backend.academicstructure.service.CycleSectionAbsenceLimitAssigner;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -97,9 +98,9 @@ class CreateCycleSectionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CreateCycleSectionService(cycleRepository, subjectRepository, courseSubjectRepository,
+        service = new CreateCycleSectionService(new CreateCycleSectionTransaction(cycleRepository, subjectRepository, courseSubjectRepository,
                 subjectSectionRepository, courseSectionRepository, classroomRepository, slotRepository, conflictChecker,
-                new CycleSectionAbsenceLimitAssigner(), identityAssigner, shiftSlotGuard);
+                new CycleSectionAbsenceLimitAssigner(), identityAssigner, shiftSlotGuard));
         term = TermFixtures.newTerm();
         term.setId(2L);
         programCycle = new AcademicOfferingCycle();
