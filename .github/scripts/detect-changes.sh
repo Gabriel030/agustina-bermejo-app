@@ -63,7 +63,7 @@ if [ -n "$base" ]; then
     if ! grep -qE '^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)' <<< "$changed"; then
       relevant=false
     fi
-    if ! grep -qE '^(frontend/|contracts/openapi\.json$|\.github/workflows/)' <<< "$changed"; then
+    if ! grep -qE '^(frontend/|perf/|contracts/openapi\.json$|\.github/workflows/)' <<< "$changed"; then
       frontend=false
     fi
     if ! grep -qE "$deploy_scope" <<< "$changed"; then
