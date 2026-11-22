@@ -13,11 +13,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class StaffRoleAssignmentPolicy {
-    public static final Set<String> STAFF_ROLES = Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO");
+    public static final Set<String> STAFF_ROLES = Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO", "SUBDIRECTOR");
 
     private static final Map<String, Set<String>> CREATABLE_ROLES_BY_ROLE = Map.of(
             "ADMINISTRATIVO", Set.of("DOCENTE", "PRECEPTOR"),
-            "DIRECTOR", Set.of("ADMINISTRATIVO"));
+            "SUBDIRECTOR", Set.of("DOCENTE", "PRECEPTOR"),
+            "DIRECTOR", Set.of("ADMINISTRATIVO", "SUBDIRECTOR"));
 
     private final CurrentPersonService currentPersonService;
 
