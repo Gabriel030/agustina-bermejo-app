@@ -129,6 +129,14 @@ Los endpoints del alumno (/me/*) y la configuración de evaluación del docente 
 
 De esos endpoints, load_grade_item, publish_grades, record_exam_recovery, read_grade_grid, confirm_commission_closure (confirmar y observación) y record_exam_board_final_grades dejan pasar al Director en Activo, pero el handler resuelve el instructor actual y, si el Director no tiene ficha de instructor, falla con InstructorNotFoundException (404): en la práctica sigue sin poder hacer acciones de docente salvo que tenga esa ficha.
 
+### Billing (tanda A1: lecturas, cobranza y configuración de recordatorios)
+
+Todos los endpoints migrados permiten hoy al Director (reglas AD, solo Director o Administrativo, Director y Preceptor), así que ningún endpoint de esta tanda cambia de resultado para el Director en Activo. El módulo sigue en Legado y billing no está completo: el resto de los endpoints (plata, corridas con efecto, alumno /me, webhook, planes de pago, términos de pago anual) llegan en las tandas siguientes.
+
+Migrados (33 endpoints, permisos billing.*): payment-standing de inscripciones (read_payment_standing, con Preceptor), su historial, contact-list, impact, configuración y cronogramas de recordatorios (read_reminder_config y manage_reminder_config), métricas, tablero financiero, deudores (read_debtors, solo Director, sin grant a otros roles), billing-overview de un alumno, alertas de configuración, corridas nocturnas y mensuales (lecturas, read_billing_runs), simulación de corrida mensual (simulate_monthly_run, persiste una corrida simulada sin emitir facturas) y late-payment-settings/current.
+
+manage_reminder_config queda no sensible porque solo propone y valida cambios: la aprobación, que sí tiene efecto, queda fuera de esta tanda y no se puede autoaprobar. Pasaría a ser sensible solo si una tanda futura pusiera la publicación directa bajo ese permiso.
+
 ## Academicrecord
 
 El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración ni cambio de resultado para el Director en ENFORCE.

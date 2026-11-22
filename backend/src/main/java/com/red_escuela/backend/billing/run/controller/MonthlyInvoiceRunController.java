@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
 import com.red_escuela.backend.billing.run.dto.ApproveDraftInvoicesRequest;
 import com.red_escuela.backend.billing.run.dto.DiscardDraftInvoicesRequest;
@@ -37,7 +38,6 @@ import java.util.List;
 @RestController
 @RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/monthly-invoice-runs")
-@PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
 public class MonthlyInvoiceRunController {
     public static final String TOTAL_COUNT_HEADER = "X-Total-Count";
 
@@ -60,6 +60,7 @@ public class MonthlyInvoiceRunController {
     @GetMapping
     @ApiResponse(responseCode = "200", description = "Corridas mensuales, la más nueva primero; el total sin paginar viaja en el header X-Total-Count",
             headers = @Header(name = TOTAL_COUNT_HEADER, description = "Cantidad total de corridas que cumplen el filtro, sin paginar", schema = @Schema(type = "integer", format = "int64")))
+    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<List<MonthlyInvoiceRunResponse>> list(@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth period,
                                                                 @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
         RunPage<MonthlyInvoiceRunResponse> runs = queryUseCase.listMonthlyInvoiceRuns(period, page, size);
@@ -67,6 +68,7 @@ public class MonthlyInvoiceRunController {
     }
 
     @GetMapping("/{monthlyRunId}")
+    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public MonthlyInvoiceRunResponse find(@PathVariable Long monthlyRunId) {
         return queryUseCase.findMonthlyInvoiceRun(monthlyRunId);
     }
@@ -74,6 +76,7 @@ public class MonthlyInvoiceRunController {
     @GetMapping("/{monthlyRunId}/items")
     @ApiResponse(responseCode = "200", description = "Ítems de la corrida por id ascendente; el total sin paginar viaja en el header X-Total-Count",
             headers = @Header(name = TOTAL_COUNT_HEADER, description = "Cantidad total de ítems que cumplen el filtro, sin paginar", schema = @Schema(type = "integer", format = "int64")))
+    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<List<MonthlyInvoiceRunItemResponse>> listItems(@PathVariable Long monthlyRunId, @RequestParam(required = false) MonthlyInvoiceRunItemResult result,
                                                                          @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
         RunPage<MonthlyInvoiceRunItemResponse> items = queryUseCase.listMonthlyInvoiceRunItems(monthlyRunId, result, page, size);
@@ -81,18 +84,21 @@ public class MonthlyInvoiceRunController {
     }
 
     @GetMapping("/{monthlyRunId}/draft-invoices")
+    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<DraftInvoiceGroupResponse> listDraftInvoiceGroups(@PathVariable Long monthlyRunId) {
         return draftQueryUseCase.listDraftInvoiceGroups(monthlyRunId);
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{monthlyRunId}/items/{itemId}/retries")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public MonthlyInvoiceRunItemResponse retryItem(@PathVariable Long monthlyRunId, @PathVariable Long itemId) {
         return manualRetryUseCase.retryMonthlyInvoiceRunItemManually(monthlyRunId, itemId);
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{monthlyRunId}/draft-invoices/approvals")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public DraftInvoiceBatchResponse approveDraftInvoices(@PathVariable Long monthlyRunId, @RequestHeader("Idempotency-Key") String idempotencyKey,
                                                           @Valid @RequestBody ApproveDraftInvoicesRequest request) {
         return approveDraftsUseCase.approveDraftInvoicesOfRun(monthlyRunId, request.invoiceIds(), idempotencyKey);
@@ -100,6 +106,7 @@ public class MonthlyInvoiceRunController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{monthlyRunId}/draft-invoices/discards")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public DraftInvoiceBatchResponse discardDraftInvoices(@PathVariable Long monthlyRunId, @Valid @RequestBody DiscardDraftInvoicesRequest request) {
         return discardDraftsUseCase.discardDraftInvoicesOfRun(monthlyRunId, request.invoiceIds(), request.reason());
     }

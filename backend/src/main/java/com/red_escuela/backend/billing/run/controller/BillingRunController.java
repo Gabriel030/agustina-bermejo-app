@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.run.domain.BillingRunStep;
 import com.red_escuela.backend.billing.run.dto.BillingRunItemResponse;
 import com.red_escuela.backend.billing.run.dto.NightlyBillingExecutionResponse;
@@ -25,7 +26,6 @@ import java.util.List;
 @RestController
 @RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing-runs")
-@PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
 public class BillingRunController {
     private final BillingRunQueryUseCase queryUseCase;
     private final BillingRunExecutionUseCase executionUseCase;
@@ -36,6 +36,7 @@ public class BillingRunController {
     }
 
     @GetMapping
+    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<NightlyBillingRunResponse> list(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return queryUseCase.listNightlyBillingRuns(from, to);
@@ -50,11 +51,13 @@ public class BillingRunController {
     }
 
     @GetMapping("/{nightlyRunId}")
+    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public NightlyBillingRunResponse find(@PathVariable Long nightlyRunId) {
         return queryUseCase.findNightlyBillingRun(nightlyRunId);
     }
 
     @GetMapping("/{nightlyRunId}/steps/{step}/items")
+    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<BillingRunItemResponse> listItems(@PathVariable Long nightlyRunId, @PathVariable BillingRunStep step) {
         return queryUseCase.listBillingRunItems(nightlyRunId, step);
     }

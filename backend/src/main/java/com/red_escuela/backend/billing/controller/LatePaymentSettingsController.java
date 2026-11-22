@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.dto.LatePaymentSettingsResponse;
 import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.usecase.latepaymentsettings.CreateLatePaymentSettingsUseCase;
@@ -36,7 +37,7 @@ public class LatePaymentSettingsController {
     }
 
     @GetMapping("/late-payment-settings/current")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_late_payment_settings", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public LatePaymentSettingsResponse current() {
         return LatePaymentSettingsResponse.from(findCurrentLatePaymentSettingsUseCase.findCurrent());
     }

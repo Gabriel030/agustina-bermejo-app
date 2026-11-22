@@ -6,6 +6,7 @@ describe('moduleLabel', () => {
     expect(moduleLabel('dataimport')).toBe('Importación de datos');
     expect(moduleLabel('audit')).toBe('Auditoría');
     expect(moduleLabel('certificate')).toBe('Certificados');
+    expect(moduleLabel('billing')).toBe('Facturación y cobranza');
     expect(moduleLabel('academicstructure')).toBe('Estructura académica');
     expect(moduleLabel('enrollment')).toBe('Inscripciones');
     expect(moduleLabel('graduation')).toBe('Egreso y certificados');
