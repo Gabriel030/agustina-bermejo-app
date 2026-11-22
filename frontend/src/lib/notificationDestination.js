@@ -1,6 +1,8 @@
 const STAFF_BILLING = ['administrativo', 'director'];
 const STAFF_INTAKE = ['preceptor', 'administrativo'];
 
+const INHERITED_ROLE = { subdirector: 'administrativo' };
+
 const toPath = (path) => () => path;
 
 const forRoles = (roles, build) => ({ roles, build });
@@ -140,7 +142,8 @@ export function notificationDestination(notification, activeRole) {
   const entries = NOTIFICATION_DESTINATIONS[notification.type];
   if (!entries) return null;
   const role = activeRole ? activeRole.toLowerCase() : null;
-  const entry = entries.find((candidate) => candidate.roles === null || candidate.roles.includes(role));
+  const matchedRole = INHERITED_ROLE[role] ?? role;
+  const entry = entries.find((candidate) => candidate.roles === null || candidate.roles.includes(matchedRole));
   if (!entry) return null;
   return entry.build({ id: notification.relatedEntityId ?? null, base: role }) ?? null;
 }

@@ -54,6 +54,7 @@ import {
   useRechazarComprobante,
 } from '@/hooks/useBilling';
 import { Input } from '@/components/ui/input';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -312,7 +313,7 @@ function TabFacturacion() {
   const showResults = searchDebounced.length >= 2;
   const debt = debtIsCurrent ? outstandingDebtOf(overview) : null;
   const hasPayableInvoices = payableInvoicesOf(overview).length > 0;
-  const accountBase = usuario?.roles?.includes('DIRECTOR') ? '/director' : '/administrativo';
+  const accountBase = useRoleBasePath();
   const availableCredit = creditBalance?.availableCredit;
   const studentName = selectedStudent ? `${selectedStudent.apellido}, ${selectedStudent.nombre}` : undefined;
   const requestedCancelId = location.state?.cancelInvoiceId;
@@ -702,8 +703,7 @@ export function AdministrativoFacturacion() {
   const { data: pendingReceipts } = useComprobantesAdmin();
   const pendingCount = pendingReceipts?.length ?? 0;
   const contactTotal = useContactList({ size: 1 }).data?.totalElements ?? 0;
-  const { usuario } = useAuth();
-  const accountBase = usuario?.roles?.includes('DIRECTOR') ? '/director' : '/administrativo';
+  const accountBase = useRoleBasePath();
 
   function handleTabChange(value) {
     const next = new URLSearchParams();

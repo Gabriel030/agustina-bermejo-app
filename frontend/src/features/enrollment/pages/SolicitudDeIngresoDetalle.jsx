@@ -194,7 +194,7 @@ function BeforeApprovingCard({ check, application, basePath }) {
               </p>
             ))}
             <p className="text-size-12-5 text-ink-faint">Tiene que regularizarla antes de que se apruebe el ingreso.</p>
-            {basePath === '/administrativo' && (
+            {['/administrativo', '/subdirector'].includes(basePath) && (
               <Button asChild variant="link" size="inline">
                 <Link to={`${studentPath}?view=financiero`}>Ir al Financiero del alumno</Link>
               </Button>

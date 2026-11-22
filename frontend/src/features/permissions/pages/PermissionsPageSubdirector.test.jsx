@@ -24,6 +24,14 @@ describe('PermissionsPage for a subdirector (read-only grid)', () => {
     expect(screen.getByText(/Solo el Director puede modificar los permisos\./)).toBeInTheDocument();
   });
 
+  it('describes the screen as read-only instead of the editing description', async () => {
+    serveReadOnlyGrid();
+    renderWithProviders(<PermissionsPage />);
+
+    expect(await screen.findByText('Mirá qué puede hacer cada rol en cada módulo.')).toBeInTheDocument();
+    expect(screen.queryByText(/Cada cambio pide un motivo/)).not.toBeInTheDocument();
+  });
+
   it('offers no edit controls and hides the discrepancies tab', async () => {
     serveReadOnlyGrid();
     renderWithProviders(<PermissionsPage />);

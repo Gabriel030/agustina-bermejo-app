@@ -27,6 +27,7 @@ import { DIRECTOR_ROLE, GRID_FORBIDDEN_CODE, describeChangeCount, discrepancyCou
 
 const PAGE_TITLE = 'Roles y permisos';
 const PAGE_DESCRIPTION = 'Definí qué puede hacer cada rol en cada módulo. Cada cambio pide un motivo y queda en el registro de auditoría.';
+const PAGE_DESCRIPTION_READ_ONLY = 'Mirá qué puede hacer cada rol en cada módulo.';
 
 function PermissionsSkeleton() {
   return (
@@ -314,7 +315,7 @@ export function PermissionsPage() {
   }
 
   return (
-    <PageContainer title={PAGE_TITLE} description={PAGE_DESCRIPTION} className="pb-28">
+    <PageContainer title={PAGE_TITLE} description={gridQuery.data?.editable === false ? PAGE_DESCRIPTION_READ_ONLY : PAGE_DESCRIPTION} className="pb-28">
       {body}
     </PageContainer>
   );
