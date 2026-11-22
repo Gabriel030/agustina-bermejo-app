@@ -88,6 +88,19 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints del alumno (/me/*), el alta pública de interesados y las decisiones sobre pedidos de aprobación (listar, ver, aprobar, rechazar) quedan fuera de la grilla.
 
+### Billing (tanda A2)
+
+Lecturas y previews sin efecto del staff sobre entidades con plata (16 permisos `billing.*`, V381, 40 endpoints). Las escrituras, la cobranza, los recordatorios, los reportes y las corridas quedan en otras tandas, y el módulo sigue en LEGACY. Ningún permiso es sensible. Alumno (`/me/*`), webhook de Mercado Pago, configuración de pagos, plan de pagos, cohortes y los términos del pago anual `current` y `versions/{n}` (mixtos) quedan fuera.
+
+Ningún endpoint de esta tanda deniega hoy al Director: las reglas vigentes son Administrativo y Director, o solo Director. Pasar el módulo a Activo no cambia su resultado.
+
+Permisos que hoy solo permite el Director y no se siembran para ningún otro rol (se delegan desde la grilla):
+
+- POST /payments/{id}/approval-revocation/preview (billing.preview_approval_revocation)
+- GET /annual-upfront-terms/versions (billing.read_annual_upfront_terms_versions)
+
+Detalle de la migración: las reglas de los services (`@PreAuthorize`) de los métodos de staff de estos endpoints se movieron a `legacyRoles` del controller; en Activo un `@PreAuthorize` en el service anularía la grilla. Los métodos de alumno de los services compartidos conservan su regla.
+
 ### Academicstructure
 
 Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
@@ -146,6 +159,8 @@ Seed a Administrativo (reglas AD): retry_draft_invoice_items, approve_draft_invo
 Decisiones exclusivas del Director, sin grants (solo se delegan con confirmación de sensible): run_billing (POST /billing-runs/executions), issue_monthly_invoices_manually, manage_promotion (crear y cerrar), cancel_price_version, manage_payment_plan_options, manage_year_billing_template (crear y configurar), set_late_payment_settings, manage_payment_gateway (PUT /payment-config y QR), decide_authorization_request (aprobar y rechazar) y publish_annual_upfront_terms.
 
 Advertencia al delegar decide_authorization_request: el servicio sigue exigiendo el rol Director para decidir (y que quien decide no sea quien pidió), así que un rol con el permiso pasa la grilla pero recibe acceso denegado del servicio. Lo mismo vale para el alcance de la bandeja de solicitudes: un Administrativo solo ve las suyas.
+
+Delegar billing.manage_payment_gateway (CBU y QR), billing.set_late_payment_settings o billing.approve_draft_invoices hace que el delegado aplique el cambio directo, sin segunda aprobación. manage_payment_gateway, run_billing e issue_monthly_invoices_manually son solo del Director y se dejan sin grants. Lo que decide si algo se aplica directo o queda como solicitud pendiente depende hoy del rol Director real (resolvers de actor), no de la grilla: un delegado no Director de manage_year_billing_template o manage_year_billing_cohorts genera una solicitud pendiente. Por eso billing se queda en Legado: no pasar a Sombra real ni a Activo hasta resolver el Issue #1254.
 
 Fuera de esta tanda: /me/*, webhook de Mercado Pago, GET payment-config/qr-image, POST payment-plan (Administrativo o Alumno), cohortes y términos de pago anual de lectura (mixtos con Alumno), previews y lecturas (A1/A2) y cobros y devoluciones (B1).
 

@@ -142,6 +142,45 @@ class PermissionGateCoverageTest {
             ROOT + ".billing.configuration.usecase.ValidateBillingConfigurationChangeService", ROOT + ".billing.configuration.usecase.ListConfigurationVersionHistoryService",
             ROOT + ".billing.configuration.usecase.FindConfigurationVersionAuthorNamesService");
 
+    private static final Set<String> BILLING_A2_MIGRATED_ENDPOINTS = Set.of(
+            "AnnualUpfrontQuoteController#quoteForStaff", "AnnualUpfrontRequestViewController#listRequestsOfEnrollmentForStaff",
+            "AnnualUpfrontRequestViewController#searchRequestsForStaff", "AnnualUpfrontRequestViewController#viewRequestForStaff",
+            "AnnualUpfrontTermsController#listTermsVersions", "AuthorizationRequestController#get",
+            "AuthorizationRequestController#list", "BankTransferReceiptController#file",
+            "BankTransferReceiptController#listPending", "CreditNoteController#listCreditNotesOfStudent",
+            "DiscountDefinitionController#findDiscountDefinition", "DiscountDefinitionController#listDiscountDefinitions",
+            "DiscountDefinitionController#validateDiscountDefinition", "InvoiceCancellationController#previewInvoiceCancellation",
+            "InvoiceController#byCourse", "InvoiceController#byProgram",
+            "InvoiceController#priceBreakdown", "PaymentReversalPreviewController#previewApprovalRevocation",
+            "PaymentReversalPreviewController#previewChargebackRegistration", "PaymentReversalPreviewController#previewChargebackReversal",
+            "PriceController#getPriceChangeImpact", "PriceController#listPriceVersionHistory",
+            "PriceController#listPrices", "PriceController#validatePriceChange",
+            "ProgramYearBillingTemplateController#listBillingTemplates", "PromotionController#findActive",
+            "PromotionController#lostBenefits", "RefundController#listRefundRequestsOfStudent",
+            "RefundController#listRefundsOfStudent", "RefundPreviewController#describeRefundEligibilityOfStudent",
+            "RefundPreviewController#previewRefundOnBehalfOfStudent", "StudentCreditBalanceController#describeCreditBalanceOfStudent",
+            "StudentDiscountController#listForCourseEnrollment", "StudentDiscountController#listForProgramEnrollment",
+            "StudentDiscountController#listForStudent", "StudentDiscountController#previewForCourseEnrollment",
+            "StudentDiscountController#previewForProgramEnrollment", "StudentDiscountController#searchStudentDiscounts",
+            "StudentPaymentController#listPaymentsOfStudent", "StudentPaymentController#previewCashPayment");
+
+    private static final Set<String> BILLING_A2_SERVICE_METHODS_WITHOUT_ROLE_RULE = Set.of(
+            "annualupfront.usecase.ViewAnnualUpfrontRequestService#viewAnnualUpfrontRequestForStaff", "annualupfront.usecase.ViewAnnualUpfrontRequestService#listAnnualUpfrontRequestsOfEnrollmentForStaff",
+            "annualupfront.usecase.ViewAnnualUpfrontRequestService#searchAnnualUpfrontRequestsForStaff", "annualupfront.usecase.QuoteAnnualUpfrontService#quoteAnnualUpfrontForStaff",
+            "annualupfront.usecase.ViewAnnualUpfrontTermsService#listAnnualUpfrontTermsVersions", "payment.usecase.PreviewRefundService#previewRefundOnBehalfOfStudent",
+            "payment.usecase.PreviewRefundService#describeRefundEligibilityOfStudent", "payment.usecase.ListStudentRefundsService#listRefundsOfStudent",
+            "payment.usecase.ListStudentRefundsService#listRefundRequestsOfStudent", "payment.usecase.DescribeStudentCreditBalanceService#describeCreditBalanceOfStudent",
+            "payment.usecase.PreviewPaymentReversalService#previewChargebackRegistration", "payment.usecase.PreviewPaymentReversalService#previewChargebackReversal",
+            "payment.usecase.PreviewPaymentReversalService#previewApprovalRevocation", "payment.usecase.ListStudentPaymentsService#describePaymentsOfStudent",
+            "payment.usecase.PreviewCashPaymentService#previewCashPayment", "note.usecase.ListCreditNotesOfStudentWithAuthorshipService#listCreditNotesOfStudentWithAuthorship",
+            "note.usecase.PreviewInvoiceCancellationService#previewInvoiceCancellation", "discount.usecase.ListActivePromotionsByLegacyContractService#listActivePromotions",
+            "discount.usecase.ListStudentDiscountsOfStudentService#listStudentDiscountsOfStudent", "discount.usecase.SearchStudentDiscountsService#searchStudentDiscounts",
+            "discount.usecase.ListDiscountDefinitionsService#listDiscountDefinitions", "discount.usecase.ListStudentDiscountsService#listStudentDiscounts",
+            "discount.usecase.FindLostCohortPromotionBenefitsService#findLostBenefits", "discount.usecase.ValidateDiscountDefinitionService#validateDiscountDefinition",
+            "discount.usecase.PreviewStudentDiscountGrantService#previewStudentDiscountGrant", "discount.usecase.FindDiscountDefinitionService#findDiscountDefinition",
+            "pricing.usecase.ListPricesService#listPrices", "pricing.usecase.GetPriceChangeImpactService#getPriceChangeImpact",
+            "pricing.usecase.ListPriceVersionHistoryService#listPriceVersionHistory", "pricing.usecase.ValidatePriceChangeService#validatePriceChange");
+
     private static final Set<String> BILLING_B2_MIGRATED_ENDPOINTS = Set.of(
             "BillingRunController#executeTodaysNightlyRun", "ManualMonthlyInvoiceIssuanceController#issueMonthlyInvoicesManually",
             "MonthlyInvoiceRunController#retryItem", "MonthlyInvoiceRunController#approveDraftInvoices", "MonthlyInvoiceRunController#discardDraftInvoices",
@@ -335,6 +374,50 @@ class PermissionGateCoverageTest {
             for (Method method : service.getDeclaredMethods()) {
                 if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
                     violations.add(service.getSimpleName() + "#" + method.getName() + " must not carry a role rule");
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void billingA2EndpointsUseTheGridGate() throws Exception {
+        List<String> violations = new ArrayList<>();
+        Set<String> found = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            if (!moduleOf(controller).equals("billing")) {
+                continue;
+            }
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                if (!BILLING_A2_MIGRATED_ENDPOINTS.contains(endpoint)) {
+                    continue;
+                }
+                found.add(endpoint);
+                RequiresPermission gate = AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class);
+                if (gate == null || !gate.code().startsWith("billing.")) {
+                    violations.add(endpoint + " must carry @RequiresPermission with a billing code");
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+        assertThat(found).isEqualTo(BILLING_A2_MIGRATED_ENDPOINTS);
+    }
+
+    @Test
+    void billingA2ServiceMethodsCarryNoRoleRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        for (String entry : BILLING_A2_SERVICE_METHODS_WITHOUT_ROLE_RULE) {
+            String[] parts = entry.split("#");
+            Class<?> service = Class.forName(ROOT + ".billing." + parts[0]);
+            if (AnnotatedElementUtils.findMergedAnnotation(service, PreAuthorize.class) != null) {
+                violations.add(service.getSimpleName() + " must not carry a class-level role rule");
+            }
+            List<Method> methods = Stream.of(service.getDeclaredMethods()).filter(method -> method.getName().equals(parts[1])).toList();
+            assertThat(methods).as(entry).isNotEmpty();
+            for (Method method : methods) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
+                    violations.add(entry + " must not carry a role rule");
                 }
             }
         }

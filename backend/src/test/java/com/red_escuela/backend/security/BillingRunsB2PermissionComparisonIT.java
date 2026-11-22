@@ -198,6 +198,24 @@ class BillingRunsB2PermissionComparisonIT extends AuthorizationMatrixSupport {
     }
 
     @Test
+    void enforceModeLetsADelegatedNonDirectorPassTheGridButTheDomainStillRefusesToDecideTheAuthorizationRequest() throws Exception {
+        setModuleMode("ENFORCE");
+        Map<String, MappedEndpoint> endpoints = endpointsByKey();
+        MappedEndpoint approve = endpoints.get("POST /authorization-requests/{id}/approve");
+        Long requestId = ownership.resourceIdFor(OwnershipKind.AUTHORIZATION_REQUEST);
+        String token = fixtures.tokenFor(MatrixRole.PRECEPTOR);
+
+        assertThat(statusWithToken(approve, "", token, requestId)).isEqualTo(403);
+        assertThat(lastResponseBody).doesNotContain("AuthorizationRequestAccessDeniedException");
+
+        grantToRole("PRECEPTOR", "billing.decide_authorization_request");
+
+        assertThat(statusWithToken(approve, "", token, requestId)).isEqualTo(403);
+        assertThat(lastResponseBody).contains("AuthorizationRequestAccessDeniedException");
+        assertThat(jdbcTemplate.queryForObject("select status from authorization_request where id = ?", String.class, requestId)).isEqualTo("PENDING");
+    }
+
+    @Test
     void theDirectorIsNeverDeniedByLegacyOnTheMonetaryBillingEndpointsOfThisBatch() {
         List<String> deniedToTheDirectorInLegacy = b2Rows().stream()
                 .filter(row -> row.byRole().get(MatrixRole.DIRECTOR) == AccessExpectation.DENY)

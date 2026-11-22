@@ -102,7 +102,7 @@ public class ProgramYearBillingTemplateController {
     }
 
     @GetMapping("/programs/{id}/year-billing-templates")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_year_billing_templates", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ProgramYearBillingTemplateResponse> listBillingTemplates(@PathVariable Long id) {
         return listBillingTemplatesUseCase.list(id).stream().map(this::templateResponse).toList();
     }

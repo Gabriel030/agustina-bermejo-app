@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
@@ -55,13 +56,13 @@ public class BankTransferReceiptController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_bank_transfer_receipts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<BankTransferReceiptResponse> listPending() {
         return receiptResponseAssembler.assembleReviewerReceiptResponses(listPendingPaymentReceiptsUseCase.list());
     }
 
     @GetMapping("/{id}/file")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_bank_transfer_receipts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<byte[]> file(@PathVariable Long id) {
         PaymentReceiptFile file = getPaymentReceiptFileUseCase.get(id);
         return ResponseEntity.ok()

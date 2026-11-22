@@ -58,19 +58,19 @@ public class PriceController {
     }
 
     @GetMapping("/prices")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.read_prices", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<PriceSummaryResponse> listPrices(@RequestParam(required = false) Long programId, @RequestParam(required = false) Long courseId) {
         return listPricesUseCase.listPrices(programId, courseId);
     }
 
     @GetMapping("/prices/{priceId}/versions")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.read_prices", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<PriceVersionHistoryEntryResponse> listPriceVersionHistory(@PathVariable Long priceId) {
         return listPriceVersionHistoryUseCase.listPriceVersionHistory(priceId);
     }
 
     @PostMapping("/prices/{priceId}/versions/impact")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.preview_price_change", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PriceChangeImpactResponse getPriceChangeImpact(@PathVariable Long priceId, @Valid @RequestBody ChangePriceRequest request) {
         return PriceChangeImpactResponse.from(getPriceChangeImpactUseCase.getPriceChangeImpact(priceId, request.amount(), request.discountOrNull(), request.effectiveFrom()));
     }
@@ -92,7 +92,7 @@ public class PriceController {
     }
 
     @PostMapping("/prices/{priceId}/versions/validation")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.preview_price_change", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PriceChangeValidationResponse validatePriceChange(@PathVariable Long priceId, @Valid @RequestBody ChangePriceRequest request) {
         return new PriceChangeValidationResponse(validatePriceChangeUseCase.validatePriceChange(priceId, request.amount(), request.discountOrNull(),
                 request.effectiveFrom(), request.changeReason(), request.appliesToLectiveYear()));

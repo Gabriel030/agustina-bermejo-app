@@ -41,6 +41,7 @@ public class AnnualUpfrontTermsController {
     }
 
     @GetMapping("/annual-upfront-terms/versions")
+    @RequiresPermission(code = "billing.read_annual_upfront_terms_versions", legacyRoles = "ROLE_DIRECTOR")
     public List<AuditedAnnualUpfrontTermsResponse> listTermsVersions() {
         return viewUseCase.listAnnualUpfrontTermsVersions().stream().map(AuditedAnnualUpfrontTermsResponse::from).toList();
     }
