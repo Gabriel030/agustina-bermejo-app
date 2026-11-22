@@ -4,6 +4,7 @@ import com.red_escuela.backend.enrollment.dto.CourseAdmissionPreviewResponse;
 import com.red_escuela.backend.enrollment.usecase.courseenrollment.PreviewCourseAdmissionUseCase;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
+import com.red_escuela.backend.shared.module.HidesPricesWhenBillingOff;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@HidesPricesWhenBillingOff
 @RequestMapping("/me")
 public class MeCourseAdmissionPreviewController {
     private final CurrentStudentService currentStudentService;

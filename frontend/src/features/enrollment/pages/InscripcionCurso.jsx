@@ -1,11 +1,13 @@
 import { useParams } from 'react-router-dom';
+import { useMyModules } from '@/hooks/useMyModules';
 import { InscripcionWizard } from '@/features/enrollment/components/InscripcionWizard';
 import { useCurso, useCursoPricing } from '@/features/enrollment/hooks/useCatalogo';
 
 export function InscripcionCurso() {
   const { id } = useParams();
+  const { billingEnabled } = useMyModules();
   const { data: curso, isLoading, isError } = useCurso(id);
-  const { data: pricing } = useCursoPricing(id);
+  const { data: pricing } = useCursoPricing(id, { enabled: billingEnabled });
 
   if (isError) {
     return <div className="p-6 text-sm text-danger">No pudimos cargar el curso. Probá recargar la página.</div>;
