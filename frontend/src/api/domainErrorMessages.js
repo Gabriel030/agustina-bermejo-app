@@ -290,6 +290,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   FEATURE_ALREADY_IN_REQUESTED_STATE: 'La función ya estaba en ese estado.',
   FINAL_GRADE_REQUIRES_EXAM_BOARD: 'La nota del final se carga solo desde la mesa de examen.',
   GRADE_CORRECTION_NO_CHANGE: 'La corrección no cambia la nota.',
+  STALE_EDIT: 'Otra persona modificó esta nota mientras la mirabas. Recargá para ver el valor actual.',
   GRADE_CORRECTION_PERIOD_ENDED: 'Terminó el período para corregir notas.',
   GRADE_ITEM_ALREADY_RECOVERED: 'Ese parcial ya tiene su recuperatorio cargado.',
   GRADE_ITEM_NOT_PUBLISHED: 'La evaluación todavía no está publicada.',

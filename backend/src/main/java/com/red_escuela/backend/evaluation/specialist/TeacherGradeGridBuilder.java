@@ -178,7 +178,7 @@ public class TeacherGradeGridBuilder {
                         item.getScore(), item.getDate(), item.getComments(),
                         item.getType() == GradeItemType.FINAL
                                 || publications.containsKey(slotKey(item.getType(), item.getSequenceNumber())),
-                        correctedItemIds.contains(item.getId())))
+                        correctedItemIds.contains(item.getId()), item.getVersion()))
                 .toList();
         return new GradeGridStudentResponse(
                 enrollmentId, person.getLastname(), person.getName(), person.getDni(),

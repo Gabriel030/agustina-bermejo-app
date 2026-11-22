@@ -4232,6 +4232,11 @@
       },
       "CorrectGradeItemRequest" : {
         "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "minimum" : 0,
+            "type" : [ "integer", "null" ]
+          },
           "newScore" : {
             "type" : "number"
           },
@@ -7804,9 +7809,13 @@
           "type" : {
             "enum" : [ "EXAM", "TP", "FINAL" ],
             "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
-        "required" : [ "gradeItemId", "sequenceNumber", "type" ],
+        "required" : [ "gradeItemId", "sequenceNumber", "type", "version" ],
         "type" : "object"
       },
       "GradeGridColumnResponse" : {
