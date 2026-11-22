@@ -17,7 +17,7 @@ import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,7 +48,7 @@ public class StudentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.read_students", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PageResponse<StudentResponse> list(
             @RequestParam(required = false) StatusType status,
             @RequestParam(required = false) StudentOnboardingStatus onboardingStatus,
@@ -59,28 +59,28 @@ public class StudentController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.read_students", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StudentRecordResponse getRecord(@PathVariable Long id) {
         return StudentRecordResponse.from(getStudentRecordUseCase.getRecord(id), seesWithdrawalReason());
     }
 
     @PostMapping("/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.withdraw_student", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void withdraw(@PathVariable Long id, @Valid @RequestBody WithdrawStudentRequest request) {
         withdrawStudentUseCase.withdraw(new WithdrawStudentCommand(id, request));
     }
 
     @PostMapping("/{id}/reactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.reactivate_student", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void reactivate(@PathVariable Long id, @Valid @RequestBody ReactivateStudentRequest request) {
         reactivateStudentUseCase.reactivate(new ReactivateStudentCommand(id, request));
     }
 
     @PostMapping("/{id}/reset-password")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "identity.reset_student_password", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public void resetPassword(@PathVariable Long id) {
         resetStudentPasswordUseCase.resetPassword(id);
     }
