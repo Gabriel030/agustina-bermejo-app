@@ -1,5 +1,6 @@
 package com.red_escuela.backend.architecture;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -84,6 +85,25 @@ class PermissionGateCoverageTest {
             checked++;
         }
         assertThat(checked).isEqualTo(6);
+    }
+
+    @Test
+    void controllersExemptAsWithoutRoleRuleCarryNoRoleAnnotations() throws Exception {
+        List<String> annotated = new ArrayList<>();
+        for (String controllerName : CONTROLLERS_WITHOUT_ROLE_RULE) {
+            Class<?> controller = Class.forName(controllerName);
+            if (AnnotatedElementUtils.findMergedAnnotation(controller, PreAuthorize.class) != null
+                    || AnnotatedElementUtils.findMergedAnnotation(controller, RequiresPermission.class) != null) {
+                annotated.add(controller.getSimpleName());
+            }
+            for (Method method : controller.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null
+                        || AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class) != null) {
+                    annotated.add(controller.getSimpleName() + "#" + method.getName());
+                }
+            }
+        }
+        assertThat(annotated).as("exempt controllers must not carry role rules").isEmpty();
     }
 
     @Test
