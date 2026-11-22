@@ -15,9 +15,9 @@ import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanc
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,7 +55,7 @@ public class AttendanceChangeRequestController {
 
     @PostMapping("/attendance/{id}/change-requests")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "attendance.request_change", legacyRoles = "ROLE_DOCENTE")
     public AttendanceChangeRequestResponse create(@PathVariable Long id, @Valid @RequestBody CreateAttendanceChangeRequestRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         AttendanceChangeRequest created = requestAttendanceChangeUseCase.request(
@@ -64,27 +64,27 @@ public class AttendanceChangeRequestController {
     }
 
     @GetMapping("/attendance/change-requests")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "attendance.read_change_requests", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public List<AttendanceChangeRequestResponse> listByStatus(
             @RequestParam(defaultValue = "PENDING") AttendanceChangeRequestStatus status) {
         return listAttendanceChangeRequestsByStatusUseCase.list(status).stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/me/attendance-change-requests")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "attendance.request_change", legacyRoles = "ROLE_DOCENTE")
     public List<AttendanceChangeRequestResponse> mine() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return listMyAttendanceChangeRequestsUseCase.list(instructor.getId()).stream().map(this::toResponse).toList();
     }
 
     @PostMapping("/attendance/change-requests/{id}/approve")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public AttendanceChangeRequestResponse approve(@PathVariable Long id) {
         return toResponse(approveAttendanceChangeRequestUseCase.approve(id));
     }
 
     @PostMapping("/attendance/change-requests/{id}/reject")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public AttendanceChangeRequestResponse reject(@PathVariable Long id, @Valid @RequestBody RejectAttendanceChangeRequestRequest request) {
         return toResponse(rejectAttendanceChangeRequestUseCase.reject(new RejectAttendanceChangeRequestCommand(id, request.reason())));
     }
