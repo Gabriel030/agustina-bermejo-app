@@ -22,6 +22,7 @@ import com.red_escuela.backend.identity.usecase.staff.WithdrawStaffUseCase;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentService;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -92,12 +93,15 @@ class StaffStudentTransactionBoundaryIT extends AbstractIntegrationTest {
     @MockitoSpyBean
     private ContactChangeRecorder contactChangeRecorder;
 
+    @MockitoSpyBean
+    private AuditTrail auditTrail;
+
     private final List<Long> institutionIds = new ArrayList<>();
 
     @AfterEach
     void cleanUp() {
         SecurityContextHolder.clearContext();
-        reset(sessionRevoker, identityAuditRecorder, contactChangeRecorder);
+        reset(sessionRevoker, identityAuditRecorder, contactChangeRecorder, auditTrail);
         String persons = "select id from person where username like '" + PREFIX + "%'";
         jdbcTemplate.update("delete from audit_log where actor_person_id in (" + persons + ") or entity_id in (" + persons + ")");
         jdbcTemplate.update("delete from audit_log where entity_type = 'STUDENT' and entity_id in (select id from student where person_id in (" + persons + "))");
@@ -158,6 +162,21 @@ class StaffStudentTransactionBoundaryIT extends AbstractIntegrationTest {
                 new TestingAuthenticationToken(actor.getId().toString(), null));
     }
 
+    private void seedLiveSession(Long personId, String tokenHash) {
+        jdbcTemplate.update("insert into refresh_token (person_id, token_hash, expires_at, revoked, created_at, grace_used) "
+                + "values (?, ?, now() + interval '1 day', false, now(), false)", personId, tokenHash);
+    }
+
+    private int liveSessions(Long personId) {
+        return jdbcTemplate.queryForObject(
+                "select count(*) from refresh_token where person_id = ? and revoked = false and grace_used = false",
+                Integer.class, personId);
+    }
+
+    private int tokenVersion(Long personId) {
+        return jdbcTemplate.queryForObject("select token_version from person where id = ?", Integer.class, personId);
+    }
+
     private String personStatus(Long personId) {
         return jdbcTemplate.queryForObject("select status from person where id = ?", String.class, personId);
     }
@@ -196,6 +215,8 @@ class StaffStudentTransactionBoundaryIT extends AbstractIntegrationTest {
                 "select count(*) from email_verification_token where person_id = ?", Integer.class, target.getId())).isZero();
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from identity_contact_change_log where person_id = ?", Integer.class, target.getId())).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "select phone_number from person where id = ?", String.class, target.getId())).isNull();
     }
 
     @Test
@@ -235,6 +256,8 @@ class StaffStudentTransactionBoundaryIT extends AbstractIntegrationTest {
     void guardedStudentWithdrawalFailingWhileAuditingLeavesNoStatusChangeNorWithdrawal() {
         authenticateAs(persistPerson(PREFIX + ".adm.guarded", "79990141", StatusType.ACTIVE, "ADMINISTRATIVO"));
         Student student = persistStudent(PREFIX + ".alu.guarded", "79990142");
+        seedLiveSession(student.getPerson().getId(), PREFIX + "-guarded-token");
+        int versionBefore = tokenVersion(student.getPerson().getId());
         WithdrawStudentCommand command = new WithdrawStudentCommand(student.getId(),
                 new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "dejo de cursar"));
 
@@ -250,9 +273,49 @@ class StaffStudentTransactionBoundaryIT extends AbstractIntegrationTest {
                 });
 
         assertThat(personStatus(student.getPerson().getId())).isEqualTo(StatusType.ACTIVE.name());
+        assertThat(liveSessions(student.getPerson().getId())).isEqualTo(1);
+        assertThat(tokenVersion(student.getPerson().getId())).isEqualTo(versionBefore);
         assertThat(jdbcTemplate.queryForObject(
                 "select withdrawal_reason from student where id = ?", String.class, student.getId())).isNull();
         assertThat(jdbcTemplate.queryForObject(
                 "select withdrawn_at from student where id = ?", java.sql.Timestamp.class, student.getId())).isNull();
+    }
+
+    @Test
+    void staffWithdrawalFailingAfterRealSessionRevocationKeepsLiveSessionsAndTokenVersion() {
+        authenticateAs(persistPerson(PREFIX + ".adm.live", "79990151", StatusType.ACTIVE, "ADMINISTRATIVO"));
+        Person target = persistPerson(PREFIX + ".doc.live", "79990152", StatusType.ACTIVE, "DOCENTE");
+        seedLiveSession(target.getId(), PREFIX + "-staff-live-token");
+        int versionBefore = tokenVersion(target.getId());
+        new TransactionTemplate(transactionManager).executeWithoutResult(tx -> doAnswer(invocation -> {
+            throw new IllegalStateException("audit failed");
+        }).when(auditTrail).record(any()));
+
+        assertThatThrownBy(() -> withdrawStaffUseCase.withdraw(target.getId()))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(personStatus(target.getId())).isEqualTo(StatusType.ACTIVE.name());
+        assertThat(liveSessions(target.getId())).isEqualTo(1);
+        assertThat(tokenVersion(target.getId())).isEqualTo(versionBefore);
+    }
+
+    @Test
+    void studentWithdrawalFailingAfterRealSessionRevocationKeepsLiveSessionsAndTokenVersion() {
+        authenticateAs(persistPerson(PREFIX + ".adm.live2", "79990161", StatusType.ACTIVE, "ADMINISTRATIVO"));
+        Student student = persistStudent(PREFIX + ".alu.live", "79990162");
+        Long personId = student.getPerson().getId();
+        seedLiveSession(personId, PREFIX + "-student-live-token");
+        int versionBefore = tokenVersion(personId);
+        doAnswer(invocation -> {
+            throw new IllegalStateException("status change failed");
+        }).when(identityAuditRecorder).recordStudentWithdrawn(anyLong(), any());
+
+        assertThatThrownBy(() -> withdrawStudentUseCase.withdraw(new WithdrawStudentCommand(student.getId(),
+                new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "x"))))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(personStatus(personId)).isEqualTo(StatusType.ACTIVE.name());
+        assertThat(liveSessions(personId)).isEqualTo(1);
+        assertThat(tokenVersion(personId)).isEqualTo(versionBefore);
     }
 }
