@@ -18,7 +18,7 @@ import com.red_escuela.backend.identity.usecase.staff.UpdateStaffUseCase;
 import com.red_escuela.backend.identity.usecase.staff.WithdrawStaffUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,21 +65,21 @@ public class StaffController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.create_staff", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StaffResponse createStaff(@Valid @RequestBody CreateStaffRequest request) {
         StaffUseCaseResult result = createStaffUseCase.create(request);
         return StaffResponse.from(result.person(), result.role());
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.update_staff", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StaffResponse updateStaff(@PathVariable Long id, @Valid @RequestBody UpdateStaffRequest request) {
         StaffUseCaseResult result = updateStaffUseCase.update(new UpdateStaffCommand(id, request));
         return StaffResponse.from(result.person(), result.role());
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.read_staff", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<StaffResponse> listStaff(
             @RequestParam(required = false) String role,
             @RequestParam(required = false) StatusType status,
@@ -91,7 +91,7 @@ public class StaffController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.read_staff", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StaffRecordResponse getRecord(@PathVariable Long id) {
         var person = getStaffRecordUseCase.getRecord(id);
         return StaffRecordResponse.from(person, staffRoleAssignmentPolicy.resolveStaffRole(person), isDirector());
@@ -104,21 +104,21 @@ public class StaffController {
 
     @PostMapping("/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.withdraw_staff", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void withdraw(@PathVariable Long id) {
         withdrawStaffUseCase.withdraw(id);
     }
 
     @PostMapping("/{id}/reactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.reactivate_staff", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void reactivate(@PathVariable Long id) {
         reactivateStaffUseCase.reactivate(id);
     }
 
     @PostMapping("/{id}/reset-password")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "identity.reset_staff_password", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void resetPassword(@PathVariable Long id) {
         resetStaffPasswordUseCase.resetPassword(id);
     }

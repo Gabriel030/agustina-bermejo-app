@@ -60,6 +60,14 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints de lectura de historial, informe de ausencias, exportación y asistencia por inscripción ya permiten al Director y no cambian.
 
+### Identity
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /students/{id}/reset-password (identity.reset_student_password): hoy solo lo permiten Preceptor y Administrativo (discrepancia esperada, #1216).
+
+El resto de los endpoints migrados de identity ya permiten al Director y no cambian.
+
 ## Notas operativas
 
 - Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.
