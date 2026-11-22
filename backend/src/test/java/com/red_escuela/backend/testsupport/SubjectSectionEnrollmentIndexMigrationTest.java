@@ -17,7 +17,7 @@ class SubjectSectionEnrollmentIndexMigrationTest {
 
     @Test
     void migrationCreatesValidCompositeIndexOutsideTransaction() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("305")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("360")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 
             assertThat(jdbc.queryForObject(INDEX_DEFINITION_QUERY, String.class))
@@ -31,7 +31,7 @@ class SubjectSectionEnrollmentIndexMigrationTest {
     @Test
     void migrationConfigDisablesTransactionForConcurrentIndexScript() throws IOException {
         var config = getClass().getClassLoader()
-                .getResource("db/migration/V305__subject_section_enrollment_section_status_index.sql.conf");
+                .getResource("db/migration/V360__subject_section_enrollment_section_status_index.sql.conf");
 
         assertThat(config).isNotNull();
         try (var in = config.openStream()) {
@@ -41,7 +41,7 @@ class SubjectSectionEnrollmentIndexMigrationTest {
 
     @Test
     void migrationStatementIsIdempotentWhenIndexAlreadyExists() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("305")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("360")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 
             jdbc.execute("create index concurrently if not exists ix_subject_section_enrollment_section_status "
