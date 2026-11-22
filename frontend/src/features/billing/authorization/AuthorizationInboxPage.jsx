@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { CheckCircle2, ListChecks } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatCard } from '@/components/StatCard';
@@ -51,13 +51,31 @@ export function AuthorizationInboxPage() {
   const { roleBase } = useActiveRole();
   const isDirector = roleBase === 'director';
 
-  const [tab, setTab] = useState('pending');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [pendingPage, setPendingPage] = useState(0);
   const [historyPage, setHistoryPage] = useState(0);
   const [search, setSearch] = useState('');
   const [withdrawing, setWithdrawing] = useState(null);
 
-  const history = tab === 'history';
+  const history = !PENDING_STATUSES.includes(searchParams.get('status')) && searchParams.get('tab') === 'history';
+  const tab = history ? 'history' : 'pending';
+
+  function changeTab(value) {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value === 'history') {
+          next.set('tab', 'history');
+          next.delete('status');
+        } else {
+          next.delete('tab');
+          next.set('status', PENDING_STATUSES[0]);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  }
   const pendingQuery = useAuthorizationRequests({ ...PENDING_SEARCH, page: pendingPage, size: INBOX_PAGE_SIZE });
   const historyQuery = useAuthorizationRequests({ ...HISTORY_SEARCH, page: historyPage, size: INBOX_PAGE_SIZE }, { enabled: history });
   const query = history ? historyQuery : pendingQuery;
@@ -117,7 +135,7 @@ export function AuthorizationInboxPage() {
         </StatCard>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="gap-3">
+      <Tabs value={tab} onValueChange={changeTab} className="gap-3">
         <TabsList variant="segmented" className="self-start">
           <TabsTrigger value="pending">
             {pendingLabel}

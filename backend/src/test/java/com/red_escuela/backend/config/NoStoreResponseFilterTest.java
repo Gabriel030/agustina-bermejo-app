@@ -30,4 +30,12 @@ class NoStoreResponseFilterTest {
             assertThat(call(uri).getHeader("Cache-Control")).as(uri).isNull();
         }
     }
+
+    @Test
+    void everyCalendarRouteStartsAsNoStoreSoOnlyTheSuccessfulJsonResponseCanRelaxIt() throws Exception {
+        for (String uri : new String[] {"/me/calendar", "/me/calendar/", "/me/calendar-x", "/me/calendar/feed",
+                "/me/calendar/feed/token", "/me/calendar/export.ics"}) {
+            assertThat(call(uri).getHeader("Cache-Control")).as(uri).isEqualTo("no-store");
+        }
+    }
 }

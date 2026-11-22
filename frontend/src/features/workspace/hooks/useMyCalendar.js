@@ -5,6 +5,7 @@ import { STALE_TIME } from '@/api/cachePolicy';
 export function toCalendarView(response) {
   return {
     generatedAt: response.generatedAt,
+    hasActiveEnrollments: response.hasActiveEnrollments !== false,
     events: (response.events ?? []).map((event) => ({
       id: event.id,
       type: event.type,
