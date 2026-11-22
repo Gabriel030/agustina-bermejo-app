@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { delay, http, HttpResponse } from 'msw';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AuthorizationInboxPage } from './AuthorizationInboxPage';
 import { API, isoDateInDays, listItem, page } from './authorizationFixtures';
+import { HISTORY_STATUSES } from './authorizationRequests';
 
 const auth = vi.hoisted(() => ({ user: null }));
 vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ usuario: auth.user }) }));
@@ -34,14 +35,22 @@ function mockList(handler) {
   server.use(http.get(`${API}/authorization-requests`, ({ request }) => handler(new URL(request.url).searchParams)));
 }
 
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="search">{location.search}</div>;
+}
+
 function renderInbox(role, route) {
   return renderWithProviders(
-    <Routes>
-      <Route path="/director/aprobaciones/facturacion" element={<AuthorizationInboxPage />} />
-      <Route path="/director/aprobaciones/facturacion/:id" element={<p>Detalle del pedido</p>} />
-      <Route path="/administrativo/aprobaciones" element={<AuthorizationInboxPage />} />
-      <Route path="/administrativo/aprobaciones/:id" element={<p>Detalle del pedido</p>} />
-    </Routes>,
+    <>
+      <Routes>
+        <Route path="/director/aprobaciones/facturacion" element={<AuthorizationInboxPage />} />
+        <Route path="/director/aprobaciones/facturacion/:id" element={<p>Detalle del pedido</p>} />
+        <Route path="/administrativo/aprobaciones" element={<AuthorizationInboxPage />} />
+        <Route path="/administrativo/aprobaciones/:id" element={<p>Detalle del pedido</p>} />
+      </Routes>
+      <LocationProbe />
+    </>,
     { route: route ?? (role === 'director' ? '/director/aprobaciones/facturacion' : '/administrativo/aprobaciones') },
   );
 }
@@ -51,6 +60,55 @@ describe('AuthorizationInboxPage as director', () => {
     auth.user = { id: 1, roles: ['DIRECTOR'] };
     toastMock.success.mockClear();
     toastMock.error.mockClear();
+  });
+
+  it('shows the pending requests when the URL asks for status PENDING', async () => {
+    let params;
+    mockList((searchParams) => {
+      params = searchParams;
+      return HttpResponse.json(page([refund]));
+    });
+    renderInbox('director', '/director/aprobaciones/facturacion?status=PENDING');
+
+    expect(await screen.findByText('Ledesma, Florencia')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Pendientes/ })).toHaveAttribute('aria-selected', 'true');
+    expect(params.getAll('status')).toEqual(['PENDING']);
+  });
+
+  it('ignores an unknown status and falls back to pending', async () => {
+    let params;
+    mockList((searchParams) => {
+      params = searchParams;
+      return HttpResponse.json(page([refund]));
+    });
+    renderInbox('director', '/director/aprobaciones/facturacion?status=DESCONOCIDO');
+
+    expect(await screen.findByText('Ledesma, Florencia')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Pendientes/ })).toHaveAttribute('aria-selected', 'true');
+    expect(params.getAll('status')).toEqual(['PENDING']);
+  });
+
+  it('opens the history from the URL and keeps the URL in sync with the tab', async () => {
+    const user = userEvent.setup();
+    const requestedStatuses = [];
+    mockList((searchParams) => {
+      requestedStatuses.push(searchParams.getAll('status'));
+      return HttpResponse.json(page([refund]));
+    });
+    renderInbox('director', '/director/aprobaciones/facturacion?tab=history');
+
+    await waitFor(() => expect(requestedStatuses).toContainEqual(HISTORY_STATUSES));
+    expect(screen.getByRole('tab', { name: 'Historial' })).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('tab', { name: /Pendientes/ }));
+    expect(screen.getByTestId('search')).toHaveTextContent('status=PENDING');
+    expect(screen.getByTestId('search')).not.toHaveTextContent('tab=history');
+    await waitFor(() => expect(requestedStatuses).toContainEqual(['PENDING']));
+
+    await user.click(screen.getByRole('tab', { name: 'Historial' }));
+    expect(screen.getByTestId('search')).toHaveTextContent('tab=history');
+    expect(screen.getByTestId('search')).not.toHaveTextContent('status=');
+    await waitFor(() => expect(requestedStatuses.at(-1)).toEqual(HISTORY_STATUSES));
   });
 
   it('lists the pending requests asking the server for pending only, by due date', async () => {
