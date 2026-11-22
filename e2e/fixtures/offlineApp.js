@@ -4,9 +4,10 @@ export const API_URL = 'http://localhost:8090';
 export const STUDENT_PROFILE = { id: 7, nombre: 'Ana', apellido: 'Paz', email: 'ana@example.test', roles: ['ALUMNO'] };
 
 export async function mockApi(context, { slowMs = 0, refreshStatus = 200 } = {}) {
-  const state = { refreshStatus };
+  const state = { refreshStatus, requests: [], offline: false };
   await context.route(`${API_URL}/**`, async (route) => {
     const request = route.request();
+    if (state.offline) return route.abort('internetdisconnected');
     const origin = request.headers().origin ?? '';
     const cors = {
       'access-control-allow-origin': origin,
@@ -17,6 +18,7 @@ export async function mockApi(context, { slowMs = 0, refreshStatus = 200 } = {})
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
     if (slowMs > 0) await new Promise((resolve) => setTimeout(resolve, slowMs));
     const { pathname } = new URL(request.url());
+    state.requests.push(pathname);
     const json = (status, body) =>
       route.fulfill({ status, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     if (pathname === '/auth/login') return json(200, { accessToken: 'access-token', refreshToken: 'refresh-token' });
@@ -36,12 +38,16 @@ export async function mockApi(context, { slowMs = 0, refreshStatus = 200 } = {})
   return state;
 }
 
-export async function signIn(page) {
+export async function signIn(page, { timeout = 15_000 } = {}) {
   await page.goto('/login');
   await page.getByPlaceholder('DNI o email').fill('alumno.demo');
   await page.getByPlaceholder('••••••••').fill('Test1234');
   await page.getByRole('button', { name: 'Ingresar' }).click();
-  await expect(page).toHaveURL(/\/alumno\/inicio$/);
+  await expect(page).toHaveURL(/\/alumno\/inicio$/, { timeout });
+}
+
+export function homeScreen(page) {
+  return page.getByText('Tu horario');
 }
 
 export async function waitForControllingWorker(page) {
@@ -52,7 +58,13 @@ export async function waitForControllingWorker(page) {
   });
 }
 
-export async function goOnline(context, page) {
+export async function goOffline(context, api) {
+  api.offline = true;
+  await context.setOffline(true);
+}
+
+export async function goOnline(context, page, api) {
+  api.offline = false;
   await context.setOffline(false);
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
 }

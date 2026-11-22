@@ -6,8 +6,8 @@ const frontendUrl = `http://localhost:${frontendPort}`;
 
 export default defineConfig({
   testDir: './specs/offline',
-  fullyParallel: true,
-  workers: 2,
+  fullyParallel: false,
+  workers: 1,
   retries: process.env.CI ? 1 : 0,
   timeout: 90_000,
   reporter: [['list'], ['html', { open: 'never' }]],
@@ -35,7 +35,7 @@ export default defineConfig({
     stderr: 'pipe',
     url: frontendUrl,
     timeout: 300_000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     env: { VITE_API_BASE_URL: backendUrl },
   },
 });

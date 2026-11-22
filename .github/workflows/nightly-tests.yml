@@ -169,7 +169,8 @@ jobs:
           npm ci --prefix e2e
 
       - name: Install Chromium
-        run: npx --prefix e2e playwright install --with-deps chromium
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
 
       - name: Run the offline matrix against the production build
         working-directory: e2e
