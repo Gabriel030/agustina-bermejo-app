@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.enrollment.service.AddProgramEnrollmentApplicationDocumentTransaction;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
@@ -25,7 +26,8 @@ class AddProgramEnrollmentApplicationDocumentServiceTest {
     private final ProgramEnrollmentApplicationFinder finder = mock(ProgramEnrollmentApplicationFinder.class);
     private final ProgramApplicationDocumentRecorder recorder = mock(ProgramApplicationDocumentRecorder.class);
     private final AddProgramEnrollmentApplicationDocumentService service =
-            new AddProgramEnrollmentApplicationDocumentService(finder, recorder, new ProgramApplicationDocumentEditableGuard());
+            new AddProgramEnrollmentApplicationDocumentService(
+                    new AddProgramEnrollmentApplicationDocumentTransaction(finder, recorder, new ProgramApplicationDocumentEditableGuard()));
     private final MockMultipartFile file = new MockMultipartFile("file", "dni.pdf", "application/pdf", new byte[]{1});
 
     private ProgramEnrollmentApplication applicationIn(ProgramEnrollmentApplicationStatus status) {
