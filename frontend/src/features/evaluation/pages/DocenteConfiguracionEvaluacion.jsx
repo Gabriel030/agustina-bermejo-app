@@ -223,19 +223,20 @@ export function DocenteConfiguracionEvaluacion() {
             <span className="text-size-11 font-semibold text-ink-faint">Cantidad</span>
             <div className="flex gap-2">
               {[1, 2, 3].map((n) => (
-                <button
+                <Button
                   key={n}
                   type="button"
+                  variant="ghost"
                   disabled={soloLectura}
                   onClick={() => setForm((f) => ({ ...f, tpCount: n }))}
-                  className={`rounded-lg px-4 py-2 text-sm font-bold ${
+                  className={`min-h-11 min-w-11 rounded-lg px-4 text-sm font-bold ${
                     form.tpCount === n
-                      ? 'bg-gradient-to-br from-primary to-brand text-on-accent ring-2 ring-success ring-offset-2'
+                      ? 'bg-brand text-on-accent ring-2 ring-success ring-offset-2 hover:bg-brand hover:text-on-accent'
                       : 'bg-neutral-bg text-ink-faint'
                   } disabled:opacity-60 disabled:ring-0`}
                 >
                   {n}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
