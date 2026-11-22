@@ -124,14 +124,14 @@ public class GradeItemRecorder {
                 () -> sectionTeachingFinder
                         .teaches(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), instructorId),
                 enrollment.getSubjectSection().getId());
-        if (scheme == null) {
-            throw new NoEvaluationSchemeException(enrollment.getSubjectSection().getId());
-        }
         requireBoardCoversEnrollment(examBoard, request.type(), instructorId,
                 examBoard != null && examBoard.getSubject() != null
                         && examBoard.getSubject().getId().equals(enrollment.getSubjectSection().getSubject().getId()),
                 () -> examBoardRegistrationRepository.findByExamBoardIdAndProgramSubjectSectionEnrollmentId(
                         examBoard.getId(), enrollmentId));
+        if (scheme == null) {
+            throw new NoEvaluationSchemeException(enrollment.getSubjectSection().getId());
+        }
         publicationLock.requireUnlocked(
                 SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), request.type(), request.sequenceNumber());
         if (request.type() == GradeItemType.EXAM) {
@@ -303,15 +303,15 @@ public class GradeItemRecorder {
                 () -> sectionTeachingFinder
                         .teaches(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), instructorId),
                 enrollment.getCourseSubjectSection().getId());
-        if (scheme == null) {
-            throw new NoEvaluationSchemeException(enrollment.getCourseSubjectSection().getId());
-        }
         requireBoardCoversEnrollment(examBoard, request.type(), instructorId,
                 examBoard != null && examBoard.getCourseSubject() != null
                         && examBoard.getCourseSubject().getId()
                                 .equals(enrollment.getCourseSubjectSection().getCourseSubject().getId()),
                 () -> examBoardRegistrationRepository.findByExamBoardIdAndCourseSubjectSectionEnrollmentId(
                         examBoard.getId(), enrollmentId));
+        if (scheme == null) {
+            throw new NoEvaluationSchemeException(enrollment.getCourseSubjectSection().getId());
+        }
         publicationLock.requireUnlocked(
                 SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), request.type(), request.sequenceNumber());
         if (request.type() == GradeItemType.EXAM) {
@@ -391,11 +391,11 @@ public class GradeItemRecorder {
         }
         ExamBoard examBoard = examBoardRepository.findById(examBoardId)
                 .orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
-        if (examBoard.getStatus() != com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED) {
-            throw new ExamBoardClosedException(examBoardId);
-        }
         if (!examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoardId, instructorId)) {
             throw new NotOwnSectionException(instructorId, examBoardId);
+        }
+        if (examBoard.getStatus() != com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED) {
+            throw new ExamBoardClosedException(examBoardId);
         }
         examBoardTakenChecker.requireTaken(examBoard);
         return examBoard;
