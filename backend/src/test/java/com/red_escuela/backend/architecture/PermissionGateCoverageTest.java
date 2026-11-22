@@ -26,7 +26,7 @@ class PermissionGateCoverageTest {
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
             "academicrecord", "academicstructure", "billing", "enrollment", "evaluation",
-            "graduation", "notification");
+            "graduation");
 
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
@@ -46,7 +46,10 @@ class PermissionGateCoverageTest {
             ROOT + ".identity.controller.OwnerEmailChangeApprovalController",
             ROOT + ".identity.controller.PersonController",
             ROOT + ".identity.controller.VerifyEmailController",
-            ROOT + ".platform.controller.ModulesController");
+            ROOT + ".platform.controller.ModulesController",
+            ROOT + ".notification.controller.MeNotificationController",
+            ROOT + ".notification.broadcast.controller.ContactConsentController",
+            ROOT + ".notification.broadcast.controller.PublicUnsubscribeController");
 
     private static final Set<String> LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
             "getCurrentDocuments", "getPendingAcceptances", "acceptCurrentDocuments", "confirmGuardianAcceptance",
