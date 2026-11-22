@@ -304,4 +304,61 @@ describe('AlumnoMisCarreras — regularity', () => {
     expect(await screen.findByText('No es alumno regular')).toBeInTheDocument();
     expect(screen.getByText('Libre por inasistencias en una cursada activa · Pagos vencidos')).toBeInTheDocument();
   });
+
+  describe('progress cards', () => {
+    function enrollment(id, status, programName) {
+      return { id, studentId: 1, programId: id, programName, status, enrollmentDate: '2022-03-01T10:00:00', completionDate: null };
+    }
+
+    function curriculumFor(id, accumulatedCredits, requiredCredits, approved) {
+      return {
+        programEnrollmentId: id,
+        programName: `Carrera ${id}`,
+        subjects: [],
+        warnings: [],
+        summary: {
+          completionPercent: 25,
+          accumulatedCredits,
+          requiredCredits,
+          remainingCredits: requiredCredits - accumulatedCredits,
+          mandatoryTotal: 4,
+          mandatoryApproved: approved,
+          counts: { approved, inProgress: 0, regularPendingFinal: 0, failed: 0, available: 0, blocked: 0 },
+          electiveGroups: [],
+        },
+      };
+    }
+
+    function mockEnrollments(list) {
+      server.use(
+        http.get(`${API}/me/program-enrollments`, () => HttpResponse.json(list)),
+        http.get(`${API}/me/program-enrollments/:id/progress`, ({ params }) =>
+          HttpResponse.json({ programEnrollmentId: Number(params.id), creditosAcumulados: 0, creditosRequeridos: 0, obligatoriasPendientes: [], gruposElectivos: [], elegibleParaCompletar: false, esRegular: true, hasActiveCoursework: true, promedioGeneral: 8 }),
+        ),
+        http.get(`${API}/me/program-enrollments/:id/progress/subjects`, ({ params }) =>
+          HttpResponse.json(curriculumFor(Number(params.id), Number(params.id) * 10, 100, Number(params.id))),
+        ),
+        http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
+        http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
+        ...curriculumProgressHandlers,
+        http.get(`${API}/*`, () => HttpResponse.json([])),
+      );
+    }
+
+    it('skips a withdrawn program and shows the cards of the first active one', async () => {
+      mockEnrollments([enrollment(3, 'WITHDRAWN', 'Carrera retirada'), enrollment(4, 'ACTIVE', 'Carrera activa')]);
+      renderWithProviders(<AlumnoMisCarreras />);
+
+      expect(await screen.findByText('40')).toBeInTheDocument();
+      expect(screen.queryByText('30')).not.toBeInTheDocument();
+    });
+
+    it('shows the cards of the program chosen by id when there are several', async () => {
+      mockEnrollments([enrollment(1, 'ACTIVE', 'Primera'), enrollment(2, 'ACTIVE', 'Segunda')]);
+      renderWithProviders(<AlumnoMisCarreras />, { route: '/?carrera=2' });
+
+      expect(await screen.findByText('20')).toBeInTheDocument();
+      expect(screen.queryByText('10')).not.toBeInTheDocument();
+    });
+  });
 });

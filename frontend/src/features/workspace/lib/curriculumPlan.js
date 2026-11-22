@@ -11,11 +11,26 @@ export const CURRICULUM_STATE_TO_PLAN_STATUS = {
 
 export const STATUS_FILTER_TO_PLAN_STATUS = {
   aprobadas: 'aprobada',
+  disponibles: 'disponible',
   'en-curso': 'en-curso',
   regulares: 'regular',
   desaprobadas: 'desaprobada',
   bloqueadas: 'bloqueada',
 };
+
+export const PLAN_STATUS_FILTER_OPTIONS = [
+  { id: 'todas', label: 'Todas' },
+  { id: 'en-curso', label: 'En curso' },
+  { id: 'regulares', label: 'Cursada regular' },
+  { id: 'aprobadas', label: 'Aprobadas' },
+  { id: 'desaprobadas', label: 'Desaprobadas' },
+  { id: 'disponibles', label: 'Disponibles' },
+  { id: 'bloqueadas', label: 'Bloqueadas' },
+];
+
+export function normalizeStatusFilter(value) {
+  return PLAN_STATUS_FILTER_OPTIONS.some((option) => option.id === value) ? value : 'todas';
+}
 
 const TERM_RANK = { FIRST: 0, SECOND: 1, ANNUAL: 2 };
 
@@ -26,7 +41,7 @@ const STANDING_LABEL = {
   WAIVED: 'eximida',
 };
 
-export function toPlanRow(subject) {
+export function toPlanRow(subject, creditsDefined = true) {
   const estado = CURRICULUM_STATE_TO_PLAN_STATUS[subject.state];
   return {
     key: `plan-${subject.programSubjectId}`,
@@ -35,6 +50,7 @@ export function toPlanRow(subject) {
     curricularYear: subject.curricularYear,
     curricularTerm: subject.curricularTerm,
     credits: subject.credits,
+    creditsDefined,
     earnedCredits: subject.state === 'APPROVED' ? subject.credits : 0,
     finalScore: subject.finalScore,
     category: subject.category,
@@ -53,8 +69,8 @@ export function comparePlanRows(a, b) {
   return (a.subjectCode ?? '').localeCompare(b.subjectCode ?? '');
 }
 
-export function buildPlanRows(subjects) {
-  return (subjects ?? []).map(toPlanRow).sort(comparePlanRows);
+export function buildPlanRows(subjects, creditsDefined = true) {
+  return (subjects ?? []).map((subject) => toPlanRow(subject, creditsDefined)).sort(comparePlanRows);
 }
 
 export function filterPlanRows(rows, statusFilter) {
@@ -77,6 +93,11 @@ export function describeCorequisite(corequisite) {
 export function formatFinalScore(score) {
   if (score == null) return '—';
   return Number(score).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+}
+
+export function formatEarnedCredits(row) {
+  if (!row.creditsDefined) return '—';
+  return `${formatCredits(row.earnedCredits)} / ${formatCredits(row.credits)}`;
 }
 
 export function formatCredits(credits) {
@@ -104,8 +125,14 @@ export function describeProjectionReason(code) {
   return PROJECTION_REASON_MESSAGE[code] ?? 'No pudimos estimar tu egreso con los datos actuales.';
 }
 
-export function describePeriodRange(range) {
+export function describePeriodUnit(periodUnit, count) {
+  if (periodUnit !== 'SEMESTER') return null;
+  return count === 1 ? 'cuatrimestre estimado' : 'cuatrimestres estimados';
+}
+
+export function describePeriodRange(range, periodUnit) {
   if (!range) return null;
+  if (periodUnit !== 'SEMESTER') return null;
   if (range.minPeriods === range.maxPeriods) return `Alrededor de ${range.maxPeriods} cuatrimestres`;
   return `Entre ${range.minPeriods} y ${range.maxPeriods} cuatrimestres`;
 }

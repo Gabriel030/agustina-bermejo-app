@@ -24,7 +24,8 @@ import {
   buildPlanRows,
   describeCorequisite,
   filterPlanRows,
-  formatCredits,
+  formatEarnedCredits,
+  normalizeStatusFilter,
   formatFinalScore,
 } from '@/features/workspace/lib/curriculumPlan';
 
@@ -67,7 +68,7 @@ function PlanRowCells({ row }) {
         <div className="text-size-12 font-normal text-ink-faint">{row.subjectCode}</div>
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {formatCredits(row.earnedCredits)} / {formatCredits(row.credits)}
+        {formatEarnedCredits(row)}
       </TableCell>
       <TableCell>
         <PlanStatusCell row={row} />
@@ -87,10 +88,10 @@ function PlanRowCells({ row }) {
 export function TabPlanDeEstudio({ carreraId }) {
   const compact = useMediaQuery('(max-width: 767px)');
   const [searchParams, setSearchParams] = useSearchParams();
-  const statusFilter = searchParams.get('estado') ?? 'todas';
+  const statusFilter = normalizeStatusFilter(searchParams.get('estado'));
   const { data: progress, isLoading, isError, error, refetch } = useCurriculumProgress(carreraId);
 
-  const rows = useMemo(() => buildPlanRows(progress?.subjects), [progress]);
+  const rows = useMemo(() => buildPlanRows(progress?.subjects, progress?.summary.requiredCredits > 0), [progress]);
   const visibleRows = useMemo(() => filterPlanRows(rows, statusFilter), [rows, statusFilter]);
 
   function changeStatusFilter(next) {

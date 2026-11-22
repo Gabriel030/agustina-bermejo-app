@@ -174,8 +174,8 @@ export function AlumnoMisCarreras() {
           </StatCard>
           <StatCard label={<StatLabel icon={Star}>Créditos acumulados</StatLabel>}>
             <div className="font-heading text-2xl font-bold text-ink">
-              {summary?.accumulatedCredits ?? '—'}
-              {summary?.requiredCredits != null && (
+              {summary && summary.requiredCredits > 0 ? summary.accumulatedCredits : '—'}
+              {summary?.requiredCredits > 0 && (
                 <span className="text-base font-semibold text-ink-faint"> / {summary.requiredCredits}</span>
               )}
             </div>

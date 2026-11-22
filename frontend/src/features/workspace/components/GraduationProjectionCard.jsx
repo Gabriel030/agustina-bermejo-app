@@ -9,6 +9,7 @@ import { useGraduationProjection } from '@/features/enrollment';
 import {
   PROJECTION_CONFIDENCE,
   describePeriodRange,
+  describePeriodUnit,
   describeProjectionReason,
 } from '@/features/workspace/lib/curriculumPlan';
 
@@ -30,15 +31,20 @@ function ProjectionBody({ projection }) {
     );
   }
 
+  const periodsLabel = describePeriodUnit(projection.periodUnit, projection.estimatedPeriods);
+  if (projection.estimatedPeriods == null || !periodsLabel) {
+    return <p className="text-sm text-ink-soft">{describeProjectionReason(null)}</p>;
+  }
+
   const confidence = PROJECTION_CONFIDENCE[projection.confidence];
-  const range = describePeriodRange(projection.range);
+  const range = describePeriodRange(projection.range, projection.periodUnit);
   const showYear = projection.confidence !== 'LOW' && projection.estimatedGraduationYear != null;
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="font-heading text-2xl font-bold tabular-nums text-ink">{projection.estimatedPeriods}</span>
-        <span className="text-sm text-ink-soft">cuatrimestres estimados</span>
+        <span className="text-sm text-ink-soft">{periodsLabel}</span>
         {confidence && <StatusPill tone={confidence.tone}>{confidence.label}</StatusPill>}
       </div>
       {range && <div className="text-size-13 text-ink-soft">{range}</div>}

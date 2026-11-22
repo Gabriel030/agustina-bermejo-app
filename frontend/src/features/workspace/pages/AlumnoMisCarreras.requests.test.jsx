@@ -63,7 +63,7 @@ function mockStudent() {
     http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
     http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
     ...curriculumProgressHandlers,
-      http.get(`${API}/*`, () => HttpResponse.json([])),
+    http.get(`${API}/*`, () => HttpResponse.json([])),
   );
 }
 

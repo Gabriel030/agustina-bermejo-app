@@ -92,7 +92,7 @@ function mockEgreso({ own = ownRequest(), post } = {}) {
       }),
     ),
     ...curriculumProgressHandlers,
-      http.get(`${API}/*`, () => HttpResponse.json([])),
+    http.get(`${API}/*`, () => HttpResponse.json([])),
   );
 }
 

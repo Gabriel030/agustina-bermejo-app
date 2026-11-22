@@ -1,6 +1,6 @@
 import { ListFilter } from 'lucide-react';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
-import { TABS_ESTADO } from '@/lib/notas';
+import { PLAN_STATUS_FILTER_OPTIONS } from '@/features/workspace/lib/curriculumPlan';
 import { cn } from '@/lib/utils';
 
 export function PlanStatusFilter({ value, onChange, className }) {
@@ -11,7 +11,7 @@ export function PlanStatusFilter({ value, onChange, className }) {
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="end">
-        {TABS_ESTADO.map((option) => (
+        {PLAN_STATUS_FILTER_OPTIONS.map((option) => (
           <SelectItem key={option.id} value={option.id}>
             {option.label}
           </SelectItem>

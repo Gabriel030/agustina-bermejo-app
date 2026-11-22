@@ -181,4 +181,53 @@ describe('TabPlanDeEstudio', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(within(card).getByText('Aprobar Álgebra (MAT100) · cursada regular')).toBeInTheDocument();
   });
+
+  it('keeps only approved subjects when the URL asks for approved ones', async () => {
+    useProgress(progress([subject(), subject({ programSubjectId: 2, subjectName: 'Análisis', state: 'AVAILABLE', finalScore: null })]));
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?estado=aprobadas' });
+
+    expect(await screen.findByText('Matemática I')).toBeInTheDocument();
+    expect(screen.queryByText('Análisis')).not.toBeInTheDocument();
+  });
+
+  it('offers the available filter and keeps only available subjects', async () => {
+    useProgress(progress([subject(), subject({ programSubjectId: 2, subjectName: 'Análisis', state: 'AVAILABLE', finalScore: null })]));
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?estado=disponibles' });
+
+    expect(await screen.findByText('Análisis')).toBeInTheDocument();
+    expect(screen.queryByText('Matemática I')).not.toBeInTheDocument();
+  });
+
+  it('falls back to all subjects when the status in the URL is unknown', async () => {
+    useProgress(progress([subject(), subject({ programSubjectId: 2, subjectName: 'Análisis', state: 'AVAILABLE', finalScore: null })]));
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?estado=inventado' });
+
+    expect(await screen.findByText('Análisis')).toBeInTheDocument();
+    expect(screen.getByText('Matemática I')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Filtrar por estado' })).toHaveTextContent('Todas');
+  });
+
+  it('shows a dash instead of 0 / 0 credits when the plan defines no credits', async () => {
+    const base = progress([subject({ credits: 0, finalScore: null, state: 'AVAILABLE' })]);
+    useProgress({ ...base, summary: { ...base.summary, requiredCredits: 0, accumulatedCredits: 0, completionPercent: null } });
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
+
+    const row = (await screen.findByText('Matemática I')).closest('tr');
+    expect(within(row).queryByText('0 / 0')).not.toBeInTheDocument();
+    expect(within(row).getAllByText('—').length).toBeGreaterThan(0);
+  });
+
+  it('does not retry when the plan progress is forbidden', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/me/program-enrollments/5/progress/subjects`, () => {
+        calls += 1;
+        return HttpResponse.json({ code: 'FORBIDDEN', requestId: 'req-1', retryable: false, violations: [] }, { status: 403 });
+      }),
+    );
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
+
+    await screen.findByRole('alert');
+    expect(calls).toBe(1);
+  });
 });

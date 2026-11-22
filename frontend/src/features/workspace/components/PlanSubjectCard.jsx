@@ -6,7 +6,7 @@ import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
 import {
   describeBlockingPrerequisite,
   describeCorequisite,
-  formatCredits,
+  formatEarnedCredits,
   formatFinalScore,
 } from '@/features/workspace/lib/curriculumPlan';
 
@@ -24,7 +24,7 @@ export function PlanSubjectCard({ row }) {
       <div className="flex justify-between gap-2 text-size-13 text-ink-soft">
         <span>Créditos</span>
         <span className="font-semibold tabular-nums text-ink">
-          {formatCredits(row.earnedCredits)} / {formatCredits(row.credits)}
+          {formatEarnedCredits(row)}
         </span>
       </div>
       <div className="flex justify-between gap-2 text-size-13 text-ink-soft">

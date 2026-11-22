@@ -98,4 +98,20 @@ describe('GraduationProjectionCard', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar la proyección de egreso');
   });
+
+  it('does not render an empty number when a projected response has no estimated periods', async () => {
+    useProjection(projection({ estimatedPeriods: null, range: null }));
+    renderWithProviders(<GraduationProjectionCard carreraId={5} />);
+
+    expect(await screen.findByText('No pudimos estimar tu egreso con los datos actuales.')).toBeInTheDocument();
+    expect(screen.queryByText('cuatrimestres estimados')).not.toBeInTheDocument();
+  });
+
+  it('does not call the periods cuatrimestres when the unit is not a semester', async () => {
+    useProjection(projection({ periodUnit: 'YEAR' }));
+    renderWithProviders(<GraduationProjectionCard carreraId={5} />);
+
+    expect(await screen.findByText('No pudimos estimar tu egreso con los datos actuales.')).toBeInTheDocument();
+    expect(screen.queryByText(/cuatrimestres/)).not.toBeInTheDocument();
+  });
 });
