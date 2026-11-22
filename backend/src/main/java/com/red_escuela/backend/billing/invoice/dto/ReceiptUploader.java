@@ -6,7 +6,7 @@ import java.util.List;
 
 public record ReceiptUploader(Long personId, String name, String role, boolean internal) {
 
-    private static final List<String> ROLE_PRIORITY = List.of("DIRECTOR", "ADMINISTRATIVO", "PRECEPTOR", "DOCENTE", "ALUMNO");
+    private static final List<String> ROLE_PRIORITY = List.of("DIRECTOR", "SUBDIRECTOR", "ADMINISTRATIVO", "PRECEPTOR", "DOCENTE", "ALUMNO");
 
     public static ReceiptUploader of(Person uploadedBy, Person payer, List<String> roleNames) {
         if (uploadedBy == null) {

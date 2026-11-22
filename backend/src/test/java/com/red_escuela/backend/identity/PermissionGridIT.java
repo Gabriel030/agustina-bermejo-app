@@ -70,7 +70,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
     void restoreGrid() {
         jdbcTemplate.update("delete from permission_discrepancy_counter");
         jdbcTemplate.update("delete from permission_module_mode");
-        jdbcTemplate.update("delete from role_permission where role = 'ADMINISTRATIVO' and permission_id = (select id from permission where code = 'audit.read')");
+        jdbcTemplate.update("delete from role_permission where role = 'ADMINISTRATIVO' and permission_id in (select id from permission where code in ('audit.read', 'announcement.create'))");
         jdbcTemplate.update("delete from audit_log where action in ('PERMISSION_GRID_CHANGED', 'PERMISSION_SENSITIVE_CHANGED')");
         jdbcTemplate.update("delete from role_permission where permission_id in (select id from permission where code = 'announcement.fixed_probe')");
         jdbcTemplate.update("delete from permission where code = 'announcement.fixed_probe'");
@@ -304,5 +304,21 @@ class PermissionGridIT extends AbstractIntegrationTest {
                 .content("{\"reason\":\"x\",\"changes\":[{\"role\":\"DOCENTE\",\"module\":\"announcement\",\"mode\":\"SHADOW\"}]}"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/permissions/discrepancies").with(user("8").roles("SUBDIRECTOR"))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void enforceModeLetsExpandedSubdirectorPassOnlyThroughTheAdministrativeGrant() throws Exception {
+        setMode("ADMINISTRATIVO", "ENFORCE");
+        assertThat(callAsAuthorities("ADMINISTRATIVO", "SUBDIRECTOR")).isEqualTo(403);
+
+        assertThat(updateGrid(body("DOCENTE", true, "announcement.create", "Permiso solo para docente"))).isEqualTo(200);
+        assertThat(callAsAuthorities("ADMINISTRATIVO", "SUBDIRECTOR")).isEqualTo(403);
+
+        assertThat(updateGrid(body("ADMINISTRATIVO", true, "announcement.create", "Permiso para administrativo"))).isEqualTo(200);
+        assertThat(callAsAuthorities("ADMINISTRATIVO", "SUBDIRECTOR")).isEqualTo(200);
+    }
+
+    private int callAsAuthorities(String... roles) throws Exception {
+        return mockMvc.perform(get("/grid-probe/create").with(user("8").roles(roles))).andReturn().getResponse().getStatus();
     }
 }
