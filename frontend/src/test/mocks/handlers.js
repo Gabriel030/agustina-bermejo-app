@@ -13,10 +13,63 @@ import {
   springPage,
 } from '@/test/fixtures/certificates';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
+import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 
 import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
 const API = 'http://localhost:8080';
+
+const curriculumProgress = (programEnrollmentId) => ({
+  programEnrollmentId,
+  programName: 'Tecnicatura de prueba',
+  summary: {
+    completionPercent: 50,
+    accumulatedCredits: 3,
+    requiredCredits: 6,
+    remainingCredits: 3,
+    mandatoryTotal: 2,
+    mandatoryApproved: 1,
+    counts: { approved: 1, inProgress: 0, regularPendingFinal: 0, failed: 0, available: 0, blocked: 1 },
+    electiveGroups: [],
+  },
+  subjects: [
+    {
+      programSubjectId: 1,
+      subjectId: 10,
+      subjectCode: 'MAT101',
+      subjectName: 'Matemática I',
+      credits: 3,
+      curricularYear: 1,
+      curricularTerm: 'FIRST',
+      category: 'MANDATORY',
+      electiveGroupId: null,
+      state: 'APPROVED',
+      finalScore: 8,
+      attempts: 1,
+      blockedBy: [],
+      corequisites: [],
+    },
+    {
+      programSubjectId: 2,
+      subjectId: 11,
+      subjectCode: 'MAT102',
+      subjectName: 'Matemática II',
+      credits: 3,
+      curricularYear: 1,
+      curricularTerm: 'SECOND',
+      category: 'MANDATORY',
+      electiveGroupId: null,
+      state: 'BLOCKED',
+      finalScore: null,
+      attempts: 0,
+      blockedBy: [
+        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
+      ],
+      corequisites: [],
+    },
+  ],
+  warnings: [],
+});
 
 const pdfResponse = () =>
   new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } });
@@ -355,6 +408,12 @@ export const handlers = [
   http.get(`${API}/program-enrollment-applications/:id`, () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
   http.get(`${API}/program-enrollment-applications/:id/approval-check`, () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
   http.get(`${API}/me/program-enrollments`, () => HttpResponse.json([])),
+  http.get(`${API}/me/program-enrollments/:id/progress/subjects`, ({ params }) =>
+    HttpResponse.json(curriculumProgress(Number(params.id))),
+  ),
+  http.get(`${API}/program-enrollments/:id/progress/subjects`, ({ params }) =>
+    HttpResponse.json(curriculumProgress(Number(params.id))),
+  ),
   http.get(`${API}/me/program-enrollments/:id/annual-upfront/quote`, () =>
     HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),
   ),
@@ -495,4 +554,5 @@ export const handlers = [
   http.get(`${API}/permissions/discrepancies`, () =>
     HttpResponse.json({ items: [permissionDiscrepancy()], page: 0, size: 50, totalElements: 1 }),
   ),
+  ...constanciasHandlers,
 ];

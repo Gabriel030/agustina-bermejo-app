@@ -7,7 +7,7 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { OfflineAwareButton } from '@/components/offline/OfflineAwareButton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InscripcionMaterias } from '@/features/enrollment';
 import { useMisInscripciones } from '@/features/enrollment';
 import { ESTADOS_EN_CURSO, FINAL_GRADE_TYPE_LABEL } from '@/lib/notas';
@@ -65,20 +65,19 @@ export function TabMaterias({ carreraId }) {
   const lista = subTab === 'en-curso' ? enCurso : cursadas;
 
   return (
-    <div className="flex flex-col gap-5">
+    <Tabs value={subTab} onValueChange={setSubTab} className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-4">
-        <Tabs value={subTab} onValueChange={setSubTab}>
-          <TabsList variant="segmented">
-            {SUB_TABS.map(({ id, label }) => (
-              <TabsTrigger key={id} value={id}>{label}</TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        <TabsList variant="segmented">
+          {SUB_TABS.map(({ id, label }) => (
+            <TabsTrigger key={id} value={id}>{label}</TabsTrigger>
+          ))}
+        </TabsList>
         <OfflineAwareButton variant="primary" onClick={() => setInscribiendo(true)}>
           + Inscribirme a materias
         </OfflineAwareButton>
       </div>
 
+      <TabsContent value={subTab} className="mt-0">
       {isLoading ? (
         <div className="flex flex-col gap-2">
           <Skeleton className="h-16" />
@@ -133,6 +132,7 @@ export function TabMaterias({ carreraId }) {
           })}
         </div>
       )}
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }

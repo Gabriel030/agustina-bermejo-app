@@ -81,7 +81,10 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     expect(screen.getAllByText('Catálogo').length).toBeGreaterThan(0);
   });
 
-  it('registrarse → detalle de carrera → wizard sin pago → ver la solicitud PENDING en Mis solicitudes', async () => {
+  it.each([
+    { billingMode: 'FULL', mentionsCollection: true },
+    { billingMode: 'OFF', mentionsCollection: false },
+  ])('registrarse → detalle de carrera → wizard sin pago → ver la solicitud PENDING en Mis solicitudes (billing $billingMode)', async ({ billingMode, mentionsCollection }) => {
     // Auditoría 2026-09-04 (calidad de tests): ningún handler de este test miraba el body/FormData
     // real de la request — devolvían una respuesta fija sin importar qué se mandó, así que un bug
     // real (mandar el cohortId equivocado, o un comprobante vacío en el FormData) hubiera pasado
@@ -98,6 +101,18 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
     let applicationSubmitted = false;
+    server.use(
+      http.get(`${API}/me/modules`, () =>
+        HttpResponse.json({
+          billing: { mode: billingMode },
+          fiscalInvoicing: { enabled: false },
+          analytics: { enabled: false },
+          paymentMethods: [],
+          billingNotifications: { enabled: false },
+          externalBilling: { enabled: false },
+        }),
+      ),
+    );
     server.use(
       http.get(`${API}/me`, () =>
         HttpResponse.json(profileFixture({ ...NEW_USER, roles: [] })),
@@ -175,7 +190,12 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     const modalConfirmar = await screen.findByRole('dialog');
     await user.click(within(modalConfirmar).getByRole('button', { name: 'Sí, confirmar' }));
     expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
-    expect(screen.getByText(/quedó en revisión y no se te cobró nada\. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso/)).toBeInTheDocument();
+    if (mentionsCollection) {
+      expect(await screen.findByText(/quedó en revisión y no se te cobró nada\. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso/)).toBeInTheDocument();
+    } else {
+      expect(screen.getByText(/quedó en revisión\. Te avisamos cuando haya novedades\./)).toBeInTheDocument();
+      expect(screen.queryByText(/factura|cobr/i)).not.toBeInTheDocument();
+    }
     await user.click(screen.getByRole('button', { name: 'Ir a mis solicitudes' }));
 
     // Revisar la tab Mis solicitudes
