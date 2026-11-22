@@ -101,39 +101,33 @@ public class RegularCertificateIssuer {
             StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class,
             StandingEvidenceRequiredException.class, NoDebtToExceptException.class})
     public RegularCertificateResponse issue(IssueRegularCertificateCommand command) {
-        LocalDateTime now = LocalDateTime.now(clock);
-        RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
-        requireDocument(facts);
-        Long studentId = facts.student().getId();
-        Long actorId = currentActorFinder.currentPersonId();
-        rejectIfStillValid(command, studentId, actorId, now);
-        requireRegular(command, studentId, actorId, now);
-        StandingResolution standing = resolveStanding(command, studentId, actorId, now);
-        return create(command, facts, standing, actorId, now);
+        IssuanceContext context = prepare(command);
+        StandingResolution standing = resolveStanding(command, context.studentId(), context.actorId(), context.now());
+        return create(command, context.facts(), standing, context.actorId(), context.now());
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
             StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class,
             StandingEvidenceRequiredException.class, NoDebtToExceptException.class})
     public RegularCertificateSubmissionResponse submitFromPortal(IssueRegularCertificateCommand command) {
-        LocalDateTime now = LocalDateTime.now(clock);
-        RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
-        requireDocument(facts);
-        Long studentId = facts.student().getId();
-        Long actorId = currentActorFinder.currentPersonId();
-        rejectIfStillValid(command, studentId, actorId, now);
-        requireRegular(command, studentId, actorId, now);
+        IssuanceContext context = prepare(command);
         if (standingGate.requiresStaffConfirmation()) {
             return RegularCertificateSubmissionResponse.pending(RegularRequestResponses.of(
-                    pendingRequestOf(command, studentId, actorId, now), facts));
+                    pendingRequestOf(command, context.studentId(), context.actorId(), context.now()), context.facts()));
         }
-        StandingResolution standing = resolveStanding(command, studentId, actorId, now);
-        return RegularCertificateSubmissionResponse.issued(create(command, facts, standing, actorId, now));
+        StandingResolution standing = resolveStanding(command, context.studentId(), context.actorId(), context.now());
+        return RegularCertificateSubmissionResponse.issued(create(command, context.facts(), standing, context.actorId(), context.now()));
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
-            StudentHasDebtException.class})
+            StudentHasDebtException.class, StandingNotConfirmedException.class})
     public RegularCertificateResponse issueToSelf(IssueRegularCertificateCommand command) {
+        IssuanceContext context = prepare(command);
+        StandingResolution standing = resolveSelfIssueStanding(command, context.studentId(), context.actorId(), context.now());
+        return create(command, context.facts(), standing, context.actorId(), context.now());
+    }
+
+    private IssuanceContext prepare(IssueRegularCertificateCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
         RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
         requireDocument(facts);
@@ -141,8 +135,10 @@ public class RegularCertificateIssuer {
         Long actorId = currentActorFinder.currentPersonId();
         rejectIfStillValid(command, studentId, actorId, now);
         requireRegular(command, studentId, actorId, now);
-        StandingResolution standing = resolveSelfIssueStanding(command, studentId, actorId, now);
-        return create(command, facts, standing, actorId, now);
+        return new IssuanceContext(facts, studentId, actorId, now);
+    }
+
+    private record IssuanceContext(RegularEnrollmentFacts facts, Long studentId, Long actorId, LocalDateTime now) {
     }
 
     private StandingResolution resolveSelfIssueStanding(IssueRegularCertificateCommand command, Long studentId, Long actorId,

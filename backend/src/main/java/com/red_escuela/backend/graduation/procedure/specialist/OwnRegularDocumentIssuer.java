@@ -7,6 +7,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCert
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.exception.NotRegularException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateAlreadyIssuedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.StandingNotConfirmedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StudentHasDebtException;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.IssueRegularCertificateCommand;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateIssuer;
@@ -44,12 +45,13 @@ public class OwnRegularDocumentIssuer {
     }
 
     @Transactional(noRollbackFor = {ProcedureNotEligibleException.class, IssuanceLimitReachedException.class,
-            NotRegularException.class, StudentHasDebtException.class, RegularCertificateAlreadyIssuedException.class})
+            NotRegularException.class, StudentHasDebtException.class, StandingNotConfirmedException.class,
+            RegularCertificateAlreadyIssuedException.class})
     public OwnDocumentResponse issue(GenerateOwnDocumentRequest request) {
         GenerateOwnDocumentRequest safe = request == null ? new GenerateOwnDocumentRequest(null, null, null, null) : request;
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
         String recipientLabel = recipientLabelFormatter.labelOf(safe.recipientType(), safe.recipientText());
-        Long enrollmentId = enrollmentResolver.resolve(studentId, safe.enrollmentId())
+        Long enrollmentId = enrollmentResolver.resolve(studentId, safe.enrollmentId()).enrollmentId()
                 .orElseThrow(ProcedureNotEligibleException::new);
         if (dailyIssuanceLimit.isReachedForRegular(studentId)) {
             throw new IssuanceLimitReachedException();
@@ -65,7 +67,7 @@ public class OwnRegularDocumentIssuer {
         try {
             return issuer.issueToSelf(new IssueRegularCertificateCommand(RegularityKind.PROGRAM, enrollmentId, false, null,
                     RegularCertificateChannel.STUDENT_PORTAL, null, recipientLabel));
-        } catch (NotRegularException | StudentHasDebtException notEligible) {
+        } catch (NotRegularException | StudentHasDebtException | StandingNotConfirmedException notEligible) {
             throw new ProcedureNotEligibleException();
         }
     }

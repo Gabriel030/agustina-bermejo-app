@@ -12,12 +12,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateRequest;
-import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequestOutcome;
-import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
-import com.red_escuela.backend.graduation.events.RegularCertificateRequestFulfilledEvent;
-import com.red_escuela.backend.graduation.events.RegularCertificateRequestRejectedEvent;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
@@ -35,13 +30,11 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -50,15 +43,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -67,12 +57,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-@RecordApplicationEvents
 class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String EVIDENCE = "Recibo 1234 verificado en el sistema contable";
-
-    @Autowired
+        @Autowired
     private TransactionTemplate transactions;
     @Autowired
     private EntityManager entityManager;
@@ -88,10 +75,6 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
     private FeatureSnapshotHolder snapshotHolder;
     @Autowired
     private RegularStudentCertificateRepository certificateRepository;
-    @Autowired
-    private RegularCertificateRequestRepository requestRepository;
-    @Autowired
-    private ApplicationEvents events;
 
     private Long enrollmentId;
     private Long studentId;
@@ -207,44 +190,9 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
         });
     }
 
-    private ResultActions submit(String token) throws Exception {
-        return mockMvc.perform(post("/me/regular-certificates").header("Authorization", "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"kind\":\"PROGRAM\",\"enrollmentId\":" + enrollmentId + "}"));
-    }
-
-    private ResultActions state(String token) throws Exception {
-        return mockMvc.perform(get("/me/regular-certificates").param("kind", "PROGRAM")
-                .param("enrollmentId", enrollmentId.toString()).header("Authorization", "Bearer " + token));
-    }
-
-    private ResultActions staffIssues() throws Exception {
-        return mockMvc.perform(post("/regular-certificates").header("Authorization", "Bearer " + staffToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"kind\":\"PROGRAM\",\"enrollmentId\":" + enrollmentId + ",\"standingConfirmed\":true,\"standingEvidence\":\""
-                        + EVIDENCE + "\"}"));
-    }
-
     private long idOf(ResultActions result, String path) throws Exception {
         Number id = JsonPath.read(result.andReturn().getResponse().getContentAsString(), path);
         return id.longValue();
-    }
-
-    private List<RegularCertificateRequest> requests() {
-        return requestRepository.findByStudentIdOrderByRequestedAtDesc(studentId);
-    }
-
-    private void assertPendingRequestWithoutCertificate(String mode) throws Exception {
-        setBillingMode(mode);
-
-        submit(studentToken).andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.request.outcome").value("PENDING_STAFF"))
-                .andExpect(jsonPath("$.request.channel").value("STUDENT_PORTAL"))
-                .andExpect(jsonPath("$.certificate").doesNotExist());
-
-        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).isEmpty();
-        state(studentToken).andExpect(status().isOk()).andExpect(jsonPath("$.state").value("PENDING"))
-                .andExpect(jsonPath("$.staffConfirmationRequired").value(true));
     }
 
     private String textOf(ResultActions result, String path) throws Exception {
@@ -307,6 +255,20 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void recipientTypeWithoutTextIsValidAndOtherWithoutTextOmitsTheBlock() throws Exception {
+        long withType = idOf(generate(studentToken, "{\"recipientType\":\"EMPLOYER\"}").andExpect(status().isCreated()), "$.id");
+        assertThat(jdbc.queryForObject("select snapshot ->> 'recipientLabel' from regular_student_certificate where id = ?",
+                String.class, withType)).isEqualTo("Se extiende a pedido del interesado para ser presentado ante: Empleador");
+        jdbc.update("update regular_student_certificate set status = 'REVOKED' where id = ?", withType);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+
+        long withOther = idOf(generate(studentToken, "{\"recipientType\":\"OTHER\"}").andExpect(status().isCreated()), "$.id");
+
+        assertThat(jdbc.queryForObject("select snapshot ->> 'recipientLabel' from regular_student_certificate where id = ?",
+                String.class, withOther)).isNull();
+    }
+
+    @Test
     void otherRecipientPrintsOnlyTheName() throws Exception {
         long id = idOf(generate(studentToken, "{\"recipientType\":\"OTHER\",\"recipientText\":\"Club Atlético\"}")
                 .andExpect(status().isCreated()), "$.id");
@@ -322,7 +284,6 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
         generate(studentToken, "{\"recipientType\":\"EMPLOYER\",\"recipientText\":\"" + "x".repeat(81) + "\"}")
                 .andExpect(status().isBadRequest());
         generate(studentToken, "{\"recipientText\":\"Sin tipo\"}").andExpect(status().isBadRequest());
-        generate(studentToken, "{\"recipientType\":\"EMPLOYER\"}").andExpect(status().isBadRequest());
 
         assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).isEmpty();
     }
@@ -373,5 +334,64 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/me/procedures/REGULAR_STUDENT_CERTIFICATE/eligibility").param("enrollmentId", enrollmentId.toString())
                 .header("Authorization", "Bearer " + strangerToken)).andExpect(status().isNotFound());
         assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).isEmpty();
+    }
+
+    @Test
+    void theLimitResetsTheNextDayWhenThePreviousCertificateIsNoLongerValid() throws Exception {
+        long first = idOf(generate(studentToken, "{}").andExpect(status().isCreated()), "$.id");
+        jdbc.update("update regular_student_certificate set status = 'REVOKED' where id = ?", first);
+        generate(studentToken, "{}").andExpect(status().isTooManyRequests()).andExpect(jsonPath("$.code").value("ISSUANCE_LIMIT_REACHED"));
+
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 0, 5));
+
+        generate(studentToken, "{}").andExpect(status().isCreated());
+    }
+
+    @Test
+    void aValidCertificateFromAPreviousDayConflictsAndEligibilityPointsToDownloadingIt() throws Exception {
+        generate(studentToken, "{}").andExpect(status().isCreated());
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 12, 10, 0));
+
+        generate(studentToken, "{}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REGULAR_CERTIFICATE_ALREADY_ISSUED"));
+        eligibility(studentToken).andExpect(jsonPath("$.eligible").value(false))
+                .andExpect(jsonPath("$.reasons[0].code").value("ISSUANCE_LIMIT_REACHED"))
+                .andExpect(jsonPath("$.reasons[0].message")
+                        .value("Ya generaste esta constancia. Si sigue vigente, podés volver a descargarla desde Trámites"));
+    }
+
+    @Test
+    void mirrorBillingModeDoesNotAllowSelfIssueAndAsksToContactAdministration() throws Exception {
+        setBillingMode("MIRROR");
+
+        eligibility(studentToken).andExpect(jsonPath("$.eligible").value(false))
+                .andExpect(jsonPath("$.reasons[0].code").value("PENDING_PAYMENTS"))
+                .andExpect(jsonPath("$.reasons[0].message").value("Comunicate con Administración"));
+        generate(studentToken, "{}").andExpect(status().isUnprocessableEntity());
+        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).isEmpty();
+    }
+
+    @Test
+    void billingOffIgnoresDebtInEligibilityToo() throws Exception {
+        addOverdueInstallment();
+
+        eligibility(studentToken).andExpect(jsonPath("$.eligible").value(true));
+    }
+
+    @Test
+    void ambiguousActiveProgramsAskToChooseOne() throws Exception {
+        transactions.executeWithoutResult(status -> {
+            CycleTestFixtures fixtures = new CycleTestFixtures(entityManager);
+            ProgramEnrollment second = new ProgramEnrollment();
+            second.setStudent(entityManager.find(ProgramEnrollment.class, enrollmentId).getStudent());
+            second.setProgram(fixtures.program());
+            second.setStatus(ProgramEnrollmentStatus.ENROLLED);
+            second.setEnrollmentDate(LocalDateTime.of(2026, 3, 2, 10, 0));
+            entityManager.persist(second);
+        });
+
+        eligibility(studentToken).andExpect(jsonPath("$.eligible").value(false))
+                .andExpect(jsonPath("$.reasons[0].code").value("NO_ACTIVE_ENROLLMENT"))
+                .andExpect(jsonPath("$.reasons[0].message").value("Tenés más de una carrera activa: elegí para cuál querés la constancia"));
     }
 }

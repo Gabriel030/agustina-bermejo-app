@@ -18,7 +18,7 @@ public class RecipientLabelFormatter {
             throw new RequestFieldRequiredException("Indicá ante quién se presenta la constancia");
         }
         if (name.isEmpty()) {
-            throw new RequestFieldRequiredException("Indicá el nombre de quien recibe la constancia");
+            return type == RecipientType.OTHER ? null : PREFIX + typeLabel(type);
         }
         return type == RecipientType.OTHER ? PREFIX + name : PREFIX + typeLabel(type) + ", " + name;
     }
