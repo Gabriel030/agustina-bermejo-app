@@ -95,7 +95,7 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
     }
 
     private void setPilotMode(String mode) {
-        for (String role : List.of("ALUMNO", "DOCENTE", "PRECEPTOR", "ADMINISTRATIVO", "DIRECTOR", "PLATFORM_ADMIN")) {
+        for (String role : List.of("ALUMNO", "DOCENTE", "PRECEPTOR", "ADMINISTRATIVO", "SUBDIRECTOR", "DIRECTOR", "PLATFORM_ADMIN")) {
             for (String module : PILOT_MODULES) {
                 jdbcTemplate.update("insert into permission_module_mode (role, module, mode) values (?, ?, ?)", role, module, mode);
             }

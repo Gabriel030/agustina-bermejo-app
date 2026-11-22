@@ -61,6 +61,12 @@ describe('notificationDestination', () => {
     expect(notificationDestination({ type: 'AUTHORIZATION_REQUESTED', relatedEntityId: 4 }, 'ADMINISTRATIVO')).toBe('/administrativo/aprobaciones/4');
   });
 
+  it('gives a subdirector the administrativo destinations under its own base', () => {
+    expect(notificationDestination({ type: 'PROGRAM_APPLICATION_RECEIVED', relatedEntityId: 5 }, 'SUBDIRECTOR')).toBe('/subdirector/solicitudes-de-ingreso/5');
+    expect(notificationDestination({ type: 'DRAFT_INVOICES_AWAITING_REVIEW', relatedEntityId: 7 }, 'SUBDIRECTOR')).toBe('/subdirector/emision-mensual/7/borradores');
+    expect(notificationDestination({ type: 'CERTIFICATE_EXCEPTION_DECIDED', relatedEntityId: null }, 'SUBDIRECTOR')).toBe('/subdirector/inicio');
+  });
+
   it('never sends a role to a screen that belongs to another one', () => {
     expect(notificationDestination({ type: 'SUBJECT_WITHDRAWN', relatedEntityId: 1 }, 'DOCENTE')).toBeNull();
     expect(notificationDestination({ type: 'NIGHTLY_RUN_FAILED', relatedEntityId: 1 }, 'ALUMNO')).toBeNull();

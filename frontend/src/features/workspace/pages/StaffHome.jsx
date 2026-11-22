@@ -4,6 +4,8 @@ import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
+import { useActiveRole } from '@/hooks/useActiveRole';
+import { roleLabel } from '@/lib/activeRole';
 import { HomeTaskCard, ComingSoonCard } from '@/features/workspace/components/HomeTaskCard';
 import { UpcomingEventsCard } from '@/features/workspace/components/UpcomingEventsCard';
 import { splitCards } from '@/features/workspace/lib/homeCards';
@@ -71,5 +73,6 @@ export function DirectorInicio() {
 }
 
 export function AdministrativoInicio() {
-  return <StaffHome roleLabel="Administrativo" cards={useAdministrativoHomeCards()} upcoming={useUpcomingEvents('administrativo')} />;
+  const { activeRole } = useActiveRole();
+  return <StaffHome roleLabel={roleLabel(activeRole)} cards={useAdministrativoHomeCards()} upcoming={useUpcomingEvents('administrativo')} />;
 }
