@@ -32,6 +32,7 @@ public class InvoiceCancellationController {
     }
 
     @PostMapping("/invoices/{invoiceId}/cancellations/preview")
+    @RequiresPermission(code = "billing.preview_invoice_cancellation", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public InvoiceCancellationPreviewResponse previewInvoiceCancellation(@PathVariable Long invoiceId, @Valid @RequestBody CancelInvoiceRequest request) {
         return InvoiceCancellationPreviewResponse.from(previewInvoiceCancellationUseCase.previewInvoiceCancellation(invoiceId, request));
     }

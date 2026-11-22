@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.authorization.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationOperationFamily;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestSearch;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestSort;
@@ -46,8 +47,8 @@ public class AuthorizationRequestController {
         this.getUseCase = getUseCase;
     }
 
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     @GetMapping("/authorization-requests")
+    @RequiresPermission(code = "billing.read_authorization_requests", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AuthorizationRequestPageResponse list(@RequestParam(required = false) Set<AuthorizationRequestStatus> status,
                                                  @RequestParam(required = false) Set<BillingOperationType> operationType,
                                                  @RequestParam(required = false) Set<AuthorizationOperationFamily> family, @RequestParam(required = false) Long requestedBy,
@@ -58,8 +59,8 @@ public class AuthorizationRequestController {
                 new AuthorizationRequestSearch(status, operationType, family, requestedBy, sort, !descending, page, size)));
     }
 
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     @GetMapping("/authorization-requests/{id}")
+    @RequiresPermission(code = "billing.read_authorization_requests", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AuthorizationRequestDetailResponse get(@PathVariable Long id) {
         return AuthorizationRequestDetailResponse.from(getUseCase.getAuthorizationRequest(id));
     }

@@ -20,7 +20,6 @@ public class QuoteAnnualUpfrontService implements QuoteAnnualUpfrontUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public AnnualUpfrontEligibility quoteAnnualUpfrontForStaff(Long programEnrollmentId) {
         return quoteService.quoteForStaff(programEnrollmentId);
     }

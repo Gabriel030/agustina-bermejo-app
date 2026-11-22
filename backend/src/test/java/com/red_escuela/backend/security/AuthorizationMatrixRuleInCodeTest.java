@@ -15,19 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthorizationMatrixRuleInCodeTest extends AuthorizationMatrixSupport {
 
     private static final Set<String> RESTRICTED_WITHOUT_HANDLER_ANNOTATION = Set.of(
-            "GET /annual-upfront-requests",
-            "GET /annual-upfront-requests/{id}",
             "GET /annual-upfront-terms/current",
-            "GET /annual-upfront-terms/versions",
             "POST /annual-upfront-terms/versions",
             "GET /annual-upfront-terms/versions/{versionNumber}",
-            "POST /invoices/{invoiceId}/cancellations/preview",
             "GET /me/annual-upfront-requests",
             "GET /me/annual-upfront-requests/{id}",
             "GET /me/program-enrollments/{id}/annual-upfront-requests",
-            "GET /me/program-enrollments/{id}/annual-upfront/quote",
-            "GET /program-enrollments/{id}/annual-upfront-requests",
-            "GET /program-enrollments/{id}/annual-upfront/quote");
+            "GET /me/program-enrollments/{id}/annual-upfront/quote");
 
     @Test
     void everyRestrictedMatrixRowHasAnAuthorizationRuleOnItsHandlerOrIsKnownToEnforceItDownstream() {

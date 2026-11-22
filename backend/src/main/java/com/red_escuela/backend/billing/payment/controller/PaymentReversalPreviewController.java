@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.payment.dto.PaymentReversalPreviewResponse;
 import com.red_escuela.backend.billing.payment.dto.RegisterChargebackRequest;
 import com.red_escuela.backend.billing.payment.dto.RevokeBankTransferApprovalRequest;
@@ -8,7 +9,6 @@ import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,7 +24,7 @@ public class PaymentReversalPreviewController {
     }
 
     @PostMapping("/payments/{paymentId}/chargebacks/preview")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.preview_payment_reversal", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Impacto del contracargo sin registrarlo; si hay bloqueo, allowed=false y blockedBy con el código de la regla. Los efectos sobre facturas y recargos todavía no se calculan (effects.calculated=false)"),
             @ApiResponse(responseCode = "404", description = "PAYMENT_NOT_FOUND")})
@@ -33,7 +33,7 @@ public class PaymentReversalPreviewController {
     }
 
     @PostMapping("/chargebacks/{chargebackId}/reversal/preview")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.preview_payment_reversal", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Impacto de la reversión del contracargo sin aplicarla; si hay bloqueo, allowed=false y blockedBy con el código de la regla"),
             @ApiResponse(responseCode = "404", description = "CHARGEBACK_NOT_FOUND")})
@@ -42,7 +42,7 @@ public class PaymentReversalPreviewController {
     }
 
     @PostMapping("/payments/{paymentId}/approval-revocation/preview")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.preview_approval_revocation", legacyRoles = "ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Impacto de la revocación sin aplicarla; si hay bloqueo, allowed=false y blockedBy con el código de la regla"),
             @ApiResponse(responseCode = "404", description = "PAYMENT_NOT_FOUND")})

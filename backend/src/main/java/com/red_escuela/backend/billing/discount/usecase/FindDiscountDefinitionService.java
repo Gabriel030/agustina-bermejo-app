@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.discount.usecase;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionCatalogEntry;
 import com.red_escuela.backend.billing.discount.service.DiscountDefinitionCatalogEntryAssembler;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @UseCase
 public class FindDiscountDefinitionService implements FindDiscountDefinitionUseCase {
@@ -14,7 +13,6 @@ public class FindDiscountDefinitionService implements FindDiscountDefinitionUseC
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public DiscountDefinitionCatalogEntry findDiscountDefinition(Long discountDefinitionId) {
         return assembler.findCatalogEntry(discountDefinitionId);
     }

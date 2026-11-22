@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 
 import com.red_escuela.backend.billing.discount.domain.CohortPromotionStatus;
@@ -57,7 +58,7 @@ public class DiscountDefinitionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_discounts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<DiscountDefinitionCatalogEntryResponse> listDiscountDefinitions(@RequestParam(required = false) DiscountDefinitionType type,
                                                                                 @RequestParam(required = false) DiscountDefinitionStatus status,
                                                                                 @RequestParam(required = false) CohortPromotionStatus cohortPromotionStatus) {
@@ -65,7 +66,7 @@ public class DiscountDefinitionController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_discounts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "La definición con su disponibilidad, su costo estimado de cupo y, en promociones de cohorte, su estado derivado"),
             @ApiResponse(responseCode = "404", description = "No existe la definición")})
@@ -84,7 +85,7 @@ public class DiscountDefinitionController {
     }
 
     @PostMapping("/validation")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.validate_discount_definition", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Todas las violaciones de las reglas del catálogo; lista vacía si el borrador es coherente"),
             @ApiResponse(responseCode = "400", description = "Cuerpo que no se puede interpretar: INVALID_PERCENTAGE (porcentaje fuera de 0 a 100), NEGATIVE_ADJUSTMENT_AMOUNT (monto fijo negativo), UNSUPPORTED_CURRENCY. Estos no vuelven como violaciones porque el valor no llega a construirse"),

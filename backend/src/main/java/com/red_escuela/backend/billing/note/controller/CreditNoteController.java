@@ -62,7 +62,7 @@ public class CreditNoteController {
     }
 
     @GetMapping("/students/{studentId}/credit-notes")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_student_billing", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<CreditNoteResponse> listCreditNotesOfStudent(@PathVariable Long studentId) {
         return listCreditNotesWithAuthorshipUseCase.listCreditNotesOfStudentWithAuthorship(studentId);
     }

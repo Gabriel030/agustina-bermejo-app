@@ -57,7 +57,7 @@ public class StudentPaymentController {
     }
 
     @PostMapping("/students/{studentId}/cash-payments/preview")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.preview_cash_payment", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "400", description = "CASH_PAYMENT_AMOUNT_INVALID"),
             @ApiResponse(responseCode = "404", description = "El alumno no existe")})
@@ -66,7 +66,7 @@ public class StudentPaymentController {
     }
 
     @GetMapping("/students/{studentId}/payments")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_student_billing", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<StudentPaymentResponse> listPaymentsOfStudent(@PathVariable Long studentId) {
         return listStudentPaymentsUseCase.describePaymentsOfStudent(studentId).stream().map(StudentPaymentResponse::from).toList();
     }
