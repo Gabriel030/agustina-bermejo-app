@@ -6,7 +6,7 @@ import com.red_escuela.backend.evaluation.dto.ExamBoardFinalGradesResponse;
 import com.red_escuela.backend.evaluation.usecase.examboard.RecordExamBoardFinalGradesCommand;
 import com.red_escuela.backend.evaluation.usecase.examboard.RecordExamBoardFinalGradesUseCase;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,7 +25,7 @@ public class ExamBoardFinalGradesController {
     }
 
     @PutMapping("/exam-boards/{id}/final-grades")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.record_exam_board_final_grades", legacyRoles = "ROLE_DOCENTE")
     public ExamBoardFinalGradesResponse recordFinalGrades(@PathVariable Long id,
                                                           @Valid @RequestBody ExamBoardFinalGradesRequest request) {
         return recordExamBoardFinalGradesUseCase.record(new RecordExamBoardFinalGradesCommand(

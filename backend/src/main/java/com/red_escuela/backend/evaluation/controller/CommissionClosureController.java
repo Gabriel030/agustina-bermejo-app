@@ -34,7 +34,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -86,33 +86,33 @@ public class CommissionClosureController {
     }
 
     @GetMapping("/program-sections/{id}/closure-sheet")
-    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_closure_sheets", legacyRoles = "ROLE_DOCENTE,ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ClosureSheetResponse getProgramSectionClosureSheet(@PathVariable Long id, Authentication authentication) {
         return readSheet(ClosureSectionKind.PROGRAM, id, authentication);
     }
 
     @GetMapping("/course-sections/{id}/closure-sheet")
-    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_closure_sheets", legacyRoles = "ROLE_DOCENTE,ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ClosureSheetResponse getCourseSectionClosureSheet(@PathVariable Long id, Authentication authentication) {
         return readSheet(ClosureSectionKind.COURSE, id, authentication);
     }
 
     @PostMapping("/program-sections/{id}/closure/confirm")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.confirm_commission_closure", legacyRoles = "ROLE_DOCENTE")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void confirmProgramSectionClosure(@PathVariable Long id) {
         confirmClosureUseCase.confirm(new ConfirmClosureCommand(ClosureSectionKind.PROGRAM, id, currentInstructorId()));
     }
 
     @PostMapping("/course-sections/{id}/closure/confirm")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.confirm_commission_closure", legacyRoles = "ROLE_DOCENTE")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void confirmCourseSectionClosure(@PathVariable Long id) {
         confirmClosureUseCase.confirm(new ConfirmClosureCommand(ClosureSectionKind.COURSE, id, currentInstructorId()));
     }
 
     @PutMapping("/program-sections/{id}/closure/students/{enrollmentId}/observation")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.confirm_commission_closure", legacyRoles = "ROLE_DOCENTE")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void recordProgramSectionObservation(@PathVariable Long id, @PathVariable Long enrollmentId,
             @Valid @RequestBody TeacherObservationRequest request) {
@@ -121,7 +121,7 @@ public class CommissionClosureController {
     }
 
     @PutMapping("/course-sections/{id}/closure/students/{enrollmentId}/observation")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.confirm_commission_closure", legacyRoles = "ROLE_DOCENTE")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void recordCourseSectionObservation(@PathVariable Long id, @PathVariable Long enrollmentId,
             @Valid @RequestBody TeacherObservationRequest request) {
@@ -130,7 +130,7 @@ public class CommissionClosureController {
     }
 
     @PostMapping("/program-sections/{id}/closure/approve")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.approve_commission_closure", legacyRoles = "ROLE_ADMINISTRATIVO")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void approveProgramSectionClosure(@PathVariable Long id, @Valid @RequestBody ApproveClosureRequest request) {
         approveClosureUseCase.approve(new ApproveClosureCommand(ClosureSectionKind.PROGRAM, id, request.book(), request.folio(),
@@ -138,14 +138,14 @@ public class CommissionClosureController {
     }
 
     @PostMapping("/program-sections/{id}/closure/reopen")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.reopen_commission_closure", legacyRoles = "ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reopenProgramSectionClosure(@PathVariable Long id, @Valid @RequestBody ClosureReasonRequest request) {
         reopenClosureUseCase.reopen(new ReopenClosureCommand(ClosureSectionKind.PROGRAM, id, request.reason()));
     }
 
     @PutMapping("/program-sections/{id}/closure/students/{enrollmentId}/exception")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.manage_closure_exceptions", legacyRoles = "ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void grantProgramSectionException(@PathVariable Long id, @PathVariable Long enrollmentId,
             @Valid @RequestBody ClosureReasonRequest request) {
@@ -154,14 +154,14 @@ public class CommissionClosureController {
     }
 
     @DeleteMapping("/program-sections/{id}/closure/students/{enrollmentId}/exception")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.manage_closure_exceptions", legacyRoles = "ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revokeProgramSectionException(@PathVariable Long id, @PathVariable Long enrollmentId) {
         revokeClosureExceptionUseCase.revoke(new RevokeClosureExceptionCommand(ClosureSectionKind.PROGRAM, id, enrollmentId));
     }
 
     @PostMapping("/course-sections/{id}/closure/approve")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.approve_commission_closure", legacyRoles = "ROLE_ADMINISTRATIVO")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void approveCourseSectionClosure(@PathVariable Long id, @Valid @RequestBody ApproveClosureRequest request) {
         approveClosureUseCase.approve(new ApproveClosureCommand(ClosureSectionKind.COURSE, id, request.book(), request.folio(),
@@ -169,14 +169,14 @@ public class CommissionClosureController {
     }
 
     @PostMapping("/course-sections/{id}/closure/reopen")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.reopen_commission_closure", legacyRoles = "ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reopenCourseSectionClosure(@PathVariable Long id, @Valid @RequestBody ClosureReasonRequest request) {
         reopenClosureUseCase.reopen(new ReopenClosureCommand(ClosureSectionKind.COURSE, id, request.reason()));
     }
 
     @PutMapping("/course-sections/{id}/closure/students/{enrollmentId}/exception")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.manage_closure_exceptions", legacyRoles = "ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void grantCourseSectionException(@PathVariable Long id, @PathVariable Long enrollmentId,
             @Valid @RequestBody ClosureReasonRequest request) {
@@ -185,14 +185,14 @@ public class CommissionClosureController {
     }
 
     @DeleteMapping("/course-sections/{id}/closure/students/{enrollmentId}/exception")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.manage_closure_exceptions", legacyRoles = "ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revokeCourseSectionException(@PathVariable Long id, @PathVariable Long enrollmentId) {
         revokeClosureExceptionUseCase.revoke(new RevokeClosureExceptionCommand(ClosureSectionKind.COURSE, id, enrollmentId));
     }
 
     @GetMapping("/commission-closures/{closureId}/students/{enrollmentId}/prerequisites")
-    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_closure_sheets", legacyRoles = "ROLE_DOCENTE,ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ClosurePrerequisiteResponse> getStudentPrerequisites(@PathVariable Long closureId,
             @PathVariable Long enrollmentId, Authentication authentication) {
         ClosureViewerProfile viewer = viewerOf(authentication);
@@ -201,7 +201,7 @@ public class CommissionClosureController {
     }
 
     @GetMapping("/commission-closures/{closureId}/export")
-    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_closure_sheets", legacyRoles = "ROLE_DOCENTE,ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<byte[]> exportClosure(@PathVariable Long closureId, @RequestParam String format,
             Authentication authentication) {
         ClosureViewerProfile viewer = viewerOf(authentication);

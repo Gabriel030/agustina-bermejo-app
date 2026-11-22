@@ -8,7 +8,7 @@ import com.red_escuela.backend.evaluation.usecase.gradecorrection.ListGradeItemA
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,14 +35,14 @@ public class GradeCorrectionController {
 
     @PostMapping("/grade-items/{id}/corrections")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.correct_published_grade", legacyRoles = "ROLE_DIRECTOR")
     public GradeItemAuditResponse correctPublishedGrade(@PathVariable Long id, @Valid @RequestBody CorrectGradeItemRequest request) {
         return correctPublishedGradeUseCase.correct(
                 new CorrectPublishedGradeCommand(id, currentActorFinder.currentPersonId(), request));
     }
 
     @GetMapping("/grade-items/{id}/audit")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.read_grade_oversight", legacyRoles = "ROLE_DIRECTOR")
     public List<GradeItemAuditResponse> listGradeItemAudit(@PathVariable Long id) {
         return listGradeItemAuditUseCase.list(id);
     }

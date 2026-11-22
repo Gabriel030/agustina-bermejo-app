@@ -6,7 +6,7 @@ import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.specialist.EvaluationSchemeManager;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +27,7 @@ public class EvaluationSchemeController {
     }
 
     @GetMapping("/evaluation-schemes")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.read_evaluation_settings", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public List<EvaluationSchemeResponse> list() {
         return evaluationSchemeService.list().stream()
                 .map(scheme -> EvaluationSchemeResponse.from(scheme, evaluationSchemeService.isInUse(scheme.getId())))
@@ -36,14 +36,14 @@ public class EvaluationSchemeController {
 
     @PostMapping("/evaluation-schemes")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.manage_evaluation_schemes", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public EvaluationSchemeResponse create(@Valid @RequestBody CreateEvaluationSchemeRequest request) {
         EvaluationScheme scheme = evaluationSchemeService.create(request);
         return EvaluationSchemeResponse.from(scheme, false);
     }
 
     @PutMapping("/evaluation-schemes/{id}")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.manage_evaluation_schemes", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public EvaluationSchemeResponse update(@PathVariable Long id, @Valid @RequestBody CreateEvaluationSchemeRequest request) {
         EvaluationScheme scheme = evaluationSchemeService.update(id, request);
         return EvaluationSchemeResponse.from(scheme, false);

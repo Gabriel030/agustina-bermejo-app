@@ -8,7 +8,7 @@ import com.red_escuela.backend.evaluation.usecase.graderecovery.RecordExamRecove
 import com.red_escuela.backend.evaluation.usecase.graderecovery.RecordExamRecoveryUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,7 +29,7 @@ public class ExamRecoveryController {
 
     @PostMapping("/grade-items/{id}/recovery")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.record_exam_recovery", legacyRoles = "ROLE_DOCENTE")
     public GradeItemAuditResponse recordExamRecovery(@PathVariable Long id, @Valid @RequestBody RecordExamRecoveryRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return recordExamRecoveryUseCase.record(

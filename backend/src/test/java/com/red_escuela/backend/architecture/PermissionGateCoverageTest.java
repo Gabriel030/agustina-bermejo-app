@@ -25,7 +25,7 @@ class PermissionGateCoverageTest {
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "academicrecord", "academicstructure", "billing", "enrollment", "evaluation");
+            "academicrecord", "academicstructure", "billing", "enrollment");
 
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
@@ -35,7 +35,8 @@ class PermissionGateCoverageTest {
             ROOT + ".platform.controller.MyPaymentMethodsController",
             ROOT + ".platform.controller.PlatformAuditLogController",
             ROOT + ".platform.controller.PlatformFeatureController",
-            ROOT + ".platform.controller.PlatformProvisioningController");
+            ROOT + ".platform.controller.PlatformProvisioningController",
+            ROOT + ".evaluation.controller.MeSectionEvaluationConfigController");
 
     private static final Set<String> CONTROLLERS_WITHOUT_ROLE_RULE = Set.of(
             ROOT + ".announcement.controller.MeAnnouncementController",
@@ -56,6 +57,7 @@ class PermissionGateCoverageTest {
             ROOT + ".graduation.certificate.approvedsubjects.controller.MeApprovedSubjectsCertificateController",
             ROOT + ".graduation.procedure.controller.MeProcedureController",
             ROOT + ".graduation.procedure.controller.MeOwnDocumentController",
+            ROOT + ".evaluation.controller.MeExamBoardRegistrationController",
             ROOT + ".graduation.certificate.verification.controller.PublicCertificateController",
             ROOT + ".graduation.certificate.verification.controller.PublicDocumentController");
 
@@ -149,6 +151,31 @@ class PermissionGateCoverageTest {
         Set<String> present = new HashSet<>();
         controllers().forEach(controller -> present.add(moduleOf(controller)));
         assertThat(present).containsAll(MODULES_PENDING_MIGRATION);
+    }
+
+    @Test
+    void evaluationClassesOutsideControllersCarryNoRoleAnnotationsThatWouldOverrideTheGrid() throws Exception {
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter((reader, factory) -> true);
+        List<String> annotated = new ArrayList<>();
+        int scanned = 0;
+        for (BeanDefinition definition : scanner.findCandidateComponents(ROOT + ".evaluation")) {
+            Class<?> type = Class.forName(definition.getBeanClassName());
+            if (type.isAnnotationPresent(RestController.class) || type.getName().endsWith("Test")) {
+                continue;
+            }
+            scanned++;
+            if (AnnotatedElementUtils.findMergedAnnotation(type, PreAuthorize.class) != null) {
+                annotated.add(type.getSimpleName());
+            }
+            for (Method method : type.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
+                    annotated.add(type.getSimpleName() + "#" + method.getName());
+                }
+            }
+        }
+        assertThat(scanned).isPositive();
+        assertThat(annotated).as("service-level role rules in evaluation override the grid in ENFORCE").isEmpty();
     }
 
     private static boolean usesGate(Method method, Class<?> controller) {

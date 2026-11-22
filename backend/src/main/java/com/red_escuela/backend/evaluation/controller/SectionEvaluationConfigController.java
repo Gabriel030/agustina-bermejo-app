@@ -12,7 +12,7 @@ import com.red_escuela.backend.evaluation.usecase.sectionconfig.ListSectionEvalu
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.RejectSectionEvaluationConfigCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.RejectSectionEvaluationConfigUseCase;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,25 +45,25 @@ public class SectionEvaluationConfigController {
     }
 
     @GetMapping("/section-evaluation-configs")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.read_evaluation_settings", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public List<SectionEvaluationConfigResponse> list(@RequestParam(required = false) SectionEvaluationConfigStatus status) {
         return listSectionEvaluationConfigsUseCase.list(status).stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/section-evaluation-configs/{sectionId}")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.read_evaluation_settings", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public SectionEvaluationConfigResponse get(@PathVariable Long sectionId) {
         return toResponse(getSectionEvaluationConfigForStaffUseCase.get(sectionId));
     }
 
     @PostMapping("/section-evaluation-configs/{sectionId}/approve")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.review_section_evaluation_config", legacyRoles = "ROLE_DIRECTOR")
     public SectionEvaluationConfigResponse approve(@PathVariable Long sectionId) {
         return toResponse(approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(sectionId)));
     }
 
     @PostMapping("/section-evaluation-configs/{sectionId}/reject")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "evaluation.review_section_evaluation_config", legacyRoles = "ROLE_DIRECTOR")
     public SectionEvaluationConfigResponse reject(
             @PathVariable Long sectionId, @Valid @RequestBody RejectSectionEvaluationConfigRequest request) {
         return toResponse(rejectSectionEvaluationConfigUseCase.reject(new RejectSectionEvaluationConfigCommand(sectionId, request)));

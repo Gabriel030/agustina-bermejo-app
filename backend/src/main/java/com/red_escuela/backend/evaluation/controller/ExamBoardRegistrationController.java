@@ -5,7 +5,7 @@ import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationResponse;
 import com.red_escuela.backend.evaluation.specialist.ExamBoardRegistrationManager;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,7 +23,7 @@ public class ExamBoardRegistrationController {
 
     @PostMapping("/exam-boards/{id}/registrations")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.manage_exam_boards", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ExamBoardRegistrationResponse register(@PathVariable Long id, @Valid @RequestBody CreateExamBoardRegistrationRequest request) {
         boolean hasProgram = request.programSectionEnrollmentId() != null;
         boolean hasCourse = request.courseSectionEnrollmentId() != null;
@@ -39,7 +39,7 @@ public class ExamBoardRegistrationController {
 
     @PostMapping("/exam-board-registrations/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.manage_exam_boards", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public void withdraw(@PathVariable Long id) {
         examBoardRegistrationService.withdraw(id);
     }

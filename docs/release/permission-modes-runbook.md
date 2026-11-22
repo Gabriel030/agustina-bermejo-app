@@ -76,6 +76,22 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 El resto de los endpoints migrados de identity ya permiten al Director y no cambian.
 
+### Evaluation
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /exam-boards, POST /exam-boards/{id}/tribunal, POST /exam-boards/{id}/reschedule, POST /exam-boards/{id}/cancel, POST /exam-boards/{id}/registrations y POST /exam-board-registrations/{id}/withdraw (evaluation.manage_exam_boards)
+- POST /exam-boards/{id}/close (evaluation.close_exam_board)
+- PUT /exam-boards/{id}/final-grades (evaluation.record_exam_board_final_grades)
+- POST /section-enrollments/{id}/grade-items y POST /course-section-enrollments/{id}/grade-items (evaluation.load_grade_item)
+- POST /program-sections/{id}/grade-items/publish y POST /course-sections/{id}/grade-items/publish (evaluation.publish_grades)
+- POST /grade-items/{id}/recovery (evaluation.record_exam_recovery)
+- GET /program-sections/{id}/grade-grid y GET /course-sections/{id}/grade-grid (evaluation.read_grade_grid)
+- POST /program-sections/{id}/closure/confirm, POST /course-sections/{id}/closure/confirm y los PUT closure/students/{enrollmentId}/observation (evaluation.confirm_commission_closure)
+- POST /program-sections/{id}/closure/approve y POST /course-sections/{id}/closure/approve (evaluation.approve_commission_closure)
+
+Los endpoints del alumno (/me/*) y la configuración de evaluación del docente (/me/section-evaluation-configs) quedan fuera de la grilla. El resto de los endpoints migrados de evaluation ya permiten al Director y no cambian.
+
 ## Notas operativas
 
 - Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.
