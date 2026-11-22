@@ -9,7 +9,11 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
 import { useMyModules } from '@/hooks/useMyModules';
-import { AdmissionInvoicePendingCard } from '@/features/billing';
+import { AdmissionInvoicePendingCard, usePaymentStanding } from '@/features/billing';
+import { useMisCursos } from '@/features/enrollment';
+import { Link } from 'react-router-dom';
+import { StudentBalanceNotice } from '@/features/workspace/components/StudentBalanceNotice';
+import { coursesSummary } from '@/features/workspace/lib/studentHome';
 import { useNovedades, useMarcarAvisoLeido } from '@/features/announcements';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Bell } from 'lucide-react';
@@ -133,6 +137,9 @@ export function AlumnoInicio() {
   const { usuario } = useAuth();
   const modules = useMyModules();
   const home = useStudentHome();
+  const standing = usePaymentStanding({ enabled: modules.billingEnabled });
+  const courses = useMisCursos();
+  const coursesText = coursesSummary(courses.data);
   const upcoming = useStudentUpcomingEvents();
   const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades, error: errorDeNovedades, isFetching: actualizandoNovedades, refetch: refetchNovedades, dataUpdatedAt: novedadesActualizadas } = useNovedades();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -186,12 +193,37 @@ export function AlumnoInicio() {
       <PageContainer>
         {modules.billingEnabled && <AdmissionInvoicePendingCard />}
 
+        {modules.billingEnabled && (
+          <StudentBalanceNotice
+            standing={standing.data?.standing}
+            isLoading={standing.isLoading}
+            isError={standing.isError}
+            onRetry={standing.refetch}
+          />
+        )}
+
         {home.enrollments.isError ? (
           <LoadErrorState distinguishForbidden error={home.enrollments.error} resource="tus datos" onRetry={home.enrollments.refetch} />
         ) : (
           <>
             <StudentHomeIdentity user={usuario} program={home.program} regularityView={home.regularityView} isLoading={identityLoading} />
-            <StudentHomeKpis activeCount={home.activeCount} progress={home.progress.data} isLoading={programLoading || home.sectionEnrollments.isLoading} />
+            <StudentHomeKpis
+              activeCount={home.activeCount}
+              progress={home.progress.data}
+              programName={home.program?.programName}
+              hasSeveralPrograms={home.hasSeveralPrograms}
+              progressFailed={home.progress.isError}
+              onRetryProgress={home.progress.refetch}
+              isLoading={programLoading || home.sectionEnrollments.isLoading}
+            />
+            {coursesText && (
+              <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <span className="text-size-13 font-semibold text-ink-soft">{coursesText}</span>
+                <Link to="/alumno/mis-cursos" className="inline-flex min-h-11 items-center text-xs font-bold text-primary hover:underline">
+                  Ver mis cursos →
+                </Link>
+              </GlassCard>
+            )}
           </>
         )}
 
@@ -260,6 +292,7 @@ export function AlumnoInicio() {
 
         <StudentCurrentSubjects
           subjects={home.subjects}
+          hasProgram={Boolean(home.program)}
           isLoading={home.sectionEnrollments.isLoading}
           isError={home.sectionEnrollments.isError}
           error={home.sectionEnrollments.error}

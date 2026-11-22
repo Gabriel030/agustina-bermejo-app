@@ -38,6 +38,7 @@ export function studentHomeHandlers({
   sectionEnrollments = [],
   progress = contractObject('/me/program-enrollments/{id}/progress', { creditosAcumulados: 30, creditosRequeridos: 60 }),
   regularity = contractObject('/me/regular-certificates/eligibility', { institutionallyRegular: true, paymentStanding: 'VERIFIED', reasons: [] }),
+  courses = [],
   calendar = calendarHandler(() => HttpResponse.json(calendarResponse({ events: [] }))),
 } = {}) {
   return [
@@ -45,6 +46,7 @@ export function studentHomeHandlers({
     http.get(`${API}/me/section-enrollments`, () => HttpResponse.json(sectionEnrollments)),
     http.get(`${API}/me/program-enrollments/:id/progress`, () => HttpResponse.json(progress)),
     http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(regularity)),
+    http.get(`${API}/me/course-enrollments`, () => HttpResponse.json(courses)),
     calendar,
   ];
 }

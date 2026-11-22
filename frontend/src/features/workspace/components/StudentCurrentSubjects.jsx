@@ -95,7 +95,7 @@ function SubjectCards({ subjects }) {
   );
 }
 
-export function StudentCurrentSubjects({ subjects, isLoading, isError, error, onRetry }) {
+export function StudentCurrentSubjects({ subjects, hasProgram, isLoading, isError, error, onRetry }) {
   let body;
   if (isLoading) {
     body = (
@@ -113,12 +113,12 @@ export function StudentCurrentSubjects({ subjects, isLoading, isError, error, on
       <EmptyState
         icon="📚"
         title="Sin materias en curso"
-        description="Inscribite a una materia desde tu plan de estudio."
-        action={
+        description={hasProgram ? 'Inscribite a una materia desde tu plan de estudio.' : 'Cuando te matricules en una carrera, tus materias aparecen acá.'}
+        action={hasProgram && (
           <Button asChild variant="outline" className="h-11">
             <Link to="/alumno/mis-carreras">Ver plan de estudio</Link>
           </Button>
-        }
+        )}
       />
     );
   } else {

@@ -1,6 +1,6 @@
 import { useMisInscripciones, useMisMatriculaciones, useMiProgreso } from '@/features/enrollment';
 import { describeRegularity, useMyRegularity } from '@/features/identity';
-import { activeSubjectsCount, currentProgram, listedSubjects } from '@/features/workspace/lib/studentHome';
+import { activePrograms, activeSubjectsCount, currentProgram, listedSubjects } from '@/features/workspace/lib/studentHome';
 
 export function useStudentHome() {
   const enrollments = useMisMatriculaciones();
@@ -14,6 +14,7 @@ export function useStudentHome() {
     enrollments,
     sectionEnrollments,
     program,
+    hasSeveralPrograms: activePrograms(enrollments.data).length > 1,
     progress,
     regularityView: regularity.data ? describeRegularity(regularity.data) : null,
     activeCount: activeSubjectsCount(sectionEnrollments.data),

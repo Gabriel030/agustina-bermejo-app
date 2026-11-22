@@ -153,6 +153,36 @@ describe('AlumnoInicio — próximos eventos', () => {
   });
 });
 
+describe('AlumnoInicio — créditos, cursos y varias carreras', () => {
+  it('namesTheProgramOfTheCreditsWhenTheStudentHasSeveralPrograms', async () => {
+    mountHome(
+      ...studentHomeHandlers({
+        enrollments: [programEnrollment(), programEnrollment({ id: 2, programName: 'Diseño Gráfico' })],
+      }),
+    );
+    expect(await screen.findByRole('progressbar', { name: 'Créditos acumulados · Tecnicatura en Desarrollo de Software' })).toBeInTheDocument();
+  });
+
+  it('showsAnErrorWithRetryInsteadOfZeroCreditsWhenTheProgressFails', async () => {
+    mountHome(http.get(`${API}/me/program-enrollments/:id/progress`, () => new HttpResponse(null, { status: 500 })), ...studentHomeHandlers());
+    expect(await screen.findByText('No pudimos cargar tus créditos')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar', { name: /Créditos acumulados/ })).not.toBeInTheDocument();
+  });
+
+  it('showsACompactAccessToCoursesAndWaitlistWhenTheStudentHasCourseEnrollments', async () => {
+    mountHome(...studentHomeHandlers({ courses: [{ id: 1, status: 'WAITLISTED' }] }));
+    expect(await screen.findByText('Estás en lista de espera de 1 curso')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ver mis cursos/ })).toHaveAttribute('href', '/alumno/mis-cursos');
+  });
+
+  it('doesNotAskToEnrollInASubjectWhenTheStudentHasNoProgram', async () => {
+    mountHome(...studentHomeHandlers({ enrollments: [], courses: [{ id: 1, status: 'IN_PROGRESS' }] }));
+    expect(await screen.findByText('Sin materias en curso')).toBeInTheDocument();
+    expect(screen.queryByText('Inscribite a una materia desde tu plan de estudio.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ver plan de estudio' })).not.toBeInTheDocument();
+  });
+});
+
 describe('AlumnoInicio — pantalla sin carrera', () => {
   it('keepsTheIdentityWithoutProgramWhenThereAreNoEnrollments', async () => {
     mountHome(...studentHomeHandlers({ enrollments: [programEnrollment({ status: 'WITHDRAWN' })] }));

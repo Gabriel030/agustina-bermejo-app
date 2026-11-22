@@ -11,6 +11,13 @@ const EVENT_TYPE_BY_CALENDAR_TYPE = {
   ASSIGNMENT: 'assignment',
 };
 
+function hasEnded(event, now) {
+  const closing = event.endTime ?? event.startTime;
+  if (!closing || event.date !== upcomingWindow(now).from) return false;
+  const current = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return closing.slice(0, 5) < current;
+}
+
 function subtitleOf(event) {
   return [event.startTime?.slice(0, 5), event.place].filter(Boolean).join(' · ') || null;
 }
@@ -18,7 +25,7 @@ function subtitleOf(event) {
 export function studentUpcomingEvents(calendarEvents, now = new Date()) {
   const { from } = upcomingWindow(now);
   return calendarEvents
-    .filter((event) => event.status !== 'CANCELED' && event.date >= from && EVENT_TYPE_BY_CALENDAR_TYPE[event.type])
+    .filter((event) => event.status !== 'CANCELED' && event.date >= from && EVENT_TYPE_BY_CALENDAR_TYPE[event.type] && !hasEnded(event, now))
     .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? '') || a.id.localeCompare(b.id))
     .slice(0, MAX_EVENTS)
     .map((event) => ({
