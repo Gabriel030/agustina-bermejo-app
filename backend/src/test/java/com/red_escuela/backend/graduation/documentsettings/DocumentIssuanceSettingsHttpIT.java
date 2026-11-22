@@ -163,4 +163,30 @@ class DocumentIssuanceSettingsHttpIT extends AbstractIntegrationTest {
         assertThat(entries.get(0).getBeforeValue()).contains("advance=15", "limit=1");
         assertThat(entries.get(0).getAfterValue()).contains("advance=20", "limit=3");
     }
+
+    @Test
+    void subdirectorCanReadButNotWrite() throws Exception {
+        String subdirector = tokenFor("SUBDIRECTOR", 4);
+        read(subdirector).andExpect(status().isOk());
+        write(subdirector, body(20, 45, 60, 3, 0)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void teachingAndPreceptorRolesCannotReadOrWrite() throws Exception {
+        String teacher = tokenFor("DOCENTE", 5);
+        String preceptor = tokenFor("PRECEPTOR", 6);
+        read(teacher).andExpect(status().isForbidden());
+        write(teacher, body(20, 45, 60, 3, 0)).andExpect(status().isForbidden());
+        read(preceptor).andExpect(status().isForbidden());
+        write(preceptor, body(20, 45, 60, 3, 0)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void versionBumpedOutsideTheUpdaterReturnsConflict() throws Exception {
+        entityManager.createNativeQuery("update document_issuance_settings set version = version + 1").executeUpdate();
+        entityManager.clear();
+
+        write(director, body(20, 45, 60, 3, 0)).andExpect(status().isConflict());
+        write(director, body(20, 45, 60, 3, 1)).andExpect(status().isOk()).andExpect(jsonPath("$.version").value(2));
+    }
 }
