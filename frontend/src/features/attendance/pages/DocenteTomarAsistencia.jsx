@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Ban, Check, Info, Minus, RefreshCw, Search, Undo2, WifiOff } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -12,60 +12,31 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { localIsoDate } from '@/lib/calendario';
 import { formatDate } from '@/lib/billing';
 import { attendancePercentToPoints } from '@/lib/attendancePercent';
 import { StatusPill } from '@/components/StatusPill';
 import { TabCount } from '@/components/TabCount';
 import { MisPedidosDeAsistencia } from '@/features/attendance/components/MisPedidosDeAsistencia';
 import { findPendingRequestForAttendance, pendingRequestCount, requestHref } from '@/features/attendance/lib/attendanceRequests';
-import { attendanceRisk } from '@/features/attendance/lib/attendanceRisk';
-import { clearAttendanceDraft, loadAttendanceDraft, saveAttendanceDraft } from '@/features/attendance/lib/attendanceDraft';
+import { Label } from '@/components/ui/label';
+import { AttendanceStudentRow } from '@/features/attendance/components/AttendanceStudentRow';
+import { AttendanceSummaryCard } from '@/features/attendance/components/AttendanceSummaryCard';
+import { AttendanceSaveBar } from '@/features/attendance/components/AttendanceSaveBar';
+import { AttendanceConfirmDialog } from '@/features/attendance/components/AttendanceConfirmDialog';
+import { ClassNotesCard } from '@/features/attendance/components/ClassNotesCard';
+import { ModalSolicitarModificacion } from '@/features/attendance/components/ModalSolicitarModificacion';
+import { useTakeAttendanceForm } from '@/features/attendance/hooks/useTakeAttendanceForm';
+import { useDraftExitGuard } from '@/features/attendance/hooks/useDraftExitGuard';
+import { STATUS_BY_VALUE, justificationState } from '@/features/attendance/lib/attendanceStatuses';
 import { JustificarAusenciaDialog } from '@/features/attendance/components/JustificarAusenciaDialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   useMisComisionesParaAsistencia,
-  useRosterDeAsistencia,
-  useGuardarAsistencia,
-  useCancelarClase,
-  useClaseDelDia,
   useHistorialAsistencia,
   useReporteAusencias,
-  useSolicitarModificacion,
   useMisPedidosDeAsistencia,
   exportarAsistencia,
 } from '@/features/attendance/hooks/useDocenteAsistencia';
-
-const ESTADOS = [
-  { value: 'PRESENT', label: 'Presente', filaClass: 'bg-success-bg', chipActivo: 'bg-success text-on-accent' },
-  { value: 'LATE', label: 'Tarde', filaClass: 'bg-warning-bg', chipActivo: 'bg-warning text-on-accent' },
-  { value: 'ABSENT', label: 'Ausente', filaClass: 'bg-danger-bg', chipActivo: 'bg-danger text-on-accent' },
-];
-const ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION = [
-  { value: 'JUSTIFIED', label: 'Justificada', filaClass: 'bg-accent-soft', chipActivo: 'bg-brand text-on-accent' },
-  { value: 'JUSTIFICATION_PENDING', label: 'Justificación pendiente', filaClass: 'bg-accent-soft', chipActivo: 'bg-brand text-on-accent' },
-];
-const CHIP_INACTIVO = 'bg-neutral-bg text-ink-faint hover:bg-neutral-bg/70';
-const ESTADO_POR_VALOR = Object.fromEntries([...ESTADOS, ...ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION].map((e) => [e.value, e]));
-
-const EDITABLE_SAVED_STATUSES = ['PRESENT', 'ABSENT', 'LATE'];
-
-const SAVE_ERROR_MESSAGES = {
-  CLASS_ON_HOLIDAY: 'Esa fecha es feriado: no se puede tomar asistencia.',
-  ATTENDANCE_ALREADY_RECORDED: 'Esa asistencia ya estaba guardada. Si la registró otro docente o ya pasó el día, pedí la modificación desde Historial.',
-};
-
-function saveErrorMessage(err) {
-  if (SAVE_ERROR_MESSAGES[err.code]) return SAVE_ERROR_MESSAGES[err.code];
-  const retry = 'Tus cambios siguen acá: probá de nuevo.';
-  if (err.name === 'NetworkError' || err.name === 'CircuitOpenError' || err.name === 'RateLimitedError') return `${err.message} ${retry}`;
-  if (err.status === 400) return `Hay datos de la asistencia que no son válidos. Revisalos y probá de nuevo.`;
-  if (err.status === 403) return 'No tenés permiso para tomar asistencia en esta comisión.';
-  if (err.status === 404) return 'No encontramos la comisión o la fecha. Recargá la página; tus cambios quedan guardados en este dispositivo.';
-  if (err.status === 409) return 'La asistencia cambió mientras la cargabas. Recargá la página; tus cambios quedan guardados en este dispositivo.';
-  if (err.status >= 500) return `El servicio no está disponible por ahora. ${retry}`;
-  return `No se pudo guardar la asistencia. ${retry}`;
-}
 
 const NOMBRE_MES = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' });
 
@@ -83,212 +54,75 @@ function agruparFechasPorMes(fechas) {
   }));
 }
 
-function estadoDeJustificacion(celdaGuardada, estadoActual) {
-  if (!celdaGuardada || celdaGuardada.status !== 'ABSENT' || estadoActual !== 'ABSENT') return null;
-  return celdaGuardada.justifiable ? 'abierta' : 'vencida';
+const CLASS_DATE_LABEL = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' });
+
+function SavedStatePill({ canceled, saved }) {
+  if (canceled) {
+    return (
+      <StatusPill tone="danger">
+        <Ban className="size-3.5" aria-hidden="true" />
+        Clase cancelada
+      </StatusPill>
+    );
+  }
+  if (saved) {
+    return (
+      <StatusPill tone="success">
+        <Check className="size-3.5" aria-hidden="true" />
+        Asistencia guardada
+      </StatusPill>
+    );
+  }
+  return (
+    <StatusPill tone="neutral">
+      <Minus className="size-3.5" aria-hidden="true" />
+      Sin tomar todavía
+    </StatusPill>
+  );
 }
 
-function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirModificacion, justificacion, onAdjuntarComprobante }) {
-  const config = estado ? ESTADO_POR_VALOR[estado] : null;
-  const riesgo = attendanceRisk(alumno);
+const BANNER_TONES = {
+  danger: 'border-danger bg-danger-bg text-danger-ink',
+  neutral: 'border-border bg-neutral-bg text-neutral-ink',
+};
+
+function AttendanceBanner({ tone, icon: Icon, role = 'status', children, action }) {
   return (
-    <div className={`flex flex-col gap-2 rounded-2xl p-3 sm:flex-row sm:items-center sm:justify-between ${config?.filaClass ?? 'bg-neutral-bg/40'} ${deshabilitada ? 'opacity-50' : ''}`}>
-      <div className="min-w-0 flex-1">
-        <div className="font-heading text-size-14 font-semibold text-ink">{alumno.studentName}</div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-          <span className={`text-size-12 font-semibold tabular-nums ${riesgo.level === 'danger' ? 'text-danger' : riesgo.level === 'warning' ? 'text-warning-ink' : 'text-ink-faint'}`}>
-            {riesgo.text}
-          </span>
-          {riesgo.pill && (
-            <span title={riesgo.hint}>
-              <StatusPill tone={riesgo.level} className="px-2 py-0.5">
-                {riesgo.pill}
-              </StatusPill>
-            </span>
-          )}
-        </div>
-        {justificacion === 'vencida' && (
-          <div className="mt-1 text-size-12 text-ink-faint">Venció el plazo para justificar: lo resuelve el preceptor.</div>
-        )}
-      </div>
-      <div className="flex shrink-0 flex-wrap gap-1.5">
-        {ESTADOS.map((e) => (
-          <button
-            key={e.value}
-            type="button"
-            disabled={deshabilitada}
-            onClick={() => onCambiarEstado(alumno.enrollmentId, e.value)}
-            className={`rounded-full px-3 py-1 text-size-11-5 font-bold transition-colors disabled:cursor-not-allowed ${estado === e.value ? e.chipActivo : CHIP_INACTIVO}`}
-          >
-            {e.label}
-          </button>
-        ))}
-        {justificacion === 'abierta' && (
-          <Button type="button" variant="outline" size="sm" onClick={onAdjuntarComprobante}>
-            Adjuntar comprobante
-          </Button>
-        )}
-        {onPedirModificacion && (
-          <Button type="button" variant="outline" size="sm" onClick={onPedirModificacion}>
-            Pedir modificación
-          </Button>
-        )}
-      </div>
+    <div role={role} className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border px-4 py-3 text-size-13 font-semibold ${BANNER_TONES[tone]}`}>
+      <Icon className="size-4 shrink-0" aria-hidden="true" />
+      <span className="min-w-0 flex-1 basis-56">{children}</span>
+      {action}
     </div>
   );
 }
 
 export function TabAsistencia({ type, sectionId }) {
-  const rosterQuery = useRosterDeAsistencia(type, sectionId);
-  const { data: roster, isLoading: cargandoRoster } = rosterQuery;
-  const historialQuery = useHistorialAsistencia(type, sectionId);
-  const { data: historial } = historialQuery;
-  const guardar = useGuardarAsistencia(type, sectionId);
-  const cancelar = useCancelarClase(type, sectionId);
+  const form = useTakeAttendanceForm(type, sectionId);
+  const { leaveDialog } = useDraftExitGuard(form.changedCount, form.hasChanges);
+  const [confirmMarkAll, setConfirmMarkAll] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [requestedChange, setRequestedChange] = useState(null);
+  const [absenceToJustify, setAbsenceToJustify] = useState(null);
 
-  const [classDate, setClassDate] = useState(() => localIsoDate());
-  const claseQuery = useClaseDelDia(type, sectionId, classDate);
-  const { data: claseDelDia } = claseQuery;
-  const [busqueda, setBusqueda] = useState('');
-  const [estados, setEstados] = useState({});
-  const [topic, setTopic] = useState('');
-  const [observations, setObservations] = useState('');
-  const [huboCambios, setHuboCambios] = useState(false);
-  const [confirmarMarcarTodos, setConfirmarMarcarTodos] = useState(false);
-  const [confirmarCancelar, setConfirmarCancelar] = useState(false);
-  const [error, setError] = useState(null);
-  const [recuperado, setRecuperado] = useState(false);
-  const huboCambiosRef = useRef(false);
-  const claveAnterior = useRef(null);
-  const borradorAplicadoPara = useRef(null);
-  const claveBorrador = `${type}:${sectionId}:${classDate}`;
-
-  const lista = useMemo(() => roster ?? [], [roster]);
-
-  // Lo ya guardado para esta fecha puntual (si el docente ya la había cargado antes) —
-  // se arma cruzando el roster (enrollmentId + studentId) con el historial (studentId +
-  // estado por fecha), sin pegarle a un endpoint nuevo.
-  const celdasGuardadas = useMemo(() => {
-    if (!historial) return {};
-    const porStudentId = new Map(historial.rows.map((fila) => [fila.studentId, fila.cellsByDate[classDate]]));
-    const resultado = {};
-    for (const alumno of lista) {
-      const celda = porStudentId.get(alumno.studentId);
-      if (celda) resultado[alumno.enrollmentId] = celda;
-    }
-    return resultado;
-  }, [historial, lista, classDate]);
-  const estadosGuardados = useMemo(
-    () => Object.fromEntries(Object.entries(celdasGuardadas).map(([enrollmentId, celda]) => [enrollmentId, celda.status])),
-    [celdasGuardadas],
-  );
-  const [modificacionPedida, setModificacionPedida] = useState(null);
-  const [ausenciaAJustificar, setAusenciaAJustificar] = useState(null);
-  const hayAsistenciaGuardada = Object.keys(estadosGuardados).length > 0;
-  const esClaseDeHoy = classDate === localIsoDate();
-  const puedeCorregirGuardado = (enrollmentId) =>
-    esClaseDeHoy && EDITABLE_SAVED_STATUSES.includes(estadosGuardados[enrollmentId]);
-
-  useEffect(() => {
-    huboCambiosRef.current = huboCambios;
-  }, [huboCambios]);
-
-  useEffect(() => {
-    const cambioClave = claveAnterior.current !== claveBorrador;
-    claveAnterior.current = claveBorrador;
-    if (!cambioClave && huboCambiosRef.current) {
-      setEstados((prev) => ({ ...prev, ...estadosGuardados }));
-      return;
-    }
-    const borrador = loadAttendanceDraft(type, sectionId, classDate);
-    const pendientes = borrador ? Object.fromEntries(Object.entries(borrador.estados).filter(([id]) => estadosGuardados[id] == null)) : {};
-    if (borrador && Object.keys(pendientes).length > 0) {
-      setEstados({ ...pendientes, ...estadosGuardados });
-      setTopic(borrador.topic);
-      setObservations(borrador.observations);
-      setHuboCambios(true);
-      setRecuperado(true);
-      borradorAplicadoPara.current = claveBorrador;
-    } else {
-      if (borrador) clearAttendanceDraft(type, sectionId, classDate);
-      setEstados(estadosGuardados);
-      setHuboCambios(false);
-      setRecuperado(false);
-      borradorAplicadoPara.current = null;
-    }
-    setError(null);
-  }, [type, sectionId, classDate, claveBorrador, estadosGuardados]);
-
-  useEffect(() => {
-    if (huboCambios && Object.keys(estados).length > 0) {
-      saveAttendanceDraft(type, sectionId, classDate, { estados, topic, observations });
-    }
-  }, [huboCambios, estados, topic, observations, type, sectionId, classDate]);
-
-  useEffect(() => {
-    if (claseDelDia && borradorAplicadoPara.current !== claveBorrador) {
-      setTopic(claseDelDia.topic ?? '');
-      setObservations(claseDelDia.observations ?? '');
-    }
-  }, [claseDelDia, claveBorrador]);
-
-  const claseCancelada = claseDelDia?.status === 'CANCELED';
-
-  const listaFiltrada = useMemo(
-    () => lista.filter((a) => a.studentName.toLowerCase().includes(busqueda.toLowerCase()) || (a.dni ?? '').includes(busqueda)),
-    [lista, busqueda],
-  );
-
-  function cambiarEstado(enrollmentId, status) {
-    setEstados((prev) => ({ ...prev, [enrollmentId]: status }));
-    setHuboCambios(true);
-  }
-
-  function marcarTodosPresentes() {
-    setEstados((prev) => {
-      const next = { ...prev };
-      for (const alumno of lista) {
-        if (!next[alumno.enrollmentId]) next[alumno.enrollmentId] = 'PRESENT';
-      }
-      return next;
-    });
-    setHuboCambios(true);
-    setConfirmarMarcarTodos(false);
-  }
-
-  async function guardarAsistencia() {
-    setError(null);
-    const entries = Object.entries(estados).map(([enrollmentId, status]) => ({ enrollmentId: Number(enrollmentId), status }));
-    try {
-      await guardar.mutateAsync({ classDate, entries, topic: topic || null, observations: observations || null });
-      clearAttendanceDraft(type, sectionId, classDate);
-      borradorAplicadoPara.current = null;
-      setRecuperado(false);
-      setHuboCambios(false);
-    } catch (err) {
-      setError(saveErrorMessage(err));
-    }
-  }
-
-  async function confirmarCancelarClase() {
-    try {
-      await cancelar.mutateAsync(classDate);
-    } finally {
-      setConfirmarCancelar(false);
-    }
-  }
-
-  const procesados = Object.keys(estados).length;
-  const presentes = Object.values(estados).filter((s) => s === 'PRESENT').length;
-  const ausentes = Object.values(estados).filter((s) => s === 'ABSENT').length;
+  const { rosterQuery, historyQuery, classQuery, classDate, students, filteredStudents, statuses, savedCells, savedStatuses, canceled } = form;
+  const unmarkedCount = students.filter((student) => !statuses[student.enrollmentId]).length;
 
   const failedQueries = [
     { query: rosterQuery, resource: 'los alumnos de la comisión' },
-    { query: historialQuery, resource: 'la asistencia ya guardada' },
-    { query: claseQuery, resource: 'los datos de la clase', ignoredStatus: 404 },
+    { query: historyQuery, resource: 'la asistencia ya guardada' },
+    { query: classQuery, resource: 'los datos de la clase', ignoredStatus: 404 },
   ].filter(({ query, ignoredStatus }) => query.isError && query.data === undefined && query.error?.status !== ignoredStatus);
 
-  if (cargandoRoster) {
+  async function confirmCancelClass() {
+    try {
+      await form.cancelClass();
+    } finally {
+      setConfirmCancel(false);
+    }
+  }
+
+  if (form.loadingRoster) {
     return (
       <div className="flex flex-col gap-2 pt-4">
         <Skeleton className="h-10" />
@@ -301,7 +135,7 @@ export function TabAsistencia({ type, sectionId }) {
   if (failedQueries.length > 0) {
     return (
       <div className="flex flex-col gap-4 pt-4">
-        <Input type="date" value={classDate} onChange={(e) => setClassDate(e.target.value)} className="w-fit" />
+        <Input type="date" value={classDate} onChange={(e) => form.setClassDate(e.target.value)} className="w-fit" />
         <GlassCard className="p-4">
           <LoadErrorState
             bare
@@ -316,207 +150,189 @@ export function TabAsistencia({ type, sectionId }) {
 
   return (
     <div className="flex flex-col gap-4 pt-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Input type="date" value={classDate} onChange={(e) => setClassDate(e.target.value)} className="w-fit" />
-        <div className="text-size-12-5 font-semibold">
-          {huboCambios ? (
-            <span className="text-warning">● Cambios sin guardar</span>
-          ) : hayAsistenciaGuardada ? (
-            <span className="text-success">✓ Asistencia guardada</span>
-          ) : (
-            <span className="text-ink-faint">Todavía no se tomó asistencia esta fecha</span>
-          )}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="class-date" className="text-size-12-5 font-bold text-ink-soft">Fecha de la clase</Label>
+          <Input id="class-date" type="date" value={classDate} onChange={(e) => form.setClassDate(e.target.value)} className="min-h-11 w-fit" />
+        </div>
+        <div aria-live="polite">
+          <SavedStatePill canceled={canceled} saved={form.hasSavedAttendance} />
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Inscriptos">
-          <div className="font-heading text-xl font-bold text-ink">{lista.length}</div>
-        </StatCard>
-        <StatCard label="Presentes">
-          <div className="font-heading text-xl font-bold text-success">{presentes}</div>
-        </StatCard>
-        <StatCard label="Ausentes">
-          <div className="font-heading text-xl font-bold text-danger">{ausentes}</div>
-        </StatCard>
-      </div>
+      <AttendanceSummaryCard
+        enrolled={students.length}
+        present={form.presentCount}
+        late={form.lateCount}
+        absent={form.absentCount}
+        marked={form.markedCount}
+      />
 
-      {claseCancelada && (
-        <div className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">
+      {canceled && (
+        <AttendanceBanner tone="danger" icon={Ban}>
           Esta clase está cancelada — no cuenta como inasistencia para nadie. Podés seguir editando el temario/observaciones, pero la grilla de asistencia queda deshabilitada.
-        </div>
+        </AttendanceBanner>
       )}
 
-      {hayAsistenciaGuardada && !claseCancelada && (
-        <div className="rounded-xl bg-neutral-bg px-4 py-2 text-size-13 font-medium text-ink-soft">
-          {esClaseDeHoy
+      {form.hasSavedAttendance && !canceled && (
+        <AttendanceBanner tone="neutral" icon={Info}>
+          {form.isToday
             ? 'Podés corregir la asistencia de hoy.'
             : 'La asistencia ya guardada no se edita desde acá: para corregirla, pedí la modificación desde Historial.'}
-        </div>
+        </AttendanceBanner>
       )}
 
-      {recuperado && !error && (
-        <div className="rounded-xl bg-neutral-bg px-4 py-2 text-size-13 font-medium text-ink-soft">Recuperamos tu asistencia sin enviar.</div>
+      {form.recovered && !form.error && (
+        <AttendanceBanner tone="neutral" icon={Undo2}>Recuperamos tu asistencia sin enviar.</AttendanceBanner>
       )}
 
-      {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">{error}</div>}
-
-      <GlassCard className="flex flex-col gap-3 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-ink-faint" />
-            <Input placeholder="Buscar alumno..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="w-[220px]" />
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-size-12 text-ink-faint">{procesados} / {lista.length} procesados</span>
-            <Button variant="outline" size="sm" onClick={() => setConfirmarMarcarTodos(true)} disabled={lista.length === 0 || claseCancelada}>
-              Marcar todos presentes
+      {form.error && (
+        <AttendanceBanner
+          tone="danger"
+          role="alert"
+          icon={form.error.offline ? WifiOff : AlertTriangle}
+          action={
+            <Button type="button" variant="outline" className="min-h-11" onClick={form.saveAttendance} disabled={form.saving}>
+              <RefreshCw aria-hidden="true" />
+              Reintentar
             </Button>
+          }
+        >
+          {form.error.message}
+        </AttendanceBanner>
+      )}
+
+      <GlassCard role="region" aria-label="Lista de alumnos" className="overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="relative min-w-60 max-w-sm flex-1">
+            <Search className="pointer-events-none absolute left-3 top-3.5 size-4 text-ink-faint" aria-hidden="true" />
+            <Input
+              type="search"
+              aria-label="Buscar alumno por nombre o DNI"
+              placeholder="Buscar por nombre o DNI"
+              value={form.search}
+              onChange={(e) => form.setSearch(e.target.value)}
+              className="min-h-11 pl-10"
+            />
           </div>
+          <Button type="button" variant="outline" className="min-h-11" onClick={() => setConfirmMarkAll(true)} disabled={unmarkedCount === 0 || canceled}>
+            <Check aria-hidden="true" />
+            Marcar presentes a los {unmarkedCount} sin marcar
+          </Button>
         </div>
 
-        {listaFiltrada.length === 0 ? (
+        {filteredStudents.length === 0 ? (
           <EmptyState title="No hay alumnos para mostrar" description="Esta comisión no tiene alumnos matriculados activos, o ninguno coincide con la búsqueda." />
         ) : (
-          <div className="flex flex-col gap-2">
-            <div className="hidden px-3 text-size-11 font-bold uppercase tracking-wide text-ink-faint sm:flex sm:items-center sm:justify-between">
+          <>
+            <div aria-hidden="true" className="hidden grid-cols-[minmax(0,1fr)_14rem_20.5rem] gap-4 border-b border-border bg-table-head px-4 py-2.5 text-size-12 font-extrabold uppercase tracking-wide text-ink-faint sm:grid">
               <span>Alumno</span>
-              <span className="w-24 shrink-0 text-center">Inasistencias</span>
-              <span className="shrink-0">Estado</span>
+              <span>Inasistencias</span>
+              <span>Asistencia</span>
             </div>
-            {listaFiltrada.map((alumno) => (
-              <FilaAlumno
-                key={alumno.enrollmentId}
-                alumno={alumno}
-                estado={estados[alumno.enrollmentId]}
-                onCambiarEstado={cambiarEstado}
-                deshabilitada={claseCancelada || (estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId))}
-                justificacion={estadoDeJustificacion(celdasGuardadas[alumno.enrollmentId], estados[alumno.enrollmentId])}
-                onAdjuntarComprobante={() =>
-                  setAusenciaAJustificar({ ...celdasGuardadas[alumno.enrollmentId], studentName: alumno.studentName, classDate })
-                }
-                onPedirModificacion={
-                  !claseCancelada && estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId)
-                    ? () => setModificacionPedida({ attendanceId: celdasGuardadas[alumno.enrollmentId].attendanceId, status: estadosGuardados[alumno.enrollmentId] })
-                    : undefined
-                }
-              />
-            ))}
-          </div>
+            <ul aria-label="Alumnos de la comisión">
+              {filteredStudents.map((student) => {
+                const enrollmentId = student.enrollmentId;
+                const savedStatus = savedStatuses[enrollmentId];
+                const locked = canceled || (savedStatus != null && !form.canCorrectSaved(enrollmentId));
+                return (
+                  <AttendanceStudentRow
+                    key={enrollmentId}
+                    student={student}
+                    status={statuses[enrollmentId]}
+                    onChangeStatus={form.changeStatus}
+                    locked={locked}
+                    justification={justificationState(savedCells[enrollmentId], statuses[enrollmentId])}
+                    onAttachProof={() => setAbsenceToJustify({ ...savedCells[enrollmentId], studentName: student.studentName, classDate })}
+                    onRequestChange={
+                      !canceled && savedStatus != null && !form.canCorrectSaved(enrollmentId)
+                        ? () => setRequestedChange({ attendanceId: savedCells[enrollmentId].attendanceId, status: savedStatus })
+                        : undefined
+                    }
+                  />
+                );
+              })}
+            </ul>
+          </>
         )}
       </GlassCard>
 
-      <GlassCard className="flex flex-col gap-3 p-4">
-        <div>
-          <div className="font-heading text-size-14 font-semibold text-ink">Temario</div>
-          <Textarea value={topic} onChange={(e) => setTopic(e.target.value.slice(0, 1000))} placeholder="Escriba los temas desarrollados durante la clase..." />
-          <div className="mt-1 text-right text-size-11 text-ink-faint">{topic.length} / 1000 caracteres</div>
-        </div>
-        <div>
-          <div className="font-heading text-size-14 font-semibold text-ink">Observaciones (opcional)</div>
-          <Textarea value={observations} onChange={(e) => setObservations(e.target.value.slice(0, 500))} placeholder="Observaciones de la clase..." />
-          <div className="mt-1 text-right text-size-11 text-ink-faint">{observations.length} / 500 caracteres</div>
-        </div>
-      </GlassCard>
+      <ClassNotesCard
+        topic={form.topic}
+        onTopicChange={form.setTopic}
+        observations={form.observations}
+        onObservationsChange={form.setObservations}
+        canceled={canceled}
+        onCancelClass={() => setConfirmCancel(true)}
+      />
 
-      <div className="flex items-center justify-between">
-        <Button variant="destructive" size="sm" onClick={() => setConfirmarCancelar(true)} disabled={claseCancelada}>
-          Cancelar clase
-        </Button>
-        <Button variant="primary" onClick={guardarAsistencia} disabled={!huboCambios || guardar.isPending || claseCancelada}>
-          Guardar asistencia
-        </Button>
-      </div>
+      <AttendanceSaveBar
+        hasPendingChanges={form.hasChanges}
+        changedCount={form.changedCount}
+        saved={form.hasSavedAttendance}
+        canceled={canceled}
+        hasError={Boolean(form.error)}
+        unmarkedCount={unmarkedCount}
+        saving={form.saving}
+        onSave={form.saveAttendance}
+        onDiscard={() => setConfirmDiscard(true)}
+      />
 
-      <Dialog open={confirmarMarcarTodos} onOpenChange={setConfirmarMarcarTodos}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Marcar a los {lista.length} alumnos como presentes?</DialogTitle>
-            <DialogDescription>Esto reemplaza únicamente a los alumnos que todavía no tienen asistencia cargada. No modifica lo ya marcado.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmarMarcarTodos(false)}>Cancelar</Button>
-            <Button variant="primary" onClick={marcarTodosPresentes}>Marcar presentes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AttendanceConfirmDialog
+        open={confirmMarkAll}
+        onOpenChange={setConfirmMarkAll}
+        title={`¿Marcar presentes a los ${unmarkedCount} alumnos sin asistencia?`}
+        description="No modifica a quienes ya tienen un estado marcado."
+        cancelLabel="Cancelar"
+        confirmLabel="Marcar presentes"
+        onConfirm={() => {
+          form.markAllPresent();
+          setConfirmMarkAll(false);
+        }}
+      />
 
-      <Dialog open={confirmarCancelar} onOpenChange={setConfirmarCancelar}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Cancelar la clase del {classDate}?</DialogTitle>
-            <DialogDescription>Esta fecha deja de contar como inasistencia para todos los alumnos.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmarCancelar(false)}>Volver</Button>
-            <Button variant="destructive" onClick={confirmarCancelarClase}>Cancelar clase</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AttendanceConfirmDialog
+        open={confirmCancel}
+        onOpenChange={setConfirmCancel}
+        title={`¿Cancelar la clase del ${CLASS_DATE_LABEL.format(new Date(`${classDate}T12:00:00`))}?`}
+        description="Esa fecha deja de contar como inasistencia para todos los alumnos."
+        cancelLabel="Volver"
+        confirmLabel="Cancelar clase"
+        confirmVariant="destructive"
+        onConfirm={confirmCancelClass}
+      />
 
-      {ausenciaAJustificar && (
-        <JustificarAusenciaDialog type={type} sectionId={sectionId} absence={ausenciaAJustificar} onClose={() => setAusenciaAJustificar(null)} />
+      <AttendanceConfirmDialog
+        open={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        title={`¿Descartar ${form.changedCount === 1 ? '1 cambio' : `${form.changedCount} cambios`}?`}
+        description="Vuelve a lo último que guardaste y borra el borrador de este dispositivo."
+        cancelLabel="Seguir editando"
+        confirmLabel="Descartar"
+        confirmVariant="destructive"
+        onConfirm={() => {
+          form.discardChanges();
+          setConfirmDiscard(false);
+        }}
+      />
+
+      {leaveDialog}
+
+      {absenceToJustify && (
+        <JustificarAusenciaDialog type={type} sectionId={sectionId} absence={absenceToJustify} onClose={() => setAbsenceToJustify(null)} />
       )}
 
-      {modificacionPedida && (
+      {requestedChange && (
         <ModalSolicitarModificacion
-          attendanceId={modificacionPedida.attendanceId}
-          estadoActual={modificacionPedida.status}
-          onClose={() => setModificacionPedida(null)}
+          attendanceId={requestedChange.attendanceId}
+          estadoActual={requestedChange.status}
+          onClose={() => setRequestedChange(null)}
         />
       )}
     </div>
   );
 }
 
-function requestErrorMessage(err) {
-  if (err.status === 403) return 'No tenés permiso para pedir la modificación en esta comisión.';
-  if (err.status === 404) return 'No encontramos ese registro de asistencia. Recargá la página y probá de nuevo.';
-  if (err.status === 400) return 'La solicitud no es válida. Revisá el estado elegido y el motivo.';
-  return 'No se pudo enviar la solicitud. Probá de nuevo.';
-}
-
-function ModalSolicitarModificacion({ attendanceId, estadoActual, onClose }) {
-  const [nuevoEstado, setNuevoEstado] = useState('PRESENT');
-  const [motivo, setMotivo] = useState('');
-  const [error, setError] = useState(null);
-  const solicitar = useSolicitarModificacion(attendanceId);
-
-  async function enviar() {
-    setError(null);
-    try {
-      await solicitar.mutateAsync({ requestedStatus: nuevoEstado, reason: motivo });
-      onClose();
-    } catch (err) {
-      setError(requestErrorMessage(err));
-    }
-  }
-
-  return (
-    <Dialog open={!!attendanceId} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Solicitar modificación de asistencia</DialogTitle>
-          <DialogDescription>Estado actual: {ESTADO_POR_VALOR[estadoActual]?.label ?? estadoActual}. La modificación queda pendiente de aprobación.</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-3">
-          <Select value={nuevoEstado} onValueChange={setNuevoEstado}>
-            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {ESTADOS.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Textarea placeholder="Motivo de la modificación..." value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-          {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-size-13 font-semibold text-danger">{error}</div>}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" onClick={enviar} disabled={!motivo || solicitar.isPending}>Enviar solicitud</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 const NOMBRE_MES_CORTO = new Intl.DateTimeFormat('es-AR', { month: 'short' });
 
@@ -601,19 +417,19 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
       <table className="border-separate border-spacing-0 text-size-11-5">
         <thead>
           <tr>
-            <th rowSpan={3} className={`${celdaSticky} bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] whitespace-nowrap border-b border-border px-3 py-1 text-left align-bottom font-semibold text-ink-faint`}>
+            <th rowSpan={3} className={`${celdaSticky} bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) whitespace-nowrap border-b border-border px-3 py-1 text-left align-bottom font-semibold text-ink-faint`}>
               Alumno
             </th>
             {gruposPorAnio.map((a, i) => (
               <th
                 key={a.anio}
                 colSpan={a.meses.reduce((acc, m) => acc + m.dias.length, 0)}
-                className={`bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] border-b border-border px-1 py-1 text-center font-semibold text-ink-faint ${i < gruposPorAnio.length - 1 ? divisorDeAnio : ''}`}
+                className={`bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) border-b border-border px-1 py-1 text-center font-semibold text-ink-faint ${i < gruposPorAnio.length - 1 ? divisorDeAnio : ''}`}
               >
                 {a.anio}
               </th>
             ))}
-            <th rowSpan={3} className="bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] border-b border-border px-2 py-1 text-center align-bottom font-semibold text-ink-faint">%</th>
+            <th rowSpan={3} className="bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) border-b border-border px-2 py-1 text-center align-bottom font-semibold text-ink-faint">%</th>
           </tr>
           <tr>
             {gruposPorAnio.flatMap((a) =>
@@ -621,7 +437,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 <th
                   key={`${a.anio}-${m.mes}`}
                   colSpan={m.dias.length}
-                  className={`bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] border-b border-border px-1 py-1 text-center font-semibold capitalize text-ink-faint ${i === a.meses.length - 1 ? divisorDeAnio : divisorDeMes}`}
+                  className={`bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) border-b border-border px-1 py-1 text-center font-semibold capitalize text-ink-faint ${i === a.meses.length - 1 ? divisorDeAnio : divisorDeMes}`}
                 >
                   {m.etiqueta}
                 </th>
@@ -634,7 +450,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 key={fecha}
                 onMouseEnter={() => setFechaHover(fecha)}
                 onMouseLeave={() => setFechaHover(null)}
-                className={`bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
+                className={`bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
               >
                 {Number(fecha.slice(8, 10))}
               </th>
@@ -652,12 +468,12 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 onClick={() => setAlumnoFijado((prev) => (prev === fila.studentId ? null : fila.studentId))}
                 className="cursor-pointer"
               >
-                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-on-accent' : 'border-transparent bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] text-ink'}`}>
+                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-on-accent' : 'border-transparent bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) text-ink'}`}>
                   {fila.studentName}
                 </td>
                 {historial.classDates.map((fecha) => {
                   const celda = fila.cellsByDate[fecha];
-                  const config = celda ? ESTADO_POR_VALOR[celda.status] : null;
+                  const config = celda ? STATUS_BY_VALUE[celda.status] : null;
                   return (
                     <td
                       key={fecha}
@@ -668,7 +484,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                         e.stopPropagation();
                         setCeldaSeleccionada({ studentName: fila.studentName, fecha, ...celda });
                       }}
-                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.filaClass : ''} ${divisor(fecha)} ${resaltada ? 'border-accent-2' : 'border-transparent'} ${returnRequest && fila.studentName === returnRequest.studentName && fecha === returnRequest.classDate ? 'ring-2 ring-inset ring-brand' : ''} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
+                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.rowClass : ''} ${divisor(fecha)} ${resaltada ? 'border-accent-2' : 'border-transparent'} ${returnRequest && fila.studentName === returnRequest.studentName && fecha === returnRequest.classDate ? 'ring-2 ring-inset ring-brand' : ''} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
                       title={celda?.rejection ? rejectionText(celda.rejection) : (config?.label ?? 'Sin cargar')}
                       tabIndex={celda?.rejection ? 0 : undefined}
                       aria-label={celda?.rejection ? `${config.label}. ${rejectionText(celda.rejection)}` : undefined}
@@ -694,7 +510,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
           <DialogHeader>
             <DialogTitle>Detalle de asistencia</DialogTitle>
             <DialogDescription>
-              {celdaSeleccionada?.studentName} · {celdaSeleccionada?.fecha} · {ESTADO_POR_VALOR[celdaSeleccionada?.status]?.label}
+              {celdaSeleccionada?.studentName} · {celdaSeleccionada?.fecha} · {STATUS_BY_VALUE[celdaSeleccionada?.status]?.label}
             </DialogDescription>
           </DialogHeader>
           {celdaSeleccionada?.rejection && (
