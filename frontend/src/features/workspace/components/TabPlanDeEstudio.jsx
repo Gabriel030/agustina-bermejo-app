@@ -1,30 +1,23 @@
 import { StablePageHeight } from '@/components/StablePageHeight';
 import { Fragment } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { Lock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
-import { StatusPill } from '@/components/StatusPill';
+import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
+import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPills';
+import { PlanSubjectCard } from '@/features/workspace/components/PlanSubjectCard';
 import { Paginador } from '@/components/Paginador';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { EstadoColumnFilter } from '@/components/alumno/EstadoColumnFilter';
 import { AnioColumnFilter } from '@/components/alumno/AnioColumnFilter';
 import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
 import { SortableColumnHeader } from '@/components/alumno/SortableColumnHeader';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { apiFetch } from '@/api/client';
 import { useGrillaDeMaterias } from '@/hooks/useGrillaDeMaterias';
 import { TIPOLOGIA_LABEL } from '@/lib/notas';
-
-const ESTADO_PILL = {
-  'en-curso': { label: 'En curso', tone: 'accent' },
-  regular: { label: 'Cursada regular · falta final', tone: 'warning' },
-  aprobada: { label: 'Aprobada', tone: 'success' },
-  desaprobada: { label: 'Desaprobada · a recursar', tone: 'danger' },
-  disponible: { label: 'Disponible', tone: 'accent' },
-  bloqueada: { label: 'Bloqueada', tone: 'neutral' },
-};
 
 // Pestaña "Plan de estudio" de Mis carreras (Épica 2 Fase 2) — materias por año con
 // créditos, correlativas y tipología. Correlativas: solo los
@@ -54,6 +47,7 @@ function compararPlanDeEstudio(a, b) {
 }
 
 export function TabPlanDeEstudio({ carreraId }) {
+  const compact = useMediaQuery('(max-width: 767px)');
   const {
     pagina,
     page,
@@ -84,7 +78,30 @@ export function TabPlanDeEstudio({ carreraId }) {
 
   return (
     <div className="flex flex-1 flex-col gap-5">
+      <ul aria-label="Referencia de estados" className="flex flex-wrap gap-1.5">
+        {Object.keys(PLAN_STATUS_PILL).map((status) => (
+          <li key={status}>
+            <PlanStatusPill status={status} />
+          </li>
+        ))}
+      </ul>
       <StablePageHeight resetKey={`${estado}-${anio}`}>
+      {compact ? (
+      <div className="flex flex-col gap-2.5">
+        {cargando ? (
+          <>
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </>
+        ) : fallo ? (
+          <LoadErrorState onRetry={recargar} resource="el plan de estudio" bare />
+        ) : pagina.length === 0 ? (
+          <EmptyState title="No hay materias para mostrar" description="Probá con otro filtro." />
+        ) : (
+          pagina.map((fila, i) => <PlanSubjectCard key={fila.key} row={fila} prerequisites={correlativasQueries[i]?.data ?? []} />)
+        )}
+      </div>
+      ) : (
       <GlassCard className="flex flex-col p-1">
         {/* El header (con los filtros de Año/Estado embebidos) se renderiza SIEMPRE —
             ver comentario del mismo patrón en TabMaterias.jsx/TabNotas.jsx/TabAsistencia.jsx. */}
@@ -146,7 +163,6 @@ export function TabPlanDeEstudio({ carreraId }) {
               </TableRow>
             ) : (
               pagina.map((fila, i) => {
-                const pill = ESTADO_PILL[fila.estado];
                 const nuevoGrupo = !hayOrdenExplicito && fila.curricularYear !== anioAnterior;
                 anioAnterior = fila.curricularYear;
                 const query = correlativasQueries[i];
@@ -174,10 +190,7 @@ export function TabPlanDeEstudio({ carreraId }) {
                       </TableCell>
                       <TableCell className="text-ink-faint">{TIPOLOGIA_LABEL[fila.curricularTerm] ?? '—'}</TableCell>
                       <TableCell>
-                        <StatusPill tone={pill.tone} dot={fila.estado === 'bloqueada'}>
-                          {fila.estado === 'bloqueada' && <Lock className="h-3 w-3" />}
-                          {pill.label}
-                        </StatusPill>
+                        <PlanStatusPill status={fila.estado} />
                       </TableCell>
                     </TableRow>
                   </Fragment>
@@ -188,6 +201,7 @@ export function TabPlanDeEstudio({ carreraId }) {
         </Table>
         </div>
       </GlassCard>
+      )}
       </StablePageHeight>
 
       <Paginador page={page} totalPages={totalPages} onChange={setPage} />

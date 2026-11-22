@@ -52,3 +52,27 @@ describe('TabPlanDeEstudio — load failure', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
+
+describe('TabPlanDeEstudio — compact layout', () => {
+  beforeEach(() => {
+    vi.mocked(useGrillaDeMaterias).mockReset();
+  });
+
+  it('shows each subject as a card with its status label on narrow screens', () => {
+    const original = window.matchMedia;
+    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    vi.mocked(useGrillaDeMaterias).mockReturnValue(
+      grid({
+        pagina: [
+          { key: 'a', subjectName: 'Bases de Datos', subjectCode: 'BD-204', credits: 8, curricularYear: 2, curricularTerm: 'FIRST', estado: 'bloqueada', programSubjectId: null },
+        ],
+      }),
+    );
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByText('Bases de Datos')).toBeInTheDocument();
+    expect(screen.getAllByText('Bloqueada').length).toBeGreaterThan(1);
+    window.matchMedia = original;
+  });
+});

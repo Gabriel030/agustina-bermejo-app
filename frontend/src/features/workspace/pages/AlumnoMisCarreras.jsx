@@ -1,15 +1,17 @@
 import { Link, useSearchParams } from 'react-router-dom';
+import { CheckCircle2, Star, TrendingUp } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatCard } from '@/components/StatCard';
 import { Stagger } from '@/components/Stagger';
+import { ProgressBar } from '@/components/ProgressBar';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TabTramites } from '@/features/workspace/components/TabTramites';
 import { TabMaterias } from '@/features/workspace/components/TabMaterias';
 import { TabPlanDeEstudio } from '@/features/workspace/components/TabPlanDeEstudio';
@@ -22,13 +24,15 @@ import { useMisMatriculaciones, useMiProgreso } from '@/features/enrollment';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
 
-// Épica 2 Fase 2 — consolidación de IA (pedido explícito del usuario, "menos
-// botones en el menu, y queda mas acoplado a la materia"): Materias, Notas,
-// Mesas de examen y Asistencia dejaron de ser ítems de nav de primer nivel —
-// ahora son pestañas DENTRO de Mis carreras, siempre en el contexto de la
-// carrera elegida arriba. Reemplaza el layout anterior de 2 cards resumen
-// (Materias aprobadas/en curso) — esa info ahora vive completa en la pestaña
-// Materias, no hace falta duplicarla acá.
+function StatLabel({ icon: Icon, children }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
 export function AlumnoMisCarreras() {
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -53,9 +57,6 @@ export function AlumnoMisCarreras() {
   const regularityView = regularity ? describeRegularity(regularity) : null;
   const { data: planDeEstudio } = useProgramaPlanDeEstudio(matricula?.programId);
   const totalMateriasPlan = planDeEstudio?.length;
-  // Mismo cruce plan+inscripciones que usan las pestañas Materias/Notas (React Query
-  // dedupea el fetch por queryKey, no dispara requests extra) — solo se usa acá para el
-  // conteo de aprobadas del resumen de arriba.
   const { filas: materiasClasificadas } = useMateriasDelPlan(matricula?.id);
   const aprobadasCount = materiasClasificadas.filter((f) => f.estado === 'aprobada').length;
   const porcentajeAvance =
@@ -78,14 +79,15 @@ export function AlumnoMisCarreras() {
       <PageContainer>
         <div className="flex items-center justify-between gap-4">
           <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-56" />
+          <Skeleton className="h-11 w-56" />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Skeleton className="h-20" />
-          <Skeleton className="h-20" />
-          <Skeleton className="h-20" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
         </div>
-        <Skeleton className="h-64" />
+        <Skeleton className="h-11 w-3/4" />
+        <Skeleton className="h-72" />
       </PageContainer>
     );
   }
@@ -93,7 +95,7 @@ export function AlumnoMisCarreras() {
   if (matriculacionesFallaron) {
     return (
       <PageContainer>
-        <LoadErrorState error={errorMatriculaciones} onRetry={recargarMatriculaciones} resource="tus carreras" />
+        <LoadErrorState error={errorMatriculaciones} onRetry={recargarMatriculaciones} resource="tus carreras" distinguishForbidden backTo="/alumno/inicio" backLabel="Inicio" />
       </PageContainer>
     );
   }
@@ -101,12 +103,14 @@ export function AlumnoMisCarreras() {
   if (activas.length === 0) {
     return (
       <PageContainer>
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">Mis carreras</h1>
         <GlassCard className="flex flex-1 flex-col p-12">
           <EmptyState
+            icon="🎓"
             title="Todavía no estás matriculado en ninguna carrera"
             description="Elegí una carrera en el Catálogo para solicitar tu alta."
             action={
-              <Button asChild variant="primary">
+              <Button asChild variant="primary" className="h-11 px-4">
                 <Link to="/catalogo?tab=carreras">Ir al Catálogo</Link>
               </Button>
             }
@@ -120,11 +124,17 @@ export function AlumnoMisCarreras() {
     <PageContainer>
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="font-heading text-2xl font-bold tracking-tight text-ink">Mis carreras</div>
-            {graduated && <StatusPill tone="success">Carrera finalizada</StatusPill>}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">Mis carreras</h1>
+            {graduated && (
+              <StatusPill tone="success">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                Carrera finalizada
+              </StatusPill>
+            )}
             {progreso && !graduated && (
               <StatusPill tone={progreso.hasActiveCoursework ? 'success' : 'neutral'}>
+                {progreso.hasActiveCoursework && <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />}
                 {progreso.hasActiveCoursework ? 'Con cursada activa' : 'Sin cursada activa'}
               </StatusPill>
             )}
@@ -139,13 +149,10 @@ export function AlumnoMisCarreras() {
           )}
           <div className="mt-1 text-sm text-ink-faint">Progreso del plan de estudios</div>
         </div>
-        {/* Siempre visible, aunque haya una sola carrera — predecible, no aparece/desaparece
-            según cuántas carreras tenga el alumno (decisión de producto). En la URL
-            (?carrera=) para que el breadcrumb pueda volver acá sin perder la carrera elegida. */}
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {tab === 'tramites' &&<GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
           <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
-            <SelectTrigger>
+            <SelectTrigger aria-label="Carrera" className="w-full data-[size=default]:h-11 sm:w-auto">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -161,13 +168,13 @@ export function AlumnoMisCarreras() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stagger>
-          <StatCard label="Materias aprobadas">
+          <StatCard label={<StatLabel icon={CheckCircle2}>Materias aprobadas</StatLabel>}>
             <div className="font-heading text-2xl font-bold text-ink">
               {aprobadasCount}
               {totalMateriasPlan != null && <span className="text-base font-semibold text-ink-faint"> / {totalMateriasPlan}</span>}
             </div>
           </StatCard>
-          <StatCard label="Créditos acumulados">
+          <StatCard label={<StatLabel icon={Star}>Créditos acumulados</StatLabel>}>
             <div className="font-heading text-2xl font-bold text-ink">
               {progreso?.creditosAcumulados ?? '—'}
               {progreso?.creditosRequeridos != null && (
@@ -175,10 +182,8 @@ export function AlumnoMisCarreras() {
               )}
             </div>
           </StatCard>
-          <StatCard label="Avance del plan">
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-neutral-bg">
-              <div className="h-full rounded-full bg-gradient-to-r from-brand to-accent-2" style={{ width: `${porcentajeAvance}%` }} />
-            </div>
+          <StatCard label={<StatLabel icon={TrendingUp}>Avance del plan</StatLabel>}>
+            <ProgressBar value={porcentajeAvance} label="Avance del plan" className="mt-1.5" />
           </StatCard>
         </Stagger>
       </div>
@@ -192,18 +197,16 @@ export function AlumnoMisCarreras() {
           <TabsTrigger value="plan-de-estudio">Plan de estudio</TabsTrigger>
           <TabsTrigger value="tramites">Trámites</TabsTrigger>
         </TabsList>
-      </Tabs>
+        <TabsContent value={tab} className="mt-4 flex flex-1 flex-col">
 
-      {/* key={matricula.id}: fuerza remount al cambiar de carrera, para que la página
-          interna de paginación de cada pestaña arranque de nuevo (si no, quedarse en
-          la página 3 de una carrera y cambiar a otra con menos materias muestra una
-          página vacía en vez de resetear). */}
-      {tab === 'materias' && <TabMaterias key={matricula.id} carreraId={matricula.id} />}
-      {tab === 'plan-de-estudio' && <TabPlanDeEstudio key={matricula.id} carreraId={matricula.id} />}
-      {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
-      {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
-      {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
-      {tab === 'tramites' && <TabTramites key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
+            {tab === 'materias' && <TabMaterias key={matricula.id} carreraId={matricula.id} />}
+            {tab === 'plan-de-estudio' && <TabPlanDeEstudio key={matricula.id} carreraId={matricula.id} />}
+            {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
+            {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
+            {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
+            {tab === 'tramites' && <TabTramites key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   );
 }

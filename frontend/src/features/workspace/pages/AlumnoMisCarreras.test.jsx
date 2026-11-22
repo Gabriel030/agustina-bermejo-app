@@ -203,6 +203,20 @@ describe('AlumnoMisCarreras — load failure', () => {
   });
 });
 
+describe('AlumnoMisCarreras — no permission', () => {
+  it('shows the access denied state without a retry button on 403', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollments`, () => new HttpResponse(null, { status: 403 })),
+      http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+    );
+    renderWithProviders(<AlumnoMisCarreras />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No tenés acceso a esta pantalla');
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+  });
+});
+
 describe('AlumnoMisCarreras — regularity', () => {
   function mockRegularity(regularity) {
     const requested = [];
