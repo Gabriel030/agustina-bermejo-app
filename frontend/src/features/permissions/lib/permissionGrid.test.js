@@ -7,6 +7,7 @@ describe('moduleLabel', () => {
     expect(moduleLabel('audit')).toBe('Auditoría');
     expect(moduleLabel('certificate')).toBe('Certificados');
     expect(moduleLabel('notification')).toBe('Notificaciones');
+    expect(moduleLabel('platform')).toBe('Configuración del instituto');
   });
 
   it('capitalizes an unknown module as a fallback', () => {

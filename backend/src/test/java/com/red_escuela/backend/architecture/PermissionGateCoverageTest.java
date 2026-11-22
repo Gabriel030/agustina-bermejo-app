@@ -25,13 +25,19 @@ class PermissionGateCoverageTest {
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
             "academicrecord", "academicstructure", "billing", "enrollment", "evaluation",
-            "graduation", "identity", "platform");
+            "graduation", "identity");
 
     private static final Set<String> CONTROLLERS_FIXED_BY_ROLE = Set.of(
-            ROOT + ".identity.controller.PermissionController");
+            ROOT + ".identity.controller.PermissionController",
+            ROOT + ".platform.controller.BackupStatusController",
+            ROOT + ".platform.controller.MyPaymentMethodsController",
+            ROOT + ".platform.controller.PlatformAuditLogController",
+            ROOT + ".platform.controller.PlatformFeatureController",
+            ROOT + ".platform.controller.PlatformProvisioningController");
 
     private static final Set<String> CONTROLLERS_WITHOUT_ROLE_RULE = Set.of(
             ROOT + ".announcement.controller.MeAnnouncementController",
+            ROOT + ".platform.controller.ModulesController",
             ROOT + ".notification.controller.MeNotificationController",
             ROOT + ".notification.broadcast.controller.ContactConsentController",
             ROOT + ".notification.broadcast.controller.PublicUnsubscribeController");
