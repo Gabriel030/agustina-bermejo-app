@@ -19,6 +19,7 @@ import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepo
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.announcement.specialist.AnnouncementRenotifier;
 import com.red_escuela.backend.announcement.specialist.SectionMembershipChecker;
+import com.red_escuela.backend.announcement.specialist.UpdateAnnouncementTransaction;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,8 +59,8 @@ class UpdateAnnouncementRulesTest {
 
     @BeforeEach
     void setUp() {
-        service = new UpdateAnnouncementService(announcementRepository, sectionMembership,
-                new AnnouncementRenotifier(recipientRepository, eventPublisher));
+        service = new UpdateAnnouncementService(new UpdateAnnouncementTransaction(announcementRepository, sectionMembership,
+                new AnnouncementRenotifier(recipientRepository, eventPublisher)));
         Subject subject = new Subject();
         subject.setName("Matematica");
         section = new SubjectSection();

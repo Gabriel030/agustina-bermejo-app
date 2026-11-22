@@ -128,7 +128,7 @@ class PermissionGateWebTest {
         store.replace(new PermissionSnapshot(
                 Map.of(role, Set.of(permissions)),
                 Map.of(PermissionSnapshot.modeKey(role, module), mode),
-                Set.of(), ALL_CODES));
+                ALL_CODES));
         cache.invalidate();
     }
 
@@ -242,7 +242,7 @@ class PermissionGateWebTest {
     void staleSnapshotServedWithinTtlUntilInvalidated() throws Exception {
         configure(PermissionMode.ENFORCE, "DOCENTE", "probe", "probe.read");
         mockMvc.perform(get("/probe/controller")).andExpect(status().isOk());
-        store.replace(new PermissionSnapshot(Map.of("DOCENTE", Set.of()), Map.of(PermissionSnapshot.modeKey("DOCENTE", "probe"), PermissionMode.ENFORCE), Set.of(), ALL_CODES));
+        store.replace(new PermissionSnapshot(Map.of("DOCENTE", Set.of()), Map.of(PermissionSnapshot.modeKey("DOCENTE", "probe"), PermissionMode.ENFORCE), ALL_CODES));
         mockMvc.perform(get("/probe/controller")).andExpect(status().isOk());
         cache.invalidate();
         mockMvc.perform(get("/probe/controller")).andExpect(status().isForbidden());
