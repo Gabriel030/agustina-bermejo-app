@@ -61,7 +61,7 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
         jdbcTemplate.update("delete from role_permission where role in ('PRECEPTOR', 'ADMINISTRATIVO') and permission_id in (select id from permission where code in ('announcement.update', 'audit.read'))");
         discrepancyAccumulator.flush();
         jdbcTemplate.update("delete from permission_discrepancy_counter");
-        jdbcTemplate.update("delete from audit_log where action = 'PERMISSION_GRID_CHANGED'");
+        jdbcTemplate.update("delete from audit_log where action in ('PERMISSION_GRID_CHANGED', 'PERMISSION_SENSITIVE_CHANGED')");
         cache.invalidate();
     }
 
@@ -91,7 +91,7 @@ class PermissionPilotComparisonIT extends AuthorizationMatrixSupport {
 
     private void setGrant(String role, String permissionCode, boolean granted) throws Exception {
         String body = "{\"reason\":\"Prueba de comparacion del piloto\",\"changes\":[{\"role\":\"" + role
-                + "\",\"permissionCode\":\"" + permissionCode + "\",\"granted\":" + granted + "}]}";
+                + "\",\"permissionCode\":\"" + permissionCode + "\",\"granted\":" + granted + "}],\"sensitiveConfirmed\":true}";
         int status = mockMvc.perform(put("/permissions/grid").header("Authorization", "Bearer " + fixtures.tokenFor(MatrixRole.DIRECTOR))
                 .contentType(APPLICATION_JSON).content(body)).andReturn().getResponse().getStatus();
         assertThat(status).isEqualTo(200);

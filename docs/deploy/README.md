@@ -173,12 +173,14 @@ Si se trabaja con un registro de imágenes, el rollback es poner en `deploy/.env
 
 ## Rotación de secretos
 
-Todos viven en `deploy/.env`. Después de cambiar uno: `dc up -d` (recrea solo lo que cambió).
+Procedimiento completo por secreto (impacto, pasos, verificación, rollback, cadencia y checklist de ensayo en staging): [docs/security/secrets-rotation.md](../security/secrets-rotation.md). Lo que sigue es el resumen.
+
+Todos viven en `deploy/.env`. Después de cambiar uno: `dc up -d` (recrea solo lo que cambió). `dc` solo conoce `docker-compose.prod.yml`: el backup y el monitoreo son overlays aparte y hay que recrearlos con sus propios `-f` (ver el documento de rotación).
 
 | Secreto | Efecto de rotarlo | Cómo |
 |---|---|---|
-| `JWT_SECRET` | Cierra todas las sesiones abiertas (todos tienen que volver a entrar) | Generar uno nuevo, `dc up -d backend` |
-| `POSTGRES_PASSWORD` | Hay que cambiarla también dentro de Postgres | `dc exec postgres psql -U <usuario> -c "ALTER USER <usuario> PASSWORD 'nueva'"`, luego editar `.env` y `dc up -d` |
+| `JWT_SECRET` | Invalida los access tokens (15 min): el front renueva con el refresh y nadie pierde la sesión. Para cerrar las sesiones hay que revocar también los refresh tokens (ver el documento de rotación) | Generar uno nuevo, `dc up -d backend` |
+| `POSTGRES_PASSWORD` | Hay que cambiarla también dentro de Postgres; `dc up -d` recrea `postgres` y las conexiones nuevas fallan entre el cambio y el reinicio del backend. El servicio `backup` se recrea aparte | `\password` interactivo dentro de `psql` (no pasar la clave en `-c`), editar `.env` y `dcb up -d`; pasos completos en el documento de rotación |
 | `BREVO_SMTP_KEY` | Sin efecto si se cambia a la vez en Brevo | Crear la clave nueva en Brevo, editar `.env`, `dc up -d backend`, revocar la vieja |
 | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET` | Los cobros online usan el nuevo apenas reinicia | Cambiarlos en el panel de Mercado Pago y en `.env`, `dc up -d backend` |
 | `ACTUATOR_PASSWORD` | Solo afecta al monitoreo | Cambiar en `.env` y en el monitoreo |
