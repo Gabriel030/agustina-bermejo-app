@@ -25,7 +25,7 @@ class PermissionGateCoverageTest {
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "academicrecord", "academicstructure", "billing", "enrollment", "evaluation");
+            "academicrecord", "academicstructure", "billing", "evaluation");
 
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
@@ -57,7 +57,23 @@ class PermissionGateCoverageTest {
             ROOT + ".graduation.procedure.controller.MeProcedureController",
             ROOT + ".graduation.procedure.controller.MeOwnDocumentController",
             ROOT + ".graduation.certificate.verification.controller.PublicCertificateController",
-            ROOT + ".graduation.certificate.verification.controller.PublicDocumentController");
+            ROOT + ".graduation.certificate.verification.controller.PublicDocumentController",
+            ROOT + ".enrollment.controller.MeCourseAdmissionPreviewController",
+            ROOT + ".enrollment.controller.MeCourseEnrollmentController",
+            ROOT + ".enrollment.controller.MeEnrollmentChangeController",
+            ROOT + ".enrollment.controller.MeEnrollmentController",
+            ROOT + ".enrollment.controller.ProgramEnrollmentApplicationWithDocumentsController");
+
+    private static final Set<String> ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
+            "CurriculumProgressController#myCurriculumProgress", "CurriculumProgressController#myGraduationProjection",
+            "EnrollmentFeeController#myStatus", "ProgramEnrollmentApplicationController#request",
+            "ProgramEnrollmentApplicationController#mine", "ProgramEnrollmentApplicationController#addDocument",
+            "ProgramEnrollmentApplicationController#myDocuments", "ProspectController#createProspect");
+
+    private static final Set<String> ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR = Set.of(
+            "DirectorApprovalRequestController#list", "DirectorApprovalRequestController#get",
+            "DirectorApprovalRequestController#approve", "DirectorApprovalRequestController#reject");
+
 
     private static final Set<String> CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS = Set.of(
             ROOT + ".graduation.certificate.exam.controller.ExamCertificateController",
@@ -73,6 +89,7 @@ class PermissionGateCoverageTest {
 
     private static final Set<String> ENDPOINTS_FIXED_BY_CONDITIONAL_ROLE_RULE = Set.of(
             "CertificateTemplateController#preview");
+
 
     private static final Set<String> LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
             "getCurrentDocuments", "getPendingAcceptances", "acceptCurrentDocuments", "confirmGuardianAcceptance",
@@ -93,6 +110,10 @@ class PermissionGateCoverageTest {
                     continue;
                 }
                 if (controller.getName().equals(LEGAL_DOCUMENT_CONTROLLER) && LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(method.getName())) {
+                    continue;
+                }
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint)) {
                     continue;
                 }
                 if (!usesGate(method, controller)) {
@@ -139,6 +160,32 @@ class PermissionGateCoverageTest {
             }
         }
         assertThat(annotated).as("exempt controllers must not carry role rules").isEmpty();
+    }
+
+    @Test
+    void enrollmentEndpointsExemptFromTheGridKeepTheirFixedRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
+                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) && preAuthorize != null) {
+                    violations.add(endpoint + " must not carry a role rule");
+                }
+                if (ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint)
+                        && (preAuthorize == null || !preAuthorize.value().equals("hasRole('DIRECTOR')"))) {
+                    violations.add(endpoint + " must stay fixed to the Director role");
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+        Set<String> declared = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                declared.add(controller.getSimpleName() + "#" + method.getName());
+            }
+        }
+        assertThat(declared).containsAll(ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE).containsAll(ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR);
     }
 
     @Test

@@ -12,7 +12,7 @@ import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,44 +37,44 @@ public class ProgramEnrollmentController {
 
     @PostMapping("/students/{id}/program-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.create_program_enrollment", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ProgramEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateProgramEnrollmentRequest request) {
         return ProgramEnrollmentResponse.from(programEnrollmentService.enroll(id, request));
     }
 
     @GetMapping("/students/{id}/program-enrollments")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_program_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ProgramEnrollmentResponse> listByStudent(@PathVariable Long id) {
         return programEnrollmentService.listByStudent(id).stream().map(ProgramEnrollmentResponse::from).toList();
     }
 
     @GetMapping("/program-enrollments/{id}")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_program_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ProgramEnrollmentResponse get(@PathVariable Long id) {
         return ProgramEnrollmentResponse.from(programEnrollmentService.get(id));
     }
 
     @GetMapping("/program-enrollments/{id}/progress")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_program_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ProgramProgressResponse getProgress(@PathVariable Long id) {
         return programEnrollmentService.calculateProgress(id);
     }
 
     @GetMapping("/program-enrollments/{id}/attendance-summary")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_program_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<SubjectAttendanceSummaryResponse> getAttendanceSummary(@PathVariable Long id) {
         return programEnrollmentService.attendanceSummaryBySubject(id);
     }
 
     @PostMapping("/program-enrollments/{id}/advance-billing-year")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.advance_billing_year", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ProgramEnrollmentResponse advanceAcademicYear(@PathVariable Long id, @Valid @RequestBody AdvanceBillingYearRequest request) {
         return ProgramEnrollmentResponse.from(programEnrollmentService.advanceAcademicYear(id, request.templateId()));
     }
 
     @PostMapping("/program-enrollments/{id}/invoices/ad-hoc")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.create_ad_hoc_invoice", legacyRoles = "ROLE_ADMINISTRATIVO")
     public InvoiceResponse createAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request,
                                           @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return InvoiceResponse.from(idempotencyKey == null || idempotencyKey.isBlank()

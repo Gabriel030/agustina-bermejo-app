@@ -76,6 +76,18 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 El resto de los endpoints migrados de identity ya permiten al Director y no cambian.
 
+### Enrollment
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- GET /program-enrollment-applications, /pending, /history, /{id}, /{id}/approval-check y /{id}/documents/{documentId}/file (enrollment.read_program_applications)
+- POST /program-enrollment-applications/{id}/approve y /reject (enrollment.review_program_application)
+- POST /program-enrollments/{id}/advance-billing-year (enrollment.advance_billing_year)
+- POST /program-enrollments/{id}/invoices/ad-hoc y POST /course-enrollments/{id}/invoices/ad-hoc (enrollment.create_ad_hoc_invoice)
+- POST /director-approval-requests (enrollment.request_director_approval)
+
+Los endpoints del alumno (/me/*), el alta pública de interesados y las decisiones sobre pedidos de aprobación (listar, ver, aprobar, rechazar) quedan fuera de la grilla.
+
 ## Notas operativas
 
 - Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.

@@ -9,7 +9,7 @@ import com.red_escuela.backend.enrollment.usecase.StaffEnrollmentChange;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,7 +29,7 @@ public class StaffEnrollmentChangeController {
     }
 
     @GetMapping("/section-enrollments/{id}/change-section-candidates")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_program_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ChangeSectionCandidateResponse> listChangeSectionCandidates(@PathVariable Long id) {
         return staffEnrollmentChange.listChangeSectionCandidates(id);
     }
@@ -37,14 +37,14 @@ public class StaffEnrollmentChangeController {
     @Operation(operationId = "SubjectSectionEnrollment_withdraw")
     @PostMapping("/section-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.withdraw_subject", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void withdrawSubject(@PathVariable Long id, @Valid @RequestBody(required = false) WithdrawSectionEnrollmentRequest request) {
         staffEnrollmentChange.withdrawSubject(id, request == null ? null : request.reason());
     }
 
     @Operation(operationId = "SubjectSectionEnrollment_changeSection")
     @PostMapping("/section-enrollments/{id}/change-section")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.change_subject_section", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public SectionEnrollmentResponse changeSubjectSection(@PathVariable Long id, @Valid @RequestBody ChangeSectionRequest request) {
         return staffEnrollmentChange.changeSubjectSection(id, request);
     }
@@ -52,7 +52,7 @@ public class StaffEnrollmentChangeController {
     @Operation(operationId = "CourseSectionEnrollment_withdraw")
     @PostMapping("/course-section-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.withdraw_subject", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void withdrawCourseModule(@PathVariable Long id, @Valid @RequestBody(required = false) WithdrawSectionEnrollmentRequest request) {
         staffEnrollmentChange.withdrawCourseModule(id, request == null ? null : request.reason());
     }
@@ -60,7 +60,7 @@ public class StaffEnrollmentChangeController {
     @Operation(operationId = "ProgramEnrollment_withdraw")
     @PostMapping("/program-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.withdraw_enrollment", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void withdrawProgram(@PathVariable Long id, @Valid @RequestBody(required = false) WithdrawEnrollmentRequest request) {
         staffEnrollmentChange.withdrawProgram(id, request);
     }
@@ -68,7 +68,7 @@ public class StaffEnrollmentChangeController {
     @Operation(operationId = "CourseEnrollment_withdraw")
     @PostMapping("/course-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.withdraw_enrollment", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void withdrawCourse(@PathVariable Long id, @Valid @RequestBody(required = false) WithdrawEnrollmentRequest request) {
         staffEnrollmentChange.withdrawCourse(id, request);
     }
