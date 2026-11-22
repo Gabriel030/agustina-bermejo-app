@@ -47,7 +47,7 @@ export async function signIn(page, { timeout = 15_000 } = {}) {
 }
 
 export function homeScreen(page) {
-  return page.getByText('Tu horario');
+  return page.getByRole('heading', { name: 'Mis materias' });
 }
 
 export async function waitForControllingWorker(page) {

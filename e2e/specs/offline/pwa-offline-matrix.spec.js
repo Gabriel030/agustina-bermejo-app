@@ -68,7 +68,6 @@ test.describe('@offline pwa offline matrix', () => {
     await goOnline(context, page, api);
 
     await expect.poll(() => api.requests.filter((path) => path === '/auth/refresh').length).toBeGreaterThan(refreshesBeforeResuming);
-    await page.reload();
 
     await expect(homeScreen(page)).toBeVisible();
     await expect(page.getByText('Sin conexión')).toHaveCount(0);
@@ -76,7 +75,7 @@ test.describe('@offline pwa offline matrix', () => {
     await expect(page).toHaveURL(/\/alumno\/inicio$/);
   });
 
-  test.fixme('resumingTheConnectionLoadsTheProfileAgainWithoutReloading', async ({ context, page }) => {
+  test('resumingTheConnectionLoadsTheProfileAgainWithoutReloading', async ({ context, page }) => {
     const api = await mockApi(context);
     await signIn(page);
     await waitForControllingWorker(page);
@@ -123,7 +122,6 @@ test.describe('@offline pwa offline matrix', () => {
 
     api.refreshStatus = 401;
     await goOnline(context, page, api);
-    await page.reload();
 
     await expect(page).toHaveURL(/\/login/);
     await expect(page.getByRole('button', { name: 'Ingresar' })).toBeVisible();

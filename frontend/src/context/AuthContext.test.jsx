@@ -9,7 +9,7 @@ import {
   readOfflineProfile,
   storeOfflineProfile,
 } from '@/api/offlinePersistence';
-import { apiFetch, setOfflineSessionMode } from '@/api/client';
+import { apiFetch, resetCircuits, setOfflineSessionMode } from '@/api/client';
 import { LEGAL_KEYS } from '@/features/identity/hooks/useLegal';
 
 const store = new Map();
@@ -30,6 +30,7 @@ vi.mock('@/api/client', () => ({
   setAccessToken: vi.fn(),
   setSessionExpiredHandler: vi.fn(),
   setOfflineSessionMode: vi.fn(),
+  resetCircuits: vi.fn(),
 }));
 
 describe('restoreStoredSession', () => {
@@ -51,6 +52,20 @@ describe('restoreStoredSession', () => {
     expect(second).toEqual({ id: 1 });
     expect(localStorage.getItem('refreshToken')).toBeNull();
     expect(localStorage.getItem('sessionHint')).toBe('1');
+  });
+
+  it('leavesOfflineSessionModeBeforeLoadingTheProfile', async () => {
+    localStorage.setItem('sessionHint', '1');
+    setOfflineSessionMode.mockClear();
+    apiFetch.mockImplementation(async (path) =>
+      path === '/auth/refresh' ? { accessToken: 'a' } : { id: 1 },
+    );
+
+    await restoreStoredSession();
+
+    const profileCall = apiFetch.mock.calls.findIndex(([path]) => path === '/me');
+    expect(setOfflineSessionMode).toHaveBeenCalledWith(false);
+    expect(setOfflineSessionMode.mock.invocationCallOrder[0]).toBeLessThan(apiFetch.mock.invocationCallOrder[profileCall]);
   });
 
   it('migrates a legacy stored token by sending it once in the body and then drops it', async () => {
@@ -481,6 +496,22 @@ describe('session restore failures', () => {
     expect(auth.usuario.roles).toEqual([]);
     expect(await readOfflineProfile()).toEqual({ nombre: undefined, apellido: undefined, roles: [] });
     expect(setOfflineSessionMode).toHaveBeenLastCalledWith(false);
+  });
+
+  it('resumingTheConnectionResetsTheCircuitsBeforeRestoring', async () => {
+    await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: [] });
+    const restoreNetwork = failRefreshWith(new TypeError('Failed to fetch'));
+    renderProvider();
+    await screen.findByText('pending');
+    resetCircuits.mockClear();
+
+    restoreNetwork();
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+    });
+
+    await screen.findByText('user-7');
+    expect(resetCircuits).toHaveBeenCalledTimes(1);
   });
 
   it('logoutPurgesTheStoredProfile', async () => {
