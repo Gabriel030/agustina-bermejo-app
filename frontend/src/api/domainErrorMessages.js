@@ -13,6 +13,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   CERTIFICATE_EXCEPTION_ALREADY_OPEN: 'Ya hay una excepción pendiente o aprobada para esta inscripción.',
   CERTIFICATE_EXCEPTION_DECISION_REASON_INVALID: 'El motivo de la decisión debe tener entre 10 y 500 caracteres.',
   CERTIFICATE_EXCEPTION_NOT_FOUND: 'La excepción no existe.',
+  CERTIFICATE_PDF_INTEGRITY_MISMATCH: 'No se pudo regenerar el documento con la integridad esperada. Se registró el hecho; avisá a administración.',
   CERTIFICATE_EXCEPTION_REASON_INVALID: 'El motivo de la excepción debe tener entre 20 y 1000 caracteres.',
   CHANNEL_NOT_AVAILABLE: 'El canal de envío no está disponible.',
   CHANNEL_NOT_ENABLED: 'El canal de envío no está habilitado. El Director puede habilitarlo desde Configuración, en la sección Notificaciones.',
