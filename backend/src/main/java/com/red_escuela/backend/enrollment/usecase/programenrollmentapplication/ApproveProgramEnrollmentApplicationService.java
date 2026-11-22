@@ -1,62 +1,20 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
-import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.service.ProgramAdmissionInvoiceIssuer;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
-import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
-import com.red_escuela.backend.enrollment.service.ApplicationDecisionIdempotencyKeys;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
-import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.enrollment.service.ProgramApplicantRoleGranter;
+import com.red_escuela.backend.enrollment.service.ApproveProgramEnrollmentApplicationTransaction;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.annotation.Transactional;
-
 
 @UseCase
 public class ApproveProgramEnrollmentApplicationService implements ApproveProgramEnrollmentApplicationUseCase {
 
-    private final ProgramEnrollmentApplicationFinder applicationFinder;
-    private final ProgramApplicantRoleGranter programApplicantRoleGranter;
-    private final ProgramAdmissionInvoiceIssuer programAdmissionInvoiceIssuer;
-    private final ProgramEnrollmentService programEnrollmentService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final ApproveProgramEnrollmentApplicationTransaction approveTransaction;
 
-    public ApproveProgramEnrollmentApplicationService(ProgramEnrollmentApplicationFinder applicationFinder,
-                                                        ProgramApplicantRoleGranter programApplicantRoleGranter,
-                                                        ProgramAdmissionInvoiceIssuer programAdmissionInvoiceIssuer,
-                                                        ProgramEnrollmentService programEnrollmentService,
-                                                        ApplicationEventPublisher eventPublisher) {
-        this.applicationFinder = applicationFinder;
-        this.programApplicantRoleGranter = programApplicantRoleGranter;
-        this.programAdmissionInvoiceIssuer = programAdmissionInvoiceIssuer;
-        this.programEnrollmentService = programEnrollmentService;
-        this.eventPublisher = eventPublisher;
+    public ApproveProgramEnrollmentApplicationService(ApproveProgramEnrollmentApplicationTransaction approveTransaction) {
+        this.approveTransaction = approveTransaction;
     }
 
     @Override
-    @Transactional
     public ProgramEnrollmentApplication approve(ApproveProgramEnrollmentApplicationCommand command) {
-        String idempotencyKey = ApplicationDecisionIdempotencyKeys.normalize(command.idempotencyKey());
-        ProgramEnrollmentApplication application = applicationFinder.findLockedOrThrow(command.id());
-        if (ApplicationDecisionIdempotencyKeys.isReplayOfApproval(application, idempotencyKey)) {
-            return application;
-        }
-        if (application.getStatus() != ProgramEnrollmentApplicationStatus.PENDING) {
-            throw new InvalidProgramEnrollmentApplicationStateException(application.getId(), application.getStatus());
-        }
-        Student student = application.getStudent();
-        programEnrollmentService.validateStudentCanEnrollInProgram(student, application.getProgram());
-        programEnrollmentService.verifyStudentHasNoOutstandingDebt(student.getId());
-
-        Invoice admissionInvoice = programAdmissionInvoiceIssuer.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
-        application.approve(command.decidedBy(), admissionInvoice);
-        ApplicationDecisionIdempotencyKeys.remember(application, idempotencyKey);
-        programApplicantRoleGranter.grantStudentRole(student);
-        eventPublisher.publishEvent(ProgramApplicationApprovedEvent.approvedFor(application.getId(), student.getPerson().getId(), application.getProgram().getName()));
-        return application;
+        return approveTransaction.approve(command.id(), command.idempotencyKey(), command.decidedBy());
     }
 }

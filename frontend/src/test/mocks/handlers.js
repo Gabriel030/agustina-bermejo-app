@@ -13,6 +13,7 @@ import {
   springPage,
 } from '@/test/fixtures/certificates';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
+import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 
 import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
@@ -495,4 +496,5 @@ export const handlers = [
   http.get(`${API}/permissions/discrepancies`, () =>
     HttpResponse.json({ items: [permissionDiscrepancy()], page: 0, size: 50, totalElements: 1 }),
   ),
+  ...constanciasHandlers,
 ];

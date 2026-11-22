@@ -9,4 +9,8 @@ public interface ListStaffSectionAnnouncementsUseCase {
     List<AnnouncementResponse> listForProgramSection(Long sectionId);
 
     List<AnnouncementResponse> listForCourseSection(Long sectionId);
+
+    List<AnnouncementResponse> listForProgramSectionAsInstructor(Long sectionId);
+
+    List<AnnouncementResponse> listForCourseSectionAsInstructor(Long sectionId);
 }
