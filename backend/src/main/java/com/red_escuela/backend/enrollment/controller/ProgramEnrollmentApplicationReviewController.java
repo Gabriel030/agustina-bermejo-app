@@ -13,7 +13,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,13 +43,13 @@ public class ProgramEnrollmentApplicationReviewController {
     }
 
     @GetMapping("/program-enrollment-applications/pending")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.read_program_applications", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public List<ProgramEnrollmentApplicationResponse> pending() {
         return listPendingUseCase.list();
     }
 
     @GetMapping("/program-enrollment-applications/history")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.read_program_applications", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ProgramEnrollmentApplicationPage history(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search,
@@ -58,19 +58,19 @@ public class ProgramEnrollmentApplicationReviewController {
     }
 
     @GetMapping("/program-enrollment-applications/{id}")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.read_program_applications", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ProgramEnrollmentApplicationResponse get(@PathVariable Long id) {
         return getApplicationUseCase.get(id);
     }
 
     @GetMapping("/program-enrollment-applications/{id}/approval-check")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.read_program_applications", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ProgramEnrollmentApplicationApprovalCheckResponse approvalCheck(@PathVariable Long id) {
         return approvalCheckUseCase.get(id);
     }
 
     @GetMapping("/program-enrollment-applications/{id}/documents/{documentId}/file")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.read_program_applications", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ResponseEntity<byte[]> documentFile(@PathVariable Long id, @PathVariable Long documentId) {
         ProgramApplicationDocumentFile file = documentUseCase.get(id, documentId);
         return ResponseEntity.ok()

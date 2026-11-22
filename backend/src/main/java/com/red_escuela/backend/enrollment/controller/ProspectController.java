@@ -9,7 +9,7 @@ import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.service.ProspectService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -43,7 +43,7 @@ public class ProspectController {
 
     @PostMapping("/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.manage_prospects", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StudentDocumentResponse addDocument(
             @PathVariable Long id,
             @RequestParam DocumentType type,
@@ -52,27 +52,27 @@ public class ProspectController {
     }
 
     @GetMapping("/{id}/documents")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_prospects", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<StudentDocumentResponse> listDocuments(@PathVariable Long id) {
         return prospectService.listDocuments(id).stream().map(StudentDocumentResponse::from).toList();
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.manage_prospects", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void saveDraft(@PathVariable Long id, @RequestBody SaveProspectDraftRequest request) {
         prospectService.saveDraft(id, request);
     }
 
     @PostMapping("/{id}/confirm")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.manage_prospects", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ProspectResponse confirm(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
         return ProspectResponse.from(prospectService.confirm(id, request));
     }
 
     @PostMapping("/{id}/send-verification")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.manage_prospects", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void sendVerification(@PathVariable Long id) {
         prospectService.sendVerification(id);
     }

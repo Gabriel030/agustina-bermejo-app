@@ -5,7 +5,7 @@ import com.red_escuela.backend.enrollment.dto.SectionEnrollmentResponse;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,13 +26,13 @@ public class SubjectSectionEnrollmentController {
 
     @PostMapping("/program-enrollments/{id}/section-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.enroll_in_subject_section", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public SectionEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateSectionEnrollmentRequest request) {
         return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.enroll(id, request));
     }
 
     @GetMapping("/program-enrollments/{id}/section-enrollments")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_program_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<SectionEnrollmentResponse> listByEnrollment(@PathVariable Long id) {
         return subjectSectionEnrollmentService.listByEnrollment(id).stream().map(SectionEnrollmentResponse::from).toList();
     }
