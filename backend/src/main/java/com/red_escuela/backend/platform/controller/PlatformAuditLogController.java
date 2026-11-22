@@ -6,7 +6,6 @@ import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditLogFilter;
 import com.red_escuela.backend.shared.audit.AuditLogView;
 import com.red_escuela.backend.shared.pagination.PageResponse;
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,7 +24,6 @@ public class PlatformAuditLogController {
     }
 
     @GetMapping("/platform/audit-log")
-    @RequiresPermission(code = "platform.read_audit_log", legacyRoles = "ROLE_PLATFORM_ADMIN")
     public PageResponse<AuditLogView> listAuditLog(@RequestParam(required = false) List<AuditAction> action,
                                                    @RequestParam(required = false) AuditEntityType entityType,
                                                    @RequestParam(required = false) Long entityId,

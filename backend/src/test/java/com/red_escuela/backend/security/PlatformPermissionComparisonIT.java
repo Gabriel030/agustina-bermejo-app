@@ -30,7 +30,7 @@ class PlatformPermissionComparisonIT extends AuthorizationMatrixSupport {
     @AfterEach
     void restoreDefaultModes() {
         jdbcTemplate.update("delete from permission_module_mode where module = 'platform'");
-        jdbcTemplate.update("delete from role_permission where role = 'ALUMNO' and permission_id in (select id from permission where module = 'platform' and code <> 'platform.read_own_payment_methods')");
+        jdbcTemplate.update("delete from role_permission where role = 'PRECEPTOR' and permission_id in (select id from permission where module = 'platform')");
         cache.invalidate();
     }
 
@@ -73,9 +73,6 @@ class PlatformPermissionComparisonIT extends AuthorizationMatrixSupport {
             assertThat(endpoints.get(row.key())).as(row.key()).isNotNull();
             for (MatrixRole role : MatrixRole.values()) {
                 boolean expectedDenied = row.byRole().get(role) == AccessExpectation.DENY;
-                if ("ENFORCE".equals(mode) && role == MatrixRole.PLATFORM_ADMIN) {
-                    expectedDenied = true;
-                }
                 if (isForbiddenByTheGate(endpoints, row, role) != expectedDenied) {
                     mismatches.add(mode + " " + role + " " + row.key() + " expected denied=" + expectedDenied);
                 }
@@ -106,7 +103,7 @@ class PlatformPermissionComparisonIT extends AuthorizationMatrixSupport {
 
     @Test
     void legacyModeIgnoresTheGridGrantedToAnotherRole() throws Exception {
-        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'ALUMNO', id from permission where module = 'platform' and code <> 'platform.read_own_payment_methods'");
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'PRECEPTOR', id from permission where module = 'platform'");
         cache.invalidate();
         assertDecisionsMatchLegacy("LEGACY");
     }
@@ -116,9 +113,9 @@ class PlatformPermissionComparisonIT extends AuthorizationMatrixSupport {
         setModuleMode("ENFORCE");
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
         AuthorizationMatrixRow listRow = platformRows().stream().filter(row -> row.key().equals("GET /institute-settings")).findFirst().orElseThrow();
-        assertThat(isForbiddenByTheGate(endpoints, listRow, MatrixRole.ALUMNO)).isTrue();
-        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'ALUMNO', id from permission where code = 'platform.read_institute_settings'");
+        assertThat(isForbiddenByTheGate(endpoints, listRow, MatrixRole.PRECEPTOR)).isTrue();
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'PRECEPTOR', id from permission where code = 'platform.read_institute_settings'");
         cache.invalidate();
-        assertThat(isForbiddenByTheGate(endpoints, listRow, MatrixRole.ALUMNO)).isFalse();
+        assertThat(isForbiddenByTheGate(endpoints, listRow, MatrixRole.PRECEPTOR)).isFalse();
     }
 }
