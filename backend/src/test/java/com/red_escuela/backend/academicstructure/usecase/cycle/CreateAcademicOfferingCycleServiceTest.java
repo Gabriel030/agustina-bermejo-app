@@ -19,6 +19,7 @@ import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.exception.HolidaysNotLoadedForYearException;
 import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleDrafter;
+import com.red_escuela.backend.academicstructure.service.CreateAcademicOfferingCycleTransaction;
 import com.red_escuela.backend.academicstructure.service.HolidayYearGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,7 @@ class CreateAcademicOfferingCycleServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CreateAcademicOfferingCycleService(cycleRepository, termRepository, programRepository, courseRepository, cycleDrafter, holidayYearGuard);
+        service = new CreateAcademicOfferingCycleService(new CreateAcademicOfferingCycleTransaction(cycleRepository, termRepository, programRepository, courseRepository, cycleDrafter, holidayYearGuard));
         term = TermFixtures.newTerm();
         term.setId(TERM_ID);
         term.setDescription("2026");
