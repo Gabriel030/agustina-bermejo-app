@@ -5700,6 +5700,256 @@
         "required" : [ "monthlyCollected", "monthlyDebt", "monthlyProjected", "totalDebt" ],
         "type" : "object"
       },
+      "CurriculumBlockingPrerequisiteResponse" : {
+        "properties" : {
+          "requirementType" : {
+            "enum" : [ "APPROVED", "PASSED_COURSEWORK" ],
+            "type" : "string"
+          },
+          "standing" : {
+            "enum" : [ "APPROVED", "REGULAR", "NOT_TAKEN", "WAIVED" ],
+            "type" : "string"
+          },
+          "subjectCode" : {
+            "type" : "string"
+          },
+          "subjectId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjectName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "requirementType", "standing", "subjectCode", "subjectId", "subjectName" ],
+        "type" : "object"
+      },
+      "CurriculumCorequisiteResponse" : {
+        "properties" : {
+          "state" : {
+            "enum" : [ "APPROVED", "IN_PROGRESS", "REGULAR_PENDING_FINAL", "FAILED", "AVAILABLE", "BLOCKED" ],
+            "type" : "string"
+          },
+          "subjectCode" : {
+            "type" : "string"
+          },
+          "subjectId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjectName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "state", "subjectCode", "subjectId", "subjectName" ],
+        "type" : "object"
+      },
+      "CurriculumElectiveGroupResponse" : {
+        "properties" : {
+          "approvedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "electiveGroupId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "fulfilled" : {
+            "type" : "boolean"
+          },
+          "maxAllowed" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "minRequired" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "approvedCount", "electiveGroupId", "fulfilled", "maxAllowed", "minRequired", "name" ],
+        "type" : "object"
+      },
+      "CurriculumProgressResponse" : {
+        "properties" : {
+          "programEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "programName" : {
+            "type" : "string"
+          },
+          "subjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumSubjectResponse"
+            },
+            "type" : "array"
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/CurriculumSummaryResponse"
+          },
+          "warnings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumWarningResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "programEnrollmentId", "programName", "subjects", "summary", "warnings" ],
+        "type" : "object"
+      },
+      "CurriculumStateCountsResponse" : {
+        "properties" : {
+          "approved" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "available" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "blocked" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "inProgress" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "regularPendingFinal" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "approved", "available", "blocked", "failed", "inProgress", "regularPendingFinal" ],
+        "type" : "object"
+      },
+      "CurriculumSubjectResponse" : {
+        "properties" : {
+          "attempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "blockedBy" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumBlockingPrerequisiteResponse"
+            },
+            "type" : "array"
+          },
+          "category" : {
+            "enum" : [ "MANDATORY", "ADDITIONAL_MANDATORY", "ELECTIVE" ],
+            "type" : "string"
+          },
+          "corequisites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumCorequisiteResponse"
+            },
+            "type" : "array"
+          },
+          "credits" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "curricularTerm" : {
+            "enum" : [ "FIRST", "SECOND", "ANNUAL", null ],
+            "type" : [ "string", "null" ]
+          },
+          "curricularYear" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "electiveGroupId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "finalScore" : {
+            "type" : [ "number", "null" ]
+          },
+          "programSubjectId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "state" : {
+            "enum" : [ "APPROVED", "IN_PROGRESS", "REGULAR_PENDING_FINAL", "FAILED", "AVAILABLE", "BLOCKED" ],
+            "type" : "string"
+          },
+          "subjectCode" : {
+            "type" : "string"
+          },
+          "subjectId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjectName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "attempts", "blockedBy", "category", "corequisites", "credits", "curricularTerm", "curricularYear", "electiveGroupId", "finalScore", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
+        "type" : "object"
+      },
+      "CurriculumSummaryResponse" : {
+        "properties" : {
+          "accumulatedCredits" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "completionPercent" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "counts" : {
+            "$ref" : "#/components/schemas/CurriculumStateCountsResponse"
+          },
+          "electiveGroups" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumElectiveGroupResponse"
+            },
+            "type" : "array"
+          },
+          "mandatoryApproved" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "mandatoryTotal" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "remainingCredits" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "requiredCredits" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "accumulatedCredits", "completionPercent", "counts", "electiveGroups", "mandatoryApproved", "mandatoryTotal", "remainingCredits", "requiredCredits" ],
+        "type" : "object"
+      },
+      "CurriculumWarningResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "message" ],
+        "type" : "object"
+      },
       "CycleConflictsResponse" : {
         "properties" : {
           "conflicts" : {
@@ -64588,6 +64838,133 @@
         "tags" : [ "me-enrollment-controller" ]
       }
     },
+    "/me/program-enrollments/{id}/progress/subjects" : {
+      "get" : {
+        "operationId" : "CurriculumProgress_myCurriculumProgress",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CurriculumProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "curriculum-progress-controller" ]
+      }
+    },
     "/me/refund-eligibility" : {
       "get" : {
         "operationId" : "RefundPreview_describeOwnRefundEligibility",
@@ -77085,6 +77462,133 @@
           }
         },
         "tags" : [ "program-enrollment-controller" ]
+      }
+    },
+    "/program-enrollments/{id}/progress/subjects" : {
+      "get" : {
+        "operationId" : "CurriculumProgress_getCurriculumProgress",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CurriculumProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "curriculum-progress-controller" ]
       }
     },
     "/program-enrollments/{id}/section-enrollments" : {

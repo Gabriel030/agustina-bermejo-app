@@ -33,6 +33,14 @@ public interface DirectorApprovalRequestRepository extends JpaRepository<Directo
             @Param("programEnrollmentIds") Collection<Long> programEnrollmentIds, @Param("subjectId") Long subjectId,
             @Param("type") ExceptionType type, @Param("status") DirectorApprovalRequestStatus status);
 
+    @Query("""
+            select r.subject.id from DirectorApprovalRequest r
+            where r.programEnrollment.id = :programEnrollmentId and r.type = :type and r.status = :status
+            """)
+    List<Long> findSubjectIdsWithRequest(
+            @Param("programEnrollmentId") Long programEnrollmentId,
+            @Param("type") ExceptionType type, @Param("status") DirectorApprovalRequestStatus status);
+
     default boolean hasApproved(Long programEnrollmentId, Long subjectId, ExceptionType type) {
         return existsByProgramEnrollmentIdAndSubjectIdAndTypeAndStatus(
                 programEnrollmentId, subjectId, type, DirectorApprovalRequestStatus.APPROVED);
