@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { QueryClientContext } from '@tanstack/react-query';
-import { apiFetch, setAccessToken, setOfflineSessionMode, setSessionExpiredHandler } from '@/api/client';
+import { apiFetch, resetCircuits, setAccessToken, setOfflineSessionMode, setSessionExpiredHandler } from '@/api/client';
 import { clearSessionHint, hasSessionHint, markSessionActive, readLegacyRefreshToken, sessionRefreshRequest } from '@/api/sessionHint';
 import { myModulesQuery } from '@/hooks/useMyModules';
 import { pendingLegalAcceptancesQuery } from '@/features/identity/hooks/useLegal';
@@ -30,6 +30,7 @@ async function loadStoredSession(onTokensReady) {
   const tokens = await apiFetch('/auth/refresh', sessionRefreshRequest());
   setAccessToken(tokens.accessToken);
   markSessionActive();
+  setOfflineSessionMode(false);
   onTokensReady?.();
   return apiFetch('/me');
 }
@@ -116,6 +117,11 @@ export function AuthProvider({ children }) {
     }
   }, [queryClient, expireSession, sessionPending, prefetchBootstrapQueries]);
 
+  const resumeRestore = useCallback(() => {
+    resetCircuits();
+    return attemptRestore();
+  }, [attemptRestore]);
+
   useEffect(() => {
     if (!hasSessionHint()) {
       setCargando(false);
@@ -136,13 +142,13 @@ export function AuthProvider({ children }) {
     const retryWhenVisible = () => {
       if (document.visibilityState === 'visible') attemptRestore();
     };
-    window.addEventListener('online', attemptRestore);
+    window.addEventListener('online', resumeRestore);
     document.addEventListener('visibilitychange', retryWhenVisible);
     return () => {
-      window.removeEventListener('online', attemptRestore);
+      window.removeEventListener('online', resumeRestore);
       document.removeEventListener('visibilitychange', retryWhenVisible);
     };
-  }, [sessionPending, attemptRestore]);
+  }, [sessionPending, attemptRestore, resumeRestore]);
 
   const login = useCallback(async (username, password) => {
     const tokens = await apiFetch('/auth/login', {
@@ -214,8 +220,8 @@ export function AuthProvider({ children }) {
   const shownUser = usuario ?? (sessionPending ? offlineProfile : null);
 
   const value = useMemo(
-    () => ({ usuario: shownUser, roles: shownUser?.roles ?? [], offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionExpired, sessionPending, retrySession: attemptRestore }),
-    [shownUser, offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionExpired, sessionPending, attemptRestore],
+    () => ({ usuario: shownUser, roles: shownUser?.roles ?? [], offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionExpired, sessionPending, retrySession: resumeRestore }),
+    [shownUser, offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionExpired, sessionPending, resumeRestore],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
