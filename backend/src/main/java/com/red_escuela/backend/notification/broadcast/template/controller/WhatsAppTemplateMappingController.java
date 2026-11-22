@@ -1,11 +1,11 @@
 package com.red_escuela.backend.notification.broadcast.template.controller;
 
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.notification.broadcast.template.dto.WhatsAppTemplateMappingRequest;
 import com.red_escuela.backend.notification.broadcast.template.dto.WhatsAppTemplateMappingResponse;
 import com.red_escuela.backend.notification.broadcast.template.usecase.CreateWhatsAppTemplateMappingUseCase;
 import com.red_escuela.backend.notification.broadcast.template.usecase.ListWhatsAppTemplateMappingsUseCase;
 import com.red_escuela.backend.notification.broadcast.template.usecase.UpdateWhatsAppTemplateMappingUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;

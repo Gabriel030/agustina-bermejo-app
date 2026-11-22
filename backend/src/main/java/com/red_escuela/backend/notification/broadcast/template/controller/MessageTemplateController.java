@@ -1,6 +1,5 @@
 package com.red_escuela.backend.notification.broadcast.template.controller;
 
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.template.dto.MessageTemplateRequest;
@@ -13,6 +12,7 @@ import com.red_escuela.backend.notification.broadcast.template.usecase.ListMessa
 import com.red_escuela.backend.notification.broadcast.template.usecase.RenderTemplatePreviewUseCase;
 import com.red_escuela.backend.notification.broadcast.template.usecase.UpdateMessageTemplateCommand;
 import com.red_escuela.backend.notification.broadcast.template.usecase.UpdateMessageTemplateUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;

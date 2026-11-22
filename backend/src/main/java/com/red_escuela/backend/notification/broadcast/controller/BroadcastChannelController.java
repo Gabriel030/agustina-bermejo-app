@@ -1,8 +1,8 @@
 package com.red_escuela.backend.notification.broadcast.controller;
 
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.notification.broadcast.dto.BroadcastChannelEntry;
 import com.red_escuela.backend.notification.broadcast.usecase.channel.ListBroadcastChannelsUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

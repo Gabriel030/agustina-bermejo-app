@@ -1,8 +1,8 @@
 package com.red_escuela.backend.notification.delivery.controller;
 
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.notification.delivery.dto.SimulatedEmailPageResponse;
 import com.red_escuela.backend.notification.delivery.usecase.ListSimulatedEmailsUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

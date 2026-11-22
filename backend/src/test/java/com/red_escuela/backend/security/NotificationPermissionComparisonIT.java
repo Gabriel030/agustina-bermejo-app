@@ -116,4 +116,15 @@ class NotificationPermissionComparisonIT extends AuthorizationMatrixSupport {
         cache.invalidate();
         assertThat(isForbiddenByTheGate(endpoints, listRow, MatrixRole.ALUMNO)).isFalse();
     }
+
+    @Test
+    void enforceModeLetsADelegatedRoleReadTheCollectionReminderMetrics() throws Exception {
+        setModuleMode("ENFORCE");
+        Map<String, MappedEndpoint> endpoints = endpointsByKey();
+        AuthorizationMatrixRow metricsRow = notificationRows().stream().filter(row -> row.key().equals("GET /notification-metrics/collection-reminders")).findFirst().orElseThrow();
+        assertThat(isForbiddenByTheGate(endpoints, metricsRow, MatrixRole.ALUMNO)).isTrue();
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'ALUMNO', id from permission where code = 'notification.read_collection_reminder_metrics'");
+        cache.invalidate();
+        assertThat(isForbiddenByTheGate(endpoints, metricsRow, MatrixRole.ALUMNO)).isFalse();
+    }
 }

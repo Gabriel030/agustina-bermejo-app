@@ -1,8 +1,8 @@
 package com.red_escuela.backend.notification.reporting.controller;
 
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.notification.reporting.dto.CollectionReminderMetricResponse;
 import com.red_escuela.backend.notification.reporting.usecase.GetCollectionReminderMetricUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
