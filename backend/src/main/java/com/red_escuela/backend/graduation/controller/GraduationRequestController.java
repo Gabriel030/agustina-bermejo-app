@@ -13,7 +13,7 @@ import com.red_escuela.backend.graduation.dto.GraduationDebtSummaryResponse;
 import com.red_escuela.backend.graduation.usecase.request.GetGraduationRequestDebtSummaryUseCase;
 import com.red_escuela.backend.graduation.usecase.request.VerifyGraduationRequestDebtUseCase;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,45 +52,45 @@ public class GraduationRequestController {
     }
 
     @PostMapping("/graduation-requests/{id}/verify-debt")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "graduation.verify_debt", legacyRoles = "ROLE_ADMINISTRATIVO")
     public GraduationRequestResponse verifyDebt(@PathVariable Long id) {
         return GraduationRequestResponse.from(verifyGraduationRequestDebtUseCase.verify(id));
     }
 
     @GetMapping("/graduation-requests/{id}/debt-summary")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "graduation.read_debt_summary", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public GraduationDebtSummaryResponse debtSummary(@PathVariable Long id) {
         return getGraduationRequestDebtSummaryUseCase.get(id);
     }
 
     @PostMapping("/graduation-requests/{id}/approve")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "graduation.approve_request", legacyRoles = "ROLE_DIRECTOR")
     public GraduationRequestResponse approve(@PathVariable Long id) {
         return GraduationRequestResponse.from(approveGraduationRequestUseCase.approve(id));
     }
 
     @PostMapping("/graduation-requests/{id}/reject")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "graduation.reject_request", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public GraduationRequestResponse reject(@PathVariable Long id, @Valid @RequestBody RejectGraduationRequestRequest request) {
         return GraduationRequestResponse.from(
                 rejectGraduationRequestUseCase.reject(new RejectGraduationRequestCommand(id, request.motivo())));
     }
 
     @GetMapping("/program-enrollments/{id}/graduation-requests")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "graduation.read_requests", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<GraduationRequestResponse> listByProgramEnrollment(@PathVariable Long id) {
         return listGraduationRequestsByProgramEnrollmentUseCase.list(id).stream()
                 .map(GraduationRequestResponse::from).toList();
     }
 
     @GetMapping("/graduation-requests")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "graduation.read_requests", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<GraduationRequestResponse> listByStatus(@RequestParam GraduationRequestStatus status) {
         return listGraduationRequestsByStatusUseCase.list(status).stream().map(GraduationRequestResponse::from).toList();
     }
 
     @GetMapping("/graduation-requests/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "graduation.read_requests", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public GraduationRequestResponse get(@PathVariable Long id) {
         return GraduationRequestResponse.from(getGraduationRequestUseCase.get(id));
     }
