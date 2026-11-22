@@ -340,7 +340,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
         <div className="font-heading text-xl font-bold text-ink">Solicitud enviada</div>
         <div className="max-w-[420px] text-size-13-5 text-ink-soft">
           {tipo === 'carrera'
-            ? `Tu solicitud para ${target.name} quedó en revisión. ${billingEnabled ? `No se te cobró nada. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso${formatMoney(montoAPagar) ? ` (${formatMoney(montoAPagar)})` : ''} y vas a tener un plazo para pagarla: recién con ese pago queda confirmada tu inscripción. ` : ''}Te avisamos cuando haya novedades.`
+            ? `Tu solicitud para ${target.name} quedó en revisión${billingEnabled ? ` y no se te cobró nada. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso${formatMoney(montoAPagar) ? ` (${formatMoney(montoAPagar)})` : ''} y vas a tener un plazo para pagarla: recién con ese pago queda confirmada tu inscripción.` : '.'} Te avisamos cuando haya novedades.`
             : state.estadoInscripcion === 'WAITLISTED'
               ? 'Tu comprobante queda en revisión. El curso no tiene cupos disponibles, así que quedaste en lista de espera: te avisamos si se libera un lugar.'
               : cursoLleno
