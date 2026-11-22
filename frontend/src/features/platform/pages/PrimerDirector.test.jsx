@@ -63,7 +63,7 @@ describe('PrimerDirector', () => {
     expect(screen.getByText('Ingresá el apellido')).toBeInTheDocument();
     expect(screen.getByText('Ingresá un email válido')).toBeInTheDocument();
     expect(screen.getByText('El motivo necesita al menos 5 caracteres')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('rejectsAReasonLongerThan500Characters', async () => {
@@ -76,7 +76,7 @@ describe('PrimerDirector', () => {
     await user.click(screen.getByRole('button', { name: 'Crear Director' }));
 
     expect(screen.getByText('El motivo admite hasta 500 caracteres')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('confirmsInOneStepSendsTheRequestWithAnIdempotencyKeyAndShowsTheSuccess', async () => {
@@ -95,7 +95,7 @@ describe('PrimerDirector', () => {
     await fillForm(user);
 
     await user.click(screen.getByRole('button', { name: 'Crear Director' }));
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('alertdialog');
     expect(dialog).toHaveTextContent('Instituto Nuevo Horizonte');
     expect(dialog).toHaveTextContent('Carolina Ledesma');
     expect(dialog).toHaveTextContent('carolina.ledesma@nuevohorizonte.edu.ar');
@@ -130,7 +130,7 @@ describe('PrimerDirector', () => {
     await user.click(screen.getByRole('button', { name: 'Crear Director' }));
     await user.click(await screen.findByRole('button', { name: 'Cancelar' }));
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(posts).toBe(0);
   });
 
@@ -355,7 +355,7 @@ describe('PrimerDirector', () => {
     await user.click(screen.getByRole('button', { name: 'Crear Director' }));
 
     expect(screen.getByText('El apellido admite hasta 255 caracteres')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('linksEachErrorToItsInputAndFocusesTheFirstInvalidField', async () => {

@@ -1,14 +1,15 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DOCUMENT_TYPES, documentTypeOf } from '@/lib/documentType';
+import { cn } from '@/lib/utils';
 
-export function DocumentField({ type, number, onTypeChange, onNumberChange, error, disabled, ariaLabel = 'Tipo de documento', onBlur, inputId, errorId, maxLength }) {
+export function DocumentField({ type, number, onTypeChange, onNumberChange, error, disabled, ariaLabel = 'Tipo de documento', onBlur, inputId, errorId, maxLength, controlClassName, errorClassName, errorRole }) {
   const actual = documentTypeOf(type);
   return (
     <div>
       <div className="flex gap-2">
         <Select value={actual.value} onValueChange={onTypeChange} disabled={disabled}>
-          <SelectTrigger aria-label={ariaLabel} className="w-[130px] shrink-0">
+          <SelectTrigger aria-label={ariaLabel} className={cn('w-[130px] shrink-0', controlClassName)}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -28,10 +29,11 @@ export function DocumentField({ type, number, onTypeChange, onNumberChange, erro
           id={inputId}
           aria-describedby={errorId}
           maxLength={maxLength}
+          className={controlClassName}
           disabled={disabled}
         />
       </div>
-      <p id={errorId} className={error ? 'mt-1 text-xs text-danger' : 'mt-1 text-xs text-ink-soft'}>{error ?? actual.hint}</p>
+      <p id={errorId} role={error ? errorRole : undefined} className={error ? cn('mt-1 text-xs text-danger', errorClassName) : 'mt-1 text-xs text-ink-soft'}>{error ?? actual.hint}</p>
     </div>
   );
 }
