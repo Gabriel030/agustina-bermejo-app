@@ -4,10 +4,12 @@ import com.red_escuela.backend.graduation.certificate.entity.GraduationCertifica
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class CertificatePdfDeterminismTest {
 
@@ -24,10 +26,10 @@ class CertificatePdfDeterminismTest {
     }
 
     @Test
-    void sameSnapshotRendersTheSameSha256WithTheApprovalDesign() throws Exception {
+    void sameSnapshotRendersTheSameSha256WithTheApprovalDesign() {
         CertificateTemplateDefinition template = new BuiltInCertificateTemplate().resolve(GraduationCertificateKind.PROGRAM, 1L);
         String first = digest.sha256(renderer.render(template, snapshotOf("PÉREZ, ANA"), code, URL));
-        Thread.sleep(1100);
+        await().pollDelay(Duration.ofMillis(1100)).until(() -> true);
         String second = digest.sha256(renderer.render(template, snapshotOf("PÉREZ, ANA"), code, URL));
         assertThat(second).isEqualTo(first);
     }

@@ -4,6 +4,8 @@ import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificatePdf;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditLogRepository;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.dto.IssueGraduationCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
@@ -61,6 +63,8 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
     private CertificateFileStore fileStore;
     @Autowired
     private CertificateDigest digest;
+    @Autowired
+    private AuditLogRepository auditLogRepository;
 
     private Program program;
     private ProgramEnrollment enrollment;
@@ -165,6 +169,36 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
         GraduationCertificatePdf pdf = pdfUseCase.pdfOf(response.id());
 
         assertThat(pdf.content()).isEqualTo(original);
+    }
+
+    @Test
+    void everyDownloadIsAuditedIncludingRepeatedOnes() {
+        GraduationCertificateResponse response = issue();
+
+        pdfUseCase.pdfOf(response.id());
+        pdfUseCase.pdfOf(response.id());
+
+        assertThat(auditLogRepository.findAll().stream()
+                .filter(entry -> entry.getAction() == AuditAction.DOCUMENT_PDF_DOWNLOADED)
+                .filter(entry -> entry.getEntityId().equals(response.id())))
+                .hasSize(2)
+                .allSatisfy(entry -> assertThat(entry.getReason()).contains("documentType=GRADUATION_CERTIFICATE", "engineVersion=" + CertificatePdfRenderer.ENGINE_VERSION));
+    }
+
+    @Test
+    void hashMismatchIsAuditedWithoutBeingServed() {
+        GraduationCertificateResponse response = issue();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        stored.replacePdf("f".repeat(64), stored.getPdfPath());
+        fileStore.deleteIfRolledBack(stored.getPdfPath());
+
+        assertThatThrownBy(() -> pdfUseCase.pdfOf(response.id())).isInstanceOf(CertificatePdfIntegrityMismatchException.class);
+
+        assertThat(auditLogRepository.findAll().stream()
+                .filter(entry -> entry.getAction() == AuditAction.DOCUMENT_PDF_HASH_MISMATCH)
+                .filter(entry -> entry.getEntityId().equals(response.id())))
+                .hasSize(1)
+                .allSatisfy(entry -> assertThat(entry.getBeforeValue()).isEqualTo("f".repeat(64)));
     }
 
     @Test
