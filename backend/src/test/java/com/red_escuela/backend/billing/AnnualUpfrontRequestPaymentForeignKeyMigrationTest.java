@@ -2,6 +2,9 @@ package com.red_escuela.backend.billing;
 
 import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.testsupport.SlowTest;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
 import org.junit.jupiter.api.Tag;
@@ -26,13 +29,27 @@ class AnnualUpfrontRequestPaymentForeignKeyMigrationTest {
     }
 
     private static void insertRequestWithoutForeignKeyChecks(DriverManagerDataSource dataSource, Long paymentId) {
-        new JdbcTemplate(dataSource).execute((java.sql.Connection connection) -> {
-            try (java.sql.Statement statement = connection.createStatement()) {
+        new JdbcTemplate(dataSource).execute((Connection connection) -> {
+            try (Statement statement = connection.createStatement()) {
                 statement.execute("set session_replication_role = replica");
-                try (java.sql.PreparedStatement insert = connection.prepareStatement(INSERT_REQUEST)) {
+                try (PreparedStatement insert = connection.prepareStatement(INSERT_REQUEST)) {
                     insert.setObject(1, paymentId);
                     insert.executeUpdate();
                 }
+                statement.execute("set session_replication_role = origin");
+            }
+            return null;
+        });
+    }
+
+    private static void insertPaymentWithoutForeignKeyChecks(DriverManagerDataSource dataSource) {
+        new JdbcTemplate(dataSource).execute((Connection connection) -> {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("set session_replication_role = replica");
+                statement.executeUpdate("""
+                        insert into payment (id, student_current_account_id, currency, status, gateway, method_type, amount, amount_currency,
+                            refunded_amount_currency, registered_by_process, registered_at, started_at, method_details)
+                        values (5001, 9100, 'ARS', 'PENDING', 'MANUAL', 'CASH', 100, 'ARS', 'ARS', 'TEST', now(), now(), '{}'::jsonb)""");
                 statement.execute("set session_replication_role = origin");
             }
             return null;
@@ -82,6 +99,20 @@ class AnnualUpfrontRequestPaymentForeignKeyMigrationTest {
 
             assertThat(jdbc.queryForObject("select count(*) from annual_upfront_request where payment_id = 987654", Integer.class)).isEqualTo(1);
             assertThat(validatedForeignKeyCount(jdbc)).isZero();
+        }
+    }
+
+    @Test
+    void requestPointingToAnExistingPaymentPassesTheCheckAndTheForeignKeyIsValidated() {
+        try (MigrationTestDatabase database = MigrationTestDatabase.migratedTo("341")) {
+            JdbcTemplate jdbc = new JdbcTemplate(database);
+            insertPaymentWithoutForeignKeyChecks(database);
+            insertRequestWithoutForeignKeyChecks(database, 5001L);
+
+            migrateTo(database, "371");
+
+            assertThat(validatedForeignKeyCount(jdbc)).isEqualTo(1);
+            assertThat(jdbc.queryForObject("select payment_id from annual_upfront_request", Long.class)).isEqualTo(5001L);
         }
     }
 

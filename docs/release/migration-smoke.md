@@ -137,3 +137,13 @@ docker rm -f smoke-pg
 - `FORWARD_HEADERS_STRATEGY=native` y `TRUSTED_PROXIES_REGEX` exacto a la IP del proxy; sin eso el rate limit de `/public/certificates/{code}` es un único bucket global (ver `docs/context/overload-protection.md`).
 - Desactivar o enmascarar los logs de acceso de Tomcat y del proxy para `/public/certificates/` y `/verificar/` (la URL lleva el código de verificación).
 - La migración V194 regeneró los códigos: los PDFs viejos quedan huérfanos en disco como `<códigoViejo>.pdf` con datos personales; pendiente un runbook o job de limpieza.
+
+## 9. Recuperacion si V371 falla (validacion de annual_upfront_request.payment_id)
+
+V370 aborta con mensaje claro si hay huerfanos; si aun asi V371 falla (por ejemplo, una fila huerfana aparecio entre V370 y V371), la constraint `fk_annual_upfront_request_payment` queda `NOT VALID` y Flyway marca V371 como fallida en `flyway_schema_history`.
+
+Recuperacion:
+
+1. Corregir las filas huerfanas: apuntar `payment_id` al pago correcto o dejarlo en null (no borrar solicitudes). Detectarlas con la consulta [V370] de `docs/release/pre-migration-checks.sql`.
+2. Ejecutar `flyway repair` para quitar el registro fallido de V371.
+3. Reiniciar el backend: Flyway reaplica V371 y valida la constraint.
