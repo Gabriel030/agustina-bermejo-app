@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import com.red_escuela.backend.billing.discount.service.DiscountDefinitionCatalogEntryAssembler;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -22,7 +21,6 @@ public class ListDiscountDefinitionsService implements ListDiscountDefinitionsUs
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<DiscountDefinitionCatalogEntry> listDiscountDefinitions(DiscountDefinitionType type, DiscountDefinitionStatus status, CohortPromotionStatus cohortPromotionStatus) {
         return repository.findCatalog(type, status).stream().map(assembler::assembleCatalogEntry)
                 .filter(entry -> cohortPromotionStatus == null || entry.cohortPromotionStatus().filter(cohortPromotionStatus::equals).isPresent()).toList();

@@ -6,7 +6,6 @@ import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.discount.service.LabeledStudentDiscountReader;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -21,7 +20,6 @@ public class ListStudentDiscountsService implements ListStudentDiscountsUseCase 
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<LabeledStudentDiscount> listStudentDiscounts(EnrollmentReference enrollment) {
         return labeledReader.readLabeled(enrollment.kind() == EnrollmentKind.PROGRAM
                 ? repository.findByProgramEnrollmentIdOrderByIdDesc(enrollment.id())

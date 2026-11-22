@@ -28,7 +28,6 @@ public class ViewAnnualUpfrontTermsService implements ViewAnnualUpfrontTermsUseC
     }
 
     @Override
-    @PreAuthorize("hasRole('DIRECTOR')")
     public List<AnnualUpfrontTermsView> listAnnualUpfrontTermsVersions() {
         return reader.listTermsVersions();
     }

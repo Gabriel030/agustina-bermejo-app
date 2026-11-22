@@ -20,7 +20,6 @@ public class ListStudentPaymentsService implements ListStudentPaymentsUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<StudentPaymentOverview> describePaymentsOfStudent(Long studentId) {
         return overviewService.describePaymentsOfExistingStudent(studentId);
     }
