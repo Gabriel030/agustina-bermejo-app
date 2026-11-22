@@ -12,9 +12,9 @@ import com.red_escuela.backend.notification.broadcast.template.usecase.ListMessa
 import com.red_escuela.backend.notification.broadcast.template.usecase.RenderTemplatePreviewUseCase;
 import com.red_escuela.backend.notification.broadcast.template.usecase.UpdateMessageTemplateCommand;
 import com.red_escuela.backend.notification.broadcast.template.usecase.UpdateMessageTemplateUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +30,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/message-templates")
-@PreAuthorize("hasAnyRole('DIRECTOR','ADMINISTRATIVO')")
 public class MessageTemplateController {
 
     private final ListMessageTemplatesUseCase listMessageTemplates;
@@ -51,30 +50,35 @@ public class MessageTemplateController {
         this.renderTemplatePreview = renderTemplatePreview;
     }
 
+    @RequiresPermission(code = "notification.read_message_templates", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @GetMapping
     public List<MessageTemplateResponse> listMessageTemplates(@RequestParam(required = false) ChannelType channel,
                                                               @RequestParam(required = false) BroadcastCategory category) {
         return listMessageTemplates.listMessageTemplates(channel, category);
     }
 
+    @RequiresPermission(code = "notification.create_message_template", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MessageTemplateResponse createMessageTemplate(@Valid @RequestBody MessageTemplateRequest request) {
         return createMessageTemplate.createMessageTemplate(request);
     }
 
+    @RequiresPermission(code = "notification.update_message_template", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @PutMapping("/{id}")
     public MessageTemplateResponse updateMessageTemplate(@PathVariable Long id,
                                                          @Valid @RequestBody MessageTemplateRequest request) {
         return updateMessageTemplate.updateMessageTemplate(new UpdateMessageTemplateCommand(id, request));
     }
 
+    @RequiresPermission(code = "notification.deactivate_message_template", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deactivateMessageTemplate(@PathVariable Long id) {
         deactivateMessageTemplate.deactivateMessageTemplate(id);
     }
 
+    @RequiresPermission(code = "notification.read_message_templates", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @PostMapping("/render-preview")
     public RenderPreviewResponse renderTemplatePreview(@Valid @RequestBody RenderPreviewRequest request) {
         return renderTemplatePreview.renderTemplatePreview(request);
