@@ -2365,6 +2365,53 @@
         "required" : [ "category", "channel", "confirmedAt", "createdAt", "id", "name", "recipientCounts", "status" ],
         "type" : "object"
       },
+      "CalendarEvent" : {
+        "properties" : {
+          "date" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "endTime" : {
+            "format" : "time-local",
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "link" : {
+            "type" : "string"
+          },
+          "place" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "startTime" : {
+            "format" : "time-local",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "SCHEDULED", "CANCELED", "REGISTERED", "OPEN_FOR_REGISTRATION" ],
+            "type" : "string"
+          },
+          "subjectName" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "CLASS", "HOLIDAY", "EXAM_BOARD", "DUE_DATE", "ASSIGNMENT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "date", "endTime", "id", "link", "place", "reason", "sectionName", "startTime", "status", "subjectName", "title", "type" ],
+        "type" : "object"
+      },
       "CalendarFeedStatusResponse" : {
         "properties" : {
           "active" : {
@@ -9376,6 +9423,25 @@
           }
         },
         "required" : [ "body", "category", "createdAt", "id", "readAt", "subjectName", "teacherName", "title", "updatedAt", "urgent" ],
+        "type" : "object"
+      },
+      "MyCalendarResponse" : {
+        "properties" : {
+          "events" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CalendarEvent"
+            },
+            "type" : "array"
+          },
+          "generatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "hasActiveEnrollments" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "events", "generatedAt", "hasActiveEnrollments" ],
         "type" : "object"
       },
       "MyCourseEnrollmentDetailResponse" : {
@@ -53679,6 +53745,141 @@
           }
         },
         "tags" : [ "bank-transfer-receipt-submission-controller" ]
+      }
+    },
+    "/me/calendar" : {
+      "get" : {
+        "operationId" : "MeCalendarFeed_myCalendar",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MyCalendarResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-calendar-feed-controller" ]
       }
     },
     "/me/calendar/export.ics" : {
