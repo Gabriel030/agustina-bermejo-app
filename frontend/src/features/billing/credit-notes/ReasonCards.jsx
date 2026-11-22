@@ -26,7 +26,7 @@ export function ReasonCards({ labelledBy, options, value, onChange }) {
             tabIndex={index === selectedIndex ? 0 : -1}
             onClick={() => onChange(option.value)}
             className={cn(
-              'flex flex-col gap-0.5 rounded-2xl border px-4 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+              'flex flex-col gap-0.5 rounded-2xl border px-4 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring',
               checked ? 'border-brand bg-accent-soft' : 'border-border bg-surface hover:bg-neutral-bg/60',
             )}
           >
