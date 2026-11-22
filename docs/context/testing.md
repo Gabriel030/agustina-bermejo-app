@@ -286,6 +286,19 @@ sistema (`backend/src/test/.../testsupport/system/SystemTestApplication`, con
 (login y ruteo por rol, sesión) y `@flow` (flujos de dinero). Corre solo en local, nunca
 en Actions.
 
+### Matriz offline de la PWA
+
+Cada estado de la PWA tiene al menos un test e2e o unitario; la tabla es la fuente y `frontend/src/pwa/offlineMatrix.test.js` falla si una referencia deja de existir. Los e2e (`e2e/specs/offline/`, config `e2e/playwright.offline.config.js`) usan Chromium con service worker real contra el build de producción y la API mockeada con `page.route`: no necesitan backend ni Docker. Son lentos (build + varios segundos por caso), así que **no corren en cada PR**: corren en el job `pwa-offline-e2e` del workflow nocturno (`nightly-tests.yml`) y a mano con `cd e2e && npm run test:offline` (`E2E_CHROMIUM_PATH` apunta a un Chromium ya instalado si la versión de Playwright no coincide).
+
+| Estado | Qué se verifica | Tests |
+|---|---|---|
+| Online | Sin avisos de conexión ni de versión, pantalla sana | `e2e/specs/offline/pwa-offline-matrix.spec.js` › `onlineSessionShowsNoOfflineBanner`; `frontend/src/pwa/SystemBar.test.jsx` › `keepsAnEmptyPoliteStatusRegionInTheDomWhileOnline` |
+| Offline | Aviso, shell servida por el service worker en arranque en frío, perfil guardado, datos cifrados | `e2e/specs/offline/pwa-offline-matrix.spec.js` › `losingTheConnectionShowsTheOfflineBannerAndKeepsTheShell`; `e2e/specs/offline/pwa-offline-matrix.spec.js` › `coldStartOfflineServesTheShellFromTheServiceWorker`; `frontend/src/pwa/SystemBar.test.jsx` › `showsTheOfflineMessageOnlyWhileOffline`; `frontend/src/context/AuthContext.test.jsx` › `storedProfileIsExposedWhilePendingAndDoesNotEnableAuthenticatedCalls`; `frontend/src/api/offlinePersistence.test.js` › `rawIndexedDbValuesContainNoPlaintextAndNoBase64` |
+| Red lenta | El login termina con respuestas lentas; reintentos y circuito abierto | `e2e/specs/offline/pwa-offline-matrix.spec.js` › `slowNetworkStillCompletesTheLogin`; `frontend/src/api/client.retry.test.jsx` › `retries network errors and reports a clear message at the end`; `frontend/src/api/client.retry.test.jsx` › `opens the circuit after repeated transient failures and fails fast with a clear message` |
+| Reanudación | Vuelve la conexión: se quita el aviso y se restaura la sesión; chequeo de versión al volver al primer plano | `e2e/specs/offline/pwa-offline-matrix.spec.js` › `resumingTheConnectionClearsTheOfflineBannerAndRestoresTheSession`; `frontend/src/pwa/useOnlineStatus.test.jsx` › `reflectsOnlineAndOfflineEvents`; `frontend/src/context/AuthContext.test.jsx` › `realProfileReplacesTheStoredOneWhenTheNetworkReturns`; `frontend/src/pwa/updateChecks.test.js` › `checksWhenTheAppReturnsToTheForeground` |
+| Versión nueva | Se ofrece la actualización, no se activa sola y recarga al aplicarla | `e2e/specs/offline/pwa-offline-matrix.spec.js` › `aNewWorkerVersionOffersTheUpdateAndReloadsWhenApplied`; `frontend/src/pwa/registerServiceWorker.test.js` › `doesNotActivateTheWaitingWorkerUntilTheUserApplies`; `frontend/src/pwa/registerServiceWorker.test.js` › `reloadsOnlyAfterAnAppliedUpdateTakesControl`; `frontend/src/pwa/SystemBar.test.jsx` › `offersTheUpdateAndAppliesItOnClick` |
+| Sesión vencida estando offline | Offline no cierra la sesión; al volver con el refresh rechazado se purga y se va al login | `e2e/specs/offline/pwa-offline-matrix.spec.js` › `anExpiredSessionDiscoveredAfterBeingOfflineSendsTheUserToLogin`; `frontend/src/context/AuthContext.test.jsx` › `rejectedRefreshPurgesTheStoredProfile`; `frontend/src/routes/AppRouter.test.jsx` › `showsTheOfflineStateInsteadOfLoginWhenTheStoredSessionCannotBeRefreshed` |
+
 ## QA de contrato HTTP — dos herramientas, dos propósitos distintos
 
 Los tests de JUnit/Vitest verifican que el CÓDIGO se comporta como el código
