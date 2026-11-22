@@ -23,6 +23,6 @@ public class AnnouncementViewer {
     }
 
     public Long currentPersonId() {
-        return currentActorFinder.currentPerson().getId();
+        return currentActorFinder.currentPersonId();
     }
 }

@@ -46,7 +46,7 @@ function MenuSwitcher({ choices, activeRole }) {
         <button
           type="button"
           aria-label={`Rol activo: ${roleLabel(activeRole)}. Cambiar de rol`}
-          className="mt-1 inline-flex min-h-8 items-center gap-1.5 rounded-control border border-border px-2.5 text-size-13 font-semibold text-ink-soft transition-colors hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="mt-1 inline-flex min-h-8 items-center gap-1.5 rounded-control border border-border px-2.5 text-size-13 font-semibold text-ink-soft transition-colors hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
         >
           <span>{roleLabel(activeRole)}</span>
           <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />

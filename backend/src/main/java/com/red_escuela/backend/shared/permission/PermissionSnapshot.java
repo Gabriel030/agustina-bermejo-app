@@ -6,11 +6,10 @@ import java.util.Set;
 public record PermissionSnapshot(
         Map<String, Set<String>> permissionsByRole,
         Map<String, PermissionMode> modeByRoleAndModule,
-        Set<String> fixedToDirector,
         Set<String> allCodes) {
 
     public static final String DIRECTOR_ROLE = "DIRECTOR";
-    public static final PermissionSnapshot EMPTY = new PermissionSnapshot(Map.of(), Map.of(), Set.of(), Set.of());
+    public static final PermissionSnapshot EMPTY = new PermissionSnapshot(Map.of(), Map.of(), Set.of());
 
     public static String modeKey(String role, String module) {
         return role + "|" + module;
@@ -23,9 +22,6 @@ public record PermissionSnapshot(
     public boolean grants(String role, String permission) {
         if (DIRECTOR_ROLE.equals(role)) {
             return allCodes.contains(permission);
-        }
-        if (fixedToDirector.contains(permission)) {
-            return false;
         }
         return permissionsByRole.getOrDefault(role, Set.of()).contains(permission);
     }

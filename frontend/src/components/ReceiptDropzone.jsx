@@ -50,7 +50,7 @@ export function ReceiptDropzone({
       ) : (
         <label
           className={cn(
-            'flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors focus-within:ring-2 focus-within:ring-ring/50 hover:border-brand/60',
+            'flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors focus-within:ring-2 focus-within:ring-ring hover:border-brand/60',
             error ? 'border-danger' : 'border-border',
           )}
         >

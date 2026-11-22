@@ -51,6 +51,9 @@ const MODULE_LABELS = {
   graduation: 'Egreso',
   identity: 'Personas y accesos',
   notification: 'Notificaciones',
+  dataimport: 'Importación de datos',
+  audit: 'Auditoría',
+  certificate: 'Certificados',
 };
 
 export function moduleLabel(module) {

@@ -21,3 +21,6 @@ export function profileFixture(overrides = {}) {
     ...overrides,
   };
 }
+
+export const subdirectorProfileFixture = (overrides = {}) =>
+  profileFixture({ id: 9, nombre: 'Sofía', apellido: 'Subdirectora', email: 'sofia@demo.test', roles: ['SUBDIRECTOR'], ...overrides });

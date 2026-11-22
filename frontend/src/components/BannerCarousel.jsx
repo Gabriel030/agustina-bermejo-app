@@ -43,9 +43,9 @@ export function BannerCarousel() {
       onMouseEnter={() => setPausado(true)}
       onMouseLeave={() => setPausado(false)}
     >
-      <div className="text-size-11 font-bold uppercase tracking-wide text-on-accent/75">Novedad institucional</div>
+      <div className="text-size-11 font-bold uppercase tracking-wide text-on-accent">Novedad institucional</div>
       <div className="mt-1 font-heading text-lg font-bold">{slide.titulo}</div>
-      <div className="mt-1 text-size-13 text-on-accent/85">{slide.texto}</div>
+      <div className="mt-1 text-size-13 text-on-accent">{slide.texto}</div>
 
       <div className="mt-4 flex items-center gap-1.5">
         {SLIDES.map((_, i) => (

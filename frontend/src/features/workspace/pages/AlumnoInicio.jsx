@@ -17,6 +17,7 @@ import { ScheduleCard } from '@/features/schedule';
 import { StaleStamp } from '@/components/offline/StaleStamp';
 import { CATEGORIA_AVISO_LABEL, parsearAvisoId } from '@/lib/avisos';
 import { describirTiempo } from '@/lib/notificaciones';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'REGULAR']);
 
@@ -181,9 +182,8 @@ export function AlumnoInicio() {
   useEffect(() => {
     const aviso = avisoResaltadoRef.current;
     if (!avisoUrlId || !avisoUrlEncontrado || !aviso) return;
-    const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     aviso.focus({ preventScroll: true });
-    aviso.scrollIntoView({ behavior: sinMovimiento ? 'auto' : 'smooth', block: 'center' });
+    aviso.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'center' });
   }, [avisoUrlId, avisoUrlEncontrado]);
 
   function alternarListaCompleta() {

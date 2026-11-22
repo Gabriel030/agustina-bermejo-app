@@ -4,11 +4,12 @@ import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UNKNOWN_OUTCOME_CODE } from '../idempotency';
 import { FULL_DEBT_CODE, RECEIPT_REVIEW_CODES, STALE_INVOICE_CODES } from './creditNotes';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 export function CreditNoteViolation({ error, receiptsTo, onReload, onCancelInstead, onRetry, retrying }) {
   const ref = useRef(null);
   useEffect(() => {
-    if (error) ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (error) ref.current?.scrollIntoView({ block: 'center', behavior: smoothScrollBehavior() });
   }, [error]);
   if (!error) return null;
   const reviewReceipts = RECEIPT_REVIEW_CODES.includes(error.code);

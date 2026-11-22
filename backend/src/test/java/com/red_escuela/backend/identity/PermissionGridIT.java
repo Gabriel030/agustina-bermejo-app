@@ -70,6 +70,8 @@ class PermissionGridIT extends AbstractIntegrationTest {
     void restoreGrid() {
         jdbcTemplate.update("delete from permission_discrepancy_counter");
         jdbcTemplate.update("delete from permission_module_mode");
+        jdbcTemplate.update("delete from role_permission where role = 'ADMINISTRATIVO' and permission_id in (select id from permission where code in ('audit.read', 'announcement.create'))");
+        jdbcTemplate.update("delete from audit_log where action in ('PERMISSION_GRID_CHANGED', 'PERMISSION_SENSITIVE_CHANGED')");
         jdbcTemplate.update("delete from role_permission where permission_id in (select id from permission where code = 'announcement.fixed_probe')");
         jdbcTemplate.update("delete from permission where code = 'announcement.fixed_probe'");
         jdbcTemplate.update("delete from role_permission where role = 'DOCENTE' and permission_id = (select id from permission where code = 'announcement.create')");
@@ -136,31 +138,111 @@ class PermissionGridIT extends AbstractIntegrationTest {
         assertThat(callCreateAs("DIRECTOR")).isEqualTo(200);
     }
 
-    @Test
-    void fixedPermissionCannotBeEditedAndGridGrantsToOtherRolesAreIgnored() throws Exception {
-        jdbcTemplate.update("insert into permission (code, module, description, fixed_to_director) values ('announcement.fixed_probe', 'announcement', 'Permiso fijo de prueba', true)");
-        assertThat(updateGrid(body("DOCENTE", true, "announcement.fixed_probe", "Delegar permiso fijo"))).isEqualTo(403);
-        mockMvc.perform(put("/permissions/grid").with(user("director-it").roles("DIRECTOR")).contentType(APPLICATION_JSON)
-                        .content(body("DOCENTE", true, "announcement.fixed_probe", "Delegar permiso fijo")))
-                .andExpect(jsonPath("$.code").value("PERMISSION_FIXED_TO_DIRECTOR"));
+    private String sensitiveBody(String role, boolean granted, boolean confirmed) {
+        return "{\"reason\":\"Delegar auditoria por ausencia\",\"sensitiveConfirmed\":" + confirmed
+                + ",\"changes\":[{\"role\":\"" + role + "\",\"permissionCode\":\"audit.read\",\"granted\":" + granted + "}]}";
+    }
 
+    private int readAuditLogAs(String role) throws Exception {
+        return mockMvc.perform(get("/audit-log").with(user("7").roles(role))).andReturn().getResponse().getStatus();
+    }
+
+    private void enforceAuditModule() {
+        jdbcTemplate.update("insert into permission_module_mode (role, module, mode) values ('ADMINISTRATIVO', 'audit', 'ENFORCE')");
+        jdbcTemplate.update("insert into permission_module_mode (role, module, mode) values ('DIRECTOR', 'audit', 'ENFORCE')");
+        cache.invalidate();
+    }
+
+    @Test
+    void delegatingSensitiveAuditReadOpensAccessAndRevokingItClosesAgain() throws Exception {
+        enforceAuditModule();
+        assertThat(readAuditLogAs("ADMINISTRATIVO")).isEqualTo(403);
+
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", true, true))).isEqualTo(200);
+        assertThat(readAuditLogAs("ADMINISTRATIVO")).isEqualTo(200);
+        assertThat(readAuditLogAs("DIRECTOR")).isEqualTo(200);
+
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", false, true))).isEqualTo(200);
+        assertThat(readAuditLogAs("ADMINISTRATIVO")).isEqualTo(403);
+        assertThat(readAuditLogAs("DIRECTOR")).isEqualTo(200);
+    }
+
+    @Test
+    void sensitiveChangeWithoutConfirmationIsRejectedAndChangesNothing() throws Exception {
+        enforceAuditModule();
+        mockMvc.perform(put("/permissions/grid").with(user("director-it").roles("DIRECTOR")).contentType(APPLICATION_JSON)
+                        .content(sensitiveBody("ADMINISTRATIVO", true, false)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("SENSITIVE_PERMISSION_CONFIRMATION_REQUIRED"));
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", true, false).replace("\"sensitiveConfirmed\":false,", ""))).isEqualTo(422);
+        assertThat(readAuditLogAs("ADMINISTRATIVO")).isEqualTo(403);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from audit_log where action = 'PERMISSION_SENSITIVE_CHANGED'", Integer.class)).isZero();
+    }
+
+    @Test
+    void revokingSensitivePermissionWithoutConfirmationIsRejectedAndChangesNothing() throws Exception {
+        enforceAuditModule();
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", true, true))).isEqualTo(200);
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", false, false))).isEqualTo(422);
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", false, false).replace("\"sensitiveConfirmed\":false,", ""))).isEqualTo(422);
+        assertThat(readAuditLogAs("ADMINISTRATIVO")).isEqualTo(200);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from audit_log where action = 'PERMISSION_SENSITIVE_CHANGED'", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    void unconfirmedSensitiveChangeRejectsTheWholeRequestIncludingNonSensitiveChanges() throws Exception {
+        String mixed = "{\"reason\":\"Cambio mixto\",\"changes\":[{\"role\":\"PRECEPTOR\",\"permissionCode\":\"announcement.read\",\"granted\":true},"
+                + "{\"role\":\"ADMINISTRATIVO\",\"permissionCode\":\"audit.read\",\"granted\":true}]}";
+        assertThat(updateGrid(mixed)).isEqualTo(422);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from role_permission where role = 'PRECEPTOR' and permission_id = (select id from permission where code = 'announcement.read')", Integer.class)).isZero();
+    }
+
+    @Test
+    void sensitiveChangeIsAuditedAsHighlightedEventWithRoleBeforeAfterAndReason() throws Exception {
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", true, true))).isEqualTo(200);
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", true, true))).isEqualTo(200);
+        assertThat(updateGrid(sensitiveBody("ADMINISTRATIVO", false, true))).isEqualTo(200);
+        List<java.util.Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "select before_value, after_value, reason, actor_role from audit_log where action = 'PERMISSION_SENSITIVE_CHANGED' order by id");
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).get("before_value")).isEqualTo("audit.read:ADMINISTRATIVO:DENIED");
+        assertThat(rows.get(0).get("after_value")).isEqualTo("audit.read:ADMINISTRATIVO:GRANTED");
+        assertThat(rows.get(0).get("reason")).isEqualTo("Delegar auditoria por ausencia");
+        assertThat(rows.get(0).get("actor_role")).isEqualTo("DIRECTOR");
+        assertThat(rows.get(1).get("after_value")).isEqualTo("audit.read:ADMINISTRATIVO:DENIED");
+        assertThat(jdbcTemplate.queryForObject("select count(*) from audit_log where action = 'PERMISSION_GRID_CHANGED'", Integer.class)).isZero();
+    }
+
+    @Test
+    void nonSensitivePermissionStillEditsWithoutConfirmation() throws Exception {
+        assertThat(updateGrid(body("PRECEPTOR", true, "announcement.read", "Sin confirmacion reforzada"))).isEqualTo(200);
+        jdbcTemplate.update("delete from role_permission where role = 'PRECEPTOR' and permission_id = (select id from permission where code = 'announcement.read')");
+        cache.invalidate();
+    }
+
+    @Test
+    void nonDirectorCannotDelegateSensitivePermissions() throws Exception {
+        int status = mockMvc.perform(put("/permissions/grid").with(user("8").roles("ADMINISTRATIVO"))
+                .contentType(APPLICATION_JSON).content(sensitiveBody("ADMINISTRATIVO", true, true))).andReturn().getResponse().getStatus();
+        assertThat(status).isEqualTo(403);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from role_permission where role = 'ADMINISTRATIVO' and permission_id = (select id from permission where code = 'audit.read')", Integer.class)).isZero();
+    }
+
+    @Test
+    void auditReadAndTheDestructiveDataImportPermissionsAreTheSeededSensitiveOnes() throws Exception {
+        assertThat(jdbcTemplate.queryForList("select code from permission where sensitive order by code", String.class)).containsExactly("audit.read", "dataimport.commit", "dataimport.rollback", "dataimport.seal");
+        mockMvc.perform(get("/permissions/catalog").with(user("director-it").roles("DIRECTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.modules[?(@.module=='audit')].permissions[0].sensitive").value(org.hamcrest.Matchers.hasItem(true)))
+                .andExpect(jsonPath("$.modules[?(@.module=='audit')].permissions[0].fixedToDirector").value(org.hamcrest.Matchers.hasItem(false)));
+    }
+
+    @Test
+    void gridGrantsOfPreviouslyFixedPermissionsAreHonoredByTheGate() throws Exception {
+        jdbcTemplate.update("insert into permission (code, module, description, fixed_to_director) values ('announcement.fixed_probe', 'announcement', 'Permiso de prueba', true)");
         jdbcTemplate.update("insert into role_permission (role, permission_id) select 'DOCENTE', id from permission where code = 'announcement.fixed_probe'");
         setMode("DOCENTE", "ENFORCE");
-        setModeFor("DIRECTOR", "ENFORCE");
-        assertThat(mockMvc.perform(get("/grid-probe/fixed").with(user("7").roles("DOCENTE"))).andReturn().getResponse().getStatus()).isEqualTo(403);
-        assertThat(mockMvc.perform(get("/grid-probe/fixed").with(user("director-it").roles("DIRECTOR"))).andReturn().getResponse().getStatus()).isEqualTo(200);
-    }
-
-    private void setModeFor(String role, String mode) {
-        setMode(role, mode);
-    }
-
-    @Test
-    void noPermissionIsFixedToTheDirectorUntilMoneyModulesAreSeeded() {
-        List<String> fixed = jdbcTemplate.queryForList("select code from permission where fixed_to_director order by code", String.class);
-        assertThat(fixed).isEmpty();
-        Integer delegated = jdbcTemplate.queryForObject("select count(*) from role_permission rp join permission p on p.id = rp.permission_id where p.fixed_to_director", Integer.class);
-        assertThat(delegated).isZero();
+        assertThat(mockMvc.perform(get("/grid-probe/fixed").with(user("7").roles("DOCENTE"))).andReturn().getResponse().getStatus()).isEqualTo(200);
     }
 
     @Test
@@ -204,7 +286,39 @@ class PermissionGridIT extends AbstractIntegrationTest {
         mockMvc.perform(get("/permissions/grid").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.editable").value(true))
-                .andExpect(jsonPath("$.roles[?(@.role=='DIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(16)))
+                .andExpect(jsonPath("$.roles[?(@.role=='DIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(jdbcTemplate.queryForObject("select count(*) from permission", Integer.class))))
                 .andExpect(jsonPath("$.roles[?(@.role=='ADMINISTRATIVO')].permissionCodes").isNotEmpty());
+    }
+
+    @Test
+    void subdirectorReadsCatalogAndGridAsNonEditableAndCannotWrite() throws Exception {
+        mockMvc.perform(get("/permissions/catalog").with(user("8").roles("SUBDIRECTOR"))).andExpect(status().isOk());
+        mockMvc.perform(get("/permissions/grid").with(user("8").roles("SUBDIRECTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.editable").value(false))
+                .andExpect(jsonPath("$.roles[?(@.role=='SUBDIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(0)))
+                .andExpect(jsonPath("$.modes[?(@.role=='SUBDIRECTOR' && @.module=='audit')].mode").value(org.hamcrest.Matchers.contains("LEGACY")));
+        mockMvc.perform(put("/permissions/grid").with(user("8").roles("SUBDIRECTOR")).contentType(APPLICATION_JSON)
+                .content(body("DOCENTE", true, "announcement.read", "Intento"))).andExpect(status().isForbidden());
+        mockMvc.perform(put("/permissions/modes").with(user("8").roles("SUBDIRECTOR")).contentType(APPLICATION_JSON)
+                .content("{\"reason\":\"x\",\"changes\":[{\"role\":\"DOCENTE\",\"module\":\"announcement\",\"mode\":\"SHADOW\"}]}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/permissions/discrepancies").with(user("8").roles("SUBDIRECTOR"))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void enforceModeLetsExpandedSubdirectorPassOnlyThroughTheAdministrativeGrant() throws Exception {
+        setMode("ADMINISTRATIVO", "ENFORCE");
+        assertThat(callAsAuthorities("ADMINISTRATIVO", "SUBDIRECTOR")).isEqualTo(403);
+
+        assertThat(updateGrid(body("DOCENTE", true, "announcement.create", "Permiso solo para docente"))).isEqualTo(200);
+        assertThat(callAsAuthorities("ADMINISTRATIVO", "SUBDIRECTOR")).isEqualTo(403);
+
+        assertThat(updateGrid(body("ADMINISTRATIVO", true, "announcement.create", "Permiso para administrativo"))).isEqualTo(200);
+        assertThat(callAsAuthorities("ADMINISTRATIVO", "SUBDIRECTOR")).isEqualTo(200);
+    }
+
+    private int callAsAuthorities(String... roles) throws Exception {
+        return mockMvc.perform(get("/grid-probe/create").with(user("8").roles(roles))).andReturn().getResponse().getStatus();
     }
 }

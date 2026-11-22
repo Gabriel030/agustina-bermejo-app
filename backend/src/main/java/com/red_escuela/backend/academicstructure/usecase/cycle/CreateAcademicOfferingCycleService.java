@@ -2,83 +2,24 @@ package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.academicstructure.dto.AcademicOfferingCycleResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest;
-import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
-import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
-import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
-import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
-import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleDrafter;
-import com.red_escuela.backend.academicstructure.service.HolidayYearGuard;
+import com.red_escuela.backend.academicstructure.service.CreateAcademicOfferingCycleTransaction;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.exception.RequestFieldRequiredException;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class CreateAcademicOfferingCycleService implements CreateAcademicOfferingCycleUseCase {
 
-    private final AcademicOfferingCycleRepository cycleRepository;
-    private final TermRepository termRepository;
-    private final ProgramRepository programRepository;
-    private final CourseRepository courseRepository;
-    private final AcademicOfferingCycleDrafter cycleDrafter;
-    private final HolidayYearGuard holidayYearGuard;
+    private final CreateAcademicOfferingCycleTransaction createAcademicOfferingCycleTransaction;
 
-    public CreateAcademicOfferingCycleService(
-            AcademicOfferingCycleRepository cycleRepository,
-            TermRepository termRepository,
-            ProgramRepository programRepository,
-            CourseRepository courseRepository,
-            AcademicOfferingCycleDrafter cycleDrafter,
-            HolidayYearGuard holidayYearGuard
-    ) {
-        this.cycleRepository = cycleRepository;
-        this.termRepository = termRepository;
-        this.programRepository = programRepository;
-        this.courseRepository = courseRepository;
-        this.cycleDrafter = cycleDrafter;
-        this.holidayYearGuard = holidayYearGuard;
+    public CreateAcademicOfferingCycleService(CreateAcademicOfferingCycleTransaction createAcademicOfferingCycleTransaction) {
+        this.createAcademicOfferingCycleTransaction = createAcademicOfferingCycleTransaction;
     }
 
     @Override
-    @Transactional
     public AcademicOfferingCycleResponse create(CreateAcademicOfferingCycleRequest request) {
         if (request.programId() == null && request.courseId() == null) {
             throw new RequestFieldRequiredException("programId o courseId");
         }
-        var term = termRepository.findById(request.termId())
-                .orElseThrow(() -> new TermNotFoundException(request.termId()));
-
-        holidayYearGuard.ensureHolidaysLoadedForTerm(term);
-
-        var cycle = cycleDrafter.draftFor(term);
-
-        if (request.programId() != null) {
-            var program = programRepository.findById(request.programId())
-                    .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
-            var active = cycleRepository.findByProgramIdOrderByCreatedAtDesc(request.programId())
-                    .stream()
-                    .filter(c -> c.getTerm().getId().equals(request.termId()))
-                    .filter(c -> c.getStatus() == AcademicOfferingCycleStatus.DRAFT || c.getStatus() == AcademicOfferingCycleStatus.PENDING_APPROVAL)
-                    .findFirst();
-            if (active.isPresent()) throw new CycleAlreadyInProgressException();
-            cycle.setProgram(program);
-        } else {
-            var course = courseRepository.findById(request.courseId())
-                    .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
-            var active = cycleRepository.findByCourseIdOrderByCreatedAtDesc(request.courseId())
-                    .stream()
-                    .filter(c -> c.getTerm().getId().equals(request.termId()))
-                    .filter(c -> c.getStatus() == AcademicOfferingCycleStatus.DRAFT || c.getStatus() == AcademicOfferingCycleStatus.PENDING_APPROVAL)
-                    .findFirst();
-            if (active.isPresent()) throw new CycleAlreadyInProgressException();
-            cycle.setCourse(course);
-        }
-
-        return AcademicOfferingCycleResponse.from(cycleRepository.save(cycle), 0L);
+        return createAcademicOfferingCycleTransaction.create(request.programId(), request.courseId(), request.termId());
     }
 }

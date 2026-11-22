@@ -22,6 +22,7 @@ import {
   orderedPayableInvoices,
   receiptTrackingRows,
 } from '@/lib/bankTransferReceipt';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 
 const PASOS = [
@@ -333,7 +334,7 @@ export function AlumnoPagarTransferencia() {
   useEffect(() => {
     if (previousStep.current === pasoActual) return;
     previousStep.current = pasoActual;
-    stepperRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    stepperRef.current?.scrollIntoView?.({ block: 'start', behavior: smoothScrollBehavior() });
   }, [pasoActual]);
 
   function irAPaso(paso) {

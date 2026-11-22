@@ -30,4 +30,20 @@ public interface SectionModificationProposalRepository extends JpaRepository<Sec
             and s.classroom.id = :classroomId
             """)
     List<String> findSectionNamesWithPendingProposalIn(@Param("classroomId") Long classroomId);
+
+    @Query("""
+            select distinct p from SectionModificationProposal p
+            join fetch p.subjectSection ss
+            join fetch ss.subject
+            join fetch ss.academicOfferingCycle c
+            left join fetch c.program
+            left join fetch c.course
+            left join fetch p.requestedBy
+            left join fetch p.slots ps
+            left join fetch ps.classroom
+            where p.status = com.red_escuela.backend.academicstructure.entity.SectionModificationStatus.PENDING
+              and c.status = com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.APPROVED
+            order by p.requestedAt asc, p.id asc
+            """)
+    List<SectionModificationProposal> findPendingOfApprovedCyclesOrderByRequestedAt();
 }

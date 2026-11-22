@@ -16,7 +16,7 @@ function LocationProbe() {
   return <div data-testid="search">{location.search}</div>;
 }
 
-function mount(route = '/tray') {
+function mount(route = '/tray', extraProps = {}) {
   return renderWithProviders(
     <>
       <Routes>
@@ -30,6 +30,7 @@ function mount(route = '/tray') {
               renderFila={(item) => <div key={item.id}>{item.name}</div>}
               extraerTextoBusqueda={(item) => item.name}
               extraerFecha={(item) => new Date(item.at)}
+              {...extraProps}
             />
           }
         />
@@ -128,5 +129,64 @@ describe('BandejaTramites — load failure', () => {
     expect(screen.queryByRole('link', { name: /Aprobaciones/ })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Por verificar (2)' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Historial' })).toBeInTheDocument();
+  });
+});
+
+describe('BandejaTramites with a pending status in the URL', () => {
+  it('shows the pending list when the URL asks for PENDING', () => {
+    mount('/tray?status=PENDING', { pendingStatus: 'PENDING' });
+
+    expect(screen.getByRole('tab', { name: 'Pendientes (2)' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByText(/Reciente|Antigua/)).toHaveLength(2);
+  });
+
+  it('ignores an unknown status and keeps the tab from the URL', () => {
+    mount('/tray?status=DESCONOCIDO&tab=historial', { pendingStatus: 'PENDING' });
+
+    expect(screen.getByRole('tab', { name: 'Historial (1)' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Decidida')).toBeInTheDocument();
+  });
+
+  it('writes PENDING to the URL when the user returns to pending, and drops it for history', async () => {
+    const user = userEvent.setup();
+    mount('/tray?status=PENDING', { pendingStatus: 'PENDING' });
+
+    await user.click(screen.getByRole('tab', { name: 'Historial (1)' }));
+    expect(screen.getByTestId('search')).toHaveTextContent('tab=historial');
+    expect(screen.getByTestId('search')).not.toHaveTextContent('status=');
+    expect(screen.getByText('Decidida')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Pendientes (2)' }));
+    expect(screen.getByTestId('search')).toHaveTextContent('status=PENDING');
+    expect(screen.getByTestId('search')).not.toHaveTextContent('tab=historial');
+    expect(screen.getAllByText(/Reciente|Antigua/)).toHaveLength(2);
+  });
+
+  it('prefers the pending status over the history tab in the URL', () => {
+    mount('/tray?tab=historial&status=PENDING', { pendingStatus: 'PENDING' });
+
+    expect(screen.getByRole('tab', { name: 'Pendientes (2)' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('keeps the status when the user searches', async () => {
+    const user = userEvent.setup();
+    mount('/tray?status=PENDING', { pendingStatus: 'PENDING' });
+
+    await user.type(screen.getByPlaceholderText('Buscar por nombre…'), 'Antigua');
+
+    expect(screen.getByTestId('search')).toHaveTextContent('status=PENDING');
+    expect(screen.getByText('Antigua')).toBeInTheDocument();
+  });
+
+  it('leaves the URL untouched when no pending status is configured', async () => {
+    const user = userEvent.setup();
+    mount('/tray?tab=historial&status=PENDING');
+
+    expect(screen.getByRole('tab', { name: 'Historial (1)' })).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('tab', { name: 'Pendientes (2)' }));
+    expect(screen.getByTestId('search')).toHaveTextContent('status=PENDING');
+    expect(screen.getByTestId('search')).not.toHaveTextContent('tab=historial');
+    expect(screen.getAllByText(/Reciente|Antigua/)).toHaveLength(2);
   });
 });

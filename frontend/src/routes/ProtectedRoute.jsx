@@ -29,6 +29,10 @@ export function ProtectedRoute({ rol, children }) {
     return <Navigate to="/login" replace state={loggedOut ? undefined : { from: location, expired: sessionExpired }} />;
   }
 
+  if (rol === 'ADMINISTRATIVO' && !roles.includes(rol) && roles.includes('SUBDIRECTOR')) {
+    return <Navigate to={`${location.pathname.replace(/^\/administrativo/, '/subdirector')}${location.search}${location.hash}`} replace />;
+  }
+
   if (!roles.includes(rol)) {
     if (roles.length && readLastRole(usuario.id) === rol) {
       return <RoleRemovedRedirect userId={usuario.id} removedRole={rol} roles={roles} />;

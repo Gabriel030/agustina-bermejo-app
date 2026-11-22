@@ -27,12 +27,12 @@ import com.red_escuela.backend.dataimport.usecase.UploadImportFileCommand;
 import com.red_escuela.backend.dataimport.usecase.UploadImportFileUseCase;
 import com.red_escuela.backend.dataimport.usecase.ValidateImportBatchUseCase;
 import com.red_escuela.backend.shared.pagination.PageResponse;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -86,25 +86,25 @@ public class DataImportController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.create", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse createBatch(@Valid @RequestBody CreateImportBatchRequest request) {
         return createImportBatchUseCase.create(request.name());
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.read", legacyRoles = "ROLE_DIRECTOR")
     public List<ImportBatchResponse> listBatches() {
         return listImportBatchesUseCase.list();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.read", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse getBatch(@PathVariable Long id) {
         return getImportBatchUseCase.get(id);
     }
 
     @PostMapping(value = "/{id}/files/{entityType}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.upload", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse uploadFile(@PathVariable Long id, @PathVariable ImportEntityType entityType,
             @RequestParam("file") MultipartFile file) {
         try {
@@ -116,58 +116,58 @@ public class DataImportController {
     }
 
     @PostMapping("/{id}/validate")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.validate", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse validateBatch(@PathVariable Long id) {
         return validateImportBatchUseCase.validate(id);
     }
 
     @PostMapping("/{id}/commit")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.commit", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse commitBatch(@PathVariable Long id,
             @Valid @RequestBody(required = false) CommitImportBatchRequest request) {
         return commitImportBatchUseCase.commit(id, request != null && request.onlyValidRowsRequested());
     }
 
     @GetMapping("/{id}/errors")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.read", legacyRoles = "ROLE_DIRECTOR")
     public PageResponse<ImportRowErrorResponse> listErrors(@PathVariable Long id,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
         return listImportRowErrorsUseCase.list(id, page, size);
     }
 
     @PostMapping("/{id}/retry")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.commit", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse retryBatch(@PathVariable Long id) {
         return retryImportBatchUseCase.retry(id);
     }
 
     @PostMapping("/{id}/seal")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.seal", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse sealBatch(@PathVariable Long id, @Valid @RequestBody ConfirmImportActionRequest request) {
         return sealImportBatchUseCase.seal(id, request.confirmation());
     }
 
     @PostMapping("/{id}/rollback")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.rollback", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse rollbackBatch(@PathVariable Long id,
             @Valid @RequestBody ConfirmImportActionRequest request) {
         return rollbackImportBatchUseCase.rollback(id, request.confirmation());
     }
 
     @GetMapping("/{id}/rollback-preview")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.read", legacyRoles = "ROLE_DIRECTOR")
     public ImportRollbackPreviewResponse previewRollback(@PathVariable Long id) {
         return previewImportRollbackUseCase.preview(id);
     }
 
     @GetMapping("/{id}/report.csv")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.download", legacyRoles = "ROLE_DIRECTOR")
     public ResponseEntity<byte[]> downloadReport(@PathVariable Long id) {
         return csv(downloadImportReportUseCase.download(id));
     }
 
     @GetMapping("/templates/{entityType}")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "dataimport.download", legacyRoles = "ROLE_DIRECTOR")
     public ResponseEntity<byte[]> downloadTemplate(@PathVariable ImportEntityType entityType) {
         return csv(downloadImportTemplateUseCase.download(entityType));
     }

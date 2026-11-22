@@ -130,7 +130,3 @@ export function countEventsByType(events, monthKey, subject) {
   });
   return counts;
 }
-
-export function hasOnlyHolidays(events) {
-  return events.every((event) => event.type === 'HOLIDAY');
-}

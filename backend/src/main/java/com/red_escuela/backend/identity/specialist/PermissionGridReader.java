@@ -47,7 +47,7 @@ public class PermissionGridReader {
         Map<String, TreeSet<String>> grantedByRole = new HashMap<>();
         for (RolePermission grant : rolePermissionRepository.findAll()) {
             Permission permission = permissionById.get(grant.getPermissionId());
-            if (permission != null && !permission.isFixedToDirector()) {
+            if (permission != null) {
                 grantedByRole.computeIfAbsent(grant.getRole(), key -> new TreeSet<>()).add(permission.getCode());
             }
         }
