@@ -25,7 +25,7 @@ class PermissionGateCoverageTest {
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "academicrecord", "academicstructure", "billing", "evaluation");
+            "academicrecord", "billing", "evaluation");
 
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
@@ -75,6 +75,41 @@ class PermissionGateCoverageTest {
             "DirectorApprovalRequestController#approve", "DirectorApprovalRequestController#reject");
 
 
+    private static final Set<String> ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE = Set.of(
+            "AcademicOfferingCycleController#list",
+            "AcademicOfferingCycleController#get",
+            "AcademicOfferingCycleController#getSections",
+            "ClassroomController#list",
+            "ClassroomController#availability",
+            "CourseController#list",
+            "CourseController#get",
+            "CourseController#getPricing",
+            "CourseSectionController#listByCourseSubject",
+            "CourseSectionController#get",
+            "CourseSectionController#listInstructors",
+            "CourseSubjectController#listByCourse",
+            "CourseSubjectController#get",
+            "ElectiveGroupController#list",
+            "ElectiveGroupController#get",
+            "ElectiveGroupController#listByProgram",
+            "HolidayController#list",
+            "MeTeachingSectionController#mine",
+            "ProgramController#list",
+            "ProgramController#get",
+            "ProgramController#getPricing",
+            "ProgramSubjectController#listByProgram",
+            "ProgramSubjectController#get",
+            "ProgramSubjectController#listPrerequisites",
+            "ProgramSubjectController#listCorequisites",
+            "ShiftRangeController#list",
+            "SubjectController#list",
+            "SubjectController#get",
+            "SubjectSectionController#listBySubject",
+            "SubjectSectionController#get",
+            "SubjectSectionController#listInstructors",
+            "TermController#list",
+            "TermController#get");
+
     private static final Set<String> CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS = Set.of(
             ROOT + ".graduation.certificate.exam.controller.ExamCertificateController",
             ROOT + ".graduation.certificate.exam.controller.ExamBoardCertificateController",
@@ -113,7 +148,7 @@ class PermissionGateCoverageTest {
                     continue;
                 }
                 String endpoint = controller.getSimpleName() + "#" + method.getName();
-                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint)) {
+                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint) || ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint)) {
                     continue;
                 }
                 if (!usesGate(method, controller)) {
@@ -186,6 +221,30 @@ class PermissionGateCoverageTest {
             }
         }
         assertThat(declared).containsAll(ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE).containsAll(ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR);
+    }
+
+    @Test
+    void academicstructureEndpointsExemptFromTheGridKeepOnlyTheirFixedRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        Set<String> declared = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                declared.add(endpoint);
+                if (!ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint)) {
+                    continue;
+                }
+                if (AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class) != null) {
+                    violations.add(endpoint + " must not use the grid");
+                }
+                PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
+                if (preAuthorize != null && !Set.of("isAuthenticated()", "hasRole('DOCENTE')").contains(preAuthorize.value())) {
+                    violations.add(endpoint + " carries an unexpected rule: " + preAuthorize.value());
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+        assertThat(declared).containsAll(ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE);
     }
 
     @Test

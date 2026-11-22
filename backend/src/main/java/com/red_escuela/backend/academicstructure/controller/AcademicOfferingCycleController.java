@@ -23,6 +23,7 @@ import com.red_escuela.backend.academicstructure.usecase.cycle.SubmitCycleForApp
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -80,7 +81,7 @@ public class AcademicOfferingCycleController {
 
     @PostMapping("/academic-offering-cycles")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_offering_cycle", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public AcademicOfferingCycleResponse create(@Valid @RequestBody CreateAcademicOfferingCycleRequest request) {
         return createCycle.create(request);
     }
@@ -103,28 +104,28 @@ public class AcademicOfferingCycleController {
 
     @PostMapping("/academic-offering-cycles/{id}/sections")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_offering_cycle", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public Long createSection(@PathVariable Long id, @Valid @RequestBody CreateCycleSectionRequest request) {
         return createSection.createSection(id, request);
     }
 
     @PostMapping("/academic-offering-cycles/{id}/submit")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_offering_cycle", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public void submit(@PathVariable Long id) {
         submitCycle.submit(id);
     }
 
     @PostMapping("/academic-offering-cycles/{id}/approve")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.review_offering_cycle", legacyRoles = "ROLE_DIRECTOR")
     public void approve(@PathVariable Long id, @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         approveCycle.approve(id, idempotencyKey);
     }
 
     @PostMapping("/academic-offering-cycles/{id}/reject")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.review_offering_cycle", legacyRoles = "ROLE_DIRECTOR")
     public void reject(@PathVariable Long id, @Valid @RequestBody RejectCycleRequest request,
                        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         rejectCycle.reject(id, request.reason(), idempotencyKey);
@@ -137,28 +138,28 @@ public class AcademicOfferingCycleController {
     }
 
     @GetMapping("/academic-offering-cycles/{id}/conflicts")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.read_offering_cycle_conflicts", legacyRoles = "ROLE_DIRECTOR,ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public CycleConflictsResponse getConflicts(@PathVariable Long id) {
         return getCycleConflicts.getConflicts(id);
     }
 
     @PostMapping("/subject-sections/{id}/modification-request")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.request_section_modification", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public void requestSectionModification(@PathVariable Long id, @Valid @RequestBody ModifySectionRequest request) {
         requestModification.requestModification(id, request);
     }
 
     @PostMapping("/subject-sections/{id}/modification-request/approve")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.review_section_modification", legacyRoles = "ROLE_DIRECTOR")
     public void approveSectionModification(@PathVariable Long id) {
         approveModification.approveModification(id);
     }
 
     @PostMapping("/subject-sections/{id}/modification-request/reject")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.review_section_modification", legacyRoles = "ROLE_DIRECTOR")
     public void rejectSectionModification(@PathVariable Long id, @Valid @RequestBody RejectCycleRequest request) {
         rejectModification.rejectModification(id, request.reason());
     }
