@@ -229,8 +229,8 @@ class PermissionGridIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void auditReadIsTheOnlySeededSensitivePermissionAndCatalogReportsIt() throws Exception {
-        assertThat(jdbcTemplate.queryForList("select code from permission where sensitive order by code", String.class)).containsExactly("audit.read");
+    void auditReadAndTheDestructiveDataImportPermissionsAreTheSeededSensitiveOnes() throws Exception {
+        assertThat(jdbcTemplate.queryForList("select code from permission where sensitive order by code", String.class)).containsExactly("audit.read", "dataimport.commit", "dataimport.rollback", "dataimport.seal");
         mockMvc.perform(get("/permissions/catalog").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.modules[?(@.module=='audit')].permissions[0].sensitive").value(org.hamcrest.Matchers.hasItem(true)))
@@ -286,7 +286,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
         mockMvc.perform(get("/permissions/grid").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.editable").value(true))
-                .andExpect(jsonPath("$.roles[?(@.role=='DIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(16)))
+                .andExpect(jsonPath("$.roles[?(@.role=='DIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(jdbcTemplate.queryForObject("select count(*) from permission", Integer.class))))
                 .andExpect(jsonPath("$.roles[?(@.role=='ADMINISTRATIVO')].permissionCodes").isNotEmpty());
     }
 }
