@@ -1,0 +1,14 @@
+package com.red_escuela.backend.graduation.procedure.dto;
+
+public enum ProcedureIneligibilityCode {
+    NOT_REGULAR_STUDENT,
+    PENDING_PAYMENTS,
+    NO_ACTIVE_ENROLLMENT,
+    NO_OPEN_ENROLLMENT_WINDOW,
+    NO_SUBJECTS_IN_PROGRESS,
+    GRADUATION_REQUIREMENTS_NOT_MET,
+    NOT_REGISTERED_FOR_EXAM,
+    EXAM_NOT_HELD_YET,
+    EXAM_ATTENDANCE_NOT_RECORDED,
+    ISSUANCE_LIMIT_REACHED
+}

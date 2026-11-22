@@ -9,6 +9,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseService;
 import com.red_escuela.backend.academicstructure.usecase.SetCourseCatalogVisibilityUseCase;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import com.red_escuela.backend.shared.module.HidesPricesWhenBillingOff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@HidesPricesWhenBillingOff
 @RequestMapping("/courses")
 public class CourseController {
 

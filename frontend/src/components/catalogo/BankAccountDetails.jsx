@@ -1,7 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { usePaymentConfig } from '@/hooks/useBilling';
+import { useMyModules } from '@/hooks/useMyModules';
 
 export function BankAccountDetails() {
+  const { billingEnabled } = useMyModules();
+  if (!billingEnabled) return null;
+  return <BankAccountDetailsContent />;
+}
+
+function BankAccountDetailsContent() {
   const { data: config, isLoading, isError, refetch } = usePaymentConfig();
   if (isLoading) return null;
 

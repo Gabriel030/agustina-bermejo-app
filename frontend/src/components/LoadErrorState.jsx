@@ -3,11 +3,12 @@ import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 
-export function LoadErrorState({ error, onRetry, resource = 'los datos', backTo, backLabel, bare = false }) {
+export function LoadErrorState({ error, onRetry, resource = 'los datos', backTo, backLabel, bare = false, distinguishForbidden = false }) {
   const notFound = error?.status === 404;
+  const forbidden = distinguishForbidden && error?.status === 403;
   const action = (
     <div className="flex flex-wrap justify-center gap-2">
-      {!notFound && onRetry && <Button onClick={onRetry}>Reintentar</Button>}
+      {!notFound && !forbidden && onRetry && <Button onClick={onRetry}>Reintentar</Button>}
       {backTo && (
         <Button asChild variant="outline">
           <Link to={backTo}>{backLabel?.startsWith('el ') ? `Volver al ${backLabel.slice(3)}` : `Volver a ${backLabel}`}</Link>
@@ -17,12 +18,14 @@ export function LoadErrorState({ error, onRetry, resource = 'los datos', backTo,
   );
   const content = (
     <EmptyState
-      icon="⚠️"
-      title={notFound ? 'No encontramos lo que buscabas' : `No pudimos cargar ${resource}`}
+      icon={forbidden ? '🔒' : '⚠️'}
+      title={forbidden ? 'No tenés acceso a esta pantalla' : notFound ? 'No encontramos lo que buscabas' : `No pudimos cargar ${resource}`}
       description={
-        notFound
-          ? 'Puede que ya no exista o que el enlace sea incorrecto.'
-          : 'Es un problema de conexión o del servidor. Podés reintentar en un momento.'
+        forbidden
+          ? 'Consultá con Administración si necesitás acceso.'
+          : notFound
+            ? 'Puede que ya no exista o que el enlace sea incorrecto.'
+            : 'Es un problema de conexión o del servidor. Podés reintentar en un momento.'
       }
       action={action}
     />
