@@ -6,6 +6,7 @@ import com.red_escuela.backend.platform.dto.FirstDirectorStatusResponse;
 import com.red_escuela.backend.platform.dto.ProvisionFirstDirectorRequest;
 import com.red_escuela.backend.platform.usecase.FindFirstDirectorStatusUseCase;
 import com.red_escuela.backend.platform.usecase.ProvisionFirstDirectorUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,11 +29,13 @@ public class PlatformProvisioningController {
     }
 
     @GetMapping("/platform/provisioning/first-director/status")
+    @RequiresPermission(code = "platform.read_provisioning_status", legacyRoles = "ROLE_PLATFORM_ADMIN")
     public FirstDirectorStatusResponse findFirstDirectorStatus() {
         return FirstDirectorStatusResponse.of(findFirstDirectorStatus.findStatus());
     }
 
     @PostMapping("/platform/provisioning/first-director")
+    @RequiresPermission(code = "platform.provision_first_director", legacyRoles = "ROLE_PLATFORM_ADMIN")
     @ResponseStatus(HttpStatus.CREATED)
     public FirstDirectorProvisioningResponse provisionFirstDirector(
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,

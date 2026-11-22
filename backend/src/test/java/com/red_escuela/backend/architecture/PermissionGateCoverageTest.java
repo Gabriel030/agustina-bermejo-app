@@ -25,13 +25,14 @@ class PermissionGateCoverageTest {
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
             "academicrecord", "academicstructure", "attendance", "billing", "enrollment", "evaluation",
-            "graduation", "identity", "notification", "platform");
+            "graduation", "identity", "notification");
 
     private static final Set<String> CONTROLLERS_FIXED_BY_ROLE = Set.of(
             ROOT + ".identity.controller.PermissionController");
 
     private static final Set<String> CONTROLLERS_WITHOUT_ROLE_RULE = Set.of(
-            ROOT + ".announcement.controller.MeAnnouncementController");
+            ROOT + ".announcement.controller.MeAnnouncementController",
+            ROOT + ".platform.controller.ModulesController");
 
     @Test
     void everyProtectedEndpointUsesTheGateOrIsExempt() throws Exception {

@@ -16,6 +16,7 @@ import com.red_escuela.backend.platform.dto.FeatureDetailResponse;
 import com.red_escuela.backend.platform.usecase.ListFeatureChangesUseCase;
 import com.red_escuela.backend.platform.usecase.ListPlatformFeaturesUseCase;
 import com.red_escuela.backend.platform.model.FeatureChangeActorKind;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
@@ -48,11 +49,13 @@ public class PlatformFeatureController {
     }
 
     @GetMapping("/platform/features")
+    @RequiresPermission(code = "platform.read_features", legacyRoles = "ROLE_PLATFORM_ADMIN")
     public List<FeatureDetailResponse> listFeatures() {
         return listFeatures.list().stream().map(FeatureDetailResponse::of).toList();
     }
 
     @GetMapping("/platform/features/changes")
+    @RequiresPermission(code = "platform.read_features", legacyRoles = "ROLE_PLATFORM_ADMIN")
     public Page<FeatureChangeResponse> listFeatureChanges(
             @RequestParam(required = false) FeatureCode code,
             @RequestParam(required = false) Long actorPersonId,
@@ -64,11 +67,13 @@ public class PlatformFeatureController {
     }
 
     @GetMapping("/platform/features/{code}/preview")
+    @RequiresPermission(code = "platform.read_features", legacyRoles = "ROLE_PLATFORM_ADMIN")
     public FeatureTransitionPreviewResponse previewFeatureChange(@PathVariable FeatureCode code, @RequestParam BillingMode target) {
         return FeatureTransitionPreviewResponse.of(previewFeatureChange.preview(new FeatureTransitionRequest(code, target)));
     }
 
     @PutMapping("/platform/features/{code}")
+    @RequiresPermission(code = "platform.change_features", legacyRoles = "ROLE_PLATFORM_ADMIN")
     public FeatureStateResponse changeFeature(
             @PathVariable FeatureCode code,
             @RequestHeader(value = "If-Match", required = false) Long expectedVersion,
