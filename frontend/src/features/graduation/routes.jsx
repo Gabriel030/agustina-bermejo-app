@@ -8,12 +8,14 @@ const StaffRegularCertificates = lazyPage(() => import('@/features/graduation/ce
 const StaffGraduationCertificates = lazyPage(() => import('@/features/graduation/certificates/pages/StaffGraduationCertificates'), 'StaffGraduationCertificates');
 const CertificateTemplateEditor = lazyPage(() => import('@/features/graduation/certificates/pages/CertificateTemplateEditor'), 'CertificateTemplateEditor');
 const CertificateSignatories = lazyPage(() => import('@/features/graduation/signatories/pages/CertificateSignatories'), 'CertificateSignatories');
+const MyCertificates = lazyPage(() => import('@/features/graduation/certificates/pages/MyCertificates'), 'MyCertificates');
 const VerifyCertificate = lazyPage(() => import('@/features/graduation/certificates/pages/VerifyCertificate'), 'VerifyCertificate');
 
 export const routes = {
   public: [{ path: '/verificar/:code', element: <VerifyCertificate /> }],
   shared: [],
   role: [
+    { roles: ['alumno'], path: 'mis-certificados', element: <MyCertificates /> },
     { roles: ['director'], path: 'aprobaciones/egresos', element: <DirectorAprobacionesEgresos /> },
     { roles: ['director'], path: 'aprobaciones/egresos/:id', element: <DirectorEgresoDetalle /> },
     { roles: ['administrativo', 'director'], path: 'constancias', element: <StaffRegularCertificates /> },

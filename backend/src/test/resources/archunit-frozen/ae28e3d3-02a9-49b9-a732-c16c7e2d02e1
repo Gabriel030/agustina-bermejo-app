@@ -1,8 +1,3 @@
-com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleService.create(com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService.createSection(java.lang.Long, com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest) declares @Transactional
-com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementService.create(com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementCommand) declares @Transactional
-com.red_escuela.backend.announcement.usecase.broadcast.DeleteAnnouncementService.delete(java.lang.Long) declares @Transactional
-com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementService.update(com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.changerequest.ApproveAttendanceChangeRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestService.reject(com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.record.ApproveAttendanceJustificationService.approve(java.lang.Long) declares @Transactional
@@ -34,12 +29,6 @@ com.red_escuela.backend.evaluation.usecase.sectionconfig.SubmitSectionEvaluation
 com.red_escuela.backend.graduation.usecase.request.ApproveGraduationRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.graduation.usecase.request.RejectGraduationRequestService.reject(com.red_escuela.backend.graduation.usecase.request.RejectGraduationRequestCommand) declares @Transactional
 com.red_escuela.backend.graduation.usecase.request.VerifyGraduationRequestDebtService.verify(java.lang.Long) declares @Transactional
-com.red_escuela.backend.identity.usecase.auth.RegisterService.register(com.red_escuela.backend.identity.dto.RegisterRequest) declares @Transactional
-com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleService.register(com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleCommand) declares @Transactional
-com.red_escuela.backend.identity.usecase.person.ChangeOwnPasswordService.changePassword(com.red_escuela.backend.identity.dto.ChangePasswordRequest) declares @Transactional
-com.red_escuela.backend.identity.usecase.person.UpdateNotificationPreferencesService.updatePreferences(com.red_escuela.backend.identity.dto.UpdateNotificationPreferencesRequest) declares @Transactional
-com.red_escuela.backend.identity.usecase.person.UpdateOwnProfileService.updateOwnProfile(com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest) declares @Transactional
-com.red_escuela.backend.identity.usecase.person.UploadAvatarService.upload(org.springframework.web.multipart.MultipartFile) declares @Transactional
 com.red_escuela.backend.identity.usecase.staff.CreateStaffService.create(com.red_escuela.backend.identity.dto.CreateStaffRequest) declares @Transactional
 com.red_escuela.backend.identity.usecase.staff.UpdateStaffService.update(com.red_escuela.backend.identity.usecase.staff.UpdateStaffCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.staff.WithdrawStaffService.withdraw(java.lang.Long) declares @Transactional

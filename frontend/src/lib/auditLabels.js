@@ -45,6 +45,7 @@ const ACTIONS = {
   PERMISSION_GRID_CHANGED: ['Grilla de permisos modificada', 'accent'],
   CALENDAR_FEED_TOKEN_ROTATED: ['Enlace de calendario generado', 'accent'],
   CALENDAR_FEED_TOKEN_REVOKED: ['Enlace de calendario revocado', 'warning'],
+  PERMISSION_SENSITIVE_CHANGED: ['Permiso sensible modificado', 'warning'],
 };
 
 const ENTITIES = {

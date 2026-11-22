@@ -1,5 +1,6 @@
 import { lazyPage } from '@/routes/lazyPage';
 const AlumnoInicio = lazyPage(() => import('@/features/workspace/pages/AlumnoInicio'), 'AlumnoInicio');
+const AlumnoCalendario = lazyPage(() => import('@/features/workspace/pages/AlumnoCalendario'), 'AlumnoCalendario');
 const DocenteMisComisiones = lazyPage(() => import('@/features/workspace/pages/DocenteMisComisiones'), 'DocenteMisComisiones');
 const StaffSectionRoster = lazyPage(() => import('@/features/workspace/pages/StaffSectionRoster'), 'StaffSectionRoster');
 const DirectorAprobaciones = lazyPage(() => import('@/features/workspace/pages/DirectorAprobaciones'), 'DirectorAprobaciones');
@@ -11,6 +12,7 @@ export const routes = {
   shared: [],
   role: [
     { roles: ['alumno'], path: 'inicio', element: <AlumnoInicio /> },
+    { roles: ['alumno'], path: 'calendario', element: <AlumnoCalendario /> },
     { roles: ['director'], path: 'inicio', element: <DirectorInicio /> },
     { roles: ['administrativo'], path: 'inicio', element: <AdministrativoInicio /> },
     { roles: ['docente'], path: 'mis-comisiones', element: <DocenteMisComisiones /> },

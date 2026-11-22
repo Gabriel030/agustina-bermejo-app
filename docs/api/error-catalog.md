@@ -257,7 +257,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXCEPTION_WITHDRAW_NOT_ALLOWED` | no | `ExceptionWithdrawNotAllowedException` | graduation |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
 | `OWN_AUTHORIZATION_REQUEST_DECISION` | no | `OwnAuthorizationRequestDecisionException` | billing |
-| `PERMISSION_FIXED_TO_DIRECTOR` | no | `PermissionFixedToDirectorException` | identity |
 | `PERMISSION_GRID_FORBIDDEN` | no | `PermissionGridForbiddenException` | identity |
 | `REFRESH_CSRF_REJECTED` | no | `RefreshCsrfRejectedException` | identity |
 | `ROLE_NOT_ASSIGNABLE_BY_ACTOR` | no | `RoleNotAssignableByActorException` | identity |
