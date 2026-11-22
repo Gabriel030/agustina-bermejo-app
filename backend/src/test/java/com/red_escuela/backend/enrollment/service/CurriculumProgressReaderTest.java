@@ -29,6 +29,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -193,6 +195,44 @@ class CurriculumProgressReaderTest {
 
         assertThat(subjectOf(view, 2L).state()).isEqualTo(CurriculumSubjectState.AVAILABLE);
         assertThat(view.summary().accumulatedCredits()).isZero();
+    }
+
+    @Test
+    void waiverOnAnAlreadyRegularSubjectKeepsRegularPendingFinal() {
+        plan = List.of(entry(1L, 3), entry(2L, 3));
+        prerequisites = Map.of(2L, List.of(requires(1L, RequirementType.APPROVED)));
+        when(approvalRepository.findSubjectIdsWithRequest(any(), any(), any())).thenReturn(List.of(2L));
+        mark(2L, EnrollmentStatus.REGULAR, null);
+
+        CurriculumProgressView.SubjectView regular = subjectOf(read(), 2L);
+
+        assertThat(regular.state()).isEqualTo(CurriculumSubjectState.REGULAR_PENDING_FINAL);
+        assertThat(regular.blockedBy()).isEmpty();
+    }
+
+    @Test
+    void waiverOnAFailedSubjectKeepsFailedWithoutBlockers() {
+        plan = List.of(entry(1L, 3), entry(2L, 3));
+        prerequisites = Map.of(2L, List.of(requires(1L, RequirementType.APPROVED)));
+        when(approvalRepository.findSubjectIdsWithRequest(any(), any(), any())).thenReturn(List.of(2L));
+        mark(2L, EnrollmentStatus.FAILED, null);
+
+        CurriculumProgressView.SubjectView failed = subjectOf(read(), 2L);
+
+        assertThat(failed.state()).isEqualTo(CurriculumSubjectState.FAILED);
+        assertThat(failed.blockedBy()).isEmpty();
+    }
+
+    @Test
+    void waiverIsLookedUpOnlyForTheRequestedEnrollment() {
+        plan = List.of(entry(1L, 3), entry(2L, 3));
+        prerequisites = Map.of(2L, List.of(requires(1L, RequirementType.APPROVED)));
+        when(approvalRepository.findSubjectIdsWithRequest(eq(777L), any(), any())).thenReturn(List.of(2L));
+
+        CurriculumProgressView view = read();
+
+        assertThat(subjectOf(view, 2L).state()).isEqualTo(CurriculumSubjectState.BLOCKED);
+        verify(approvalRepository).findSubjectIdsWithRequest(eq(ENROLLMENT_ID), any(), any());
     }
 
     @Test

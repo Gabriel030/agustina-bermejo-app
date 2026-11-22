@@ -7,7 +7,13 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
+import com.red_escuela.backend.academicstructure.entity.ElectiveGroup;
+import com.red_escuela.backend.academicstructure.entity.ProgramElectiveGroup;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCorequisite;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
+import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
+import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.enrollment.service.CurriculumProgressReader;
 import com.red_escuela.backend.enrollment.api.CurriculumProgressView;
@@ -87,15 +93,16 @@ class CurriculumProgressReaderQueryCountTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void chainedPlanBlocksSecondSubjectUntilFirstIsApproved() {
+    void chainedPlanUnlocksSecondSubjectByApprovalAndThirdByWaiver() {
         ProgramEnrollment enrollment = chainedEnrollment(3);
 
         CurriculumProgressView view = curriculumProgressReader.readProgress(enrollment.getId());
 
         assertThat(view.subjects()).extracting(CurriculumProgressView.SubjectView::state)
-                .containsExactly(CurriculumSubjectState.AVAILABLE, CurriculumSubjectState.BLOCKED,
-                        CurriculumSubjectState.BLOCKED);
-        assertThat(view.subjects().get(1).blockedBy()).hasSize(1);
+                .containsExactly(CurriculumSubjectState.APPROVED, CurriculumSubjectState.AVAILABLE,
+                        CurriculumSubjectState.AVAILABLE);
+        assertThat(view.subjects().get(1).corequisites()).hasSize(1);
+        assertThat(view.summary().electiveGroups()).hasSize(2);
     }
 
     private ProgramEnrollment chainedEnrollment(int subjects) {
@@ -107,9 +114,43 @@ class CurriculumProgressReaderQueryCountTest extends AbstractIntegrationTest {
             prerequisite.setPrerequisiteProgramSubject(plan.get(i - 1));
             prerequisite.setRequirementType(RequirementType.APPROVED);
             entityManager.persist(prerequisite);
+            ProgramSubjectCorequisite corequisite = new ProgramSubjectCorequisite();
+            corequisite.setProgramSubject(plan.get(i));
+            corequisite.setCorequisiteProgramSubject(plan.get(i - 1));
+            entityManager.persist(corequisite);
+            persistElectiveGroup(enrollment, plan.get(i), i);
+            if (i % 2 == 0) {
+                persistWaiver(enrollment, plan.get(i));
+            }
         }
+        persistSubjectEnrollment(enrollment, plan.get(0), EnrollmentStatus.APPROVED);
         flushAndClear();
         return enrollment;
+    }
+
+    private void persistElectiveGroup(ProgramEnrollment enrollment, ProgramSubject programSubject, int index) {
+        ElectiveGroup group = new ElectiveGroup();
+        group.setName("Group " + programSubject.getId() + "-" + index);
+        entityManager.persist(group);
+        ProgramElectiveGroup programGroup = new ProgramElectiveGroup();
+        programGroup.setProgram(enrollment.getProgram());
+        programGroup.setElectiveGroup(group);
+        programGroup.setMinRequired(1);
+        programGroup.setMaxAllowed(2);
+        entityManager.persist(programGroup);
+        programSubject.setElectiveGroup(group);
+    }
+
+    private void persistWaiver(ProgramEnrollment enrollment, ProgramSubject programSubject) {
+        DirectorApprovalRequest waiver = new DirectorApprovalRequest();
+        waiver.setType(ExceptionType.PREREQUISITE_WAIVER);
+        waiver.setProgramEnrollment(enrollment);
+        waiver.setSubject(programSubject.getSubject());
+        waiver.setJustification("Waiver");
+        waiver.setStatus(DirectorApprovalRequestStatus.APPROVED);
+        waiver.setRequestedBy(enrollment.getStudent().getPerson());
+        waiver.setRequestedAt(LocalDateTime.now());
+        entityManager.persist(waiver);
     }
 
     private long countQueries(Supplier<Object> action) {
