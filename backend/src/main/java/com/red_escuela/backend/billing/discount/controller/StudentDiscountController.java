@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
@@ -65,7 +66,7 @@ public class StudentDiscountController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/program-enrollments/{id}/student-discounts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.grant_student_discount", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director otorgó el descuento", content = @Content(schema = @Schema(implementation = StudentDiscountResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido pendiente de aprobación", content = @Content(schema = @Schema(implementation = StudentDiscountPendingAuthorizationResponse.class)))})
@@ -75,7 +76,7 @@ public class StudentDiscountController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/course-enrollments/{id}/student-discounts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.grant_student_discount", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director otorgó el descuento", content = @Content(schema = @Schema(implementation = StudentDiscountResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido pendiente de aprobación", content = @Content(schema = @Schema(implementation = StudentDiscountPendingAuthorizationResponse.class)))})
@@ -132,7 +133,7 @@ public class StudentDiscountController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/student-discounts/{id}/revocation")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.revoke_student_discount", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director revocó el descuento", content = @Content(schema = @Schema(implementation = StudentDiscountResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido de revocación pendiente; vence a fin de mes si nadie lo decide", content = @Content(schema = @Schema(implementation = StudentDiscountPendingAuthorizationResponse.class)))})

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.PaymentPlanOptionResponse;
 import com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase;
@@ -8,7 +9,6 @@ import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,7 +30,7 @@ public class PaymentPlanOptionController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/courses/{id}/payment-plan-options")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_payment_plan_options", legacyRoles = "ROLE_DIRECTOR")
     public PaymentPlanOptionResponse createForCourse(@PathVariable Long id, @Valid @RequestBody CreatePaymentPlanOptionRequest request) {
         return PaymentPlanOptionResponse.from(createForCourseUseCase.create(id, request));
     }
@@ -38,7 +38,7 @@ public class PaymentPlanOptionController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/programs/{id}/payment-plan-options")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_payment_plan_options", legacyRoles = "ROLE_DIRECTOR")
     public PaymentPlanOptionResponse createForProgram(@PathVariable Long id, @Valid @RequestBody CreatePaymentPlanOptionRequest request) {
         return PaymentPlanOptionResponse.from(createForProgramUseCase.create(id, request));
     }

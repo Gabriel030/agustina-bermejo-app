@@ -137,6 +137,18 @@ Migrados (33 endpoints, permisos billing.*): payment-standing de inscripciones (
 
 manage_reminder_config queda no sensible porque solo propone y valida cambios: la aprobación, que sí tiene efecto, queda fuera de esta tanda y no se puede autoaprobar. Pasaría a ser sensible solo si una tanda futura pusiera la publicación directa bajo ese permiso.
 
+### Billing (tanda B2: corridas, descuentos, promociones, precios, plantillas, recargos, pasarela y aprobaciones)
+
+Los 29 endpoints migrados (V383, 20 permisos billing.*) mueven plata o cambian su configuración, por eso los 20 permisos son sensibles: delegarlos exige la confirmación de sensible. El Director conserva todos en Activo: ningún endpoint de la tanda le está denegado hoy, así que no cambia de resultado en ninguno. Alumno y administrador de plataforma quedan fuera de la grilla; el Subdirector hereda lo de Administrativo.
+
+Seed a Administrativo (reglas AD): retry_draft_invoice_items, approve_draft_invoices, discard_draft_invoices, manage_discount_definition (crear y cerrar), grant_student_discount (carrera y curso), revoke_student_discount, propose_price_change (POST /prices/{id}/versions), manage_year_billing_cohorts (crear cohorte y descuento de matrícula), withdraw_authorization_request y request_advance_enrollment_fee (mostrador, no el /me del alumno).
+
+Decisiones exclusivas del Director, sin grants (solo se delegan con confirmación de sensible): run_billing (POST /billing-runs/executions), issue_monthly_invoices_manually, manage_promotion (crear y cerrar), cancel_price_version, manage_payment_plan_options, manage_year_billing_template (crear y configurar), set_late_payment_settings, manage_payment_gateway (PUT /payment-config y QR), decide_authorization_request (aprobar y rechazar) y publish_annual_upfront_terms.
+
+Advertencia al delegar decide_authorization_request: el servicio sigue exigiendo el rol Director para decidir (y que quien decide no sea quien pidió), así que un rol con el permiso pasa la grilla pero recibe acceso denegado del servicio. Lo mismo vale para el alcance de la bandeja de solicitudes: un Administrativo solo ve las suyas.
+
+Fuera de esta tanda: /me/*, webhook de Mercado Pago, GET payment-config/qr-image, POST payment-plan (Administrativo o Alumno), cohortes y términos de pago anual de lectura (mixtos con Alumno), previews y lecturas (A1/A2) y cobros y devoluciones (B1).
+
 ## Academicrecord
 
 El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración ni cambio de resultado para el Director en ENFORCE.

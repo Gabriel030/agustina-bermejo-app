@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 
 import com.red_escuela.backend.billing.discount.domain.CohortPromotionStatus;
@@ -75,7 +76,7 @@ public class DiscountDefinitionController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_discount_definition", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director publicó la promoción", content = @Content(schema = @Schema(implementation = DiscountDefinitionResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido pendiente de aprobación", content = @Content(schema = @Schema(implementation = DiscountDefinitionPendingAuthorizationResponse.class)))})
@@ -95,7 +96,7 @@ public class DiscountDefinitionController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{id}/closure")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_discount_definition", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director cerró la promoción", content = @Content(schema = @Schema(implementation = DiscountDefinitionResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido de cierre pendiente de aprobación", content = @Content(schema = @Schema(implementation = DiscountDefinitionPendingAuthorizationResponse.class)))})

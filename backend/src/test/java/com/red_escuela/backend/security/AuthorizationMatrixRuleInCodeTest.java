@@ -19,7 +19,6 @@ class AuthorizationMatrixRuleInCodeTest extends AuthorizationMatrixSupport {
             "GET /annual-upfront-requests/{id}",
             "GET /annual-upfront-terms/current",
             "GET /annual-upfront-terms/versions",
-            "POST /annual-upfront-terms/versions",
             "GET /annual-upfront-terms/versions/{versionNumber}",
             "POST /invoices/{invoiceId}/cancellations",
             "POST /invoices/{invoiceId}/cancellations/preview",

@@ -142,6 +142,34 @@ class PermissionGateCoverageTest {
             ROOT + ".billing.configuration.usecase.ValidateBillingConfigurationChangeService", ROOT + ".billing.configuration.usecase.ListConfigurationVersionHistoryService",
             ROOT + ".billing.configuration.usecase.FindConfigurationVersionAuthorNamesService");
 
+    private static final Set<String> BILLING_B2_MIGRATED_ENDPOINTS = Set.of(
+            "BillingRunController#executeTodaysNightlyRun", "ManualMonthlyInvoiceIssuanceController#issueMonthlyInvoicesManually",
+            "MonthlyInvoiceRunController#retryItem", "MonthlyInvoiceRunController#approveDraftInvoices", "MonthlyInvoiceRunController#discardDraftInvoices",
+            "DiscountDefinitionController#createDiscountDefinition", "DiscountDefinitionController#closeDiscountDefinition",
+            "StudentDiscountController#grantForProgramEnrollment", "StudentDiscountController#grantForCourseEnrollment", "StudentDiscountController#revokeStudentDiscount",
+            "PromotionController#createForCourse", "PromotionController#createForProgram", "PromotionController#close",
+            "PriceController#publishPriceVersion", "PriceController#cancelScheduledPriceVersion",
+            "PaymentPlanOptionController#createForCourse", "PaymentPlanOptionController#createForProgram",
+            "ProgramYearBillingTemplateController#create", "ProgramYearBillingTemplateController#updateConfiguration",
+            "ProgramYearBillingTemplateController#createCohort", "ProgramYearBillingTemplateController#updateEntryFeeDiscount",
+            "LatePaymentSettingsController#create", "PaymentGatewayConfigController#updateConfig", "PaymentGatewayConfigController#uploadQr",
+            "AuthorizationRequestController#approve", "AuthorizationRequestController#reject", "AuthorizationRequestController#withdraw",
+            "AdvanceEnrollmentFeeController#requestForStudent", "AnnualUpfrontTermsController#publishNewTermsVersion");
+
+    private static final Set<String> BILLING_B2_SERVICE_METHODS_WITHOUT_ROLE_RULE = Set.of(
+            ROOT + ".billing.discount.usecase.RevokeStudentDiscountService#revokeStudentDiscount",
+            ROOT + ".billing.discount.usecase.CreateDiscountDefinitionService#createDiscountDefinition",
+            ROOT + ".billing.discount.usecase.GrantStudentDiscountService#grantStudentDiscount",
+            ROOT + ".billing.discount.usecase.ClosePromotionByLegacyContractService#closePromotion",
+            ROOT + ".billing.discount.usecase.CreatePromotionByLegacyContractService#createForProgram",
+            ROOT + ".billing.discount.usecase.CreatePromotionByLegacyContractService#createForCourse",
+            ROOT + ".billing.discount.usecase.CloseDiscountDefinitionService#closeDiscountDefinition",
+            ROOT + ".billing.pricing.usecase.ProposePriceChangeService#proposeOrPublishPriceVersion",
+            ROOT + ".billing.pricing.usecase.CancelScheduledPriceVersionService#cancelScheduledVersion",
+            ROOT + ".billing.annualupfront.usecase.PublishAnnualUpfrontTermsService#publishNewAnnualUpfrontTermsVersion",
+            ROOT + ".billing.usecase.cohort.UpdateYearBillingConfigurationService#update",
+            ROOT + ".billing.advanceenrollmentfee.usecase.RequestAdvanceEnrollmentFeeService#requestForStudentAtCounter");
+
     private static final Set<String> CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS = Set.of(
             ROOT + ".graduation.certificate.exam.controller.ExamCertificateController",
             ROOT + ".graduation.certificate.exam.controller.ExamBoardCertificateController",
@@ -307,6 +335,43 @@ class PermissionGateCoverageTest {
             for (Method method : service.getDeclaredMethods()) {
                 if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
                     violations.add(service.getSimpleName() + "#" + method.getName() + " must not carry a role rule");
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void billingB2EndpointsRequireTheGateWithASensitivePermissionAndTheirServiceMethodsCarryNoRoleRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        Set<String> declared = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                if (!BILLING_B2_MIGRATED_ENDPOINTS.contains(endpoint) || !moduleOf(controller).equals("billing")) {
+                    continue;
+                }
+                declared.add(endpoint);
+                RequiresPermission requiresPermission = AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class);
+                PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
+                if (requiresPermission == null || !requiresPermission.code().startsWith("billing.") || !usesGate(method, controller)
+                        || preAuthorize == null || !preAuthorize.value().contains(GATE_EXPRESSION)) {
+                    violations.add(endpoint + " must be guarded by @RequiresPermission");
+                }
+            }
+        }
+        assertThat(declared).containsExactlyInAnyOrderElementsOf(BILLING_B2_MIGRATED_ENDPOINTS);
+        for (String qualifiedMethod : BILLING_B2_SERVICE_METHODS_WITHOUT_ROLE_RULE) {
+            Class<?> service = Class.forName(qualifiedMethod.substring(0, qualifiedMethod.indexOf('#')));
+            String methodName = qualifiedMethod.substring(qualifiedMethod.indexOf('#') + 1);
+            if (AnnotatedElementUtils.findMergedAnnotation(service, PreAuthorize.class) != null) {
+                violations.add(service.getSimpleName() + " must not carry a role rule");
+            }
+            List<Method> methods = Stream.of(service.getDeclaredMethods()).filter(method -> method.getName().equals(methodName)).toList();
+            assertThat(methods).as(qualifiedMethod).isNotEmpty();
+            for (Method method : methods) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
+                    violations.add(service.getSimpleName() + "#" + methodName + " must not carry a role rule");
                 }
             }
         }
