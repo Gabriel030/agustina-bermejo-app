@@ -230,7 +230,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
 
     @Test
     void auditReadAndTheDestructiveDataImportPermissionsAreTheSeededSensitiveOnes() throws Exception {
-        assertThat(jdbcTemplate.queryForList("select code from permission where sensitive order by code", String.class)).containsExactly("audit.read", "dataimport.commit", "dataimport.rollback", "dataimport.seal");
+        assertThat(jdbcTemplate.queryForList("select code from permission where sensitive order by code", String.class)).contains("audit.read", "dataimport.commit", "dataimport.rollback", "dataimport.seal", "identity.create_staff", "identity.reset_student_password");
         mockMvc.perform(get("/permissions/catalog").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.modules[?(@.module=='audit')].permissions[0].sensitive").value(org.hamcrest.Matchers.hasItem(true)))

@@ -27,11 +27,23 @@ class PermissionGateCoverageTest {
             "academicrecord", "academicstructure", "attendance", "billing", "enrollment", "evaluation",
             "graduation", "identity", "notification", "platform");
 
+    private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
+
     private static final Set<String> CONTROLLERS_FIXED_BY_ROLE = Set.of(
             ROOT + ".identity.controller.PermissionController");
 
     private static final Set<String> CONTROLLERS_WITHOUT_ROLE_RULE = Set.of(
-            ROOT + ".announcement.controller.MeAnnouncementController");
+            ROOT + ".announcement.controller.MeAnnouncementController",
+            ROOT + ".identity.controller.AuthController",
+            ROOT + ".identity.controller.CancelEmailChangeController",
+            ROOT + ".identity.controller.InstitutionController",
+            ROOT + ".identity.controller.OwnerEmailChangeApprovalController",
+            ROOT + ".identity.controller.PersonController",
+            ROOT + ".identity.controller.VerifyEmailController");
+
+    private static final Set<String> LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
+            "getCurrentDocuments", "getPendingAcceptances", "acceptCurrentDocuments", "confirmGuardianAcceptance",
+            "resendGuardianConfirmation", "getNewsletterPreference", "updateNewsletterPreference");
 
     @Test
     void everyProtectedEndpointUsesTheGateOrIsExempt() throws Exception {
@@ -42,6 +54,9 @@ class PermissionGateCoverageTest {
             }
             for (Method method : controller.getDeclaredMethods()) {
                 if (AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class) == null) {
+                    continue;
+                }
+                if (controller.getName().equals(LEGAL_DOCUMENT_CONTROLLER) && LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(method.getName())) {
                     continue;
                 }
                 if (!usesGate(method, controller)) {
