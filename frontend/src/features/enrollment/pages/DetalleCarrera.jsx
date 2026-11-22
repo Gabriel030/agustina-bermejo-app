@@ -95,22 +95,22 @@ export function DetalleCarrera() {
       }
     >
       {billingEnabled && (
-      <CatalogBlock query={pricingQuery} resource="los precios">
-        <GlassCard className="flex flex-wrap gap-6 p-5">
-          <div>
-            <div className="text-xs text-ink-faint">Matrícula (1ª cohorte)</div>
-            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte1) || 'A definir'}</div>
-          </div>
-          <div>
-            <div className="text-xs text-ink-faint">Matrícula (2ª cohorte)</div>
-            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte2) || 'A definir'}</div>
-          </div>
-          <div>
-            <div className="text-xs text-ink-faint">Cuota mensual</div>
-            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.cuotaMensual) || 'A definir'}</div>
-          </div>
-        </GlassCard>
-      </CatalogBlock>
+        <CatalogBlock query={pricingQuery} resource="los precios">
+          <GlassCard className="flex flex-wrap gap-6 p-5">
+            <div>
+              <div className="text-xs text-ink-faint">Matrícula (1ª cohorte)</div>
+              <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte1) || 'A definir'}</div>
+            </div>
+            <div>
+              <div className="text-xs text-ink-faint">Matrícula (2ª cohorte)</div>
+              <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte2) || 'A definir'}</div>
+            </div>
+            <div>
+              <div className="text-xs text-ink-faint">Cuota mensual</div>
+              <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.cuotaMensual) || 'A definir'}</div>
+            </div>
+          </GlassCard>
+        </CatalogBlock>
       )}
 
       <h2 className="font-heading text-size-15 font-semibold text-ink-soft">Plan de estudio</h2>

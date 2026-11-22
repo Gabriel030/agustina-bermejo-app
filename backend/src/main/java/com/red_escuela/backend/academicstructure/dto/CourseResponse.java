@@ -2,6 +2,7 @@ package com.red_escuela.backend.academicstructure.dto;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.module.CatalogPriced;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder(toBuilder = true)
-public class CourseResponse {
+public class CourseResponse implements CatalogPriced<CourseResponse> {
     private final Long id;
     private final String name;
     private final Long termId;
@@ -25,6 +26,7 @@ public class CourseResponse {
     private final boolean registrationOpen;
     private final Boolean full;
 
+    @Override
     public CourseResponse withoutPrices() {
         return toBuilder().price(null).build();
     }
