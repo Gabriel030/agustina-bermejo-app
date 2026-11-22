@@ -10,17 +10,16 @@ image="ghcr.io/zaproxy/zaproxy:stable"
 
 "$here/assert-staging-target.sh" "$target"
 
-mkdir -p "$output"
-chmod 777 "$output"
+mkdir -p -m 0755 "$output"
 
 case "$profile" in
   baseline)
-    docker run --rm -v "$here:/zap/config:ro" -v "$output:/zap/wrk:rw" "$image" \
+    docker run --rm --user "$(id -u):$(id -g)" -v "$here:/zap/config:ro" -v "$output:/zap/wrk:rw" "$image" \
       zap-baseline.py -t "$target" -c /zap/config/baseline.conf \
       -r baseline-report.html -J baseline-report.json -I
     ;;
   api)
-    docker run --rm -v "$here:/zap/config:ro" -v "$root/contracts:/zap/contracts:ro" -v "$output:/zap/wrk:rw" "$image" \
+    docker run --rm --user "$(id -u):$(id -g)" -v "$here:/zap/config:ro" -v "$root/contracts:/zap/contracts:ro" -v "$output:/zap/wrk:rw" "$image" \
       zap-api-scan.py -t /zap/contracts/openapi.json -f openapi -O "$target/api" \
       -c /zap/config/api-scan.conf -r api-scan-report.html -J api-scan-report.json -I -S
     ;;
