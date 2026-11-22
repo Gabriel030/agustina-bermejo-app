@@ -6,6 +6,7 @@ describe('moduleLabel', () => {
     expect(moduleLabel('dataimport')).toBe('Importación de datos');
     expect(moduleLabel('audit')).toBe('Auditoría');
     expect(moduleLabel('certificate')).toBe('Certificados');
+    expect(moduleLabel('platform')).toBe('Configuración del instituto');
   });
 
   it('capitalizes an unknown module as a fallback', () => {
