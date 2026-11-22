@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatearFechaCorta, textoDeAlcance } from '@/lib/avisos';
+import { formatearFechaCorta, parseAnnouncementId, textoDeAlcance } from '@/lib/avisos';
 
 globalThis.process.env.TZ ='America/Argentina/Buenos_Aires';
 
@@ -16,5 +16,19 @@ describe('formatearFechaCorta', () => {
 describe('textoDeAlcance', () => {
   it('usa el total de la comisión, no la cantidad de destinatarios', () => {
     expect(textoDeAlcance(1, 4)).toBe('Lo ve 1 de los 4 alumnos de la comisión.');
+  });
+});
+
+describe('parseAnnouncementId', () => {
+  it('acceptsAPlainPositiveInteger', () => {
+    expect(parseAnnouncementId(['42'])).toBe(42);
+  });
+
+  it.each(['1e0', '0x2', ' 2 ', '1.5', '0', '-1', '', 'abc', '01', '1234567890123456'])('rejects%s', (value) => {
+    expect(parseAnnouncementId([value])).toBeNull();
+  });
+
+  it('rejectsRepeatedValues', () => {
+    expect(parseAnnouncementId(['1', '2'])).toBeNull();
   });
 });
