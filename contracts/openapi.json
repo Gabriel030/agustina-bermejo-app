@@ -15238,7 +15238,7 @@
             "type" : "string"
           },
           "unavailableType" : {
-            "enum" : [ "ATTENDANCE", "PAYMENTS", "ENROLLMENT", "REJECTED", null ],
+            "enum" : [ "ATTENDANCE", "PAYMENTS", "ENROLLMENT", null ],
             "type" : [ "string", "null" ]
           }
         },
