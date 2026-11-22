@@ -319,6 +319,22 @@ class PermissionGateCoverageTest {
     }
 
     @Test
+    void academicstructureEndpointsOutsideTheGridAreExactlyTheExemptSet() throws Exception {
+        Set<String> withoutGate = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            if (!"academicstructure".equals(moduleOf(controller))) {
+                continue;
+            }
+            for (Method method : controller.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class) != null && !usesGate(method, controller)) {
+                    withoutGate.add(controller.getSimpleName() + "#" + method.getName());
+                }
+            }
+        }
+        assertThat(withoutGate).isEqualTo(ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE);
+    }
+
+    @Test
     void billingEndpointsMigratedToTheGridRequireTheGateAndTheirServicesCarryNoRoleRule() throws Exception {
         List<String> violations = new ArrayList<>();
         Set<String> declared = new HashSet<>();

@@ -48,13 +48,12 @@ const MODULE_LABELS = {
   enrollment: 'Inscripciones',
   attendance: 'Asistencia',
   evaluation: 'Evaluación',
-  academic: 'Estructura académica',
-  graduation: 'Egreso y certificados',
+  graduation: 'Egreso',
   identity: 'Personas y accesos',
   notification: 'Notificaciones',
   dataimport: 'Importación de datos',
   audit: 'Auditoría',
-  certificate: 'Certificados',
+  certificate: 'Certificados de egreso',
   platform: 'Configuración del instituto',
 };
 
