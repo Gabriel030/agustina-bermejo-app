@@ -123,6 +123,15 @@ const personResponse = (overrides = {}) => ({
   ...overrides,
 });
 
+export const curriculumProgressHandlers = [
+  http.get(`${API}/me/program-enrollments/:id/progress/subjects`, ({ params }) =>
+    HttpResponse.json(curriculumProgress(Number(params.id))),
+  ),
+  http.get(`${API}/me/program-enrollments/:id/progress/projection`, ({ params }) =>
+    HttpResponse.json(graduationProjection(Number(params.id))),
+  ),
+];
+
 /*
  * Handlers "felices" por default — cada test sobreescribe con server.use(...)
  * el caso puntual que quiere probar (401, 429, etc.), ver
@@ -130,6 +139,7 @@ const personResponse = (overrides = {}) => ({
  * body (ver docs/context/backend.md) — acá se replica ese contrato a propósito.
  */
 export const handlers = [
+  ...curriculumProgressHandlers,
   http.get(`${API}/regular-certificate-requests`, () => HttpResponse.json([])),
   http.get(`${API}/graduation-requests`, () => HttpResponse.json([])),
   http.get(`${API}/graduation-certificates/eligible`, () => HttpResponse.json(springPage([eligibleGraduate()]))),
@@ -431,14 +441,8 @@ export const handlers = [
   http.get(`${API}/program-enrollment-applications/:id`, () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
   http.get(`${API}/program-enrollment-applications/:id/approval-check`, () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
   http.get(`${API}/me/program-enrollments`, () => HttpResponse.json([])),
-  http.get(`${API}/me/program-enrollments/:id/progress/subjects`, ({ params }) =>
-    HttpResponse.json(curriculumProgress(Number(params.id))),
-  ),
   http.get(`${API}/program-enrollments/:id/progress/subjects`, ({ params }) =>
     HttpResponse.json(curriculumProgress(Number(params.id))),
-  ),
-  http.get(`${API}/me/program-enrollments/:id/progress/projection`, ({ params }) =>
-    HttpResponse.json(graduationProjection(Number(params.id))),
   ),
   http.get(`${API}/program-enrollments/:id/progress/projection`, ({ params }) =>
     HttpResponse.json(graduationProjection(Number(params.id))),

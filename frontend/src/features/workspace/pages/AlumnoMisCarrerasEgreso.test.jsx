@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
+import { curriculumProgressHandlers } from '@/test/mocks/handlers';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
 
@@ -90,6 +91,7 @@ function mockEgreso({ own = ownRequest(), post } = {}) {
         externalBilling: { enabled: false },
       }),
     ),
+    ...curriculumProgressHandlers,
     http.get(`${API}/*`, () => HttpResponse.json([])),
   );
 }
