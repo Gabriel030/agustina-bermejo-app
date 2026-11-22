@@ -106,7 +106,7 @@ export function TabAsistencia({ type, sectionId }) {
   const [absenceToJustify, setAbsenceToJustify] = useState(null);
 
   const { rosterQuery, historyQuery, classQuery, classDate, students, filteredStudents, statuses, savedCells, savedStatuses, canceled } = form;
-  const unmarkedCount = students.filter((student) => !statuses[student.enrollmentId]).length;
+  const unmarkedCount = form.unmarkedCount;
 
   const failedQueries = [
     { query: rosterQuery, resource: 'los alumnos de la comisión' },

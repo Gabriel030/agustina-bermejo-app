@@ -46,7 +46,7 @@ export function useDraftExitGuard(changedCount, active) {
         if (!open) setPendingPath(null);
       }}
       title="¿Salir sin guardar?"
-      description={`Tenés ${changedCount === 1 ? '1 cambio sin guardar' : `${changedCount || 'varios'} cambios sin guardar`}. Quedan como borrador en este dispositivo hasta 12 horas, pero los alumnos y Secretaría no los ven hasta que guardes.`}
+      description={`${changedCount > 1 ? `Tenés ${changedCount} cambios sin guardar` : 'Tenés cambios sin guardar'}. Quedan como borrador en este dispositivo hasta 12 horas, pero los alumnos y Secretaría no los ven hasta que guardes.`}
       cancelLabel="Seguir acá"
       confirmLabel="Salir"
       confirmVariant="destructive"

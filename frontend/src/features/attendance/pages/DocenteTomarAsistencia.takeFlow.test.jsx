@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { Link } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { TabAsistencia } from '@/features/attendance/pages/DocenteTomarAsistencia';
@@ -99,6 +99,68 @@ describe('TabAsistencia take flow', () => {
     await user.click(screen.getByRole('link', { name: 'Mis comisiones' }));
 
     expect(await screen.findByText('¿Salir sin guardar?')).toBeInTheDocument();
-    expect(screen.getByText(/Tenés 1 cambio sin guardar/)).toBeInTheDocument();
+    expect(screen.getByText(/Tenés cambios sin guardar/)).toBeInTheDocument();
+  });
+
+  describe('exit guard', () => {
+    async function renderDirty() {
+      mockEmptySection();
+      const user = userEvent.setup();
+      renderWithProviders(
+        <>
+          <Link to="/mis-comisiones">Mis comisiones</Link>
+          <Link to="/otra" target="_blank">Otra pestaña</Link>
+          <TabAsistencia type="PROGRAM" sectionId={5} />
+          <Routes>
+            <Route path="/mis-comisiones" element={<div>Pantalla destino</div>} />
+            <Route path="*" element={null} />
+          </Routes>
+        </>,
+      );
+      await screen.findByText('Ana Gómez');
+      await user.click(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Presente' }));
+      return user;
+    }
+
+    it('registers beforeunload while there are changes and removes it after discarding', async () => {
+      const added = vi.spyOn(window, 'addEventListener');
+      const removed = vi.spyOn(window, 'removeEventListener');
+      const user = await renderDirty();
+
+      expect(added.mock.calls.some(([type]) => type === 'beforeunload')).toBe(true);
+      await user.click(screen.getByRole('button', { name: 'Descartar' }));
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Descartar' }));
+
+      await waitFor(() => expect(removed.mock.calls.some(([type]) => type === 'beforeunload')).toBe(true));
+      added.mockRestore();
+      removed.mockRestore();
+    });
+
+    it('navigates after confirming Salir', async () => {
+      const user = await renderDirty();
+      await user.click(screen.getByRole('link', { name: 'Mis comisiones' }));
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Salir' }));
+
+      expect(await screen.findByText('Pantalla destino')).toBeInTheDocument();
+    });
+
+    it('stays when choosing Seguir acá', async () => {
+      const user = await renderDirty();
+      await user.click(screen.getByRole('link', { name: 'Mis comisiones' }));
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Seguir acá' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(screen.queryByText('Pantalla destino')).not.toBeInTheDocument();
+    });
+
+    it('does not intercept ctrl-click or links that open in a new tab', async () => {
+      const user = await renderDirty();
+      await user.keyboard('{Control>}');
+      await user.click(screen.getByRole('link', { name: 'Mis comisiones' }));
+      await user.keyboard('{/Control}');
+      await user.click(screen.getByRole('link', { name: 'Otra pestaña' }));
+
+      expect(screen.queryByText('¿Salir sin guardar?')).not.toBeInTheDocument();
+    });
   });
 });

@@ -183,7 +183,7 @@ export function useTakeAttendanceForm(type, sectionId) {
     presentCount: values.filter((s) => s === 'PRESENT').length,
     lateCount: values.filter((s) => s === 'LATE').length,
     absentCount: values.filter((s) => s === 'ABSENT').length,
-    unmarkedCount: students.length - markedCount,
+    unmarkedCount: students.filter((student) => !statuses[student.enrollmentId]).length,
     changeStatus,
     markAllPresent,
     saveAttendance,
