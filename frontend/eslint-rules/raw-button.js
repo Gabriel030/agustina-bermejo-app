@@ -36,18 +36,13 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/features/billing/runs/NightlyRunsTab.jsx',
   'src/features/enrollment/components/InscripcionMaterias.jsx',
   'src/features/enrollment/components/InscripcionWizard.jsx',
-  'src/features/evaluation/components/GradeGridTable.jsx',
-  'src/features/evaluation/components/GradeReadCell.jsx',
   'src/features/evaluation/pages/DirectorEsquemasEvaluacion.jsx',
-  'src/features/evaluation/pages/DocenteConfiguracionEvaluacion.jsx',
-  'src/features/evaluation/pages/PreceptorMesaExamen.jsx',
   'src/features/identity/components/NotificationMatrix.jsx',
   'src/features/identity/pages/MiPerfil.jsx',
   'src/features/notifications/components/NotificationBell.jsx',
   'src/features/workspace/pages/AlumnoInicio.jsx',
   'src/pages/AdministrativoCargarComprobante.jsx',
   'src/pages/AdministrativoFacturacion.jsx',
-  'src/pages/AlumnoPagarSeleccion.jsx',
 ]
 
 export const noRawButtonRule = {

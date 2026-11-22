@@ -203,14 +203,16 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
                   >
                     {isStudent ? (
                       <div className="flex items-center gap-1">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="flex items-center gap-1 uppercase hover:text-foreground"
+                          className="min-h-11 gap-1 px-0 text-[length:inherit] font-[weight:inherit] uppercase hover:bg-transparent hover:text-foreground md:min-h-8"
                         >
                           Alumno
                           <SortIcon className="size-3.5" />
-                        </button>
+                        </Button>
                         {!boardMode && filterOptions.length > 1 && (
                           <ColumnFilter
                             label="Condición"
