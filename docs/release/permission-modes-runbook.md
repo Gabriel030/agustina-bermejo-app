@@ -151,6 +151,12 @@ Migrados (33 endpoints, permisos billing.*): payment-standing de inscripciones (
 
 manage_reminder_config queda no sensible porque solo propone y valida cambios: la aprobación, que sí tiene efecto, queda fuera de esta tanda y no se puede autoaprobar. Pasaría a ser sensible solo si una tanda futura pusiera la publicación directa bajo ese permiso.
 
+### Billing (tanda B1: cobros, reversas, reembolsos, notas de crédito y anulaciones)
+
+Los 13 permisos de esta tanda son SENSIBLES: delegarlos o revocarlos desde la grilla exige confirmación explícita y queda auditado como evento destacado. Migrados (14 endpoints): pago en efectivo (register_cash_payment), pago anual adelantado en efectivo (register_annual_upfront_cash_payment), carga de comprobante por el staff (submit_bank_transfer_receipt), aprobar y rechazar comprobantes (review_bank_transfer_receipt), revocar aprobación de un pago (revoke_payment_approval, solo Director en Legado, sin grant a otros roles), contracargos y su reversa (register_chargeback, reverse_chargeback), reembolsos (request_refund, complete_refund, fail_refund), nota de crédito (issue_credit_note), anulación de factura (cancel_invoice) y aplicación del saldo a favor (allocate_account_credit).
+
+Ningún endpoint de esta tanda cambia de resultado para el Director en Activo: todas las reglas vigentes lo permiten. Quedan fuera los previews (tanda A2), /me, el webhook de la pasarela y la tanda B2. Se quitó el @PreAuthorize de los métodos de staff de los services; los métodos de alumno de SubmitBankTransferReceiptService y RequestRefundService conservan el suyo. El módulo sigue en Legado.
+
 ## Academicrecord
 
 El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración de permisos ni cambio de resultado para el Director en ENFORCE.

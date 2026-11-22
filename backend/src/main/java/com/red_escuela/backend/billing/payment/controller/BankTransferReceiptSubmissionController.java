@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionRequest;
 import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionResponse;
 import com.red_escuela.backend.billing.payment.usecase.SubmitBankTransferReceiptUseCase;
@@ -67,7 +68,7 @@ public class BankTransferReceiptSubmissionController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping(value = "/students/{studentId}/bank-transfer-receipts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.submit_bank_transfer_receipt", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "400", description = SUBMISSION_ERRORS),
             @ApiResponse(responseCode = "404", description = "El alumno no existe o la factura no es de su cuenta"),

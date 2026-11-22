@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.note.service.IssueCreditNoteOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @UseCase
 public class IssueCreditNoteService implements IssueCreditNoteUseCase {
@@ -22,7 +21,6 @@ public class IssueCreditNoteService implements IssueCreditNoteUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public BillingOperationOutcome<CreditNote> issueOrRequestCreditNote(Long invoiceId, CreateCreditNoteRequest request, String idempotencyKey) {
         return pipeline.runOperation(operation, commandFactory.buildCommandForCurrentUser(invoiceId, request.reason(), request.justification(), request.toLineAmounts(), idempotencyKey));
     }

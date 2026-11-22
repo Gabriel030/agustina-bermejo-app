@@ -117,6 +117,29 @@ class PermissionGateCoverageTest {
             "TermController#list",
             "TermController#get");
 
+    private static final Set<String> BILLING_B1_MIGRATED_ENDPOINTS = Set.of(
+            "StudentPaymentController#registerCashPayment", "AnnualUpfrontCashPaymentController#registerAnnualUpfrontCashPayment",
+            "BankTransferReceiptSubmissionController#submitReceiptOnBehalfOfStudent", "BankTransferReceiptController#approve",
+            "BankTransferReceiptController#reject", "PaymentReversalController#revokeBankTransferApproval",
+            "PaymentReversalController#registerChargeback", "PaymentReversalController#reverseChargeback",
+            "RefundController#requestRefundOnBehalfOfStudent", "RefundController#completeRefund", "RefundController#failRefund",
+            "CreditNoteController#issueOrRequestCreditNote", "InvoiceCancellationController#cancelOrRequestInvoiceCancellation",
+            "CurrentAccountAllocationController#allocateCredit");
+
+    private static final Set<String> BILLING_B1_SERVICE_METHODS_WITHOUT_ROLE_RULE = Set.of(
+            ROOT + ".billing.payment.usecase.RegisterCashPaymentService#registerCashPayment",
+            ROOT + ".billing.payment.usecase.RegisterAnnualUpfrontCashPaymentService#registerAnnualUpfrontCashPayment",
+            ROOT + ".billing.payment.usecase.SubmitBankTransferReceiptService#submitReceiptOnBehalfOfStudent",
+            ROOT + ".billing.payment.usecase.RevokeBankTransferApprovalService#revokeBankTransferApproval",
+            ROOT + ".billing.payment.usecase.RegisterChargebackService#registerChargeback",
+            ROOT + ".billing.payment.usecase.ReverseChargebackService#reverseChargeback",
+            ROOT + ".billing.payment.usecase.RequestRefundService#requestRefundOnBehalfOfStudent",
+            ROOT + ".billing.payment.usecase.CompleteRefundService#completeRefund",
+            ROOT + ".billing.payment.usecase.FailRefundService#failRefund",
+            ROOT + ".billing.note.usecase.IssueCreditNoteService#issueOrRequestCreditNote",
+            ROOT + ".billing.note.usecase.CancelInvoiceService#cancelOrRequestInvoiceCancellation",
+            ROOT + ".billing.account.usecase.AllocateAccountCreditService#allocateCreditOfStudentAccounts");
+
     private static final Set<String> BILLING_ENDPOINTS_MIGRATED_TO_THE_GRID = Set.of(
             "CollectionReminderImpactController#getImpact", "OverdueContactListController#list",
             "EnrollmentPaymentStandingController#getProgramEnrollmentStanding", "EnrollmentPaymentStandingController#getCourseEnrollmentStanding",
@@ -406,6 +429,43 @@ class PermissionGateCoverageTest {
             for (Method method : methods) {
                 if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
                     violations.add(entry + " must not carry a role rule");
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void billingB1EndpointsRequireTheGateAndTheStaffServiceMethodsCarryNoRoleRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        Set<String> declared = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                if (!BILLING_B1_MIGRATED_ENDPOINTS.contains(endpoint) || !moduleOf(controller).equals("billing")) {
+                    continue;
+                }
+                declared.add(endpoint);
+                RequiresPermission requiresPermission = AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class);
+                PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
+                if (requiresPermission == null || !requiresPermission.code().startsWith("billing.") || !usesGate(method, controller)
+                        || preAuthorize == null || !preAuthorize.value().contains(GATE_EXPRESSION)) {
+                    violations.add(endpoint + " must be guarded by @RequiresPermission");
+                }
+            }
+        }
+        assertThat(declared).containsExactlyInAnyOrderElementsOf(BILLING_B1_MIGRATED_ENDPOINTS);
+        for (String serviceMethod : BILLING_B1_SERVICE_METHODS_WITHOUT_ROLE_RULE) {
+            String[] parts = serviceMethod.split("#");
+            Class<?> service = Class.forName(parts[0]);
+            if (AnnotatedElementUtils.findMergedAnnotation(service, PreAuthorize.class) != null) {
+                violations.add(service.getSimpleName() + " must not carry a role rule");
+            }
+            List<Method> methods = Stream.of(service.getDeclaredMethods()).filter(method -> method.getName().equals(parts[1])).toList();
+            assertThat(methods).as(serviceMethod).isNotEmpty();
+            for (Method method : methods) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
+                    violations.add(service.getSimpleName() + "#" + method.getName() + " must not carry a role rule");
                 }
             }
         }

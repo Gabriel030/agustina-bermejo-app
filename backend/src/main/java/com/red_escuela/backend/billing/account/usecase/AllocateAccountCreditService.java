@@ -9,7 +9,6 @@ import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.account.service.CurrentAccountActorResolver;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -33,7 +32,6 @@ public class AllocateAccountCreditService implements AllocateAccountCreditUseCas
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<AccountCreditAllocationResult> allocateCreditOfStudentAccounts(Long studentId) {
         StatusChangeActor actor = actorResolver.resolveCurrentPersonAsActor();
         LocalDate businessDate = LocalDate.now(clock);
