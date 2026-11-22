@@ -34,6 +34,8 @@ import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosed
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +52,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class SubjectSectionEnrollmentService {
+    private static final String STUDENT_SECTION_UNIQUE_CONSTRAINT = "uk_prog_sec_enr_student_section";
+
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final SectionFinder sectionFinder;
@@ -139,7 +143,7 @@ public class SubjectSectionEnrollmentService {
             reactivada.setWithdrawalReason(null);
             reactivada.setWithdrawnByPersonId(null);
             reactivada.setEnrolledAt(LocalDateTime.now(clock));
-            return subjectSectionEnrollmentRepository.save(reactivada);
+            return saveSectionEnrollmentOrThrowAlreadyEnrolled(reactivada, programEnrollmentId, subjectId);
         }
 
         SubjectSectionEnrollment nueva = new SubjectSectionEnrollment();
@@ -149,7 +153,24 @@ public class SubjectSectionEnrollmentService {
         nueva.setStatus(calculateStatusByCapacity(section));
         nueva.setEnrolledAt(LocalDateTime.now(clock));
         nueva.setAttemptNumber(calculateAttemptNumber(programEnrollmentId, subjectId, section.termId()));
-        return subjectSectionEnrollmentRepository.save(nueva);
+        return saveSectionEnrollmentOrThrowAlreadyEnrolled(nueva, programEnrollmentId, subjectId);
+    }
+
+    private SubjectSectionEnrollment saveSectionEnrollmentOrThrowAlreadyEnrolled(
+            SubjectSectionEnrollment enrollment, Long programEnrollmentId, Long subjectId) {
+        try {
+            return subjectSectionEnrollmentRepository.saveAndFlush(enrollment);
+        } catch (DataIntegrityViolationException violation) {
+            if (!violatesStudentSectionUniqueConstraint(violation)) {
+                throw violation;
+            }
+            throw new AlreadyEnrolledInSubjectException(programEnrollmentId, subjectId);
+        }
+    }
+
+    private static boolean violatesStudentSectionUniqueConstraint(DataIntegrityViolationException violation) {
+        return violation.getCause() instanceof ConstraintViolationException constraint
+                && STUDENT_SECTION_UNIQUE_CONSTRAINT.equals(constraint.getConstraintName());
     }
 
     private int calculateAttemptNumber(Long programEnrollmentId, Long subjectId, Long newTermId) {
@@ -251,7 +272,8 @@ public class SubjectSectionEnrollmentService {
             reactivada.setWithdrawalReason(null);
             reactivada.setWithdrawnByPersonId(null);
             reactivada.setEnrolledAt(now);
-            SubjectSectionEnrollment saved = subjectSectionEnrollmentRepository.save(reactivada);
+            SubjectSectionEnrollment saved = saveSectionEnrollmentOrThrowAlreadyEnrolled(
+                    reactivada, programEnrollment.getId(), origen.subjectId());
             changeEventPublisher.publishSectionChanged(origen, saved, change);
             return saved;
         }
@@ -263,7 +285,8 @@ public class SubjectSectionEnrollmentService {
         nueva.setStatus(calculateStatusByCapacity(destino));
         nueva.setEnrolledAt(now);
         nueva.setAttemptNumber(attemptNumber);
-        SubjectSectionEnrollment saved = subjectSectionEnrollmentRepository.save(nueva);
+        SubjectSectionEnrollment saved = saveSectionEnrollmentOrThrowAlreadyEnrolled(
+                nueva, programEnrollment.getId(), origen.subjectId());
         changeEventPublisher.publishSectionChanged(origen, saved, change);
         return saved;
     }

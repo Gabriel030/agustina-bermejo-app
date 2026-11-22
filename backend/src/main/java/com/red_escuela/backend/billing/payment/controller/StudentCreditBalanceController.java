@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.payment.dto.StudentCreditBalanceResponse;
 import com.red_escuela.backend.billing.payment.usecase.DescribeStudentCreditBalanceUseCase;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
@@ -33,7 +34,7 @@ public class StudentCreditBalanceController {
     }
 
     @GetMapping("/students/{studentId}/credit-balance")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_student_billing", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({@ApiResponse(responseCode = "404", description = "STUDENT_NOT_FOUND: el alumno no existe")})
     public StudentCreditBalanceResponse describeCreditBalanceOfStudent(@PathVariable Long studentId,
                                                                        @RequestParam(name = "currency", defaultValue = CURRENCY_DEFAULT) Currency currency) {

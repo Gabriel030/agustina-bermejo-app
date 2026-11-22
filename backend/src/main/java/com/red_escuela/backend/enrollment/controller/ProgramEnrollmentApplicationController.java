@@ -26,7 +26,7 @@ import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -120,14 +120,14 @@ public class ProgramEnrollmentApplicationController {
     }
 
     @GetMapping("/program-enrollment-applications")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.read_program_applications", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public List<ProgramEnrollmentApplicationResponse> listPending() {
         return listPendingProgramEnrollmentApplicationsUseCase.list().stream()
                 .map(ProgramEnrollmentApplicationResponse::from).toList();
     }
 
     @PostMapping("/program-enrollment-applications/{id}/approve")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.review_program_application", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ProgramEnrollmentApplicationResponse approve(@PathVariable Long id,
                                                         @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         Person decidedBy = currentPersonService.resolveCurrentPerson();
@@ -136,7 +136,7 @@ public class ProgramEnrollmentApplicationController {
     }
 
     @PostMapping("/program-enrollment-applications/{id}/reject")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.review_program_application", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ProgramEnrollmentApplicationResponse reject(
             @PathVariable Long id, @Valid @RequestBody RejectProgramEnrollmentApplicationRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {

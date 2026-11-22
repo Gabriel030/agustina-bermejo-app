@@ -2515,11 +2515,11 @@
           },
           "createdAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "lastUsedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "active", "createdAt", "lastUsedAt" ],

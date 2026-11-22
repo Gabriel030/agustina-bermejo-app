@@ -3,7 +3,7 @@ package com.red_escuela.backend.enrollment.controller;
 import com.red_escuela.backend.enrollment.dto.CourseSectionEnrollmentResponse;
 import com.red_escuela.backend.enrollment.service.CourseSectionEnrollmentService;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +21,7 @@ public class CourseSectionEnrollmentController {
     }
 
     @GetMapping("/course-enrollments/{id}/section-enrollments")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_course_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<CourseSectionEnrollmentResponse> listByEnrollment(@PathVariable Long id) {
         return courseSectionEnrollmentService.listByEnrollment(id).stream()
                 .map(CourseSectionEnrollmentResponse::from).toList();

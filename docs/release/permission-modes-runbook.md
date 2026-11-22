@@ -60,6 +60,101 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints de lectura de historial, informe de ausencias, exportación y asistencia por inscripción ya permiten al Director y no cambian.
 
+### Graduation
+
+Endpoint que hoy deniega al Director y pasaría a permitirlo en Activo:
+
+- POST /graduation-requests/{id}/verify-debt (graduation.verify_debt)
+
+Los permisos certificate.* usados por los certificados de egreso y sus plantillas pertenecen al módulo certificate: su modo se configura aparte del de graduation, pero conviene prender graduation y certificate juntos en Activo, porque el egreso y sus certificados se usan en un mismo circuito. Las constancias de #1103, las rutas de alumno y las públicas no usan la grilla. Los permisos certificate.revoke, certificate.issue y certificate.templates_manage pasan a ser sensibles.
+
+### Identity
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /students/{id}/reset-password (identity.reset_student_password): hoy solo lo permiten Preceptor y Administrativo (discrepancia esperada, #1216).
+
+El resto de los endpoints migrados de identity ya permiten al Director y no cambian.
+
+### Enrollment
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- GET /program-enrollment-applications, /pending, /history, /{id}, /{id}/approval-check y /{id}/documents/{documentId}/file (enrollment.read_program_applications)
+- POST /program-enrollment-applications/{id}/approve y /reject (enrollment.review_program_application)
+- POST /program-enrollments/{id}/advance-billing-year (enrollment.advance_billing_year)
+- POST /program-enrollments/{id}/invoices/ad-hoc y POST /course-enrollments/{id}/invoices/ad-hoc (enrollment.create_ad_hoc_invoice)
+- POST /director-approval-requests (enrollment.request_director_approval)
+
+Los endpoints del alumno (/me/*), el alta pública de interesados y las decisiones sobre pedidos de aprobación (listar, ver, aprobar, rechazar) quedan fuera de la grilla.
+
+### Billing (tanda A2)
+
+Lecturas y previews sin efecto del staff sobre entidades con plata (16 permisos `billing.*`, V381, 40 endpoints). Las escrituras, la cobranza, los recordatorios, los reportes y las corridas quedan en otras tandas, y el módulo sigue en LEGACY. Ningún permiso es sensible. Alumno (`/me/*`), webhook de Mercado Pago, configuración de pagos, plan de pagos, cohortes y los términos del pago anual `current` y `versions/{n}` (mixtos) quedan fuera.
+
+Ningún endpoint de esta tanda deniega hoy al Director: las reglas vigentes son Administrativo y Director, o solo Director. Pasar el módulo a Activo no cambia su resultado.
+
+Permisos que hoy solo permite el Director y no se siembran para ningún otro rol (se delegan desde la grilla):
+
+- POST /payments/{id}/approval-revocation/preview (billing.preview_approval_revocation)
+- GET /annual-upfront-terms/versions (billing.read_annual_upfront_terms_versions)
+
+Detalle de la migración: las reglas de los services (`@PreAuthorize`) de los métodos de staff de estos endpoints se movieron a `legacyRoles` del controller; en Activo un `@PreAuthorize` en el service anularía la grilla. Los métodos de alumno de los services compartidos conservan su regla.
+
+### Academicstructure
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /programs, PUT /programs/{id}, POST /programs/{id}/subjects, PUT /program-subjects/{id}, POST y DELETE de prerrequisitos y correquisitos de materias de carrera, POST/PUT /elective-groups y POST/DELETE /programs/{id}/elective-groups (academicstructure.manage_programs)
+- POST /courses, PUT /courses/{id}, POST /courses/{id}/subjects y PUT /course-subjects/{id} (academicstructure.manage_courses)
+- POST activate/deactivate de carreras y materias de carrera (academicstructure.change_program_status)
+- POST activate/deactivate de cursos y materias de curso (academicstructure.change_course_status)
+- PUT /programs/{id}/catalog-visibility y PUT /courses/{id}/catalog-visibility (academicstructure.change_catalog_visibility)
+- POST /holidays y PUT /holidays/{id} (academicstructure.manage_holidays); DELETE /holidays/{id} (academicstructure.delete_holiday)
+- POST /subjects, PUT /subjects/{id} y POST /subjects/{id}/submit-for-approval (academicstructure.manage_subjects)
+- POST /academic-offering-cycles, POST /academic-offering-cycles/{id}/sections y POST /academic-offering-cycles/{id}/submit (academicstructure.manage_offering_cycle)
+- POST /classrooms y POST /classrooms/{id}/deactivate (academicstructure.manage_classrooms)
+- POST /subject-sections/{id}/modification-request y /modification-request/preview (academicstructure.request_section_modification)
+- POST /subjects/{id}/sections, PUT /program-sections/{id}, POST /course-subjects/{id}/sections y PUT /course-sections/{id} (academicstructure.manage_sections)
+- POST activate/deactivate de comisiones de materias y de cursos (academicstructure.change_section_status)
+- POST /program-sections/{id}/instructors y /course-sections/{id}/instructors (academicstructure.assign_section_instructor)
+- DELETE /program-sections/{id}/instructors/{assignmentId} y /course-sections/{id}/instructors/{assignmentId} (academicstructure.remove_section_instructor)
+
+El resto de los endpoints migrados de academicstructure ya permite al Director y no cambia. Las decisiones exclusivas del Director (aprobar o rechazar ciclos de oferta, materias y pedidos de cambio de horario, ver los pedidos pendientes y definir los rangos de turnos) quedan como permisos sin concesiones a otros roles: el Director las conserva.
+
+Las lecturas abiertas a cualquier usuario autenticado (listados y detalles de carreras, cursos, materias, comisiones, ciclos, aulas, feriados, períodos y rangos de turnos) y GET /me/teaching-sections quedan fuera de la grilla.
+
+### Evaluation
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /exam-boards, POST /exam-boards/{id}/tribunal, POST /exam-boards/{id}/reschedule, POST /exam-boards/{id}/registrations y POST /exam-board-registrations/{id}/withdraw (evaluation.manage_exam_boards)
+- POST /exam-boards/{id}/cancel (evaluation.cancel_exam_board): hoy el Director no puede cancelar mesas; en Activo sí
+- POST /exam-boards/{id}/close (evaluation.close_exam_board)
+- PUT /exam-boards/{id}/final-grades (evaluation.record_exam_board_final_grades)
+- POST /section-enrollments/{id}/grade-items y POST /course-section-enrollments/{id}/grade-items (evaluation.load_grade_item)
+- POST /program-sections/{id}/grade-items/publish y POST /course-sections/{id}/grade-items/publish (evaluation.publish_grades)
+- POST /grade-items/{id}/recovery (evaluation.record_exam_recovery)
+- GET /program-sections/{id}/grade-grid y GET /course-sections/{id}/grade-grid (evaluation.read_grade_grid)
+- POST /program-sections/{id}/closure/confirm, POST /course-sections/{id}/closure/confirm y los PUT closure/students/{enrollmentId}/observation (evaluation.confirm_commission_closure)
+- POST /program-sections/{id}/closure/approve y POST /course-sections/{id}/closure/approve (evaluation.approve_commission_closure)
+
+Los endpoints del alumno (/me/*) y la configuración de evaluación del docente (/me/section-evaluation-configs) quedan fuera de la grilla. El resto de los endpoints migrados de evaluation ya permiten al Director y no cambian.
+
+De esos endpoints, load_grade_item, publish_grades, record_exam_recovery, read_grade_grid, confirm_commission_closure (confirmar y observación) y record_exam_board_final_grades dejan pasar al Director en Activo, pero el handler resuelve el instructor actual y, si el Director no tiene ficha de instructor, falla con InstructorNotFoundException (404): en la práctica sigue sin poder hacer acciones de docente salvo que tenga esa ficha. Esto viene de la resolución del instructor actual (currentInstructorId): el Director sin ficha de instructor no pasa en Activo lo que dependa de ella. requireCurrentInstructorOf, en cambio, deja pasar al Director sin ficha, así que no entra en este caso.
+
+### Billing (tanda A1: lecturas, cobranza y configuración de recordatorios)
+
+Todos los endpoints migrados permiten hoy al Director (reglas AD, solo Director o Administrativo, Director y Preceptor), así que ningún endpoint de esta tanda cambia de resultado para el Director en Activo. El módulo sigue en Legado y billing no está completo: el resto de los endpoints (plata, corridas con efecto, alumno /me, webhook, planes de pago, términos de pago anual) llegan en las tandas siguientes.
+
+Migrados (33 endpoints, permisos billing.*): payment-standing de inscripciones (read_payment_standing, con Preceptor), su historial, contact-list, impact, configuración y cronogramas de recordatorios (read_reminder_config y manage_reminder_config), métricas, tablero financiero, deudores (read_debtors, solo Director, sin grant a otros roles), billing-overview de un alumno, alertas de configuración, corridas nocturnas y mensuales (lecturas, read_billing_runs), simulación de corrida mensual (simulate_monthly_run, persiste una corrida simulada sin emitir facturas) y late-payment-settings/current.
+
+manage_reminder_config queda no sensible porque solo propone y valida cambios: la aprobación, que sí tiene efecto, queda fuera de esta tanda y no se puede autoaprobar. Pasaría a ser sensible solo si una tanda futura pusiera la publicación directa bajo ese permiso.
+
+## Academicrecord
+
+El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración de permisos ni cambio de resultado para el Director en ENFORCE.
+
 ## Notas operativas
 
 - Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.

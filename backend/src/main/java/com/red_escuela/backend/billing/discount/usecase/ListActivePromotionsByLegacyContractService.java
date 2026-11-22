@@ -6,7 +6,6 @@ import com.red_escuela.backend.billing.discount.dto.PromotionResponse;
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import com.red_escuela.backend.billing.discount.service.PromotionContractTranslator;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -21,7 +20,6 @@ public class ListActivePromotionsByLegacyContractService implements ListActivePr
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<PromotionResponse> listActivePromotions() {
         return translator.toResponses(repository.findCatalog(DiscountDefinitionType.COHORT_PROMOTION, DiscountDefinitionStatus.ACTIVE));
     }

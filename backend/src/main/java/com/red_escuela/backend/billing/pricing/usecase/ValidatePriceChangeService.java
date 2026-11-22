@@ -7,7 +7,6 @@ import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import java.time.LocalDate;
 import java.util.List;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @UseCase
 public class ValidatePriceChangeService implements ValidatePriceChangeUseCase {
@@ -19,7 +18,6 @@ public class ValidatePriceChangeService implements ValidatePriceChangeUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<PolicyViolation> validatePriceChange(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason, Integer appliesToLectiveYear) {
         return priceChangeViolationsReader.validatePriceChange(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, appliesToLectiveYear);
     }

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle, Info } from 'lucide-react';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { EmptyState } from '@/components/EmptyState';
+import { StickyActionBar } from '@/components/StickyActionBar';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
@@ -151,14 +152,14 @@ function ReviewStep({ student, draft, uploaderName, state, onBack, onSend, onVie
           </div>
         )}
       </GlassCard>
-      <GlassCard className="sticky bottom-4 z-10 flex items-center justify-end gap-3 p-4">
-        <Button type="button" variant="ghost" onClick={onBack} disabled={state.sending}>
+      <StickyActionBar>
+        <Button type="button" variant="ghost" className="min-h-11" onClick={onBack} disabled={state.sending}>
           Volver a editar
         </Button>
-        <Button type="button" variant="primary" onClick={onSend} loading={state.sending}>
+        <Button type="button" variant="primary" className="min-h-11" onClick={onSend} loading={state.sending}>
           {state.sending ? 'Cargando…' : state.unconfirmed ? 'Reintentar' : 'Cargar comprobante'}
         </Button>
-      </GlassCard>
+      </StickyActionBar>
     </>
   );
 }

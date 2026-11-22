@@ -1,0 +1,62 @@
+name: ZAP manual (staging)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: URL https de STAGING (nunca producción)
+        required: true
+        type: string
+      profile:
+        description: Perfil de ZAP
+        required: true
+        type: choice
+        options:
+          - baseline
+          - api
+      environment_confirmation:
+        description: Escribir exactamente ESTO ES STAGING
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zap-manual
+  cancel-in-progress: false
+
+jobs:
+  zap:
+    if: vars.ZAP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Reject any target that is not an allowed staging host
+        env:
+          TARGET_URL: ${{ inputs.target_url }}
+          ZAP_CONFIRMATION: ${{ inputs.environment_confirmation }}
+          ZAP_ALLOWED_HOSTS: ${{ vars.ZAP_ALLOWED_HOSTS }}
+          ZAP_FORBIDDEN_HOSTS: ${{ vars.ZAP_FORBIDDEN_HOSTS }}
+        run: security/zap/assert-staging-target.sh "$TARGET_URL"
+
+      - name: Run the ZAP profile against staging
+        env:
+          TARGET_URL: ${{ inputs.target_url }}
+          ZAP_PROFILE: ${{ inputs.profile }}
+          ZAP_CONFIRMATION: ${{ inputs.environment_confirmation }}
+          ZAP_ALLOWED_HOSTS: ${{ vars.ZAP_ALLOWED_HOSTS }}
+          ZAP_FORBIDDEN_HOSTS: ${{ vars.ZAP_FORBIDDEN_HOSTS }}
+          ZAP_OUTPUT_DIR: ${{ github.workspace }}/zap-reports
+        run: security/zap/run-zap.sh "$ZAP_PROFILE" "$TARGET_URL"
+
+      - name: Upload the ZAP reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap-reports
+          path: zap-reports
+          if-no-files-found: ignore
+          retention-days: 14

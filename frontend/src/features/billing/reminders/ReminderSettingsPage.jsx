@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/EmptyState';
+import { StickyActionBar } from '@/components/StickyActionBar';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
@@ -84,19 +85,14 @@ function ResultView({ result, roleBase, onClose }) {
 
 function ChangesBar({ count, onDiscard, onReview }) {
   return (
-    <GlassCard className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-      <span className="text-sm font-semibold text-ink">
-        {count} {count === 1 ? 'cambio sin publicar' : 'cambios sin publicar'}
-      </span>
-      <div className="flex gap-2">
-        <Button variant="ghost" onClick={onDiscard}>
-          Descartar
-        </Button>
-        <Button variant="primary" onClick={onReview}>
-          Revisar cambios
-        </Button>
-      </div>
-    </GlassCard>
+    <StickyActionBar summary={`${count} ${count === 1 ? 'cambio sin publicar' : 'cambios sin publicar'}`}>
+      <Button variant="ghost" className="min-h-11" onClick={onDiscard}>
+        Descartar
+      </Button>
+      <Button variant="primary" className="min-h-11" onClick={onReview}>
+        Revisar cambios
+      </Button>
+    </StickyActionBar>
   );
 }
 

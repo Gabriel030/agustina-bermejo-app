@@ -5,9 +5,11 @@ import {
   cohortLabel,
   debtMessages,
   documentationLabel,
+  filterPendingApplications,
   isApplicationAlreadyResolved,
   missingDocumentsText,
   nextPendingId,
+  pendingFilterOptions,
 } from '@/features/enrollment/lib/applicationReview';
 
 describe('applicationReview', () => {
@@ -68,5 +70,45 @@ describe('applicationReview', () => {
     expect(nextPendingId(pending, 1)).toBe(2);
     expect(nextPendingId(pending, 2)).toBe(3);
     expect(nextPendingId([pending[0]], 1)).toBeNull();
+  });
+});
+
+describe('pending filters', () => {
+  const complete = { complete: true, missingTypes: [] };
+  const incomplete = { complete: false, missingTypes: ['DNI_DORSO'] };
+  const applications = [
+    { id: 1, programName: 'Software', documentation: complete },
+    { id: 2, programName: 'Software', documentation: incomplete },
+    { id: 3, programName: 'Ciberseguridad', documentation: complete },
+  ];
+  const ids = (list) => list.map((application) => application.id);
+
+  it('returns everything when no filter is set', () => {
+    expect(ids(filterPendingApplications(applications, {}))).toEqual([1, 2, 3]);
+    expect(ids(filterPendingApplications(applications))).toEqual([1, 2, 3]);
+    expect(ids(filterPendingApplications(undefined, {}))).toEqual([]);
+  });
+
+  it('filters by program and by documentation independently', () => {
+    expect(ids(filterPendingApplications(applications, { programs: ['Software'] }))).toEqual([1, 2]);
+    expect(ids(filterPendingApplications(applications, { documentations: ['Completa'] }))).toEqual([1, 3]);
+  });
+
+  it('combines program and documentation with AND', () => {
+    expect(ids(filterPendingApplications(applications, { programs: ['Software'], documentations: ['Completa'] }))).toEqual([1]);
+    expect(ids(filterPendingApplications(applications, { programs: ['Ciberseguridad'], documentations: ['Incompleta'] }))).toEqual([]);
+  });
+
+  it('builds sorted options with counts from the full set', () => {
+    expect(pendingFilterOptions(applications)).toEqual({
+      programs: [
+        { value: 'Ciberseguridad', label: 'Ciberseguridad', count: 1 },
+        { value: 'Software', label: 'Software', count: 2 },
+      ],
+      documentations: [
+        { value: 'Completa', label: 'Completa', count: 2 },
+        { value: 'Incompleta', label: 'Incompleta', count: 1 },
+      ],
+    });
   });
 });

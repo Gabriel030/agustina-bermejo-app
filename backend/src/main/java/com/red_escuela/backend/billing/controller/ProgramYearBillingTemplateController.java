@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
 import com.red_escuela.backend.billing.dto.CreateProgramYearBillingTemplateRequest;
 import com.red_escuela.backend.billing.dto.ProgramCohortCatalogResponse;
@@ -101,7 +102,7 @@ public class ProgramYearBillingTemplateController {
     }
 
     @GetMapping("/programs/{id}/year-billing-templates")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_year_billing_templates", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ProgramYearBillingTemplateResponse> listBillingTemplates(@PathVariable Long id) {
         return listBillingTemplatesUseCase.list(id).stream().map(this::templateResponse).toList();
     }

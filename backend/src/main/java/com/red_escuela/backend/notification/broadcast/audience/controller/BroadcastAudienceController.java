@@ -5,8 +5,8 @@ import com.red_escuela.backend.notification.broadcast.audience.dto.BroadcastAudi
 import com.red_escuela.backend.notification.broadcast.audience.dto.SegmentCatalogEntry;
 import com.red_escuela.backend.notification.broadcast.audience.usecase.ListSegmentCatalogUseCase;
 import com.red_escuela.backend.notification.broadcast.audience.usecase.PreviewBroadcastAudienceUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,7 +17,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/broadcasts")
-@PreAuthorize("hasAnyRole('DIRECTOR','ADMINISTRATIVO')")
 public class BroadcastAudienceController {
 
     private final ListSegmentCatalogUseCase listSegmentCatalog;
@@ -29,11 +28,13 @@ public class BroadcastAudienceController {
         this.previewBroadcastAudience = previewBroadcastAudience;
     }
 
+    @RequiresPermission(code = "notification.compose_broadcast", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @GetMapping("/segment-catalog")
     public List<SegmentCatalogEntry> listSegmentCatalog() {
         return listSegmentCatalog.listSegmentCatalog();
     }
 
+    @RequiresPermission(code = "notification.compose_broadcast", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @PostMapping("/audience-preview")
     public BroadcastAudiencePreviewResponse previewBroadcastAudience(@Valid @RequestBody AudiencePreviewRequest request) {
         return previewBroadcastAudience.previewBroadcastAudience(request);

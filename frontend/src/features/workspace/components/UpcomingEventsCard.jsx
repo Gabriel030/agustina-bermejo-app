@@ -15,6 +15,9 @@ const EVENT_TYPE_PILL = {
   close: { tone: 'warning', label: 'Cierre de período' },
   enrollment: { tone: 'success', label: 'Inscripción' },
   start: { tone: 'neutral', label: 'Inicio de período' },
+  class: { tone: 'accent', label: 'Clase' },
+  due: { tone: 'warning', label: 'Vencimiento' },
+  assignment: { tone: 'neutral', label: 'Entrega' },
 };
 
 const EVENT_ROW_CLASS = 'grid grid-cols-[3.5rem_minmax(0,1fr)_auto] min-[521px]:grid-cols-[3.5rem_minmax(0,1fr)_auto_auto] items-center gap-3 border-t border-border px-1 py-2';
@@ -42,7 +45,10 @@ function EventRowContent({ event }) {
   return (
     <>
       <EventDateBlock isoDate={event.date} />
-      <span className="min-w-0 truncate text-size-13-5 font-semibold text-ink">{event.title}</span>
+      <span className="min-w-0">
+        <span className="block truncate text-size-13-5 font-semibold text-ink">{event.title}</span>
+        {event.subtitle && <span className="block truncate text-size-12 text-ink-faint tabular-nums">{event.subtitle}</span>}
+      </span>
       <StatusPill tone={pill.tone} className="max-[520px]:sr-only min-[521px]:not-sr-only">
         {pill.label}
       </StatusPill>

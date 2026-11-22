@@ -6,6 +6,7 @@
     "test": "playwright test",
     "test:smoke": "playwright test --grep @smoke",
     "test:flows": "playwright test --grep @flow",
+    "test:offline": "playwright test --config playwright.offline.config.js",
     "test:demo": "playwright test --config playwright.demo.config.js",
     "test:visual": "playwright test -c playwright.visual.config.js",
     "test:visual:update": "playwright test -c playwright.visual.config.js --update-snapshots"

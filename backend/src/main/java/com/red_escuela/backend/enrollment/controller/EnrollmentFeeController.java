@@ -15,7 +15,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,26 +47,26 @@ public class EnrollmentFeeController {
 
     @PostMapping("/program-enrollments/{id}/enrollment-fee-exemptions")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.grant_enrollment_fee_exemption", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public EnrollmentFeeExemptionResponse grant(@PathVariable Long id, @Valid @RequestBody GrantEnrollmentFeeExemptionRequest request) {
         return EnrollmentFeeExemptionResponse.from(grantUseCase.grant(id, request));
     }
 
     @PostMapping("/enrollment-fee-exemptions/{id}/revoke")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.revoke_enrollment_fee_exemption", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public void revoke(@PathVariable Long id, @Valid @RequestBody RevokeEnrollmentFeeExemptionRequest request) {
         revokeUseCase.revoke(id, request.notes());
     }
 
     @GetMapping("/program-enrollments/{id}/enrollment-fee-exemptions")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO', 'PRECEPTOR')")
+    @RequiresPermission(code = "enrollment.read_enrollment_fee", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO,ROLE_PRECEPTOR")
     public List<EnrollmentFeeExemptionResponse> list(@PathVariable Long id) {
         return listUseCase.list(id);
     }
 
     @GetMapping("/program-enrollments/{id}/enrollment-fee-status")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO', 'PRECEPTOR')")
+    @RequiresPermission(code = "enrollment.read_enrollment_fee", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO,ROLE_PRECEPTOR")
     public List<EnrollmentFeeObligationResponse> status(@PathVariable Long id) {
         return statusUseCase.get(id);
     }

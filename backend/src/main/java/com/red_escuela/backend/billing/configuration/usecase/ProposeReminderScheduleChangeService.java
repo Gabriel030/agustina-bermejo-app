@@ -6,7 +6,6 @@ import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarg
 import com.red_escuela.backend.billing.configuration.service.ReminderScheduleTargets;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDate;
 
@@ -21,13 +20,11 @@ public class ProposeReminderScheduleChangeService implements ProposeReminderSche
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public BillingOperationOutcome<ConfigurationVersion> proposeChange(ReminderScheduleTarget target, ReminderSchedule schedule, LocalDate effectiveFrom, String changeReason) {
         return proposeChangeUseCase.proposeChange(targets.requireExistingTopic(target), targets.requestedValuesOf(target.group(), schedule), effectiveFrom, changeReason);
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public BillingOperationOutcome<ConfigurationVersion> proposeExceptionRemoval(ReminderScheduleTarget target, LocalDate effectiveFrom, String changeReason) {
         return proposeChangeUseCase.proposeChange(targets.requireExistingTopic(target), targets.valuesOf(target.group(), ReminderSchedule.followingGroup()), effectiveFrom, changeReason);
     }

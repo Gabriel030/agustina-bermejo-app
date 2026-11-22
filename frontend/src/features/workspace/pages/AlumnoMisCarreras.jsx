@@ -20,9 +20,7 @@ import { TabAsistencia } from '@/features/attendance';
 import { TabMesasDeExamen } from '@/features/evaluation';
 import { GraduationRequestAction } from '@/features/graduation';
 import { describeRegularity, useMyRegularity } from '@/features/identity';
-import { useMisMatriculaciones, useMiProgreso } from '@/features/enrollment';
-import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
-import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
+import { useMisMatriculaciones, useMiProgreso, useCurriculumProgress } from '@/features/enrollment';
 
 function StatLabel({ icon: Icon, children }) {
   return (
@@ -55,12 +53,12 @@ export function AlumnoMisCarreras() {
   const { data: progreso } = useMiProgreso(matricula?.id);
   const { data: regularity } = useMyRegularity('PROGRAM', graduated ? null : matricula?.id);
   const regularityView = regularity ? describeRegularity(regularity) : null;
-  const { data: planDeEstudio } = useProgramaPlanDeEstudio(matricula?.programId);
-  const totalMateriasPlan = planDeEstudio?.length;
-  const { filas: materiasClasificadas } = useMateriasDelPlan(matricula?.id);
-  const aprobadasCount = materiasClasificadas.filter((f) => f.estado === 'aprobada').length;
+  const { data: curriculum } = useCurriculumProgress(matricula?.id);
+  const summary = curriculum?.summary;
+  const aprobadasCount = summary?.counts.approved;
+  const totalMateriasPlan = curriculum?.subjects.length;
   const porcentajeAvance =
-    progreso?.creditosRequeridos ? Math.round((progreso.creditosAcumulados / progreso.creditosRequeridos) * 100) : 0;
+    summary?.completionPercent ?? (summary?.mandatoryTotal ? (summary.mandatoryApproved / summary.mandatoryTotal) * 100 : 0);
 
   function cambiarCarrera(value) {
     searchParams.set('carrera', value);
@@ -170,15 +168,15 @@ export function AlumnoMisCarreras() {
         <Stagger>
           <StatCard label={<StatLabel icon={CheckCircle2}>Materias aprobadas</StatLabel>}>
             <div className="font-heading text-2xl font-bold text-ink">
-              {aprobadasCount}
+              {aprobadasCount ?? '—'}
               {totalMateriasPlan != null && <span className="text-base font-semibold text-ink-faint"> / {totalMateriasPlan}</span>}
             </div>
           </StatCard>
           <StatCard label={<StatLabel icon={Star}>Créditos acumulados</StatLabel>}>
             <div className="font-heading text-2xl font-bold text-ink">
-              {progreso?.creditosAcumulados ?? '—'}
-              {progreso?.creditosRequeridos != null && (
-                <span className="text-base font-semibold text-ink-faint"> / {progreso.creditosRequeridos}</span>
+              {summary && summary.requiredCredits > 0 ? summary.accumulatedCredits : '—'}
+              {summary?.requiredCredits > 0 && (
+                <span className="text-base font-semibold text-ink-faint"> / {summary.requiredCredits}</span>
               )}
             </div>
           </StatCard>

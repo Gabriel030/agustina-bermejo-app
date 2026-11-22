@@ -30,7 +30,7 @@ function mockSection({ savedStatusForAna, savedDate = localIsoDate() } = {}) {
 }
 
 function rowOf(name) {
-  return screen.getByText(name).closest('div.rounded-2xl');
+  return screen.getByText(name).closest('li');
 }
 
 const draftKey = () => `attendanceDraft:PROGRAM:5:${localIsoDate()}`;
@@ -158,7 +158,7 @@ describe('TabAsistencia', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
 
     expect(await screen.findByText(/Si la registró otro docente o ya pasó el día/)).toBeInTheDocument();
-    expect(screen.getByText('● Cambios sin guardar')).toBeInTheDocument();
+    expect(screen.getByText(/cambio sin guardar/)).toBeInTheDocument();
   });
 
   it('conserva el borrador local de una correccion de hoy al recargar', async () => {
@@ -264,11 +264,11 @@ describe('TabAsistencia', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
 
     expect(await screen.findByText(/El servicio no está disponible por ahora/)).toBeInTheDocument();
-    expect(screen.getByText('1 / 2 procesados')).toBeInTheDocument();
+    expect(screen.getByText('1 de 2 marcados')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Guardar asistencia' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
-    expect(await screen.findByText('✓ Asistencia guardada')).toBeInTheDocument();
+    expect(await screen.findByText('Asistencia guardada')).toBeInTheDocument();
     expect(calls).toBe(2);
     expect(localStorage.getItem(draftKey())).toBeNull();
   });
@@ -286,8 +286,8 @@ describe('TabAsistencia', () => {
     renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
     await screen.findByText('Ana Gómez');
     expect(await screen.findByText('Recuperamos tu asistencia sin enviar.')).toBeInTheDocument();
-    expect(screen.getByText('1 / 2 procesados')).toBeInTheDocument();
-    expect(screen.getByText('● Cambios sin guardar')).toBeInTheDocument();
+    expect(screen.getByText('1 de 2 marcados')).toBeInTheDocument();
+    expect(screen.getByText(/cambio sin guardar/)).toBeInTheDocument();
   });
 
   it('does not recover an expired draft', async () => {
@@ -300,7 +300,7 @@ describe('TabAsistencia', () => {
 
     await screen.findByText('Ana Gómez');
     expect(screen.queryByText('Recuperamos tu asistencia sin enviar.')).not.toBeInTheDocument();
-    expect(screen.getByText('0 / 2 procesados')).toBeInTheDocument();
+    expect(screen.getByText('0 de 2 marcados')).toBeInTheDocument();
   });
 
   it('clears the draft after a successful submit', async () => {
@@ -350,7 +350,7 @@ describe('TabAsistencia load failure', () => {
     await screen.findByText(message);
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
     expect(screen.queryByText('No hay alumnos para mostrar')).not.toBeInTheDocument();
-    expect(screen.queryByText('Todavía no se tomó asistencia esta fecha')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sin tomar todavía')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Guardar/ })).not.toBeInTheDocument();
     expect(posts).toBe(0);
   });

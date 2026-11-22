@@ -114,6 +114,33 @@ class SectionEnrollmentConcurrencyIT extends AbstractIntegrationTest {
     }
 
     @RepeatedTest(5)
+    void sameStudentEnrollingInTheSameSectionFromTwoProgramEnrollmentsLetsOneInAndRejectsTheOtherAsDuplicate() throws Exception {
+        Long[] ids = new Long[4];
+        inTransaction(() -> {
+            SubjectSection section = section(20);
+            ProgramEnrollment first = fixtures.programEnrollment(program);
+            ProgramEnrollment second = new ProgramEnrollment();
+            second.setStudent(first.getStudent());
+            second.setProgram(program);
+            second.setStatus(first.getStatus());
+            entityManager.persist(second);
+            ids[0] = first.getId();
+            ids[1] = second.getId();
+            ids[2] = section.getId();
+            ids[3] = first.getStudent().getId();
+        });
+        Callable<Object> enrollFromFirst = () -> service.enroll(ids[0], new CreateSectionEnrollmentRequest(ids[2]));
+        Callable<Object> enrollFromSecond = () -> service.enroll(ids[1], new CreateSectionEnrollmentRequest(ids[2]));
+
+        List<Outcome<Object>> outcomes = ConcurrentRace.run(List.of(enrollFromFirst, enrollFromSecond));
+
+        assertThat(outcomes).filteredOn(Outcome::succeeded).hasSize(1);
+        assertThat(outcomes).filteredOn(outcome -> !outcome.succeeded())
+                .singleElement().satisfies(outcome -> assertThat(outcome.failure()).isInstanceOf(AlreadyEnrolledInSubjectException.class));
+        assertThat(enrollmentRepository.findBySubjectSectionIdAndStatusIn(ids[2], SEAT_HOLDING)).hasSize(1);
+    }
+
+    @RepeatedTest(5)
     void oppositeSectionChangesBetweenTheSameTwoSectionsBothComplete() throws Exception {
         Long[] ids = new Long[4];
         inTransaction(() -> {

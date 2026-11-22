@@ -7,7 +7,7 @@ import com.red_escuela.backend.enrollment.usecase.prospect.CreateProspectByStaff
 import com.red_escuela.backend.enrollment.usecase.prospect.ListProspectsUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,13 +31,13 @@ public class ProspectStaffController {
 
     @PostMapping("/by-staff")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.manage_prospects", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ProspectResponse createProspectByStaff(@Valid @RequestBody CreateProspectRequest request) {
         return createProspectByStaff.create(request);
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_prospects", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ProspectListItemResponse> listProspects() {
         return listProspects.list();
     }

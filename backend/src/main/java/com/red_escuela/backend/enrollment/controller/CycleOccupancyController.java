@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.CycleOccupancyResponse;
 import com.red_escuela.backend.enrollment.usecase.occupancy.GetCycleOccupancyUseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +17,7 @@ public class CycleOccupancyController {
     }
 
     @GetMapping("/academic-offering-cycles/{id}/occupancy")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_waitlists", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public CycleOccupancyResponse getOccupancy(@PathVariable Long id) {
         return getCycleOccupancyUseCase.getOccupancy(id);
     }

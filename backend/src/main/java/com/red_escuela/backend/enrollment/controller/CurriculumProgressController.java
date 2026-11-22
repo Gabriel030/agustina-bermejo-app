@@ -7,7 +7,7 @@ import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadGraduat
 import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadOwnCurriculumProgressUseCase;
 import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadOwnGraduationProjectionUseCase;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,7 +39,7 @@ public class CurriculumProgressController {
     }
 
     @GetMapping("/program-enrollments/{id}/progress/subjects")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_program_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public CurriculumProgressResponse getCurriculumProgress(@PathVariable Long id) {
         return readCurriculumProgressUseCase.read(id);
     }
@@ -50,7 +50,7 @@ public class CurriculumProgressController {
     }
 
     @GetMapping("/program-enrollments/{id}/progress/projection")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_program_enrollments", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public GraduationProjectionResponse getGraduationProjection(@PathVariable Long id) {
         return readGraduationProjectionUseCase.read(id);
     }

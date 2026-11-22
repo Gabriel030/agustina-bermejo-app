@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom';
+import { useMyModules } from '@/hooks/useMyModules';
 import { InscripcionWizard } from '@/features/enrollment/components/InscripcionWizard';
 import {
   usePrograma,
@@ -10,8 +11,9 @@ import {
 // inscripción a una carrera — mismo patrón de página fina que DetalleCarrera.
 export function InscripcionCarrera() {
   const { id } = useParams();
+  const { billingEnabled } = useMyModules();
   const { data: programa, isLoading, isError } = usePrograma(id);
-  const { data: pricing } = useProgramaPricing(id);
+  const { data: pricing } = useProgramaPricing(id, { enabled: billingEnabled });
   const { data: cohorts } = useOpenProgramCohorts(id);
 
   if (isError) {
