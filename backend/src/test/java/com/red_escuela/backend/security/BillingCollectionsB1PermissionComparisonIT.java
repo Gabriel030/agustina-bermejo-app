@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SlowTest(reason = "recorre los endpoints de billing de la tanda A1 por rol contra el contexto completo")
+@SlowTest(reason = "recorre los endpoints de billing de la tanda B1 (cobros y reversas) por rol contra el contexto completo")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class BillingCollectionsB1PermissionComparisonIT extends AuthorizationMatrixSupport {
 
@@ -39,6 +39,8 @@ class BillingCollectionsB1PermissionComparisonIT extends AuthorizationMatrixSupp
         jdbcTemplate.update("delete from permission_module_mode where module = 'billing'");
         jdbcTemplate.update("delete from role_permission where role in ('ALUMNO', 'PRECEPTOR', 'DOCENTE') and permission_id in (select id from permission where module = 'billing')");
         jdbcTemplate.update("delete from role_permission where role = 'ADMINISTRATIVO' and permission_id in (select id from permission where code = 'billing.revoke_payment_approval')");
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'ADMINISTRATIVO', id from permission where code = 'billing.register_cash_payment' "
+                + "and not exists (select 1 from role_permission rp where rp.role = 'ADMINISTRATIVO' and rp.permission_id = permission.id)");
         cache.invalidate();
     }
 
@@ -102,18 +104,18 @@ class BillingCollectionsB1PermissionComparisonIT extends AuthorizationMatrixSupp
     }
 
     @Test
-    void legacyModeMatchesTheOldRulesForEveryBillingReadEndpointAndRole() throws Exception {
+    void legacyModeMatchesTheOldRulesForEveryBillingCollectionEndpointAndRole() throws Exception {
         assertDecisionsMatchLegacy("LEGACY");
     }
 
     @Test
-    void shadowModeMatchesTheOldRulesForEveryBillingReadEndpointAndRole() throws Exception {
+    void shadowModeMatchesTheOldRulesForEveryBillingCollectionEndpointAndRole() throws Exception {
         setModuleMode("SHADOW");
         assertDecisionsMatchLegacy("SHADOW");
     }
 
     @Test
-    void enforceModeWithTheDefaultGridMatchesTheOldRulesForEveryBillingReadEndpointAndRole() throws Exception {
+    void enforceModeWithTheDefaultGridMatchesTheOldRulesForEveryBillingCollectionEndpointAndRole() throws Exception {
         setModuleMode("ENFORCE");
         assertDecisionsMatchLegacy("ENFORCE");
     }
@@ -135,6 +137,18 @@ class BillingCollectionsB1PermissionComparisonIT extends AuthorizationMatrixSupp
         grantToRole("PRECEPTOR", "billing.register_cash_payment");
         assertThat(isForbiddenByTheGate(endpoints, cashRow, MatrixRole.PRECEPTOR)).isFalse();
         assertThat(isForbiddenByTheGate(endpoints, rowOf("POST /refunds/{refundId}/completion"), MatrixRole.PRECEPTOR)).isTrue();
+    }
+
+    @Test
+    void enforceModeDeniesTheAdministrativeRoleOnceTheSeededPermissionIsRemoved() throws Exception {
+        setModuleMode("ENFORCE");
+        Map<String, MappedEndpoint> endpoints = endpointsByKey();
+        AuthorizationMatrixRow cashRow = rowOf("POST /students/{studentId}/cash-payments");
+        assertThat(isForbiddenByTheGate(endpoints, cashRow, MatrixRole.ADMINISTRATIVO)).isFalse();
+        jdbcTemplate.update("delete from role_permission where role = 'ADMINISTRATIVO' and permission_id in (select id from permission where code = 'billing.register_cash_payment')");
+        cache.invalidate();
+        assertThat(isForbiddenByTheGate(endpoints, cashRow, MatrixRole.ADMINISTRATIVO)).isTrue();
+        assertThat(isForbiddenByTheGate(endpoints, cashRow, MatrixRole.DIRECTOR)).isFalse();
     }
 
     @Test
