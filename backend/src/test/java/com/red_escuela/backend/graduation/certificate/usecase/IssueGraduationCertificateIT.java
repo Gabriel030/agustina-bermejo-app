@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
@@ -65,6 +66,8 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
     private CertificateDigest digest;
     @Autowired
     private AuditLogRepository auditLogRepository;
+    @Autowired
+    private JdbcTemplate jdbc;
 
     private Program program;
     private ProgramEnrollment enrollment;
@@ -199,6 +202,12 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
                 .filter(entry -> entry.getEntityId().equals(response.id())))
                 .hasSize(1)
                 .allSatisfy(entry -> assertThat(entry.getBeforeValue()).isEqualTo("f".repeat(64)));
+        assertThat(committedAuditCount("DOCUMENT_PDF_HASH_MISMATCH", response.id())).isEqualTo(1);
+        assertThat(stored.getPdfSha256()).isEqualTo("f".repeat(64));
+    }
+
+    private int committedAuditCount(String action, Long certificateId) {
+        return jdbc.queryForObject("select count(*) from audit_log where action = ? and entity_id = ?", Integer.class, action, certificateId);
     }
 
     @Test
