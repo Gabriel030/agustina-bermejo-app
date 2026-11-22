@@ -8,7 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.service.SubjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,45 +33,45 @@ public class SubjectController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_subjects", legacyRoles = "ROLE_ADMINISTRATIVO")
     public SubjectResponse create(@Valid @RequestBody CreateSubjectRequest request) {
         return SubjectResponse.from(subjectService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_subjects", legacyRoles = "ROLE_ADMINISTRATIVO")
     public SubjectResponse update(@PathVariable Long id, @Valid @RequestBody UpdateSubjectRequest request) {
         return SubjectResponse.from(subjectService.update(id, request));
     }
 
     @PostMapping("/{id}/submit-for-approval")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_subjects", legacyRoles = "ROLE_ADMINISTRATIVO")
     public SubjectResponse submitForApproval(@PathVariable Long id) {
         return SubjectResponse.from(subjectService.submitForApproval(id));
     }
 
     @PostMapping("/{id}/approve")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.review_subject", legacyRoles = "ROLE_DIRECTOR")
     public SubjectResponse approve(@PathVariable Long id) {
         return SubjectResponse.from(subjectService.approve(id));
     }
 
     @PostMapping("/{id}/reject")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.review_subject", legacyRoles = "ROLE_DIRECTOR")
     public SubjectResponse reject(@PathVariable Long id, @Valid @RequestBody RejectSubjectRequest request) {
         return SubjectResponse.from(subjectService.reject(id, request.reason()));
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.change_subject_status", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void deactivate(@PathVariable Long id) {
         subjectService.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "academicstructure.change_subject_status", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void reactivate(@PathVariable Long id) {
         subjectService.reactivate(id);
     }

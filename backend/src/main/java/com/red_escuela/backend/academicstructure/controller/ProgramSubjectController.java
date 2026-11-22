@@ -11,7 +11,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.ProgramSubjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,13 +35,13 @@ public class ProgramSubjectController {
 
     @PostMapping("/programs/{id}/subjects")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ProgramSubjectResponse addSubject(@PathVariable Long id, @Valid @RequestBody CreateProgramSubjectRequest request) {
         return ProgramSubjectResponse.from(programSubjectService.addSubject(id, request));
     }
 
     @PutMapping("/program-subjects/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ProgramSubjectResponse update(@PathVariable Long id, @RequestBody UpdateProgramSubjectRequest request) {
         return ProgramSubjectResponse.from(programSubjectService.update(id, request));
     }
@@ -58,21 +58,21 @@ public class ProgramSubjectController {
 
     @PostMapping("/program-subjects/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_program_status", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void deactivate(@PathVariable Long id) {
         programSubjectService.deactivate(id);
     }
 
     @PostMapping("/program-subjects/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.change_program_status", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void reactivate(@PathVariable Long id) {
         programSubjectService.reactivate(id);
     }
 
     @PostMapping("/program-subjects/{id}/prerequisites")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public PrerequisiteResponse addPrerequisite(@PathVariable Long id, @Valid @RequestBody AddPrerequisiteRequest request) {
         return PrerequisiteResponse.from(programSubjectService.addPrerequisite(id, request));
     }
@@ -84,14 +84,14 @@ public class ProgramSubjectController {
 
     @DeleteMapping("/program-subjects/prerequisites/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void removePrerequisite(@PathVariable Long id) {
         programSubjectService.removePrerequisite(id);
     }
 
     @PostMapping("/program-subjects/{id}/corequisites")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public CorequisiteResponse addCorequisite(@PathVariable Long id, @Valid @RequestBody AddCorequisiteRequest request) {
         return CorequisiteResponse.from(programSubjectService.addCorequisite(id, request));
     }
@@ -103,7 +103,7 @@ public class ProgramSubjectController {
 
     @DeleteMapping("/program-subjects/corequisites/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void removeCorequisite(@PathVariable Long id) {
         programSubjectService.removeCorequisite(id);
     }

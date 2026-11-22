@@ -27,7 +27,7 @@ public class MonthlyInvoiceSimulationController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @RequiresPermission(code = "billing.read_billing_runs", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
+    @RequiresPermission(code = "billing.simulate_monthly_run", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public MonthlyInvoiceSimulationResponse simulateMonthlyInvoices(@Valid @RequestBody MonthlyInvoiceSimulationRequest request) {
         return simulationUseCase.simulateMonthlyInvoicesOfPeriodAsOfToday(request.period());
     }

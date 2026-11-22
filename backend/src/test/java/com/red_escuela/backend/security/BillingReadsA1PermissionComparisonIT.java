@@ -27,7 +27,7 @@ class BillingReadsA1PermissionComparisonIT extends AuthorizationMatrixSupport {
             "billing.read_billing_metrics", "billing.read_financial_dashboard", "billing.read_debtors",
             "billing.read_student_billing_overview", "billing.read_payment_standing", "billing.read_payment_standing_history",
             "billing.read_overdue_contacts", "billing.preview_reminder_impact", "billing.read_reminder_config",
-            "billing.manage_reminder_config", "billing.read_billing_runs", "billing.read_late_payment_settings");
+            "billing.manage_reminder_config", "billing.read_billing_runs", "billing.simulate_monthly_run", "billing.read_late_payment_settings");
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

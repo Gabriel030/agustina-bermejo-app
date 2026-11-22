@@ -9,7 +9,8 @@ insert into permission (code, module, description, fixed_to_director, sensitive)
     ('billing.preview_reminder_impact', 'billing', 'Simular el impacto de un cambio en los recordatorios de cobranza', false, false),
     ('billing.read_reminder_config', 'billing', 'Ver la configuración de recordatorios de cobranza, sus cronogramas y su historial de versiones', false, false),
     ('billing.manage_reminder_config', 'billing', 'Validar y proponer cambios en la configuración y los cronogramas de recordatorios de cobranza', false, false),
-    ('billing.read_billing_runs', 'billing', 'Ver las corridas de facturación, sus alertas, los borradores mensuales, las alertas de configuración y simular una corrida mensual', false, false),
+    ('billing.read_billing_runs', 'billing', 'Ver las corridas de facturación, sus alertas, los borradores mensuales y las alertas de configuración', false, false),
+    ('billing.simulate_monthly_run', 'billing', 'Simular una corrida mensual de facturación sin emitir facturas', false, false),
     ('billing.read_late_payment_settings', 'billing', 'Ver la configuración vigente de recargos por mora', false, false);
 
 insert into role_permission (role, permission_id)
@@ -26,6 +27,7 @@ from (values
     ('ADMINISTRATIVO', 'billing.read_reminder_config'),
     ('ADMINISTRATIVO', 'billing.manage_reminder_config'),
     ('ADMINISTRATIVO', 'billing.read_billing_runs'),
+    ('ADMINISTRATIVO', 'billing.simulate_monthly_run'),
     ('ADMINISTRATIVO', 'billing.read_late_payment_settings')
 ) as grants (role, code)
 join permission on permission.code = grants.code;

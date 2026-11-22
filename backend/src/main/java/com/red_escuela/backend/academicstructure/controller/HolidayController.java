@@ -9,7 +9,7 @@ import com.red_escuela.backend.academicstructure.usecase.holiday.ListHolidaysUse
 import com.red_escuela.backend.academicstructure.usecase.holiday.UpdateHolidayUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,20 +44,20 @@ public class HolidayController {
 
     @PostMapping("/holidays")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_holidays", legacyRoles = "ROLE_ADMINISTRATIVO")
     public HolidayResponse create(@Valid @RequestBody CreateHolidayRequest request) {
         return createHolidayUseCase.create(request);
     }
 
     @PutMapping("/holidays/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.manage_holidays", legacyRoles = "ROLE_ADMINISTRATIVO")
     public HolidayResponse update(@PathVariable Long id, @Valid @RequestBody UpdateHolidayRequest request) {
         return updateHolidayUseCase.update(id, request);
     }
 
     @DeleteMapping("/holidays/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.delete_holiday", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void delete(@PathVariable Long id) {
         deleteHolidayUseCase.delete(id);
     }
