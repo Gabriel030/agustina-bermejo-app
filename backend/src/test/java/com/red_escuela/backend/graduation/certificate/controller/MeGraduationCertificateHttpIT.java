@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -81,7 +82,9 @@ class MeGraduationCertificateHttpIT extends GraduationCertificateOperationsSuppo
         Long id = issueCertificate(mine);
         String token = studentToken(mine);
 
-        send(get(ME + "/" + id + "/pdf"), token).andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_PDF));
+        send(get(ME + "/" + id + "/pdf"), token).andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"));
         send(get(ME + "/" + id + "/pdf?disposition=INLINE"), token).andExpect(status().isOk());
 
         assertThat(downloads(id, AuditAction.GRADUATION_CERTIFICATE_DOWNLOADED)).isEqualTo(2);
@@ -137,5 +140,21 @@ class MeGraduationCertificateHttpIT extends GraduationCertificateOperationsSuppo
         assertThat(result.getResponse().getContentType()).doesNotContain("pdf");
         assertThat(downloads(id, AuditAction.GRADUATION_CERTIFICATE_PDF_MISMATCH)).isEqualTo(1);
         assertThat(downloads(id, AuditAction.GRADUATION_CERTIFICATE_DOWNLOADED)).isZero();
+    }
+
+    @Test
+    void anonymousCallersAreUnauthorized() throws Exception {
+        Long id = issueCertificate(completedEnrollment());
+
+        mockMvc.perform(get(ME)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(ME + "/" + id + "/pdf")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void staffWithoutAStudentProfileGetsNotFoundOnBothEndpoints() throws Exception {
+        Long id = issueCertificate(completedEnrollment());
+
+        send(get(ME), director).andExpect(status().isNotFound());
+        send(get(ME + "/" + id + "/pdf"), director).andExpect(status().isNotFound());
     }
 }
