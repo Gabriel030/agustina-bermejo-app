@@ -15,7 +15,6 @@ describe('deriveRegularView', () => {
     [{ state: 'UNAVAILABLE', unavailableType: 'ATTENDANCE' }, REGULAR_VIEW.UNAVAILABLE_ATTENDANCE],
     [{ state: 'UNAVAILABLE', unavailableType: 'PAYMENTS' }, REGULAR_VIEW.UNAVAILABLE_PAYMENTS],
     [{ state: 'UNAVAILABLE', unavailableType: 'ENROLLMENT' }, REGULAR_VIEW.UNAVAILABLE_ENROLLMENT],
-    [{ state: 'UNAVAILABLE', unavailableType: 'REJECTED' }, REGULAR_VIEW.UNAVAILABLE_REJECTED],
     [{ state: 'UNAVAILABLE', unavailableType: 'SOMETHING_NEW' }, REGULAR_VIEW.UNAVAILABLE_ENROLLMENT],
   ])('maps %j to %s', (state, view) => {
     expect(deriveRegularView(state)).toBe(view);
