@@ -103,6 +103,7 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                   <div className="flex items-center justify-end gap-2">
                     {pagable && (
                       <Button
+                        className="min-h-11"
                         size="sm"
                         variant="primary"
                         onClick={(event) => {
@@ -115,6 +116,7 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                     )}
                     {underReview && (
                       <Button
+                        className="min-h-11"
                         size="sm"
                         variant="outline"
                         onClick={(event) => {
@@ -133,7 +135,7 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                         aria-expanded={open}
                         aria-controls={`invoice-detail-${inv.id}`}
                         aria-label={`Ver detalle de ${concept}`}
-                        className="text-ink-faint">
+                        className="min-h-11 text-ink-faint">
                         {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </Button>
                     )}
@@ -191,7 +193,7 @@ export function AlumnoPagoDetalle() {
         size="inline"
         type="button"
         onClick={() => navigate('/alumno/pagos')}
-        className="mb-4 flex items-center gap-1.5 text-sm"
+        className="min-h-11 mb-4 flex items-center gap-1.5 text-sm"
         >
         <ArrowLeft size={16} />
         Mis pagos
@@ -226,6 +228,7 @@ export function AlumnoPagoDetalle() {
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-sm">
               <Button
+                className="min-h-11"
                 variant="subtle"
                 size="sm"
                 type="button"
@@ -238,6 +241,7 @@ export function AlumnoPagoDetalle() {
                 {page} / {totalPages}
               </span>
               <Button
+                className="min-h-11"
                 variant="subtle"
                 size="sm"
                 type="button"
