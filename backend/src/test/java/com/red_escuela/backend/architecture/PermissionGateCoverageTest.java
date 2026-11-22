@@ -24,7 +24,7 @@ class PermissionGateCoverageTest {
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "academicrecord", "academicstructure", "attendance", "billing", "enrollment", "evaluation",
+            "academicrecord", "academicstructure", "billing", "enrollment", "evaluation",
             "graduation", "identity", "notification", "platform");
 
     private static final Set<String> CONTROLLERS_FIXED_BY_ROLE = Set.of(

@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 
-const ROLES = ['ALUMNO', 'DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR', 'PLATFORM_ADMIN'];
+const ROLES = ['ALUMNO', 'DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'SUBDIRECTOR', 'DIRECTOR', 'PLATFORM_ADMIN'];
 
 export function useActiveRole() {
   const segment = useLocation().pathname.split('/')[1]?.toUpperCase();

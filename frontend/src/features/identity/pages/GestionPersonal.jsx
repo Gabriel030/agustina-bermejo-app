@@ -23,6 +23,7 @@ const ETIQUETA_ROL = {
   DOCENTE: 'Docente',
   PRECEPTOR: 'Preceptor',
   ADMINISTRATIVO: 'Administrativo',
+  SUBDIRECTOR: 'Subdirector',
 };
 
 function createStaffErrorMessage(err) {

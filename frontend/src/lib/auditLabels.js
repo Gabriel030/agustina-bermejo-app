@@ -44,7 +44,21 @@ const ACTIONS = {
   PERMISSION_GRID_CHANGED: ['Grilla de permisos modificada', 'accent'],
   CALENDAR_FEED_TOKEN_ROTATED: ['Enlace de calendario generado', 'accent'],
   CALENDAR_FEED_TOKEN_REVOKED: ['Enlace de calendario revocado', 'warning'],
+  GRADUATION_CERTIFICATE_DOWNLOADED: ['Certificado de egreso descargado', 'accent'],
+  GRADUATION_CERTIFICATE_PDF_MISMATCH: ['PDF de certificado de egreso con hash distinto', 'warning'],
   PERMISSION_SENSITIVE_CHANGED: ['Permiso sensible modificado', 'warning'],
+  DOCUMENT_PDF_DOWNLOADED: ['Documento descargado', 'neutral'],
+  DOCUMENT_PDF_HASH_MISMATCH: ['Documento regenerado con huella distinta', 'danger'],
+  DOCUMENT_TEMPLATE_PUBLISHED: ['Plantilla de documento publicada', 'success'],
+  REGULAR_CERTIFICATE_ISSUED: ['Constancia de alumno regular emitida', 'success'],
+  REGULAR_CERTIFICATE_REVOKED: ['Constancia de alumno regular revocada', 'danger'],
+  APPROVED_SUBJECTS_CERT_ISSUED: ['Constancia de materias aprobadas emitida', 'success'],
+  APPROVED_SUBJECTS_CERT_REVOKED: ['Constancia de materias aprobadas revocada', 'danger'],
+  EXAM_CERTIFICATE_ISSUED: ['Constancia de examen emitida', 'success'],
+  EXAM_CERTIFICATE_BATCH_ISSUED: ['Constancias de examen emitidas en lote', 'success'],
+  EXAM_CERTIFICATE_REVOKED: ['Constancia de examen revocada', 'danger'],
+  DOCUMENT_GENERATED_BY_STUDENT: ['Constancia generada por el alumno', 'neutral'],
+  DOCUMENT_SETTINGS_CHANGED: ['Configuración de emisión de documentos modificada', 'accent'],
 };
 
 const ENTITIES = {
@@ -61,10 +75,15 @@ const ENTITIES = {
   GATEWAY_PAYMENT: 'Pago en línea',
   CERTIFICATE_SIGNATORY: 'Firmante de certificado',
   PERMISSION: 'Permiso',
+  GRADUATION_CERTIFICATE: 'Certificado de egreso',
+  CERTIFICATE_DOCUMENT: 'Documento verificable',
+  CERTIFICATE_TEMPLATE: 'Plantilla de documento',
+  EXAM_CERTIFICATE: 'Constancia de examen',
 };
 
 const ROLES = {
   DIRECTOR: ['Director', 'accent'],
+  SUBDIRECTOR: ['Subdirector', 'neutral'],
   ADMINISTRATIVO: ['Administrativo', 'neutral'],
   PRECEPTOR: ['Preceptor', 'success'],
   DOCENTE: ['Docente', 'warning'],

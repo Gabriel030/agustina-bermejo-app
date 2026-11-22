@@ -91,6 +91,18 @@ describe('SolicitudDeIngresoDetalle', () => {
     expect(screen.getByRole('button', { name: 'Aprobar solicitud' })).toHaveAttribute('aria-disabled', 'true');
   });
 
+  it('offers the Financiero link to a subdirector under its own base', async () => {
+    mockReview({
+      check: approvalCheck({ canApprove: false, debt: { blocksApproval: true, violationCodes: ['OVERDUE_DEBT'] } }),
+    });
+    renderDetail('51', '/subdirector');
+
+    expect(await screen.findByRole('link', { name: 'Ir al Financiero del alumno' })).toHaveAttribute(
+      'href',
+      '/subdirector/alumnos/7?view=financiero',
+    );
+  });
+
   it('approves with an idempotency key and opens the next pending application', async () => {
     mockReview();
     const keys = [];

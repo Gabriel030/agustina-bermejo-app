@@ -18,14 +18,6 @@ com.red_escuela.backend.billing.usecase.paymentgateway.UpdatePaymentGatewayConfi
 com.red_escuela.backend.billing.usecase.paymentgateway.UploadQrImageService.upload(org.springframework.web.multipart.MultipartFile, com.red_escuela.backend.identity.entity.Person) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.directorapproval.RequestDirectorApprovalService.request(com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.enrollmentfee.GrantEnrollmentFeeExemptionService.grant(java.lang.Long, com.red_escuela.backend.enrollment.dto.GrantEnrollmentFeeExemptionRequest) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.enrollmentfee.RevokeEnrollmentFeeExemptionService.revoke(java.lang.Long, java.lang.String) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentService.add(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentCommand) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationService.approve(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationCommand) declares @Transactional
-com.red_escuela.backend.evaluation.usecase.sectionconfig.ApproveSectionEvaluationConfigService.approve(com.red_escuela.backend.evaluation.usecase.sectionconfig.ApproveSectionEvaluationConfigCommand) declares @Transactional
-com.red_escuela.backend.evaluation.usecase.sectionconfig.RejectSectionEvaluationConfigService.reject(com.red_escuela.backend.evaluation.usecase.sectionconfig.RejectSectionEvaluationConfigCommand) declares @Transactional
-com.red_escuela.backend.evaluation.usecase.sectionconfig.SubmitSectionEvaluationConfigForApprovalService.submit(com.red_escuela.backend.evaluation.usecase.sectionconfig.SubmitSectionEvaluationConfigForApprovalCommand) declares @Transactional
 com.red_escuela.backend.graduation.usecase.request.ApproveGraduationRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.graduation.usecase.request.RejectGraduationRequestService.reject(com.red_escuela.backend.graduation.usecase.request.RejectGraduationRequestCommand) declares @Transactional
 com.red_escuela.backend.graduation.usecase.request.VerifyGraduationRequestDebtService.verify(java.lang.Long) declares @Transactional

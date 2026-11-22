@@ -121,7 +121,9 @@ final class MatrixRequestFactory {
                     && queryParameter.defaultValue().equals(ValueConstants.DEFAULT_NONE)
                     && !isMultipartPart(parameter)) {
                 String name = queryParameter.name().isEmpty() ? queryParameter.value() : queryParameter.name();
-                request.param(name.isEmpty() ? nameOf(parameter) : name, valueFor(elementType(parameter)));
+                String parameterName = name.isEmpty() ? nameOf(parameter) : name;
+                boolean attendanceExportScope = "scope".equals(parameterName) && endpoint.path().endsWith("/attendance/export");
+                request.param(parameterName, attendanceExportScope ? "history" : valueFor(elementType(parameter)));
             }
             RequestHeader header = parameter.getParameterAnnotation(RequestHeader.class);
             if (header != null && header.required()

@@ -96,12 +96,12 @@
   --ring-surface: var(--border);
   --page-bg: var(--bg1);
   --btn-primary-bg: linear-gradient(var(--accent), var(--accent));
-  --btn-primary-shadow: none;
-  --btn-primary-shadow-hover: none;
+  --btn-primary-shadow: 0 0 0 0 transparent;
+  --btn-primary-shadow-hover: 0 0 0 0 transparent;
   --btn-lift-y: 0px;
   --card-lift-y: 0px;
   --seg-indicator-bg: linear-gradient(var(--accent), var(--accent));
-  --seg-indicator-shadow: none;
+  --seg-indicator-shadow: 0 0 0 0 transparent;
   --nav-indicator-bg: var(--accent-soft);
   --nav-active-fg: var(--accent);
   --seg-active-fg: var(--on-accent);

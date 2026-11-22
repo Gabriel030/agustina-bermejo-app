@@ -56,10 +56,10 @@ export function LegajoAlumno() {
   const resetMutation = useResetStudentPassword(id);
 
   const { roleBase: rolBase } = useActiveRole();
-  const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo';
-  const puededarDeBaja = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status !== 'DELETED';
+  const puedeAccionar = ['preceptor', 'administrativo', 'subdirector'].includes(rolBase);
+  const puededarDeBaja = ['administrativo', 'subdirector', 'director'].includes(rolBase) && legajo?.status !== 'DELETED';
 
-  const puedeReactivar = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status === 'DELETED';
+  const puedeReactivar = ['administrativo', 'subdirector', 'director'].includes(rolBase) && legajo?.status === 'DELETED';
 
   async function confirmarReactivar(reason) {
     try {
@@ -157,7 +157,7 @@ export function LegajoAlumno() {
               />
             </TabsContent>
             <TabsContent value="financiero" className="mt-4">
-              <FinancieroTab studentId={id} puedeHabilitar={rolBase === 'director' || rolBase === 'administrativo'} roleBase={rolBase} />
+              <FinancieroTab studentId={id} puedeHabilitar={['director', 'administrativo', 'subdirector'].includes(rolBase)} roleBase={rolBase} />
             </TabsContent>
           </Tabs>
           )}

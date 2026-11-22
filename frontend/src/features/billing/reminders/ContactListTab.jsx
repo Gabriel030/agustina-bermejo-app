@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
 import { Buscador } from '@/components/Buscador';
 import { EmptyState } from '@/components/EmptyState';
 import { GlassCard } from '@/components/GlassCard';
@@ -112,13 +111,11 @@ function buildContactColumns(accountBase) {
   ];
 }
 
-function CriterionBar() {
+function CriterionBar({ base }) {
   const { data } = useReminderSettingsVersions();
-  const { usuario } = useAuth();
   const effective = data?.find((version) => version.status === 'EFFECTIVE');
   const text = criterionText(effective?.values);
   if (!text) return null;
-  const base = usuario?.roles?.includes('DIRECTOR') ? '/director' : '/administrativo';
   return (
     <p className="text-sm text-ink-soft">
       Se listan los alumnos con {text}.{' '}
@@ -169,7 +166,7 @@ export function ContactListTab({ accountBase }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <CriterionBar />
+      <CriterionBar base={accountBase} />
       <div className="flex flex-wrap items-center gap-3">
         <Buscador value={search} onChange={setSearch} placeholder="Buscar por nombre o DNI" />
         <Select
