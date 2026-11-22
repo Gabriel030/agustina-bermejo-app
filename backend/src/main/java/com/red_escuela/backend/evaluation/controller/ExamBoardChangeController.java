@@ -32,7 +32,7 @@ public class ExamBoardChangeController {
     }
 
     @PostMapping("/exam-boards/{id}/cancel")
-    @RequiresPermission(code = "evaluation.manage_exam_boards", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    @RequiresPermission(code = "evaluation.cancel_exam_board", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ExamBoardResponse cancel(@PathVariable Long id, @Valid @RequestBody CancelExamBoardRequest request) {
         return cancelExamBoard.cancel(new CancelExamBoardCommand(id, request.reason()));
     }

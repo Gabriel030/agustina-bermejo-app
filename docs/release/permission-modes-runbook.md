@@ -76,11 +76,24 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 El resto de los endpoints migrados de identity ya permiten al Director y no cambian.
 
+### Enrollment
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- GET /program-enrollment-applications, /pending, /history, /{id}, /{id}/approval-check y /{id}/documents/{documentId}/file (enrollment.read_program_applications)
+- POST /program-enrollment-applications/{id}/approve y /reject (enrollment.review_program_application)
+- POST /program-enrollments/{id}/advance-billing-year (enrollment.advance_billing_year)
+- POST /program-enrollments/{id}/invoices/ad-hoc y POST /course-enrollments/{id}/invoices/ad-hoc (enrollment.create_ad_hoc_invoice)
+- POST /director-approval-requests (enrollment.request_director_approval)
+
+Los endpoints del alumno (/me/*), el alta pública de interesados y las decisiones sobre pedidos de aprobación (listar, ver, aprobar, rechazar) quedan fuera de la grilla.
+
 ### Evaluation
 
 Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
-- POST /exam-boards, POST /exam-boards/{id}/tribunal, POST /exam-boards/{id}/reschedule, POST /exam-boards/{id}/cancel, POST /exam-boards/{id}/registrations y POST /exam-board-registrations/{id}/withdraw (evaluation.manage_exam_boards)
+- POST /exam-boards, POST /exam-boards/{id}/tribunal, POST /exam-boards/{id}/reschedule, POST /exam-boards/{id}/registrations y POST /exam-board-registrations/{id}/withdraw (evaluation.manage_exam_boards)
+- POST /exam-boards/{id}/cancel (evaluation.cancel_exam_board): hoy el Director no puede cancelar mesas; en Activo sí
 - POST /exam-boards/{id}/close (evaluation.close_exam_board)
 - PUT /exam-boards/{id}/final-grades (evaluation.record_exam_board_final_grades)
 - POST /section-enrollments/{id}/grade-items y POST /course-section-enrollments/{id}/grade-items (evaluation.load_grade_item)

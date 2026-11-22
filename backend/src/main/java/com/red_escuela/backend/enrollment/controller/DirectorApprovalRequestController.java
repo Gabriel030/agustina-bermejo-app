@@ -12,6 +12,7 @@ import com.red_escuela.backend.enrollment.usecase.directorapproval.RejectDirecto
 import com.red_escuela.backend.enrollment.usecase.directorapproval.RequestDirectorApprovalUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,7 +49,7 @@ public class DirectorApprovalRequestController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "enrollment.request_director_approval", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public DirectorApprovalRequestResponse request(@Valid @RequestBody CreateDirectorApprovalRequestRequest request) {
         return DirectorApprovalRequestResponse.from(requestDirectorApprovalUseCase.request(request));
     }

@@ -137,7 +137,7 @@ class EvaluationPermissionComparisonIT extends AuthorizationMatrixSupport {
                 .filter(row -> row.byRole().get(MatrixRole.DIRECTOR) == AccessExpectation.DENY)
                 .map(AuthorizationMatrixRow::key)
                 .toList();
-        assertThat(deniedToTheDirectorInLegacy).contains("POST /exam-boards", "POST /exam-boards/{id}/close", "PUT /exam-boards/{id}/final-grades", "POST /program-sections/{id}/closure/approve", "POST /grade-items/{id}/recovery");
+        assertThat(deniedToTheDirectorInLegacy).contains("POST /exam-boards", "POST /exam-boards/{id}/cancel", "POST /exam-boards/{id}/close", "PUT /exam-boards/{id}/final-grades", "POST /program-sections/{id}/closure/approve", "POST /grade-items/{id}/recovery");
         for (AuthorizationMatrixRow row : evaluationRows()) {
             if (deniedToTheDirectorInLegacy.contains(row.key())) {
                 assertThat(isForbiddenByTheGate(endpoints, row, MatrixRole.DIRECTOR)).as(row.key()).isFalse();
