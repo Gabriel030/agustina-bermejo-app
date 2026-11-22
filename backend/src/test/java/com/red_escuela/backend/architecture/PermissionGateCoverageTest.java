@@ -25,7 +25,7 @@ class PermissionGateCoverageTest {
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "academicrecord", "academicstructure", "billing", "evaluation");
+            "academicstructure", "billing", "evaluation");
 
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
@@ -62,7 +62,12 @@ class PermissionGateCoverageTest {
             ROOT + ".enrollment.controller.MeCourseEnrollmentController",
             ROOT + ".enrollment.controller.MeEnrollmentChangeController",
             ROOT + ".enrollment.controller.MeEnrollmentController",
-            ROOT + ".enrollment.controller.ProgramEnrollmentApplicationWithDocumentsController");
+            ROOT + ".enrollment.controller.ProgramEnrollmentApplicationWithDocumentsController",
+            ROOT + ".academicrecord.controller.MeAcademicRecordController",
+            ROOT + ".academicrecord.controller.MeCalendarFeedController",
+            ROOT + ".academicrecord.controller.MeCourseEnrollmentDetailController",
+            ROOT + ".academicrecord.controller.MeCourseSectionEnrollmentController",
+            ROOT + ".academicrecord.controller.PublicCalendarFeedController");
 
     private static final Set<String> ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
             "CurriculumProgressController#myCurriculumProgress", "CurriculumProgressController#myGraduationProjection",
