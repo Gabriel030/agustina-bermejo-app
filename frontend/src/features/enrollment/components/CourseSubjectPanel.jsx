@@ -14,6 +14,7 @@ import {
   sortByClassDateDescending,
   summarizeAttendance,
 } from '@/features/enrollment/lib/courseSubjectDetail';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 const RECENT_ATTENDANCE_LIMIT = 5;
 
@@ -153,7 +154,7 @@ export function CourseSubjectPanel({ subject, open, onOpenChange }) {
       requestAnimationFrame(() => {
         const trigger = document.getElementById(triggerId);
         trigger?.focus({ preventScroll: true });
-        trigger?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+        trigger?.scrollIntoView?.({ block: 'nearest', behavior: smoothScrollBehavior() });
       });
     }
   }

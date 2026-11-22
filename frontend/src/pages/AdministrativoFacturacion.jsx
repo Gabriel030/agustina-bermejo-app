@@ -54,6 +54,7 @@ import {
   useRechazarComprobante,
 } from '@/hooks/useBilling';
 import { Input } from '@/components/ui/input';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -98,7 +99,7 @@ async function openReceiptFile(receiptId) {
 }
 
 function scrollToStudentPayments() {
-  document.getElementById(STUDENT_PAYMENTS_ANCHOR)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById(STUDENT_PAYMENTS_ANCHOR)?.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'start' });
 }
 
 function InvoicesTable({ invoices, billing }) {
