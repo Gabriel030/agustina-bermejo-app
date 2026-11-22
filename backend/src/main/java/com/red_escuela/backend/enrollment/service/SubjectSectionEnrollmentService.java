@@ -69,6 +69,7 @@ public class SubjectSectionEnrollmentService {
     private final FinalExamEligibilityResolver finalExamEligibilityResolver;
     private final StudentScheduleOverlapGuard scheduleOverlapGuard;
     private final EnrollmentChangeEventPublisher changeEventPublisher;
+    private final OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -86,7 +87,9 @@ public class SubjectSectionEnrollmentService {
             FinalExamEligibilityResolver finalExamEligibilityResolver,
             StudentScheduleOverlapGuard scheduleOverlapGuard,
             EnrollmentChangeEventPublisher changeEventPublisher,
+            OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard,
             Clock clock) {
+        this.ownSectionChangeRecordsGuard = ownSectionChangeRecordsGuard;
         this.scheduleOverlapGuard = scheduleOverlapGuard;
         this.changeEventPublisher = changeEventPublisher;
         this.subjectRetakeGuard = subjectRetakeGuard;
@@ -233,6 +236,7 @@ public class SubjectSectionEnrollmentService {
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede cambiar de comisión");
         }
         studentEnrollmentEligibility.requireConfirmedAndActive(origen.getStudent());
+        ownSectionChangeRecordsGuard.requireNoRecords(change, origen.getId());
 
         ProgramSectionView destino = sectionFinder.findOpenProgramSection(request.newSectionId());
         if (!destino.subjectId().equals(origen.subjectId())) {
