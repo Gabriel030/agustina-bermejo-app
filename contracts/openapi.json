@@ -14075,7 +14075,7 @@
             "type" : "string"
           },
           "standingBasis" : {
-            "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED" ],
+            "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED", "BILLING_NOT_ENFORCED" ],
             "type" : "string"
           },
           "status" : {

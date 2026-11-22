@@ -131,6 +131,30 @@ public class RegularCertificateIssuer {
         return RegularCertificateSubmissionResponse.issued(create(command, facts, standing, actorId, now));
     }
 
+    @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
+            StudentHasDebtException.class})
+    public RegularCertificateResponse issueToSelf(IssueRegularCertificateCommand command) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
+        requireDocument(facts);
+        Long studentId = facts.student().getId();
+        Long actorId = currentActorFinder.currentPersonId();
+        rejectIfStillValid(command, studentId, actorId, now);
+        requireRegular(command, studentId, actorId, now);
+        StandingResolution standing = resolveSelfIssueStanding(command, studentId, actorId, now);
+        return create(command, facts, standing, actorId, now);
+    }
+
+    private StandingResolution resolveSelfIssueStanding(IssueRegularCertificateCommand command, Long studentId, Long actorId,
+                                                        LocalDateTime now) {
+        try {
+            return standingGate.resolveForSelfIssue(studentId, command.kind(), command.enrollmentId());
+        } catch (StudentHasDebtException e) {
+            recordRequest(command, studentId, actorId, now, RegularRequestOutcome.REJECTED, List.of(reasonCodeOf(e)));
+            throw e;
+        }
+    }
+
     private void requireDocument(RegularEnrollmentFacts facts) {
         String documentNumber = facts.student().getPerson().getDni();
         if (documentNumber == null || documentNumber.isBlank()) {
@@ -208,7 +232,7 @@ public class RegularCertificateIssuer {
                                               StandingResolution standing, Long actorId, LocalDateTime now) {
         Long studentId = facts.student().getId();
         CertificateCode code = newUniqueCode();
-        CertificateSnapshot snapshot = template.snapshotOf(facts, now.toLocalDate());
+        CertificateSnapshot snapshot = template.snapshotOf(facts, now.toLocalDate()).withRecipientLabel(command.recipientLabel());
         ValidityDays validityDays = settingsFinder.current().validityDays();
         LocalDateTime expiresAt = now.plusDays(validityDays.value());
         String url = verificationUrl.of(code);

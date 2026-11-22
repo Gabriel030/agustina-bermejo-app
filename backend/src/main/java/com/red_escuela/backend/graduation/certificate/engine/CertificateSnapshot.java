@@ -15,5 +15,18 @@ public record CertificateSnapshot(
         LocalDate issuedOn,
         String institutionName,
         List<SignatorySnapshot> signatories,
-        String templateRef) {
+        String templateRef,
+        String recipientLabel) {
+
+    public CertificateSnapshot(String holderFullName, String documentTypeLabel, String documentNumber, String titleKind,
+                               String titleName, String programLevel, Integer hours, LocalDate graduationDate, LocalDate issuedOn,
+                               String institutionName, List<SignatorySnapshot> signatories, String templateRef) {
+        this(holderFullName, documentTypeLabel, documentNumber, titleKind, titleName, programLevel, hours, graduationDate,
+                issuedOn, institutionName, signatories, templateRef, null);
+    }
+
+    public CertificateSnapshot withRecipientLabel(String label) {
+        return new CertificateSnapshot(holderFullName, documentTypeLabel, documentNumber, titleKind, titleName, programLevel,
+                hours, graduationDate, issuedOn, institutionName, signatories, templateRef, label);
+    }
 }
