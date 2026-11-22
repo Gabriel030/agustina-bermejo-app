@@ -153,7 +153,7 @@ manage_reminder_config queda no sensible porque solo propone y valida cambios: l
 
 ### Billing (tanda B2: corridas, descuentos, promociones, precios, plantillas, recargos, pasarela y aprobaciones)
 
-Los 29 endpoints migrados (V391, 20 permisos billing.*) mueven plata o cambian su configuración, por eso los 20 permisos son sensibles: delegarlos exige la confirmación de sensible. El Director conserva todos en Activo: ningún endpoint de la tanda le está denegado hoy, así que no cambia de resultado en ninguno. Alumno y administrador de plataforma quedan fuera de la grilla; el Subdirector hereda lo de Administrativo.
+Los 29 endpoints migrados (V410, 20 permisos billing.*) mueven plata o cambian su configuración, por eso los 20 permisos son sensibles: delegarlos exige la confirmación de sensible. El Director conserva todos en Activo: ningún endpoint de la tanda le está denegado hoy, así que no cambia de resultado en ninguno. Alumno y administrador de plataforma quedan fuera de la grilla; el Subdirector hereda lo de Administrativo.
 
 Seed a Administrativo (reglas AD): retry_draft_invoice_items, approve_draft_invoices, discard_draft_invoices, manage_discount_definition (crear y cerrar), grant_student_discount (carrera y curso), revoke_student_discount, propose_price_change (POST /prices/{id}/versions), manage_year_billing_cohorts (crear cohorte y descuento de matrícula), withdraw_authorization_request y request_advance_enrollment_fee (mostrador, no el /me del alumno).
 
