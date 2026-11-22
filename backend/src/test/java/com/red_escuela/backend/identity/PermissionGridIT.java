@@ -289,4 +289,20 @@ class PermissionGridIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.roles[?(@.role=='DIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(16)))
                 .andExpect(jsonPath("$.roles[?(@.role=='ADMINISTRATIVO')].permissionCodes").isNotEmpty());
     }
+
+    @Test
+    void subdirectorReadsCatalogAndGridAsNonEditableAndCannotWrite() throws Exception {
+        mockMvc.perform(get("/permissions/catalog").with(user("8").roles("SUBDIRECTOR"))).andExpect(status().isOk());
+        mockMvc.perform(get("/permissions/grid").with(user("8").roles("SUBDIRECTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.editable").value(false))
+                .andExpect(jsonPath("$.roles[?(@.role=='SUBDIRECTOR')].permissionCodes.length()").value(org.hamcrest.Matchers.contains(0)))
+                .andExpect(jsonPath("$.modes[?(@.role=='SUBDIRECTOR' && @.module=='audit')].mode").value(org.hamcrest.Matchers.contains("LEGACY")));
+        mockMvc.perform(put("/permissions/grid").with(user("8").roles("SUBDIRECTOR")).contentType(APPLICATION_JSON)
+                .content(body("DOCENTE", true, "announcement.read", "Intento"))).andExpect(status().isForbidden());
+        mockMvc.perform(put("/permissions/modes").with(user("8").roles("SUBDIRECTOR")).contentType(APPLICATION_JSON)
+                .content("{\"reason\":\"x\",\"changes\":[{\"role\":\"DOCENTE\",\"module\":\"announcement\",\"mode\":\"SHADOW\"}]}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/permissions/discrepancies").with(user("8").roles("SUBDIRECTOR"))).andExpect(status().isForbidden());
+    }
 }

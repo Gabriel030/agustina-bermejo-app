@@ -62,7 +62,10 @@ class PermissionGateCoverageTest {
             }
             PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
             assertThat(preAuthorize).as(method.getName()).isNotNull();
-            assertThat(preAuthorize.value()).isEqualTo("hasRole('DIRECTOR')");
+            String expectedRule = Set.of("getCatalog", "getGrid").contains(method.getName())
+                    ? "hasAnyRole('DIRECTOR', 'SUBDIRECTOR')"
+                    : "hasRole('DIRECTOR')";
+            assertThat(preAuthorize.value()).isEqualTo(expectedRule);
             checked++;
         }
         assertThat(checked).isEqualTo(6);

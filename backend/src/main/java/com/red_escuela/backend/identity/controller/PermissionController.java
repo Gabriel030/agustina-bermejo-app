@@ -48,13 +48,13 @@ public class PermissionController {
     }
 
     @GetMapping("/catalog")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'SUBDIRECTOR')")
     public PermissionCatalogResponse getCatalog() {
         return getPermissionCatalogUseCase.get();
     }
 
     @GetMapping("/grid")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'SUBDIRECTOR')")
     public PermissionGridResponse getGrid() {
         return getPermissionGridUseCase.get();
     }
