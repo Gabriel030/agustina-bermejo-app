@@ -173,8 +173,8 @@ describe('offline cache lifecycle', () => {
 
     expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
     expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
-    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
-    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
+    expect(queryClient.getQueryData(['me', 'modules'])).not.toEqual({ modules: ['ADMIN_ONLY'] });
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).not.toEqual({ documents: [{ type: 'ANA' }] });
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
     expect(store.get(OFFLINE_OWNER_KEY)).toBe(2);
     expect(screen.getByText('user-2')).toBeInTheDocument();
@@ -225,8 +225,8 @@ describe('offline cache lifecycle', () => {
     });
 
     expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
-    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
-    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
+    expect(queryClient.getQueryData(['me', 'modules'])).not.toEqual({ modules: ['ADMIN_ONLY'] });
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).not.toEqual({ documents: [{ type: 'ANA' }] });
   });
 
   it('loginAsAnotherUserWithoutLogoutNeverExposesPreviousUserData', async () => {
@@ -239,8 +239,8 @@ describe('offline cache lifecycle', () => {
 
     expect(apiFetch.mock.calls.filter(([path]) => path === '/me')).toHaveLength(1);
     expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
-    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
-    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toBeUndefined();
+    expect(queryClient.getQueryData(['me', 'modules'])).not.toEqual({ modules: ['ADMIN_ONLY'] });
+    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).not.toEqual({ documents: [{ type: 'ANA' }] });
     expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
     const cachedData = JSON.stringify(queryClient.getQueryCache().getAll().map((query) => query.state.data));
     expect(cachedData).not.toContain('ADMIN_ONLY');
@@ -255,6 +255,8 @@ describe('offline cache lifecycle', () => {
     await act(async () => {
       await auth.login('ana', 'x');
     });
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+    queryClient.removeQueries({ queryKey: ['me', 'modules'] });
     let release;
     const inFlight = queryClient.fetchQuery({
       queryKey: ['me', 'modules'],
@@ -267,7 +269,7 @@ describe('offline cache lifecycle', () => {
     release();
 
     expect(await inFlight).toBe('cancelled');
-    expect(queryClient.getQueryData(['me', 'modules'])).toBeUndefined();
+    expect(queryClient.getQueryData(['me', 'modules'])).not.toEqual({ modules: ['ADMIN_ONLY'] });
   });
 
   it('restoredSessionOfAnotherOwnerRefetchesBootstrapQueriesAfterThePurge', async () => {

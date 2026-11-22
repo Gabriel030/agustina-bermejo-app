@@ -54,14 +54,21 @@ export function AuthProvider({ children }) {
     purgeOfflineData(queryClient);
   }, [queryClient]);
 
+  const prefetchBootstrapQueries = useCallback(() => {
+    queryClient?.prefetchQuery(pendingLegalAcceptancesQuery);
+    queryClient?.prefetchQuery(myModulesQuery);
+  }, [queryClient]);
+
   const beginSession = useCallback(
     async (tokens) => {
       await purgeOfflineData(queryClient);
       setOfflineSessionMode(false);
       setAccessToken(tokens.accessToken);
       markSessionActive();
+      prefetchBootstrapQueries();
       const perfil = await apiFetch('/me');
-      await claimOfflineCache(perfil.id, queryClient);
+      const ownerChanged = await claimOfflineCache(perfil.id, queryClient);
+      if (ownerChanged) prefetchBootstrapQueries();
       await storeOfflineProfile(perfil);
       queryClient?.setQueryData(['me'], perfil);
       setUsuario(perfil);
@@ -69,7 +76,7 @@ export function AuthProvider({ children }) {
       setSessionExpired(false);
       return perfil;
     },
-    [queryClient],
+    [queryClient, prefetchBootstrapQueries],
   );
 
   const expireSession = useCallback(() => {
@@ -80,11 +87,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     setSessionExpiredHandler(expireSession);
   }, [expireSession]);
-
-  const prefetchBootstrapQueries = useCallback(() => {
-    queryClient?.prefetchQuery(pendingLegalAcceptancesQuery);
-    queryClient?.prefetchQuery(myModulesQuery);
-  }, [queryClient]);
 
   const attemptRestore = useCallback(async () => {
     const wasOffline = sessionPending;
