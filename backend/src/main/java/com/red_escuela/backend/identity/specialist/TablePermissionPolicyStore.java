@@ -44,7 +44,7 @@ public class TablePermissionPolicyStore implements PermissionPolicyStore {
         Map<String, Set<String>> permissionsByRole = new HashMap<>();
         for (RolePermission grant : rolePermissionRepository.findAll()) {
             Permission permission = permissionById.get(grant.getPermissionId());
-            if (permission != null && !permission.isFixedToDirector()) {
+            if (permission != null) {
                 permissionsByRole.computeIfAbsent(grant.getRole(), key -> new HashSet<>()).add(permission.getCode());
             }
         }
@@ -52,10 +52,8 @@ public class TablePermissionPolicyStore implements PermissionPolicyStore {
         for (PermissionModuleModeSetting setting : modeRepository.findAll()) {
             modes.put(PermissionSnapshot.modeKey(setting.getRole(), setting.getModule()), PermissionMode.valueOf(setting.getMode()));
         }
-        Set<String> fixed = permissions.stream().filter(Permission::isFixedToDirector)
-                .map(Permission::getCode).collect(Collectors.toUnmodifiableSet());
         Set<String> allCodes = permissions.stream().map(Permission::getCode).collect(Collectors.toUnmodifiableSet());
-        return new PermissionSnapshot(Map.copyOf(permissionsByRole), Map.copyOf(modes), fixed, allCodes);
+        return new PermissionSnapshot(Map.copyOf(permissionsByRole), Map.copyOf(modes), allCodes);
     }
 
 }
