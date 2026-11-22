@@ -4,5 +4,5 @@ const PermissionsPage = lazyPage(() => import('@/features/permissions/pages/Perm
 export const routes = {
   public: [],
   shared: [],
-  role: [{ roles: ['director'], path: 'permisos', element: <PermissionsPage /> }],
+  role: [{ roles: ['director', 'subdirector'], path: 'permisos', element: <PermissionsPage /> }],
 };

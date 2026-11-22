@@ -29,6 +29,18 @@ export const permissionGrid = (overrides = {}) => ({
   ...overrides,
 });
 
+export const permissionGridReadOnly = () =>
+  permissionGrid({
+    editable: false,
+    roles: [
+      { role: 'DIRECTOR', permissionCodes: ['announcement.create', 'announcement.delete', 'billing.payment.revoke'] },
+      { role: 'SUBDIRECTOR', permissionCodes: ['announcement.create'] },
+      { role: 'ADMINISTRATIVO', permissionCodes: ['announcement.create'] },
+      { role: 'PRECEPTOR', permissionCodes: [] },
+      { role: 'DOCENTE', permissionCodes: [] },
+    ],
+  });
+
 export const permissionDiscrepancy = (overrides = {}) => ({
   role: 'ADMINISTRATIVO',
   module: 'announcement',

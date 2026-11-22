@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.entity.NotificationEvent;
 import com.red_escuela.backend.identity.entity.NotificationPreference;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.NotificationPreferenceRepository;
+import com.red_escuela.backend.identity.service.NotificationPreferencesUpdateTransaction;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.identity.domain.EmittedNotificationEvents;
 import com.red_escuela.backend.identity.domain.MandatoryNotificationChannels;
@@ -31,7 +32,7 @@ class NotificationPreferencesServicesTest {
     private final CurrentPersonService currentPerson = mock(CurrentPersonService.class);
     private final Person person = new Person();
     private final GetNotificationPreferencesService getService = new GetNotificationPreferencesService(repository, currentPerson);
-    private final UpdateNotificationPreferencesService updateService = new UpdateNotificationPreferencesService(repository, currentPerson);
+    private final UpdateNotificationPreferencesService updateService = new UpdateNotificationPreferencesService(new NotificationPreferencesUpdateTransaction(repository, currentPerson));
 
     private NotificationPreference storedOff(NotificationEvent event, NotificationChannel channel) {
         NotificationPreference preference = new NotificationPreference();

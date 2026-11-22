@@ -33,6 +33,14 @@ class CertificatePdfRendererTest {
     }
 
     @Test
+    void renderingTheSameInputsTwiceProducesTheSameBytes() {
+        byte[] first = renderer.render(template, snapshotOf("PÉREZ, ANA"), code, URL);
+        byte[] second = renderer.render(template, snapshotOf("PÉREZ, ANA"), code, URL);
+
+        assertThat(second).isEqualTo(first);
+    }
+
+    @Test
     void pdfContainsHolderNameAndCode() throws Exception {
         byte[] pdf = renderer.render(template, snapshotOf("PÉREZ, ANA"), code, URL);
 

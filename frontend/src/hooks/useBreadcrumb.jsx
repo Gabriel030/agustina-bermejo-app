@@ -43,13 +43,13 @@ export function useBreadcrumb() {
   const { data: cursos } = useMisCursos(enDetallePagosCurso);
   const { data: carreras } = useMisMatriculaciones(enDetallePagosCarrera || enMatriculaAnticipada);
 
-  const enLegajoAlumno = /^\/(preceptor|administrativo|director)\/alumnos\/[^/]+$/.test(location.pathname);
+  const enLegajoAlumno = /^\/(preceptor|administrativo|subdirector|director)\/alumnos\/[^/]+$/.test(location.pathname);
   const { data: legajo } = useLegajoAlumno(params.id, enLegajoAlumno);
 
-  const enPedirReembolso = /^\/(administrativo|director)\/alumnos\/[^/]+\/reembolsos\/nuevo$/.test(location.pathname);
+  const enPedirReembolso = /^\/(administrativo|subdirector|director)\/alumnos\/[^/]+\/reembolsos\/nuevo$/.test(location.pathname);
   const { data: legajoReembolso } = useLegajoAlumno(params.id, enPedirReembolso);
 
-  const enLegajoPersonal = /^\/(administrativo|director)\/personal\/[^/]+$/.test(location.pathname);
+  const enLegajoPersonal = /^\/(administrativo|subdirector|director)\/personal\/[^/]+$/.test(location.pathname);
   const { data: legajoPersonal } = useLegajoPersonal(params.id, enLegajoPersonal);
 
   const enNuevoAviso = /^\/docente\/mis-comisiones\/[^/]+\/avisos\/nuevo$/.test(location.pathname);
@@ -62,8 +62,8 @@ export function useBreadcrumb() {
   const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
   const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
 
-  const enNotaDeCredito = /^\/(administrativo|director)\/facturacion\/cuotas\/[^/]+\/nota-de-credito$/.test(location.pathname);
-  const billingInboxDetail = /^\/(director\/aprobaciones\/facturacion|administrativo\/aprobaciones)\/(\d+)$/.exec(location.pathname);
+  const enNotaDeCredito = /^\/(administrativo|subdirector|director)\/facturacion\/cuotas\/[^/]+\/nota-de-credito$/.test(location.pathname);
+  const billingInboxDetail = /^\/(director\/aprobaciones\/facturacion|(?:administrativo|subdirector)\/aprobaciones)\/(\d+)$/.exec(location.pathname);
   if (billingInboxDetail) {
     const rolBase = location.pathname.split('/')[1];
     const requestLabel = `Pedido N.º ${billingInboxDetail[2]}`;
@@ -74,7 +74,7 @@ export function useBreadcrumb() {
         { label: requestLabel },
       ];
     }
-    return [{ label: 'Aprobaciones', to: '/administrativo/aprobaciones' }, { label: requestLabel }];
+    return [{ label: 'Aprobaciones', to: `/${rolBase}/aprobaciones` }, { label: requestLabel }];
   }
 
   if (location.pathname === '/director/aprobaciones/facturacion') {

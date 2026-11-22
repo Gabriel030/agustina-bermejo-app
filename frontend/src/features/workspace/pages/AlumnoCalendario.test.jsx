@@ -24,12 +24,12 @@ function setViewport(desktop) {
   window.matchMedia = () => ({ matches: desktop, addEventListener() {}, removeEventListener() {} });
 }
 
-function respondWith(events) {
+function respondWith(events, extra = {}) {
   const requests = [];
   server.use(
     calendarHandler(({ request }) => {
       requests.push(new URL(request.url).searchParams.get('from'));
-      return HttpResponse.json(calendarResponse({ events }));
+      return HttpResponse.json(calendarResponse({ events, ...extra }));
     }),
   );
   return requests;
@@ -42,13 +42,12 @@ async function renderDesktop() {
 }
 
 describe('AlumnoCalendario', () => {
-  it('shows the heading, the update time and the disabled export button', async () => {
+  it('shows the heading, the update time and the enabled export button', async () => {
     await renderDesktop();
 
     expect(screen.getByRole('heading', { level: 1, name: 'Calendario' })).toBeInTheDocument();
     expect(screen.getByText('Actualizado hoy 09:30')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Agregar a mi calendario' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Agregar a mi calendario' })).toHaveAccessibleDescription('Disponible próximamente');
+    expect(screen.getByRole('button', { name: 'Agregar a mi calendario' })).toBeEnabled();
     expect(screen.getByRole('heading', { name: 'noviembre de 2026' })).toBeInTheDocument();
   });
 
@@ -86,6 +85,7 @@ describe('AlumnoCalendario', () => {
       await renderDesktop();
 
       await user.click(screen.getAllByRole('button', { name: 'Clase: Programación II, 18:00, Programada' })[0]);
+      await user.click(await screen.findByRole('button', { name: 'Cerrar detalle' }));
 
       const block = screen.getByRole('region', { name: /viernes 20 de noviembre/i });
       expect(within(block).getByText('Programada')).toBeInTheDocument();
@@ -330,8 +330,8 @@ describe('AlumnoCalendario', () => {
       expect(await screen.findByRole('button', { name: 'sábado 21 de noviembre, hoy, sin eventos' })).toBeInTheDocument();
     });
 
-    it('shows the no-enrollments banner when only holidays come back', async () => {
-      respondWith([holidayEvent()]);
+    it('shows the no-enrollments banner when the student has no active enrollments', async () => {
+      respondWith([holidayEvent()], { hasActiveEnrollments: false });
       setViewport(true);
       renderWithProviders(<AlumnoCalendario />);
 
@@ -339,6 +339,26 @@ describe('AlumnoCalendario', () => {
       expect(within(banner).getByText('Todavía no estás inscripto a ninguna materia')).toBeInTheDocument();
       expect(within(banner).getByRole('link', { name: 'Ver oferta académica' })).toHaveAttribute('href', '/catalogo');
       expect(screen.getByRole('button', { name: 'Feriado: Día de la Soberanía Nacional, Todo el día' })).toBeInTheDocument();
+    });
+
+    it('does not show the banner for an enrolled student whose month has only holidays', async () => {
+      respondWith([holidayEvent()], { hasActiveEnrollments: true });
+      await renderDesktop();
+
+      expect(screen.queryByText('Todavía no estás inscripto a ninguna materia')).not.toBeInTheDocument();
+    });
+
+    it('does not show the banner when the response omits hasActiveEnrollments', async () => {
+      server.use(
+        calendarHandler(() => {
+          const legacy = calendarResponse({ events: [holidayEvent()] });
+          delete legacy.hasActiveEnrollments;
+          return HttpResponse.json(legacy);
+        }),
+      );
+      await renderDesktop();
+
+      expect(screen.queryByText('Todavía no estás inscripto a ninguna materia')).not.toBeInTheDocument();
     });
 
     it('does not show the banner when the student has classes', async () => {

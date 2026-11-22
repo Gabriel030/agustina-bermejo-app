@@ -192,7 +192,7 @@ export function NotificationMatrix() {
             ))}
             <SectionRow title="General" />
             {GENERAL_EVENTS.map(renderRow)}
-            {roles.includes('ADMINISTRATIVO') && ADMINISTRATIVE_EVENTS.map(renderRow)}
+            {(roles.includes('ADMINISTRATIVO') || roles.includes('SUBDIRECTOR')) && ADMINISTRATIVE_EVENTS.map(renderRow)}
           </TableBody>
         </Table>
       </div>

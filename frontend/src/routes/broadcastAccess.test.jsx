@@ -7,7 +7,7 @@ const BROADCASTS_SCREEN = 'comunicaciones';
 const BROADCAST_WIZARD_PATH = 'comunicaciones/nuevo';
 const BROADCAST_DETAIL_PATH = 'comunicaciones/:broadcastId';
 const BROADCAST_ROUTES = [BROADCAST_WIZARD_PATH, BROADCASTS_SCREEN, BROADCAST_DETAIL_PATH];
-const ROLES_WITH_ACCESS = ['administrativo', 'director'];
+const ROLES_WITH_ACCESS = ['administrativo', 'subdirector', 'director'];
 const ROLES_WITHOUT_ACCESS = Object.keys(ROLE_MENU).filter((role) => !ROLES_WITH_ACCESS.includes(role));
 
 describe('broadcasts screens access by role', () => {
