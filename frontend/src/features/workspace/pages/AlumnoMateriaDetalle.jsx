@@ -60,7 +60,8 @@ export function AlumnoMateriaDetalle() {
         <LoadErrorState
           error={errorInscripcion}
           onRetry={recargarInscripcion}
-          resource="la materia" distinguishForbidden
+          resource="la materia"
+          distinguishForbidden
           backTo="/alumno/mis-carreras"
           backLabel="Mis carreras"
         />
@@ -91,6 +92,16 @@ export function AlumnoMateriaDetalle() {
   const puedeDarseDeBaja = ESTADOS_QUE_ADMITEN_BAJA.has(inscripcion.status);
   const { columnas, extras } = mapearNotasAColumnas(notas);
 
+  function openWithdrawDialog() {
+    darseDeBaja.reset();
+    setModalBajaAbierto(true);
+  }
+
+  function changeWithdrawDialog(open) {
+    darseDeBaja.reset();
+    setModalBajaAbierto(open);
+  }
+
   async function confirmarBaja() {
     try {
       await darseDeBaja.mutateAsync(id);
@@ -119,7 +130,7 @@ export function AlumnoMateriaDetalle() {
           </div>
         </div>
         {puedeDarseDeBaja && (
-          <Button variant="outline" className="h-11 px-4 text-danger" onClick={() => setModalBajaAbierto(true)}>
+          <Button variant="destructive" className="h-11 px-4" onClick={openWithdrawDialog}>
             Darme de baja
           </Button>
         )}
@@ -154,26 +165,26 @@ export function AlumnoMateriaDetalle() {
         ) : (
           <>
             <div className="overflow-x-auto">
-            <Table className="min-w-[560px]">
-              <TableCaption className="sr-only">Notas de la materia</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  {COLUMNAS_NOTAS.map((columna) => (
-                    <TableHead key={columna.key}>{columna.label}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  {COLUMNAS_NOTAS.map((columna) => (
-                    <TableCell key={columna.key} className="font-heading text-base font-bold tabular-nums text-ink">
-                      {columnas[columna.key] ?? <span className="font-normal text-ink-faint">—</span>}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableBody>
-            </Table>
-            </div>
+              <Table className="min-w-[560px]">
+                <TableCaption className="sr-only">Notas de la materia</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    {COLUMNAS_NOTAS.map((columna) => (
+                      <TableHead key={columna.key}>{columna.label}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    {COLUMNAS_NOTAS.map((columna) => (
+                      <TableCell key={columna.key} className="font-heading text-base font-bold tabular-nums text-ink">
+                        {columnas[columna.key] ?? <span className="font-normal text-ink-faint">—</span>}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableBody>
+              </Table>
+              </div>
             {extras.length > 0 && (
               <div className="mt-3 text-xs text-ink-faint">
                 Notas adicionales: {extras.map((g) => `${TIPO_NOTA_LABEL[g.type] ?? 'Nota'} ${g.sequenceNumber ?? ''}: ${g.score ?? '—'}`).join(' · ')}
@@ -185,7 +196,7 @@ export function AlumnoMateriaDetalle() {
 
       <ConfirmActionDialog
         open={modalBajaAbierto}
-        onOpenChange={setModalBajaAbierto}
+        onOpenChange={changeWithdrawDialog}
         title="¿Dar de baja esta materia?"
         description={`Vas a perder tu lugar en ${inscripcion.sectionName}. Si querés volver a cursarla vas a tener que inscribirte de nuevo.`}
         confirmLabel="Sí, darme de baja"

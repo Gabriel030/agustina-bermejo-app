@@ -1,10 +1,15 @@
 import { GlassCard } from '@/components/GlassCard';
+import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPills';
 import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
 import { TIPOLOGIA_LABEL } from '@/lib/notas';
 
 export function PlanSubjectCard({ row, prerequisites }) {
   return (
-    <GlassCard className={`flex flex-col gap-2 p-3 ${row.estado === 'bloqueada' ? 'opacity-60' : ''}`}>
+    <GlassCard
+      role="group"
+      aria-label={`${row.subjectName}, ${PLAN_STATUS_PILL[row.estado].label}`}
+      className={`flex flex-col gap-2 p-3 ${row.estado === 'bloqueada' ? 'opacity-60' : ''}`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 font-semibold text-ink">{row.subjectName}</div>
         <PlanStatusPill status={row.estado} />

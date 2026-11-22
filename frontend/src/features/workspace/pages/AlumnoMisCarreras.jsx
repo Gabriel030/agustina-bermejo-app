@@ -150,7 +150,7 @@ export function AlumnoMisCarreras() {
           <div className="mt-1 text-sm text-ink-faint">Progreso del plan de estudios</div>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          {tab === 'tramites' &&<GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
+          {tab === 'tramites' && <GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
           <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
             <SelectTrigger aria-label="Carrera" className="w-full data-[size=default]:h-11 sm:w-auto">
               <SelectValue />
@@ -198,13 +198,12 @@ export function AlumnoMisCarreras() {
           <TabsTrigger value="tramites">Trámites</TabsTrigger>
         </TabsList>
         <TabsContent value={tab} className="mt-4 flex flex-1 flex-col">
-
-            {tab === 'materias' && <TabMaterias key={matricula.id} carreraId={matricula.id} />}
-            {tab === 'plan-de-estudio' && <TabPlanDeEstudio key={matricula.id} carreraId={matricula.id} />}
-            {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
-            {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
-            {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
-            {tab === 'tramites' && <TabTramites key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
+          {tab === 'materias' && <TabMaterias key={matricula.id} carreraId={matricula.id} />}
+          {tab === 'plan-de-estudio' && <TabPlanDeEstudio key={matricula.id} carreraId={matricula.id} />}
+          {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
+          {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
+          {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
+          {tab === 'tramites' && <TabTramites key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
         </TabsContent>
       </Tabs>
     </PageContainer>

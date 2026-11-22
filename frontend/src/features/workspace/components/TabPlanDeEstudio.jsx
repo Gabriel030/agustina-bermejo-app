@@ -9,7 +9,7 @@ import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
 import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPills';
 import { PlanSubjectCard } from '@/features/workspace/components/PlanSubjectCard';
 import { Paginador } from '@/components/Paginador';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption } from '@/components/ui/table';
 import { EstadoColumnFilter } from '@/components/alumno/EstadoColumnFilter';
 import { AnioColumnFilter } from '@/components/alumno/AnioColumnFilter';
 import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
@@ -107,6 +107,7 @@ export function TabPlanDeEstudio({ carreraId }) {
             ver comentario del mismo patrón en TabMaterias.jsx/TabNotas.jsx/TabAsistencia.jsx. */}
         <div className="overflow-x-auto">
         <Table className="min-w-[720px]">
+          <TableCaption className="sr-only">Plan de estudio</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead>Código</TableHead>
