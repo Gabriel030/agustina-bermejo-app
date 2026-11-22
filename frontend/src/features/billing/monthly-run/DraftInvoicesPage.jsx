@@ -4,6 +4,7 @@ import { ArrowLeft, CircleCheck, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { EmptyState } from '@/components/EmptyState';
+import { StickyActionBar } from '@/components/StickyActionBar';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { ModalMotivo } from '@/components/ModalMotivo';
@@ -225,23 +226,20 @@ export function DraftInvoicesPage() {
             </div>
           </GlassCard>
           <SharedInvoicesNotice summary={summary} />
-          <GlassCard className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 p-4">
-            <div className="flex flex-col">
-              <span className="font-semibold text-ink">{hasSelection ? `${countText(summary.count)} seleccionadas` : 'Sin selección'}</span>
-              <span className="text-sm text-ink-soft">
-                {hasSelection ? `${totalText(summary)} · ${summary.groupCount} de ${groups.length} grupos` : 'Elegí uno o más grupos para aprobar o descartar.'}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="ghost" disabled={!hasSelection} onClick={() => setSelected(new Set())}>
+          <StickyActionBar
+            summary={hasSelection ? `${countText(summary.count)} seleccionadas` : 'Sin selección'}
+            hint={hasSelection ? `${totalText(summary)} · ${summary.groupCount} de ${groups.length} grupos` : 'Elegí uno o más grupos para aprobar o descartar.'}
+          >
+              <Button type="button" variant="ghost" className="min-h-11" disabled={!hasSelection} onClick={() => setSelected(new Set())}>
                 Deseleccionar todo
               </Button>
-              <Button type="button" variant="outline" disabled={!hasSelection || !canAct} onClick={() => setDiscardOpen(true)}>
+              <Button type="button" variant="outline" className="min-h-11" disabled={!hasSelection || !canAct} onClick={() => setDiscardOpen(true)}>
                 Descartar seleccionadas
               </Button>
               <Button
                 type="button"
                 variant="primary"
+                className="min-h-11"
                 disabled={!hasSelection || !canAct}
                 onClick={() => {
                   setApproveError(null);
@@ -251,8 +249,7 @@ export function DraftInvoicesPage() {
                 <CircleCheck aria-hidden="true" />
                 Aprobar y emitir {hasSelection ? summary.count : ''}
               </Button>
-            </div>
-          </GlassCard>
+          </StickyActionBar>
         </>
       )}
       <ConfirmActionDialog
