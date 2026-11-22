@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse, delay } from 'msw';
 import { resetCircuits, setRetrySleep } from '@/api/client';
@@ -173,5 +173,42 @@ describe('PrimerDirector flow', () => {
 
     const banner = await screen.findByRole('alert');
     await waitFor(() => expect(banner).toHaveFocus());
+  });
+
+  it('sendsASingleRequestWhenTheConfirmationButtonIsDoubleClicked', async () => {
+    let posts = 0;
+    server.use(
+      noDirector(),
+      http.post(PROVISION_URL, async () => {
+        posts += 1;
+        await delay(200);
+        return HttpResponse.json(provisioned, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PrimerDirector />);
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Crear Director' }));
+
+    const confirm = await screen.findByRole('button', { name: 'Sí, crear Director' });
+    act(() => {
+      confirm.click();
+      confirm.click();
+    });
+
+    await screen.findByText('Director creado');
+    expect(posts).toBe(1);
+  });
+
+  it('announcesTheDocumentErrorAsAnAlert', async () => {
+    server.use(noDirector(), http.post(PROVISION_URL, () => HttpResponse.json({ code: 'DNI_ALREADY_EXISTS', retryable: false }, { status: 400 })));
+    const user = userEvent.setup();
+    renderWithProviders(<PrimerDirector />);
+    await fillForm(user);
+
+    await submitAndConfirm(user);
+
+    const message = await screen.findByText('Ya hay una persona registrada con este documento');
+    expect(message.closest('[role="alert"]')).toHaveAttribute('id', 'documentNumber-error');
   });
 });

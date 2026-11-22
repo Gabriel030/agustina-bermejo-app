@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DOCUMENT_TYPES, documentTypeOf } from '@/lib/documentType';
 import { cn } from '@/lib/utils';
 
-export function DocumentField({ type, number, onTypeChange, onNumberChange, error, disabled, ariaLabel = 'Tipo de documento', onBlur, inputId, errorId, maxLength, controlClassName, errorClassName }) {
+export function DocumentField({ type, number, onTypeChange, onNumberChange, error, disabled, ariaLabel = 'Tipo de documento', onBlur, inputId, errorId, maxLength, controlClassName, errorClassName, errorRole }) {
   const actual = documentTypeOf(type);
   return (
     <div>
@@ -33,7 +33,7 @@ export function DocumentField({ type, number, onTypeChange, onNumberChange, erro
           disabled={disabled}
         />
       </div>
-      <p id={errorId} className={error ? cn('mt-1 text-xs text-danger', errorClassName) : 'mt-1 text-xs text-ink-soft'}>{error ?? actual.hint}</p>
+      <p id={errorId} role={error ? errorRole : undefined} className={error ? cn('mt-1 text-xs text-danger', errorClassName) : 'mt-1 text-xs text-ink-soft'}>{error ?? actual.hint}</p>
     </div>
   );
 }

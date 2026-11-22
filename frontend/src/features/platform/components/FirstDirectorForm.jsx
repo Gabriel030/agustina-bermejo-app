@@ -117,6 +117,7 @@ export function FirstDirectorForm({ formState, institutionLocked, pending, banne
             maxLength={FIELD_LIMITS.documentNumber}
             controlClassName={FIRST_DIRECTOR_CONTROL_CLASS}
             errorClassName="text-danger-ink"
+            errorRole="alert"
           />
         </div>
       </FirstDirectorSection>

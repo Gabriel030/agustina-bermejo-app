@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
@@ -50,6 +50,7 @@ export function PrimerDirector() {
   const [alreadyExists, setAlreadyExists] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submittedForm, setSubmittedForm] = useState(null);
+  const submittingRef = useRef(false);
 
   const lockedInstitution = status.data && !status.data.directorExists ? status.data.institutionName : null;
   const formState = useFirstDirectorForm(lockedInstitution);
@@ -62,11 +63,16 @@ export function PrimerDirector() {
   }
 
   function submit() {
+    if (submittingRef.current || provision.isPending) return;
+    submittingRef.current = true;
     const submitted = formState.effectiveForm;
     setConfirming(false);
     setSubmittedForm(submitted);
     setSubmitError(null);
     provision.mutate(toRequest(submitted), {
+      onSettled: () => {
+        submittingRef.current = false;
+      },
       onSuccess: (response) => setCreated(response),
       onError: (error) => {
         const fieldError = fieldErrorOf(error);
