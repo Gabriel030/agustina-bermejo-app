@@ -1,0 +1,52 @@
+insert into permission (code, module, description, fixed_to_director, sensitive) values
+    ('evaluation.read_evaluation_settings', 'evaluation', 'Ver los esquemas de evaluación y las configuraciones de evaluación de las comisiones', false, false),
+    ('evaluation.manage_evaluation_schemes', 'evaluation', 'Crear y editar esquemas de evaluación', false, false),
+    ('evaluation.review_section_evaluation_config', 'evaluation', 'Aprobar o rechazar la configuración de evaluación de una comisión', false, true),
+    ('evaluation.read_grade_items', 'evaluation', 'Ver las notas cargadas de una inscripción', false, false),
+    ('evaluation.load_grade_item', 'evaluation', 'Cargar notas de una inscripción como docente', false, false),
+    ('evaluation.publish_grades', 'evaluation', 'Publicar las notas de una evaluación de una comisión', false, true),
+    ('evaluation.record_exam_recovery', 'evaluation', 'Registrar el recuperatorio de una nota', false, true),
+    ('evaluation.correct_published_grade', 'evaluation', 'Corregir una nota ya publicada', false, true),
+    ('evaluation.read_grade_oversight', 'evaluation', 'Ver la auditoría de una nota y la grilla de notas de cualquier comisión', false, false),
+    ('evaluation.read_grade_grid', 'evaluation', 'Ver la grilla de notas de una comisión como docente', false, false),
+    ('evaluation.read_exam_boards', 'evaluation', 'Ver las mesas de examen y sus inscriptos', false, false),
+    ('evaluation.manage_exam_boards', 'evaluation', 'Crear y reprogramar mesas de examen, asignar el tribunal y gestionar inscripciones a mesas', false, false),
+    ('evaluation.cancel_exam_board', 'evaluation', 'Cancelar una mesa de examen', false, true),
+    ('evaluation.close_exam_board', 'evaluation', 'Cerrar una mesa de examen', false, true),
+    ('evaluation.record_exam_board_final_grades', 'evaluation', 'Cargar las notas finales de una mesa de examen', false, true),
+    ('evaluation.read_closure_sheets', 'evaluation', 'Ver la planilla de cierre de una comisión, sus correlativas y exportarla', false, false),
+    ('evaluation.read_commission_closures', 'evaluation', 'Ver el listado de cierres de comisiones', false, false),
+    ('evaluation.confirm_commission_closure', 'evaluation', 'Confirmar el cierre de una comisión y cargar observaciones por alumno como docente', false, true),
+    ('evaluation.approve_commission_closure', 'evaluation', 'Aprobar el cierre de una comisión', false, true),
+    ('evaluation.reopen_commission_closure', 'evaluation', 'Reabrir el cierre de una comisión', false, true),
+    ('evaluation.manage_closure_exceptions', 'evaluation', 'Otorgar y revocar excepciones de cierre a un alumno', false, true);
+
+insert into role_permission (role, permission_id)
+select grants.role, permission.id
+from (values
+    ('DOCENTE', 'evaluation.load_grade_item'),
+    ('DOCENTE', 'evaluation.publish_grades'),
+    ('DOCENTE', 'evaluation.record_exam_recovery'),
+    ('DOCENTE', 'evaluation.read_grade_grid'),
+    ('DOCENTE', 'evaluation.read_exam_boards'),
+    ('DOCENTE', 'evaluation.record_exam_board_final_grades'),
+    ('DOCENTE', 'evaluation.read_closure_sheets'),
+    ('DOCENTE', 'evaluation.confirm_commission_closure'),
+    ('PRECEPTOR', 'evaluation.read_grade_items'),
+    ('PRECEPTOR', 'evaluation.read_exam_boards'),
+    ('PRECEPTOR', 'evaluation.manage_exam_boards'),
+    ('PRECEPTOR', 'evaluation.cancel_exam_board'),
+    ('PRECEPTOR', 'evaluation.close_exam_board'),
+    ('PRECEPTOR', 'evaluation.read_closure_sheets'),
+    ('ADMINISTRATIVO', 'evaluation.read_evaluation_settings'),
+    ('ADMINISTRATIVO', 'evaluation.manage_evaluation_schemes'),
+    ('ADMINISTRATIVO', 'evaluation.read_grade_items'),
+    ('ADMINISTRATIVO', 'evaluation.read_exam_boards'),
+    ('ADMINISTRATIVO', 'evaluation.manage_exam_boards'),
+    ('ADMINISTRATIVO', 'evaluation.cancel_exam_board'),
+    ('ADMINISTRATIVO', 'evaluation.close_exam_board'),
+    ('ADMINISTRATIVO', 'evaluation.read_closure_sheets'),
+    ('ADMINISTRATIVO', 'evaluation.read_commission_closures'),
+    ('ADMINISTRATIVO', 'evaluation.approve_commission_closure')
+) as grants (role, code)
+join permission on permission.code = grants.code;

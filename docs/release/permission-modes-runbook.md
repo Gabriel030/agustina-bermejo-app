@@ -110,6 +110,28 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 El resto de los endpoints migrados de academicstructure ya permite al Director y no cambia. Las decisiones exclusivas del Director (aprobar o rechazar ciclos de oferta, materias y pedidos de cambio de horario, ver los pedidos pendientes y definir los rangos de turnos) quedan como permisos sin concesiones a otros roles: el Director las conserva.
 
 Las lecturas abiertas a cualquier usuario autenticado (listados y detalles de carreras, cursos, materias, comisiones, ciclos, aulas, feriados, períodos y rangos de turnos) y GET /me/teaching-sections quedan fuera de la grilla.
+### Evaluation
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /exam-boards, POST /exam-boards/{id}/tribunal, POST /exam-boards/{id}/reschedule, POST /exam-boards/{id}/registrations y POST /exam-board-registrations/{id}/withdraw (evaluation.manage_exam_boards)
+- POST /exam-boards/{id}/cancel (evaluation.cancel_exam_board): hoy el Director no puede cancelar mesas; en Activo sí
+- POST /exam-boards/{id}/close (evaluation.close_exam_board)
+- PUT /exam-boards/{id}/final-grades (evaluation.record_exam_board_final_grades)
+- POST /section-enrollments/{id}/grade-items y POST /course-section-enrollments/{id}/grade-items (evaluation.load_grade_item)
+- POST /program-sections/{id}/grade-items/publish y POST /course-sections/{id}/grade-items/publish (evaluation.publish_grades)
+- POST /grade-items/{id}/recovery (evaluation.record_exam_recovery)
+- GET /program-sections/{id}/grade-grid y GET /course-sections/{id}/grade-grid (evaluation.read_grade_grid)
+- POST /program-sections/{id}/closure/confirm, POST /course-sections/{id}/closure/confirm y los PUT closure/students/{enrollmentId}/observation (evaluation.confirm_commission_closure)
+- POST /program-sections/{id}/closure/approve y POST /course-sections/{id}/closure/approve (evaluation.approve_commission_closure)
+
+Los endpoints del alumno (/me/*) y la configuración de evaluación del docente (/me/section-evaluation-configs) quedan fuera de la grilla. El resto de los endpoints migrados de evaluation ya permiten al Director y no cambian.
+
+De esos endpoints, load_grade_item, publish_grades, record_exam_recovery, read_grade_grid, confirm_commission_closure (confirmar y observación) y record_exam_board_final_grades dejan pasar al Director en Activo, pero el handler resuelve el instructor actual y, si el Director no tiene ficha de instructor, falla con InstructorNotFoundException (404): en la práctica sigue sin poder hacer acciones de docente salvo que tenga esa ficha.
+
+## Academicrecord
+
+El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración ni cambio de resultado para el Director en ENFORCE.
 
 ## Notas operativas
 

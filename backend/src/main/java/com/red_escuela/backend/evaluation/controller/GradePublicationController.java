@@ -4,12 +4,12 @@ import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.evaluation.dto.PublishGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.PublishedGradesSummary;
-import com.red_escuela.backend.evaluation.usecase.gradepublication.PublishSectionGradeItemCommand;
 import com.red_escuela.backend.evaluation.usecase.gradepublication.PublishCourseSectionGradeItemUseCase;
 import com.red_escuela.backend.evaluation.usecase.gradepublication.PublishProgramSectionGradeItemUseCase;
+import com.red_escuela.backend.evaluation.usecase.gradepublication.PublishSectionGradeItemCommand;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,7 +33,7 @@ public class GradePublicationController {
 
     @PostMapping("/program-sections/{id}/grade-items/publish")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.publish_grades", legacyRoles = "ROLE_DOCENTE")
     public PublishedGradesSummary publishProgramSectionGradeItem(
             @PathVariable Long id, @Valid @RequestBody PublishGradeItemRequest request) {
         return publishProgramSectionGradeItemUseCase.publish(commandOf(id, request));
@@ -41,7 +41,7 @@ public class GradePublicationController {
 
     @PostMapping("/course-sections/{id}/grade-items/publish")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('DOCENTE')")
+    @RequiresPermission(code = "evaluation.publish_grades", legacyRoles = "ROLE_DOCENTE")
     public PublishedGradesSummary publishCourseSectionGradeItem(
             @PathVariable Long id, @Valid @RequestBody PublishGradeItemRequest request) {
         return publishCourseSectionGradeItemUseCase.publish(commandOf(id, request));

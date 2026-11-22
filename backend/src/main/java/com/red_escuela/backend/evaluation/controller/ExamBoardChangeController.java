@@ -7,8 +7,8 @@ import com.red_escuela.backend.evaluation.usecase.examboard.CancelExamBoardComma
 import com.red_escuela.backend.evaluation.usecase.examboard.CancelExamBoardUseCase;
 import com.red_escuela.backend.evaluation.usecase.examboard.RescheduleExamBoardCommand;
 import com.red_escuela.backend.evaluation.usecase.examboard.RescheduleExamBoardUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,13 +26,13 @@ public class ExamBoardChangeController {
     }
 
     @PostMapping("/exam-boards/{id}/reschedule")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.manage_exam_boards", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ExamBoardResponse reschedule(@PathVariable Long id, @Valid @RequestBody RescheduleExamBoardRequest request) {
         return rescheduleExamBoard.reschedule(new RescheduleExamBoardCommand(id, request));
     }
 
     @PostMapping("/exam-boards/{id}/cancel")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "evaluation.cancel_exam_board", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ExamBoardResponse cancel(@PathVariable Long id, @Valid @RequestBody CancelExamBoardRequest request) {
         return cancelExamBoard.cancel(new CancelExamBoardCommand(id, request.reason()));
     }

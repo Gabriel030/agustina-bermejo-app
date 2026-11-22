@@ -11,6 +11,7 @@ describe('moduleLabel', () => {
     expect(moduleLabel('graduation')).toBe('Egreso y certificados');
     expect(moduleLabel('notification')).toBe('Notificaciones');
     expect(moduleLabel('platform')).toBe('Configuración del instituto');
+    expect(moduleLabel('evaluation')).toBe('Evaluación');
   });
 
   it('capitalizes an unknown module as a fallback', () => {
