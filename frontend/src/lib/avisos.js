@@ -100,3 +100,13 @@ export function fechaEnPalabras(valorIso) {
   const hora = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
   return `${diaSemana} ${fechaCorta} a las ${hora}, hora de Argentina`;
 }
+
+const AVISO_ID_PATTERN = /^[1-9]\d*$/;
+const AVISO_ID_MAX_LENGTH = 15;
+
+export function parsearAvisoId(valores) {
+  if (valores.length !== 1) return null;
+  const [valor] = valores;
+  if (valor.length > AVISO_ID_MAX_LENGTH || !AVISO_ID_PATTERN.test(valor)) return null;
+  return Number(valor);
+}

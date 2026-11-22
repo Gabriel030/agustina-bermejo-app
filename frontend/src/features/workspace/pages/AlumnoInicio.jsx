@@ -15,8 +15,8 @@ import { useMisCursos } from '@/features/enrollment';
 import { useNovedades, useMarcarAvisoLeido } from '@/features/announcements';
 import { ScheduleCard } from '@/features/schedule';
 import { StaleStamp } from '@/components/offline/StaleStamp';
-import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
-import { tiempoRelativo } from '@/lib/notificaciones';
+import { CATEGORIA_AVISO_LABEL, parsearAvisoId } from '@/lib/avisos';
+import { describirTiempo } from '@/lib/notificaciones';
 
 const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'REGULAR']);
 
@@ -48,9 +48,17 @@ function fueEditado(aviso) {
 }
 
 function metaTemporal(aviso) {
-  if (!fueEditado(aviso)) return tiempoRelativo(aviso.createdAt);
-  const relativo = tiempoRelativo(aviso.updatedAt);
-  return /^(hace|recién)/.test(relativo) ? `editado ${relativo}` : `editado el ${relativo}`;
+  if (!fueEditado(aviso)) return { texto: describirTiempo(aviso.createdAt).texto, fechaIso: aviso.createdAt };
+  const { texto, esRelativo } = describirTiempo(aviso.updatedAt);
+  return { texto: esRelativo ? `editado ${texto}` : `editado el ${texto}`, fechaIso: aviso.updatedAt };
+}
+
+const LINEAS_VISIBLES = 6;
+
+function cuerpoDesborda(el, expandido) {
+  if (!expandido) return el.scrollHeight > el.clientHeight + 2;
+  const alturaLinea = parseFloat(window.getComputedStyle(el).lineHeight);
+  return Number.isFinite(alturaLinea) && el.scrollHeight > alturaLinea * LINEAS_VISIBLES + 2;
 }
 
 function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
@@ -59,7 +67,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
   const [previousExpandidoPorUrl, setPreviousExpandidoPorUrl] = useState(false);
 
   function measureBody(el) {
-    if (el && !expandido) setDesborda(el.scrollHeight > el.clientHeight + 2);
+    if (el) setDesborda(cuerpoDesborda(el, expandido));
   }
 
   if (expandidoPorUrl !== previousExpandidoPorUrl) {
@@ -76,10 +84,14 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
     setExpandido((v) => !v);
   }
 
+  const meta = metaTemporal(aviso);
+
   return (
     <div
       ref={refProp}
       data-aviso-id={aviso.id}
+      tabIndex={expandidoPorUrl ? -1 : undefined}
+      aria-current={expandidoPorUrl ? 'true' : undefined}
       className={`rounded-xl px-3 py-3 transition-colors ${expandidoPorUrl ? 'animate-[stagger-in_0.3s_ease-out_both] bg-accent-soft/40' : ''}`}
     >
       <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -91,9 +103,9 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {aviso.urgent && <StatusPill tone="danger">Urgente</StatusPill>}
-          <span className="text-size-10-5 text-ink-faint">
-            {metaTemporal(aviso)}
-          </span>
+          <time dateTime={meta.fechaIso} className="text-size-10-5 text-ink-faint">
+            {meta.texto}
+          </time>
         </div>
       </div>
       <div className="mt-1 flex items-center gap-2">
@@ -146,7 +158,7 @@ export function AlumnoInicio() {
   const { data: cursos } = useMisCursos();
   const { pendientes: matriculasPendientes } = useAdmissionInvoicesPending();
   const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades, isFetching: actualizandoNovedades, refetch: refetchNovedades, dataUpdatedAt: novedadesActualizadas } = useNovedades();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [verTodos, setVerTodos] = useState(false);
   const marcarLeido = useMarcarAvisoLeido();
   const avisoResaltadoRef = useRef(null);
@@ -156,18 +168,36 @@ export function AlumnoInicio() {
   const cursosActivos = (cursos ?? []).filter((c) => ESTADOS_CURSO_ACTIVO.has(c.status));
   const cursosEnEspera = (cursos ?? []).filter((c) => c.status === 'WAITLISTED');
 
-  const avisoUrlId = searchParams.get('aviso') ? Number(searchParams.get('aviso')) : null;
+  const hayAvisoEnUrl = searchParams.has('aviso');
+  const avisoUrlId = hayAvisoEnUrl ? parsearAvisoId(searchParams.getAll('aviso')) : null;
   const novedades = [...(novedadesRaw ?? [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const sinLeer = novedades.filter((aviso) => !aviso.readAt).length;
   const avisoUrlIndex = avisoUrlId ? novedades.findIndex((aviso) => aviso.id === avisoUrlId) : -1;
-  const avisoUrlNoDisponible = Boolean(avisoUrlId) && novedadesRaw !== undefined && avisoUrlIndex === -1;
+  const avisoUrlNoDisponible = hayAvisoEnUrl && novedadesRaw !== undefined && !actualizandoNovedades && avisoUrlIndex === -1;
+  const avisoUrlEncontrado = avisoUrlIndex !== -1;
   const mostrarTodos = verTodos || avisoUrlIndex >= NOVEDADES_INICIAL;
   const novedadesVisibles = mostrarTodos ? novedades : novedades.slice(0, NOVEDADES_INICIAL);
 
   useEffect(() => {
-    if (!avisoUrlId || !avisoResaltadoRef.current) return;
-    avisoResaltadoRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [avisoUrlId, novedades.length]);
+    const aviso = avisoResaltadoRef.current;
+    if (!avisoUrlId || !avisoUrlEncontrado || !aviso) return;
+    const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    aviso.focus({ preventScroll: true });
+    aviso.scrollIntoView({ behavior: sinMovimiento ? 'auto' : 'smooth', block: 'center' });
+  }, [avisoUrlId, avisoUrlEncontrado]);
+
+  function alternarListaCompleta() {
+    if (!mostrarTodos) {
+      setVerTodos(true);
+      return;
+    }
+    setVerTodos(false);
+    if (avisoUrlIndex >= NOVEDADES_INICIAL) {
+      const siguiente = new URLSearchParams(searchParams);
+      siguiente.delete('aviso');
+      setSearchParams(siguiente, { replace: true });
+    }
+  }
 
   return (
     <PageContainer>
@@ -260,7 +290,7 @@ export function AlumnoInicio() {
                   variant="text"
                   size="inline"
                   type="button"
-                  onClick={() => setVerTodos(!mostrarTodos)}
+                  onClick={alternarListaCompleta}
                   className="mt-1 self-start text-size-12-5 font-semibold"
                   >
                   {mostrarTodos ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}

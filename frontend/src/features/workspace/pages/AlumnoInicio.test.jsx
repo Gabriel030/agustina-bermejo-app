@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { reiniciarAvisosMarcados } from '@/features/announcements';
@@ -98,7 +99,7 @@ describe('AlumnoInicio — Novedades', () => {
     expect(await screen.findByText(/editado/)).toBeInTheDocument();
   });
 
-  it('writesEditedAgoWhenEditedLongAgo', async () => {
+  it('writesEditedOnDateWhenEditedMoreThanAWeekAgo', async () => {
     mockearBase([unAviso({ id: 1, createdAt: hoursAgo(24 * 20), updatedAt: hoursAgo(24 * 10) })]);
     montar();
 
@@ -158,6 +159,15 @@ describe('AlumnoInicio — Novedades', () => {
   });
 });
 
+function PollNow() {
+  const queryClient = useQueryClient();
+  return (
+    <button type="button" onClick={() => queryClient.invalidateQueries({ queryKey: ['me', 'announcements'] })}>
+      poll
+    </button>
+  );
+}
+
 describe('AlumnoInicio — deep link del aviso', () => {
   function manyAnnouncements(count) {
     return Array.from({ length: count }, (_, i) =>
@@ -174,7 +184,121 @@ describe('AlumnoInicio — deep link del aviso', () => {
     const title = await screen.findByRole('button', { name: /Aviso 2/ });
     expect(title).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('button', { name: /Aviso 1/ })).toHaveAttribute('aria-expanded', 'false');
-    expect(title.closest('[data-aviso-id]')).toHaveAttribute('data-aviso-id', '2');
+    expect(title.closest('[data-aviso-id]')).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: /Aviso 1/ }).closest('[data-aviso-id]')).not.toHaveAttribute('aria-current');
+  });
+
+  it('movesFocusToTheHighlightedAnnouncementWhenArrivingByDeepLink', async () => {
+    reiniciarAvisosMarcados();
+    mockearBase(manyAnnouncements(2));
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
+    montar('/alumno/inicio?aviso=2');
+
+    const title = await screen.findByRole('button', { name: /Aviso 2/ });
+    await waitFor(() => expect(title.closest('[data-aviso-id]')).toHaveFocus());
+  });
+
+  it('doesNotScrollAgainWhenPollingBringsANewAnnouncement', async () => {
+    reiniciarAvisosMarcados();
+    let avisos = manyAnnouncements(2);
+    server.use(
+      http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
+      http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+      http.get(`${API}/me/announcements`, () => HttpResponse.json(avisos)),
+      http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })),
+    );
+    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView');
+    renderWithProviders(
+      <Routes>
+        <Route path="/alumno/inicio" element={<><PollNow /><AlumnoInicio /></>} />
+      </Routes>,
+      { route: '/alumno/inicio?aviso=2' },
+    );
+    await screen.findByRole('button', { name: /Aviso 2/ });
+    await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
+
+    avisos = [...avisos, unAviso({ id: 9, title: 'Aviso nuevo', createdAt: hoursAgo(9), updatedAt: hoursAgo(9) })];
+    await userEvent.click(screen.getByRole('button', { name: 'poll' }));
+    await screen.findByRole('button', { name: /Aviso nuevo/ });
+    expect(scroll).toHaveBeenCalledTimes(1);
+    scroll.mockRestore();
+  });
+
+  it.each(['1e0', '0x2', ' 2 ', '1.5', '0', '-1', 'abc', '', '99999999999999999999'])(
+    'treatsTheInvalidParameter%sAsUnavailable',
+    async (value) => {
+      mockearBase(manyAnnouncements(3));
+      montar(`/alumno/inicio?aviso=${encodeURIComponent(value)}`);
+
+      expect(await screen.findByText('Ese aviso ya no está disponible.')).toBeInTheDocument();
+      screen.getAllByRole('button', { name: /Aviso \d/ }).forEach((button) => expect(button).toHaveAttribute('aria-expanded', 'false'));
+    },
+  );
+
+  it('treatsARepeatedParameterAsUnavailable', async () => {
+    mockearBase(manyAnnouncements(3));
+    montar('/alumno/inicio?aviso=1&aviso=2');
+
+    expect(await screen.findByText('Ese aviso ya no está disponible.')).toBeInTheDocument();
+  });
+
+  it('doesNotShowTheUnavailableMessageWhileTheListIsRefetching', async () => {
+    reiniciarAvisosMarcados();
+    const avisos = manyAnnouncements(2);
+    let releaseRefetch;
+    const gate = new Promise((resolve) => {
+      releaseRefetch = resolve;
+    });
+    let calls = 0;
+    server.use(
+      http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
+      http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+      http.get(`${API}/me/announcements`, async () => {
+        calls += 1;
+        if (calls > 1) await gate;
+        return HttpResponse.json(avisos);
+      }),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/alumno/inicio" element={<><PollNow /><AlumnoInicio /></>} />
+      </Routes>,
+      { route: '/alumno/inicio?aviso=9' },
+    );
+    expect(await screen.findByText('Ese aviso ya no está disponible.')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'poll' }));
+    await waitFor(() => expect(screen.queryByText('Ese aviso ya no está disponible.')).not.toBeInTheDocument());
+    releaseRefetch();
+    expect(await screen.findByText('Ese aviso ya no está disponible.')).toBeInTheDocument();
+  });
+
+  it('collapsesTheListWhenTappingShowLessWithADeepLinkBeyondTheThird', async () => {
+    reiniciarAvisosMarcados();
+    mockearBase(manyAnnouncements(5));
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
+    const user = userEvent.setup();
+    montar('/alumno/inicio?aviso=5');
+
+    await screen.findByRole('button', { name: /Aviso 5/ });
+    await user.click(screen.getByRole('button', { name: 'Mostrar menos avisos' }));
+
+    expect(screen.queryByRole('button', { name: /Aviso 5/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver todos (5)' })).toBeInTheDocument();
+  });
+
+  it('collapsesTheListAfterShowAllWhenTheDeepLinkIsWithinTheFirstThree', async () => {
+    reiniciarAvisosMarcados();
+    mockearBase(manyAnnouncements(5));
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
+    const user = userEvent.setup();
+    montar('/alumno/inicio?aviso=1');
+
+    await screen.findByRole('button', { name: /Aviso 1/ });
+    await user.click(screen.getByRole('button', { name: /Ver todos/ }));
+    expect(screen.getByRole('button', { name: /Aviso 5/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Mostrar menos avisos' }));
+    expect(screen.queryByRole('button', { name: /Aviso 5/ })).not.toBeInTheDocument();
   });
 
   it('revealsAnAnnouncementHiddenBehindShowAll', async () => {
@@ -204,41 +328,58 @@ describe('AlumnoInicio — deep link del aviso', () => {
     await screen.findByRole('button', { name: /Aviso 1/ });
     expect(screen.queryByText('Ese aviso ya no está disponible.')).not.toBeInTheDocument();
   });
+});
 
-  it('refreshesTheBellCountWhenReadingFromNews', async () => {
+describe('AlumnoInicio — estado de lectura único con la campanita', () => {
+  it('marksTheRelatedNotificationReadAndLowersTheBellCountWhenReadingFromNews', async () => {
     reiniciarAvisosMarcados();
-    let unread = 1;
+    const notification = {
+      id: 11,
+      type: 'ANNOUNCEMENT_PUBLISHED',
+      message: 'Nuevo aviso en Análisis Matemático I',
+      read: false,
+      relatedEntityType: 'Announcement',
+      relatedEntityId: 7,
+      createdAt: '2026-11-05T10:00:00',
+    };
+    const readRequests = [];
+    const unreadCountRequests = [];
     mockearBase([unAviso({ id: 7, title: 'Sin abrir' })]);
     server.use(
-      http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json({ count: unread })),
-      http.post(`${API}/me/announcements/:id/read`, () => {
-        unread = 0;
+      http.get(`${API}/me/notifications/unread-count`, () => {
+        unreadCountRequests.push(true);
+        return HttpResponse.json({ count: notification.read ? 0 : 1 });
+      }),
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json({ items: [notification], page: 0, size: 10, totalElements: 1, totalPages: 1 }),
+      ),
+      http.post(`${API}/me/announcements/:id/read`, ({ params }) => {
+        readRequests.push(params.id);
+        if (Number(params.id) === notification.relatedEntityId) notification.read = true;
         return new HttpResponse(null, { status: 204 });
       }),
     );
     renderWithProviders(
       <Routes>
-        <Route
-          path="/alumno/inicio"
-          element={
-            <>
-              <NotificationBell />
-              <AlumnoInicio />
-            </>
-          }
-        />
+        <Route path="/alumno/inicio" element={<><NotificationBell /><AlumnoInicio /></>} />
       </Routes>,
       { route: '/alumno/inicio' },
     );
     expect(await screen.findByRole('button', { name: 'Notificaciones, 1 sin leer' })).toBeInTheDocument();
+    const requestsBeforeReading = unreadCountRequests.length;
+
     await userEvent.click(await screen.findByRole('button', { name: /Sin abrir/ }));
+
     expect(await screen.findByRole('button', { name: 'Notificaciones' })).toBeInTheDocument();
+    expect(readRequests).toEqual(['7']);
+    expect(unreadCountRequests.length).toBeGreaterThan(requestsBeforeReading);
   });
 });
 
 describe('AlumnoInicio — cuerpo de los avisos', () => {
   afterEach(() => {
     delete HTMLElement.prototype.scrollHeight;
+    delete HTMLElement.prototype.clientHeight;
   });
 
   it('hidesSeeMoreWhenTheBodyFitsInSixLines', async () => {
@@ -249,9 +390,30 @@ describe('AlumnoInicio — cuerpo de los avisos', () => {
     expect(screen.queryByRole('button', { name: 'Ver más' })).not.toBeInTheDocument();
   });
 
+  function mockLongBodyMeasures() {
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get: () => 300 });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get() {
+        return this.className.includes('line-clamp-6') ? 120 : 300;
+      },
+    });
+    const original = window.getComputedStyle.bind(window);
+    return vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) => {
+      const real = original(element, pseudo);
+      return new Proxy(real, {
+        get: (target, property) => {
+          if (property === 'lineHeight') return '20px';
+          const value = target[property];
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+      });
+    });
+  }
+
   it('offersSeeMoreForLongBodiesAndKeepsSeeLessAfterExpanding', async () => {
     reiniciarAvisosMarcados();
-    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get: () => 300 });
+    const computed = mockLongBodyMeasures();
     mockearBase([unAviso({ id: 1, title: 'Largo' }), unAviso({ id: 2, title: 'Otro', createdAt: hoursAgo(2), updatedAt: hoursAgo(2) })]);
     server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
     const user = userEvent.setup();
@@ -266,6 +428,28 @@ describe('AlumnoInicio — cuerpo de los avisos', () => {
     await user.click(screen.getByRole('button', { name: 'Otro' }));
     expect(screen.getByRole('button', { name: 'Largo' })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('button', { name: 'Otro' })).toHaveAttribute('aria-expanded', 'true');
+    computed.mockRestore();
+  });
+
+  it('showsSeeLessForALongAnnouncementOpenedByDeepLink', async () => {
+    reiniciarAvisosMarcados();
+    const computed = mockLongBodyMeasures();
+    mockearBase([unAviso({ id: 1, title: 'Largo' })]);
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
+    montar('/alumno/inicio?aviso=1');
+
+    expect(await screen.findByRole('button', { name: 'Ver menos' })).toBeInTheDocument();
+    computed.mockRestore();
+  });
+
+  it('rendersTheTimeMetaAsATimeElementWithTheDate', async () => {
+    const createdAt = hoursAgo(1);
+    mockearBase([unAviso({ id: 1, createdAt, updatedAt: createdAt })]);
+    montar();
+
+    const meta = await screen.findByText('hace 1 h');
+    expect(meta.tagName).toBe('TIME');
+    expect(meta).toHaveAttribute('dateTime', createdAt);
   });
 });
 

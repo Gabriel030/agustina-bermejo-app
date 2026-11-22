@@ -182,16 +182,20 @@ function fechaCorta(fecha) {
   return `${dia}/${mes}/${fecha.getFullYear()}`;
 }
 
-export function tiempoRelativo(fechaIso) {
+export function describirTiempo(fechaIso) {
   const fecha = new Date(fechaIso);
-  if (!fechaIso || Number.isNaN(fecha.getTime())) return '';
+  if (!fechaIso || Number.isNaN(fecha.getTime())) return { texto: '', esRelativo: false };
   const diffMs = Date.now() - fecha.getTime();
   const minutos = Math.floor(diffMs / 60000);
-  if (minutos < 1) return 'recién';
-  if (minutos < 60) return `hace ${minutos} min`;
+  if (minutos < 1) return { texto: 'recién', esRelativo: true };
+  if (minutos < 60) return { texto: `hace ${minutos} min`, esRelativo: true };
   const horas = Math.floor(minutos / 60);
-  if (horas < 24) return `hace ${horas} h`;
+  if (horas < 24) return { texto: `hace ${horas} h`, esRelativo: true };
   const dias = Math.floor(horas / 24);
-  if (dias < 7) return `hace ${dias} d`;
-  return fechaCorta(fecha);
+  if (dias < 7) return { texto: `hace ${dias} d`, esRelativo: true };
+  return { texto: fechaCorta(fecha), esRelativo: false };
+}
+
+export function tiempoRelativo(fechaIso) {
+  return describirTiempo(fechaIso).texto;
 }
