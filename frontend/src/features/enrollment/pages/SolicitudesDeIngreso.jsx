@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Info } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
@@ -11,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/table/DataTable';
+import { ColumnFilter } from '@/components/table/ColumnFilter';
+import { LoadErrorState } from '@/components/LoadErrorState';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useReviewBasePath } from '@/features/enrollment/hooks/useReviewBasePath';
 import {
   HISTORY_PAGE_SIZE,
@@ -24,6 +28,8 @@ import {
   cohortLabel,
   documentationFilterValue,
   documentationLabel,
+  filterPendingApplications,
+  pendingFilterOptions,
 } from '@/features/enrollment/lib/applicationReview';
 import { formatearFecha } from '@/lib/comisiones';
 import { ageLabel } from '@/lib/aprobaciones';
@@ -61,7 +67,7 @@ function RequestedCell({ application }) {
 
 function ReviewCell({ application, basePath }) {
   return (
-    <Button asChild variant="outline" size="sm">
+    <Button asChild variant="outline" className="min-h-11 px-4 font-bold max-md:w-full">
       <Link
         to={`${basePath}/${APPLICATION_REVIEW_PATH}/${application.id}`}
         aria-label={`Revisar la solicitud de ${application.studentFullName ?? 'la persona'}`}
@@ -86,8 +92,6 @@ function buildColumns({ basePath, history }) {
     header: 'Carrera',
     accessorFn: (application) => application.programName,
     enableSorting: false,
-    enableColumnFilter: true,
-    meta: { filterable: true, filterTitle: 'carrera' },
     cell: ({ row }) => <ProgramCell application={row.original} />,
   };
   const requested = {
@@ -106,7 +110,7 @@ function buildColumns({ basePath, history }) {
   if (history) {
     return [
       student,
-      { ...program, enableColumnFilter: false, meta: {} },
+      program,
       requested,
       {
         id: 'status',
@@ -144,8 +148,6 @@ function buildColumns({ basePath, history }) {
       header: 'Documentación',
       accessorFn: (application) => documentationFilterValue(application.documentation),
       enableSorting: false,
-      enableColumnFilter: true,
-      meta: { filterable: true, filterTitle: 'documentación' },
       cell: ({ row }) => (
         <StatusPill tone={row.original.documentation?.complete ? 'success' : 'warning'}>
           {documentationLabel(row.original.documentation)}
@@ -159,29 +161,86 @@ function buildColumns({ basePath, history }) {
 function PendingList({ basePath }) {
   const navigate = useNavigate();
   const pending = usePendingApplications();
+  const [programs, setPrograms] = useState();
+  const [documentations, setDocumentations] = useState();
   const columns = useMemo(() => buildColumns({ basePath, history: false }), [basePath]);
+  const all = useMemo(() => pending.data ?? [], [pending.data]);
+  const options = useMemo(() => pendingFilterOptions(all), [all]);
+  const visible = useMemo(
+    () => filterPendingApplications(all, { programs, documentations }),
+    [all, programs, documentations],
+  );
+  const isFiltered = Array.isArray(programs) || Array.isArray(documentations);
+
+  function clearFilters() {
+    setPrograms(undefined);
+    setDocumentations(undefined);
+  }
+
+  if (pending.isError && pending.error?.status === 403) {
+    return <LoadErrorState bare distinguishForbidden error={pending.error} resource="las solicitudes" />;
+  }
+
   return (
-    <DataTable
-      compact
-      mobileLayout="scroll"
-      columns={columns}
-      data={pending.data}
-      getRowId={(application) => String(application.id)}
-      initialSorting={[{ id: 'requestedAt', desc: false }]}
-      minWidth={720}
-      isLoading={pending.isLoading}
-      isError={pending.isError}
-      onRetry={pending.refetch}
-      errorMessage="No pudimos cargar las solicitudes"
-      onRowClick={(application) => navigate(`${basePath}/${APPLICATION_REVIEW_PATH}/${application.id}`)}
-      emptyState={
-        <EmptyState
-          icon="📥"
-          title="No hay solicitudes por revisar"
-          description="Cuando alguien solicite inscribirse a una carrera, la vas a ver acá y en tus notificaciones."
-        />
-      }
-    />
+    <div className="flex flex-col gap-3">
+      {all.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <ColumnFilter
+            label="carrera"
+            triggerLabel="Carrera"
+            options={options.programs}
+            selected={programs}
+            onChange={setPrograms}
+          />
+          <ColumnFilter
+            label="documentación"
+            triggerLabel="Documentación"
+            options={options.documentations}
+            selected={documentations}
+            onChange={setDocumentations}
+          />
+          {isFiltered && (
+            <Button type="button" variant="link" className="min-h-11 font-bold" onClick={clearFilters}>
+              Quitar filtros
+            </Button>
+          )}
+          <span className="ml-auto text-size-12-5 tabular-nums text-ink-faint" aria-live="polite">
+            {visible.length} de {all.length} pendientes
+          </span>
+        </div>
+      )}
+      <DataTable
+        columns={columns}
+        data={pending.isLoading || pending.isError ? pending.data : visible}
+        getRowId={(application) => String(application.id)}
+        initialSorting={[{ id: 'requestedAt', desc: false }]}
+        minWidth={720}
+        isLoading={pending.isLoading}
+        isError={pending.isError}
+        onRetry={pending.refetch}
+        errorMessage="No pudimos cargar las solicitudes"
+        onRowClick={(application) => navigate(`${basePath}/${APPLICATION_REVIEW_PATH}/${application.id}`)}
+        emptyState={
+          all.length > 0 ? (
+            <EmptyState
+              title="Ninguna solicitud coincide"
+              description="Probá con otra carrera o estado de documentación."
+              action={
+                <Button type="button" variant="outline" className="min-h-11" onClick={clearFilters}>
+                  Quitar filtros
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon="📥"
+              title="No hay solicitudes por revisar"
+              description="Cuando alguien pida inscribirse a una carrera, la vas a ver acá y en tus notificaciones."
+            />
+          )
+        }
+      />
+    </div>
   );
 }
 
@@ -202,14 +261,23 @@ function HistoryList({ basePath }) {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  function clearHistoryFilters() {
+    setSearchInput('');
+    setStatus('ALL');
+  }
+
   const items = history.data?.items;
   const totalPages = Math.max(1, Math.ceil((history.data?.totalElements ?? 0) / HISTORY_PAGE_SIZE));
   const isFiltered = Boolean(search) || status !== 'ALL';
 
+  if (history.isError && history.error?.status === 403) {
+    return <LoadErrorState bare distinguishForbidden error={history.error} resource="el historial" />;
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <Buscador value={searchInput} onChange={setSearchInput} placeholder="Buscar por alumno o DNI" />
+        <Buscador value={searchInput} onChange={setSearchInput} placeholder="Buscar por alumno o DNI" ariaLabel="Buscar por alumno o DNI" className="min-h-11 flex-1 md:flex-none" />
         <Select
           value={status}
           onValueChange={(next) => {
@@ -217,7 +285,7 @@ function HistoryList({ basePath }) {
             setPage(1);
           }}
         >
-          <SelectTrigger aria-label="Filtrar por estado" className="w-auto min-w-44">
+          <SelectTrigger aria-label="Filtrar por estado" className="min-h-11 w-auto min-w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -230,8 +298,6 @@ function HistoryList({ basePath }) {
         </Select>
       </div>
       <DataTable
-        compact
-        mobileLayout="scroll"
         columns={columns}
         data={items}
         getRowId={(application) => String(application.id)}
@@ -244,7 +310,15 @@ function HistoryList({ basePath }) {
         onRowClick={(application) => navigate(`${basePath}/${APPLICATION_REVIEW_PATH}/${application.id}`)}
         emptyState={
           isFiltered ? (
-            <EmptyState title="Ninguna solicitud coincide" description="Probá con otro nombre, DNI o estado." />
+            <EmptyState
+              title="Ninguna solicitud coincide"
+              description="Probá con otro nombre, DNI o estado."
+              action={
+                <Button type="button" variant="outline" className="min-h-11" onClick={clearHistoryFilters}>
+                  Quitar filtros
+                </Button>
+              }
+            />
           ) : (
             <EmptyState
               title="Todavía no hay solicitudes resueltas"
@@ -258,6 +332,26 @@ function HistoryList({ basePath }) {
   );
 }
 
+function ReviewSubtitle() {
+  return (
+    <span className="inline-flex items-center gap-1">
+      Personas que piden inscribirse a una carrera
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button type="button" variant="subtle" className="size-11" aria-label="Qué pasa al aprobar una solicitud">
+              <Info className="size-4" aria-hidden="true" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-60">
+            Al aprobar se genera su matrícula de ingreso y obtiene acceso como alumno.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </span>
+  );
+}
+
 export function SolicitudesDeIngreso() {
   const basePath = useReviewBasePath();
   const [params, setParams] = useSearchParams();
@@ -265,16 +359,13 @@ export function SolicitudesDeIngreso() {
   const pending = usePendingApplications();
 
   return (
-    <PageContainer
-      title="Solicitudes de ingreso"
-      description="Personas que pidieron inscribirse a una carrera. Revisá la documentación y aprobá o rechazá: al aprobar se genera su matrícula de ingreso y obtiene acceso como alumno."
-    >
+    <PageContainer title="Solicitudes de ingreso" description={<ReviewSubtitle />}>
       <Tabs
         className="gap-4"
         value={tab}
         onValueChange={(value) => setParams(value === 'historial' ? { tab: 'historial' } : {}, { replace: true })}
       >
-        <TabsList variant="segmented">
+        <TabsList variant="segmented" className="group-data-horizontal/tabs:h-12">
           <TabsTrigger value="pendientes">
             Pendientes
             <TabCount count={pending.data?.length} />

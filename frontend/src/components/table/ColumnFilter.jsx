@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export function ColumnFilter({ label, options, selected, onChange }) {
+export function ColumnFilter({ label, options, selected, onChange, triggerLabel }) {
   const [open, setOpen] = useState(false);
   const allValues = options.map((option) => option.value);
   const effectiveSelected = selected ?? allValues;
@@ -30,19 +30,33 @@ export function ColumnFilter({ label, options, selected, onChange }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Filtrar por ${label}`}
-          className={cn(
-            'inline-flex size-6 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            isFiltering && 'bg-accent-soft text-primary',
-          )}
-        >
-          <ListFilter className="size-3.5" />
-        </button>
+        {triggerLabel ? (
+          <Button
+            type="button"
+            variant="outline"
+            aria-label={`Filtrar por ${label}`}
+            data-filtering={isFiltering}
+            className={cn('min-h-11 gap-1.5 px-3 font-semibold text-ink-soft', isFiltering && 'border-primary bg-accent-soft text-primary')}
+          >
+            <ListFilter className="size-4" />
+            {triggerLabel}
+            {isFiltering && <span className="tabular-nums">({effectiveSelected.length})</span>}
+          </Button>
+        ) : (
+          <button
+            type="button"
+            aria-label={`Filtrar por ${label}`}
+            className={cn(
+              'inline-flex size-6 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              isFiltering && 'bg-accent-soft text-primary',
+            )}
+          >
+            <ListFilter className="size-3.5" />
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 gap-1 bg-dialog-bg p-2">
-        <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold text-ink hover:bg-neutral-bg">
+        <label className={cn('flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold text-ink hover:bg-neutral-bg', triggerLabel && 'min-h-11')}>
           <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
           Seleccionar todo
         </label>
@@ -50,7 +64,7 @@ export function ColumnFilter({ label, options, selected, onChange }) {
           {options.map((option) => (
             <label
               key={String(option.value)}
-              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-ink hover:bg-neutral-bg"
+              className={cn('flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-ink hover:bg-neutral-bg', triggerLabel && 'min-h-11')}
             >
               <Checkbox checked={effectiveSelected.includes(option.value)} onCheckedChange={() => toggleOne(option.value)} />
               <span className="min-w-0 flex-1 truncate">{option.label}</span>

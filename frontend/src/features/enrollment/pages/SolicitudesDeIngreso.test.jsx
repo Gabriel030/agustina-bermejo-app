@@ -64,11 +64,34 @@ describe('SolicitudesDeIngreso', () => {
     renderList();
     await screen.findByText('Joaquín Benítez');
 
-    await userEvent.click(screen.getByRole('button', { name: /documentación/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Filtrar por documentación' }));
     await userEvent.click(await screen.findByRole('checkbox', { name: /Completa/ }));
 
     await waitFor(() => expect(screen.queryByText('Valentina Suárez')).not.toBeInTheDocument());
     expect(screen.getByText('Joaquín Benítez')).toBeInTheDocument();
+  });
+
+  it('shows the filtered count and clears the filters', async () => {
+    mockPending();
+    renderList();
+    await screen.findByText('Joaquín Benítez');
+    expect(screen.getByText('2 de 2 pendientes')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtrar por documentación' }));
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Completa/ }));
+    await waitFor(() => expect(screen.getByText('1 de 2 pendientes')).toBeInTheDocument());
+
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar filtros' }));
+    expect(await screen.findByText('2 de 2 pendientes')).toBeInTheDocument();
+    expect(screen.getByText('Valentina Suárez')).toBeInTheDocument();
+  });
+
+  it('shows a dedicated state when the user has no permission', async () => {
+    server.use(http.get(`${API}/program-enrollment-applications/pending`, () => HttpResponse.json(errorBody('ACCESS_DENIED'), { status: 403 })));
+    renderList();
+
+    expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
   });
 
   it('shows the empty state when nothing is pending', async () => {
