@@ -6,7 +6,6 @@ import com.red_escuela.backend.academicstructure.dto.ProgramResponse;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.academicstructure.service.ProgramService;
-import com.red_escuela.backend.academicstructure.usecase.GetCatalogPriceVisibilityUseCase;
 import com.red_escuela.backend.academicstructure.usecase.SetProgramCatalogVisibilityUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -31,14 +30,11 @@ public class ProgramController {
 
     private final ProgramService programService;
     private final SetProgramCatalogVisibilityUseCase setCatalogVisibility;
-    private final GetCatalogPriceVisibilityUseCase catalogPriceVisibility;
 
     public ProgramController(ProgramService programService,
-            SetProgramCatalogVisibilityUseCase setCatalogVisibility,
-            GetCatalogPriceVisibilityUseCase catalogPriceVisibility) {
+            SetProgramCatalogVisibilityUseCase setCatalogVisibility) {
         this.programService = programService;
         this.setCatalogVisibility = setCatalogVisibility;
-        this.catalogPriceVisibility = catalogPriceVisibility;
     }
 
     @PostMapping
@@ -71,11 +67,7 @@ public class ProgramController {
     @GetMapping
     public List<ProgramResponse> list(@RequestParam(required = false) StatusType status,
             @RequestParam(required = false) Boolean visibleInCatalog) {
-        boolean pricesVisible = catalogPriceVisibility.execute();
-        return programService.list(status, visibleInCatalog).stream()
-                .map(ProgramResponse::from)
-                .map(response -> pricesVisible ? response : response.withoutPrices())
-                .toList();
+        return programService.list(status, visibleInCatalog).stream().map(ProgramResponse::from).toList();
     }
 
     @PutMapping("/{id}/catalog-visibility")
@@ -87,16 +79,12 @@ public class ProgramController {
 
     @GetMapping("/{id}")
     public ProgramResponse get(@PathVariable Long id) {
-        var response = ProgramResponse.from(programService.get(id));
-        return catalogPriceVisibility.execute() ? response : response.withoutPrices();
+        return ProgramResponse.from(programService.get(id));
     }
 
     @GetMapping("/{id}/pricing")
     public ProgramPricingResponse getPricing(@PathVariable Long id) {
         var program = programService.get(id);
-        if (!catalogPriceVisibility.execute()) {
-            return new ProgramPricingResponse(id, null, null, null);
-        }
         return new ProgramPricingResponse(id, program.enrollmentFeeAsMoney(), program.enrollmentFeeAsMoney(), program.priceAsMoney());
     }
 }

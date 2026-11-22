@@ -7,7 +7,6 @@ import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseService;
-import com.red_escuela.backend.academicstructure.usecase.GetCatalogPriceVisibilityUseCase;
 import com.red_escuela.backend.academicstructure.usecase.SetCourseCatalogVisibilityUseCase;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import jakarta.validation.Valid;
@@ -32,16 +31,13 @@ public class CourseController {
     private final CourseService courseService;
     private final SetCourseCatalogVisibilityUseCase setCatalogVisibility;
     private final CourseEnrollmentService courseEnrollmentService;
-    private final GetCatalogPriceVisibilityUseCase catalogPriceVisibility;
 
     public CourseController(CourseService courseService,
             SetCourseCatalogVisibilityUseCase setCatalogVisibility,
-            CourseEnrollmentService courseEnrollmentService,
-            GetCatalogPriceVisibilityUseCase catalogPriceVisibility) {
+            CourseEnrollmentService courseEnrollmentService) {
         this.courseService = courseService;
         this.setCatalogVisibility = setCatalogVisibility;
         this.courseEnrollmentService = courseEnrollmentService;
-        this.catalogPriceVisibility = catalogPriceVisibility;
     }
 
     @PostMapping
@@ -74,11 +70,7 @@ public class CourseController {
     @GetMapping
     public List<CourseResponse> list(@RequestParam(required = false) StatusType status,
             @RequestParam(required = false) Boolean visibleInCatalog) {
-        boolean pricesVisible = catalogPriceVisibility.execute();
-        return courseService.list(status, visibleInCatalog).stream()
-                .map(CourseResponse::from)
-                .map(response -> pricesVisible ? response : response.withoutPrices())
-                .toList();
+        return courseService.list(status, visibleInCatalog).stream().map(CourseResponse::from).toList();
     }
 
     @PutMapping("/{id}/catalog-visibility")
@@ -90,16 +82,12 @@ public class CourseController {
 
     @GetMapping("/{id}")
     public CourseResponse get(@PathVariable Long id) {
-        var response = CourseResponse.from(courseService.get(id), courseEnrollmentService.countOccupiedSeats(id));
-        return catalogPriceVisibility.execute() ? response : response.withoutPrices();
+        return CourseResponse.from(courseService.get(id), courseEnrollmentService.countOccupiedSeats(id));
     }
 
     @GetMapping("/{id}/pricing")
     public CoursePricingResponse getPricing(@PathVariable Long id) {
         var course = courseService.get(id);
-        if (!catalogPriceVisibility.execute()) {
-            return new CoursePricingResponse(id, null);
-        }
         return new CoursePricingResponse(id, course.priceAsMoney());
     }
 }

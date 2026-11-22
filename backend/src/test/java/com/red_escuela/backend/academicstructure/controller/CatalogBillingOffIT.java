@@ -90,8 +90,8 @@ class CatalogBillingOffIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.enrollmentFeeAmount").doesNotExist());
         mockMvc.perform(get("/programs?status=ACTIVE").header("Authorization", "Bearer " + studentToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.id==" + programId + ")].price").isEmpty())
-                .andExpect(jsonPath("$[?(@.id==" + programId + ")].enrollmentFeeAmount").isEmpty());
+                .andExpect(jsonPath("$[?(@.id==" + programId + ")].price").value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue())))
+                .andExpect(jsonPath("$[?(@.id==" + programId + ")].enrollmentFeeAmount").value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue())));
         mockMvc.perform(get("/programs/" + programId + "/pricing").header("Authorization", "Bearer " + studentToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.programId").value(programId))
