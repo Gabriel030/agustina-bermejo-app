@@ -88,6 +88,28 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints del alumno (/me/*), el alta pública de interesados y las decisiones sobre pedidos de aprobación (listar, ver, aprobar, rechazar) quedan fuera de la grilla.
 
+### Academicstructure
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /programs, PUT /programs/{id}, POST /programs/{id}/subjects, PUT /program-subjects/{id}, POST y DELETE de prerrequisitos y correquisitos de materias de carrera, POST/PUT /elective-groups y POST/DELETE /programs/{id}/elective-groups (academicstructure.manage_programs)
+- POST /courses, PUT /courses/{id}, POST /courses/{id}/subjects y PUT /course-subjects/{id} (academicstructure.manage_courses)
+- POST activate/deactivate de carreras y materias de carrera (academicstructure.change_program_status)
+- POST activate/deactivate de cursos y materias de curso (academicstructure.change_course_status)
+- PUT /programs/{id}/catalog-visibility y PUT /courses/{id}/catalog-visibility (academicstructure.change_catalog_visibility)
+- POST /holidays y PUT /holidays/{id} (academicstructure.manage_holidays); DELETE /holidays/{id} (academicstructure.delete_holiday)
+- POST /subjects, PUT /subjects/{id} y POST /subjects/{id}/submit-for-approval (academicstructure.manage_subjects)
+- POST /academic-offering-cycles, POST /academic-offering-cycles/{id}/sections y POST /academic-offering-cycles/{id}/submit (academicstructure.manage_offering_cycle)
+- POST /classrooms y POST /classrooms/{id}/deactivate (academicstructure.manage_classrooms)
+- POST /subject-sections/{id}/modification-request y /modification-request/preview (academicstructure.request_section_modification)
+- POST /subjects/{id}/sections, PUT /program-sections/{id}, POST /course-subjects/{id}/sections y PUT /course-sections/{id} (academicstructure.manage_sections)
+- POST activate/deactivate de comisiones de materias y de cursos (academicstructure.change_section_status)
+- POST /program-sections/{id}/instructors y /course-sections/{id}/instructors (academicstructure.assign_section_instructor)
+- DELETE /program-sections/{id}/instructors/{assignmentId} y /course-sections/{id}/instructors/{assignmentId} (academicstructure.remove_section_instructor)
+
+El resto de los endpoints migrados de academicstructure ya permite al Director y no cambia. Las decisiones exclusivas del Director (aprobar o rechazar ciclos de oferta, materias y pedidos de cambio de horario, ver los pedidos pendientes y definir los rangos de turnos) quedan como permisos sin concesiones a otros roles: el Director las conserva.
+
+Las lecturas abiertas a cualquier usuario autenticado (listados y detalles de carreras, cursos, materias, comisiones, ciclos, aulas, feriados, períodos y rangos de turnos) y GET /me/teaching-sections quedan fuera de la grilla.
 ### Evaluation
 
 Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:

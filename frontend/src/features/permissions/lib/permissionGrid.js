@@ -44,6 +44,7 @@ export const PERMISSION_MODES = {
 const MODULE_LABELS = {
   announcement: 'Avisos',
   billing: 'Facturación',
+  academicstructure: 'Estructura académica',
   enrollment: 'Inscripciones',
   attendance: 'Asistencia',
   evaluation: 'Evaluación',
