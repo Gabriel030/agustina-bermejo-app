@@ -31,7 +31,7 @@ prueba encuentra bugs que los demás no ven.
 | Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | En uso (solo local: `scripts/system-tests.sh`) |
 | OpenAPI + validación en ambos lados | Contrato front-back | ¿El front y el back hablan el mismo idioma, o un cambio del backend rompe al front? | En uso (lado backend: instantánea `contracts/openapi.json` + `oasdiff`); falta la validación de los mocks del front (Q13b) |
 | k6 | Carga y rendimiento | ¿Aguanta el volumen real (corrida mensual de miles de alumnos, pipeline nocturno, locks por cuenta)? | En uso para HTTP (solo local: `scripts/load-tests.sh`); falta el batch (Q15b) |
-| OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Dependency-Check y `npm audit`: en uso (solo local); matriz por rol (`security/AuthorizationMatrixTest`, `authorization-matrix.csv`): en uso, corre en cada PR y todo endpoint nuevo o cambio de permisos exige tocar el CSV; ZAP: propuesto |
+| OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Dependency-Check y `npm audit`: en uso (solo local); matriz por rol (`security/AuthorizationMatrixTest`, `authorization-matrix.csv`): en uso, corre en cada PR y todo endpoint nuevo o cambio de permisos exige tocar el CSV; ZAP: plan y workflow manual desactivado por defecto, sin ejecutar (`docs/security/pentest-interno.md`, `security/zap/`, `.github/workflows/zap-manual.yml`) |
 
 ## Criterio: qué tests escribir para un cambio
 
