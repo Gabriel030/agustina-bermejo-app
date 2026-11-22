@@ -102,7 +102,8 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                 <TableCell>
                   <div className="flex items-center justify-end gap-2">
                     {pagable && (
-                      <Button className="min-h-11"
+                      <Button
+                        className="min-h-11"
                         size="sm"
                         variant="primary"
                         onClick={(event) => {
@@ -114,7 +115,8 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                       </Button>
                     )}
                     {underReview && (
-                      <Button className="min-h-11"
+                      <Button
+                        className="min-h-11"
                         size="sm"
                         variant="outline"
                         onClick={(event) => {
@@ -225,7 +227,8 @@ export function AlumnoPagoDetalle() {
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-sm">
-              <Button className="min-h-11"
+              <Button
+                className="min-h-11"
                 variant="subtle"
                 size="sm"
                 type="button"
@@ -237,7 +240,8 @@ export function AlumnoPagoDetalle() {
               <span className="text-ink-faint">
                 {page} / {totalPages}
               </span>
-              <Button className="min-h-11"
+              <Button
+                className="min-h-11"
                 variant="subtle"
                 size="sm"
                 type="button"

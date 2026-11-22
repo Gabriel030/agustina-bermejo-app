@@ -43,7 +43,7 @@ function CardPaymentOption({ enabled, onSelect }) {
     return <div aria-disabled="true">{content}</div>;
   }
   return (
-    <Button type="button" variant="row" size="row" onClick={onSelect} className="min-h-11 p-0">
+    <Button type="button" variant="row" size="row" onClick={onSelect} className="min-h-11 p-0 hover:bg-transparent active:translate-y-0">
       {content}
     </Button>
   );
@@ -107,9 +107,9 @@ export function AlumnoPagarSeleccion() {
               variant="row"
               size="row"
               onClick={() => goTo(`/alumno/pagos/${invoiceId}/transferencia`)}
-              className="min-h-11 p-0"
+              className="min-h-11 p-0 hover:bg-transparent active:translate-y-0"
             >
-              <GlassCard interactive className="flex items-start gap-4 p-5">
+              <GlassCard className="flex items-start gap-4 p-5 transition-shadow hover:shadow-md">
                 <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-on-accent">
                   <Banknote size={20} />
                 </div>
