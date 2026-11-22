@@ -8,6 +8,7 @@ import com.red_escuela.backend.graduation.certificate.engine.BuiltInCertificateT
 import com.red_escuela.backend.graduation.certificate.engine.CertificateAssets;
 import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
+import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateNotFoundException;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
 import org.slf4j.Logger;
@@ -53,8 +54,12 @@ public class GraduationCertificatePdfProvider {
         }
         log.warn("El PDF del certificado {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getId());
         byte[] regenerated = regenerate(certificate);
-        String path = fileStore.save(certificate.getCode(), regenerated);
-        certificate.replacePdf(digest.sha256(regenerated), path);
+        String regeneratedSha256 = digest.sha256(regenerated);
+        if (certificate.isPdfRegenerationVerifiable() && !regeneratedSha256.equals(certificate.getPdfSha256())) {
+            log.error("El PDF regenerado del certificado {} no coincide con el hash registrado", certificate.getId());
+            throw new CertificatePdfIntegrityMismatchException();
+        }
+        certificate.replacePdf(regeneratedSha256, fileStore.save(certificate.getCode(), regenerated));
         return new GraduationCertificatePdf(certificate.getCode(), regenerated);
     }
 

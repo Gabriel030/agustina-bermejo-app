@@ -8,6 +8,8 @@ import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateR
 import com.red_escuela.backend.graduation.certificate.dto.IssueGraduationCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
+import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateStatus;
@@ -141,8 +143,57 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
 
         assertThat(fileStore.load(stored.getPdfPath())).isPresent();
         assertThat(stored.getPdfSha256()).isEqualTo(digest.sha256(pdf.content()));
+        assertThat(stored.getPdfSha256()).isEqualTo(originalHash);
         assertThat(pdf.code()).isEqualTo(response.code());
         assertThat(originalHash).hasSize(64);
+    }
+
+    @Test
+    void issuedCertificateRecordsTheRenderEngineVersion() {
+        GraduationCertificate stored = repository.findById(issue().id()).orElseThrow();
+
+        assertThat(stored.getRenderEngineVersion()).isEqualTo(CertificatePdfRenderer.ENGINE_VERSION);
+    }
+
+    @Test
+    void deletingTheCachedFileLosesNothingAndServesTheSameBytes() {
+        GraduationCertificateResponse response = issue();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        byte[] original = fileStore.load(stored.getPdfPath()).orElseThrow();
+        fileStore.deleteIfRolledBack(stored.getPdfPath());
+
+        GraduationCertificatePdf pdf = pdfUseCase.pdfOf(response.id());
+
+        assertThat(pdf.content()).isEqualTo(original);
+    }
+
+    @Test
+    void regenerationThatDiffersFromTheStoredHashIsNotServed() {
+        GraduationCertificateResponse response = issue();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        String originalHash = stored.getPdfSha256();
+        stored.replacePdf("f".repeat(64), stored.getPdfPath());
+        fileStore.deleteIfRolledBack(stored.getPdfPath());
+
+        assertThatThrownBy(() -> pdfUseCase.pdfOf(response.id())).isInstanceOf(CertificatePdfIntegrityMismatchException.class);
+        assertThat(stored.getPdfSha256()).isEqualTo("f".repeat(64)).isNotEqualTo(originalHash);
+        assertThat(fileStore.load(stored.getPdfPath())).isEmpty();
+    }
+
+    @Test
+    void legacyCertificateWithoutEngineVersionIsRegeneratedAndItsHashRefreshed() {
+        GraduationCertificateResponse response = issue();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        entityManager.flush();
+        entityManager.createNativeQuery("update graduation_certificate set render_engine_version = null where id = :id")
+                .setParameter("id", response.id()).executeUpdate();
+        entityManager.clear();
+        GraduationCertificate legacy = repository.findById(response.id()).orElseThrow();
+        legacy.replacePdf("e".repeat(64), stored.getPdfPath());
+
+        GraduationCertificatePdf pdf = pdfUseCase.pdfOf(response.id());
+
+        assertThat(legacy.getPdfSha256()).isEqualTo(digest.sha256(pdf.content()));
     }
 
     @Test

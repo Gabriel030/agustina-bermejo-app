@@ -3,6 +3,7 @@ package com.red_escuela.backend.graduation.certificate.regular.specialist;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateNotFoundException;
@@ -50,7 +51,12 @@ public class RegularCertificatePdfProvider {
         CertificateCode code = certificate.certificateCode();
         byte[] regenerated = renderer.render(template.definitionFor(certificate.getSnapshot(), certificate.getExpiresAt().toLocalDate()),
                 certificate.getSnapshot(), code, verificationUrl.of(code));
-        certificate.replacePdf(digest.sha256(regenerated), fileStore.save(code.value(), regenerated));
+        String regeneratedSha256 = digest.sha256(regenerated);
+        if (certificate.isPdfRegenerationVerifiable() && !regeneratedSha256.equals(certificate.getPdfSha256())) {
+            log.error("El PDF regenerado de la constancia {} no coincide con el hash registrado", certificate.getId());
+            throw new CertificatePdfIntegrityMismatchException();
+        }
+        certificate.replacePdf(regeneratedSha256, fileStore.save(code.value(), regenerated));
         return new RegularCertificatePdf(certificate.getCode(), regenerated);
     }
 }
