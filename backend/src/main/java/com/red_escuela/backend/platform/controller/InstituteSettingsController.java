@@ -12,11 +12,11 @@ import com.red_escuela.backend.platform.usecase.settings.ChangeBillingNotificati
 import com.red_escuela.backend.platform.usecase.settings.ChangePaymentMethodSettingUseCase;
 import com.red_escuela.backend.platform.usecase.settings.GetInstituteSettingsUseCase;
 import com.red_escuela.backend.platform.usecase.settings.ListInstituteSettingChangesUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -41,13 +41,13 @@ public class InstituteSettingsController {
     }
 
     @GetMapping("/institute-settings")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "platform.read_institute_settings", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public InstituteSettingsResponse getSettings() {
         return InstituteSettingsResponse.of(getSettings.read());
     }
 
     @PutMapping("/institute-settings/payment-methods/{code}")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "platform.change_payment_methods", legacyRoles = "ROLE_DIRECTOR")
     public PaymentMethodSettingResponse changePaymentMethod(
             @PathVariable PaymentMethodCode code,
             @RequestHeader(value = "If-Match", required = false) Long expectedVersion,
@@ -56,7 +56,7 @@ public class InstituteSettingsController {
     }
 
     @PutMapping("/institute-settings/billing-notifications")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "platform.change_billing_notifications", legacyRoles = "ROLE_DIRECTOR")
     public BillingNotificationsSettingResponse changeBillingNotifications(
             @RequestHeader(value = "If-Match", required = false) Long expectedVersion,
             @Valid @RequestBody ChangeInstituteSettingRequest request) {
@@ -64,7 +64,7 @@ public class InstituteSettingsController {
     }
 
     @GetMapping("/institute-settings/audit")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "platform.read_institute_settings_audit", legacyRoles = "ROLE_DIRECTOR")
     public Page<InstituteSettingChangeResponse> listChanges(@PageableDefault(size = 25) Pageable pageable) {
         return listChanges.list(pageable).map(InstituteSettingChangeResponse::of);
     }

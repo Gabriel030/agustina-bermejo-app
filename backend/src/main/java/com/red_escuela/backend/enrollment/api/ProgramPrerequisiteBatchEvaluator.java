@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -54,17 +53,18 @@ public class ProgramPrerequisiteBatchEvaluator {
                 .collect(Collectors.toMap(row -> row.getEnrollmentId(), row -> row.getProgramId()));
         Map<Long, Set<Long>> waivedBySubject = waivedProgramEnrollmentsBySubject(queries, programEnrollmentIds);
         Map<String, List<PrerequisiteView>> prerequisitesByPlanEntry = new HashMap<>();
-        Map<String, Optional<ProgramSubjectView>> planEntries = new HashMap<>();
         Set<Long> prerequisiteSubjectIds = new HashSet<>();
-        for (PrerequisiteBatchQuery query : queries) {
-            Long programId = programIdByEnrollment.get(query.programEnrollmentId());
-            String key = programId + ":" + query.subjectId();
-            Optional<ProgramSubjectView> entry = planEntries.computeIfAbsent(
-                    key, ignored -> programCurriculumFinder.findProgramSubject(programId, query.subjectId()));
-            entry.ifPresent(programSubject -> prerequisitesByPlanEntry.computeIfAbsent(
-                    key, ignored -> programCurriculumFinder.findPrerequisites(programSubject.id())));
+        for (Long programId : new HashSet<>(programIdByEnrollment.values())) {
+            Map<Long, List<PrerequisiteView>> prerequisitesByProgramSubject = programCurriculumFinder.findProgramPrerequisites(programId);
+            for (ProgramSubjectView entry : programCurriculumFinder.findProgramSubjects(programId)) {
+                prerequisitesByPlanEntry.put(programId + ":" + entry.subjectId(),
+                        prerequisitesByProgramSubject.getOrDefault(entry.id(), List.of()));
+            }
         }
-        prerequisitesByPlanEntry.values().forEach(list -> list.forEach(p -> prerequisiteSubjectIds.add(p.prerequisiteSubjectId())));
+        for (PrerequisiteBatchQuery query : queries) {
+            prerequisitesByPlanEntry.getOrDefault(programIdByEnrollment.get(query.programEnrollmentId()) + ":" + query.subjectId(), List.of())
+                    .forEach(prerequisite -> prerequisiteSubjectIds.add(prerequisite.prerequisiteSubjectId()));
+        }
         Map<String, List<EnrollmentStatus>> statusesByStudentSubject = statusesOf(programEnrollmentIds, prerequisiteSubjectIds);
         Map<Long, PrerequisiteBatchResult> results = new HashMap<>();
         for (PrerequisiteBatchQuery query : queries) {

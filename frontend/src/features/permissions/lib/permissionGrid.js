@@ -54,6 +54,7 @@ const MODULE_LABELS = {
   dataimport: 'Importación de datos',
   audit: 'Auditoría',
   certificate: 'Certificados',
+  platform: 'Configuración del instituto',
 };
 
 export function moduleLabel(module) {
