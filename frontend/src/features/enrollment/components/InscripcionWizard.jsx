@@ -14,6 +14,7 @@ import { validateDocument } from '@/lib/documentType';
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { Stepper } from '@/components/Stepper';
 import { useAuth } from '@/context/AuthContext';
+import { useMyModules } from '@/hooks/useMyModules';
 import {
   useSolicitarCarrera,
   useInscribirmeCurso,
@@ -183,6 +184,7 @@ function reducer(state, action) {
 export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cursoLleno = false }) {
   const navigate = useNavigate();
   const { usuario, refrescarPerfil } = useAuth();
+  const { billingEnabled } = useMyModules();
   const [state, dispatch] = useReducer(reducer, { tipo }, estadoInicial);
   const [tocado, setTocado] = useState(false);
   const {
@@ -338,7 +340,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
         <div className="font-heading text-xl font-bold text-ink">Solicitud enviada</div>
         <div className="max-w-[420px] text-size-13-5 text-ink-soft">
           {tipo === 'carrera'
-            ? `Tu solicitud para ${target.name} quedó en revisión y no se te cobró nada. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso${formatMoney(montoAPagar) ? ` (${formatMoney(montoAPagar)})` : ''} y vas a tener un plazo para pagarla: recién con ese pago queda confirmada tu inscripción. Te avisamos cuando haya novedades.`
+            ? `Tu solicitud para ${target.name} quedó en revisión. ${billingEnabled ? `No se te cobró nada. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso${formatMoney(montoAPagar) ? ` (${formatMoney(montoAPagar)})` : ''} y vas a tener un plazo para pagarla: recién con ese pago queda confirmada tu inscripción. ` : ''}Te avisamos cuando haya novedades.`
             : state.estadoInscripcion === 'WAITLISTED'
               ? 'Tu comprobante queda en revisión. El curso no tiene cupos disponibles, así que quedaste en lista de espera: te avisamos si se libera un lugar.'
               : cursoLleno
@@ -379,7 +381,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
       {state.paso === 'cohorte' && (
         <GlassCard className="flex flex-col gap-3 p-5">
           <div className="text-size-13 text-ink-soft">Elegí la cohorte a la que te querés inscribir.</div>
-          {tipo === 'carrera' && (
+          {tipo === 'carrera' && billingEnabled && (
             <div className="text-xs text-ink-faint">
               No se te cobra nada al enviar la solicitud. Si la aprueban, vas a recibir la factura de la matrícula y vas a tener un plazo para pagarla.
             </div>
@@ -401,9 +403,11 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
             >
               <span className="text-size-13-5 font-bold text-ink">{cohort.label ?? `Cohorte ${cohort.ordenEnAnio}`}</span>
               <span className="text-xs text-ink-faint">Inicio de cursada: {cohort.cursadaStart}</span>
-              <span className="mt-1 text-xs font-semibold text-ink">
-                Matrícula: {formatMoney(cohort.ordenEnAnio === 2 ? pricing?.matriculaCohorte2 : pricing?.matriculaCohorte1) || 'A definir'}
-              </span>
+              {billingEnabled && (
+                <span className="mt-1 text-xs font-semibold text-ink">
+                  Matrícula: {formatMoney(cohort.ordenEnAnio === 2 ? pricing?.matriculaCohorte2 : pricing?.matriculaCohorte1) || 'A definir'}
+                </span>
+              )}
             </button>
           ))}
         </GlassCard>
@@ -571,11 +575,13 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
 
       {state.paso === 'pago' && (
         <GlassCard className="flex flex-col gap-4 p-5">
-          <div className="rounded-xl bg-neutral-bg px-4 py-3">
-            <div className="text-xs text-ink-faint">Monto a pagar</div>
-            <div className="font-heading text-xl font-bold text-ink">{formatMoney(montoAPagar) || 'A definir'}</div>
-            <div className="mt-1 text-xs text-ink-faint">{tipo === 'carrera' ? 'Matrícula' : 'Primera cuota'}</div>
-          </div>
+          {billingEnabled && (
+            <div className="rounded-xl bg-neutral-bg px-4 py-3">
+              <div className="text-xs text-ink-faint">Monto a pagar</div>
+              <div className="font-heading text-xl font-bold text-ink">{formatMoney(montoAPagar) || 'A definir'}</div>
+              <div className="mt-1 text-xs text-ink-faint">{tipo === 'carrera' ? 'Matrícula' : 'Primera cuota'}</div>
+            </div>
+          )}
           {tipo === 'curso' && cursoLleno && (
             <p className="rounded-lg bg-warning-bg px-3 py-2 text-xs font-medium text-warning">
               Este curso no tiene cupos disponibles. Si enviás el comprobante, quedás en lista de espera.
@@ -639,8 +645,8 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
             <div className="font-heading text-base font-bold text-ink">Confirmar solicitud</div>
           </DialogHeader>
           <div className="text-size-13 text-ink-soft">
-            Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong>. No pagás nada ahora: si la aprueban,
-            recibís la factura de la matrícula ({formatMoney(montoAPagar) || 'monto a definir'}) para pagarla.
+            Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong>.
+            {billingEnabled && ` No pagás nada ahora: si la aprueban, recibís la factura de la matrícula (${formatMoney(montoAPagar) || 'monto a definir'}) para pagarla.`}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalConfirmarAbierto(false)} className="rounded-xl">

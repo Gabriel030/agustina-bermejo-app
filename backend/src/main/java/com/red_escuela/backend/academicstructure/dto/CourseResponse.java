@@ -8,7 +8,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class CourseResponse {
     private final Long id;
     private final String name;
@@ -24,6 +24,10 @@ public class CourseResponse {
     private final LocalDateTime registrationEnd;
     private final boolean registrationOpen;
     private final Boolean full;
+
+    public CourseResponse withoutPrices() {
+        return toBuilder().price(null).build();
+    }
 
     public static CourseResponse from(Course course, long occupiedSeats) {
         return from(course, course.priceAsMoney(), occupiedSeats);

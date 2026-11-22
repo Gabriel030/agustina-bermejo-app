@@ -7,7 +7,7 @@ import lombok.Getter;
 
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class ProgramResponse {
     private final Long id;
     private final String name;
@@ -22,6 +22,10 @@ public class ProgramResponse {
     private final String level;
     private final String graduationProfile;
     private final String admissionRequirements;
+
+    public ProgramResponse withoutPrices() {
+        return toBuilder().price(null).enrollmentFeeAmount(null).build();
+    }
 
     public static ProgramResponse from(Program program) {
         return from(program, program.priceAsMoney(), program.enrollmentFeeAsMoney());
