@@ -56,7 +56,7 @@ describe('DetalleCurso', () => {
     renderDetalle();
 
     expect(await screen.findByText('Curso de prueba')).toBeInTheDocument();
-    expect(screen.getByText('$ 8.000,00')).toBeInTheDocument();
+    expect(await screen.findByText('$ 8.000,00')).toBeInTheDocument();
     expect(screen.getByText('Módulo 1 — Fundamentos')).toBeInTheDocument();
   });
 

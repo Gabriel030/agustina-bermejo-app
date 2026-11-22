@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { useCurso, useCursoPricing, useCursoTemario } from '@/features/enrollment/hooks/useCatalogo';
 import { formatMoney } from '@/lib/utils';
+import { useMyModules } from '@/hooks/useMyModules';
 import { courseSummary, formatWeeklyWorkload, isListedInCatalog } from '@/lib/catalog';
 import { useCourseViewerStatus } from '@/features/enrollment/hooks/useCatalogViewer';
 import { CatalogBlock } from '@/features/enrollment/components/CatalogBlock';
@@ -29,7 +30,8 @@ export function DetalleCurso() {
   const navigate = useNavigate();
 
   const courseQuery = useCurso(id);
-  const pricingQuery = useCursoPricing(id);
+  const { billingEnabled } = useMyModules();
+  const pricingQuery = useCursoPricing(id, { enabled: billingEnabled });
   const syllabusQuery = useCursoTemario(id);
   const viewer = useCourseViewerStatus(id);
   const curso = courseQuery.data;
@@ -89,14 +91,16 @@ export function DetalleCurso() {
         />
       }
     >
-      <CatalogBlock query={pricingQuery} resource="los precios">
-        <GlassCard className="flex flex-wrap gap-6 p-5">
-          <div>
-            <div className="text-xs text-ink-faint">Cuota mensual</div>
-            <div className="text-size-15 font-bold text-ink">{formatMoney(pricingQuery.data?.cuotaMensual) || 'A definir'}</div>
-          </div>
-        </GlassCard>
-      </CatalogBlock>
+      {billingEnabled && (
+        <CatalogBlock query={pricingQuery} resource="los precios">
+          <GlassCard className="flex flex-wrap gap-6 p-5">
+            <div>
+              <div className="text-xs text-ink-faint">Cuota mensual</div>
+              <div className="text-size-15 font-bold text-ink">{formatMoney(pricingQuery.data?.cuotaMensual) || 'A definir'}</div>
+            </div>
+          </GlassCard>
+        </CatalogBlock>
+      )}
 
       <h2 className="font-heading text-size-15 font-semibold text-ink-soft">Temario</h2>
       <CatalogBlock query={syllabusQuery} resource="el temario" skeletonClassName="h-40">
