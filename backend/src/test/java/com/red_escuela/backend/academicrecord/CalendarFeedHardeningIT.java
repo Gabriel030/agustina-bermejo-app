@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.red_escuela.backend.academicrecord.specialist.MyCalendarEventsFinder;
+import com.red_escuela.backend.academicrecord.specialist.MyCalendarProvider;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -18,7 +19,9 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -130,6 +133,30 @@ class CalendarFeedHardeningIT extends AbstractIntegrationTest {
                 Integer.class, owner.student().getId())).isEqualTo(2 * ROUNDS);
     }
 
+    private void withoutCalendarProvider(ThrowingRunnable action) throws Exception {
+        Object original = ReflectionTestUtils.getField(eventsFinder, "providers");
+        ObjectProvider<MyCalendarProvider> none = new StaticListableBeanFactory().getBeanProvider(MyCalendarProvider.class);
+        ReflectionTestUtils.setField(eventsFinder, "providers", none);
+        try {
+            action.run();
+        } finally {
+            ReflectionTestUtils.setField(eventsFinder, "providers", original);
+        }
+    }
+
+    private interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+
+    @Test
+    void realCalendarProviderIsRegisteredSoFeedAndExportDoNotAnswerServiceUnavailable() throws Exception {
+        Actor owner = newStudent();
+        MockHttpServletResponse export = mockMvc.perform(get("/me/calendar/export.ics").header("Authorization", bearer(owner)))
+                .andReturn().getResponse();
+
+        assertThat(export.getStatus()).isEqualTo(200);
+    }
+
     @Test
     void feedAndExportAnswerServiceUnavailableWhenNoCalendarProviderIsRegistered() throws Exception {
         Actor owner = newStudent();
@@ -137,25 +164,27 @@ class CalendarFeedHardeningIT extends AbstractIntegrationTest {
                 .andReturn().getResponse();
         String token = objectMapper.readTree(created.getContentAsString()).get("token").asString();
 
-        MockHttpServletResponse feed = mockMvc.perform(get("/public/calendar/" + token + ".ics")).andReturn().getResponse();
-        MockHttpServletResponse export = mockMvc.perform(get("/me/calendar/export.ics").header("Authorization", bearer(owner)))
-                .andReturn().getResponse();
+        withoutCalendarProvider(() -> {
+            MockHttpServletResponse feed = mockMvc.perform(get("/public/calendar/" + token + ".ics")).andReturn().getResponse();
+            MockHttpServletResponse export = mockMvc.perform(get("/me/calendar/export.ics").header("Authorization", bearer(owner)))
+                    .andReturn().getResponse();
 
-        assertThat(feed.getStatus()).isEqualTo(503);
-        assertThat(feed.getContentAsString()).contains("EXTERNAL_SERVICE_UNAVAILABLE");
-        assertThat(feed.getHeader("Retry-After")).isNotBlank();
-        assertThat(export.getStatus()).isEqualTo(503);
-        assertThat(export.getContentAsString()).contains("EXTERNAL_SERVICE_UNAVAILABLE");
+            assertThat(feed.getStatus()).isEqualTo(503);
+            assertThat(feed.getContentAsString()).contains("EXTERNAL_SERVICE_UNAVAILABLE");
+            assertThat(feed.getHeader("Retry-After")).isNotBlank();
+            assertThat(export.getStatus()).isEqualTo(503);
+            assertThat(export.getContentAsString()).contains("EXTERNAL_SERVICE_UNAVAILABLE");
+        });
     }
 
     @Test
-    void startupWarnsWhenNoCalendarProviderIsRegistered() {
+    void startupWarnsWhenNoCalendarProviderIsRegistered() throws Exception {
         Logger logger = (Logger) LoggerFactory.getLogger(MyCalendarEventsFinder.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
         try {
-            ReflectionTestUtils.invokeMethod(eventsFinder, "warnWhenNoProviderIsRegistered");
+            withoutCalendarProvider(() -> ReflectionTestUtils.invokeMethod(eventsFinder, "warnWhenNoProviderIsRegistered"));
 
             assertThat(appender.list).anyMatch(event -> event.getFormattedMessage().contains("No MyCalendarProvider bean"));
         } finally {

@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class IdentityAuditRecorder {
 
+    private static final int AUDIT_VALUE_MAX_LENGTH = 100;
+
     private final AuditTrail auditTrail;
 
     public IdentityAuditRecorder(AuditTrail auditTrail) {
@@ -30,8 +32,22 @@ public class IdentityAuditRecorder {
     }
 
     public void recordPermissionGridChanged(Long permissionId, String role, boolean granted, String reason) {
-        auditTrail.record(new AuditRecord(AuditAction.PERMISSION_GRID_CHANGED, AuditEntityType.PERMISSION,
-                permissionId, role + ":" + (granted ? "DENIED" : "GRANTED"), role + ":" + (granted ? "GRANTED" : "DENIED"),
+        recordPermissionChange(AuditAction.PERMISSION_GRID_CHANGED, permissionId, role, granted, reason);
+    }
+
+    public void recordPermissionSensitiveChanged(Long permissionId, String permissionCode, String role, boolean granted,
+                                                 String reason) {
+        String subject = permissionCode + ":" + role;
+        if (subject.length() + ":DENIED".length() > AUDIT_VALUE_MAX_LENGTH) {
+            subject = permissionCode;
+        }
+        recordPermissionChange(AuditAction.PERMISSION_SENSITIVE_CHANGED, permissionId, subject, granted, reason);
+    }
+
+    private void recordPermissionChange(AuditAction action, Long permissionId, String subject, boolean granted,
+                                        String reason) {
+        auditTrail.record(new AuditRecord(action, AuditEntityType.PERMISSION, permissionId,
+                subject + ":" + (granted ? "DENIED" : "GRANTED"), subject + ":" + (granted ? "GRANTED" : "DENIED"),
                 reason));
     }
 

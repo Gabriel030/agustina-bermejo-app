@@ -65,7 +65,7 @@ export function useDirectorHomeCards() {
       }),
     ),
     closuresCard({ id: 'closures', title: 'Cierres sin acta', icon: 'lock', to: '/director/cierres-de-comision?status=TEACHER_CONFIRMED', unit: 'pendientes', tip: 'Comisiones confirmadas por el docente que esperan el acta de cierre.' }, closures),
-    listCard({ id: 'exceptions', title: 'Excepciones elevadas', icon: 'alert', to: '/director/aprobaciones/excepciones', unit: 'pendientes', tip: 'Excepciones que Secretaría elevó a Dirección para decidir.' }, exceptions, 'requestedAt'),
+    listCard({ id: 'exceptions', title: 'Excepciones elevadas', icon: 'alert', to: '/director/aprobaciones/excepciones?status=PENDING', unit: 'pendientes', tip: 'Excepciones que Secretaría elevó a Dirección para decidir.' }, exceptions, 'requestedAt'),
     toCard(
       { id: 'boards', title: 'Mesas de examen', icon: 'calendar', to: '/director/mesas-de-examen', unit: 'esta semana', tip: 'Mesas de examen programadas para los próximos 7 días.' },
       [boards],
@@ -77,7 +77,7 @@ export function useDirectorHomeCards() {
   ];
 
   if (modules.billingEnabled) {
-    cards.push(pagedCard({ id: 'authorizations', title: 'Facturación por autorizar', icon: 'receipt', to: '/director/aprobaciones/facturacion', unit: 'pendientes', tip: 'Operaciones de facturación que Administración pidió autorizar.' }, authorizations, 'requestedAt'));
+    cards.push(pagedCard({ id: 'authorizations', title: 'Facturación por autorizar', icon: 'receipt', to: '/director/aprobaciones/facturacion?status=PENDING', unit: 'pendientes', tip: 'Operaciones de facturación que Administración pidió autorizar.' }, authorizations, 'requestedAt'));
   }
   return cards;
 }

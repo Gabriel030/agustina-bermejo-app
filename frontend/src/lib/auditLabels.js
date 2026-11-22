@@ -46,6 +46,7 @@ const ACTIONS = {
   CALENDAR_FEED_TOKEN_REVOKED: ['Enlace de calendario revocado', 'warning'],
   GRADUATION_CERTIFICATE_DOWNLOADED: ['Certificado de egreso descargado', 'accent'],
   GRADUATION_CERTIFICATE_PDF_MISMATCH: ['PDF de certificado de egreso con hash distinto', 'warning'],
+  PERMISSION_SENSITIVE_CHANGED: ['Permiso sensible modificado', 'warning'],
 };
 
 const ENTITIES = {

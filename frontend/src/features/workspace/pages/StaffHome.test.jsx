@@ -88,7 +88,7 @@ describe('StaffHome', () => {
     expect(within(approvals).getByRole('link', { name: 'Otras aprobaciones' })).toHaveAttribute('href', '/director/aprobaciones');
     expect(within(approvals).getByRole('link', { name: /Egresos/ })).toHaveAttribute('href', '/director/aprobaciones/egresos');
     expect(within(approvals).getByText('Más antiguo: hace 9 días')).toBeInTheDocument();
-    expect(within(await readyCard('Excepciones elevadas')).getByRole('link', { name: 'Excepciones elevadas' })).toHaveAttribute('href', '/director/aprobaciones/excepciones');
+    expect(within(await readyCard('Excepciones elevadas')).getByRole('link', { name: 'Excepciones elevadas' })).toHaveAttribute('href', '/director/aprobaciones/excepciones?status=PENDING');
     expect(within(await readyCard('Cierres sin acta')).getByText('Más antiguo: hace 6 días')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Empezar por lo más urgente' })).toHaveAttribute('href', '/director/aprobaciones');
     expect(screen.getByText('Alumnos en riesgo')).toBeInTheDocument();
@@ -250,7 +250,7 @@ describe('StaffHome', () => {
     serve();
     renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
     expect(within(await readyCard('Cierres sin acta')).getByRole('link', { name: 'Cierres sin acta' })).toHaveAttribute('href', '/director/cierres-de-comision?status=TEACHER_CONFIRMED');
-    expect(within(await readyCard('Facturación por autorizar')).getByRole('link', { name: 'Facturación por autorizar' })).toHaveAttribute('href', '/director/aprobaciones/facturacion');
+    expect(within(await readyCard('Facturación por autorizar')).getByRole('link', { name: 'Facturación por autorizar' })).toHaveAttribute('href', '/director/aprobaciones/facturacion?status=PENDING');
   });
 
   it('administrativo failing card shows retry and keeps the all-clear message hidden', async () => {

@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicrecord.dto.CalendarEventType;
 import com.red_escuela.backend.academicrecord.specialist.MyCalendarProvider;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -25,6 +26,7 @@ public class CalendarFeedTestProviderConfiguration {
     }
 
     @Bean
+    @Primary
     MyCalendarProvider testMyCalendarProvider() {
         return (studentId, from, to) -> {
             LAST_RANGE_BY_STUDENT.put(studentId, new LocalDate[] {from, to});
