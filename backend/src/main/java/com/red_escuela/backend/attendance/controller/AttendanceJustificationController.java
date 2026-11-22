@@ -4,11 +4,11 @@ import com.red_escuela.backend.attendance.domain.AttendanceJustificationStatus;
 import com.red_escuela.backend.attendance.dto.AttendanceJustificationPage;
 import com.red_escuela.backend.attendance.usecase.record.ListAttendanceJustificationsUseCase;
 import com.red_escuela.backend.attendance.usecase.record.GetAttendanceJustificationAttachmentUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,7 +28,7 @@ public class AttendanceJustificationController {
     }
 
     @GetMapping("/attendance/justifications")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "attendance.read_justifications", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public AttendanceJustificationPage listJustifications(
             @RequestParam(defaultValue = "PENDING") AttendanceJustificationStatus status,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
@@ -36,7 +36,7 @@ public class AttendanceJustificationController {
     }
 
     @GetMapping("/attendance/{id}/justification-attachment")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "attendance.read_justifications", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ResponseEntity<byte[]> getJustificationAttachment(@PathVariable Long id) {
         return getAttendanceJustificationAttachmentUseCase.get(id)
                 .map(attachment -> ResponseEntity.ok()

@@ -38,6 +38,36 @@ Pasar un módulo a `ENFORCE` solo con cero discrepancias sin explicar durante al
 
 Quitar `legacyRoles` del código es una limpieza de código, no un cambio de configuración: después de ese deploy ya no existe regla vieja a la que volver y `PUT /permissions/modes` en `LEGACY` deja de tener efecto. Solo se hace con todos los módulos migrados en `ENFORCE` y estables. Revertirla exige un deploy.
 
+## El Director en ENFORCE
+
+El Director conserva todos los permisos de la grilla de forma implícita (decisión de Gabriel). Por eso, al pasar un módulo a Activo, el Director queda habilitado también en las escrituras que hoy le deniega la regla vigente. Es una discrepancia esperada, no un error: en Sombra se registra como divergencia y no hay que corregirla.
+
+### Attendance
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /program-sections/{id}/attendance y POST /course-sections/{id}/attendance (attendance.record)
+- GET /program-sections/{id}/roster y GET /course-sections/{id}/roster (attendance.record)
+- GET /program-sections/{id}/class-sessions/{date} y GET /course-sections/{id}/class-sessions/{date} (attendance.record)
+- POST /program-sections/{id}/class-sessions/{date}/cancel y POST /course-sections/{id}/class-sessions/{date}/cancel (attendance.cancel_class_session)
+- POST /attendance/{id}/justify (attendance.justify)
+- POST /attendance/{id}/justification-proof (attendance.submit_justification_proof)
+- GET /attendance/justifications y GET /attendance/{id}/justification-attachment (attendance.read_justifications)
+- POST /attendance/{id}/approve-justification y POST /attendance/{id}/reject-justification (attendance.review_justification)
+- POST /attendance/{id}/change-requests y GET /me/attendance-change-requests (attendance.request_change)
+- GET /attendance/change-requests (attendance.read_change_requests)
+- POST /attendance/change-requests/{id}/approve y POST /attendance/change-requests/{id}/reject (attendance.review_change_request)
+
+Los endpoints de lectura de historial, informe de ausencias, exportación y asistencia por inscripción ya permiten al Director y no cambian.
+
+### Identity
+
+Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
+
+- POST /students/{id}/reset-password (identity.reset_student_password): hoy solo lo permiten Preceptor y Administrativo (discrepancia esperada, #1216).
+
+El resto de los endpoints migrados de identity ya permiten al Director y no cambian.
+
 ## Notas operativas
 
 - Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.

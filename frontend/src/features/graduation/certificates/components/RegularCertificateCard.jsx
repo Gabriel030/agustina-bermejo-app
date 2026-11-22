@@ -40,8 +40,6 @@ function summaryFor(view, state) {
       return 'Estás libre en todas tus materias por inasistencias, así que no figurás como alumno regular.';
     case REGULAR_VIEW.UNAVAILABLE_PAYMENTS:
       return 'Tenés pagos pendientes. Cuando estés al día podés volver a pedirla.';
-    case REGULAR_VIEW.UNAVAILABLE_REJECTED:
-      return `Administración no pudo confirmar tu pedido: «${state.rejectionReason ?? 'sin motivo informado'}». Cuando lo resuelvas podés pedirla de nuevo.`;
     case REGULAR_VIEW.UNAVAILABLE_ENROLLMENT:
       return 'No tenés una inscripción activa en esta carrera.';
     default:

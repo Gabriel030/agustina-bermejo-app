@@ -210,16 +210,6 @@ describe('RegularCertificateCard', () => {
     await waitFor(() => expect(screen.queryByRole('link', { name: 'Ver mis pagos' })).not.toBeInTheDocument());
   });
 
-  it('shows the rejection reason written by administration', async () => {
-    mockState(
-      stateBody({ state: 'UNAVAILABLE', unavailableType: 'REJECTED', rejectionReason: 'Falta regularizar la cuota de octubre' }),
-    );
-    renderCard();
-
-    expect(await screen.findByText(/Falta regularizar la cuota de octubre/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Pedir constancia' })).not.toBeInTheDocument();
-  });
-
   it('shows the not-regular message when the request is refused with NOT_REGULAR', async () => {
     mockState(stateBody());
     server.use(
