@@ -17,6 +17,7 @@ import { ScheduleCard } from '@/features/schedule';
 import { StaleStamp } from '@/components/offline/StaleStamp';
 import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
 import { tiempoRelativo } from '@/lib/notificaciones';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'REGULAR']);
 
@@ -157,7 +158,7 @@ export function AlumnoInicio() {
 
   useEffect(() => {
     if (!avisoUrlId || !avisoResaltadoRef.current) return;
-    avisoResaltadoRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    avisoResaltadoRef.current.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'center' });
   }, [avisoUrlId, novedades.length]);
 
   return (
