@@ -64,11 +64,70 @@ describe('SolicitudesDeIngreso', () => {
     renderList();
     await screen.findByText('Joaquín Benítez');
 
-    await userEvent.click(screen.getByRole('button', { name: /documentación/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Filtrar por documentación' }));
     await userEvent.click(await screen.findByRole('checkbox', { name: /Completa/ }));
 
     await waitFor(() => expect(screen.queryByText('Valentina Suárez')).not.toBeInTheDocument());
     expect(screen.getByText('Joaquín Benítez')).toBeInTheDocument();
+  });
+
+  it('shows the filtered count and clears the filters', async () => {
+    mockPending();
+    renderList();
+    await screen.findByText('Joaquín Benítez');
+    expect(screen.getByText('2 de 2 pendientes')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtrar por documentación' }));
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Completa/ }));
+    await waitFor(() => expect(screen.getByText('1 de 2 pendientes')).toBeInTheDocument());
+
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar filtros' }));
+    expect(await screen.findByText('2 de 2 pendientes')).toBeInTheDocument();
+    expect(screen.getByText('Valentina Suárez')).toBeInTheDocument();
+  });
+
+  it('filters by program, shows no matches and clears with Quitar filtros', async () => {
+    mockPending([
+      ...pendingRows,
+      application({ id: 53, studentFullName: 'Lucía Pérez', programName: 'Tecnicatura en Ciberseguridad' }),
+    ]);
+    renderList();
+    await screen.findByText('Joaquín Benítez');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtrar por carrera' }));
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Tecnicatura en Ciberseguridad/ }));
+    await waitFor(() => expect(screen.getByText('2 de 3 pendientes')).toBeInTheDocument());
+    expect(screen.queryByText('Lucía Pérez')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /Profesorado de Inglés/ }));
+    await userEvent.click(screen.getByRole('checkbox', { name: /Tecnicatura en Administración/ }));
+    expect(await screen.findByText('Ninguna solicitud coincide')).toBeInTheDocument();
+
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Quitar filtros' })[0]);
+    expect(await screen.findByText('Lucía Pérez')).toBeInTheDocument();
+    expect(screen.getByText('3 de 3 pendientes')).toBeInTheDocument();
+  });
+
+  it('shows no sort control for the history because the order comes from the server', async () => {
+    mockPending();
+    server.use(
+      http.get(`${API}/program-enrollment-applications/history`, () =>
+        HttpResponse.json({ items: [application({ id: 40, status: 'REJECTED' })], totalElements: 1 }),
+      ),
+    );
+    renderList('/preceptor/solicitudes-de-ingreso?tab=historial');
+
+    await screen.findByText('Rechazada');
+    expect(screen.queryByRole('button', { name: /Solicitada/ })).not.toBeInTheDocument();
+  });
+
+  it('shows a dedicated state when the user has no permission', async () => {
+    server.use(http.get(`${API}/program-enrollment-applications/pending`, () => HttpResponse.json(errorBody('ACCESS_DENIED'), { status: 403 })));
+    renderList();
+
+    expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
   });
 
   it('shows the empty state when nothing is pending', async () => {

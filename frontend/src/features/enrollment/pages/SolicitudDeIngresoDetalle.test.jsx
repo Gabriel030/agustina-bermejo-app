@@ -45,8 +45,8 @@ describe('SolicitudDeIngresoDetalle', () => {
     renderDetail();
 
     expect(await screen.findByRole('heading', { name: 'Valentina Suárez' })).toBeInTheDocument();
-    expect(screen.getByLabelText('DNI')).toHaveValue('41234567');
-    expect(screen.getByLabelText('Cohorte')).toHaveValue('Primer ingreso 2026');
+    expect(screen.getByText('DNI').nextElementSibling).toHaveTextContent('41234567');
+    expect(screen.getByText('Cohorte').nextElementSibling).toHaveTextContent('Primer ingreso 2026');
     expect(screen.getAllByRole('button', { name: /^Ver / })).toHaveLength(3);
     expect(await screen.findByText('Sin deuda que bloquee la inscripción.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Aprobar solicitud' })).not.toHaveAttribute('aria-disabled');
@@ -177,6 +177,30 @@ describe('SolicitudDeIngresoDetalle', () => {
     expect(screen.getByRole('link', { name: 'Volver a la bandeja' })).toBeInTheDocument();
   });
 
+  it.each([
+    ['REJECTED', 'Rechazada'],
+    ['EXPIRED', 'Vencida'],
+  ])('shows the real %s status after a state conflict and never Aprobada', async (status, label) => {
+    let resolved = false;
+    mockReview();
+    server.use(
+      http.get(`${BASE}/51`, () =>
+        HttpResponse.json(reviewApplication(resolved ? { status, decidedByName: 'Marcela Díaz', decidedAt: '2026-11-07T10:00:00' } : {})),
+      ),
+      http.post(`${BASE}/51/approve`, () => {
+        resolved = true;
+        return HttpResponse.json(errorBody('INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE'), { status: 409 });
+      }),
+    );
+    renderDetail();
+    await userEvent.click(await screen.findByRole('button', { name: 'Aprobar solicitud' }));
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Aprobar' }));
+
+    expect(await screen.findByText('Otra persona ya resolvió esta solicitud.')).toBeInTheDocument();
+    expect(await screen.findByText(label)).toBeInTheDocument();
+    expect(screen.queryByText('Aprobada')).not.toBeInTheDocument();
+  });
+
   it('keeps the dialog values and shows the server message when approving fails for another reason', async () => {
     mockReview();
     server.use(
@@ -228,7 +252,7 @@ describe('SolicitudDeIngresoDetalle', () => {
     renderDetail();
 
     expect(await screen.findByText('Resolución')).toBeInTheDocument();
-    expect(screen.getByLabelText('Resuelta por')).toHaveValue('Marcela Díaz');
+    expect(screen.getByText('Resuelta por').nextElementSibling).toHaveTextContent('Marcela Díaz');
     expect(screen.getByText(/El analítico está cortado/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Aprobar solicitud' })).not.toBeInTheDocument();
     expect(screen.queryByText('Antes de aprobar')).not.toBeInTheDocument();
@@ -251,6 +275,25 @@ describe('SolicitudDeIngresoDetalle', () => {
     renderDetail();
 
     expect(await screen.findByText('Este trámite no existe o ya no está disponible')).toBeInTheDocument();
+  });
+
+  it('shows the forbidden state when the user cannot review applications', async () => {
+    server.use(
+      http.get(`${BASE}/pending`, () => HttpResponse.json([])),
+      http.get(`${BASE}/51`, () => HttpResponse.json(errorBody('ACCESS_DENIED'), { status: 403 })),
+    );
+    renderDetail();
+
+    expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver a Solicitudes de ingreso' })).toBeInTheDocument();
+  });
+
+  it('marks each approval condition with a text status', async () => {
+    mockReview({ check: approvalCheck({ canApprove: false, debt: { blocksApproval: true, violationCodes: ['OVERDUE_DEBT'] } }) });
+    renderDetail();
+
+    expect(await screen.findByText('Bloquea')).toBeInTheDocument();
+    expect(screen.getByText('En regla')).toBeInTheDocument();
   });
 
   it('has no accessibility violations', async () => {
