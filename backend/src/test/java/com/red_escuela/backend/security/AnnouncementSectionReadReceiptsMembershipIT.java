@@ -74,7 +74,7 @@ class AnnouncementSectionReadReceiptsMembershipIT extends AuthorizationMatrixSup
     @AfterEach
     void restoreDefaultGrid() {
         jdbcTemplate.update("delete from permission_module_mode");
-        jdbcTemplate.update("delete from role_permission where role in ('DOCENTE', 'PRECEPTOR') and permission_id = (select id from permission where code = 'announcement.view_read_receipts')");
+        jdbcTemplate.update("delete from role_permission where role in ('DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO') and permission_id = (select id from permission where code = 'announcement.view_read_receipts')");
         jdbcTemplate.update("insert into role_permission (role, permission_id) select 'PRECEPTOR', id from permission where code = 'announcement.view_read_receipts'");
         discrepancyAccumulator.flush();
         jdbcTemplate.update("delete from permission_discrepancy_counter");
@@ -89,7 +89,11 @@ class AnnouncementSectionReadReceiptsMembershipIT extends AuthorizationMatrixSup
     }
 
     private void grantReceiptsToDocente() {
-        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'DOCENTE', id from permission where code = 'announcement.view_read_receipts'");
+        grantReceiptsTo("DOCENTE");
+    }
+
+    private void grantReceiptsTo(String role) {
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select ?, id from permission where code = 'announcement.view_read_receipts'", role);
         permissionCache.invalidate();
     }
 
@@ -242,5 +246,42 @@ class AnnouncementSectionReadReceiptsMembershipIT extends AuthorizationMatrixSup
         setMode("ENFORCE");
         assertMembershipRules("ENFORCE default subject", Kind.SUBJECT, false);
         assertMembershipRules("ENFORCE default course", Kind.COURSE, false);
+    }
+
+    private void assertNotFoundWithoutBody(Seeded seeded, String token, String label) throws Exception {
+        assertThat(statusWith(seeded, token)).as(label).isEqualTo(404);
+        assertThat(lastResponseBody).as(label + " body").doesNotContain("recipientCount");
+    }
+
+    private void assertMissingSectionIsNotFoundForEveryone(Kind kind) throws Exception {
+        Teacher docente = teacherWithRoles("DOCENTE");
+        Seeded missing = new Seeded(kind, 999999999L);
+        assertNotFoundWithoutBody(missing, docente.token(), kind + " docente with the permission");
+        assertNotFoundWithoutBody(missing, fixtures.tokenFor(MatrixRole.DIRECTOR), kind + " director");
+        assertNotFoundWithoutBody(missing, fixtures.tokenFor(MatrixRole.PRECEPTOR), kind + " preceptor");
+    }
+
+    @Test
+    void missingSubjectSectionIsNotFoundForEveryRoleInEnforceMode() throws Exception {
+        setMode("ENFORCE");
+        grantReceiptsToDocente();
+        assertMissingSectionIsNotFoundForEveryone(Kind.SUBJECT);
+    }
+
+    @Test
+    void missingCourseSectionIsNotFoundForEveryRoleInEnforceMode() throws Exception {
+        setMode("ENFORCE");
+        grantReceiptsToDocente();
+        assertMissingSectionIsNotFoundForEveryone(Kind.COURSE);
+    }
+
+    @Test
+    void administrativeWithTheGrantOnAnotherSectionIsNotFoundInEnforceMode() throws Exception {
+        setMode("ENFORCE");
+        grantReceiptsTo("ADMINISTRATIVO");
+        Seeded subject = seedSectionTaughtBy(Kind.SUBJECT, teacherWithRoles("DOCENTE"));
+        Seeded course = seedSectionTaughtBy(Kind.COURSE, teacherWithRoles("DOCENTE"));
+        assertNotFoundWithoutBody(subject, fixtures.tokenFor(MatrixRole.ADMINISTRATIVO), "subject administrative");
+        assertNotFoundWithoutBody(course, fixtures.tokenFor(MatrixRole.ADMINISTRATIVO), "course administrative");
     }
 }
