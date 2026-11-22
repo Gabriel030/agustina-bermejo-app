@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.payment.dto.CashPaymentPreviewRequest;
 import com.red_escuela.backend.billing.payment.dto.CashPaymentPreviewResponse;
 import com.red_escuela.backend.billing.payment.dto.CashPaymentResponse;
@@ -45,7 +46,7 @@ public class StudentPaymentController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/students/{studentId}/cash-payments")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.register_cash_payment", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "400", description = "IDEMPOTENCY_KEY_INVALID, CASH_PAYMENT_AMOUNT_INVALID, CASH_PAYMENT_RECEIPT_NUMBER_INVALID, PAYMENT_DATE_IN_FUTURE, CASH_PAYMENT_DATE_TOO_OLD (más de 5 días atrás para el administrativo), CASH_PAYMENT_BACKDATE_REASON_REQUIRED (director, más de 5 días atrás sin motivo), CASH_PAYMENT_BACKDATE_REASON_INVALID (motivo de más de 500 caracteres)"),
             @ApiResponse(responseCode = "404", description = "STUDENT_NOT_FOUND: el alumno no existe"),

@@ -21,7 +21,6 @@ public class SubmitBankTransferReceiptService implements SubmitBankTransferRecei
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public BankTransferReceiptSubmissionResult submitReceiptOnBehalfOfStudent(Long studentId, BankTransferReceiptSubmissionRequest request, String idempotencyKey) {
         return submissionRunner.runSubmission(studentId, request, idempotencyKey);
     }

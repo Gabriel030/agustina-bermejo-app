@@ -21,16 +21,13 @@ class AuthorizationMatrixRuleInCodeTest extends AuthorizationMatrixSupport {
             "GET /annual-upfront-terms/versions",
             "POST /annual-upfront-terms/versions",
             "GET /annual-upfront-terms/versions/{versionNumber}",
-            "POST /invoices/{invoiceId}/cancellations",
             "POST /invoices/{invoiceId}/cancellations/preview",
-            "POST /invoices/{invoiceId}/credit-notes",
             "GET /me/annual-upfront-requests",
             "GET /me/annual-upfront-requests/{id}",
             "GET /me/program-enrollments/{id}/annual-upfront-requests",
             "GET /me/program-enrollments/{id}/annual-upfront/quote",
             "GET /program-enrollments/{id}/annual-upfront-requests",
-            "GET /program-enrollments/{id}/annual-upfront/quote",
-            "POST /students/{studentId}/current-account/allocations");
+            "GET /program-enrollments/{id}/annual-upfront/quote");
 
     @Test
     void everyRestrictedMatrixRowHasAnAuthorizationRuleOnItsHandlerOrIsKnownToEnforceItDownstream() {
