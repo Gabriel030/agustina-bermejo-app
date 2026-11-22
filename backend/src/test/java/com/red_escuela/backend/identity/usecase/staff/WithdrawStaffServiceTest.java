@@ -34,7 +34,8 @@ class WithdrawStaffServiceTest {
     private final AuditTrail auditTrail = mock(AuditTrail.class);
 
     private WithdrawStaffService serviceActingAs(String actorRole) {
-        return new WithdrawStaffService(personRepository, policyActingAs(actorRole), sessionRevoker, auditTrail);
+        return new WithdrawStaffService(new com.red_escuela.backend.identity.service.WithdrawStaffTransaction(personRepository,
+                policyActingAs(actorRole), sessionRevoker, auditTrail));
     }
 
     private Person target(StatusType status, String... roles) {
