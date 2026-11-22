@@ -60,6 +60,14 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints de lectura de historial, informe de ausencias, exportación y asistencia por inscripción ya permiten al Director y no cambian.
 
+### Graduation
+
+Endpoint que hoy deniega al Director y pasaría a permitirlo en Activo:
+
+- POST /graduation-requests/{id}/verify-debt (graduation.verify_debt)
+
+Los permisos certificate.* usados por los certificados de egreso y sus plantillas pertenecen al módulo certificate: su modo se configura aparte del de graduation. Las constancias de #1103, las rutas de alumno y las públicas no usan la grilla.
+
 ## Notas operativas
 
 - Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.

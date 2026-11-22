@@ -48,7 +48,7 @@ const MODULE_LABELS = {
   attendance: 'Asistencia',
   evaluation: 'Evaluación',
   academic: 'Estructura académica',
-  graduation: 'Egreso',
+  graduation: 'Egreso y certificados',
   identity: 'Personas y accesos',
   notification: 'Notificaciones',
   dataimport: 'Importación de datos',
