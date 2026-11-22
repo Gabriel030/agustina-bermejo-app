@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -6,6 +6,7 @@ import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { reiniciarAvisosMarcados } from '@/features/announcements';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 import { installFixedClock } from '@/test/fixedClock';
 import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION } from '@/lib/notificaciones';
@@ -97,6 +98,20 @@ describe('AlumnoInicio — Novedades', () => {
     expect(await screen.findByText(/editado/)).toBeInTheDocument();
   });
 
+  it('writesEditedAgoWhenEditedLongAgo', async () => {
+    mockearBase([unAviso({ id: 1, createdAt: hoursAgo(24 * 20), updatedAt: hoursAgo(24 * 10) })]);
+    montar();
+
+    expect(await screen.findByText(/editado el \d{2}\/\d{2}\/\d{4}/)).toBeInTheDocument();
+  });
+
+  it('writesEditedAgoWhenEditedRecently', async () => {
+    mockearBase([unAviso({ id: 1, createdAt: hoursAgo(5), updatedAt: hoursAgo(2) })]);
+    montar();
+
+    expect(await screen.findByText('editado hace 2 h')).toBeInTheDocument();
+  });
+
   it('no muestra "editado" cuando updatedAt === createdAt', async () => {
     mockearBase([unAviso({ id: 1, createdAt: hoursAgo(1), updatedAt: hoursAgo(1) })]);
     montar();
@@ -140,6 +155,117 @@ describe('AlumnoInicio — Novedades', () => {
     await screen.findByText('Aviso 1');
     await user.click(screen.getByRole('button', { name: /Ver todos/ }));
     expect(screen.getByText('Aviso 4')).toBeInTheDocument();
+  });
+});
+
+describe('AlumnoInicio — deep link del aviso', () => {
+  function manyAnnouncements(count) {
+    return Array.from({ length: count }, (_, i) =>
+      unAviso({ id: i + 1, title: `Aviso ${i + 1}`, createdAt: hoursAgo(i + 1), updatedAt: hoursAgo(i + 1) }),
+    );
+  }
+
+  it('expandsAndHighlightsTheAnnouncementFromTheUrl', async () => {
+    reiniciarAvisosMarcados();
+    mockearBase(manyAnnouncements(2));
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
+    montar('/alumno/inicio?aviso=2');
+
+    const title = await screen.findByRole('button', { name: /Aviso 2/ });
+    expect(title).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /Aviso 1/ })).toHaveAttribute('aria-expanded', 'false');
+    expect(title.closest('[data-aviso-id]')).toHaveAttribute('data-aviso-id', '2');
+  });
+
+  it('revealsAnAnnouncementHiddenBehindShowAll', async () => {
+    reiniciarAvisosMarcados();
+    mockearBase(manyAnnouncements(5));
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
+    montar('/alumno/inicio?aviso=5');
+
+    expect(await screen.findByRole('button', { name: /Aviso 5/ })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Mostrar menos avisos' })).toBeInTheDocument();
+  });
+
+  it('showsAClearMessageWhenTheAnnouncementIsNotAvailable', async () => {
+    mockearBase(manyAnnouncements(2));
+    montar('/alumno/inicio?aviso=999');
+
+    expect(await screen.findByText('Ese aviso ya no está disponible.')).toBeInTheDocument();
+    expect(screen.getByText('Aviso 1')).toBeInTheDocument();
+  });
+
+  it('doesNotShowTheMessageWhenTheAnnouncementExists', async () => {
+    reiniciarAvisosMarcados();
+    mockearBase(manyAnnouncements(2));
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
+    montar('/alumno/inicio?aviso=1');
+
+    await screen.findByRole('button', { name: /Aviso 1/ });
+    expect(screen.queryByText('Ese aviso ya no está disponible.')).not.toBeInTheDocument();
+  });
+
+  it('refreshesTheBellCountWhenReadingFromNews', async () => {
+    reiniciarAvisosMarcados();
+    let unread = 1;
+    mockearBase([unAviso({ id: 7, title: 'Sin abrir' })]);
+    server.use(
+      http.get(`${API}/me/notifications/unread-count`, () => HttpResponse.json({ count: unread })),
+      http.post(`${API}/me/announcements/:id/read`, () => {
+        unread = 0;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route
+          path="/alumno/inicio"
+          element={
+            <>
+              <NotificationBell />
+              <AlumnoInicio />
+            </>
+          }
+        />
+      </Routes>,
+      { route: '/alumno/inicio' },
+    );
+    expect(await screen.findByRole('button', { name: 'Notificaciones, 1 sin leer' })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: /Sin abrir/ }));
+    expect(await screen.findByRole('button', { name: 'Notificaciones' })).toBeInTheDocument();
+  });
+});
+
+describe('AlumnoInicio — cuerpo de los avisos', () => {
+  afterEach(() => {
+    delete HTMLElement.prototype.scrollHeight;
+  });
+
+  it('hidesSeeMoreWhenTheBodyFitsInSixLines', async () => {
+    mockearBase([unAviso({ id: 1 })]);
+    montar();
+
+    await screen.findByText('Cambio de aula');
+    expect(screen.queryByRole('button', { name: 'Ver más' })).not.toBeInTheDocument();
+  });
+
+  it('offersSeeMoreForLongBodiesAndKeepsSeeLessAfterExpanding', async () => {
+    reiniciarAvisosMarcados();
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get: () => 300 });
+    mockearBase([unAviso({ id: 1, title: 'Largo' }), unAviso({ id: 2, title: 'Otro', createdAt: hoursAgo(2), updatedAt: hoursAgo(2) })]);
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })));
+    const user = userEvent.setup();
+    montar();
+
+    const [firstSeeMore] = await screen.findAllByRole('button', { name: 'Ver más' });
+    await user.click(firstSeeMore);
+    expect(await screen.findByRole('button', { name: 'Ver menos' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Largo' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Otro' })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Otro' }));
+    expect(screen.getByRole('button', { name: 'Largo' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Otro' })).toHaveAttribute('aria-expanded', 'true');
   });
 });
 

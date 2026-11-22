@@ -47,13 +47,19 @@ function fueEditado(aviso) {
   return new Date(aviso.updatedAt) - new Date(aviso.createdAt) > 60_000;
 }
 
+function metaTemporal(aviso) {
+  if (!fueEditado(aviso)) return tiempoRelativo(aviso.createdAt);
+  const relativo = tiempoRelativo(aviso.updatedAt);
+  return /^(hace|recién)/.test(relativo) ? `editado ${relativo}` : `editado el ${relativo}`;
+}
+
 function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
   const [expandido, setExpandido] = useState(false);
   const [desborda, setDesborda] = useState(false);
   const [previousExpandidoPorUrl, setPreviousExpandidoPorUrl] = useState(false);
 
   function measureBody(el) {
-    if (el) setDesborda(el.scrollHeight > el.clientHeight + 2);
+    if (el && !expandido) setDesborda(el.scrollHeight > el.clientHeight + 2);
   }
 
   if (expandidoPorUrl !== previousExpandidoPorUrl) {
@@ -86,7 +92,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
         <div className="flex items-center gap-1.5 flex-wrap">
           {aviso.urgent && <StatusPill tone="danger">Urgente</StatusPill>}
           <span className="text-size-10-5 text-ink-faint">
-            {fueEditado(aviso) ? `editado ${tiempoRelativo(aviso.updatedAt)}` : tiempoRelativo(aviso.createdAt)}
+            {metaTemporal(aviso)}
           </span>
         </div>
       </div>
@@ -153,7 +159,10 @@ export function AlumnoInicio() {
   const avisoUrlId = searchParams.get('aviso') ? Number(searchParams.get('aviso')) : null;
   const novedades = [...(novedadesRaw ?? [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const sinLeer = novedades.filter((aviso) => !aviso.readAt).length;
-  const novedadesVisibles = verTodos ? novedades : novedades.slice(0, NOVEDADES_INICIAL);
+  const avisoUrlIndex = avisoUrlId ? novedades.findIndex((aviso) => aviso.id === avisoUrlId) : -1;
+  const avisoUrlNoDisponible = Boolean(avisoUrlId) && novedadesRaw !== undefined && avisoUrlIndex === -1;
+  const mostrarTodos = verTodos || avisoUrlIndex >= NOVEDADES_INICIAL;
+  const novedadesVisibles = mostrarTodos ? novedades : novedades.slice(0, NOVEDADES_INICIAL);
 
   useEffect(() => {
     if (!avisoUrlId || !avisoResaltadoRef.current) return;
@@ -214,6 +223,11 @@ export function AlumnoInicio() {
             </div>
             {sinLeer > 0 && <StatusPill tone="accent">{sinLeer} sin leer</StatusPill>}
           </div>
+          {avisoUrlNoDisponible && (
+            <p role="status" className="mb-2 rounded-xl bg-warning-bg px-3 py-2 text-size-12-5 text-warning-ink">
+              Ese aviso ya no está disponible.
+            </p>
+          )}
           {cargandoNovedades ? (
             <div className="flex flex-col gap-2">
               <Skeleton className="h-16 w-full" />
@@ -246,10 +260,10 @@ export function AlumnoInicio() {
                   variant="text"
                   size="inline"
                   type="button"
-                  onClick={() => setVerTodos((v) => !v)}
+                  onClick={() => setVerTodos(!mostrarTodos)}
                   className="mt-1 self-start text-size-12-5 font-semibold"
                   >
-                  {verTodos ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
+                  {mostrarTodos ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
                 </Button>
               )}
             </div>
