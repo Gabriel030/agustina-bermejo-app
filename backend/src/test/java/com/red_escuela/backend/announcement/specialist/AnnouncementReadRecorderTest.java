@@ -1,8 +1,11 @@
 package com.red_escuela.backend.announcement.specialist;
 
+import com.red_escuela.backend.announcement.events.AnnouncementReadEvent;
 import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
 import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -10,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -21,8 +25,9 @@ class AnnouncementReadRecorderTest {
 
     private final AnnouncementRecipientRepository recipientRepository = mock(AnnouncementRecipientRepository.class);
     private final AnnouncementViewer announcementViewer = mock(AnnouncementViewer.class);
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final AnnouncementReadRecorder recorder = new AnnouncementReadRecorder(recipientRepository, announcementViewer,
-            Clock.fixed(Instant.parse("2026-11-06T12:00:00Z"), ZoneOffset.UTC));
+            Clock.fixed(Instant.parse("2026-11-06T12:00:00Z"), ZoneOffset.UTC), eventPublisher);
 
     @Test
     void recordsTheReadAtTheCurrentInstant() {
@@ -64,5 +69,20 @@ class AnnouncementReadRecorderTest {
         recorder.recordReadByCurrentStudent(9L);
 
         verify(recipientRepository).markReadIfUnread(9L, 5L, LocalDateTime.of(2026, 11, 6, 12, 0));
+    }
+
+    @Test
+    void publishesTheReadEventWithTheCurrentPersonOnly() {
+        when(announcementViewer.currentStudentId()).thenReturn(Optional.of(5L));
+        when(announcementViewer.currentPersonId()).thenReturn(77L);
+        when(recipientRepository.markReadIfUnread(any(), any(), any())).thenReturn(1);
+
+        recorder.recordReadByCurrentStudent(9L);
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        AnnouncementReadEvent event = (AnnouncementReadEvent) captor.getValue();
+        assertThat(event.announcementId()).isEqualTo(9L);
+        assertThat(event.readerPersonId()).isEqualTo(77L);
     }
 }
