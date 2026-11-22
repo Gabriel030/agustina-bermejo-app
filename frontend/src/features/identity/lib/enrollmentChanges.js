@@ -13,8 +13,8 @@ export function isEnrollmentActionable(status) {
 }
 
 export function permissionsFor(roleBase) {
-  const isStaff = ['preceptor', 'administrativo', 'director'].includes(roleBase);
-  const canWithdrawWhole = roleBase === 'administrativo' || roleBase === 'director';
+  const isStaff = ['preceptor', 'administrativo', 'subdirector', 'director'].includes(roleBase);
+  const canWithdrawWhole = ['administrativo', 'subdirector', 'director'].includes(roleBase);
   return {
     canWithdrawSubject: isStaff,
     canChangeSection: isStaff,

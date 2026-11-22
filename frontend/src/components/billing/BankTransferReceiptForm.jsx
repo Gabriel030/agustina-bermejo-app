@@ -17,6 +17,7 @@ import {
   todayIsoDate,
 } from '@/lib/bankTransferReceipt';
 import { cn, moneyValue } from '@/lib/utils';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 const COPY = {
   student: {
@@ -106,7 +107,7 @@ export function BankTransferReceiptForm({
     if (focusRequest === 0) return;
     const target = formRef.current?.querySelector('[aria-invalid="true"], [role="alert"]');
     if (target) {
-      target.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+      target.scrollIntoView?.({ block: 'center', behavior: smoothScrollBehavior() });
       target.focus?.({ preventScroll: true });
     }
   }, [focusRequest]);

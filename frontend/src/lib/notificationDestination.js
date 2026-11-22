@@ -1,6 +1,8 @@
 const STAFF_BILLING = ['administrativo', 'director'];
 const STAFF_INTAKE = ['preceptor', 'administrativo'];
 
+const INHERITED_ROLE = { subdirector: 'administrativo' };
+
 const toPath = (path) => () => path;
 
 const forRoles = (roles, build) => ({ roles, build });
@@ -66,6 +68,9 @@ export const NOTIFICATION_DESTINATIONS = {
   SECTION_CHANGED: [SUBJECTS_TAB],
   SECTION_CHANGED_TEACHER: [TEACHER_SECTIONS],
   REGULAR_CERTIFICATE_READY: [alumno('/alumno/mis-carreras?tab=tramites')],
+  GRADUATION_CERTIFICATE_ISSUED: [alumno('/alumno/mis-carreras?tab=tramites')],
+  GRADUATION_CERTIFICATE_REVOKED: [alumno('/alumno/mis-carreras?tab=tramites')],
+  GRADUATION_CERTIFICATE_REISSUED: [alumno('/alumno/mis-carreras?tab=tramites')],
   REGULAR_CERTIFICATE_REJECTED: [alumno('/alumno/mis-carreras?tab=tramites')],
   CERTIFICATE_EXCEPTION_REQUESTED: [staff(['director'], 'aprobaciones')],
   CERTIFICATE_EXCEPTION_DECIDED: [staff(['administrativo', 'director'], 'inicio')],
@@ -141,7 +146,8 @@ export function notificationDestination(notification, activeRole) {
   const entries = NOTIFICATION_DESTINATIONS[notification.type];
   if (!entries) return null;
   const role = activeRole ? activeRole.toLowerCase() : null;
-  const entry = entries.find((candidate) => candidate.roles === null || candidate.roles.includes(role));
+  const matchedRole = INHERITED_ROLE[role] ?? role;
+  const entry = entries.find((candidate) => candidate.roles === null || candidate.roles.includes(matchedRole));
   if (!entry) return null;
   return entry.build({ id: notification.relatedEntityId ?? null, base: role }) ?? null;
 }

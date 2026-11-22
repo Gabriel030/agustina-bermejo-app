@@ -4,6 +4,7 @@ const DocenteLayout = lazyPage(() => import('@/layouts/DocenteLayout'), 'Docente
 const PreceptorLayout = lazyPage(() => import('@/layouts/PreceptorLayout'), 'PreceptorLayout');
 const AdministrativoLayout = lazyPage(() => import('@/layouts/AdministrativoLayout'), 'AdministrativoLayout');
 const DirectorLayout = lazyPage(() => import('@/layouts/DirectorLayout'), 'DirectorLayout');
+const SubdirectorLayout = lazyPage(() => import('@/layouts/SubdirectorLayout'), 'SubdirectorLayout');
 const PlatformLayout = lazyPage(() => import('@/layouts/PlatformLayout'), 'PlatformLayout');
 
 import { pagesFor } from '@/routes/roleMenu';
@@ -24,6 +25,10 @@ export const ROLE_CONFIG = {
   administrativo: {
     Layout: AdministrativoLayout,
     pages: pagesFor('administrativo'),
+  },
+  subdirector: {
+    Layout: SubdirectorLayout,
+    pages: pagesFor('subdirector'),
   },
   director: {
     Layout: DirectorLayout,

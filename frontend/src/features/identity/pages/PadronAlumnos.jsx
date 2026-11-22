@@ -21,7 +21,7 @@ const TABS = [
   { id: 'bajas', label: 'Bajas', params: { status: 'DELETED' } },
 ];
 
-const STAFF_REGISTRATION_ROLES = ['preceptor', 'administrativo', 'director'];
+const STAFF_REGISTRATION_ROLES = ['preceptor', 'administrativo', 'subdirector', 'director'];
 
 const ESTADO_ONBOARDING = {
   CONFIRMADO: 'Confirmado',

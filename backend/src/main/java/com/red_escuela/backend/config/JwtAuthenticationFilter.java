@@ -49,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private UsernamePasswordAuthenticationToken buildAuthentication(AuthenticatedPrincipal principal) {
-        List<GrantedAuthority> authorities = principal.roles().stream()
+        List<GrantedAuthority> authorities = RoleAuthorityExpander.expand(principal.roles()).stream()
                 .<GrantedAuthority>map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                 .toList();
 

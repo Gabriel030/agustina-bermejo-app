@@ -99,7 +99,7 @@ export function AnnualUpfrontStaffSection({ enrollmentId, studentId }) {
   const { usuario } = useAuth();
   const [collecting, setCollecting] = useState(false);
   const keyFor = useIdempotencyKey();
-  const canCollect = (usuario?.roles ?? []).some((role) => role === 'ADMINISTRATIVO' || role === 'DIRECTOR');
+  const canCollect = (usuario?.roles ?? []).some((role) => ['ADMINISTRATIVO', 'SUBDIRECTOR', 'DIRECTOR'].includes(role));
   const requestsQuery = useAnnualUpfrontRequests(enrollmentId, 'staff', canCollect);
   const quoteQuery = useAnnualUpfrontQuote(enrollmentId, 'staff', canCollect);
 
