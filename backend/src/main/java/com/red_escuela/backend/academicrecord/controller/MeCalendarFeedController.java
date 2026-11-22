@@ -2,12 +2,16 @@ package com.red_escuela.backend.academicrecord.controller;
 
 import com.red_escuela.backend.academicrecord.dto.CalendarFeedStatusResponse;
 import com.red_escuela.backend.academicrecord.dto.CalendarFeedTokenResponse;
+import com.red_escuela.backend.academicrecord.dto.MyCalendarResponse;
 import com.red_escuela.backend.academicrecord.usecase.ExportMyCalendarCommand;
 import com.red_escuela.backend.academicrecord.usecase.ExportMyCalendarUseCase;
 import com.red_escuela.backend.academicrecord.usecase.ReadMyCalendarFeedStatusUseCase;
+import com.red_escuela.backend.academicrecord.usecase.ReadMyCalendarUseCase;
 import com.red_escuela.backend.academicrecord.usecase.RevokeMyCalendarFeedTokenUseCase;
 import com.red_escuela.backend.academicrecord.usecase.RotateMyCalendarFeedTokenUseCase;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -35,18 +39,34 @@ public class MeCalendarFeedController {
     private final RotateMyCalendarFeedTokenUseCase rotateFeedTokenUseCase;
     private final RevokeMyCalendarFeedTokenUseCase revokeFeedTokenUseCase;
     private final ExportMyCalendarUseCase exportCalendarUseCase;
+    private final ReadMyCalendarUseCase readCalendarUseCase;
 
     public MeCalendarFeedController(
             CurrentStudentService currentStudentService,
             ReadMyCalendarFeedStatusUseCase readFeedStatusUseCase,
             RotateMyCalendarFeedTokenUseCase rotateFeedTokenUseCase,
             RevokeMyCalendarFeedTokenUseCase revokeFeedTokenUseCase,
-            ExportMyCalendarUseCase exportCalendarUseCase) {
+            ExportMyCalendarUseCase exportCalendarUseCase,
+            ReadMyCalendarUseCase readCalendarUseCase) {
         this.currentStudentService = currentStudentService;
         this.readFeedStatusUseCase = readFeedStatusUseCase;
         this.rotateFeedTokenUseCase = rotateFeedTokenUseCase;
         this.revokeFeedTokenUseCase = revokeFeedTokenUseCase;
         this.exportCalendarUseCase = exportCalendarUseCase;
+        this.readCalendarUseCase = readCalendarUseCase;
+    }
+
+    @GetMapping
+    public ResponseEntity<MyCalendarResponse> myCalendar(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            HttpServletResponse servletResponse) {
+        MyCalendarResponse response = currentStudentService.findCurrentStudent()
+                .map(Student::getId)
+                .map(studentId -> readCalendarUseCase.read(studentId, from, to))
+                .orElseGet(() -> readCalendarUseCase.readEmpty(from, to));
+        servletResponse.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=60");
+        return ResponseEntity.ok().header(HttpHeaders.VARY, HttpHeaders.AUTHORIZATION).body(response);
     }
 
     @GetMapping("/feed")

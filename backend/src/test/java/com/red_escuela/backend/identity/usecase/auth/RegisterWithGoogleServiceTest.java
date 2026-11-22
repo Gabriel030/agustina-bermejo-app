@@ -12,6 +12,7 @@ import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
 import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.service.GoogleStudentRegistrationTransaction;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
 import com.red_escuela.backend.shared.domain.EmailAddress;
@@ -45,8 +46,8 @@ class RegisterWithGoogleServiceTest {
     private final PersonFactory personFactory = mock(PersonFactory.class);
     private final AuthTokenIssuer authTokenIssuer = mock(AuthTokenIssuer.class);
     private final RegisterWithGoogleService service = new RegisterWithGoogleService(
-            googleIdTokenService, personRepository, studentRepository, institutionRepository, personFactory,
-            authTokenIssuer);
+            new GoogleStudentRegistrationTransaction(googleIdTokenService, personRepository, studentRepository,
+                    institutionRepository, personFactory, authTokenIssuer));
     private final RegisterWithGoogleCommand command = new RegisterWithGoogleCommand(ID_TOKEN, INSTITUTION_ID);
 
     private void verifiedTokenWithFreeEmailAndExistingInstitution() {

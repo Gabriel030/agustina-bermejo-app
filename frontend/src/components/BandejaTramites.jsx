@@ -31,14 +31,22 @@ export function BandejaTramites({
   etiquetaPendientes = 'Pendientes',
   contadorHistorial = true,
   recurso = 'los trámites',
+  pendingStatus,
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get('tab') === 'historial' ? 'historial' : 'pendientes';
+  const pendingRequested = pendingStatus !== undefined && searchParams.get('status') === pendingStatus;
+  const tab = !pendingRequested && searchParams.get('tab') === 'historial' ? 'historial' : 'pendientes';
   const search = searchParams.get('q') ?? '';
   const orden = searchParams.get('orden') ?? (tab === 'pendientes' ? 'antiguos' : 'recientes');
   const desde = searchParams.get('desde') ?? '';
   const hasta = searchParams.get('hasta') ?? '';
   const page = Math.max(1, Number.parseInt(searchParams.get('page') ?? '1', 10) || 1);
+
+  function tabChanges(value) {
+    if (pendingStatus === undefined) return { tab: value === 'historial' ? 'historial' : '', orden: '' };
+    if (value === 'historial') return { tab: 'historial', status: '', orden: '' };
+    return { tab: '', status: pendingStatus, orden: '' };
+  }
 
   function updateParams(changes, { resetPage = true } = {}) {
     setSearchParams(
@@ -109,7 +117,7 @@ export function BandejaTramites({
 
       <h1 className="font-heading text-2xl font-bold text-ink">{titulo}</h1>
 
-      <Tabs className="gap-4" value={tab} onValueChange={(value) => updateParams({ tab: value === 'historial' ? 'historial' : '', orden: '' })}>
+      <Tabs className="gap-4" value={tab} onValueChange={(value) => updateParams(tabChanges(value))}>
         <TabsList variant="segmented">
           <TabsTrigger value="pendientes">{etiquetaPendientes}{pendientes ? ` (${pendientes.length})` : ''}</TabsTrigger>
           <TabsTrigger value="historial">Historial{contadorHistorial && historial ? ` (${historial.length})` : ''}</TabsTrigger>

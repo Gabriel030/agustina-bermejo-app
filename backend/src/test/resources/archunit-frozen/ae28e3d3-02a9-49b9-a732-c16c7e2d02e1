@@ -29,6 +29,4 @@ com.red_escuela.backend.evaluation.usecase.sectionconfig.SubmitSectionEvaluation
 com.red_escuela.backend.graduation.usecase.request.ApproveGraduationRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.graduation.usecase.request.RejectGraduationRequestService.reject(com.red_escuela.backend.graduation.usecase.request.RejectGraduationRequestCommand) declares @Transactional
 com.red_escuela.backend.graduation.usecase.request.VerifyGraduationRequestDebtService.verify(java.lang.Long) declares @Transactional
-com.red_escuela.backend.identity.usecase.auth.RegisterService.register(com.red_escuela.backend.identity.dto.RegisterRequest) declares @Transactional
-com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleService.register(com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleCommand) declares @Transactional
 com.red_escuela.backend.shared.event.ProcessedEffectGuard.runEffectOnce(com.red_escuela.backend.shared.event.DeduplicableDomainEvent, java.lang.String, java.lang.Runnable) declares @Transactional
