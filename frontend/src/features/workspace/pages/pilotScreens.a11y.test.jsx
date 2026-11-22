@@ -8,6 +8,7 @@ import { installFixedClock } from '@/test/fixedClock';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { renderWithAppCache } from '@/test/renderWithAppCache';
 import { contractList, contractObject } from '@/test/fixtures/fromContract';
+import { studentHomeHandlers } from '@/test/fixtures/studentHome';
 import { calendarHandler } from '@/test/fixtures/studentCalendar';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
@@ -49,8 +50,7 @@ afterEach(() => {
 describe('pilot screens accessibility (jsdom does not measure color contrast, covered by tokens.test.js)', () => {
   it('studentHomeHasNoAxeViolations', async () => {
     server.use(
-      http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
-      http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+      ...studentHomeHandlers(),
       http.get(`${API}/me/announcements`, () => HttpResponse.json([])),
     );
     const { container } = renderWithProviders(
