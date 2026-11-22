@@ -242,12 +242,12 @@ public final class GraduationProjectionPolicy {
                     takenByGroup.merge(group.electiveGroupId(), 1, Integer::sum);
                 }
             }
-            includePendingPrerequisitesOfTargets();
+            includePendingPrerequisitesOfTargets(takenByGroup);
             addExtraElectivesUntilCreditsAreReached(takenByGroup, reasons);
             return reasons;
         }
 
-        private void includePendingPrerequisitesOfTargets() {
+        private void includePendingPrerequisitesOfTargets(Map<Long, Integer> takenByGroup) {
             boolean grew = true;
             while (grew) {
                 grew = false;
@@ -255,6 +255,9 @@ public final class GraduationProjectionPolicy {
                     for (Long blockerId : planBySubjectId.get(targetId).unmetPrerequisiteSubjectIds()) {
                         ProjectionSubject prerequisite = planBySubjectId.get(blockerId);
                         if (prerequisite != null && isPending(prerequisite) && targetSubjectIds.add(prerequisite.subjectId())) {
+                            if (prerequisite.electiveGroupId() != null) {
+                                takenByGroup.merge(prerequisite.electiveGroupId(), 1, Integer::sum);
+                            }
                             grew = true;
                         }
                     }

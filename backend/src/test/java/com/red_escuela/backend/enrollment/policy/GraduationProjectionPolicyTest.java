@@ -209,6 +209,20 @@ class GraduationProjectionPolicyTest {
     }
 
     @Test
+    void electivesPulledInAsPrerequisitesCountTowardTheGroupMaximum() {
+        List<ProjectionSubject> subjects = List.of(
+                subject(1, 3, CurriculumSubjectState.APPROVED, null, null),
+                subject(2, 3, CurriculumSubjectState.BLOCKED, null, null, 3L),
+                subject(3, 3, CurriculumSubjectState.AVAILABLE, null, 7L),
+                subject(4, 3, CurriculumSubjectState.AVAILABLE, null, 7L));
+        List<ProjectionElectiveGroup> groups = List.of(new ProjectionElectiveGroup(7L, 0, 1, true));
+
+        GraduationProjection view = project(subjects, 12, groups, 3, 0, MARCH);
+
+        assertThat(view.reasons()).containsExactly(ProjectionBlockReason.CREDITS_UNREACHABLE);
+    }
+
+    @Test
     void confidenceBordersFollowClosedPeriodsAndApprovedSubjects() {
         assertThat(policy.confidenceOf(1, 2)).isEqualTo(ProjectionConfidence.LOW);
         assertThat(policy.confidenceOf(2, 2)).isEqualTo(ProjectionConfidence.MEDIUM);

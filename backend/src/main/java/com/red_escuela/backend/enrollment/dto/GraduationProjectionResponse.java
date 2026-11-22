@@ -1,7 +1,7 @@
 package com.red_escuela.backend.enrollment.dto;
 
-import com.red_escuela.backend.enrollment.policy.GraduationProjection;
 import com.red_escuela.backend.enrollment.policy.CreditsPerPeriodSource;
+import com.red_escuela.backend.enrollment.policy.GraduationProjection;
 import com.red_escuela.backend.enrollment.policy.ProjectionBlockReason;
 import com.red_escuela.backend.enrollment.policy.ProjectionConfidence;
 import com.red_escuela.backend.enrollment.policy.ProjectionMethod;

@@ -87,7 +87,8 @@ class GraduationProjectionReaderQueryCountTest extends AbstractIntegrationTest {
 
         assertThat(view.status()).isEqualTo(ProjectionStatus.PROJECTED);
         assertThat(view.basis().criticalPathPeriods()).isEqualTo(2);
-        assertThat(view.estimatedPeriods()).isGreaterThanOrEqualTo(2);
+        assertThat(view.estimatedPeriods()).isEqualTo(4);
+        assertThat(view.range().maxPeriods()).isEqualTo(4);
     }
 
     @Test

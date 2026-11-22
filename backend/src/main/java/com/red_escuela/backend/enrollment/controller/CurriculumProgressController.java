@@ -2,10 +2,10 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.CurriculumProgressResponse;
 import com.red_escuela.backend.enrollment.dto.GraduationProjectionResponse;
-import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadGraduationProjectionUseCase;
-import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadOwnGraduationProjectionUseCase;
 import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadCurriculumProgressUseCase;
+import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadGraduationProjectionUseCase;
 import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadOwnCurriculumProgressUseCase;
+import com.red_escuela.backend.enrollment.usecase.curriculumprogress.ReadOwnGraduationProjectionUseCase;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
