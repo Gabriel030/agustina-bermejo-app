@@ -11,6 +11,7 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
 export function formatFeedDate(iso) {
+  if (!iso) return '-';
   return dayFormat.format(new Date(iso));
 }
 
