@@ -129,6 +129,15 @@ const personResponse = (overrides = {}) => ({
  * docs/context/testing.md. Las respuestas de error del backend real no llevan
  * body (ver docs/context/backend.md) — acá se replica ese contrato a propósito.
  */
+export const curriculumProgressHandlers = [
+  http.get(`${API}/me/program-enrollments/:id/progress/subjects`, ({ params }) =>
+    HttpResponse.json(curriculumProgress(Number(params.id))),
+  ),
+  http.get(`${API}/me/program-enrollments/:id/progress/projection`, ({ params }) =>
+    HttpResponse.json(graduationProjection(Number(params.id))),
+  ),
+];
+
 export const handlers = [
   http.get(`${API}/regular-certificate-requests`, () => HttpResponse.json([])),
   http.get(`${API}/graduation-requests`, () => HttpResponse.json([])),

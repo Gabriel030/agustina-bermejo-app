@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
+import { curriculumProgressHandlers } from '@/test/mocks/handlers';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
 
@@ -56,6 +57,7 @@ describe('AlumnoMisCarreras', () => {
       ),
       http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
+      ...curriculumProgressHandlers,
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
 
@@ -96,6 +98,7 @@ describe('AlumnoMisCarreras', () => {
       ),
       http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
+      ...curriculumProgressHandlers,
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
   }
@@ -117,7 +120,7 @@ describe('AlumnoMisCarreras', () => {
   it('does not show an invented weekly hours column in the study plan', async () => {
     mockEnrollment(true);
     renderWithProviders(<AlumnoMisCarreras />, { route: '/?tab=plan-de-estudio' });
-    expect(await screen.findByText('Correlativas')).toBeInTheDocument();
+    expect(await screen.findByRole('columnheader', { name: 'Créditos' })).toBeInTheDocument();
     expect(screen.queryByText('Hs. semanales')).not.toBeInTheDocument();
   });
 
@@ -191,6 +194,7 @@ describe('AlumnoMisCarreras — load failure', () => {
       }),
       http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
+      ...curriculumProgressHandlers,
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     const user = userEvent.setup();
@@ -208,6 +212,7 @@ describe('AlumnoMisCarreras — no permission', () => {
     server.use(
       http.get(`${API}/me/program-enrollments`, () => new HttpResponse(null, { status: 403 })),
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
+      ...curriculumProgressHandlers,
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     renderWithProviders(<AlumnoMisCarreras />);
@@ -263,6 +268,7 @@ describe('AlumnoMisCarreras — regularity', () => {
       ),
       http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
+      ...curriculumProgressHandlers,
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     return requested;

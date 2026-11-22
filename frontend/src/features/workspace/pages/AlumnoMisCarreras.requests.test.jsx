@@ -3,6 +3,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
+import { curriculumProgressHandlers } from '@/test/mocks/handlers';
 import { renderWithAppCache } from '@/test/renderWithAppCache';
 import { recordApiRequests } from '@/test/recordApiRequests';
 import { countOf, settledRequests } from '@/test/apiRequestCount';
@@ -61,7 +62,8 @@ function mockStudent() {
     ),
     http.get(`${API}/me/regular-certificates/eligibility`, () => HttpResponse.json(REGULAR_STUDENT)),
     http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
-    http.get(`${API}/*`, () => HttpResponse.json([])),
+    ...curriculumProgressHandlers,
+      http.get(`${API}/*`, () => HttpResponse.json([])),
   );
 }
 
