@@ -6,6 +6,7 @@ import { useEstadoMatricula } from '@/features/enrollment';
 import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { formatDate, formatMoney } from '@/lib/billing';
 import { advanceKindOf, advanceOf, advanceYearOf, formatLongDate } from './advanceEnrollmentFee';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 export const ACCOUNT_ANCHOR = 'student-account-table';
 
@@ -43,7 +44,7 @@ export function NextYearBlock({ enrollmentId }) {
   }
 
   function goToOverdueInstallments() {
-    document.getElementById(ACCOUNT_ANCHOR)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(ACCOUNT_ANCHOR)?.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'start' });
   }
 
   return (

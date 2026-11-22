@@ -65,6 +65,7 @@ const ENTITIES = {
 
 const ROLES = {
   DIRECTOR: ['Director', 'accent'],
+  SUBDIRECTOR: ['Subdirector', 'neutral'],
   ADMINISTRATIVO: ['Administrativo', 'neutral'],
   PRECEPTOR: ['Preceptor', 'success'],
   DOCENTE: ['Docente', 'warning'],

@@ -46,6 +46,7 @@ export function DirectorAprobacionesExcepciones() {
           const valor = tab === 'historial' ? e.decidedAt : e.requestedAt;
           return valor ? new Date(valor) : null;
         }}
+        pendingStatus="PENDING"
         tituloVacioPendientes="Ninguna excepción pendiente"
         tituloVacioHistorial="Todavía no decidiste ninguna excepción"
       />
