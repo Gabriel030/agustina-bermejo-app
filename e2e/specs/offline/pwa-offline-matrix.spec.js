@@ -87,6 +87,7 @@ test.describe('@offline pwa offline matrix', () => {
     await goOnline(context, page, api);
 
     await expect.poll(() => api.requests.filter((path) => path === '/me').length).toBeGreaterThan(profileLoadsBeforeResuming);
+    await expect(homeScreen(page)).toBeVisible();
   });
 
   test('aNewWorkerVersionOffersTheUpdateAndReloadsWhenApplied', async ({ context, page }) => {

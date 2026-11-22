@@ -514,6 +514,21 @@ describe('session restore failures', () => {
     expect(resetCircuits).toHaveBeenCalledTimes(1);
   });
 
+  it('profileNetworkFailureAfterARefreshKeepsOfflineModeOnWithTheStoredProfile', async () => {
+    await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: [] });
+    apiFetch.mockImplementation(async (path) => {
+      if (path === '/auth/refresh') return { accessToken: 'a' };
+      throw new TypeError('Failed to fetch');
+    });
+    setOfflineSessionMode.mockClear();
+
+    renderProvider();
+
+    await screen.findByText('pending');
+    expect(setOfflineSessionMode).toHaveBeenLastCalledWith(true);
+    expect(auth.usuario).toEqual({ nombre: 'Ana', apellido: 'Paz', roles: [] });
+  });
+
   it('logoutPurgesTheStoredProfile', async () => {
     await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: [] });
     failRefreshWith(new TypeError('Failed to fetch'));
