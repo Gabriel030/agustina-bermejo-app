@@ -1,5 +1,6 @@
 package com.red_escuela.backend.architecture;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -25,13 +26,31 @@ class PermissionGateCoverageTest {
 
     private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
             "academicrecord", "academicstructure", "billing", "enrollment", "evaluation",
-            "graduation", "identity", "notification", "platform");
+            "graduation", "notification");
+
+    private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
     private static final Set<String> CONTROLLERS_FIXED_BY_ROLE = Set.of(
-            ROOT + ".identity.controller.PermissionController");
+            ROOT + ".identity.controller.PermissionController",
+            ROOT + ".platform.controller.BackupStatusController",
+            ROOT + ".platform.controller.MyPaymentMethodsController",
+            ROOT + ".platform.controller.PlatformAuditLogController",
+            ROOT + ".platform.controller.PlatformFeatureController",
+            ROOT + ".platform.controller.PlatformProvisioningController");
 
     private static final Set<String> CONTROLLERS_WITHOUT_ROLE_RULE = Set.of(
-            ROOT + ".announcement.controller.MeAnnouncementController");
+            ROOT + ".announcement.controller.MeAnnouncementController",
+            ROOT + ".identity.controller.AuthController",
+            ROOT + ".identity.controller.CancelEmailChangeController",
+            ROOT + ".identity.controller.InstitutionController",
+            ROOT + ".identity.controller.OwnerEmailChangeApprovalController",
+            ROOT + ".identity.controller.PersonController",
+            ROOT + ".identity.controller.VerifyEmailController",
+            ROOT + ".platform.controller.ModulesController");
+
+    private static final Set<String> LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
+            "getCurrentDocuments", "getPendingAcceptances", "acceptCurrentDocuments", "confirmGuardianAcceptance",
+            "resendGuardianConfirmation", "getNewsletterPreference", "updateNewsletterPreference");
 
     @Test
     void everyProtectedEndpointUsesTheGateOrIsExempt() throws Exception {
@@ -42,6 +61,9 @@ class PermissionGateCoverageTest {
             }
             for (Method method : controller.getDeclaredMethods()) {
                 if (AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class) == null) {
+                    continue;
+                }
+                if (controller.getName().equals(LEGAL_DOCUMENT_CONTROLLER) && LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(method.getName())) {
                     continue;
                 }
                 if (!usesGate(method, controller)) {
@@ -69,6 +91,25 @@ class PermissionGateCoverageTest {
             checked++;
         }
         assertThat(checked).isEqualTo(6);
+    }
+
+    @Test
+    void controllersExemptAsWithoutRoleRuleCarryNoRoleAnnotations() throws Exception {
+        List<String> annotated = new ArrayList<>();
+        for (String controllerName : CONTROLLERS_WITHOUT_ROLE_RULE) {
+            Class<?> controller = Class.forName(controllerName);
+            if (AnnotatedElementUtils.findMergedAnnotation(controller, PreAuthorize.class) != null
+                    || AnnotatedElementUtils.findMergedAnnotation(controller, RequiresPermission.class) != null) {
+                annotated.add(controller.getSimpleName());
+            }
+            for (Method method : controller.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null
+                        || AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class) != null) {
+                    annotated.add(controller.getSimpleName() + "#" + method.getName());
+                }
+            }
+        }
+        assertThat(annotated).as("exempt controllers must not carry role rules").isEmpty();
     }
 
     @Test
