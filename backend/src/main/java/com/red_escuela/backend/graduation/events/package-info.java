@@ -1,5 +1,5 @@
 /**
- * <b>Qué es</b>: eventos que graduación publica: solicitud creada, verificada, aprobada, rechazada o bloqueada por deuda, certificado regular emitido, y excepción de certificado regular pedida o decidida.
+ * <b>Qué es</b>: eventos que graduación publica: certificado de egreso emitido, revocado o reemitido (sin el motivo de la revocación), solicitud creada, verificada, aprobada, rechazada o bloqueada por deuda, certificado regular emitido, y excepción de certificado regular pedida o decidida.
  *
  * <p><b>Expone</b>: todo el paquete, como interfaz con nombre {@code events}.
  *

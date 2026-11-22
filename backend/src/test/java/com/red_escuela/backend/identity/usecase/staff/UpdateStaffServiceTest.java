@@ -30,7 +30,8 @@ class UpdateStaffServiceTest {
             mock(com.red_escuela.backend.identity.specialist.EmailChangeRequester.class);
 
     private UpdateStaffService serviceActingAs(String actorRole) {
-        return new UpdateStaffService(personRepository, policyActingAs(actorRole), emailChangeRequester);
+        return new UpdateStaffService(new com.red_escuela.backend.identity.service.UpdateStaffTransaction(personRepository,
+                policyActingAs(actorRole), emailChangeRequester));
     }
 
     private Person target(String... roles) {

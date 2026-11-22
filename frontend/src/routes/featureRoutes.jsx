@@ -38,9 +38,17 @@ export const FEATURE_ROUTES = {
 
 const collect = (kind) => Object.values(FEATURE_ROUTES).flatMap((featureRoutes) => featureRoutes[kind]);
 
+export function withSubdirectorInheritance(routes) {
+  return routes.map((route) =>
+    route.roles.includes('administrativo') && !route.roles.includes('subdirector')
+      ? { ...route, roles: [...route.roles, 'subdirector'] }
+      : route,
+  );
+}
+
 export const PUBLIC_ROUTES = collect('public');
 export const SHARED_ROUTES = collect('shared');
-export const ROLE_ROUTES = collect('role');
+export const ROLE_ROUTES = withSubdirectorInheritance(collect('role'));
 
 export function roleRoutesFor(role) {
   return ROLE_ROUTES.filter((route) => route.roles.includes(role));

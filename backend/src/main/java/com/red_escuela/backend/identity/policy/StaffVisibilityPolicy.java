@@ -9,7 +9,8 @@ public final class StaffVisibilityPolicy {
 
     private static final Map<String, Set<String>> VISIBLE_ROLES_BY_ROLE = Map.of(
             "ADMINISTRATIVO", Set.of("DOCENTE", "PRECEPTOR"),
-            "DIRECTOR", Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO"));
+            "SUBDIRECTOR", Set.of("DOCENTE", "PRECEPTOR"),
+            "DIRECTOR", Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO", "SUBDIRECTOR"));
 
     private StaffVisibilityPolicy() {
     }

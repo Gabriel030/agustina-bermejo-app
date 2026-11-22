@@ -11,7 +11,7 @@ import java.util.Set;
 @Component
 public class StaffRoleSegmentStrategy implements SegmentStrategy {
 
-    private static final Set<String> STAFF_ROLES = Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO", "DIRECTOR");
+    private static final Set<String> STAFF_ROLES = Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO", "SUBDIRECTOR", "DIRECTOR");
 
     private final PersonAudienceFinder finder;
 

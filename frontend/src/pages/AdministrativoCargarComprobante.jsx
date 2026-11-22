@@ -25,6 +25,7 @@ import {
   receiptSubmissionFailure,
 } from '@/lib/bankTransferReceipt';
 import { moneyValue } from '@/lib/utils';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 
 const STEPS = [
   { key: 'datos', label: 'Datos del comprobante' },
@@ -223,7 +224,7 @@ export function AdministrativoCargarComprobante() {
   const { studentId } = useParams();
   const navigate = useNavigate();
   const { usuario } = useAuth();
-  const base = usuario?.roles?.includes('DIRECTOR') ? '/director' : '/administrativo';
+  const base = useRoleBasePath();
   const accountPath = `${base}/facturacion?alumno=${studentId}`;
   const receiptsPath = `${base}/facturacion?tab=comprobantes`;
   const uploaderName = usuario ? `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() : '';

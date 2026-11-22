@@ -52,7 +52,7 @@ function GenerateDialog({ open, onOpenChange, enrollmentId, advance, concept }) 
 export function AdvanceEnrollmentFeeStaffSection({ enrollmentId, invoices = [] }) {
   const { usuario } = useAuth();
   const [confirming, setConfirming] = useState(false);
-  const canGenerate = (usuario?.roles ?? []).some((role) => role === 'ADMINISTRATIVO' || role === 'DIRECTOR');
+  const canGenerate = (usuario?.roles ?? []).some((role) => ['ADMINISTRATIVO', 'SUBDIRECTOR', 'DIRECTOR'].includes(role));
   const statusQuery = useEstadoMatriculaDeInscripcion(canGenerate ? enrollmentId : null);
 
   if (!canGenerate) return null;

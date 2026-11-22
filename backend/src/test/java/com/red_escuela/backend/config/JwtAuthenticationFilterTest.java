@@ -121,4 +121,30 @@ class JwtAuthenticationFilterTest {
 
         assertThat(request.getAttribute(UnauthenticatedEntryPoint.REJECTED_TOKEN_ATTRIBUTE)).isNull();
     }
+
+    @Test
+    void subdirectorTokenGrantsAdministrativeAuthorityAndNeverDirector() throws Exception {
+        String token = jwtService.generateAccessToken(personWithRoles("SUBDIRECTOR"));
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer " + token);
+
+        filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactlyInAnyOrder("ROLE_SUBDIRECTOR", "ROLE_ADMINISTRATIVO");
+    }
+
+    @Test
+    void administrativeTokenDoesNotGainSubdirectorAuthority() throws Exception {
+        String token = jwtService.generateAccessToken(personWithRoles("ADMINISTRATIVO"));
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer " + token);
+
+        filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactly("ROLE_ADMINISTRATIVO");
+    }
 }
