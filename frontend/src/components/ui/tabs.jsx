@@ -3,6 +3,7 @@ import { cva } from "class-variance-authority";
 import { Tabs as TabsPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { smoothScrollBehavior } from "@/lib/scrollBehavior"
 import { useSlidingIndicator } from "@/hooks/useSlidingIndicator"
 
 function Tabs({
@@ -69,7 +70,7 @@ function TabsList({
     const container = containerRef.current;
     if (!segmented || activeLeft == null || !container || typeof container.scrollTo !== "function") return;
     const target = activeLeft - (container.clientWidth - activeWidth) / 2;
-    container.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+    container.scrollTo({ left: Math.max(0, target), behavior: smoothScrollBehavior() });
   }, [segmented, containerRef, activeLeft, activeWidth]);
 
   const edge = 28;
