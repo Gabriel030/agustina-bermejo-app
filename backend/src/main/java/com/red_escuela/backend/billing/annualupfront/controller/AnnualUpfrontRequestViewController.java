@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontRequestStatus;
 import com.red_escuela.backend.billing.annualupfront.dto.AnnualUpfrontRequestDetailResponse;
 import com.red_escuela.backend.billing.annualupfront.dto.AnnualUpfrontRequestPageResponse;
@@ -38,16 +39,19 @@ public class AnnualUpfrontRequestViewController {
     }
 
     @GetMapping("/annual-upfront-requests/{id}")
+    @RequiresPermission(code = "billing.read_annual_upfront", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AnnualUpfrontRequestDetailResponse viewRequestForStaff(@PathVariable Long id) {
         return AnnualUpfrontRequestDetailResponse.from(viewUseCase.viewAnnualUpfrontRequestForStaff(id));
     }
 
     @GetMapping("/program-enrollments/{id}/annual-upfront-requests")
+    @RequiresPermission(code = "billing.read_annual_upfront", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<AnnualUpfrontRequestDetailResponse> listRequestsOfEnrollmentForStaff(@PathVariable Long id) {
         return viewUseCase.listAnnualUpfrontRequestsOfEnrollmentForStaff(id).stream().map(AnnualUpfrontRequestDetailResponse::from).toList();
     }
 
     @GetMapping("/annual-upfront-requests")
+    @RequiresPermission(code = "billing.read_annual_upfront", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AnnualUpfrontRequestPageResponse searchRequestsForStaff(@RequestParam(required = false) AnnualUpfrontRequestStatus status, @RequestParam(required = false) Integer lectiveYear,
                                                                    @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return AnnualUpfrontRequestPageResponse.from(viewUseCase.searchAnnualUpfrontRequestsForStaff(new AnnualUpfrontRequestSearch(status, lectiveYear), page, size));

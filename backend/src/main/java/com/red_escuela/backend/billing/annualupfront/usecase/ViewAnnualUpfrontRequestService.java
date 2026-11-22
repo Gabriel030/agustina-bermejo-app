@@ -36,19 +36,16 @@ public class ViewAnnualUpfrontRequestService implements ViewAnnualUpfrontRequest
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public AnnualUpfrontRequestView viewAnnualUpfrontRequestForStaff(Long requestId) {
         return reader.findRequestForStaff(requestId);
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<AnnualUpfrontRequestView> listAnnualUpfrontRequestsOfEnrollmentForStaff(Long programEnrollmentId) {
         return reader.listRequestsOfEnrollmentForStaff(programEnrollmentId);
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public AnnualUpfrontRequestPage searchAnnualUpfrontRequestsForStaff(AnnualUpfrontRequestSearch search, int page, int size) {
         return reader.searchRequests(search, page, size);
     }

@@ -24,7 +24,6 @@ public class PreviewRefundService implements PreviewRefundUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public RefundPlanOutcome previewRefundOnBehalfOfStudent(Long studentId, RequestRefundRequest request) {
         return previewService.previewRefundOfExistingStudent(studentId, request.amount(), destinationOf(request));
     }
@@ -36,7 +35,6 @@ public class PreviewRefundService implements PreviewRefundUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public RefundEligibility describeRefundEligibilityOfStudent(Long studentId, Currency currency) {
         return previewService.describeEligibilityOfExistingStudent(studentId, currency);
     }

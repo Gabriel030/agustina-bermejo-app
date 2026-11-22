@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.note.dto.CancelInvoiceRequest;
 import com.red_escuela.backend.billing.note.dto.CreditNotePendingAuthorizationResponse;
@@ -31,6 +32,7 @@ public class InvoiceCancellationController {
     }
 
     @PostMapping("/invoices/{invoiceId}/cancellations/preview")
+    @RequiresPermission(code = "billing.preview_invoice_cancellation", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public InvoiceCancellationPreviewResponse previewInvoiceCancellation(@PathVariable Long invoiceId, @Valid @RequestBody CancelInvoiceRequest request) {
         return InvoiceCancellationPreviewResponse.from(previewInvoiceCancellationUseCase.previewInvoiceCancellation(invoiceId, request));
     }

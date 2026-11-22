@@ -4,7 +4,6 @@ import com.red_escuela.backend.billing.pricing.dto.PriceVersionHistoryEntryRespo
 import com.red_escuela.backend.billing.pricing.service.PriceVersionHistoryReader;
 import com.red_escuela.backend.shared.UseCase;
 import java.util.List;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @UseCase
 public class ListPriceVersionHistoryService implements ListPriceVersionHistoryUseCase {
@@ -16,7 +15,6 @@ public class ListPriceVersionHistoryService implements ListPriceVersionHistoryUs
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<PriceVersionHistoryEntryResponse> listPriceVersionHistory(Long priceId) {
         return priceVersionHistoryReader.listPriceVersionHistory(priceId);
     }

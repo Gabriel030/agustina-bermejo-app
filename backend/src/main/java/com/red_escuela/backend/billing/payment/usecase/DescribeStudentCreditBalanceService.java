@@ -21,7 +21,6 @@ public class DescribeStudentCreditBalanceService implements DescribeStudentCredi
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public StudentCreditBalance describeCreditBalanceOfStudent(Long studentId, Currency currency) {
         return previewService.describeCreditBalanceOfExistingStudent(studentId, currency);
     }

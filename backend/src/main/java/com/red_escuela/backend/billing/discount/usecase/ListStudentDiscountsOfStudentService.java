@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.discount.usecase;
 import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
 import com.red_escuela.backend.billing.discount.service.StudentDiscountsOfStudentReader;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -16,7 +15,6 @@ public class ListStudentDiscountsOfStudentService implements ListStudentDiscount
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<LabeledStudentDiscount> listStudentDiscountsOfStudent(Long studentId) {
         return reader.readDiscountsOfExistingStudent(studentId);
     }

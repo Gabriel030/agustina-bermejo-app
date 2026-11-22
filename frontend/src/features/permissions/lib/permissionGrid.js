@@ -43,7 +43,7 @@ export const PERMISSION_MODES = {
 
 const MODULE_LABELS = {
   announcement: 'Avisos',
-  billing: 'Facturación',
+  billing: 'Facturación y cobranza',
   enrollment: 'Inscripciones',
   attendance: 'Asistencia',
   evaluation: 'Evaluación',

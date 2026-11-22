@@ -88,6 +88,19 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints del alumno (/me/*), el alta pública de interesados y las decisiones sobre pedidos de aprobación (listar, ver, aprobar, rechazar) quedan fuera de la grilla.
 
+### Billing (tanda A2)
+
+Lecturas y previews sin efecto del staff sobre entidades con plata (16 permisos `billing.*`, V381, 40 endpoints). Las escrituras, la cobranza, los recordatorios, los reportes y las corridas quedan en otras tandas, y el módulo sigue en LEGACY. Ningún permiso es sensible. Alumno (`/me/*`), webhook de Mercado Pago, configuración de pagos, plan de pagos, cohortes y los términos del pago anual `current` y `versions/{n}` (mixtos) quedan fuera.
+
+Ningún endpoint de esta tanda deniega hoy al Director: las reglas vigentes son Administrativo y Director, o solo Director. Pasar el módulo a Activo no cambia su resultado.
+
+Permisos que hoy solo permite el Director y no se siembran para ningún otro rol (se delegan desde la grilla):
+
+- POST /payments/{id}/approval-revocation/preview (billing.preview_approval_revocation)
+- GET /annual-upfront-terms/versions (billing.read_annual_upfront_terms_versions)
+
+Detalle de la migración: las reglas de los services (`@PreAuthorize`) de los métodos de staff de estos endpoints se movieron a `legacyRoles` del controller; en Activo un `@PreAuthorize` en el service anularía la grilla. Los métodos de alumno de los services compartidos conservan su regla.
+
 ## Academicrecord
 
 El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración ni cambio de resultado para el Director en ENFORCE.

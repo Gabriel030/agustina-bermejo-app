@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.discount.domain.LostBenefitFilter;
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitsSlice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
@@ -79,13 +80,13 @@ public class PromotionController {
 
     @Operation(deprecated = true, description = "Deprecado (D-432): usar GET /discount-definitions?type=COHORT_PROMOTION. Se retira cuando el front use el contrato nuevo.")
     @GetMapping("/promotions")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_discounts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<PromotionResponse> findActive(@RequestParam(defaultValue = "active") String status) {
         return listUseCase.listActivePromotions();
     }
 
     @GetMapping("/reports/billing/promotions/lost-benefits")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_discounts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponse(responseCode = "200", description = "Beneficios perdidos; el total sin paginar viaja en el header X-Total-Count",
             headers = @Header(name = "X-Total-Count", description = "Cantidad total de beneficios perdidos que cumplen los filtros, sin paginar", schema = @Schema(type = "integer", format = "int64")))
     public ResponseEntity<List<LostPromotionBenefitResponse>> lostBenefits(@RequestParam(required = false) Long discountDefinitionId,
