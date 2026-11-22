@@ -26,11 +26,16 @@ describe('DirectorInstitutionSettings', () => {
   it('shows the three settings with their ranges and no changes bar actions enabled', async () => {
     await openScreen();
     expect(screen.getByLabelText('Plazo para configurar la evaluación')).toHaveValue('30');
-    expect(screen.getByText('Entre 0 y 60')).toBeInTheDocument();
-    expect(screen.getByText('Entre 1 y 120')).toBeInTheDocument();
+    expect(screen.getByText('Entre 0 y 60 · Hoy: 5')).toBeInTheDocument();
+    expect(screen.getByText('Entre 1 y 120 · Hoy: 30')).toBeInTheDocument();
+    expect(screen.getByText('Desactivado')).toBeInTheDocument();
+    expect(screen.getByText('Hoy: desactivado')).toBeInTheDocument();
+    expect(screen.getByText('Cambios')).toBeInTheDocument();
+    expect(screen.getByText('Confirmar')).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: 'Avisos no urgentes por email' })).not.toBeChecked();
-    expect(screen.getByRole('button', { name: 'Revisar cambios' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Descartar' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: 'Descartar' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText('Cambiá un valor para habilitar Guardar')).toBeInTheDocument();
   });
 
   it('counts unsaved changes and discards them', async () => {
@@ -39,6 +44,8 @@ describe('DirectorInstitutionSettings', () => {
     await user.type(justification, '7');
     await user.click(screen.getByRole('switch', { name: 'Avisos no urgentes por email' }));
     expect(screen.getByText('2 cambios sin guardar')).toBeInTheDocument();
+    expect(screen.getAllByText('Modificado')).toHaveLength(2);
+    expect(screen.getByText('Activado')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Descartar' }));
     expect(justification).toHaveValue('5');
     expect(screen.getByRole('switch', { name: 'Avisos no urgentes por email' })).not.toBeChecked();
@@ -52,7 +59,12 @@ describe('DirectorInstitutionSettings', () => {
     await user.type(justification, '99');
     expect(screen.getByRole('alert')).toHaveTextContent('Entre 0 y 60');
     expect(justification).toHaveValue('99');
-    expect(screen.getByRole('button', { name: 'Revisar cambios' })).toBeDisabled();
+    expect(justification).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Corregí 1 campo para poder guardar')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toHaveAttribute('aria-disabled', 'true');
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(justification).toHaveFocus();
+    expect(screen.queryByText('Qué cambia')).not.toBeInTheDocument();
   });
 
   it('rejects empty and non integer values', async () => {
@@ -84,7 +96,7 @@ describe('DirectorInstitutionSettings', () => {
     await user.clear(justification);
     await user.type(justification, '8');
     await user.click(screen.getByRole('switch', { name: 'Avisos no urgentes por email' }));
-    await user.click(screen.getByRole('button', { name: 'Revisar cambios' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     const deadline = screen.getByRole('group', { name: 'Plazo para justificar inasistencias' });
     expect(within(deadline).getByText('5 días hábiles')).toBeInTheDocument();
@@ -105,7 +117,7 @@ describe('DirectorInstitutionSettings', () => {
     const { user, justification } = await openScreen();
     await user.clear(justification);
     await user.type(justification, '9');
-    await user.click(screen.getByRole('button', { name: 'Revisar cambios' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     await user.click(screen.getByRole('button', { name: 'Volver' }));
     expect(screen.getByLabelText('Plazo para justificar inasistencias')).toHaveValue('9');
   });
@@ -115,10 +127,14 @@ describe('DirectorInstitutionSettings', () => {
     server.use(http.put(URL, () => new HttpResponse(null, { status: 500 })));
     await user.clear(justification);
     await user.type(justification, '8');
-    await user.click(screen.getByRole('button', { name: 'Revisar cambios' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     await user.click(screen.getByRole('button', { name: 'Confirmar y guardar' }));
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tus cambios siguen acá');
     expect(screen.getByRole('button', { name: 'Confirmar y guardar' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(screen.getByLabelText('Plazo para justificar inasistencias')).toHaveValue('8');
+    expect(screen.queryByText(/Tus cambios siguen acá/)).not.toBeInTheDocument();
   });
 
   it('shows an error state and retries the load', async () => {
@@ -133,5 +149,43 @@ describe('DirectorInstitutionSettings', () => {
     renderWithProviders(<DirectorInstitutionSettings />);
     await user.click(await screen.findByRole('button', { name: 'Reintentar' }));
     expect(await screen.findByLabelText('Plazo para justificar inasistencias')).toHaveValue('5');
+  });
+
+  it('shows the stepper from the start and marks the confirmation step when reviewing', async () => {
+    const { user, justification } = await openScreen();
+    expect(screen.getByRole('button', { name: 'Cambios' })).toHaveAttribute('aria-current', 'step');
+    await user.clear(justification);
+    await user.type(justification, '6');
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByText('1 ajuste cambia')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Qué cambia' })).toHaveFocus();
+  });
+
+  it('asks before leaving through a link while there are unsaved changes', async () => {
+    server.use(http.get(URL, () => HttpResponse.json(SAVED)));
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <a href="/director/inicio">Inicio</a>
+        <DirectorInstitutionSettings />
+      </>,
+    );
+    const justification = await screen.findByLabelText('Plazo para justificar inasistencias');
+    await user.clear(justification);
+    await user.type(justification, '6');
+    await user.click(screen.getByRole('link', { name: 'Inicio' }));
+    const dialog = await screen.findByRole('alertdialog', { name: '¿Salir sin guardar?' });
+    expect(within(dialog).getByText(/1 cambio sin guardar/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(justification).toHaveValue('6');
+  });
+
+  it('shows a no permission state when the load is forbidden', async () => {
+    server.use(http.get(URL, () => new HttpResponse(null, { status: 403 })));
+    renderWithProviders(<DirectorInstitutionSettings />);
+    expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
   });
 });
