@@ -42,13 +42,15 @@ public class GraduationCertificateIssuer {
     private final CertificateDigest digest;
     private final CurrentActorFinder currentActorFinder;
     private final Clock clock;
+    private final GraduationCertificateEventPublisher eventPublisher;
     private final SecureRandom random = new SecureRandom();
 
     public GraduationCertificateIssuer(List<GraduationSource> graduationSources, GraduationCertificateRepository repository,
                                        BuiltInCertificateTemplate builtInTemplate, CertificateTemplateRenderSource templateSource,
                                        CertificateRegistryNumberAssigner registryNumberAssigner, CertificatePdfRenderer renderer,
                                        CertificateFileStore fileStore, CertificateVerificationUrl verificationUrl,
-                                       CertificateDigest digest, CurrentActorFinder currentActorFinder, Clock clock) {
+                                       CertificateDigest digest, CurrentActorFinder currentActorFinder, Clock clock,
+                                       GraduationCertificateEventPublisher eventPublisher) {
         graduationSources.forEach(source -> sources.put(source.kind(), source));
         this.repository = repository;
         this.builtInTemplate = builtInTemplate;
@@ -60,10 +62,23 @@ public class GraduationCertificateIssuer {
         this.digest = digest;
         this.currentActorFinder = currentActorFinder;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
     public GraduationCertificateResponse issue(GraduationCertificateKind kind, Long enrollmentId) {
+        GraduationCertificate saved = create(kind, enrollmentId);
+        eventPublisher.issued(saved);
+        return toResponse(saved, verificationUrl.of(saved.certificateCode()));
+    }
+
+    @Transactional
+    public GraduationCertificateResponse issueReplacement(GraduationCertificateKind kind, Long enrollmentId) {
+        GraduationCertificate saved = create(kind, enrollmentId);
+        return toResponse(saved, verificationUrl.of(saved.certificateCode()));
+    }
+
+    private GraduationCertificate create(GraduationCertificateKind kind, Long enrollmentId) {
         GraduationSource source = sources.get(kind);
         source.requireEligible(enrollmentId);
         if (alreadyIssued(kind, enrollmentId)) {
@@ -81,7 +96,7 @@ public class GraduationCertificateIssuer {
             GraduationCertificate saved = repository.saveAndFlush(GraduationCertificate.issue(kind, enrollmentId,
                     source.studentIdOf(enrollmentId), code, snapshot, digest.sha256(pdf), path,
                     LocalDateTime.now(clock), currentActorFinder.currentPersonId(), registryNumber, templateVersion.getId()));
-            return toResponse(saved, url);
+            return saved;
         } catch (DataIntegrityViolationException e) {
             fileStore.deleteIfRolledBack(path);
             if (violatesValidCertificateUniqueness(e)) {

@@ -44,6 +44,8 @@ const ACTIONS = {
   PERMISSION_GRID_CHANGED: ['Grilla de permisos modificada', 'accent'],
   CALENDAR_FEED_TOKEN_ROTATED: ['Enlace de calendario generado', 'accent'],
   CALENDAR_FEED_TOKEN_REVOKED: ['Enlace de calendario revocado', 'warning'],
+  GRADUATION_CERTIFICATE_DOWNLOADED: ['Certificado de egreso descargado', 'accent'],
+  GRADUATION_CERTIFICATE_PDF_MISMATCH: ['PDF de certificado de egreso con hash distinto', 'warning'],
   PERMISSION_SENSITIVE_CHANGED: ['Permiso sensible modificado', 'warning'],
 };
 
@@ -61,6 +63,7 @@ const ENTITIES = {
   GATEWAY_PAYMENT: 'Pago en línea',
   CERTIFICATE_SIGNATORY: 'Firmante de certificado',
   PERMISSION: 'Permiso',
+  GRADUATION_CERTIFICATE: 'Certificado de egreso',
 };
 
 const ROLES = {
