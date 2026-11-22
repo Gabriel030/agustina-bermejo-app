@@ -88,6 +88,12 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 
 Los endpoints del alumno (/me/*), el alta pública de interesados y las decisiones sobre pedidos de aprobación (listar, ver, aprobar, rechazar) quedan fuera de la grilla.
 
+### Billing (tanda A1: lecturas, cobranza y configuración de recordatorios)
+
+Todos los endpoints migrados permiten hoy al Director (reglas AD, solo Director o Administrativo, Director y Preceptor), así que ningún endpoint de esta tanda cambia de resultado para el Director en Activo. El módulo sigue en Legado y billing no está completo: el resto de los endpoints (plata, corridas con efecto, alumno /me, webhook, planes de pago, términos de pago anual) llegan en las tandas siguientes.
+
+Migrados (33 endpoints, permisos billing.*): payment-standing de inscripciones (read_payment_standing, con Preceptor), su historial, contact-list, impact, configuración y cronogramas de recordatorios (read_reminder_config y manage_reminder_config), métricas, tablero financiero, deudores (read_debtors, solo Director, sin grant a otros roles), billing-overview de un alumno, alertas de configuración, corridas nocturnas y mensuales (lecturas y simulación, read_billing_runs) y late-payment-settings/current.
+
 ## Academicrecord
 
 El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración ni cambio de resultado para el Director en ENFORCE.

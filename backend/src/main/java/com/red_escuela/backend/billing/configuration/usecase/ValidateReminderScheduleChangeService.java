@@ -5,7 +5,6 @@ import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarg
 import com.red_escuela.backend.billing.configuration.service.ReminderScheduleTargets;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,7 +20,6 @@ public class ValidateReminderScheduleChangeService implements ValidateReminderSc
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<PolicyViolation> validateChange(ReminderScheduleTarget target, ReminderSchedule schedule, LocalDate effectiveFrom, String changeReason) {
         return validateChangeUseCase.validateChange(targets.requireExistingTopic(target), targets.requestedValuesOf(target.group(), schedule), effectiveFrom, changeReason);
     }
