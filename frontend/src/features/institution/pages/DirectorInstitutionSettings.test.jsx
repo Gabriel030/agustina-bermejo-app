@@ -111,6 +111,7 @@ describe('DirectorInstitutionSettings', () => {
     expect(sent).toEqual({ justificationDeadlineBusinessDays: 8, evaluationConfigDueDays: 30, announcementEmailEnabled: true });
     expect(await screen.findByText('Sin cambios por guardar')).toBeInTheDocument();
     expect(screen.getByLabelText('Plazo para justificar inasistencias')).toHaveValue('8');
+    expect(screen.getByLabelText('Plazo para justificar inasistencias')).toHaveFocus();
   });
 
   it('goes back from the confirmation keeping the draft', async () => {
@@ -129,12 +130,13 @@ describe('DirectorInstitutionSettings', () => {
     await user.type(justification, '8');
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     await user.click(screen.getByRole('button', { name: 'Confirmar y guardar' }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect(await screen.findByRole('alert')).toHaveTextContent('Tus cambios siguen acá');
     expect(screen.getByRole('button', { name: 'Confirmar y guardar' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Volver' }));
     expect(screen.getByLabelText('Plazo para justificar inasistencias')).toHaveValue('8');
     expect(screen.queryByText(/Tus cambios siguen acá/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Plazo para justificar inasistencias')).toHaveFocus();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('shows an error state and retries the load', async () => {
@@ -187,5 +189,38 @@ describe('DirectorInstitutionSettings', () => {
     renderWithProviders(<DirectorInstitutionSettings />);
     expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+  });
+
+  it('announces the unsaved changes count in a polite live region', async () => {
+    const { user, justification } = await openScreen();
+    const summary = screen.getByText('Sin cambios por guardar').closest('[aria-live="polite"]');
+    expect(summary).not.toBeNull();
+    await user.clear(justification);
+    await user.type(justification, '6');
+    expect(summary).toHaveTextContent('1 cambio sin guardar');
+  });
+
+  it('does not ask to leave after saving successfully', async () => {
+    server.use(http.get(URL, () => HttpResponse.json(SAVED)));
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <a href="/director/inicio">Inicio</a>
+        <DirectorInstitutionSettings />
+      </>,
+    );
+    const justification = await screen.findByLabelText('Plazo para justificar inasistencias');
+    server.use(
+      http.put(URL, async ({ request }) => HttpResponse.json(await request.json())),
+      http.get(URL, () => HttpResponse.json({ ...SAVED, justificationDeadlineBusinessDays: 6 })),
+    );
+    await user.clear(justification);
+    await user.type(justification, '6');
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmar y guardar' }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Ajustes guardados'));
+    await waitFor(() => expect(screen.getByLabelText('Plazo para justificar inasistencias')).toHaveFocus());
+    await user.click(screen.getByRole('link', { name: 'Inicio' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 });

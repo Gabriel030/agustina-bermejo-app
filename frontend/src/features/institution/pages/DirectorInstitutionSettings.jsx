@@ -104,17 +104,19 @@ function ChangesBar({ count, invalidCount, onDiscard, onReview }) {
   return (
     <StickyActionBar
       summary={
-        count === 0 ? (
+        <span aria-live="polite" aria-atomic="true">
+        {count === 0 ? (
           <span className="text-sm font-semibold text-ink-faint">Sin cambios por guardar</span>
         ) : (
           <StatusPill tone="accent" className="text-size-13">
             <AlertCircle className="size-3.5" aria-hidden="true" />
             {count} {count === 1 ? 'cambio sin guardar' : 'cambios sin guardar'}
           </StatusPill>
-        )
+        )}
+        </span>
       }
       hint={
-        <span id="settings-bar-reason" className={invalidCount > 0 ? 'font-semibold text-danger' : undefined}>
+        <span id="settings-bar-reason" aria-live="polite" className={invalidCount > 0 ? 'font-semibold text-danger' : undefined}>
           {describeBlockReason(invalidCount, count)}
         </span>
       }
@@ -156,6 +158,7 @@ function SettingsEditor({ settings }) {
   const [step, setStep] = useState('changes');
   const [saveError, setSaveError] = useState(null);
   const confirmHeadingRef = useRef(null);
+  const refocusFirstField = useRef(false);
 
   const draft = { ...toDraft(settings), ...edits };
   const changedCount = SETTING_FIELDS.filter((field) => isChanged(field, settings, draft)).length;
@@ -168,6 +171,10 @@ function SettingsEditor({ settings }) {
 
   useEffect(() => {
     if (step === 'confirm') confirmHeadingRef.current?.focus();
+    if (step === 'changes' && refocusFirstField.current) {
+      refocusFirstField.current = false;
+      document.getElementById(`setting-${SETTING_FIELDS[0].key}`)?.focus();
+    }
   }, [step]);
 
   function edit(field, value) {
@@ -194,6 +201,7 @@ function SettingsEditor({ settings }) {
   }
 
   function backToChanges() {
+    refocusFirstField.current = true;
     setSaveError(null);
     setStep('changes');
   }
@@ -204,12 +212,12 @@ function SettingsEditor({ settings }) {
       await save.mutateAsync(toPayload(draft));
       setEdits({});
       setTouched({});
+      refocusFirstField.current = true;
       setStep('changes');
       toast.success('Ajustes guardados');
     } catch (error) {
       const message = error.message || 'No pudimos guardar los ajustes. Probá de nuevo.';
       setSaveError(message);
-      toast.error(message);
     }
   }
 
