@@ -1,106 +1,28 @@
 {
-  "/students": {
-    "p95": 200,
-    "queries": 3
-  },
-  "/staff": {
-    "p95": 120,
-    "queries": 8
-  },
-  "/me/section-enrollments": {
-    "p95": 120,
-    "queries": 8
-  },
-  "/program-enrollments/{id}/attendance-summary": {
-    "p95": 60,
-    "queries": 6
-  },
-  "/financial-dashboard": {
-    "p95": 60,
-    "queries": 8
-  },
-  "/financial-dashboard/debtors/page": {
-    "p95": 300,
-    "queries": 12
-  },
-  "screen:/director/financiero": {
-    "requests": 20,
-    "duplicates": 0
-  },
-  "screen:/director/alumnos": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/listas-de-espera": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/periodos": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/oferta-academica": {
-    "requests": 12,
-    "duplicates": 0
-  },
-  "screen:/director/oferta-academica/calendario": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/gestion-academica": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/aprobaciones": {
-    "requests": 9,
-    "duplicates": 0
-  },
-  "screen:/director/cierres-de-comision": {
-    "requests": 11,
-    "duplicates": 0
-  },
-  "screen:/director/mesas-de-examen": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/esquemas-evaluacion": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/financiero/anios-lectivos": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/facturacion": {
-    "requests": 9,
-    "duplicates": 0
-  },
-  "screen:/director/precios": {
-    "requests": 12,
-    "duplicates": 0
-  },
-  "screen:/director/descuentos": {
-    "requests": 11,
-    "duplicates": 0
-  },
-  "screen:/director/corridas-de-facturacion": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/constancias": {
-    "requests": 11,
-    "duplicates": 0
-  },
-  "screen:/director/personal": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/importacion-inicial": {
-    "requests": 10,
-    "duplicates": 0
-  },
-  "screen:/director/ajustes-del-instituto": {
-    "requests": 10,
-    "duplicates": 0
-  }
+  "/students": {"p95": 200, "queries": 3},
+  "/staff": {"p95": 120, "queries": 8},
+  "/me/section-enrollments": {"p95": 120, "queries": 8},
+  "/program-enrollments/{id}/attendance-summary": {"p95": 60, "queries": 6},
+  "/financial-dashboard": {"p95": 60, "queries": 8},
+  "/financial-dashboard/debtors/page": {"p95": 300, "queries": 12},
+  "screen:/director/financiero": {"requests": 20, "duplicates": 0},
+  "screen:/director/alumnos": {"requests": 10, "duplicates": 0},
+  "screen:/director/listas-de-espera": {"requests": 10, "duplicates": 0},
+  "screen:/director/periodos": {"requests": 10, "duplicates": 0},
+  "screen:/director/oferta-academica": {"requests": 12, "duplicates": 0},
+  "screen:/director/oferta-academica/calendario": {"requests": 10, "duplicates": 0},
+  "screen:/director/gestion-academica": {"requests": 10, "duplicates": 0},
+  "screen:/director/aprobaciones": {"requests": 9, "duplicates": 0},
+  "screen:/director/cierres-de-comision": {"requests": 11, "duplicates": 0},
+  "screen:/director/mesas-de-examen": {"requests": 10, "duplicates": 0},
+  "screen:/director/esquemas-evaluacion": {"requests": 10, "duplicates": 0},
+  "screen:/director/financiero/anios-lectivos": {"requests": 10, "duplicates": 0},
+  "screen:/director/facturacion": {"requests": 9, "duplicates": 0},
+  "screen:/director/precios": {"requests": 12, "duplicates": 0},
+  "screen:/director/descuentos": {"requests": 11, "duplicates": 0},
+  "screen:/director/corridas-de-facturacion": {"requests": 10, "duplicates": 0},
+  "screen:/director/constancias": {"requests": 11, "duplicates": 0},
+  "screen:/director/personal": {"requests": 10, "duplicates": 0},
+  "screen:/director/importacion-inicial": {"requests": 10, "duplicates": 0},
+  "screen:/director/ajustes-del-instituto": {"requests": 10, "duplicates": 0}
 }

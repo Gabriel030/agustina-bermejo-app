@@ -67,8 +67,7 @@ export function AuthProvider({ children }) {
       markSessionActive();
       prefetchBootstrapQueries();
       const perfil = await apiFetch('/me');
-      const ownerChanged = await claimOfflineCache(perfil.id, queryClient);
-      if (ownerChanged) prefetchBootstrapQueries();
+      await claimOfflineCache(perfil.id, queryClient);
       await storeOfflineProfile(perfil);
       queryClient?.setQueryData(['me'], perfil);
       setUsuario(perfil);

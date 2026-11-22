@@ -173,8 +173,8 @@ describe('offline cache lifecycle', () => {
 
     expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
     expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
-    expect(queryClient.getQueryData(['me', 'modules'])).not.toEqual({ modules: ['ADMIN_ONLY'] });
-    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).not.toEqual({ documents: [{ type: 'ANA' }] });
+    await waitFor(() => expect(queryClient.getQueryData(['me', 'modules'])).toEqual({}));
+    await waitFor(() => expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toEqual({}));
     expect(store.has(OFFLINE_CACHE_KEY)).toBe(false);
     expect(store.get(OFFLINE_OWNER_KEY)).toBe(2);
     expect(screen.getByText('user-2')).toBeInTheDocument();
@@ -225,8 +225,8 @@ describe('offline cache lifecycle', () => {
     });
 
     expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
-    expect(queryClient.getQueryData(['me', 'modules'])).not.toEqual({ modules: ['ADMIN_ONLY'] });
-    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).not.toEqual({ documents: [{ type: 'ANA' }] });
+    await waitFor(() => expect(queryClient.getQueryData(['me', 'modules'])).toEqual({}));
+    await waitFor(() => expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toEqual({}));
   });
 
   it('loginAsAnotherUserWithoutLogoutNeverExposesPreviousUserData', async () => {
@@ -239,8 +239,8 @@ describe('offline cache lifecycle', () => {
 
     expect(apiFetch.mock.calls.filter(([path]) => path === '/me')).toHaveLength(1);
     expect(queryClient.getQueryData(['me'])).toEqual({ id: 2, roles: [] });
-    expect(queryClient.getQueryData(['me', 'modules'])).not.toEqual({ modules: ['ADMIN_ONLY'] });
-    expect(queryClient.getQueryData(LEGAL_KEYS.pending)).not.toEqual({ documents: [{ type: 'ANA' }] });
+    await waitFor(() => expect(queryClient.getQueryData(['me', 'modules'])).toEqual({}));
+    await waitFor(() => expect(queryClient.getQueryData(LEGAL_KEYS.pending)).toEqual({}));
     expect(queryClient.getQueryData(['me', 'notifications'])).toBeUndefined();
     const cachedData = JSON.stringify(queryClient.getQueryCache().getAll().map((query) => query.state.data));
     expect(cachedData).not.toContain('ADMIN_ONLY');

@@ -7,6 +7,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { server } from '@/test/mocks/server';
+import { recordApiRequests } from '@/test/recordApiRequests';
+import { settledRequests } from '@/test/apiRequestCount';
 import { profileFixture } from '@/test/fixtures/profile';
 import { contractList } from '@/test/fixtures/fromContract';
 import { AuthProvider } from '@/context/AuthContext';
@@ -44,22 +46,6 @@ const emptyMetric = (panel) => ({ panel, available: true, partial: false, months
 const SCREEN_ROWS_FILE = globalThis.process.env.PERF_SCREENS_OUT;
 const screenRows = {};
 
-function trackRequests() {
-  const calls = [];
-  const listener = ({ request }) => {
-    const url = new URL(request.url);
-    calls.push({ key: `${request.method} ${url.pathname}${url.search}` });
-  };
-  server.events.on('request:start', listener);
-  return { calls, stop: () => server.events.removeListener('request:start', listener) };
-}
-
-function duplicatesOf(calls) {
-  const counts = new Map();
-  calls.forEach((call) => counts.set(call.key, (counts.get(call.key) ?? 0) + 1));
-  return [...counts].filter(([, count]) => count > 1).map(([key, count]) => `${key} x${count}`);
-}
-
 describe('director screens request profile', () => {
   let tracker;
   let queryClient;
@@ -75,7 +61,7 @@ describe('director screens request profile', () => {
       http.get(`${API}/billing/metrics/:panel`, ({ params }) => HttpResponse.json(emptyMetric(params.panel))),
       http.get(`${API}/notification-metrics/collection-reminders`, () => HttpResponse.json(emptyMetric('collection-reminders'))),
     );
-    tracker = trackRequests();
+    tracker = recordApiRequests();
     queryClient = createQueryClient();
   });
 
@@ -83,17 +69,6 @@ describe('director screens request profile', () => {
     tracker.stop();
     localStorage.clear();
   });
-
-  async function waitUntilQuiet() {
-    let lastCount = -1;
-    let quietChecks = 0;
-    await waitFor(() => {
-      const count = tracker.calls.length;
-      quietChecks = queryClient.isFetching() === 0 && count === lastCount ? quietChecks + 1 : 0;
-      lastCount = count;
-      expect(quietChecks).toBeGreaterThanOrEqual(30);
-    }, { timeout: 10000, interval: 50 });
-  }
 
   it.each(DIRECTOR_SCREENS)('%s makes no duplicated request', async (screen) => {
     render(
@@ -109,13 +84,13 @@ describe('director screens request profile', () => {
         </ThemeProvider>
       </GoogleOAuthProvider>,
     );
-    await waitFor(() => expect(tracker.calls.some((call) => call.key === 'GET /me/notifications/unread-count')).toBe(true), { timeout: 15000 });
-    await waitUntilQuiet();
+    await waitFor(() => expect(tracker.requests.includes('GET /me/notifications/unread-count')).toBe(true), { timeout: 15000 });
+    await settledRequests(tracker, { quietMs: 1500, timeout: 20000 });
     screenRows[`screen:/director/${screen}`] = {
-      requests: tracker.calls.length,
-      duplicates: duplicatesOf(tracker.calls).length,
+      requests: tracker.requests.length,
+      duplicates: tracker.duplicates().length,
     };
-    expect(duplicatesOf(tracker.calls)).toEqual([]);
+    expect(tracker.duplicates()).toEqual([]);
   });
 
   afterAll(() => {
