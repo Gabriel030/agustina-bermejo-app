@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 const SRC_DIR = join(import.meta.dirname, '..');
 const SELF_FILE = join(import.meta.dirname, 'noStickyBottomOutsideActionBar.test.js');
 const SOURCE_FILE_PATTERN = /\.(jsx?|tsx?)$/;
-const STICKY_BOTTOM_PATTERN = /sticky\s+bottom-/;
-const ALLOWED_STICKY_BOTTOM_FILES = ['components/StickyActionBar.jsx'];
+const PINNED_BOTTOM_PATTERN_STICKY_OR_FIXED = /\b(sticky|fixed)\b[^"'`]*\bbottom-/;
+const ALLOWED_PINNED_BOTTOM_FILES_PENDING_MIGRATION = ['components/StickyActionBar.jsx', 'features/permissions/components/PendingChangesBar.jsx', 'components/ui/sheet.jsx'];
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -26,7 +26,7 @@ function stickyBottomUsagesIn(path) {
   return readFileSync(path, 'utf8')
     .split('\n')
     .map((line, index) => ({ line, lineNumber: index + 1 }))
-    .filter(({ line }) => STICKY_BOTTOM_PATTERN.test(line))
+    .filter(({ line }) => PINNED_BOTTOM_PATTERN_STICKY_OR_FIXED.test(line))
     .map(({ lineNumber }) => `${relativePath(path)}:${lineNumber}`);
 }
 
@@ -34,13 +34,13 @@ describe('sticky bottom action bars', () => {
   it('only StickyActionBar pins a bar to the bottom', () => {
     const usages = sourceFiles(SRC_DIR)
       .filter((path) => path !== SELF_FILE)
-      .filter((path) => !ALLOWED_STICKY_BOTTOM_FILES.includes(relativePath(path)))
+      .filter((path) => !ALLOWED_PINNED_BOTTOM_FILES_PENDING_MIGRATION.includes(relativePath(path)))
       .flatMap(stickyBottomUsagesIn);
     expect(usages).toEqual([]);
   });
 
   it('every allowed exception still pins a bar to the bottom', () => {
-    const exceptionsWithoutSticky = ALLOWED_STICKY_BOTTOM_FILES.filter(
+    const exceptionsWithoutSticky = ALLOWED_PINNED_BOTTOM_FILES_PENDING_MIGRATION.filter(
       (file) => stickyBottomUsagesIn(join(SRC_DIR, file)).length === 0,
     );
     expect(exceptionsWithoutSticky).toEqual([]);

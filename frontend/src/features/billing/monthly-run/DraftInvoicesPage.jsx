@@ -230,25 +230,25 @@ export function DraftInvoicesPage() {
             summary={hasSelection ? `${countText(summary.count)} seleccionadas` : 'Sin selección'}
             hint={hasSelection ? `${totalText(summary)} · ${summary.groupCount} de ${groups.length} grupos` : 'Elegí uno o más grupos para aprobar o descartar.'}
           >
-              <Button type="button" variant="ghost" className="min-h-11" disabled={!hasSelection} onClick={() => setSelected(new Set())}>
-                Deseleccionar todo
-              </Button>
-              <Button type="button" variant="outline" className="min-h-11" disabled={!hasSelection || !canAct} onClick={() => setDiscardOpen(true)}>
-                Descartar seleccionadas
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                className="min-h-11"
-                disabled={!hasSelection || !canAct}
-                onClick={() => {
-                  setApproveError(null);
-                  setApproveOpen(true);
-                }}
-              >
-                <CircleCheck aria-hidden="true" />
-                Aprobar y emitir {hasSelection ? summary.count : ''}
-              </Button>
+            <Button type="button" variant="ghost" className="min-h-11" disabled={!hasSelection} onClick={() => setSelected(new Set())}>
+              Deseleccionar todo
+            </Button>
+            <Button type="button" variant="outline" className="min-h-11" disabled={!hasSelection || !canAct} onClick={() => setDiscardOpen(true)}>
+              Descartar seleccionadas
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              className="min-h-11"
+              disabled={!hasSelection || !canAct}
+              onClick={() => {
+                setApproveError(null);
+                setApproveOpen(true);
+              }}
+            >
+              <CircleCheck aria-hidden="true" />
+              Aprobar y emitir {hasSelection ? summary.count : ''}
+            </Button>
           </StickyActionBar>
         </>
       )}

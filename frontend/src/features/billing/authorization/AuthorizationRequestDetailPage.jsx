@@ -273,15 +273,15 @@ export function AuthorizationRequestDetailPage() {
           title={request.amount ? formatMoney(request.amount) : request.operationLabel}
           subtitle={confirming ? 'Se ejecuta ahora y no se puede deshacer.' : (request.studentName ?? request.summary)}
         >
-          <Button type="button" variant="outline" className="text-danger" onClick={() => setRejectOpen(true)}>
+          <Button type="button" variant="outline" className="min-h-11 text-danger" onClick={() => setRejectOpen(true)}>
             Rechazar
           </Button>
           {confirming && (
-            <Button type="button" variant="ghost" onClick={() => setConfirming(false)}>
+            <Button type="button" variant="ghost" className="min-h-11" onClick={() => setConfirming(false)}>
               Volver
             </Button>
           )}
-          <Button type="button" variant="primary" loading={approve.isPending} onClick={handleApprove}>
+          <Button type="button" variant="primary" className="min-h-11" loading={approve.isPending} onClick={handleApprove}>
             {confirming ? 'Confirmar aprobación' : approveLabel}
           </Button>
         </ActionBar>
@@ -292,7 +292,7 @@ export function AuthorizationRequestDetailPage() {
           title="Esperando a la dirección"
           subtitle={roleBase === 'director' ? 'Lo tiene que decidir otra persona de dirección.' : 'Mientras siga pendiente, podés retirarlo.'}
         >
-          <Button type="button" variant="outline" className="text-danger" onClick={() => setWithdrawOpen(true)}>
+          <Button type="button" variant="outline" className="min-h-11 text-danger" onClick={() => setWithdrawOpen(true)}>
             Retirar pedido
           </Button>
         </ActionBar>
