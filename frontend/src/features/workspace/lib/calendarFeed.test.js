@@ -8,6 +8,10 @@ describe('calendarFeed', () => {
     expect(formatFeedDate('2026-11-20T02:30:00Z')).toBe('19/11/2026');
   });
 
+  it('returns a dash when the creation date is missing', () => {
+    expect(formatFeedDate(null)).toBe('-');
+  });
+
   it('says nobody read the link yet when there is no last read', () => {
     expect(formatFeedLastRead(null, NOW)).toBe('todavía no lo leyó ningún calendario');
   });
