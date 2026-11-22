@@ -5,7 +5,6 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
-import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 
 import java.awt.Color;
 import java.io.IOException;
@@ -95,7 +94,6 @@ public class ApprovalCertificateDesign {
         float height = page.getHeight();
         paper(content, page);
         frames(content, page);
-        guilloche(content, height);
         CertificateTexts texts = assets.texts();
         String registry = assets.registrationNumber();
         logo(document, content, fonts, height, assets);
@@ -181,30 +179,6 @@ public class ApprovalCertificateDesign {
         corner(content, right, top, arm, -1, -1);
         corner(content, left, bottom, arm, 1, 1);
         corner(content, right, bottom, arm, -1, 1);
-    }
-
-    private void guilloche(PDPageContentStream content, float pageHeight) throws IOException {
-        PDExtendedGraphicsState translucent = new PDExtendedGraphicsState();
-        translucent.setStrokingAlphaConstant(0.65f);
-        content.saveGraphicsState();
-        content.setGraphicsStateParameters(translucent);
-        content.setStrokingColor(GOLD);
-        content.setLineWidth(0.6f * PX);
-        for (Rect band : List.of(GuillocheBand.LEFT, GuillocheBand.RIGHT)) {
-            for (List<float[]> line : GuillocheBand.polylines(band)) {
-                for (int i = 0; i < line.size(); i++) {
-                    float x = line.get(i)[0] * PX;
-                    float y = pageHeight - line.get(i)[1] * PX;
-                    if (i == 0) {
-                        content.moveTo(x, y);
-                    } else {
-                        content.lineTo(x, y);
-                    }
-                }
-                content.stroke();
-            }
-        }
-        content.restoreGraphicsState();
     }
 
     private void corner(PDPageContentStream content, float x, float y, float arm, int dx, int dy) throws IOException {
