@@ -47,7 +47,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
+import com.red_escuela.backend.shared.exception.NotFoundException;
+import org.springframework.http.ResponseEntity;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -411,6 +415,10 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
     void loadingAGradeForAClosedExamBoardFails() {
         Setup s = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
         ExamBoard closed = persistExamBoard(s, ExamBoardStatus.CLOSED);
+        ExamBoardInstructor tribunal = new ExamBoardInstructor();
+        tribunal.setExamBoard(closed);
+        tribunal.setInstructor(s.instructor());
+        entityManager.persist(tribunal);
 
         assertThatThrownBy(() -> load(s, boardRequest(closed.getId())))
                 .isInstanceOf(ExamBoardClosedException.class);
@@ -586,5 +594,70 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         gradeItemService.recalculateCourseEnrollmentCondition(s.enrollment().getId());
 
         assertThat(statusAfter(s)).isEqualTo(EnrollmentStatus.FAILED);
+    }
+
+    private ResponseEntity<?> notFoundResponseFor(Long enrollmentId, Long instructorId, Long examBoardId) {
+        entityManager.flush();
+        Throwable thrown = catchThrowable(() -> gradeItemService.loadCourseEnrollmentGrade(
+                enrollmentId, instructorId, boardRequest(examBoardId)));
+        assertThat(thrown).isInstanceOf(NotFoundException.class);
+        return new GlobalExceptionHandler().handleNotFound((NotFoundException) thrown);
+    }
+
+    private void assertIndistinguishable(ResponseEntity<?> actual, ResponseEntity<?> reference) {
+        assertThat(actual.getStatusCode().value()).isEqualTo(404);
+        assertThat(actual.getStatusCode()).isEqualTo(reference.getStatusCode());
+        assertThat(actual.getBody()).isEqualTo(reference.getBody());
+        assertThat(actual.getHeaders()).isEqualTo(reference.getHeaders());
+    }
+
+    private void addToTribunal(ExamBoard board, Instructor instructor) {
+        ExamBoardInstructor tribunal = new ExamBoardInstructor();
+        tribunal.setExamBoard(board);
+        tribunal.setInstructor(instructor);
+        entityManager.persist(tribunal);
+    }
+
+    @Test
+    void courseOutsiderOnClosedOrForeignBoardGetsTheSameResponseAsOnMissingBoard() {
+        Setup s = setup(simpleScheme(1, true), EnrollmentStatus.REGULAR, null);
+        ExamBoard closed = persistExamBoard(s, ExamBoardStatus.CLOSED);
+        ExamBoard open = persistExamBoard(s, ExamBoardStatus.SCHEDULED);
+        Instructor outsider = persistInstructor();
+
+        ResponseEntity<?> missing = notFoundResponseFor(s.enrollment().getId(), outsider.getId(), 999_999_999L);
+
+        assertIndistinguishable(notFoundResponseFor(s.enrollment().getId(), outsider.getId(), closed.getId()), missing);
+        assertIndistinguishable(notFoundResponseFor(s.enrollment().getId(), outsider.getId(), open.getId()), missing);
+    }
+
+    @Test
+    void courseMemberWithUncoveredEnrollmentGetsNotFoundBeforeTheSchemeError() {
+        Setup s = setup(null, EnrollmentStatus.REGULAR, null);
+        ExamBoard board = persistExamBoard(s, ExamBoardStatus.SCHEDULED);
+        addToTribunal(board, s.instructor());
+
+        ResponseEntity<?> response = notFoundResponseFor(s.enrollment().getId(), s.instructor().getId(), board.getId());
+
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getBody()).isNull();
+    }
+
+    @Test
+    void courseMemberWithCoveredEnrollmentAndNoSchemeGetsTheSchemeError() {
+        Setup s = setup(null, EnrollmentStatus.REGULAR, null);
+        ExamBoard board = persistExamBoard(s, ExamBoardStatus.SCHEDULED);
+        addToTribunal(board, s.instructor());
+        ExamBoardRegistration registration = new ExamBoardRegistration();
+        registration.setExamBoard(board);
+        registration.setCourseSubjectSectionEnrollment(s.enrollment());
+        registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
+        registration.setRegisteredAt(LocalDateTime.now());
+        entityManager.persist(registration);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> gradeItemService.loadCourseEnrollmentGrade(
+                s.enrollment().getId(), s.instructor().getId(), boardRequest(board.getId())))
+                .isInstanceOf(NoEvaluationSchemeException.class);
     }
 }

@@ -105,6 +105,10 @@ class DetectChangesTest(unittest.TestCase):
         result = self.pull_request_changing({'backend/src/main/java/com/red_escuela/backend/billing/Invoice.java': 'x'})
         self.assertEqual('false', result['run_demo_seed'])
 
+    def test_pull_request_touching_the_perf_budgets_runs_the_frontend_checks(self):
+        result = self.pull_request_changing({'perf/budget.json': '{}'})
+        self.assertEqual('true', result['frontend'])
+
     def test_pull_request_touching_the_caddyfile_runs_the_deploy_job(self):
         result = self.pull_request_changing({'frontend/Caddyfile': 'x'})
         self.assertEqual('true', result['deploy'])
