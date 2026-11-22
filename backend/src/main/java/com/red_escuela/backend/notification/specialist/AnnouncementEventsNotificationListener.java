@@ -2,10 +2,10 @@ package com.red_escuela.backend.notification.specialist;
 
 import com.red_escuela.backend.notification.domain.AnnouncementUpdatedNotification;
 import com.red_escuela.backend.notification.domain.AnnouncementPublishedNotification;
+import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.announcement.events.AnnouncementDeletedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementPublishedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementReadEvent;
-import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.repository.NotificationRepository;

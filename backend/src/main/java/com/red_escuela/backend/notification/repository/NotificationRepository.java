@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import com.red_escuela.backend.notification.entity.NotificationType;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,5 +32,5 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     @Modifying
     @Query("update Notification n set n.read = true where n.recipient.id = :recipientId and n.relatedEntityType = :type and n.relatedEntityId = :id and n.type in :types and n.read = false")
-    int markReadByRecipientAndRelatedEntity(@Param("recipientId") Long recipientId, @Param("type") String type, @Param("id") Long id, @Param("types") java.util.Collection<NotificationType> types);
+    int markReadByRecipientAndRelatedEntity(@Param("recipientId") Long recipientId, @Param("type") String type, @Param("id") Long id, @Param("types") Collection<NotificationType> types);
 }

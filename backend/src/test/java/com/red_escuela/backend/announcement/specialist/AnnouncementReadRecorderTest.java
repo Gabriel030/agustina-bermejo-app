@@ -1,9 +1,11 @@
 package com.red_escuela.backend.announcement.specialist;
 
+import com.red_escuela.backend.announcement.events.AnnouncementReadEvent;
 import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
 import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepository;
-import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -11,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -76,10 +79,10 @@ class AnnouncementReadRecorderTest {
 
         recorder.recordReadByCurrentStudent(9L);
 
-        org.mockito.ArgumentCaptor<Object> captor = org.mockito.ArgumentCaptor.forClass(Object.class);
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         verify(eventPublisher).publishEvent(captor.capture());
-        com.red_escuela.backend.announcement.events.AnnouncementReadEvent event = (com.red_escuela.backend.announcement.events.AnnouncementReadEvent) captor.getValue();
-        org.assertj.core.api.Assertions.assertThat(event.announcementId()).isEqualTo(9L);
-        org.assertj.core.api.Assertions.assertThat(event.readerPersonId()).isEqualTo(77L);
+        AnnouncementReadEvent event = (AnnouncementReadEvent) captor.getValue();
+        assertThat(event.announcementId()).isEqualTo(9L);
+        assertThat(event.readerPersonId()).isEqualTo(77L);
     }
 }
