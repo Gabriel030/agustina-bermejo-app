@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatearFechaCorta, parsearAvisoId, textoDeAlcance } from '@/lib/avisos';
+import { formatearFechaCorta, parseAnnouncementId, textoDeAlcance } from '@/lib/avisos';
 
 globalThis.process.env.TZ ='America/Argentina/Buenos_Aires';
 
@@ -19,16 +19,16 @@ describe('textoDeAlcance', () => {
   });
 });
 
-describe('parsearAvisoId', () => {
+describe('parseAnnouncementId', () => {
   it('acceptsAPlainPositiveInteger', () => {
-    expect(parsearAvisoId(['42'])).toBe(42);
+    expect(parseAnnouncementId(['42'])).toBe(42);
   });
 
   it.each(['1e0', '0x2', ' 2 ', '1.5', '0', '-1', '', 'abc', '01', '1234567890123456'])('rejects%s', (value) => {
-    expect(parsearAvisoId([value])).toBeNull();
+    expect(parseAnnouncementId([value])).toBeNull();
   });
 
   it('rejectsRepeatedValues', () => {
-    expect(parsearAvisoId(['1', '2'])).toBeNull();
+    expect(parseAnnouncementId(['1', '2'])).toBeNull();
   });
 });

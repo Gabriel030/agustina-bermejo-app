@@ -188,20 +188,20 @@ function fechaCorta(fecha) {
   return `${dia}/${mes}/${fecha.getFullYear()}`;
 }
 
-export function describirTiempo(fechaIso) {
+export function describeTime(fechaIso) {
   const fecha = new Date(fechaIso);
-  if (!fechaIso || Number.isNaN(fecha.getTime())) return { texto: '', esRelativo: false };
+  if (!fechaIso || Number.isNaN(fecha.getTime())) return { text: '', isRelative: false };
   const diffMs = Date.now() - fecha.getTime();
   const minutos = Math.floor(diffMs / 60000);
-  if (minutos < 1) return { texto: 'recién', esRelativo: true };
-  if (minutos < 60) return { texto: `hace ${minutos} min`, esRelativo: true };
+  if (minutos < 1) return { text: 'recién', isRelative: true };
+  if (minutos < 60) return { text: `hace ${minutos} min`, isRelative: true };
   const horas = Math.floor(minutos / 60);
-  if (horas < 24) return { texto: `hace ${horas} h`, esRelativo: true };
+  if (horas < 24) return { text: `hace ${horas} h`, isRelative: true };
   const dias = Math.floor(horas / 24);
-  if (dias < 7) return { texto: `hace ${dias} d`, esRelativo: true };
-  return { texto: fechaCorta(fecha), esRelativo: false };
+  if (dias < 7) return { text: `hace ${dias} d`, isRelative: true };
+  return { text: fechaCorta(fecha), isRelative: false };
 }
 
 export function tiempoRelativo(fechaIso) {
-  return describirTiempo(fechaIso).texto;
+  return describeTime(fechaIso).text;
 }

@@ -15,8 +15,8 @@ import { useMisCursos } from '@/features/enrollment';
 import { useNovedades, useMarcarAvisoLeido } from '@/features/announcements';
 import { ScheduleCard } from '@/features/schedule';
 import { StaleStamp } from '@/components/offline/StaleStamp';
-import { CATEGORIA_AVISO_LABEL, parsearAvisoId } from '@/lib/avisos';
-import { describirTiempo } from '@/lib/notificaciones';
+import { CATEGORIA_AVISO_LABEL, parseAnnouncementId } from '@/lib/avisos';
+import { describeTime } from '@/lib/notificaciones';
 import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'REGULAR']);
@@ -48,18 +48,18 @@ function fueEditado(aviso) {
   return new Date(aviso.updatedAt) - new Date(aviso.createdAt) > 60_000;
 }
 
-function metaTemporal(aviso) {
-  if (!fueEditado(aviso)) return { texto: describirTiempo(aviso.createdAt).texto, fechaIso: aviso.createdAt };
-  const { texto, esRelativo } = describirTiempo(aviso.updatedAt);
-  return { texto: esRelativo ? `editado ${texto}` : `editado el ${texto}`, fechaIso: aviso.updatedAt };
+function timeMeta(aviso) {
+  if (!fueEditado(aviso)) return { text: describeTime(aviso.createdAt).text, isoDate: aviso.createdAt };
+  const { text, isRelative } = describeTime(aviso.updatedAt);
+  return { text: isRelative ? `editado ${text}` : `editado el ${text}`, isoDate: aviso.updatedAt };
 }
 
-const LINEAS_VISIBLES = 6;
+const VISIBLE_LINES = 6;
 
-function cuerpoDesborda(el, expandido) {
+function bodyOverflows(el, expandido) {
   if (!expandido) return el.scrollHeight > el.clientHeight + 2;
-  const alturaLinea = parseFloat(window.getComputedStyle(el).lineHeight);
-  return Number.isFinite(alturaLinea) && el.scrollHeight > alturaLinea * LINEAS_VISIBLES + 2;
+  const lineHeightPx = parseFloat(window.getComputedStyle(el).lineHeight);
+  return Number.isFinite(lineHeightPx) && el.scrollHeight > lineHeightPx * VISIBLE_LINES + 2;
 }
 
 function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
@@ -68,7 +68,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
   const [previousExpandidoPorUrl, setPreviousExpandidoPorUrl] = useState(false);
 
   function measureBody(el) {
-    if (el) setDesborda(cuerpoDesborda(el, expandido));
+    if (el) setDesborda(bodyOverflows(el, expandido));
   }
 
   if (expandidoPorUrl !== previousExpandidoPorUrl) {
@@ -85,7 +85,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
     setExpandido((v) => !v);
   }
 
-  const meta = metaTemporal(aviso);
+  const meta = timeMeta(aviso);
 
   return (
     <div
@@ -93,7 +93,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
       data-aviso-id={aviso.id}
       tabIndex={expandidoPorUrl ? -1 : undefined}
       aria-current={expandidoPorUrl ? 'true' : undefined}
-      className={`rounded-xl px-3 py-3 transition-colors ${expandidoPorUrl ? 'animate-[stagger-in_0.3s_ease-out_both] bg-accent-soft/40' : ''}`}
+      className={`rounded-xl px-3 py-3 transition-colors outline-none ${expandidoPorUrl ? 'animate-[stagger-in_0.3s_ease-out_both] bg-accent-soft/40' : ''}`}
     >
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -104,8 +104,8 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {aviso.urgent && <StatusPill tone="danger">Urgente</StatusPill>}
-          <time dateTime={meta.fechaIso} className="text-size-10-5 text-ink-faint">
-            {meta.texto}
+          <time dateTime={meta.isoDate} className="text-size-10-5 text-ink-faint">
+            {meta.text}
           </time>
         </div>
       </div>
@@ -169,33 +169,33 @@ export function AlumnoInicio() {
   const cursosActivos = (cursos ?? []).filter((c) => ESTADOS_CURSO_ACTIVO.has(c.status));
   const cursosEnEspera = (cursos ?? []).filter((c) => c.status === 'WAITLISTED');
 
-  const hayAvisoEnUrl = searchParams.has('aviso');
-  const avisoUrlId = hayAvisoEnUrl ? parsearAvisoId(searchParams.getAll('aviso')) : null;
+  const hasAnnouncementParam = searchParams.has('aviso');
+  const avisoUrlId = hasAnnouncementParam ? parseAnnouncementId(searchParams.getAll('aviso')) : null;
   const novedades = [...(novedadesRaw ?? [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const sinLeer = novedades.filter((aviso) => !aviso.readAt).length;
-  const avisoUrlIndex = avisoUrlId ? novedades.findIndex((aviso) => aviso.id === avisoUrlId) : -1;
-  const avisoUrlNoDisponible = hayAvisoEnUrl && novedadesRaw !== undefined && !actualizandoNovedades && avisoUrlIndex === -1;
-  const avisoUrlEncontrado = avisoUrlIndex !== -1;
-  const mostrarTodos = verTodos || avisoUrlIndex >= NOVEDADES_INICIAL;
-  const novedadesVisibles = mostrarTodos ? novedades : novedades.slice(0, NOVEDADES_INICIAL);
+  const deepLinkedAnnouncementIndex = avisoUrlId ? novedades.findIndex((aviso) => aviso.id === avisoUrlId) : -1;
+  const deepLinkedAnnouncementUnavailable = hasAnnouncementParam && novedadesRaw !== undefined && !actualizandoNovedades && deepLinkedAnnouncementIndex === -1;
+  const deepLinkedAnnouncementFound = deepLinkedAnnouncementIndex !== -1;
+  const showingAll = verTodos || deepLinkedAnnouncementIndex >= NOVEDADES_INICIAL;
+  const novedadesVisibles = showingAll ? novedades : novedades.slice(0, NOVEDADES_INICIAL);
 
   useEffect(() => {
-    const aviso = avisoResaltadoRef.current;
-    if (!avisoUrlId || !avisoUrlEncontrado || !aviso) return;
-    aviso.focus({ preventScroll: true });
-    aviso.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'center' });
-  }, [avisoUrlId, avisoUrlEncontrado]);
+    const highlighted = avisoResaltadoRef.current;
+    if (!avisoUrlId || !deepLinkedAnnouncementFound || !highlighted) return;
+    highlighted.focus({ preventScroll: true });
+    highlighted.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'center' });
+  }, [avisoUrlId, deepLinkedAnnouncementFound]);
 
-  function alternarListaCompleta() {
-    if (!mostrarTodos) {
+  function toggleFullList() {
+    if (!showingAll) {
       setVerTodos(true);
       return;
     }
     setVerTodos(false);
-    if (avisoUrlIndex >= NOVEDADES_INICIAL) {
-      const siguiente = new URLSearchParams(searchParams);
-      siguiente.delete('aviso');
-      setSearchParams(siguiente, { replace: true });
+    if (deepLinkedAnnouncementIndex >= NOVEDADES_INICIAL) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('aviso');
+      setSearchParams(nextParams, { replace: true });
     }
   }
 
@@ -253,7 +253,7 @@ export function AlumnoInicio() {
             </div>
             {sinLeer > 0 && <StatusPill tone="accent">{sinLeer} sin leer</StatusPill>}
           </div>
-          {avisoUrlNoDisponible && (
+          {deepLinkedAnnouncementUnavailable && (
             <p role="status" className="mb-2 rounded-xl bg-warning-bg px-3 py-2 text-size-12-5 text-warning-ink">
               Ese aviso ya no está disponible.
             </p>
@@ -290,10 +290,10 @@ export function AlumnoInicio() {
                   variant="text"
                   size="inline"
                   type="button"
-                  onClick={alternarListaCompleta}
+                  onClick={toggleFullList}
                   className="mt-1 self-start text-size-12-5 font-semibold"
                   >
-                  {mostrarTodos ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
+                  {showingAll ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
                 </Button>
               )}
             </div>

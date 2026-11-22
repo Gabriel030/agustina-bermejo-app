@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION, describirTiempo, etiquetaNotificacion, tiempoRelativo } from './notificaciones';
+import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION, describeTime, etiquetaNotificacion, tiempoRelativo } from './notificaciones';
 
 describe('notificaciones', () => {
   it('etiqueta y da tono a la autorizacion pendiente y al resto de los tipos de configuracion', () => {
@@ -126,9 +126,9 @@ describe('notificaciones', () => {
     });
 
     it('flagsRelativeAndAbsoluteForms', () => {
-      expect(describirTiempo('2026-11-05T09:00:00')).toEqual({ texto: 'hace 3 h', esRelativo: true });
-      expect(describirTiempo('2026-10-01T10:00:00')).toEqual({ texto: '01/10/2026', esRelativo: false });
-      expect(describirTiempo('')).toEqual({ texto: '', esRelativo: false });
+      expect(describeTime('2026-11-05T09:00:00')).toEqual({ text: 'hace 3 h', isRelative: true });
+      expect(describeTime('2026-10-01T10:00:00')).toEqual({ text: '01/10/2026', isRelative: false });
+      expect(describeTime('')).toEqual({ text: '', isRelative: false });
     });
 
     it('shows an absolute date from seven days', () => {

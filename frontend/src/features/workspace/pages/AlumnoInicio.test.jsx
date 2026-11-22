@@ -200,11 +200,11 @@ describe('AlumnoInicio — deep link del aviso', () => {
 
   it('doesNotScrollAgainWhenPollingBringsANewAnnouncement', async () => {
     reiniciarAvisosMarcados();
-    let avisos = manyAnnouncements(2);
+    let announcements = manyAnnouncements(2);
     server.use(
       http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
       http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
-      http.get(`${API}/me/announcements`, () => HttpResponse.json(avisos)),
+      http.get(`${API}/me/announcements`, () => HttpResponse.json(announcements)),
       http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 204 })),
     );
     const scroll = vi.spyOn(Element.prototype, 'scrollIntoView');
@@ -217,7 +217,7 @@ describe('AlumnoInicio — deep link del aviso', () => {
     await screen.findByRole('button', { name: /Aviso 2/ });
     await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
 
-    avisos = [...avisos, unAviso({ id: 9, title: 'Aviso nuevo', createdAt: hoursAgo(9), updatedAt: hoursAgo(9) })];
+    announcements = [...announcements, unAviso({ id: 9, title: 'Aviso nuevo', createdAt: hoursAgo(9), updatedAt: hoursAgo(9) })];
     await userEvent.click(screen.getByRole('button', { name: 'poll' }));
     await screen.findByRole('button', { name: /Aviso nuevo/ });
     expect(scroll).toHaveBeenCalledTimes(1);
@@ -244,7 +244,7 @@ describe('AlumnoInicio — deep link del aviso', () => {
 
   it('doesNotShowTheUnavailableMessageWhileTheListIsRefetching', async () => {
     reiniciarAvisosMarcados();
-    const avisos = manyAnnouncements(2);
+    const announcements = manyAnnouncements(2);
     let releaseRefetch;
     const gate = new Promise((resolve) => {
       releaseRefetch = resolve;
@@ -256,7 +256,7 @@ describe('AlumnoInicio — deep link del aviso', () => {
       http.get(`${API}/me/announcements`, async () => {
         calls += 1;
         if (calls > 1) await gate;
-        return HttpResponse.json(avisos);
+        return HttpResponse.json(announcements);
       }),
     );
     renderWithProviders(
