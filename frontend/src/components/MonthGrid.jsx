@@ -100,7 +100,7 @@ export function MonthGrid({ year, month, entries, todayIso, selectedIso, onSelec
                   onKeyDown={(event) => handleKeyDown(event, day)}
                   className={cn(
                     'group relative flex border-transparent min-h-14 w-full flex-col items-start gap-0.5 overflow-hidden rounded-xl border p-1.5 text-left transition-colors sm:min-h-20 sm:p-2',
-                    'outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                    'outline-none focus-visible:ring-3 focus-visible:ring-ring',
                     entry ? entry.cellClass : weekend ? 'border-transparent bg-neutral-bg/70 hover:border-border hover:bg-surface' : 'border-transparent bg-neutral-bg/35 hover:border-border hover:bg-surface',
                     entry && 'hover:brightness-95',
                     selected && 'border-2 border-ink shadow-popover',
