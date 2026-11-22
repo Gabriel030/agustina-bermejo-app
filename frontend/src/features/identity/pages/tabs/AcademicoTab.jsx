@@ -176,7 +176,7 @@ function PendingList({ title, items }) {
   );
 }
 
-const REGULARITY_VIEWER_ROLES = ['ADMINISTRATIVO', 'DIRECTOR'];
+const REGULARITY_VIEWER_ROLES = ['ADMINISTRATIVO', 'SUBDIRECTOR', 'DIRECTOR'];
 
 function RegularityLine({ programEnrollmentId }) {
   const { usuario } = useAuth();

@@ -1,9 +1,10 @@
 export const PLATFORM_ROLE = 'PLATFORM_ADMIN';
 
-export const ROLE_ORDER = ['DIRECTOR', 'ADMINISTRATIVO', 'PRECEPTOR', 'DOCENTE', 'ALUMNO'];
+export const ROLE_ORDER = ['DIRECTOR', 'SUBDIRECTOR', 'ADMINISTRATIVO', 'PRECEPTOR', 'DOCENTE', 'ALUMNO'];
 
 export const ROLE_LABELS = {
   DIRECTOR: 'Director',
+  SUBDIRECTOR: 'Subdirector',
   ADMINISTRATIVO: 'Administrativo',
   PRECEPTOR: 'Preceptor',
   DOCENTE: 'Docente',

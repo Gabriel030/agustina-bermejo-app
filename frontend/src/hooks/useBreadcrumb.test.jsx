@@ -15,6 +15,26 @@ function labelsFor(url) {
   return result.current.map((item) => item.label);
 }
 
+describe('useBreadcrumb en la bandeja de aprobaciones', () => {
+  it.each([
+    ['/administrativo/aprobaciones/12', 'Pedido N.º 12'],
+    ['/subdirector/aprobaciones/12', 'Pedido N.º 12'],
+  ])('%s muestra el pedido dentro de Aprobaciones', (url, label) => {
+    expect(labelsFor(url)).toEqual(['Aprobaciones', label]);
+  });
+
+  it('sends a subdirector back to its own Aprobaciones', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }) => (
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/subdirector/aprobaciones/12']}>{children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+    const { result } = renderHook(() => useBreadcrumb(), { wrapper });
+    expect(result.current[0].to).toBe('/subdirector/aprobaciones');
+  });
+});
+
 describe('useBreadcrumb en Mis carreras', () => {
   it.each([
     ['tramites', 'Trámites'],
