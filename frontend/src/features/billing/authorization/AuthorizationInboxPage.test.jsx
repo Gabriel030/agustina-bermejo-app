@@ -88,6 +88,21 @@ describe('AuthorizationInboxPage as director', () => {
     expect(params.getAll('status')).toEqual(['PENDING']);
   });
 
+  it('shows pending over history when the URL asks for both tab=history and status=PENDING', async () => {
+    const requestedStatuses = [];
+    mockList((searchParams) => {
+      requestedStatuses.push(searchParams.getAll('status'));
+      return HttpResponse.json(page([refund]));
+    });
+    renderInbox('director', '/director/aprobaciones/facturacion?tab=history&status=PENDING');
+
+    expect(await screen.findByText('Ledesma, Florencia')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Pendientes/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Historial' })).toHaveAttribute('aria-selected', 'false');
+    expect(requestedStatuses).toContainEqual(['PENDING']);
+    expect(requestedStatuses).not.toContainEqual(HISTORY_STATUSES);
+  });
+
   it('opens the history from the URL and keeps the URL in sync with the tab', async () => {
     const user = userEvent.setup();
     const requestedStatuses = [];
