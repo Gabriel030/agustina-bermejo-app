@@ -20,7 +20,7 @@ function CardPaymentOption({ enabled, onSelect }) {
       <div
         className={cn(
           'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-          enabled ? 'bg-gradient-to-br from-brand to-accent-2 text-on-accent' : 'bg-neutral-bg text-ink-faint',
+          enabled ? 'bg-brand text-on-accent' : 'bg-neutral-bg text-ink-faint',
         )}
       >
         <CreditCard size={20} />
@@ -43,9 +43,9 @@ function CardPaymentOption({ enabled, onSelect }) {
     return <div aria-disabled="true">{content}</div>;
   }
   return (
-    <button type="button" onClick={onSelect} className="text-left">
+    <Button type="button" variant="row" size="row" onClick={onSelect} className="min-h-11 p-0">
       {content}
-    </button>
+    </Button>
   );
 }
 
@@ -73,7 +73,7 @@ export function AlumnoPagarSeleccion() {
         size="inline"
         type="button"
         onClick={goToOrigin}
-        className="flex items-center gap-1.5 text-sm"
+        className="min-h-11 flex items-center gap-1.5 text-sm"
         >
         <ChevronLeft size={16} />
         {originLabel}
@@ -102,13 +102,15 @@ export function AlumnoPagarSeleccion() {
       {payable && !loadingConfig && !configFailed && (
         <div className="flex flex-col gap-4">
           {tieneTransferencia && (
-            <button
+            <Button
               type="button"
+              variant="row"
+              size="row"
               onClick={() => goTo(`/alumno/pagos/${invoiceId}/transferencia`)}
-              className="text-left"
+              className="min-h-11 p-0"
             >
-              <GlassCard className="flex items-start gap-4 p-5 transition-shadow hover:shadow-md">
-                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-accent-2 text-on-accent">
+              <GlassCard interactive className="flex items-start gap-4 p-5">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-on-accent">
                   <Banknote size={20} />
                 </div>
                 <div>
@@ -118,7 +120,7 @@ export function AlumnoPagarSeleccion() {
                   </p>
                 </div>
               </GlassCard>
-            </button>
+            </Button>
           )}
 
           {!tieneTransferencia && (

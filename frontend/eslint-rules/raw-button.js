@@ -47,7 +47,6 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/features/workspace/pages/AlumnoInicio.jsx',
   'src/pages/AdministrativoCargarComprobante.jsx',
   'src/pages/AdministrativoFacturacion.jsx',
-  'src/pages/AlumnoPagarSeleccion.jsx',
 ]
 
 export const noRawButtonRule = {

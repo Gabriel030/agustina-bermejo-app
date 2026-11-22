@@ -74,7 +74,7 @@ function OnlinePaymentRedirect({ invoiceId }) {
         size="inline"
         type="button"
         onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
-        className="flex items-center gap-1.5 text-sm"
+        className="min-h-11 flex items-center gap-1.5 text-sm"
         >
         <ChevronLeft size={16} />
         Volver
@@ -100,12 +100,9 @@ function OnlinePaymentRedirect({ invoiceId }) {
               <p className="font-semibold">Tu sesión de pago está lista</p>
               <p className="mt-1 text-sm text-ink-faint">Si no fuiste redirigido automáticamente, hacé clic abajo.</p>
             </div>
-            <a
-              href={data.initPoint}
-              className="rounded-xl bg-gradient-to-br from-brand to-accent-2 px-6 py-3 font-semibold text-on-accent shadow-sm transition-opacity hover:opacity-90"
-            >
-              Ir a Mercado Pago
-            </a>
+            <Button asChild variant="primary" className="min-h-11 px-6">
+              <a href={data.initPoint}>Ir a Mercado Pago</a>
+            </Button>
           </>
         )}
 
@@ -113,7 +110,7 @@ function OnlinePaymentRedirect({ invoiceId }) {
           <>
             <p className="font-semibold text-danger">No pudimos iniciar el pago</p>
             <p className="text-sm text-ink-faint">{error.message}</p>
-            <Button variant="primary" onClick={() => mutate(invoiceId)}>
+            <Button className="min-h-11" variant="primary" onClick={() => mutate(invoiceId)}>
               Reintentar
             </Button>
           </>

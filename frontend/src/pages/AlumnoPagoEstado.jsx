@@ -51,7 +51,7 @@ export function AlumnoPagoEstado() {
         </div>
 
         <div className="flex flex-col gap-3 w-full">
-          <Button variant="primary" onClick={() => navigate('/alumno/pagos')} className="flex items-center gap-2">
+          <Button variant="primary" onClick={() => navigate('/alumno/pagos')} className="min-h-11 flex items-center gap-2">
             <ArrowLeft size={16} />
             Volver a Mis pagos
           </Button>
@@ -62,7 +62,7 @@ export function AlumnoPagoEstado() {
               size="lg"
               type="button"
               onClick={() => navigate(`/alumno/pagos/${invoiceId}/seleccion`)}
-              className="px-6 font-semibold text-ink hover:border-brand hover:text-brand">
+              className="min-h-11 px-6 font-semibold text-ink hover:border-brand hover:text-brand">
               Intentar con otro método de pago
             </Button>
           )}

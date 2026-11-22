@@ -56,7 +56,7 @@ function DatoField({ label, value }) {
         size="icon"
         type="button"
         onClick={() => copiar(value)}
-        className="shrink-0 text-ink-faint hover:border-brand hover:text-brand"
+        className="min-h-11 shrink-0 text-ink-faint hover:border-brand hover:text-brand"
         title="Copiar"
         aria-label={`Copiar ${label}`}>
         {copiado ? <Check size={14} /> : <Copy size={14} />}
@@ -91,7 +91,7 @@ function PasoDatos({ config, amount, onNext }) {
           : 'Realizá la transferencia por el monto exacto de la cuota y luego subí el comprobante en el siguiente paso.'}
       </p>
 
-      <Button variant="primary" onClick={onNext}>
+      <Button className="min-h-11" variant="primary" onClick={onNext}>
         Ya transferí — subir comprobante
       </Button>
     </div>
@@ -299,15 +299,15 @@ function PasoEstado({ invoiceId, onResend }) {
 
       {rejected ? (
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
-          <Button variant="primary" onClick={onResend}>
+          <Button className="min-h-11" variant="primary" onClick={onResend}>
             Corregir y reenviar
           </Button>
-          <Button variant="outline" onClick={goToOrigin}>
+          <Button className="min-h-11" variant="outline" onClick={goToOrigin}>
             {originLabel}
           </Button>
         </div>
       ) : (
-        <Button variant="primary" onClick={goToOrigin}>
+        <Button className="min-h-11" variant="primary" onClick={goToOrigin}>
           {originLabel}
         </Button>
       )}
@@ -351,7 +351,7 @@ export function AlumnoPagarTransferencia() {
         size="inline"
         type="button"
         onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
-        className="flex items-center gap-1.5 text-sm"
+        className="min-h-11 flex items-center gap-1.5 text-sm"
         >
         <ChevronLeft size={16} />
         Volver
