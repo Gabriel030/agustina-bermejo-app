@@ -80,6 +80,7 @@ const TEXT_PAIRS = [
   ['--accent', '--row-selected'],
   ['--accent', '--dialog-bg'],
   ['--on-accent', '--danger'],
+  ['--on-accent', '--warning'],
   ['--danger', '--surface'],
   ['--danger', '--bg1'],
   ['--danger', '--danger-bg'],
