@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Decide que partes del CI corren y si el arbol de un push a develop ya fue verificado por un PR verde.
+# Decide que partes del CI corren y si el arbol de un push a develop (merge commit o squash) ya fue verificado por un PR verde.
 # Entradas (env): GITHUB_EVENT_NAME, GITHUB_REF, GITHUB_OUTPUT, GITHUB_REPOSITORY, GH_TOKEN,
 #   PR_BASE_SHA (pull_request), PR_BASE_REF (pull_request), PR_NUMBER (pull_request), TESTED_TREE_DIR (salida para PR)
 # Salidas: relevant, frontend, lockfile, run_migration, run_demo_seed, run_docs, deploy, deploy_ops, extra_groups,
@@ -92,8 +92,21 @@ if [ "$event" = pull_request ] && [ -n "${TESTED_TREE_DIR:-}" ]; then
     "$(git rev-parse 'HEAD^{tree}')" "${PR_NUMBER:-}" "$relevant" "$frontend" "$run_migration" > "$TESTED_TREE_DIR/tested-tree.json"
 fi
 
-if [ "$develop_push" = true ] && git rev-parse -q --verify 'HEAD^2' > /dev/null 2>&1; then
-  pr_head=$(git rev-parse 'HEAD^2')
+pr_head=""
+if [ "$develop_push" = true ]; then
+  if git rev-parse -q --verify 'HEAD^2' > /dev/null 2>&1; then
+    pr_head=$(git rev-parse 'HEAD^2')
+  else
+    head_sha=$(git rev-parse HEAD)
+    pr_head=$(gh api "repos/$repo/commits/$head_sha/pulls" --jq "[.[] | select(.base.ref == \"develop\" and .merged_at != null and .merge_commit_sha == \"$head_sha\")] | if length == 1 then .[0].head.sha else empty end" 2>/dev/null || true)
+    if [[ ! "$pr_head" =~ ^[0-9a-f]{40}$ ]]; then
+      pr_head=""
+      echo "no single merged pull request maps to $head_sha: everything runs"
+    fi
+  fi
+fi
+
+if [ -n "$pr_head" ]; then
   tree=$(git rev-parse 'HEAD^{tree}')
   run=$(gh run list --repo "$repo" --workflow ci.yml --event pull_request --commit "$pr_head" --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty' 2>/dev/null || true)
   if [ -n "$run" ]; then
@@ -102,7 +115,17 @@ if [ "$develop_push" = true ] && git rev-parse -q --verify 'HEAD^2' > /dev/null 
     if gh run download "$run" --repo "$repo" -n tested-tree -D "$download" > /dev/null 2>&1 && [ -f "$download/tested-tree.json" ]; then
       recorded=$(jq -r '.tree // empty' "$download/tested-tree.json")
       pr_number=$(jq -r '.pr // empty' "$download/tested-tree.json")
-      if [ -n "$recorded" ] && [ "$recorded" = "$tree" ] && [[ "$run" =~ ^[0-9]+$ ]] && [[ "$pr_number" =~ ^[0-9]+$ ]]; then
+      checks_green=false
+      if bad=$(gh api --paginate "repos/$repo/commits/$pr_head/check-runs?filter=latest&per_page=100" --jq '.check_runs[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | .name' 2>/dev/null); then
+        if [ -z "$bad" ]; then
+          checks_green=true
+        else
+          echo "checks of $pr_head are not all green ($(tr '\n' ',' <<< "$bad")): everything runs"
+        fi
+      else
+        echo "could not read the check runs of $pr_head: everything runs"
+      fi
+      if [ "$checks_green" = true ] && [ -n "$recorded" ] && [ "$recorded" = "$tree" ] && [[ "$run" =~ ^[0-9]+$ ]] && [[ "$pr_number" =~ ^[0-9]+$ ]]; then
         reuse_run="$run"
         reuse_pr="$pr_number"
         [ "$(jq -r '.backend' "$download/tested-tree.json")" = true ] && reuse_backend=true
