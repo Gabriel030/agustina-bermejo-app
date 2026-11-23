@@ -12,6 +12,8 @@ import {
   procedureEligibility,
 } from '@/test/fixtures/constancias';
 import { errorBody } from '@/test/fixtures/errors';
+import { contractList } from '@/test/fixtures/fromContract';
+import { sectionEnrollment } from '@/test/fixtures/studentHome';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { StudentProceduresSection } from './StudentProceduresSection';
@@ -62,6 +64,32 @@ function useEligibility(byType) {
     http.get(`${API}/me/procedures/:type/eligibility`, ({ params }) =>
       HttpResponse.json(byType[params.type] ?? procedureEligibility({ type: params.type })),
     ),
+  );
+}
+
+const sectionEnrollmentRows = [
+  sectionEnrollment({ id: 100, programEnrollmentId: 5, subjectName: 'Bases de Datos', sectionName: 'B', status: 'IN_PROGRESS' }),
+  sectionEnrollment({ id: 101, programEnrollmentId: 6, subjectName: 'Anatomía II', sectionName: 'A', status: 'IN_PROGRESS' }),
+  sectionEnrollment({ id: 102, programEnrollmentId: 5, subjectName: 'Química', sectionName: 'A', status: 'APPROVED' }),
+];
+
+const sectionCandidates = contractList('/me/section-enrollments/{id}/change-section-candidates', [
+  { sectionId: 1, name: 'B', availableSeats: 3, slots: [], selectable: false, blockReason: 'CURRENT_SECTION', blockDetail: null },
+  {
+    sectionId: 2,
+    name: 'C',
+    availableSeats: 4,
+    slots: [{ dayOfWeek: 'SATURDAY', startTime: '09:00:00', endTime: '13:00:00', classroomName: 'Aula 2' }],
+    selectable: true,
+    blockReason: null,
+    blockDetail: null,
+  },
+]);
+
+function useSectionEnrollments() {
+  server.use(
+    http.get(`${API}/me/section-enrollments`, () => HttpResponse.json(sectionEnrollmentRows)),
+    http.get(`${API}/me/section-enrollments/:id/change-section-candidates`, () => HttpResponse.json(sectionCandidates)),
   );
 }
 
@@ -340,11 +368,131 @@ describe('StudentProceduresSection', () => {
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeEnabled();
   });
 
-  it('links Cambio de comisión to the subjects tab of the career', async () => {
+  it('opens the change of section sheet from the Cambio de comisión row', async () => {
+    useSectionEnrollments();
+    const user = userEvent.setup();
     renderSection();
 
     const row = (await screen.findByText('Cambio de comisión')).closest('li');
-    expect(within(row).getByRole('link', { name: 'Abrir' })).toHaveAttribute('href', '/alumno/mis-carreras?carrera=5&tab=materias');
+    expect(within(row).queryByRole('link', { name: 'Abrir' })).not.toBeInTheDocument();
+    await user.click(within(row).getByRole('button', { name: 'Abrir' }));
+
+    const sheet = await screen.findByRole('dialog');
+    expect(within(sheet).getByText('Cambiar de comisión')).toBeInTheDocument();
+    expect(await within(sheet).findByText('Bases de Datos')).toBeInTheDocument();
+    expect(within(sheet).queryByText('Anatomía II')).not.toBeInTheDocument();
+  });
+
+  it('changes the section without asking for a reason and refreshes enrollments and procedures', async () => {
+    useSectionEnrollments();
+    const posted = [];
+    let enrollmentRequests = 0;
+    let approvedRequests = 0;
+    server.use(
+      http.get(`${API}/me/section-enrollments`, () => {
+        enrollmentRequests += 1;
+        return HttpResponse.json(sectionEnrollmentRows);
+      }),
+      http.get(`${API}/me/procedures/approved`, () => {
+        approvedRequests += 1;
+        return HttpResponse.json([]);
+      }),
+      http.post(`${API}/me/section-enrollments/:id/change-section`, async ({ params, request }) => {
+        posted.push({ id: params.id, body: await request.json() });
+        return HttpResponse.json(sectionEnrollment({ id: 100, sectionId: 2 }));
+      }),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+    await user.click(await screen.findByRole('radio', { name: /Com\. C/ }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(screen.queryByLabelText('Motivo')).not.toBeInTheDocument();
+    const before = { enrollmentRequests, approvedRequests };
+    await user.click(screen.getByRole('button', { name: 'Confirmar el cambio' }));
+
+    await waitFor(() => expect(posted).toEqual([{ id: '100', body: { newSectionId: 2 } }]));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(enrollmentRequests).toBeGreaterThan(before.enrollmentRequests));
+    await waitFor(() => expect(approvedRequests).toBeGreaterThan(before.approvedRequests));
+    expect(await screen.findByText('Comisión cambiada')).toBeInTheDocument();
+  });
+
+  it('keeps the sheet open and shows the SECTION_HAS_RECORDS message on confirm', async () => {
+    useSectionEnrollments();
+    server.use(
+      http.post(`${API}/me/section-enrollments/:id/change-section`, () =>
+        HttpResponse.json(errorBody('SECTION_HAS_RECORDS'), { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+    await user.click(await screen.findByRole('radio', { name: /Com\. C/ }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmar el cambio' }));
+
+    expect(await screen.findByText('Para cambiar de comisión hablá con Administración.')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Elegir otra comisión' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar el cambio' })).toBeEnabled();
+  });
+
+  it('shows the full section message inline and lets the student choose another one', async () => {
+    useSectionEnrollments();
+    server.use(
+      http.post(`${API}/me/section-enrollments/:id/change-section`, () => HttpResponse.json(errorBody('SECTION_FULL'), { status: 409 })),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+    await user.click(await screen.findByRole('radio', { name: /Com\. C/ }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmar el cambio' }));
+
+    expect(await screen.findByText('La comisión elegida no tiene cupo. Seguís en tu comisión actual.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Elegir otra comisión' }));
+    expect(screen.getByRole('radio', { name: /Com\. C/ })).toBeInTheDocument();
+  });
+
+  it('closes the sheet with a toast on an unexpected error', async () => {
+    useSectionEnrollments();
+    server.use(
+      http.post(`${API}/me/section-enrollments/:id/change-section`, () => HttpResponse.json(errorBody('FORBIDDEN'), { status: 403 })),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+    await user.click(await screen.findByRole('radio', { name: /Com\. C/ }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmar el cambio' }));
+
+    expect(await screen.findByText('No tenés permiso para hacer esto.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('shows the closed window message when the candidates cannot be loaded', async () => {
+    useSectionEnrollments();
+    server.use(
+      http.get(`${API}/me/section-enrollments/:id/change-section-candidates`, () =>
+        HttpResponse.json(errorBody('ENROLLMENT_WINDOW_CLOSED'), { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+
+    expect(await screen.findByText('El período de inscripción está cerrado.')).toBeInTheDocument();
   });
 
   it('shows the empty state when there are no approved procedures', async () => {

@@ -12,6 +12,7 @@ import {
   ownGraduationCertificate,
   springPage,
 } from '@/test/fixtures/certificates';
+import { sectionEnrollment } from '@/test/fixtures/studentHome';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 
@@ -568,6 +569,11 @@ export const handlers = [
   http.get(`${API}/programs/:id/year-billing-templates`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-enrollments`, () => HttpResponse.json([])),
+  http.get(`${API}/me/section-enrollments/:id/change-section-candidates`, () => HttpResponse.json([])),
+  http.post(`${API}/me/section-enrollments/:id/change-section`, async ({ params, request }) => {
+    const { newSectionId } = await request.json();
+    return HttpResponse.json(sectionEnrollment({ id: Number(params.id), sectionId: newSectionId }));
+  }),
   http.get(`${API}/billing/configuration-alerts`, () => HttpResponse.json([])),
   http.get(`${API}/announcements/:id/recipients`, () => HttpResponse.json([])),
   http.post(`${API}/me/notifications/:id/read`, () => new HttpResponse(null, { status: 200 })),
