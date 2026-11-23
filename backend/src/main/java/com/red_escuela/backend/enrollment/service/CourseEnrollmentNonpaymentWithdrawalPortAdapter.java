@@ -1,16 +1,16 @@
 package com.red_escuela.backend.enrollment.service;
 
-import com.red_escuela.backend.billing.api.CourseEnrollmentNonpaymentWithdrawalPort;
+import com.red_escuela.backend.shared.module.CourseEnrollmentNonpaymentWithdrawalPort;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 
 @Component
-public class CourseEnrollmentNonpaymentWithdrawalAdapter implements CourseEnrollmentNonpaymentWithdrawalPort {
+public class CourseEnrollmentNonpaymentWithdrawalPortAdapter implements CourseEnrollmentNonpaymentWithdrawalPort {
 
     private final CourseEnrollmentService courseEnrollmentService;
 
-    public CourseEnrollmentNonpaymentWithdrawalAdapter(CourseEnrollmentService courseEnrollmentService) {
+    public CourseEnrollmentNonpaymentWithdrawalPortAdapter(CourseEnrollmentService courseEnrollmentService) {
         this.courseEnrollmentService = courseEnrollmentService;
     }
 

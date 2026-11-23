@@ -5,6 +5,7 @@ import com.red_escuela.backend.graduation.certificate.exam.dto.ExamCertificateRe
 import com.red_escuela.backend.graduation.certificate.exam.dto.RevokeExamCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.exam.usecase.GetExamCertificatePdfUseCase;
 import com.red_escuela.backend.graduation.certificate.exam.usecase.RevokeExamCertificateUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,7 +15,6 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +34,7 @@ public class ExamCertificateController {
     }
 
     @GetMapping("/exam-certificates/{id}/pdf")
-    @PreAuthorize("hasAnyRole('DOCENTE','ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.exam_download", legacyRoles = "ROLE_DOCENTE,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @Operation(description = "Descarga individual. Docente de la mesa (404 si es ajena), Administrativo y Director. Audita DOCUMENT_PDF_DOWNLOADED.")
     @ApiResponse(responseCode = "200", content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")))
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
@@ -47,7 +47,7 @@ public class ExamCertificateController {
     }
 
     @PostMapping("/exam-certificates/{id}/revoke")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.revoke", legacyRoles = "ROLE_DIRECTOR")
     public ExamCertificateResponse revoke(@PathVariable Long id, @Valid @RequestBody RevokeExamCertificateRequest request) {
         return revokeUseCase.revoke(id, request.reason());
     }
