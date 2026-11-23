@@ -125,6 +125,14 @@ El front se organiza por módulo de backend, no por rol:
 Regla de límites (ESLint, `no-restricted-imports`, en `warn` hasta M6): una feature no importa
 de otra salvo por su `index.js`, y `components/`, `lib/` y `layouts/` no importan de `features/`.
 
+Estado de la regla (F0): hay 7 warnings de límites, ninguno por features cruzadas por fuera de
+`index.js` salvo `billing/dashboard/FinancialDashboardPage` (2), `components/TopHeader` (2),
+`layouts/RoleShell` (1) y 2 tests de workspace; `eslint .` termina con 0 errores y el CI no usa
+`--max-warnings`, así que no cortan. Cada feature tiene `routes.jsx`, `pages/`, `components/` y
+`hooks/` (las carpetas vacías llevan `.gitkeep`); `api.js` se crea cuando el módulo tenga llamadas
+propias. Mover las páginas que siguen en `src/pages/` (F1 de billing) se coordina con líder-3 por
+las listas de paths de `eslint-rules/` y de los guards (`noStickyBottomOutsideActionBar`).
+
 ## Estructura de carpetas
 
 Fase 1 usa carpetas **por tipo** (`api/`, `components/`, `context/`, `layouts/`,
@@ -288,7 +296,7 @@ de `src/theme/tokens.css`, gana el código y se corrige la doc.
 | Entrada escalonada de listas/grillas de cards | `<Stagger>` envolviendo los hijos (`delayStep` en ms) |
 | KPI / métrica | `StatCard` (dentro de `Stagger` en grillas) |
 | Tablas | `components/ui/table.jsx` (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableCell`), dentro de un `GlassCard` — la tabla no trae borde propio. Header sticky, mayúsculas, hover `accent-soft`. Excepción: grillas con rowSpan/colSpan/sticky propias (ej. tomar asistencia) |
-| Encabezado ordenable | `alumno/SortableColumnHeader.jsx` (ya con el estilo del header de tabla) |
+| Encabezado ordenable | `features/evaluation/components/SortableColumnHeader.jsx` (ya con el estilo del header de tabla) |
 | Pestañas | `Tabs` con `variant="segmented"` |
 | Stepper / wizard | `components/Stepper.jsx` único (completados en verde con tilde, activo con gradiente y pulso; pasos visitados clickeables). No hay otro Stepper |
 | Notificaciones/feedback de acciones | `toast` de `sonner` (`toast.error/success`), con `<Toaster />` ya montado en `App.jsx`. No mostrar errores de mutaciones como párrafos inline |

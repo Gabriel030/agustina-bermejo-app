@@ -78,10 +78,10 @@ export function ClosureApproveDialog({ open, sheet, pending, onClose, onApprove 
               </div>
             )}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={close}>
+              <Button type="button" variant="outline" onClick={close} className="min-h-11 md:min-h-8">
                 Cancelar
               </Button>
-              <Button type="button" variant="primary" onClick={goToReview}>
+              <Button type="button" variant="primary" onClick={goToReview} className="min-h-11 md:min-h-8">
                 Continuar
               </Button>
             </DialogFooter>
@@ -97,10 +97,10 @@ export function ClosureApproveDialog({ open, sheet, pending, onClose, onApprove 
             </DialogHeader>
             <Totals sheet={sheet} />
             <DialogFooter>
-              <Button type="button" variant="outline" disabled={pending} onClick={() => setStep('location')}>
+              <Button type="button" variant="outline" disabled={pending} onClick={() => setStep('location')} className="min-h-11 md:min-h-8">
                 Volver
               </Button>
-              <Button type="button" variant="primary" loading={pending} onClick={approve}>
+              <Button type="button" variant="primary" loading={pending} onClick={approve} className="min-h-11 md:min-h-8">
                 {withoutTeacher ? 'Cerrar el acta' : 'Aprobar y cerrar'}
               </Button>
             </DialogFooter>

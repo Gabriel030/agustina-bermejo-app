@@ -50,6 +50,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `ACTIVATION_TOKEN_EXPIRED` | no | `ActivationTokenExpiredException` | identity |
+| `ACTIVATION_TOKEN_INVALID` | no | `ActivationTokenInvalidException` | identity |
 | `ADMISSION_WINDOW_CLOSED` | no | `AdmissionWindowClosedException` | enrollment |
 | `AMBIGUOUS_SECTION` | no | `AmbiguousSectionException` | enrollment |
 | `ANNUAL_UPFRONT_IDEMPOTENCY_KEY_INVALID` | no | `AnnualUpfrontIdempotencyKeyInvalidException` | billing |
@@ -292,6 +294,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `COURSE_SUBJECT_NOT_FOUND` | no | `CourseSubjectNotFoundException` | academicstructure |
 | `CREDIT_NOTE_INVOICE_NOT_FOUND` | no | `CreditNoteInvoiceNotFoundException` | billing |
 | `CYCLE_NOT_FOUND` | no | `CycleNotFoundException` | academicstructure |
+| `DEBT_EXCEPTION_NOT_FOUND` | no | `DebtExceptionNotFoundException` | graduation |
 | `DIRECTOR_APPROVAL_REQUEST_NOT_FOUND` | no | `DirectorApprovalRequestNotFoundException` | enrollment |
 | `DISCOUNT_DEFINITION_NOT_FOUND` | no | `DiscountDefinitionNotFoundException` | billing |
 | `DISCOUNT_SCOPE_OFFERING_NOT_FOUND` | no | `DiscountScopeOfferingNotFoundException` | billing |
@@ -435,11 +438,14 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CYCLE_DECISION_IDEMPOTENCY_KEY_CONFLICT` | no | `CycleDecisionIdempotencyKeyConflictException` | academicstructure |
 | `CYCLE_NOT_EDITABLE` | no | `CycleNotEditableException` | academicstructure |
 | `CYCLE_NOT_PENDING_APPROVAL` | no | `CycleNotPendingApprovalException` | academicstructure |
+| `DEBT_EXCEPTION_ALREADY_USED` | no | `DebtExceptionAlreadyUsedException` | graduation |
+| `DEBT_EXCEPTION_EXPIRED` | no | `DebtExceptionExpiredException` | graduation |
 | `DIRECTOR_ALREADY_EXISTS` | no | `DirectorAlreadyExistsException` | identity |
 | `DIRECTOR_APPROVAL_REQUEST_ALREADY_ACTIVE` | no | `DirectorApprovalRequestAlreadyActiveException` | enrollment |
 | `DISCOUNT_DEFINITION_CLOSED` | no | `DiscountDefinitionClosedException` | billing |
 | `DISCOUNT_EXCEEDS_LINE_AMOUNT` | no | `DiscountExceedsLineAmountException` | billing |
 | `DISCOUNT_INVOICE_TYPE_MISMATCH` | no | `DiscountInvoiceTypeMismatchException` | billing |
+| `DOCUMENT_REQUIRES_PAYMENTS_UP_TO_DATE` | no | `DocumentRequiresPaymentsUpToDateException` | graduation |
 | `DRAFT_NOT_PENDING` | no | `DraftNotPendingException` | billing |
 | `DUE_DATE_BEFORE_ISSUE_DATE` | no | `DueDateBeforeIssueDateException` | billing |
 | `DUPLICATE_CHARGE` | no | `DuplicateChargeException` | billing |
@@ -573,6 +579,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PENDING_COURSEWORK` | no | `PendingCourseworkException` | evaluation |
 | `PENDING_COURSE_ENROLLMENT_APPLICATION` | no | `PendingCourseEnrollmentApplicationException` | enrollment |
 | `PENDING_DEBT` | no | `PendingDebtException` | billing |
+| `PERSON_ALREADY_ACTIVATED` | no | `PersonAlreadyActivatedException` | identity |
+| `PERSON_NOT_ELIGIBLE_FOR_ACTIVATION` | no | `PersonNotEligibleForActivationException` | identity |
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
@@ -615,6 +623,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SIGNATORY_INACTIVE` | no | `SignatoryInactiveException` | graduation |
 | `SIGNATORY_NOT_ALLOWED_FOR_DOCUMENT_TYPE` | no | `SignatoryNotAllowedForDocumentTypeException` | graduation |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
+| `STALE_EDIT` | no | `StaleEditException` | evaluation |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
 | `STUDENT_DISCOUNT_OVERLAP` | no | `StudentDiscountOverlapException` | billing |
@@ -762,6 +771,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/attendance/{id}/justification-proof` | `AttendanceController#submitJustificationProof` |
 | POST | `/attendance/{id}/justify` | `AttendanceController#justify` |
 | POST | `/attendance/{id}/reject-justification` | `AttendanceController#rejectJustification` |
+| POST | `/auth/activate` | `AuthController#activateAccount` |
 | POST | `/auth/forgot-password` | `AuthController#forgotPassword` |
 | POST | `/auth/google` | `AuthController#loginWithGoogle` |
 | POST | `/auth/google/register` | `AuthController#registerWithGoogle` |
@@ -849,6 +859,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/discount-definitions` | `DiscountDefinitionController#createDiscountDefinition` |
 | POST | `/discount-definitions/validation` | `DiscountDefinitionController#validateDiscountDefinition` |
 | POST | `/discount-definitions/{id}/closure` | `DiscountDefinitionController#closeDiscountDefinition` |
+| POST | `/document-debt-exceptions` | `DocumentDebtExceptionController#issue` |
 | POST | `/elective-groups` | `ElectiveGroupController#create` |
 | POST | `/email-change-preview` | `OwnerEmailChangeApprovalController#previewEmailChange` |
 | POST | `/enrollment-fee-exemptions/{id}/revoke` | `EnrollmentFeeController#revoke` |

@@ -63,13 +63,15 @@ function StudentHeader({ student }) {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
                 type="button"
+                variant="subtle"
+                size="icon-xs"
                 aria-label="Qué significa carga por secretaría"
-                className="inline-flex size-6 items-center justify-center rounded-full text-ink-faint hover:text-ink"
+                className="min-h-11 min-w-11 rounded-full md:min-h-6 md:min-w-6"
               >
                 <Info className="size-4" aria-hidden="true" />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent>Lo cargás en nombre del alumno. Queda registrado quién lo carga y quién lo aprueba.</TooltipContent>
           </Tooltip>

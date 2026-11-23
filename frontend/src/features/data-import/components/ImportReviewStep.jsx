@@ -132,7 +132,7 @@ export function ImportReviewStep({ batch, onBackToFiles, onCommitting }) {
         <GlassCard className="flex flex-col gap-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-heading text-base font-semibold text-ink">Qué corregir</h2>
-            <Button type="button" variant="outline" size="sm" onClick={handleDownloadErrors} disabled={items.length === 0}>
+            <Button className="min-h-11 md:min-h-8" type="button" variant="outline" size="sm" onClick={handleDownloadErrors} disabled={items.length === 0}>
               <Download className="size-4" aria-hidden="true" />
               Descargar errores
             </Button>
@@ -154,7 +154,7 @@ export function ImportReviewStep({ batch, onBackToFiles, onCommitting }) {
               Mostrando {items.length} de {total}
             </span>
             {items.length < total && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setSize((current) => current + PAGE_SIZE)}>
+              <Button className="min-h-11 md:min-h-8" type="button" variant="ghost" size="sm" onClick={() => setSize((current) => current + PAGE_SIZE)}>
                 Ver más
               </Button>
             )}
@@ -165,10 +165,10 @@ export function ImportReviewStep({ batch, onBackToFiles, onCommitting }) {
         summary={blocked ? 'Importar está bloqueado' : 'Todo listo para importar'}
         hint={blocked ? `Hay ${errorCount.toLocaleString('es-AR')} filas para corregir en los archivos.` : summaryText(batch)}
       >
-        <Button type="button" variant="outline" onClick={onBackToFiles}>
+        <Button className="min-h-11 md:min-h-8" type="button" variant="outline" onClick={onBackToFiles}>
           Volver a los archivos
         </Button>
-        <Button type="button" disabled={blocked} loading={commit.isPending} onClick={() => setConfirmOpen(true)}>
+        <Button className="min-h-11 md:min-h-8" type="button" disabled={blocked} loading={commit.isPending} onClick={() => setConfirmOpen(true)}>
           Importar
         </Button>
       </StickyActionBar>

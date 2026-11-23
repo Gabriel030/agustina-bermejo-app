@@ -5,6 +5,8 @@ import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,6 +36,10 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
     Integer findTokenVersionById(@Param("personId") Long personId);
 
     Optional<Person> findByUsername(String username);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Person p where p.id = :id")
+    Optional<Person> findByIdForUpdate(@Param("id") Long id);
 
     @Query("select count(p) from Person p where p.id in :ids and (p.grantSystemAccess = true or p.password is not null)")
     long countWithSystemAccessByIdIn(@Param("ids") Collection<Long> ids);

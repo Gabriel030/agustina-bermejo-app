@@ -219,14 +219,14 @@ export function DirectorRevisarConfiguracion() {
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"
-                className="border-danger/40 text-danger"
+                className="min-h-11 md:min-h-8 border-danger/40 text-danger"
                 onClick={() => setModalRechazo(true)}
                 disabled={deciding}
               >
                 Rechazar
               </Button>
               <Button
-                className="bg-success text-on-accent hover:bg-success/90"
+                className="min-h-11 md:min-h-8 bg-success text-on-accent hover:bg-success/90"
                 onClick={() => setModalAprobacion(true)}
                 disabled={deciding}
               >

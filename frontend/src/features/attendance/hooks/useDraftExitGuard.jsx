@@ -1,22 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AttendanceConfirmDialog } from '@/features/attendance/components/AttendanceConfirmDialog';
+import { useBackNavigationGuard } from '@/hooks/useBackNavigationGuard';
 
-function internalTarget(event) {
+function internalLink(event) {
   if (event.defaultPrevented || event.button !== 0) return null;
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
   const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;
   if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return null;
   const url = new URL(anchor.href, window.location.href);
   if (url.origin !== window.location.origin) return null;
-  const target = `${url.pathname}${url.search}${url.hash}`;
+  const path = `${url.pathname}${url.search}${url.hash}`;
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  return target === current ? null : target;
+  return path === current ? null : { anchor, path };
 }
 
 export function useDraftExitGuard(changedCount, active) {
   const navigate = useNavigate();
-  const [pendingPath, setPendingPath] = useState(null);
+  const [pendingLink, setPendingLink] = useState(null);
+  const releasedAnchorRef = useRef(null);
+  const back = useBackNavigationGuard(active);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -25,11 +28,15 @@ export function useDraftExitGuard(changedCount, active) {
       event.returnValue = '';
     }
     function handleClick(event) {
-      const target = internalTarget(event);
-      if (!target) return;
+      const link = internalLink(event);
+      if (!link) return;
+      if (link.anchor === releasedAnchorRef.current) {
+        releasedAnchorRef.current = null;
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
-      setPendingPath(target);
+      setPendingLink(link);
     }
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('click', handleClick, true);
@@ -41,9 +48,12 @@ export function useDraftExitGuard(changedCount, active) {
 
   const leaveDialog = (
     <AttendanceConfirmDialog
-      open={pendingPath !== null}
+      open={pendingLink !== null || back.isBackPending}
       onOpenChange={(open) => {
-        if (!open) setPendingPath(null);
+        if (!open) {
+          setPendingLink(null);
+          back.cancelBackNavigation();
+        }
       }}
       title="¿Salir sin guardar?"
       description={`${changedCount > 1 ? `Tenés ${changedCount} cambios sin guardar` : 'Tenés cambios sin guardar'}. Quedan como borrador en este dispositivo hasta 12 horas, pero los alumnos y Secretaría no los ven hasta que guardes.`}
@@ -51,9 +61,19 @@ export function useDraftExitGuard(changedCount, active) {
       confirmLabel="Salir"
       confirmVariant="destructive"
       onConfirm={() => {
-        const path = pendingPath;
-        setPendingPath(null);
-        navigate(path);
+        if (back.isBackPending) {
+          back.confirmBackNavigation();
+          return;
+        }
+        const link = pendingLink;
+        setPendingLink(null);
+        if (link.anchor.isConnected) {
+          releasedAnchorRef.current = link.anchor;
+          link.anchor.click();
+          releasedAnchorRef.current = null;
+          return;
+        }
+        navigate(link.path);
       }}
     />
   );

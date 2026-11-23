@@ -126,7 +126,7 @@ function pendingColumns({ onAction }) {
                   <MoreHorizontal aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-dialog-bg backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)">
+              <DropdownMenuContent align="end" className="bg-dialog-bg">
                 <DropdownMenuItem variant="destructive" onSelect={() => onAction('reject', row.original)}>
                   Rechazar
                 </DropdownMenuItem>
@@ -195,7 +195,7 @@ function issuedColumns({ isDirector, onAction, onDownload, onCopyLink }) {
                   <MoreHorizontal aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-dialog-bg backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)">
+              <DropdownMenuContent align="end" className="bg-dialog-bg">
                 <DropdownMenuItem onSelect={() => onDownload(row.original)}>Descargar PDF</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onCopyLink(row.original)}>Copiar enlace de verificación</DropdownMenuItem>
                 {isDirector && row.original.status === 'VALID' && (

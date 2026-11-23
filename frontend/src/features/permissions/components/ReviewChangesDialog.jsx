@@ -121,12 +121,13 @@ export function ReviewChangesDialog({ open, onClose, changes, catalogIndex, grid
           )}
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" disabled={saving} onClick={onClose}>
+          <Button className="min-h-11 md:min-h-8" type="button" variant="outline" disabled={saving} onClick={onClose}>
             Seguir editando
           </Button>
           <Button
             type="button"
             variant="primary"
+            className="min-h-11 md:min-h-8"
             loading={saving}
             disabled={reasonTooShort || (hasSensitive && !sensitiveAcknowledged)}
             onClick={() => onConfirm(trimmed, hasSensitive && sensitiveAcknowledged)}

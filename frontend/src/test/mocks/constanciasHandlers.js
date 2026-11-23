@@ -2,12 +2,15 @@ import { http, HttpResponse } from 'msw';
 import {
   certificateTemplateImage,
   certificateTemplateVersion,
+  springPage,
 } from '@/test/fixtures/certificates';
 import {
   PUBLIC_DOCUMENT_VERIFICATION_BY_TYPE,
   approvedProcedureList,
   approvedSubjectsCertificate,
   changeSectionCandidateList,
+  debtException,
+  debtExceptionList,
   documentIssuanceSettings,
   examCertificate,
   ownDocument,
@@ -73,6 +76,9 @@ export const constanciasHandlers = [
     const body = await request.json().catch(() => ({}));
     return HttpResponse.json(documentIssuanceSettings({ ...body, version: (body.version ?? 0) + 1 }));
   }),
+  http.post(`${API}/document-debt-exceptions`, () => HttpResponse.json(debtException(), { status: 201 })),
+  http.get(`${API}/document-debt-exceptions/:id/pdf`, () => pdfResponse()),
+  http.get(`${API}/document-debt-exceptions`, () => HttpResponse.json(springPage(debtExceptionList()))),
   http.get(`${API}/me/section-enrollments/:id/change-section-candidates`, () => HttpResponse.json(changeSectionCandidateList())),
   http.get(`${TEMPLATES}/versions/:number`, ({ params }) =>
     HttpResponse.json(certificateTemplateVersion({ versionNumber: Number(params.number) })),

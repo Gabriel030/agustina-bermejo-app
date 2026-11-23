@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -35,8 +35,8 @@ function buildGrid(correctionDeadline = '2026-12-18') {
         condition: 'REGULAR',
         finalEnabled: true,
         grades: [
-          { gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: true, corrected: true },
-          { gradeItemId: 2, type: 'EXAM', sequenceNumber: 2, score: 8, date: '2026-10-28T10:00:00', comments: null, published: false, corrected: false },
+          { gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: true, corrected: true, version: 0 },
+          { gradeItemId: 2, type: 'EXAM', sequenceNumber: 2, score: 8, date: '2026-10-28T10:00:00', comments: null, published: false, corrected: false, version: 0 },
         ],
       },
     ],
@@ -54,6 +54,11 @@ async function openCorrectionForm(user) {
 
 describe('DirectorGradeGrid', () => {
   installFixedClock();
+
+  beforeEach(() => {
+    toastMock.success.mockClear();
+    toastMock.error.mockClear();
+  });
 
   it('marks corrected and unpublished cells and only offers Corregir on published grades', async () => {
     useGrid(buildGrid());
@@ -109,7 +114,7 @@ describe('DirectorGradeGrid', () => {
     pending.resolve();
 
     await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
-    expect(posts).toEqual([{ newScore: 9, reason: 'Error de carga' }]);
+    expect(posts).toEqual([{ newScore: 9, reason: 'Error de carga', expectedVersion: 0 }]);
   });
 
   it('shows the banner and a toast when the server answers that the period ended', async () => {
@@ -127,6 +132,69 @@ describe('DirectorGradeGrid', () => {
 
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('No se pudo corregir: el cuatrimestre ya terminó.'));
     expect(await screen.findByRole('alert', { hidden: true })).toHaveTextContent('El plazo de corrección terminó');
+  });
+
+  it('sends the cell version as expectedVersion with the correction', async () => {
+    const body = buildGrid();
+    body.students[0].grades[0].version = 4;
+    useGrid(body);
+    const posts = [];
+    server.use(
+      http.post(`${API}/grade-items/1/corrections`, async ({ request }) => {
+        posts.push(await request.json());
+        return HttpResponse.json({ id: 9, gradeItemId: 1, kind: 'CORRECTION', previousScore: 7, newScore: 9, reason: 'Error de carga', changedById: 3, changedAt: '2026-11-05T12:00:00' }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<DirectorGradeGrid sectionId="7" kind="PROGRAM" />);
+    await openCorrectionForm(user);
+    await user.type(await screen.findByLabelText('Nota nueva'), '9');
+    await user.type(screen.getByLabelText('Motivo'), 'Error de carga');
+    await user.click(screen.getByRole('button', { name: 'Revisar cambios' }));
+    await user.click(await screen.findByRole('button', { name: 'Confirmar corrección' }));
+
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
+    expect(posts).toEqual([{ newScore: 9, reason: 'Error de carga', expectedVersion: 4 }]);
+  });
+
+  it.each([
+    ['STALE_EDIT', 'Otra persona modificó esta nota mientras la mirabas. Recargá para ver el valor actual.'],
+    ['CONCURRENT_MODIFICATION', 'Otra persona modificó este registro. Recargá y volvé a intentar.'],
+  ])('keeps the form open with the %s message and refetches the grid', async (code, message) => {
+    let gridRequests = 0;
+    const current = buildGrid();
+    current.students[0].grades[0].version = 1;
+    current.students[0].grades[0].score = 8;
+    const posts = [];
+    server.use(
+      http.get(`${API}/staff/program-sections/7/grade-grid`, () => {
+        gridRequests += 1;
+        return HttpResponse.json(gridRequests === 1 ? buildGrid() : current);
+      }),
+      http.post(`${API}/grade-items/1/corrections`, async ({ request }) => {
+        posts.push(await request.json());
+        if (posts.length === 1) return HttpResponse.json(errorBody(code), { status: 409 });
+        return HttpResponse.json({ id: 9, gradeItemId: 1, kind: 'CORRECTION', previousScore: 8, newScore: 9, reason: 'Error de carga', changedById: 3, changedAt: '2026-11-05T12:00:00' }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<DirectorGradeGrid sectionId="7" kind="PROGRAM" />);
+    await openCorrectionForm(user);
+    await user.type(await screen.findByLabelText('Nota nueva'), '9');
+    await user.type(screen.getByLabelText('Motivo'), 'Error de carga');
+    await user.click(screen.getByRole('button', { name: 'Revisar cambios' }));
+    await user.click(await screen.findByRole('button', { name: 'Confirmar corrección' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
+    expect(screen.getByLabelText('Nota nueva')).toHaveValue('9');
+    expect(screen.getByLabelText('Motivo')).toHaveValue('Error de carga');
+    await waitFor(() => expect(gridRequests).toBeGreaterThanOrEqual(2));
+    expect(toastMock.error).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Revisar cambios' }));
+    await user.click(await screen.findByRole('button', { name: 'Confirmar corrección' }));
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
+    expect(posts.map((post) => post.expectedVersion)).toEqual([0, 1]);
   });
 
   it('lists only corrections in the history, newest first, authored by Dirección', async () => {

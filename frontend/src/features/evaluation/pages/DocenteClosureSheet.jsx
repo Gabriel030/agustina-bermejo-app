@@ -30,7 +30,7 @@ function ConfirmBar({ sheet, onConfirm, pending }) {
           {reason ?? 'Confirmás que revisaste notas, asistencia y resultado sugerido. El Administrativo aprueba y emite el acta.'}
         </p>
       </div>
-      <Button type="button" variant="primary" disabled={!sheet.availability.canConfirm} aria-describedby="closure-confirm-hint" onClick={() => setOpen(true)}>
+      <Button type="button" variant="primary" disabled={!sheet.availability.canConfirm} aria-describedby="closure-confirm-hint" onClick={() => setOpen(true)} className="min-h-11 md:min-h-8">
         Confirmar cierre
       </Button>
       <ConfirmActionDialog
@@ -98,7 +98,7 @@ export function DocenteClosureSheet() {
   return (
     <PageContainer>
       <div className="flex flex-col gap-2">
-        <Button asChild variant="ghost" className="w-fit px-0">
+        <Button asChild variant="ghost" className="min-h-11 md:min-h-8 w-fit px-0">
           <Link to={back}>
             <ArrowLeft className="size-4" /> Volver a la comisión
           </Link>

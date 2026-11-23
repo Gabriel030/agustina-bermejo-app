@@ -85,10 +85,10 @@ function CorrectionSteps({ row, saving, failure, onClose, onConfirm }) {
             <span className={cn('text-right text-xs', counterBad ? 'text-danger' : 'text-ink-faint')}>{`${reasonText.length}/${CORRECTION_REASON_MAX} · mínimo ${CORRECTION_REASON_MIN}`}</span>
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="min-h-11 md:min-h-8">
               Cancelar
             </Button>
-            <Button type="button" variant="primary" disabled={!form.ready} onClick={() => setStep('confirm')}>
+            <Button type="button" variant="primary" disabled={!form.ready} onClick={() => setStep('confirm')} className="min-h-11 md:min-h-8">
               Revisar cambios
             </Button>
           </div>
@@ -104,10 +104,10 @@ function CorrectionSteps({ row, saving, failure, onClose, onConfirm }) {
             Se aplica al confirmar y queda en el historial. Hasta que se cierre el acta podés volver a corregirla.
           </p>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" disabled={saving} onClick={() => setStep('data')}>
+            <Button type="button" variant="outline" disabled={saving} onClick={() => setStep('data')} className="min-h-11 md:min-h-8">
               Volver
             </Button>
-            <Button type="button" variant="primary" loading={saving} onClick={() => onConfirm(form)}>
+            <Button type="button" variant="primary" loading={saving} onClick={() => onConfirm(form)} className="min-h-11 md:min-h-8">
               Confirmar corrección
             </Button>
           </div>

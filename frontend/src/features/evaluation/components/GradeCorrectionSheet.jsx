@@ -32,13 +32,13 @@ function ItemRow({ column, cell, highlighted, periodEnded, onHistory, onCorrect 
       </span>
       <StatusPill tone={status.tone}>{status.label}</StatusPill>
       {published && (
-        <Button type="button" variant="ghost" size="sm" aria-label={`Historial de ${label}`} onClick={() => onHistory(column)}>
+        <Button type="button" variant="ghost" size="sm" aria-label={`Historial de ${label}`} onClick={() => onHistory(column)} className="min-h-11 md:min-h-7">
           Historial
         </Button>
       )}
       {cell?.score != null &&
         (correctable ? (
-          <Button type="button" variant="outline" size="sm" aria-label={`Corregir ${label}`} onClick={() => onCorrect(column)}>
+          <Button type="button" variant="outline" size="sm" aria-label={`Corregir ${label}`} onClick={() => onCorrect(column)} className="min-h-11 md:min-h-7">
             Corregir
           </Button>
         ) : (
@@ -46,7 +46,7 @@ function ItemRow({ column, cell, highlighted, periodEnded, onHistory, onCorrect 
             <Tooltip>
               <TooltipTrigger asChild>
                 <span tabIndex={0} className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Button type="button" variant="outline" size="sm" disabled aria-label={`Corregir ${label}`}>
+                  <Button type="button" variant="outline" size="sm" disabled aria-label={`Corregir ${label}`} className="min-h-11 md:min-h-7">
                     Corregir
                   </Button>
                 </span>
