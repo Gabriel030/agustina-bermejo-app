@@ -90,3 +90,31 @@ La limpieza usa `session_replication_role = replica` y borra explicitamente, por
 Para S5 correr la simulacion o la corrida con un periodo posterior al mes de alta de los precios demo (los precios nacen vigentes desde el dia en que se creo la base; el mes en curso falla con `NoEffectivePriceException`). Verificado: `POST /monthly-invoice-runs/simulations {"period":"<mes siguiente>"}` emite las 400 inscripciones con 300+100 alumnos.
 
 El script reintenta ante 429 (el limite de 120 escrituras por minuto es por usuario y el arranque `demo` completo lo consume con administrativo.demo; por eso las mesas se crean con preceptor.demo).
+
+## Perfil perf para escenarios de carga (E25 A5-S2)
+
+`application-perf.properties` (solo se activa con `SPRING_PROFILES_ACTIVE=...,perf`) relaja lo necesario para que los escenarios k6 no choquen con el rate limit y midan billing real:
+
+| Propiedad | Perf | Produccion |
+|---|---|---|
+| `auth.rate-limit.login.capacity` / `refill-per-minute` | 1000000 | 10 |
+| `app.rate-limit.user-write.capacity` / `refill-per-minute` | 1000000 | 120 |
+| `app.rate-limit.user-read.capacity` / `refill-per-minute` | 1000000 | 600 |
+| `platform.provisioning.initial-billing-mode` | FULL | OFF |
+
+No hay propiedades nuevas ni cambios de codigo: son las que ya lee el filtro. `PerfProfileGuardTest` falla si `application.properties` cambia estos valores de produccion, si `application-prod`/`application-staging` definen alguna de estas claves o si cualquier `spring.profiles.*` de esos archivos incluye `perf`. Nunca activar `perf` en staging/prod (`STAGING_SPRING_PROFILES` debe quedar en `prod`).
+
+Arranque (misma base que "Reproducir"; correr `seed-large.sql` y luego `seed-load.py`):
+
+```
+cd backend && ACTUATOR_USER=perf ACTUATOR_PASSWORD=perf JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES_ACTIVE=local,demo,perf SERVER_PORT=8461 DB_URL=jdbc:postgresql://localhost:5461/perf ./mvnw -q spring-boot:run
+python3 perf/seed-load.py
+```
+
+Medir un escenario (los scripts k6 llegan en S3-S5; el contrato es `BASE_URL` apuntando al backend perf):
+
+```
+k6 run -e BASE_URL=http://localhost:8461 perf/k6/<escenario>.js
+```
+
+En S5 usar un periodo posterior al mes en curso (ver arriba, `NoEffectivePriceException`).
