@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { reiniciarAvisosMarcados } from '@/features/announcements';
-import { NotificationBell } from '@/features/notifications/components/NotificationBell';
+import { NotificationBell } from '@/features/notifications';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 import { installFixedClock } from '@/test/fixedClock';
 import { studentHomeHandlers } from '@/test/fixtures/studentHome';
