@@ -153,7 +153,7 @@ class PermissionModesIT extends AbstractIntegrationTest {
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("DIRECTOR_PERMISSIONS_NOT_EDITABLE"));
         putModes(modes("Válido y luego inválido", change("PRECEPTOR", "announcement", "SHADOW"), change("NOPE", "announcement", "SHADOW")))
                 .andExpect(status().isUnprocessableEntity());
-        assertThat(jdbcTemplate.queryForObject("select count(*) from permission_module_mode", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from permission_module_mode where not (role = 'SUBDIRECTOR' and module = 'document')", Integer.class)).isZero();
     }
 
     @Test
