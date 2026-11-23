@@ -26,7 +26,7 @@ public class BroadcastEmailDispatchJob {
     private static final Logger log = LoggerFactory.getLogger(BroadcastEmailDispatchJob.class);
     private static final List<DeliveryStatus> WAITING = List.of(DeliveryStatus.QUEUED, DeliveryStatus.DEFERRED);
     private static final List<DeliveryStatus> SENT = List.of(DeliveryStatus.SENT, DeliveryStatus.SENT_SIMULATED);
-    private static final List<DeliveryCategory> TRANSACTIONAL = List.of(DeliveryCategory.COLLECTION_REMINDER, DeliveryCategory.ANNOUNCEMENT);
+    private static final List<DeliveryCategory> TRANSACTIONAL = DeliveryCategory.TRANSACTIONAL_EMAIL;
 
     private final NotificationDeliveryRepository deliveryRepository;
     private final EmailDeliveryChannel emailChannel;
