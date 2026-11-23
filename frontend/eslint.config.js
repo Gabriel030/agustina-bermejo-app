@@ -97,7 +97,7 @@ export default defineConfig([
       'src/features/attendance/pages/DocenteTomarAsistencia.jsx',
       'src/features/attendance/hooks/useTakeAttendanceForm.js',
       'src/features/billing/dashboard/OfferCombobox.jsx',
-      'src/pages/AdministrativoFacturacion.jsx',
+      'src/features/billing/pages/AdministrativoFacturacion.jsx',
     ],
     rules: {
       'react-hooks/set-state-in-effect': 'off',
