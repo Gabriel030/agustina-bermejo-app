@@ -1,10 +1,10 @@
 /**
- * <b>Qué es</b>: lógica propia de los trámites del alumno que los casos de uso componen.
+ * <b>Qué es</b>: puertos y registros por tipo de trámite del alumno (elegibilidad y trámites aprobados).
  *
- * <p><b>Expone</b>: especialistas de elegibilidad y de generación de documentos propios.
+ * <p><b>Expone</b>: {@code ProcedureEligibilityStrategy} y {@code ApprovedProcedureSource}, que cada emisor implementa para registrarse, y los especialistas de generación propia (p. ej. {@code OwnRegularDocumentIssuer}).
  *
- * <p><b>No hacer</b>: exponer endpoints ni usar repositorios de otros módulos.
+ * <p><b>No hacer</b>: duplicar la lógica de elegibilidad de un tipo; modificar un registro al sumar un tipo nuevo.
  *
- * <p><b>Ejemplo</b>: {@code OwnRegularDocumentIssuer}.
+ * <p><b>Ejemplo</b>: {@code RegularApprovedProcedureSource}.
  */
 package com.red_escuela.backend.graduation.procedure.specialist;

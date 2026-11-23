@@ -20,6 +20,7 @@ import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryCha
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.mail.TransactionalEmail;
 import com.red_escuela.backend.shared.mail.TransactionalEmailGateway;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
@@ -60,6 +61,8 @@ class BroadcastPersonalizedRenderIT extends AbstractBroadcastDispatchIT {
     private PolicySet<EmailDeliveryContext> emailDeliveryPolicySet;
     @Autowired
     private CircuitBreakerFactory circuitBreakerFactory;
+    @Autowired
+    private BulkheadFactory bulkheadFactory;
 
     @BeforeEach
     void startWithNoPreceptors() {
@@ -115,7 +118,7 @@ class BroadcastPersonalizedRenderIT extends AbstractBroadcastDispatchIT {
             return realGateway.send(email);
         };
         return new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceFinder, emailDeliveryPolicySet, capturing,
-                circuitBreakerFactory, linkFactory) {
+                circuitBreakerFactory, bulkheadFactory, linkFactory) {
             @Override
             public void dispatchDelivery(Long deliveryId) {
                 transactionTemplate.executeWithoutResult(status -> super.dispatchDelivery(deliveryId));

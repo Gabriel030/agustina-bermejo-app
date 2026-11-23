@@ -17,7 +17,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RegularProcedureEligibility {
+public class RegularProcedureEligibility implements ProcedureEligibilityStrategy {
 
     private final OwnProgramEnrollmentResolver enrollmentResolver;
     private final RegularityEvaluator regularityEvaluator;
@@ -37,7 +37,13 @@ public class RegularProcedureEligibility {
         this.validCertificateProbe = validCertificateProbe;
     }
 
-    public ProcedureEligibilityResponse evaluate(Long studentId, Long enrollmentId) {
+    @Override
+    public StudentProcedureType type() {
+        return StudentProcedureType.REGULAR_STUDENT_CERTIFICATE;
+    }
+
+    @Override
+    public ProcedureEligibilityResponse eligibilityOf(Long studentId, Long enrollmentId, Long registrationId) {
         OwnProgramEnrollmentResolver.Resolution resolution = enrollmentResolver.resolve(studentId, enrollmentId);
         if (resolution.enrollmentId().isEmpty()) {
             return response(null, List.of(noEnrollmentReason(resolution.ambiguous())));

@@ -1,29 +1,30 @@
 package com.red_escuela.backend.graduation.procedure.usecase;
 
-import com.red_escuela.backend.graduation.certificate.exception.DocumentOperationPendingException;
+import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureEligibilityResponse;
 import com.red_escuela.backend.graduation.procedure.dto.StudentProcedureType;
-import com.red_escuela.backend.graduation.procedure.specialist.RegularProcedureEligibility;
-import com.red_escuela.backend.identity.specialist.CurrentStudentService;
+import com.red_escuela.backend.graduation.procedure.specialist.ProcedureEligibilityStrategies;
 import com.red_escuela.backend.shared.UseCase;
+import java.util.List;
 
 @UseCase
 public class GetProcedureEligibilityService implements GetProcedureEligibilityUseCase {
 
-    private final RegularProcedureEligibility regularEligibility;
-    private final CurrentStudentService currentStudentService;
+    private static final String UNAVAILABLE_SUMMARY = "Este trámite todavía no está disponible";
 
-    public GetProcedureEligibilityService(RegularProcedureEligibility regularEligibility,
-                                          CurrentStudentService currentStudentService) {
-        this.regularEligibility = regularEligibility;
-        this.currentStudentService = currentStudentService;
+    private final ProcedureEligibilityStrategies strategies;
+    private final CurrentActorFinder currentActorFinder;
+
+    public GetProcedureEligibilityService(ProcedureEligibilityStrategies strategies, CurrentActorFinder currentActorFinder) {
+        this.strategies = strategies;
+        this.currentActorFinder = currentActorFinder;
     }
 
     @Override
     public ProcedureEligibilityResponse eligibilityOf(StudentProcedureType type, Long enrollmentId, Long registrationId) {
-        if (type == StudentProcedureType.REGULAR_STUDENT_CERTIFICATE) {
-            return regularEligibility.evaluate(currentStudentService.resolveCurrentStudent().getId(), enrollmentId);
-        }
-        throw new DocumentOperationPendingException();
+        Long studentId = currentActorFinder.currentStudentId();
+        return strategies.forType(type)
+                .map(strategy -> strategy.eligibilityOf(studentId, enrollmentId, registrationId))
+                .orElseGet(() -> new ProcedureEligibilityResponse(type, false, enrollmentId, UNAVAILABLE_SUMMARY, List.of()));
     }
 }

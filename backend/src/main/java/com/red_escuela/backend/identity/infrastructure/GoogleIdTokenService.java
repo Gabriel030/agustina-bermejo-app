@@ -5,6 +5,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.json.gson.GsonFactory;
 import com.red_escuela.backend.identity.exception.InvalidGoogleTokenException;
 import com.red_escuela.backend.identity.exception.GoogleServiceUnavailableException;
+import com.red_escuela.backend.shared.resilience.Bulkhead;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreaker;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,24 +22,27 @@ import java.util.Collections;
 public class GoogleIdTokenService {
     private final GoogleIdTokenVerifier verifier;
     private final CircuitBreaker breaker;
+    private final Bulkhead bulkhead;
 
     @Autowired
     public GoogleIdTokenService(@Value("${google.oauth.client-id}") String clientId,
                                 @Value("${google.oauth.http.connect-timeout:5s}") Duration connectTimeout,
                                 @Value("${google.oauth.http.read-timeout:5s}") Duration readTimeout,
-                                CircuitBreakerFactory circuitBreakerFactory) {
+                                CircuitBreakerFactory circuitBreakerFactory,
+                                BulkheadFactory bulkheadFactory) {
         this(new GoogleIdTokenVerifier.Builder(new TimeoutNetHttpTransport(connectTimeout, readTimeout), GsonFactory.getDefaultInstance())
                 .setAudience(Collections.singletonList(clientId))
-                .build(), circuitBreakerFactory.breakerNamed(GoogleCircuit.NAME));
+                .build(), circuitBreakerFactory.breakerNamed(GoogleCircuit.NAME), bulkheadFactory.bulkheadNamed(GoogleCircuit.NAME));
     }
 
-    GoogleIdTokenService(GoogleIdTokenVerifier verifier, CircuitBreaker breaker) {
+    GoogleIdTokenService(GoogleIdTokenVerifier verifier, CircuitBreaker breaker, Bulkhead bulkhead) {
         this.verifier = verifier;
         this.breaker = breaker;
+        this.bulkhead = bulkhead;
     }
 
     public GoogleProfile verify(String idTokenString) {
-        GoogleIdToken idToken = breaker.execute(() -> {
+        GoogleIdToken idToken = Bulkhead.executeProtected(bulkhead, breaker, () -> {
             try {
                 return verifier.verify(idTokenString);
             } catch (IOException e) {
