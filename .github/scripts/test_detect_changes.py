@@ -84,8 +84,13 @@ class DetectChangesTest(unittest.TestCase):
     def push(self, **env):
         return self.run_script(GITHUB_EVENT_NAME='push', GITHUB_REF='refs/heads/develop', **env)
 
-    def pull_request_changing(self, files):
+    def start_pull_request_branch(self):
+        subprocess.run(['git', 'checkout', '-q', 'develop'], cwd=self.repo, check=True, capture_output=True)
+        subprocess.run(['git', 'branch', '-qD', 'pr-demo'], cwd=self.repo, capture_output=True)
         git(self.repo, 'checkout', '-q', '-b', 'pr-demo')
+
+    def pull_request_changing(self, files):
+        self.start_pull_request_branch()
         commit_files(self.repo, files, 'change')
         return self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/1/merge', PR_BASE_SHA=self.base, PR_BASE_REF='develop')
 
@@ -150,11 +155,69 @@ class DetectChangesTest(unittest.TestCase):
     def test_pull_request_touching_backend_and_frontend_runs_both(self):
         self.assert_areas({'backend/B.java': 'x', 'frontend/b.js': 'x'}, 'true', 'true')
 
-    def test_pull_request_touching_only_docs_runs_neither(self):
-        self.assert_areas({'docs/context/x.md': 'x', 'README.md': 'x'}, 'false', 'false')
+    def test_pull_request_touching_only_ignored_files_runs_neither(self):
+        for path in ['.claude/agents/x.md', '.claude/settings.json', '.gitignore', 'diagrama_entidades.puml']:
+            with self.subTest(path=path):
+                self.assert_areas({path: 'x'}, 'false', 'false')
 
-    def test_pull_request_touching_docs_and_the_frontend_skips_the_backend(self):
-        self.assert_areas({'docs/x.md': 'x', 'frontend/b.js': 'x'}, 'false', 'true')
+    def test_pull_request_touching_documents_read_by_backend_tests_runs_the_backend(self):
+        for path in ['docs/api/error-catalog.md', 'docs/billing/policy-catalog.md', 'docs/billing/decision-registry.md',
+                     'docs/release/pre-migration-checks.sql', 'docs/architecture/modules.puml', 'docs/README.md',
+                     'docs/context/new-doc.md', 'README.md', 'CLAUDE.md', 'perf/seed-large.sql', 'notes.md']:
+            with self.subTest(path=path):
+                result = self.pull_request_changing({path: 'x'})
+                self.assertEqual('true', result['relevant'])
+
+    def test_pull_request_touching_documents_read_by_frontend_tests_runs_the_frontend(self):
+        for path in ['docs/api/error-catalog.md', 'docs/context/testing.md']:
+            with self.subTest(path=path):
+                result = self.pull_request_changing({path: 'x'})
+                self.assertEqual('true', result['frontend'])
+
+    def test_pull_request_touching_other_documents_skips_the_frontend(self):
+        self.assert_areas({'docs/billing/policy-catalog.md': 'x'}, 'true', 'false')
+
+    def test_pull_request_touching_docs_and_the_frontend_runs_both(self):
+        self.assert_areas({'docs/x.md': 'x', 'frontend/b.js': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_only_the_perf_budgets_skips_the_backend(self):
+        self.assert_areas({'perf/budget.json': '{}'}, 'false', 'true')
+
+    def test_pull_request_touching_each_shared_file_runs_everything(self):
+        for path in ['backend/.mvn/wrapper/maven-wrapper.properties', 'backend/mvnw.cmd', 'frontend/yarn.lock',
+                     'frontend/pnpm-lock.yaml', 'backend/pom.xml', 'frontend/package.json']:
+            with self.subTest(path=path):
+                result = self.pull_request_changing({path: 'x'})
+                self.assertEqual(('true', 'true'), (result['relevant'], result['frontend']))
+
+    def test_pull_request_moving_a_backend_file_to_the_frontend_runs_the_backend(self):
+        self.start_pull_request_branch()
+        git(self.repo, 'mv', 'backend/A.java', 'frontend/A.java')
+        git(self.repo, 'commit', '-qm', 'move')
+        result = self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/1/merge', PR_BASE_SHA=self.base, PR_BASE_REF='develop')
+        self.assertEqual(('true', 'true'), (result['relevant'], result['frontend']))
+
+    def test_pull_request_moving_a_backend_file_to_ignored_paths_runs_the_backend(self):
+        self.start_pull_request_branch()
+        os.makedirs(os.path.join(self.repo, '.claude'))
+        git(self.repo, 'mv', 'backend/A.java', '.claude/A.java')
+        git(self.repo, 'commit', '-qm', 'move')
+        result = self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/1/merge', PR_BASE_SHA=self.base, PR_BASE_REF='develop')
+        self.assertEqual('true', result['relevant'])
+
+    def test_pull_request_deleting_a_backend_file_runs_the_backend(self):
+        self.start_pull_request_branch()
+        git(self.repo, 'rm', '-q', 'backend/A.java')
+        git(self.repo, 'commit', '-qm', 'delete')
+        result = self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/1/merge', PR_BASE_SHA=self.base, PR_BASE_REF='develop')
+        self.assertEqual(('true', 'false'), (result['relevant'], result['frontend']))
+
+    def test_pull_request_deleting_a_frontend_file_runs_the_frontend(self):
+        self.start_pull_request_branch()
+        git(self.repo, 'rm', '-q', 'frontend/a.js')
+        git(self.repo, 'commit', '-qm', 'delete')
+        result = self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/1/merge', PR_BASE_SHA=self.base, PR_BASE_REF='develop')
+        self.assertEqual(('false', 'true'), (result['relevant'], result['frontend']))
 
     def test_pull_request_touching_the_workflows_runs_everything(self):
         self.assert_areas({'.github/workflows/ci.yml': 'x'}, 'true', 'true')

@@ -42,8 +42,10 @@ deploy_scope='^(backend/Dockerfile|backend/\.dockerignore|frontend/Dockerfile|fr
 backend_scope='^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)'
 migration_scope='^(backend/src/main/resources/db/migration/|backend/src/test/.*Migrat[^/]*\.java$|backend/pom\.xml$|scripts/|\.github/workflows/|\.github/scripts/)'
 
-run_everything_scope='(^|/)(pom\.xml|mvnw|mvnw\.cmd|package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$|^(\.mvn/|backend/\.mvn/|\.github/|contracts/|deploy/)'
-classified_scope='^(backend/|frontend/|perf/|docs/|\.claude/|\.gitignore$|diagrama_entidades\.puml$)|\.md$'
+run_everything_scope='(^|/)(pom\.xml|mvnw|mvnw\.cmd|package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$|^backend/\.mvn/'
+classified_scope='^(backend/|frontend/|perf/|docs/|\.claude/|\.gitignore$|diagrama_entidades\.puml$)|^[^.].*\.md$'
+docs_backend_scope='^(docs/|perf/seed-large\.sql$)|^[^.].*\.md$'
+docs_frontend_scope='^docs/(api/error-catalog|context/testing)\.md$'
 
 demo_seed_scope='^(backend/src/main/java/.*/(config|demo)/[^/]*Demo[^/]*\.java$|backend/src/main/java/.*/demo/|backend/src/main/java/.*Seed[^/]*\.java$|backend/src/test/java/.*Demo[^/]*SeedIT\.java$|backend/src/main/resources/application-demo\.properties$|backend/src/main/resources/db/migration/)'
 
@@ -62,7 +64,7 @@ elif [ "$develop_push" = true ]; then
 fi
 
 if [ -n "$base" ]; then
-  if changed=$(git -c core.quotePath=false diff --name-only "$base" HEAD 2>/dev/null); then
+  if changed=$(git -c core.quotePath=false diff --no-renames --name-only "$base" HEAD 2>/dev/null); then
     if ! grep -qE '^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)' <<< "$changed"; then
       relevant=false
     fi
@@ -92,6 +94,12 @@ if [ -n "$base" ]; then
         frontend=true
         run_migration=true
         echo "pull request touches shared or unclassified paths: backend and frontend run"
+      fi
+      if grep -qE "$docs_backend_scope" <<< "$changed"; then
+        relevant=true
+      fi
+      if grep -qE "$docs_frontend_scope" <<< "$changed"; then
+        frontend=true
       fi
     fi
   fi
