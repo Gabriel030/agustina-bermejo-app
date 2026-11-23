@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
+import { InvoiceAmountCell } from '@/features/billing/components/InvoiceAmountCell';
 import { invoiceFixture } from '@/test/fixtures/invoices';
 
 describe('InvoiceAmountCell', () => {

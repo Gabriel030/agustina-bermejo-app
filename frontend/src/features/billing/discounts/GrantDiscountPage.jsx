@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
-import { MonthPicker } from '@/components/MonthPicker';
+import { MonthPicker } from '@/features/billing/components/MonthPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

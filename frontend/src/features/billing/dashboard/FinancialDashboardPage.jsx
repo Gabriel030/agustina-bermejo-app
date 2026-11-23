@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, SlidersHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
-import { MonthPicker } from '@/components/MonthPicker';
+import { MonthPicker } from '@/features/billing/components/MonthPicker';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';

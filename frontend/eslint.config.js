@@ -104,7 +104,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/components/MonthPicker.jsx'],
+    files: ['src/features/billing/components/MonthPicker.jsx'],
     rules: {
       'react-hooks/refs': 'off',
     },

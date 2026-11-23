@@ -40,10 +40,10 @@ import { PendingAuthorizationBanner } from '@/features/billing/credit-notes/Pend
 import { StudentCreditNotesSection } from '@/features/billing/credit-notes/StudentCreditNotesSection';
 import { pendingAuthorizationOf } from '@/features/billing/credit-notes/creditNotes';
 import { useStudentCreditBalance } from '@/features/billing/hooks/useCreditNotes';
-import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
-import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
-import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
-import { useExpandedRows } from '@/hooks/useExpandedRows';
+import { InvoiceAmountCell } from '@/features/billing/components/InvoiceAmountCell';
+import { InvoiceDetail } from '@/features/billing/components/InvoiceDetail';
+import { PaymentDateCell } from '@/features/billing/components/PaymentDateCell';
+import { useExpandedRows } from '@/features/billing/hooks/useExpandedRows';
 import { formatMoney, moneyValue } from '@/lib/utils';
 import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
