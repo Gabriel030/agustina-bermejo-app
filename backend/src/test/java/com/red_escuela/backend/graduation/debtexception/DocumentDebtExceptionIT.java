@@ -3,11 +3,20 @@ package com.red_escuela.backend.graduation.debtexception;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.graduation.api.DebtExceptionDocument;
+import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
 import com.red_escuela.backend.graduation.api.DebtExceptionGate;
+import com.red_escuela.backend.graduation.api.DebtExceptionScope;
+import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionNotFoundException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.debtexception.repository.DocumentDebtExceptionRepository;
 import com.red_escuela.backend.graduation.debtexception.specialist.DebtExceptionExpirer;
@@ -47,8 +56,40 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
+@Import(DocumentDebtExceptionIT.FakeIssuerConfig.class)
 @ActiveProfiles("test")
 class DocumentDebtExceptionIT extends AbstractIntegrationTest {
+
+    private static final AtomicBoolean FAIL_RENDER = new AtomicBoolean();
+
+    @TestConfiguration
+    static class FakeIssuerConfig {
+
+        @Bean
+        DebtExceptionDocumentIssuer fakeExamIssuer() {
+            return new DebtExceptionDocumentIssuer() {
+                @Override
+                public boolean supports(CertificateDocumentType type) {
+                    return type == CertificateDocumentType.EXAM_CERTIFICATE;
+                }
+
+                @Override
+                public void requireScopeBelongsToStudent(DebtExceptionScope scope) {
+                    if (Long.valueOf(404L).equals(scope.registrationId())) {
+                        throw new DebtExceptionNotFoundException();
+                    }
+                }
+
+                @Override
+                public DebtExceptionDocument render(DebtExceptionScope scope) {
+                    if (FAIL_RENDER.get()) {
+                        throw new IllegalStateException("render failed");
+                    }
+                    return new DebtExceptionDocument("EXC-" + scope.exceptionId(), "pdf".getBytes(), "fake=1");
+                }
+            };
+        }
+    }
 
     private static final String REASON = "Convenio de pago firmado con la familia del alumno";
 
@@ -209,6 +250,86 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
         assertThat(expirer.expireDue()).isZero();
         assertThat(jdbc.queryForObject("select status from document_debt_exception where id = ?", String.class, id)).isEqualTo("EXPIRED");
         assertThat(auditCount("DOCUMENT_DEBT_EXC_EXPIRED", id)).isEqualTo(1);
+    }
+
+    @Test
+    void firstDownloadConsumesTheExceptionAndSecondIsRejected() throws Exception {
+        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
+
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes("pdf".getBytes()));
+        assertThat(jdbc.queryForObject("select status from document_debt_exception where id = ?", String.class, id)).isEqualTo("USED");
+        assertThat(auditCount("DOCUMENT_DEBT_EXC_DOWNLOADED", id)).isEqualTo(1);
+        assertThat(auditCount("DOCUMENT_DEBT_EXC_USED", id)).isEqualTo(1);
+
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DEBT_EXCEPTION_ALREADY_USED"));
+        assertThat(auditCount("DOCUMENT_DEBT_EXC_DOWNLOADED", id)).isEqualTo(1);
+    }
+
+    @Test
+    void downloadingAnExpiredExceptionIsRejected() throws Exception {
+        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 1).andExpect(status().isCreated());
+        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        actAs(administrative);
+
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DEBT_EXCEPTION_EXPIRED"));
+        assertThat(auditCount("DOCUMENT_DEBT_EXC_DOWNLOADED", id)).isZero();
+    }
+
+    @Test
+    void downloadingAMissingExceptionIsNotFound() throws Exception {
+        mockMvc.perform(get("/document-debt-exceptions/999999/pdf").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("DEBT_EXCEPTION_NOT_FOUND"));
+    }
+
+    @Test
+    void typeWithoutIssuerIsUnprocessableAndTheExceptionStaysActive() throws Exception {
+        issue(administrativeToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
+
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(jdbc.queryForObject("select status from document_debt_exception where id = ?", String.class, id)).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    void failedRenderRollsBackAndTheExceptionStaysActive() throws Exception {
+        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
+        FAIL_RENDER.set(true);
+        try {
+            actAs(administrative);
+            mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
+                    .andExpect(status().is5xxServerError());
+        } finally {
+            FAIL_RENDER.set(false);
+        }
+        assertThat(jdbc.queryForObject("select status from document_debt_exception where id = ?", String.class, id)).isEqualTo("ACTIVE");
+        assertThat(auditCount("DOCUMENT_DEBT_EXC_USED", id)).isZero();
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void issuerRejectsAScopeThatDoesNotBelongToTheStudent() throws Exception {
+        mockMvc.perform(post("/document-debt-exceptions").header("Authorization", "Bearer " + administrativeToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"studentId\":" + studentId + ",\"documentType\":\"EXAM_CERTIFICATE\",\"registrationId\":404,"
+                                + "\"reason\":\"" + REASON + "\",\"validityDays\":5}"))
+                .andExpect(status().isNotFound());
+        assertThat(jdbc.queryForObject("select count(*) from document_debt_exception", Integer.class)).isZero();
     }
 
     @Test

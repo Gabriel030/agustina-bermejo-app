@@ -2,7 +2,7 @@
  * <b>Qué es</b>: superficie pública de graduación. Especialistas concretos (sin interfaz) que otro
  * módulo puede llamar y los records que reciben o devuelven.
  *
- * <p><b>Expone</b>: todo el paquete ({@code @NamedInterface("api")}). Se admite {@code @Transactional}.
+ * <p><b>Expone</b>: todo el paquete ({@code @NamedInterface("api")}). Se admite {@code @Transactional}. Incluye el puerto {@code DebtExceptionDocumentIssuer} que implementa cada tipo de documento para descargar su PDF por excepción de deuda.
  *
  * <p><b>No hacer</b>: depender de {@code usecase} o {@code controller}; recibir o devolver entidades que
  * no estén marcadas {@code @NamedInterface("model")}; publicar eventos ni crear certificados al registrar un egreso histórico.

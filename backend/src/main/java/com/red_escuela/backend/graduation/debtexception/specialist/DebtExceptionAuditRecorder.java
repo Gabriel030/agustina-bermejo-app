@@ -37,6 +37,12 @@ public class DebtExceptionAuditRecorder {
                 exceptionId, "ACTIVE", "EXPIRED", null));
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void downloaded(Long exceptionId, String documentType, Long studentId, String detail) {
+        auditTrail.record(new AuditRecord(AuditAction.DOCUMENT_DEBT_EXC_DOWNLOADED, AuditEntityType.DOCUMENT_DEBT_EXCEPTION,
+                exceptionId, "USED", "USED", describe(documentType, studentId) + (detail == null ? "" : ";" + detail)));
+    }
+
     private static String describe(String documentType, Long studentId) {
         return "documentType=" + documentType + ";studentId=" + studentId;
     }
