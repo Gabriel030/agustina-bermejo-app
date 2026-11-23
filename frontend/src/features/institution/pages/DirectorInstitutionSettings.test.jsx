@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 import { DirectorInstitutionSettings } from './DirectorInstitutionSettings';
 
 const API = 'http://localhost:8080';
@@ -50,6 +51,26 @@ describe('DirectorInstitutionSettings', () => {
     expect(justification).toHaveValue('5');
     expect(screen.getByRole('switch', { name: 'Avisos no urgentes por email' })).not.toBeChecked();
     expect(screen.getByText('Sin cambios por guardar')).toBeInTheDocument();
+  });
+
+  describe('on a compact viewport', () => {
+    afterEach(restoreViewport);
+
+    it('keeps the discard action in the more menu and explains why saving is blocked', async () => {
+      useCompactViewport();
+      const { user, justification } = await openScreen();
+      const bar = screen.getByRole('region', { name: 'Cambios sin guardar' });
+      expect(within(bar).getByRole('button', { name: 'Guardar cambios' })).toHaveAccessibleDescription('Cambiá un valor para habilitar Guardar');
+      expect(within(bar).queryByRole('button', { name: 'Descartar' })).not.toBeInTheDocument();
+
+      await user.clear(justification);
+      await user.type(justification, '7');
+      expect(within(bar).getByText('1 cambio')).toBeInTheDocument();
+      await user.click(within(bar).getByRole('button', { name: 'Más acciones' }));
+      await user.click(await screen.findByRole('menuitem', { name: 'Descartar' }));
+      expect(justification).toHaveValue('5');
+      expect(screen.getByText('Sin cambios por guardar')).toBeInTheDocument();
+    });
   });
 
   it('shows the range error only after typing and blocks the review without clamping the value', async () => {

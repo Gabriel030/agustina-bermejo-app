@@ -80,6 +80,7 @@ public class GraduationCertificateIssuer {
 
     private GraduationCertificate create(GraduationCertificateKind kind, Long enrollmentId) {
         GraduationSource source = sources.get(kind);
+        source.lockForIssuance(enrollmentId);
         source.requireEligible(enrollmentId);
         if (alreadyIssued(kind, enrollmentId)) {
             throw new GraduationCertificateAlreadyIssuedException();
