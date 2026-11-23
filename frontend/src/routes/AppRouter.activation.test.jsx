@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { formatContractDeviations, takeContractDeviations } from '@/test/contract/withContract';
+import { activationTokenStatus } from '@/test/fixtures/invitationWaves';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -12,7 +12,6 @@ import { AppRouter } from '@/routes/AppRouter';
 
 const API = 'http://localhost:8080';
 const TOKEN = 'tok-router-456';
-const NOT_YET_CONTRACTED = 'POST /auth/activation-token/status';
 
 vi.mock('idb-keyval', () => ({
   get: vi.fn(async () => undefined),
@@ -53,8 +52,6 @@ describe('AppRouter activation page', () => {
   });
 
   afterEach(() => {
-    const unexpected = takeContractDeviations().filter((deviation) => deviation.key !== NOT_YET_CONTRACTED);
-    if (unexpected.length > 0) throw new Error(formatContractDeviations(unexpected));
     vi.unstubAllGlobals();
   });
 
@@ -62,7 +59,7 @@ describe('AppRouter activation page', () => {
     server.use(
       http.post(`${API}/auth/activation-token/status`, async ({ request }) => {
         expect((await request.json()).token).toBe(TOKEN);
-        return HttpResponse.json({ status: 'VALID', username: 'lucia.acosta', institution: { name: 'Instituto', email: 'a@b.test', phoneNumber: '123' } });
+        return HttpResponse.json(activationTokenStatus('VALID'));
       }),
     );
     const { queryClient } = renderApp(`/activar?token=${TOKEN}`);

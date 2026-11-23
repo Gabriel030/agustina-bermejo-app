@@ -65,7 +65,7 @@ function InstitutionContact({ institution }) {
         </a>
       )}
       {phoneNumber && (
-        <a href={`tel:${phoneNumber}`} className="flex min-h-11 items-center font-semibold text-brand">
+        <a href={`tel:${phoneNumber.replace(/[^\d+]/g, '')}`} className="flex min-h-11 items-center font-semibold text-brand">
           {phoneNumber}
         </a>
       )}
@@ -141,7 +141,7 @@ function SuccessCard({ headingRef, username }) {
       <p className="text-ink-soft">Ya podés iniciar sesión con tu usuario y la contraseña que elegiste.</p>
       {username && (
         <p className="text-ink-soft">
-          Tu usuario es <b className="break-all font-bold text-ink">{username}</b>
+          Tu usuario para ingresar es <b className="break-all font-bold text-ink">{username}</b>
         </p>
       )}
       <LoginLink variant="primary" />
@@ -225,7 +225,7 @@ function ActivationForm({ headingRef, token, username, onTokenRejected, onActiva
         <p className="text-ink-soft">Elegí una contraseña para entrar al sistema del instituto.</p>
         {username && (
           <p className="text-ink-soft">
-            Tu usuario es <b className="break-all font-bold text-ink">{username}</b>
+            Tu usuario para ingresar es <b className="break-all font-bold text-ink">{username}</b>
           </p>
         )}
         {notice && (

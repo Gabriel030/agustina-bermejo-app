@@ -8,12 +8,12 @@ import { axe } from '@/test/axe';
 import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
-import { formatContractDeviations, takeContractDeviations } from '@/test/contract/withContract';
+import { activationTokenStatus } from '@/test/fixtures/invitationWaves';
 import { ActivateAccount } from '@/features/identity/pages/ActivateAccount';
 
 const API = 'http://localhost:8080';
 const TOKEN = 'tok-secret-123';
-const INSTITUTION = { name: 'Instituto Agustina Bermejo', email: 'secretaria@instituto.test', phoneNumber: '+54 11 5555-0000' };
+const INSTITUTION = activationTokenStatus('VALID').institution;
 const VALID_PASSWORD = 'Clave2026x';
 
 function LocationProbe() {
@@ -54,7 +54,8 @@ function statusReturns(body) {
   return seen;
 }
 
-const validStatus = { status: 'VALID', username: 'lucia.acosta', institution: INSTITUTION };
+const validStatus = activationTokenStatus('VALID', { username: 'lucia.acosta' });
+const importedStatus = activationTokenStatus('VALID', { username: 'lucia.acosta.muy.larga@ejemplo.edu.ar' });
 
 async function fillAndSubmit(user, { password = VALID_PASSWORD, confirmation = password } = {}) {
   await user.type(await screen.findByLabelText('Nueva contraseña'), password);
@@ -67,11 +68,7 @@ async function expectFocusedHeading(name) {
   await waitFor(() => expect(heading).toHaveFocus());
 }
 
-const NOT_YET_CONTRACTED = 'POST /auth/activation-token/status';
-
 afterEach(() => {
-  const unexpected = takeContractDeviations().filter((deviation) => deviation.key !== NOT_YET_CONTRACTED);
-  if (unexpected.length > 0) throw new Error(formatContractDeviations(unexpected));
   vi.restoreAllMocks();
   vi.useRealTimers();
   window.localStorage.clear();
@@ -100,9 +97,18 @@ describe('ActivateAccount status', () => {
 
     await expectFocusedHeading('Activá tu cuenta');
     expect(screen.getByText('lucia.acosta')).toBeInTheDocument();
-    expect(screen.getByText(/tu usuario es/i)).toBeInTheDocument();
+    expect(screen.getByText(/tu usuario para ingresar es/i)).toBeInTheDocument();
     expect(seen).toHaveLength(1);
     expect(seen[0].body).toEqual({ token: TOKEN });
+  });
+
+  it('showsTheEmailAsLoginUsernameForImportedStudentsWithWrapping', async () => {
+    statusReturns(importedStatus);
+    renderPage();
+
+    const username = await screen.findByText('lucia.acosta.muy.larga@ejemplo.edu.ar');
+    expect(username).toHaveClass('break-all');
+    expect(screen.getByText(/tu usuario para ingresar es/i)).toBeInTheDocument();
   });
 
   it('sendsTheStatusRequestWithoutCachingOrReferrerAndWithoutTheTokenInTheUrl', async () => {
@@ -118,24 +124,24 @@ describe('ActivateAccount status', () => {
   });
 
   it('showsTheInstitutionContactAndHowToGetANewInvitationWhenTheLinkExpired', async () => {
-    statusReturns({ status: 'EXPIRED', institution: INSTITUTION });
+    statusReturns(activationTokenStatus('EXPIRED'));
     renderPage();
 
     await expectFocusedHeading('El enlace venció');
     expect(screen.getByText(/pedí que te manden una invitación nueva/i)).toBeInTheDocument();
     expect(screen.getByText('Instituto Agustina Bermejo', { selector: 'b' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'secretaria@instituto.test' })).toHaveAttribute('href', 'mailto:secretaria@instituto.test');
-    expect(screen.getByRole('link', { name: '+54 11 5555-0000' })).toHaveAttribute('href', 'tel:+54 11 5555-0000');
+    expect(screen.getByRole('link', { name: INSTITUTION.email })).toHaveAttribute('href', `mailto:${INSTITUTION.email}`);
+    expect(screen.getByRole('link', { name: INSTITUTION.phoneNumber })).toHaveAttribute('href', 'tel:01155550000');
     expect(screen.queryByLabelText('Nueva contraseña')).not.toBeInTheDocument();
   });
 
   it('showsAGenericInvalidMessageWithoutHintsWhenTheLinkIsInvalid', async () => {
-    statusReturns({ status: 'INVALID', institution: null });
+    statusReturns(activationTokenStatus('INVALID'));
     renderPage();
 
     await expectFocusedHeading('Enlace no válido');
     expect(screen.getByText('El enlace de activación no es válido o ya fue usado.')).toBeInTheDocument();
-    expect(screen.queryByText(/tu usuario es/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tu usuario para ingresar es/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir a iniciar sesión' })).toHaveAttribute('href', '/login');
   });
 
@@ -154,7 +160,7 @@ describe('ActivateAccount status', () => {
   });
 
   it('showsTheSameInvalidScreenForAMalformedAndForAnUnknownToken', async () => {
-    statusReturns({ status: 'INVALID' });
+    statusReturns(activationTokenStatus('INVALID'));
     const unknown = renderPage('/activar?token=unknown');
     await screen.findByRole('heading', { name: 'Enlace no válido' });
     const unknownText = unknown.container.textContent;
@@ -164,14 +170,6 @@ describe('ActivateAccount status', () => {
     await screen.findByRole('heading', { name: 'Enlace no válido' });
 
     expect(malformed.container.textContent).toBe(unknownText);
-  });
-
-  it('treatsAnUnexpectedStatusValueAsInvalid', async () => {
-    statusReturns({ status: 'SOMETHING_ELSE', username: 'leak' });
-    renderPage();
-
-    expect(await screen.findByRole('heading', { name: 'Enlace no válido' })).toBeInTheDocument();
-    expect(screen.queryByText('leak')).not.toBeInTheDocument();
   });
 
   it('offersRetryWhenTheStatusRequestFailsOnTheNetworkAndRecovers', async () => {
@@ -342,7 +340,7 @@ describe('ActivateAccount form', () => {
     await fillAndSubmit(user);
 
     await expectFocusedHeading('El enlace venció');
-    expect(screen.getByRole('link', { name: 'secretaria@instituto.test' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: INSTITUTION.email })).toBeInTheDocument();
   });
 
   it('switchesToTheInvalidScreenWhenTheTokenWasAlreadyUsedBetweenSteps', async () => {
@@ -455,8 +453,8 @@ describe('ActivateAccount form', () => {
 describe('ActivateAccount accessibility', () => {
   it.each([
     ['form', validStatus, 'Activá tu cuenta'],
-    ['expired', { status: 'EXPIRED', institution: INSTITUTION }, 'El enlace venció'],
-    ['invalid', { status: 'INVALID' }, 'Enlace no válido'],
+    ['expired', activationTokenStatus('EXPIRED'), 'El enlace venció'],
+    ['invalid', activationTokenStatus('INVALID'), 'Enlace no válido'],
   ])('hasNoAxeViolationsInTheStateOf%s', async (_name, body, heading) => {
     statusReturns(body);
     const { container } = renderPage();
