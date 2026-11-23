@@ -57,7 +57,7 @@ class ApprovalCertificateDesignTest {
         return new CertificateSnapshot(holder, "DNI", "30123456", "la carrera", program, "UNDERGRADUATE", 1800,
                 LocalDate.of(2026, 7, 15), LocalDate.of(2026, 11, 5), institution,
                 List.of(new SignatorySnapshot(signerName, signerTitle), new SignatorySnapshot("Lic. Carlos Gómez", "Director Académico")),
-                BuiltInCertificateTemplate.BUILT_IN_V1);
+                BuiltInCertificateTemplate.BUILT_IN_V1, null);
     }
 
     private static List<Marker> markers() {

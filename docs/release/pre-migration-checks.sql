@@ -252,7 +252,7 @@ begin
       ('exam_certificate', 'recipient_type', array['HEALTH_INSURANCE', 'EMPLOYER', 'STUDENT_TRANSPORT', 'OTHER']),
       ('regular_student_certificate', 'issue_channel', array['STAFF', 'STUDENT_PORTAL']),
       ('regular_student_certificate', 'kind', array['COURSE', 'PROGRAM']),
-      ('regular_student_certificate', 'standing_basis', array['BILLING_VERIFIED', 'EXCEPTION_APPROVED', 'MANUALLY_CONFIRMED']),
+      ('regular_student_certificate', 'standing_basis', array['BILLING_NOT_ENFORCED', 'BILLING_VERIFIED', 'EXCEPTION_APPROVED', 'MANUALLY_CONFIRMED']),
       ('regular_student_certificate', 'status', array['EXPIRED', 'REVOKED', 'VALID']),
       ('section_evaluation_config', 'status', array['APPROVED', 'DRAFT', 'PENDING_APPROVAL', 'REJECTED']),
       ('section_grade_item_publication', 'grade_item_type', array['EXAM', 'FINAL', 'TP']),
