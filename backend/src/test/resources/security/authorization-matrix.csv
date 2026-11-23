@@ -628,6 +628,7 @@ GET,/me/section-enrollments/{id}/change-section-candidates,DENY,OWNER,ALLOW,ALLO
 POST,/approved-subjects-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/exam-boards/{id}/exam-certificates/candidates,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards/{id}/exam-certificates/batch,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""registrationIds"":[1]}"
+GET,/exam-certificates/{id}/pdf,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/certificate-templates/documents/{documentType},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/certificate-templates/documents/{documentType}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
