@@ -24,9 +24,6 @@ class PermissionGateCoverageTest {
     private static final String ROOT = "com.red_escuela.backend";
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
 
-    private static final Set<String> MODULES_PENDING_MIGRATION = Set.of(
-            "billing");
-
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
     private static final Set<String> CONTROLLERS_FIXED_BY_ROLE = Set.of(
@@ -232,6 +229,41 @@ class PermissionGateCoverageTest {
             ROOT + ".billing.usecase.cohort.UpdateYearBillingConfigurationService#update",
             ROOT + ".billing.advanceenrollmentfee.usecase.RequestAdvanceEnrollmentFeeService#requestForStudentAtCounter");
 
+    private static final Set<String> BILLING_ENDPOINTS_WITHOUT_GRID_RULE = Set.of(
+            "AdvanceEnrollmentFeeController#requestForMe",
+            "AnnualUpfrontQuoteController#quoteForCurrentStudent",
+            "AnnualUpfrontRequestController#discardAnnualUpfrontRequest",
+            "AnnualUpfrontRequestController#requestAnnualUpfront",
+            "AnnualUpfrontRequestViewController#listRequestsOfCurrentStudent",
+            "AnnualUpfrontRequestViewController#viewRequestOfCurrentStudent",
+            "AnnualUpfrontRequestViewController#listRequestsOfEnrollmentOfCurrentStudent",
+            "MeInvoiceController#priceBreakdown",
+            "MeInvoiceController#createMpPreference",
+            "MeInvoiceController#uploadReceipt",
+            "MeInvoiceController#myReceipts",
+            "MeInvoiceController#myCourseInstallments",
+            "MeInvoiceController#myProgramInstallments",
+            "MeInvoiceController#myPaymentStatus",
+            "StudentDiscountController#listMyStudentDiscounts",
+            "CreditNoteController#listMyCreditNotes",
+            "BankTransferReceiptSubmissionController#submitOwnReceipt",
+            "RefundController#requestOwnRefund",
+            "RefundController#listOwnRefunds",
+            "RefundController#listOwnRefundRequests",
+            "RefundPreviewController#previewOwnRefund",
+            "RefundPreviewController#describeOwnRefundEligibility",
+            "StudentCreditBalanceController#describeOwnCreditBalance",
+            "StudentPaymentController#listOwnPayments",
+            "MpWebhookController#webhook",
+            "PaymentPlanSelectionController#selectForCourse",
+            "PaymentPlanSelectionController#selectForProgram",
+            "ProgramYearBillingTemplateController#listCohorts",
+            "AnnualUpfrontTermsController#viewCurrentTerms",
+            "AnnualUpfrontTermsController#viewTermsOfVersion",
+            "PaymentGatewayConfigController#getConfig",
+            "PaymentGatewayConfigController#getQrImage",
+            "ProgramYearBillingTemplateController#listProgramCohorts");
+
     private static final Set<String> CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS = Set.of(
             ROOT + ".graduation.certificate.exam.controller.ExamCertificateController",
             ROOT + ".graduation.certificate.exam.controller.ExamBoardCertificateController",
@@ -257,7 +289,7 @@ class PermissionGateCoverageTest {
     void everyProtectedEndpointUsesTheGateOrIsExempt() throws Exception {
         List<String> uncovered = new ArrayList<>();
         for (Class<?> controller : controllers()) {
-            if (CONTROLLERS_FIXED_BY_ROLE.contains(controller.getName()) || CONTROLLERS_WITHOUT_ROLE_RULE.contains(controller.getName()) || CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS.contains(controller.getName()) || MODULES_PENDING_MIGRATION.contains(moduleOf(controller))) {
+            if (CONTROLLERS_FIXED_BY_ROLE.contains(controller.getName()) || CONTROLLERS_WITHOUT_ROLE_RULE.contains(controller.getName()) || CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS.contains(controller.getName())) {
                 continue;
             }
             for (Method method : controller.getDeclaredMethods()) {
@@ -271,7 +303,7 @@ class PermissionGateCoverageTest {
                     continue;
                 }
                 String endpoint = controller.getSimpleName() + "#" + method.getName();
-                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint) || ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint)) {
+                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint) || ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint) || BILLING_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint)) {
                     continue;
                 }
                 if (!usesGate(method, controller)) {
@@ -384,6 +416,22 @@ class PermissionGateCoverageTest {
             }
         }
         assertThat(withoutGate).isEqualTo(ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE);
+    }
+
+    @Test
+    void billingEndpointsOutsideTheGridAreExactlyTheExemptSet() throws Exception {
+        Set<String> withoutGate = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            if (!"billing".equals(moduleOf(controller))) {
+                continue;
+            }
+            for (Method method : controller.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class) != null && !usesGate(method, controller)) {
+                    withoutGate.add(controller.getSimpleName() + "#" + method.getName());
+                }
+            }
+        }
+        assertThat(withoutGate).isEqualTo(BILLING_ENDPOINTS_WITHOUT_GRID_RULE);
     }
 
     @Test
@@ -539,13 +587,10 @@ class PermissionGateCoverageTest {
     }
 
     @Test
-    void exemptListsOnlyNameExistingModulesAndControllers() throws Exception {
+    void exemptListsOnlyNameExistingControllers() throws Exception {
         for (String controllerName : Stream.of(CONTROLLERS_FIXED_BY_ROLE, CONTROLLERS_WITHOUT_ROLE_RULE, CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS).flatMap(Set::stream).toList()) {
             assertThat(Class.forName(controllerName)).isNotNull();
         }
-        Set<String> present = new HashSet<>();
-        controllers().forEach(controller -> present.add(moduleOf(controller)));
-        assertThat(present).containsAll(MODULES_PENDING_MIGRATION);
     }
 
     @Test
