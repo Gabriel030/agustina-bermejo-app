@@ -71,7 +71,7 @@ function ScopeChip({ label, onClear }) {
         size="icon"
         aria-label="Quitar filtro de oferta"
         onClick={onClear}
-        className="-my-1.5 flex size-11 rounded-none border-0 text-ink-soft transition-none hover:text-ink focus-visible:ring-2 active:not-aria-[haspopup]:translate-y-0"
+        className="-my-1.5 flex size-11 rounded-none border-0 text-ink-soft transition-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
       >
         <X className="size-4" />
       </Button>

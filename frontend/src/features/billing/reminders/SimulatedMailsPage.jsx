@@ -59,7 +59,7 @@ function StatusCell({ mail }) {
           variant="subtle"
           size="inline"
           aria-label={`${DELIVERY_STATUS_LABELS[mail.status] ?? mail.status}: ver el motivo`}
-          className="rounded-full text-current transition-none hover:text-current focus-visible:ring-2 active:not-aria-[haspopup]:translate-y-0"
+          className="rounded-full text-current transition-none hover:text-current focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
         >
           {pill}
         </Button>

@@ -56,7 +56,7 @@ function LockedMark({ label }) {
           variant="subtle"
           size="inline"
           aria-label={`${label}: ${LOCK_TEXT}`}
-          className="gap-1.5 rounded-md p-1 transition-none focus-visible:ring-2 active:not-aria-[haspopup]:translate-y-0"
+          className="gap-1.5 rounded-md p-1 transition-none focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
         >
           <Lock className="size-3.5" />
           <span className="hidden text-xs sm:inline">Siempre activo</span>
