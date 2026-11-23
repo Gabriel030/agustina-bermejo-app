@@ -86,5 +86,6 @@ En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql
 ## Reglas de ritmo y relevo (23-nov, regla 7 a 9 de `docs/context/cell.md`)
 - Hasta 8 workers a la vez y máx. 3 con Maven; cada uno con su worktree. Mantené la cola siempre llena y en paralelo con todo lo que tenga spec o contrato. Sin trabajo con spec lista: avisá al coordinador «SIN COLA: <qué falta>».
 - Pedí relevo al coordinador a los 400k de contexto. Antes entregá tus workers en vuelo, dejá el handoff y avisá «WORKERS ENTREGADOS»; recién ahí se archiva tu sesión.
+- Relevo con sesiones compartidas (regla 15 de `docs/context/cell.md`): tu handoff lleva la tabla de tus workers y revisores vivos (título, ID `session_…`, rama o PR, estado) y el líder que te releva sigue con esas mismas sesiones; no las archivés ni las relances.
 - Migraciones: máximo de develop + 1, revalidado justo antes de mergear; sin `outOfOrder`. Enums de auditoría y notificación con su CHECK en la misma migración.
 - El estado vive en el comentario ESTADO VIVO del Issue, no en tu memoria.
