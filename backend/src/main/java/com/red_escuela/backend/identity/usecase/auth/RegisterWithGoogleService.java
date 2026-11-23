@@ -1,68 +1,19 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.identity.dto.AuthTokens;
-import com.red_escuela.backend.shared.domain.EmailAddress;
-import com.red_escuela.backend.identity.entity.Institution;
-import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.identity.exception.InstitutionNotFoundException;
-import com.red_escuela.backend.identity.exception.UsernameAlreadyExistsException;
-import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
-import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
-import com.red_escuela.backend.identity.specialist.PersonFactory;
-import com.red_escuela.backend.identity.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.service.GoogleStudentRegistrationTransaction;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class RegisterWithGoogleService implements RegisterWithGoogleUseCase {
-    private final GoogleIdTokenService googleIdTokenService;
-    private final PersonRepository personRepository;
-    private final StudentRepository studentRepository;
-    private final InstitutionRepository institutionRepository;
-    private final PersonFactory personFactory;
-    private final AuthTokenIssuer authTokenIssuer;
+    private final GoogleStudentRegistrationTransaction googleStudentRegistrationTransaction;
 
-    public RegisterWithGoogleService(GoogleIdTokenService googleIdTokenService, PersonRepository personRepository,
-                                      StudentRepository studentRepository, InstitutionRepository institutionRepository,
-                                      PersonFactory personFactory, AuthTokenIssuer authTokenIssuer) {
-        this.googleIdTokenService = googleIdTokenService;
-        this.personRepository = personRepository;
-        this.studentRepository = studentRepository;
-        this.institutionRepository = institutionRepository;
-        this.personFactory = personFactory;
-        this.authTokenIssuer = authTokenIssuer;
+    public RegisterWithGoogleService(GoogleStudentRegistrationTransaction googleStudentRegistrationTransaction) {
+        this.googleStudentRegistrationTransaction = googleStudentRegistrationTransaction;
     }
 
     @Override
-    @Transactional
     public AuthTokens register(RegisterWithGoogleCommand command) {
-        var profile = googleIdTokenService.verify(command.idToken());
-
-        if (personRepository.findByEmail(EmailAddress.of(profile.email())).isPresent()) {
-            throw new UsernameAlreadyExistsException(profile.email());
-        }
-
-        Institution institution = institutionRepository.findById(command.institutionId())
-                .orElseThrow(() -> new InstitutionNotFoundException(command.institutionId()));
-
-        try {
-            Person person = personFactory.createPersonWithGoogle(
-                    profile.givenName(), profile.familyName(), profile.email(), profile.subject());
-
-            Student student = new Student();
-            student.setPerson(person);
-            student.setInstitution(institution);
-            student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
-            studentRepository.saveAndFlush(student);
-
-            return authTokenIssuer.issueTokens(person);
-        } catch (DataIntegrityViolationException e) {
-            throw new UsernameAlreadyExistsException(profile.email());
-        }
+        return googleStudentRegistrationTransaction.register(command.idToken(), command.institutionId());
     }
 }

@@ -19,7 +19,7 @@ import java.util.Map;
 public class BroadcastCompletionEstimator {
 
     private static final List<DeliveryStatus> SENT = List.of(DeliveryStatus.SENT, DeliveryStatus.SENT_SIMULATED);
-    private static final List<DeliveryCategory> TRANSACTIONAL = List.of(DeliveryCategory.COLLECTION_REMINDER, DeliveryCategory.ANNOUNCEMENT);
+    private static final List<DeliveryCategory> TRANSACTIONAL = DeliveryCategory.TRANSACTIONAL_EMAIL;
 
     private final NotificationDeliveryRepository deliveryRepository;
     private final BroadcastDispatchSettings settings;

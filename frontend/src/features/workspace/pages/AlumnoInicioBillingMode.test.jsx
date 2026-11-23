@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { studentHomeHandlers } from '@/test/fixtures/studentHome';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 
 vi.mock('@/context/AuthContext', () => ({
@@ -50,7 +51,7 @@ const pendingAdmission = () =>
 
 function mountWith(...handlers) {
   server.use(
-    http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+    ...studentHomeHandlers(),
     http.get(`${API}/me/announcements`, () => HttpResponse.json([])),
     ...handlers,
   );
@@ -62,8 +63,8 @@ function mountWith(...handlers) {
   );
 }
 
-describe('AlumnoInicio account card by billing mode', () => {
-  it('hides the account card when billing is off and never asks for the balance', async () => {
+describe('AlumnoInicio balance notice by billing mode', () => {
+  it('hidesTheBalanceNoticeWhenBillingIsOffAndNeverAsksForTheBalance', async () => {
     const balanceCalls = vi.fn();
     mountWith(
       modulesWith('OFF'),
@@ -73,37 +74,41 @@ describe('AlumnoInicio account card by billing mode', () => {
       }),
     );
     await screen.findByText('Todavía no hay novedades');
-    await waitFor(() => expect(screen.queryByText('Estado de cuenta')).not.toBeInTheDocument());
-    expect(screen.queryByText('No tenés saldo pendiente.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Saldo pendiente')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pagos al día')).not.toBeInTheDocument();
     expect(balanceCalls).not.toHaveBeenCalled();
   });
 
-  it('shows the pending balance when billing is on and the student is overdue', async () => {
+  it('showsThePendingBalanceWithALinkToPaymentsWhenBillingIsOnAndTheStudentIsOverdue', async () => {
     mountWith(
       modulesWith('FULL'),
       http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([paymentEntry('OVERDUE')])),
     );
     expect(await screen.findByText('Saldo pendiente')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ver pagos/ })).toHaveAttribute('href', '/alumno/pagos');
   });
 
-  it('shows no pending balance when billing is on and the endpoint answers 200 with zero balance', async () => {
+  it('showsUpToDateWhenBillingIsOnAndThereIsNoOverdueBalance', async () => {
     mountWith(
       modulesWith('FULL'),
       http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([paymentEntry('UP_TO_DATE')])),
     );
-    expect(await screen.findByText('No tenés saldo pendiente.')).toBeInTheDocument();
+    expect(await screen.findByText('Pagos al día')).toBeInTheDocument();
+    expect(screen.queryByText('Saldo pendiente')).not.toBeInTheDocument();
   });
 
-  it('does not claim there is no balance when the balance request fails', async () => {
+  it('doesNotClaimThereIsNoBalanceWhenTheBalanceRequestFails', async () => {
     mountWith(
       modulesWith('FULL'),
       http.get(`${API}/me/enrollment-payment-status`, () => new HttpResponse(null, { status: 404 })),
     );
-    expect(await screen.findByText(/estado de cuenta/i, { selector: 'div,p,span,h2,h3' })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole('button', { name: /reintentar/i })).toBeInTheDocument());
-    expect(screen.queryByText('No tenés saldo pendiente.')).not.toBeInTheDocument();
+    expect(await screen.findByText('No pudimos verificar tu saldo')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument());
+    expect(screen.queryByText('Pagos al día')).not.toBeInTheDocument();
   });
+});
 
+describe('AlumnoInicio admission fee card by billing mode', () => {
   it('hides the admission fee payment card when billing is off', async () => {
     mountWith(modulesWith('OFF'), pendingAdmission());
     await screen.findByText('Todavía no hay novedades');

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
@@ -65,7 +66,7 @@ public class StudentDiscountController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/program-enrollments/{id}/student-discounts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.grant_student_discount", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director otorgó el descuento", content = @Content(schema = @Schema(implementation = StudentDiscountResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido pendiente de aprobación", content = @Content(schema = @Schema(implementation = StudentDiscountPendingAuthorizationResponse.class)))})
@@ -75,7 +76,7 @@ public class StudentDiscountController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/course-enrollments/{id}/student-discounts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.grant_student_discount", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director otorgó el descuento", content = @Content(schema = @Schema(implementation = StudentDiscountResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido pendiente de aprobación", content = @Content(schema = @Schema(implementation = StudentDiscountPendingAuthorizationResponse.class)))})
@@ -84,13 +85,13 @@ public class StudentDiscountController {
     }
 
     @GetMapping("/program-enrollments/{id}/student-discounts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_discounts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<StudentDiscountResponse> listForProgramEnrollment(@PathVariable Long id) {
         return staffResponsesOf(listUseCase.listStudentDiscounts(EnrollmentReference.ofProgram(id)));
     }
 
     @GetMapping("/course-enrollments/{id}/student-discounts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_discounts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<StudentDiscountResponse> listForCourseEnrollment(@PathVariable Long id) {
         return staffResponsesOf(listUseCase.listStudentDiscounts(EnrollmentReference.ofCourse(id)));
     }
@@ -102,7 +103,7 @@ public class StudentDiscountController {
     }
 
     @GetMapping("/student-discounts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_discounts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StudentDiscountPageResponse searchStudentDiscounts(@RequestParam(required = false) StudentDiscountStatus status, @RequestParam(required = false) DiscountType type,
                                                               @RequestParam(required = false) DiscountDefinitionType definitionType, @RequestParam(required = false) Long discountDefinitionId,
                                                               @RequestParam(required = false) Long studentId, @RequestParam(required = false) Long programEnrollmentId,
@@ -113,26 +114,26 @@ public class StudentDiscountController {
     }
 
     @GetMapping("/students/{studentId}/student-discounts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_discounts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<StudentDiscountResponse> listForStudent(@PathVariable Long studentId) {
         return staffResponsesOf(listOfStudentUseCase.listStudentDiscountsOfStudent(studentId));
     }
 
     @PostMapping("/program-enrollments/{id}/student-discounts/preview")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.preview_student_discount", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StudentDiscountGrantPreviewResponse previewForProgramEnrollment(@PathVariable Long id, @Valid @RequestBody GrantStudentDiscountRequest request) {
         return StudentDiscountGrantPreviewResponse.from(previewUseCase.previewStudentDiscountGrant(EnrollmentReference.ofProgram(id), request.toGrantRequest()));
     }
 
     @PostMapping("/course-enrollments/{id}/student-discounts/preview")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.preview_student_discount", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StudentDiscountGrantPreviewResponse previewForCourseEnrollment(@PathVariable Long id, @Valid @RequestBody GrantStudentDiscountRequest request) {
         return StudentDiscountGrantPreviewResponse.from(previewUseCase.previewStudentDiscountGrant(EnrollmentReference.ofCourse(id), request.toGrantRequest()));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/student-discounts/{id}/revocation")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.revoke_student_discount", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "El director revocó el descuento", content = @Content(schema = @Schema(implementation = StudentDiscountResponse.class))),
             @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido de revocación pendiente; vence a fin de mes si nadie lo decide", content = @Content(schema = @Schema(implementation = StudentDiscountPendingAuthorizationResponse.class)))})

@@ -12,6 +12,6 @@ final class CertificateExceptionResponses {
         return new CertificateExceptionResponse(approval.getId(), approval.getStudentId(), approval.getKind(), approval.enrollmentId(),
                 approval.getOrganismKind(), approval.getOrganismReference(), approval.getReason(), approval.getStatus(),
                 approval.getRequestedById(), approval.getRequestedAt(), approval.getDecidedById(), approval.getDecidedAt(),
-                approval.getDecisionReason(), approval.getValidUntil());
+                approval.getDecisionReason(), approval.getValidUntil(), approval.isCreatedByDirector());
     }
 }

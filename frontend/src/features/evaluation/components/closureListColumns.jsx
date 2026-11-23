@@ -116,7 +116,7 @@ export function buildClosureListColumns(role) {
       cell: ({ row }) => {
         const label = row.original.status === 'CLOSED' ? 'Ver acta' : 'Abrir planilla';
         return (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="min-h-11 md:min-h-7">
             <Link to={closureSheetPath(role, row.original)} aria-label={`${label} de ${row.original.subjectName}, ${row.original.sectionName}`}>
               {label}
             </Link>

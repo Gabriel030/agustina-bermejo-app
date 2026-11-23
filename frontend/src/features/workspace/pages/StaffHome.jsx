@@ -4,13 +4,17 @@ import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
+import { useActiveRole } from '@/hooks/useActiveRole';
+import { roleLabel } from '@/lib/activeRole';
 import { HomeTaskCard, ComingSoonCard } from '@/features/workspace/components/HomeTaskCard';
+import { UpcomingEventsCard } from '@/features/workspace/components/UpcomingEventsCard';
 import { splitCards } from '@/features/workspace/lib/homeCards';
 import { useAdministrativoHomeCards, useDirectorHomeCards } from '@/features/workspace/hooks/useStaffHomeCards';
+import { useUpcomingEvents } from '@/features/workspace/hooks/useUpcomingEvents';
 
 const AT_RISK_TIP = 'Se calcula con la analítica de asistencia. Lo vamos a habilitar cuando esté lista.';
 
-function StaffHome({ roleLabel, cards }) {
+function StaffHome({ roleLabel, cards, upcoming }) {
   const { usuario } = useAuth();
   const { pending, unsettled, clear, allClear } = splitCards(cards);
   const firstName = usuario?.nombre ?? '';
@@ -54,6 +58,8 @@ function StaffHome({ roleLabel, cards }) {
           </div>
         )}
 
+        <UpcomingEventsCard card={upcoming} />
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <ComingSoonCard title="Alumnos en riesgo" tip={AT_RISK_TIP} />
         </div>
@@ -63,9 +69,10 @@ function StaffHome({ roleLabel, cards }) {
 }
 
 export function DirectorInicio() {
-  return <StaffHome roleLabel="Director" cards={useDirectorHomeCards()} />;
+  return <StaffHome roleLabel="Director" cards={useDirectorHomeCards()} upcoming={useUpcomingEvents('director')} />;
 }
 
 export function AdministrativoInicio() {
-  return <StaffHome roleLabel="Administrativo" cards={useAdministrativoHomeCards()} />;
+  const { activeRole } = useActiveRole();
+  return <StaffHome roleLabel={roleLabel(activeRole)} cards={useAdministrativoHomeCards()} upcoming={useUpcomingEvents('administrativo')} />;
 }

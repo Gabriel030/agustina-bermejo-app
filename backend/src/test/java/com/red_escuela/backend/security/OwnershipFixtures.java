@@ -29,6 +29,10 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.announcement.entity.Announcement;
+import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
+import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
+import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
@@ -80,6 +84,8 @@ final class OwnershipFixtures {
     private Long courseSectionEnrollmentId;
     private Long sectionId;
     private Long attendanceId;
+    private Long announcementId;
+    private Long announcementToDeleteId;
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
@@ -127,6 +133,9 @@ final class OwnershipFixtures {
             case COURSE_SECTION_ENROLLMENT_INSTRUCTOR -> courseSectionEnrollmentId;
             case COURSE_SECTION_INSTRUCTOR -> courseSectionId;
             case AUTHORIZATION_REQUEST -> authorizationRequestId;
+            case ATTENDANCE_STUDENT -> attendanceId;
+            case ANNOUNCEMENT_INSTRUCTOR -> announcementId;
+            case ANNOUNCEMENT_DELETE_INSTRUCTOR -> announcementToDeleteId;
             case CERTIFICATE_EXCEPTION -> certificateExceptionId;
         };
     }
@@ -274,6 +283,8 @@ final class OwnershipFixtures {
         persistClosure(closureObservationSectionId);
         closureObservationEnrollmentId = persistClosureEnrollment(ownerStudent, programEnrollment, closureObservationSectionId);
         authorizationRequestId = persistAuthorizationRequest(ownerAdministrativePerson);
+        announcementId = persistAnnouncement(section, instructorPerson);
+        announcementToDeleteId = persistAnnouncement(section, instructorPerson);
         certificateExceptionId = persistCertificateException(ownerAdministrativePerson, ownerStudent, programEnrollment);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term, instructor);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
@@ -475,6 +486,25 @@ final class OwnershipFixtures {
         entityManager.persist(option);
         entityManager.flush();
         return option.getId();
+    }
+
+    private Long persistAnnouncement(SubjectSection section, Person author) {
+        LocalDateTime now = LocalDateTime.now();
+        Announcement announcement = Announcement.builder()
+                .subjectSection(section)
+                .createdBy(author)
+                .title("Aviso matriz")
+                .body("Aviso de la matriz de autorizacion")
+                .category(AnnouncementCategory.REMINDER)
+                .audienceSpec(AudienceSpec.wholeSection())
+                .audienceLabel("Toda la comision")
+                .status(AnnouncementStatus.SENT)
+                .sentAt(now)
+                .createdAt(now)
+                .build();
+        entityManager.persist(announcement);
+        entityManager.flush();
+        return announcement.getId();
     }
 
     private Long persistNotification(Person recipient) {

@@ -18,3 +18,7 @@ Los specs de inscripción y notas usan las cuentas `alumno.inscripcion.demo`, `a
 ## CI
 
 No hay job de E2E en el workflow. Cómo sería: un job con Docker, `node 20`, JDK 21 y `scripts/system-tests.sh --config playwright.demo.config.js` (el flujo de asistencia tarda ~25 s, inscripción, notas y riesgo de asistencia 3 a 10 s cada uno; el arranque en frío del backend demo y el build del front suman ~3 a 4 min en una máquina cargada), con `retries: 1` (ya activo con `CI`) y el reporte HTML (`playwright-report/`) como artefacto.
+
+## Matriz offline de la PWA
+
+`playwright.offline.config.js` corre `specs/offline` solo contra el build del front (`vite preview`) con la API mockeada: sin backend ni Docker. Comando: `npm run test:offline` (puerto `E2E_FRONTEND_PORT`, default 4174; `E2E_CHROMIUM_PATH` para usar un Chromium ya instalado). Corre en el job `pwa-offline-e2e` del nightly, no en cada PR. La matriz completa y su vínculo con los tests unitarios está en `docs/context/testing.md`.

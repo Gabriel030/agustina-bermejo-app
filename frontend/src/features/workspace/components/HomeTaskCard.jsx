@@ -33,7 +33,7 @@ const FOOT_TONE = {
   neutral: 'text-ink-faint',
 };
 
-function InfoTip({ text }) {
+export function InfoTip({ text }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -46,7 +46,7 @@ function InfoTip({ text }) {
   );
 }
 
-function CardFrame({ card, tone, children, className }) {
+export function CardFrame({ card, tone, children, className }) {
   const Icon = ICONS[card.icon];
   return (
     <article

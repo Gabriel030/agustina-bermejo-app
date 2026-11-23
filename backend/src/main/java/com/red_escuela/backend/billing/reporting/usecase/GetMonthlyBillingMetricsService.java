@@ -12,7 +12,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.YearMonth;
 import java.util.EnumMap;
@@ -37,7 +36,6 @@ public class GetMonthlyBillingMetricsService implements GetMonthlyBillingMetrics
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public MonthlyMetric getMonthlyBillingMetrics(GetMonthlyBillingMetricsCommand command) {
         MetricPanel panel = MetricPanel.fromPath(command.panel());
         YearMonth last = Optional.ofNullable(command.to()).orElseGet(ApplicationTime::currentMonth);

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.dto.LatePaymentSettingsResponse;
 import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.usecase.latepaymentsettings.CreateLatePaymentSettingsUseCase;
@@ -8,7 +9,6 @@ import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,13 +30,13 @@ public class LatePaymentSettingsController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/late-payment-settings")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.set_late_payment_settings", legacyRoles = "ROLE_DIRECTOR")
     public LatePaymentSettingsResponse create(@Valid @RequestBody CreateLatePaymentSettingsRequest request) {
         return LatePaymentSettingsResponse.from(createLatePaymentSettingsUseCase.create(request));
     }
 
     @GetMapping("/late-payment-settings/current")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_late_payment_settings", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public LatePaymentSettingsResponse current() {
         return LatePaymentSettingsResponse.from(findCurrentLatePaymentSettingsUseCase.findCurrent());
     }

@@ -20,7 +20,6 @@ public class RequestAdvanceEnrollmentFeeService implements RequestAdvanceEnrollm
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public AdvanceEnrollmentFeeIssuance requestForStudentAtCounter(Long programEnrollmentId) {
         return issuer.issueForStaff(programEnrollmentId);
     }

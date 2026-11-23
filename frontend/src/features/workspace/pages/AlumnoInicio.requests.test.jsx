@@ -5,6 +5,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithAppCache } from '@/test/renderWithAppCache';
 import { recordApiRequests } from '@/test/recordApiRequests';
 import { settledRequests } from '@/test/apiRequestCount';
+import { studentHomeHandlers } from '@/test/fixtures/studentHome';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 
 vi.mock('@/context/AuthContext', () => ({
@@ -26,8 +27,7 @@ describe('AlumnoInicio requests', () => {
           externalBilling: { enabled: false },
         }),
       ),
-      http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
-      http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
+      ...studentHomeHandlers(),
       http.get(`${API}/me/announcements`, () => HttpResponse.json([])),
       http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
     );

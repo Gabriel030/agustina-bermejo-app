@@ -2,13 +2,14 @@ package com.red_escuela.backend.academicstructure.dto;
 
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.module.CatalogPriced;
 import lombok.Builder;
 import lombok.Getter;
 
 
 @Getter
-@Builder
-public class ProgramResponse {
+@Builder(toBuilder = true)
+public class ProgramResponse implements CatalogPriced<ProgramResponse> {
     private final Long id;
     private final String name;
     private final Integer totalYears;
@@ -22,6 +23,11 @@ public class ProgramResponse {
     private final String level;
     private final String graduationProfile;
     private final String admissionRequirements;
+
+    @Override
+    public ProgramResponse withoutPrices() {
+        return toBuilder().price(null).enrollmentFeeAmount(null).build();
+    }
 
     public static ProgramResponse from(Program program) {
         return from(program, program.priceAsMoney(), program.enrollmentFeeAsMoney());

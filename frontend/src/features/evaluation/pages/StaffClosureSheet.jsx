@@ -108,7 +108,7 @@ export function StaffClosureSheet({ role }) {
   return (
     <PageContainer>
       <div className="flex flex-col gap-2">
-        <Button type="button" variant="ghost" className="w-fit px-0" onClick={goBack}>
+        <Button type="button" variant="ghost" className="min-h-11 md:min-h-8 w-fit px-0" onClick={goBack}>
           <ArrowLeft className="size-4" /> Volver
         </Button>
         <div className="flex flex-wrap items-center justify-between gap-3">

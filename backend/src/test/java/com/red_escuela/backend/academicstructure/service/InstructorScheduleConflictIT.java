@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
+import com.red_escuela.backend.academicstructure.RequesterAuthentication;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseSubjectRequest;
@@ -25,6 +26,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.exception.ConflictException;
 import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +71,7 @@ class InstructorScheduleConflictIT extends AbstractIntegrationTest {
     private Instructor teacher;
     private Classroom roomA;
     private Classroom roomB;
+    private com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle approvedCycle;
 
     @BeforeEach
     void seed() {
@@ -77,6 +80,13 @@ class InstructorScheduleConflictIT extends AbstractIntegrationTest {
         teacher = fixtures.instructor();
         roomA = fixtures.classroom(30);
         roomB = fixtures.classroom(30);
+        approvedCycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
+        RequesterAuthentication.authenticateNewRequester(entityManager);
+    }
+
+    @AfterEach
+    void clearAuthentication() {
+        RequesterAuthentication.clear();
     }
 
     private AssignInstructorRequest assignment(Instructor instructor) {
@@ -84,14 +94,14 @@ class InstructorScheduleConflictIT extends AbstractIntegrationTest {
     }
 
     private SubjectSection teachingSection(Term sectionTerm, StatusType status, Classroom room, DayOfWeek day, LocalTime start, LocalTime end) {
-        SubjectSection section = fixtures.section(fixtures.subject(), sectionTerm, status, null);
+        SubjectSection section = fixtures.section(fixtures.subject(), sectionTerm, status, approvedCycle);
         fixtures.slot(section, room, day, start, end);
         fixtures.assignLead(section, teacher);
         return section;
     }
 
     private SubjectSection candidateSection(Classroom room, DayOfWeek day, LocalTime start, LocalTime end) {
-        SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, null);
+        SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, approvedCycle);
         fixtures.slot(section, room, day, start, end);
         return section;
     }

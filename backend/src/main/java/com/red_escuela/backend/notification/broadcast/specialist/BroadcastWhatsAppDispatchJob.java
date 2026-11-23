@@ -67,6 +67,10 @@ public class BroadcastWhatsAppDispatchJob {
             if (!settings.window().isOpenAt(LocalTime.now(clock)) || remainingQuotaToday() == 0) {
                 break;
             }
+            if (sender.isCircuitOpen()) {
+                log.warn("Circuito de WhatsApp abierto, se corta el lote de masivos con {} sin enviar", ids.size() - attempted);
+                break;
+            }
             if (dispatchOne(id)) {
                 attempted++;
             }

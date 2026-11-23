@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { errorBody } from '@/test/fixtures/errors';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
+import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 import { server } from '@/test/mocks/server';
+import { curriculumProgressHandlers } from '@/test/mocks/handlers';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
 
@@ -90,18 +92,23 @@ function mockEgreso({ own = ownRequest(), post } = {}) {
         externalBilling: { enabled: false },
       }),
     ),
+    ...curriculumProgressHandlers,
+    ...constanciasHandlers,
     http.get(`${API}/*`, () => HttpResponse.json([])),
   );
 }
 
-function renderEgreso() {
-  return renderWithProviders(
+async function renderEgreso() {
+  const view = renderWithProviders(
     <>
       <AlumnoMisCarreras />
       <Toaster />
     </>,
     { route: '/alumno/mis-carreras?tab=tramites' },
   );
+  const row = (await screen.findByText('Solicitud de egreso')).closest('li');
+  await userEvent.click(within(row).getByRole('button', { name: /Abrir/ }));
+  return view;
 }
 
 describe('AlumnoMisCarreras · Egreso', () => {
@@ -115,7 +122,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
       }),
     });
 
-    renderEgreso();
+    await renderEgreso();
 
     expect(await screen.findByText('Todavía no elegible')).toBeInTheDocument();
     expect(screen.getByText('Práctica Profesional')).toBeInTheDocument();
@@ -127,7 +134,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
   it('asks for confirmation and then sends the request when eligible', async () => {
     mockEgreso();
     const user = userEvent.setup();
-    renderEgreso();
+    await renderEgreso();
 
     await user.click(await screen.findByRole('button', { name: 'Solicitar egreso' }));
     expect(await screen.findByText('¿Solicitar el egreso?')).toBeInTheDocument();
@@ -148,7 +155,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
       },
     });
     const user = userEvent.setup();
-    renderEgreso();
+    await renderEgreso();
 
     await user.click(await screen.findByRole('button', { name: 'Solicitar egreso' }));
     await user.click(await screen.findByRole('button', { name: 'Cancelar' }));
@@ -160,7 +167,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
   it('shows an error toast and keeps the request button when the backend rejects the request', async () => {
     mockEgreso({ post: () => HttpResponse.json(errorBody('ANY'), { status: 409 }) });
     const user = userEvent.setup();
-    renderEgreso();
+    await renderEgreso();
 
     await user.click(await screen.findByRole('button', { name: 'Solicitar egreso' }));
     await user.click(await screen.findByRole('button', { name: 'Solicitar' }));
@@ -172,7 +179,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
   it('shows the requested state with the next step and no request button', async () => {
     mockEgreso({ own: ownRequest({ request: detail('REQUESTED') }) });
 
-    renderEgreso();
+    await renderEgreso();
 
     expect(await screen.findByText('Solicitada')).toBeInTheDocument();
     expect(screen.getByText('Enviaste tu solicitud el 28/10/2026.')).toBeInTheDocument();
@@ -183,7 +190,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
   it('shows the debt verified state waiting for the director', async () => {
     mockEgreso({ own: ownRequest({ request: detail('ADMIN_VERIFIED', { verifiedAt: '2026-10-29T09:00:00' }) }) });
 
-    renderEgreso();
+    await renderEgreso();
 
     expect(await screen.findByText('En revisión de Dirección')).toBeInTheDocument();
     expect(screen.getByText('Administración verificó tu situación de deuda el 29/10/2026.')).toBeInTheDocument();
@@ -193,7 +200,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
   it('shows the approved state without a request button', async () => {
     mockEgreso({ own: ownRequest({ graduated: true, request: detail('APPROVED', { decidedAt: '2026-10-30T12:00:00' }) }) });
 
-    renderEgreso();
+    await renderEgreso();
 
     expect(await screen.findByText('Egreso aprobado')).toBeInTheDocument();
     expect(screen.getByText('La Dirección aprobó tu egreso el 30/10/2026.')).toBeInTheDocument();
@@ -207,7 +214,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
       }),
     });
 
-    renderEgreso();
+    await renderEgreso();
 
     expect(await screen.findByText('Rechazada')).toBeInTheDocument();
     expect(screen.getByText('La Dirección rechazó tu solicitud el 30/10/2026.')).toBeInTheDocument();
@@ -219,7 +226,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
     mockEgreso();
     server.use(http.get(`${API}/me/program-enrollments/5/graduation-request`, () => new HttpResponse(null, { status: 500 })));
 
-    renderEgreso();
+    await renderEgreso();
 
     expect(await screen.findByText('No pudimos cargar tu egreso')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();

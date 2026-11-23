@@ -7,7 +7,13 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Certific
 import com.red_escuela.backend.graduation.certificate.regular.exception.NoDebtToExceptException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.graduation.events.CertificateExceptionRequestedEvent;
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateSettings;
+import com.red_escuela.backend.graduation.events.CertificateExceptionCreatedByDirectorEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
+import org.mockito.ArgumentCaptor;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import org.hibernate.exception.ConstraintViolationException;
@@ -42,9 +48,11 @@ class CertificateExceptionRequesterTest {
     private final RegularStandingGate standingGate = mock(RegularStandingGate.class);
     private final CurrentActorFinder currentActorFinder = mock(CurrentActorFinder.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+    private final RegularCertificateSettingsFinder settingsFinder = mock(RegularCertificateSettingsFinder.class);
+    private final AuditTrail auditTrail = mock(AuditTrail.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-05T12:00:00Z"), ZoneOffset.UTC);
     private final CertificateExceptionRequester requester = new CertificateExceptionRequester(repository, factsFinder, standingGate,
-            currentActorFinder, eventPublisher, clock);
+            currentActorFinder, eventPublisher, settingsFinder, auditTrail, clock);
     private final RequestCertificateExceptionCommand command = new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, ENROLLMENT_ID,
             OrganismKind.COURT, "Causa 1/2026", REASON);
 
@@ -56,6 +64,7 @@ class CertificateExceptionRequesterTest {
         when(factsFinder.find(RegularityKind.PROGRAM, ENROLLMENT_ID)).thenReturn(new RegularEnrollmentFacts(student, "la carrera", "Tecnicatura"));
         when(currentActorFinder.currentPersonId()).thenReturn(REQUESTER_ID);
         when(repository.existsByProgramEnrollmentIdAndStatusIn(any(), any())).thenReturn(false);
+        when(settingsFinder.current()).thenReturn(RegularCertificateSettings.DEFAULT);
     }
 
     private DataIntegrityViolationException violationOf(String constraintName) {
@@ -114,5 +123,66 @@ class CertificateExceptionRequesterTest {
         requester.request(command);
 
         verify(eventPublisher).publishEvent(any(CertificateExceptionRequestedEvent.class));
+    }
+
+    @Test
+    void directCreationSavesAnApprovedExceptionAuditsItAndNotifiesAdministrative() {
+        when(repository.saveAndFlush(any(CertificateExceptionApproval.class))).thenAnswer(invocation -> {
+            CertificateExceptionApproval saved = invocation.getArgument(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(saved, "id", 21L);
+            return saved;
+        });
+
+        var response = requester.createApprovedByDirector(command);
+
+        assertThat(response.status()).isEqualTo(com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionStatus.APPROVED);
+        assertThat(response.createdByDirector()).isTrue();
+        assertThat(response.decidedById()).isEqualTo(REQUESTER_ID);
+        assertThat(response.validUntil()).isEqualTo(response.decidedAt().plusDays(RegularCertificateSettings.DEFAULT.exceptionValidityDays().value()));
+        ArgumentCaptor<AuditRecord> audit = ArgumentCaptor.forClass(AuditRecord.class);
+        verify(auditTrail).record(audit.capture());
+        assertThat(audit.getValue().action()).isEqualTo(AuditAction.CERTIFICATE_EXCEPTION_DIRECT_CREATED);
+        verify(eventPublisher).publishEvent(any(CertificateExceptionCreatedByDirectorEvent.class));
+        verify(eventPublisher, never()).publishEvent(any(CertificateExceptionRequestedEvent.class));
+    }
+
+    @Test
+    void directCreationWithoutDebtInFullBillingIsRefusedAndLeavesNoTrace() {
+        doThrow(new NoDebtToExceptException()).when(standingGate).requireDebtToExcept(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID);
+
+        assertThatThrownBy(() -> requester.createApprovedByDirector(command)).isInstanceOf(NoDebtToExceptException.class);
+
+        verify(repository, never()).saveAndFlush(any(CertificateExceptionApproval.class));
+        verify(auditTrail, never()).record(any(AuditRecord.class));
+    }
+
+    @Test
+    void directCreationRefusesASecondOpenExceptionForTheEnrollment() {
+        when(repository.existsByProgramEnrollmentIdAndStatusIn(any(), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> requester.createApprovedByDirector(command)).isInstanceOf(CertificateExceptionAlreadyOpenException.class);
+
+        verify(auditTrail, never()).record(any(AuditRecord.class));
+    }
+
+    @Test
+    void directCreationWithAShortReasonIsRefusedBeforeSaving() {
+        RequestCertificateExceptionCommand shortReason = new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, ENROLLMENT_ID,
+                OrganismKind.COURT, "Causa 1/2026", "motivo corto");
+
+        assertThatThrownBy(() -> requester.createApprovedByDirector(shortReason))
+                .isInstanceOf(com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionReasonInvalidException.class);
+
+        verify(repository, never()).saveAndFlush(any(CertificateExceptionApproval.class));
+    }
+
+    @Test
+    void concurrentDirectCreationReportsAlreadyOpenOnTheOpenPerEnrollmentConstraint() {
+        when(repository.saveAndFlush(any(CertificateExceptionApproval.class)))
+                .thenThrow(violationOf("uq_certificate_exception_open_per_enrollment"));
+
+        assertThatThrownBy(() -> requester.createApprovedByDirector(command)).isInstanceOf(CertificateExceptionAlreadyOpenException.class);
+
+        verify(auditTrail, never()).record(any(AuditRecord.class));
     }
 }

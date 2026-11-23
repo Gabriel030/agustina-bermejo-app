@@ -95,6 +95,7 @@ export const FINANCIAL_PANELS = [
   {
     id: 'collection-reminders',
     basePath: '/notification-metrics',
+    currencyScoped: false,
     tab: 'COLLECTIONS',
     title: 'Avisos de cobranza',
     subtitle: 'Avisos por estado y % de alumnos que pagó dentro de las 72 h',

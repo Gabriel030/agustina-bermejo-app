@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.account.dto.AccountCreditAllocationResponse;
 import com.red_escuela.backend.billing.account.usecase.AllocateAccountCreditUseCase;
 import com.red_escuela.backend.shared.module.BillingMode;
@@ -19,6 +20,7 @@ public class CurrentAccountAllocationController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/students/{studentId}/current-account/allocations")
+    @RequiresPermission(code = "billing.allocate_account_credit", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AccountCreditAllocationResponse allocateCredit(@PathVariable Long studentId) {
         return AccountCreditAllocationResponse.from(allocateAccountCreditUseCase.allocateCreditOfStudentAccounts(studentId));
     }

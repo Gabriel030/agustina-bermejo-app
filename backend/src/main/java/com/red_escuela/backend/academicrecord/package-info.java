@@ -1,7 +1,7 @@
 /**
  * <b>Qué es</b>: módulo de la vista del alumno sobre su propio recorrido (horario, asistencia, notas,
- * inscripciones a comisiones). No tiene entidades ni repositorios: compone lo que exponen los demás
- * módulos. Es de las capas más altas: puede depender de casi todos.
+ * inscripciones a comisiones). Compone lo que exponen los demás módulos; su única persistencia propia es el token
+ * del enlace de calendario ({@code calendar_feed_token}). Es de las capas más altas: puede depender de casi todos.
  *
  * <p><b>Expone</b>: nada: no tiene {@code api} ni {@code events}.
  *

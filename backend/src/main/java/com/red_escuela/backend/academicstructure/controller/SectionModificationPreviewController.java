@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.dto.ModifySectionRequest;
 import com.red_escuela.backend.academicstructure.dto.SectionModificationPreviewResponse;
 import com.red_escuela.backend.academicstructure.usecase.cycle.PreviewSectionModificationUseCase;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +20,7 @@ public class SectionModificationPreviewController {
     }
 
     @PostMapping("/subject-sections/{id}/modification-request/preview")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @RequiresPermission(code = "academicstructure.request_section_modification", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public SectionModificationPreviewResponse previewSectionModification(@PathVariable Long id,
                                                                          @Valid @RequestBody ModifySectionRequest request) {
         return previewModification.preview(id, request);

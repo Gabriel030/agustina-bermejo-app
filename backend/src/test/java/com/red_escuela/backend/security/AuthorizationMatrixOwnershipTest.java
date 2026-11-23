@@ -65,10 +65,23 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
         Long resourceId = ownership.resourceIdFor(kind);
         String body = ownership.resolvePlaceholders(ownershipCase.row().body());
 
-        int ownerStatus = statusWithToken(endpoint, body, ownership.ownerTokenFor(kind), resourceId);
         int strangerStatus = statusWithToken(endpoint, body, ownership.strangerTokenFor(kind), resourceId);
+        int ownerStatus = statusWithToken(endpoint, body, ownership.ownerTokenFor(kind), resourceId);
 
         assertThat(ownerStatus).as("dueno en %s", ownershipCase).isNotIn(403, 404);
         assertThat(strangerStatus).as("no dueno en %s", ownershipCase).isEqualTo(kind.strangerStatus());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("administrativeOwnedRows")
+    void subdirectorWhoDidNotOpenTheRequestGetsTheSameStatusAsAnotherAdministrative(OwnershipCase ownershipCase) throws Exception {
+        MappedEndpoint endpoint = mappedEndpoints().stream()
+                .filter(candidate -> candidate.key().equals(ownershipCase.row().key()))
+                .findFirst().orElseThrow();
+        String body = ownership.resolvePlaceholders(ownershipCase.row().body());
+
+        int status = statusWithToken(endpoint, body, fixtures.tokenFor(MatrixRole.SUBDIRECTOR), ownership.resourceIdFor(ownershipCase.kind()));
+
+        assertThat(status).as("subdirector no dueno en %s", ownershipCase).isEqualTo(ownershipCase.kind().strangerStatus());
     }
 }

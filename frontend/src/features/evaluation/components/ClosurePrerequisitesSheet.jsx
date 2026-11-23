@@ -23,7 +23,7 @@ export function ClosurePrerequisitesSheet({ closureId, student, subjectName, onC
           {isError && (
             <div className="flex flex-col items-start gap-2 text-sm text-ink-soft">
               No pudimos cargar las correlativas.
-              <Button type="button" variant="outline" onClick={() => refetch()}>
+              <Button type="button" variant="outline" onClick={() => refetch()} className="min-h-11 md:min-h-8">
                 Reintentar
               </Button>
             </div>

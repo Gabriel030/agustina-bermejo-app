@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
 import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.service.GoogleLoginTransaction;
 import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
 import com.red_escuela.backend.identity.specialist.PublicPasswordResetBlockPolicy;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ class LoginWithGoogleServiceTest {
     private final AuthTokenIssuer authTokenIssuer = mock(AuthTokenIssuer.class);
     private final PublicPasswordResetBlockPolicy blockPolicy = mock(PublicPasswordResetBlockPolicy.class);
     private final LoginWithGoogleService service =
-            new LoginWithGoogleService(googleIdTokenService, personRepository, authTokenIssuer, blockPolicy);
+            new LoginWithGoogleService(
+                    new GoogleLoginTransaction(googleIdTokenService, personRepository, authTokenIssuer, blockPolicy));
 
     private Person personWithStatus(StatusType status) {
         Person person = new Person();

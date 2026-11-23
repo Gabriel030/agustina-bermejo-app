@@ -25,9 +25,13 @@ export const TIPO_NOTIFICACION_LABEL = {
   SECTION_CHANGED: 'Cambio de comisión',
   SECTION_CHANGED_TEACHER: 'Cambio de comisión de un alumno',
   REGULAR_CERTIFICATE_READY: 'Constancia lista',
+  GRADUATION_CERTIFICATE_ISSUED: 'Certificado de egreso disponible',
+  GRADUATION_CERTIFICATE_REVOKED: 'Certificado de egreso revocado',
+  GRADUATION_CERTIFICATE_REISSUED: 'Certificado de egreso reemitido',
   REGULAR_CERTIFICATE_REJECTED: 'Constancia rechazada',
   CERTIFICATE_EXCEPTION_REQUESTED: 'Excepción de constancia pendiente',
   CERTIFICATE_EXCEPTION_DECIDED: 'Excepción de constancia resuelta',
+  CERTIFICATE_EXCEPTION_DIRECT_CREATED: 'Excepción creada por el Director',
   PAYMENT_RECEIPT_APPROVED: 'Pago acreditado',
   PAYMENT_RECEIPT_REJECTED: 'Comprobante rechazado',
   ANNOUNCEMENT_PUBLISHED: 'Nuevo aviso',
@@ -79,6 +83,9 @@ export const TIPO_NOTIFICACION_LABEL = {
   OFFER_CYCLE_SUBMITTED: 'Oferta enviada a aprobación',
   OFFER_CYCLE_APPROVED: 'Oferta aprobada',
   OFFER_CYCLE_REJECTED: 'Oferta rechazada',
+  SECTION_MODIFICATION_REQUESTED: 'Pedido de cambio de horario',
+  SECTION_MODIFICATION_APPROVED: 'Cambio de horario aprobado',
+  SECTION_MODIFICATION_REJECTED: 'Cambio de horario rechazado',
 };
 
 export const TONO_NOTIFICACION = {
@@ -108,9 +115,13 @@ export const TONO_NOTIFICACION = {
   SECTION_CHANGED: 'accent2',
   SECTION_CHANGED_TEACHER: 'accent2',
   REGULAR_CERTIFICATE_READY: 'success',
+  GRADUATION_CERTIFICATE_ISSUED: 'success',
+  GRADUATION_CERTIFICATE_REVOKED: 'warning',
+  GRADUATION_CERTIFICATE_REISSUED: 'success',
   REGULAR_CERTIFICATE_REJECTED: 'warning',
   CERTIFICATE_EXCEPTION_REQUESTED: 'warning',
   CERTIFICATE_EXCEPTION_DECIDED: 'accent2',
+  CERTIFICATE_EXCEPTION_DIRECT_CREATED: 'accent2',
   PAYMENT_RECEIPT_APPROVED: 'success',
   PAYMENT_RECEIPT_REJECTED: 'danger',
   ANNOUNCEMENT_PUBLISHED: 'accent2',
@@ -162,6 +173,9 @@ export const TONO_NOTIFICACION = {
   OFFER_CYCLE_SUBMITTED: 'warning',
   OFFER_CYCLE_APPROVED: 'success',
   OFFER_CYCLE_REJECTED: 'danger',
+  SECTION_MODIFICATION_REQUESTED: 'warning',
+  SECTION_MODIFICATION_APPROVED: 'success',
+  SECTION_MODIFICATION_REJECTED: 'danger',
 };
 
 export const ETIQUETA_NOTIFICACION_DESCONOCIDA = 'Notificación';
@@ -176,16 +190,20 @@ function fechaCorta(fecha) {
   return `${dia}/${mes}/${fecha.getFullYear()}`;
 }
 
-export function tiempoRelativo(fechaIso) {
+export function describeTime(fechaIso) {
   const fecha = new Date(fechaIso);
-  if (!fechaIso || Number.isNaN(fecha.getTime())) return '';
+  if (!fechaIso || Number.isNaN(fecha.getTime())) return { text: '', isRelative: false };
   const diffMs = Date.now() - fecha.getTime();
   const minutos = Math.floor(diffMs / 60000);
-  if (minutos < 1) return 'recién';
-  if (minutos < 60) return `hace ${minutos} min`;
+  if (minutos < 1) return { text: 'recién', isRelative: true };
+  if (minutos < 60) return { text: `hace ${minutos} min`, isRelative: true };
   const horas = Math.floor(minutos / 60);
-  if (horas < 24) return `hace ${horas} h`;
+  if (horas < 24) return { text: `hace ${horas} h`, isRelative: true };
   const dias = Math.floor(horas / 24);
-  if (dias < 7) return `hace ${dias} d`;
-  return fechaCorta(fecha);
+  if (dias < 7) return { text: `hace ${dias} d`, isRelative: true };
+  return { text: fechaCorta(fecha), isRelative: false };
+}
+
+export function tiempoRelativo(fechaIso) {
+  return describeTime(fechaIso).text;
 }

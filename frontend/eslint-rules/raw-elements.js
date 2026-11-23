@@ -9,7 +9,6 @@ export const EXEMPT_INPUT_TYPES = ['checkbox', 'radio', 'file', 'hidden']
 
 export const RAW_ELEMENT_EXCEPTIONS = [
   'src/features/attendance/pages/DocenteTomarAsistencia.jsx',
-  'src/features/evaluation/components/GradeGridTable.jsx',
 ]
 
 function literalType(node) {

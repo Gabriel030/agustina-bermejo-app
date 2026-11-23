@@ -6,11 +6,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
@@ -175,6 +178,62 @@ class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"observation\":\"Observacion de prueba\"}"))
+                .andReturn().getResponse().getStatus();
+    }
+
+    @Test
+    void strangerTeacherCannotDeleteAnnouncementOfAnotherSection() throws Exception {
+        long announcementId = ownership.resourceIdFor(OwnershipKind.ANNOUNCEMENT_INSTRUCTOR);
+
+        MockHttpServletResponse foreign = mockMvc.perform(delete("/announcements/{id}", announcementId)
+                .header("Authorization", "Bearer " + strangerTeacherToken())).andReturn().getResponse();
+        MockHttpServletResponse missing = mockMvc.perform(delete("/announcements/{id}", MISSING_ID)
+                .header("Authorization", "Bearer " + strangerTeacherToken())).andReturn().getResponse();
+
+        assertThat(foreign.getStatus()).isEqualTo(404);
+        assertThat(foreign.getContentAsString()).isEqualTo(missing.getContentAsString());
+        MockHttpServletResponse stillThere = mockMvc.perform(get("/announcements/{id}/recipients", announcementId)
+                .header("Authorization", "Bearer " + ownership.ownerTokenFor(OwnershipKind.ANNOUNCEMENT_INSTRUCTOR)))
+                .andReturn().getResponse();
+        assertThat(stillThere.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void studentOwnerAndSectionInstructorCannotUseStaffJustifyOnRealAttendance() throws Exception {
+        long attendanceId = ownership.resourceIdFor(OwnershipKind.ATTENDANCE_STUDENT);
+
+        int studentStatus = staffJustifyStatus(attendanceId, ownership.ownerTokenFor(OwnershipKind.ATTENDANCE_STUDENT));
+        int instructorStatus = staffJustifyStatus(attendanceId, ownership.ownerTokenFor(OwnershipKind.ATTENDANCE_SECTION_INSTRUCTOR));
+
+        assertThat(studentStatus).isEqualTo(403);
+        assertThat(instructorStatus).isEqualTo(403);
+    }
+
+    @Test
+    void strangerStudentGetsNotFoundOnSelfServiceJustifyOfAForeignAttendanceSameAsMissing() throws Exception {
+        long attendanceId = ownership.resourceIdFor(OwnershipKind.ATTENDANCE_STUDENT);
+        String strangerToken = ownership.strangerTokenFor(OwnershipKind.ATTENDANCE_STUDENT);
+
+        MockHttpServletResponse foreign = selfServiceJustify(attendanceId, strangerToken);
+        MockHttpServletResponse missing = selfServiceJustify(MISSING_ID, strangerToken);
+
+        assertThat(foreign.getStatus()).isEqualTo(404);
+        assertThat(missing.getStatus()).isEqualTo(404);
+        assertThat(foreign.getContentAsString().replaceAll("\"requestId\":\"[^\"]*\"", ""))
+                .isEqualTo(missing.getContentAsString().replaceAll("\"requestId\":\"[^\"]*\"", ""));
+    }
+
+    private MockHttpServletResponse selfServiceJustify(long attendanceId, String token) throws Exception {
+        MockMultipartFile proof = new MockMultipartFile("comprobante", "proof.pdf", "application/pdf", "%PDF-1.4 proof".getBytes());
+        return mockMvc.perform(multipart("/me/attendance/{id}/justify", attendanceId).file(proof)
+                .header("Authorization", "Bearer " + token)).andReturn().getResponse();
+    }
+
+    private int staffJustifyStatus(long attendanceId, String token) throws Exception {
+        return mockMvc.perform(post("/attendance/{id}/justify", attendanceId)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Motivo suficiente\"}"))
                 .andReturn().getResponse().getStatus();
     }
 

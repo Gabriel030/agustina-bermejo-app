@@ -1,0 +1,138 @@
+import { describe, expect, it } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+import { Routes, Route } from 'react-router-dom';
+import { createDeferred } from '@/test/deferred';
+import { server } from '@/test/mocks/server';
+import { renderWithProviders } from '@/test/renderWithProviders';
+import { AlumnoPagos } from '@/features/billing/pages/AlumnoPagos';
+
+const API = 'http://localhost:8080';
+
+function renderPagos() {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/alumno/pagos" element={<AlumnoPagos />} />
+    </Routes>,
+    { route: '/alumno/pagos' },
+  );
+}
+
+describe('AlumnoPagos', () => {
+  it('ofrece pagar la matrícula de ingreso de una solicitud aprobada sin inscripción todavía (D-227)', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([
+          {
+            id: 3,
+            programName: 'Diseño Gráfico',
+            status: 'APPROVED',
+            admissionInvoice: { id: 77, total: { amount: '50000.00', currency: 'ARS' }, dueDate: '2026-03-20', paymentStatus: 'PENDING' },
+          },
+        ]),
+      ),
+    );
+    renderPagos();
+
+    expect(await screen.findByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).toBeInTheDocument();
+    expect(screen.getByText(/Diseño Gráfico · \$\s50\.000,00\. Vencimiento:/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pagar matrícula' })).toBeInTheDocument();
+  });
+
+  it('no ofrece pagar la matrícula de ingreso cuando ya está paga', async () => {
+    const applications = createDeferred();
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, async () => {
+        await applications.promise;
+        return HttpResponse.json([
+          {
+            id: 3,
+            programName: 'Diseño Gráfico',
+            status: 'APPROVED',
+            admissionInvoice: { id: 77, total: { amount: '50000.00', currency: 'ARS' }, dueDate: '2026-03-20', paymentStatus: 'PAID' },
+          },
+        ]);
+      }),
+    );
+    const { container } = renderPagos();
+
+    await screen.findByPlaceholderText('Buscar curso o carrera…');
+    expect(container.querySelector('.skeleton-shimmer.h-28')).toBeInTheDocument();
+    applications.resolve();
+    await waitFor(() => expect(container.querySelector('.skeleton-shimmer.h-28')).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
+  });
+
+  it('muestra el error en lugar de callar cuando no puede cargar las solicitudes', async () => {
+    server.use(http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json({}, { status: 500 })));
+    renderPagos();
+
+    expect(await screen.findByText(/No pudimos cargar tus matrículas de ingreso/)).toBeInTheDocument();
+  });
+
+  it('con el comprobante en revisión muestra el pago en revisión en lugar de ofrecer pagar de nuevo', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([
+          {
+            id: 3,
+            programName: 'Diseño Gráfico',
+            status: 'APPROVED',
+            admissionInvoice: {
+              id: 77,
+              total: { amount: '50000.00', currency: 'ARS' },
+              dueDate: '2099-03-20',
+              paymentStatus: 'PENDING',
+              receiptStatus: 'PENDING_REVIEW',
+              receiptUploadedAt: '2026-10-02T10:00:00',
+            },
+          },
+        ]),
+      ),
+    );
+    renderPagos();
+
+    expect(await screen.findByText('Pago en revisión')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
+  });
+
+  it('muestra la pestaña Mis descuentos con los descuentos del alumno', async () => {
+    server.use(
+      http.get(`${API}/me/student-discounts`, () =>
+        HttpResponse.json([
+          {
+            id: 1, type: 'SCHOLARSHIP', applicableInvoiceType: 'MONTHLY_INSTALLMENT', calculation: { type: 'PROPORTIONAL', ratePercent: 15 },
+            fromPeriod: '2026-03', toPeriod: '2026-12', status: 'ACTIVE', appliedInstallments: [], lostPeriods: [], definitionName: 'Beca', enrollmentName: 'Enfermería',
+          },
+        ])),
+    );
+    const user = userEvent.setup();
+    renderPagos();
+
+    await user.click(await screen.findByRole('tab', { name: 'Mis descuentos' }));
+
+    expect(await screen.findByRole('heading', { name: 'Vigentes' })).toBeInTheDocument();
+    expect(screen.getByText('15 %')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Cuotas' }));
+    expect(await screen.findByPlaceholderText('Buscar curso o carrera…')).toBeInTheDocument();
+  });
+
+  it('muestra el saldo a favor con el enlace a las notas de crédito cuando hay crédito disponible', async () => {
+    server.use(
+      http.get(`${API}/me/credit-balance`, () =>
+        HttpResponse.json({
+          currency: 'ARS',
+          unallocatedCredit: { amount: '6000.00', currency: 'ARS' },
+          reservedByPendingRefunds: { amount: '0.00', currency: 'ARS' },
+          availableCredit: { amount: '6000.00', currency: 'ARS' },
+        }),
+      ),
+    );
+    renderPagos();
+
+    expect(await screen.findByText('Saldo a favor')).toBeInTheDocument();
+    expect(screen.getByText('$ 6.000,00')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver mis notas de crédito' })).toBeInTheDocument();
+  });
+});

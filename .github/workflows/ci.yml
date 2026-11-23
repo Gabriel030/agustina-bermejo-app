@@ -10,7 +10,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -22,6 +22,8 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: read
+      checks: read
     outputs:
       relevant: ${{ steps.changes.outputs.relevant }}
       frontend: ${{ steps.changes.outputs.frontend }}
@@ -554,6 +556,8 @@ jobs:
     name: frontend-tests (${{ matrix.shard }})
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: ${{ matrix.shard == 1 && '0' || '1' }}
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -568,7 +572,12 @@ jobs:
 
       - name: Run the frontend test shard
         working-directory: frontend
-        run: npm run test -- --shard=${{ matrix.shard }}/3
+        run: npm run test -- --shard=${{ matrix.shard }}/3 --exclude src/test/unhandledBaseline.test.js
+
+      - name: Run the baseline guard against the base branch
+        if: matrix.shard == 1
+        working-directory: frontend
+        run: npx vitest run src/test/unhandledBaseline.test.js
 
   frontend-checks:
     runs-on: ubuntu-latest
@@ -601,6 +610,37 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+  frontend-screen-budget:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund --prefer-offline
+
+      - name: Measure the requests of every Director screen
+        working-directory: frontend
+        env:
+          PERF_SCREENS_OUT: ${{ github.workspace }}/perf/out/screens.json
+        run: npx vitest run src/test/flows/directorScreenRequests.integration.test.jsx --maxWorkers=2 --testTimeout=40000
+
+      - name: Check the screen budgets
+        env:
+          PERF_SCOPE: screen
+        run: |
+          python3 perf/test_check_budget.py
+          python3 perf/check_budget.py
+
   secret-scan-pr:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
@@ -621,7 +661,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
-    needs: [changes, frontend-checks, frontend-tests]
+    needs: [changes, frontend-checks, frontend-tests, frontend-screen-budget]
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     steps:
       - name: Aggregate the frontend results
@@ -630,13 +670,14 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           CHECKS: ${{ needs.frontend-checks.result }}
           TESTS: ${{ needs.frontend-tests.result }}
+          BUDGET: ${{ needs.frontend-screen-budget.result }}
           RELEVANT: ${{ needs.changes.outputs.frontend }}
           REUSE: ${{ needs.changes.outputs.reuse_frontend }}
           REUSE_PR: ${{ needs.changes.outputs.reuse_pr }}
           REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
         run: |
           set -uo pipefail
-          echo "changes=$CHANGES frontend=$RELEVANT reuse=$REUSE checks=$CHECKS tests=$TESTS"
+          echo "changes=$CHANGES frontend=$RELEVANT reuse=$REUSE checks=$CHECKS tests=$TESTS budget=$BUDGET"
           if [ "$CHANGES" != "success" ]; then exit 1; fi
           if [ "$RELEVANT" != "true" ]; then
             echo "no frontend changes"
@@ -646,7 +687,7 @@ jobs:
             echo "Frontend reused from PR #$REUSE_PR (run $REUSE_RUN): the merged tree is identical to the tree that PR verified." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          [ "$CHECKS" = "success" ] && [ "$TESTS" = "success" ]
+          [ "$CHECKS" = "success" ] && [ "$TESTS" = "success" ] && [ "$BUDGET" = "success" ]
 
   deploy-images:
     runs-on: ubuntu-latest

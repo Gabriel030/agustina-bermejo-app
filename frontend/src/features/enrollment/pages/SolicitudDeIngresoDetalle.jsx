@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { ArrowLeft, CheckCircle2, FileText, ShieldCheck, TriangleAlert, User } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { Notice } from '@/components/Notice';
 import { StickyActionBar } from '@/components/StickyActionBar';
 import { ModalMotivo } from '@/components/ModalMotivo';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { UnavailableRequestState } from '@/components/director/UnavailableRequestState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { describeError } from '@/api/describeError';
 import { useReviewBasePath } from '@/features/enrollment/hooks/useReviewBasePath';
@@ -32,6 +34,7 @@ import {
   blockingReasonMessages,
   cohortLabel,
   debtMessages,
+  documentationLabel,
   isApplicationAlreadyResolved,
   missingDocumentsText,
   nextPendingId,
@@ -40,14 +43,21 @@ import { formatMoney } from '@/lib/billing';
 import { formatearFecha } from '@/lib/comisiones';
 import { ageLabel, MIN_REJECTION_REASON_LENGTH } from '@/lib/aprobaciones';
 
-function ReadOnlyField({ id, label, value }) {
+function DetailTerm({ label, children }) {
   return (
-    <div className="flex flex-col gap-1">
-      <Label htmlFor={id} className="text-size-12 text-ink-faint">
-        {label}
-      </Label>
-      <Input id={id} readOnly value={value ?? '—'} />
+    <div className="min-w-0">
+      <dt className="text-size-12 font-bold uppercase tracking-wide text-ink-faint">{label}</dt>
+      <dd className="mt-0.5 break-words font-bold text-ink tabular-nums">{children ?? '—'}</dd>
     </div>
+  );
+}
+
+function CardTitle({ icon: Icon, id, children }) {
+  return (
+    <h2 id={id} className="flex items-center gap-2 font-heading text-size-15 font-semibold text-ink">
+      <Icon className="size-[18px] text-primary" aria-hidden="true" />
+      {children}
+    </h2>
   );
 }
 
@@ -71,12 +81,14 @@ function DocumentationCard({ application }) {
   const documentation = application.documentation;
   const documents = documentation?.documents ?? [];
   return (
-    <GlassCard className="flex flex-col gap-2 p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="font-heading text-base font-semibold text-ink">Documentación</h2>
+    <GlassCard className="flex flex-col gap-2 p-4" aria-labelledby="documentation-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <CardTitle icon={FileText} id="documentation-title">
+          Documentación
+        </CardTitle>
         {documentation && (
           <StatusPill tone={documentation.complete ? 'success' : 'warning'}>
-            {documentation.complete ? 'Completa' : 'Incompleta'}
+            {documentationLabel(documentation)}
           </StatusPill>
         )}
       </div>
@@ -98,7 +110,7 @@ function DocumentationCard({ application }) {
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    className="min-h-11 px-4 font-bold"
                     aria-label={`Ver ${label}`}
                     onClick={() => openDocument(application.id, document.id)}
                   >
@@ -121,15 +133,15 @@ function CheckRow({ ok, title, children }) {
     <div className="flex items-start gap-3 py-2">
       <span
         aria-hidden="true"
-        className={`grid size-[22px] shrink-0 place-items-center rounded-full text-size-12 font-bold ${ok ? 'bg-success-bg text-success-ink' : 'bg-danger-bg text-danger-ink'}`}
+        className={`grid size-7 shrink-0 place-items-center rounded-full text-size-12 font-bold ${ok ? 'bg-success-bg text-success-ink' : 'bg-danger-bg text-danger-ink'}`}
       >
-        {ok ? '✓' : '!'}
+        {ok ? '✓' : '✕'}
       </span>
       <div className="flex flex-col items-start gap-1">
-        <b className="text-size-14 text-ink">
-          {title}
-          <span className="sr-only">{ok ? ': en regla' : ': bloquea la aprobación'}</span>
-        </b>
+        <div className="flex flex-wrap items-center gap-2">
+          <b className="text-size-14 text-ink">{title}</b>
+          <StatusPill tone={ok ? 'success' : 'danger'}>{ok ? 'En regla' : 'Bloquea'}</StatusPill>
+        </div>
         {children}
       </div>
     </div>
@@ -151,7 +163,7 @@ function BeforeApprovingCard({ check, application, basePath }) {
         <span role="alert" className="text-size-13-5 text-ink-soft">
           No pudimos verificar la documentación y la deuda del alumno.
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={() => check.refetch()}>
+        <Button type="button" variant="outline" className="min-h-11" onClick={() => check.refetch()}>
           Reintentar
         </Button>
       </GlassCard>
@@ -162,8 +174,10 @@ function BeforeApprovingCard({ check, application, basePath }) {
   const debtBlocks = data.debt?.blocksApproval;
   const studentPath = `${basePath}/alumnos/${application.studentId}`;
   return (
-    <GlassCard className="flex flex-col gap-1 p-4">
-      <h2 className="font-heading text-base font-semibold text-ink">Antes de aprobar</h2>
+    <GlassCard className="flex flex-col gap-1 p-4" aria-labelledby="before-approving-title">
+      <CardTitle icon={ShieldCheck} id="before-approving-title">
+        Antes de aprobar
+      </CardTitle>
       <CheckRow ok={documentationOk} title="Documentación obligatoria">
         <p className="text-size-12-5 text-ink-faint">
           {documentationOk
@@ -171,7 +185,7 @@ function BeforeApprovingCard({ check, application, basePath }) {
             : `Falta ${missingDocumentsText(data.documentation?.missingTypes)}. Hasta que la suba no se puede aprobar.`}
         </p>
         {!documentationOk && (
-          <Button asChild variant="link" size="inline">
+          <Button asChild variant="link" size="inline" className="min-h-11">
             <Link to={studentPath}>Cargarlo en mostrador desde el legajo</Link>
           </Button>
         )}
@@ -194,8 +208,8 @@ function BeforeApprovingCard({ check, application, basePath }) {
               </p>
             ))}
             <p className="text-size-12-5 text-ink-faint">Tiene que regularizarla antes de que se apruebe el ingreso.</p>
-            {basePath === '/administrativo' && (
-              <Button asChild variant="link" size="inline">
+            {['/administrativo', '/subdirector'].includes(basePath) && (
+              <Button asChild variant="link" size="inline" className="min-h-11">
                 <Link to={`${studentPath}?view=financiero`}>Ir al Financiero del alumno</Link>
               </Button>
             )}
@@ -211,27 +225,29 @@ function BeforeApprovingCard({ check, application, basePath }) {
 function ResolutionCard({ application }) {
   const invoice = application.admissionInvoice;
   return (
-    <GlassCard className="flex flex-col gap-3 p-4">
-      <h2 className="font-heading text-base font-semibold text-ink">Resolución</h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <ReadOnlyField id="resolved-by" label="Resuelta por" value={application.decidedByName} />
-        <ReadOnlyField id="resolved-at" label="Fecha" value={formatearFecha(application.decidedAt)} />
-      </div>
+    <GlassCard className="flex flex-col gap-3 p-4" aria-labelledby="resolution-title">
+      <CardTitle icon={CheckCircle2} id="resolution-title">
+        Resolución
+      </CardTitle>
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <DetailTerm label="Resuelta por">{application.decidedByName}</DetailTerm>
+        <DetailTerm label="Fecha">{formatearFecha(application.decidedAt)}</DetailTerm>
+      </dl>
       {application.status === 'REJECTED' && application.rejectionReason && (
-        <div className="rounded-2xl bg-danger-bg px-4 py-3 text-size-13-5 font-medium text-danger-ink">
+        <Notice tone="danger" role="note" className="text-size-13-5 text-danger-ink">
           <b>Motivo del rechazo (lo ve el alumno):</b> {application.rejectionReason}
-        </div>
+        </Notice>
       )}
       {application.status === 'APPROVED' && invoice && (
-        <div className="rounded-2xl bg-success-bg px-4 py-3 text-size-13-5 font-medium text-success-ink">
-          Matrícula de ingreso · {formatMoney(invoice.total)}
+        <Notice tone="success" role="note" className="text-size-13-5 text-success-ink">
+          Matrícula de ingreso · <b className="tabular-nums">{formatMoney(invoice.total)}</b>
           {invoice.dueDate ? ` · vence ${formatearFecha(invoice.dueDate)}` : ''}
-        </div>
+        </Notice>
       )}
       {application.status === 'EXPIRED' && (
-        <div className="rounded-2xl bg-neutral-bg px-4 py-3 text-size-13-5 font-medium text-neutral-ink">
+        <Notice tone="neutral" role="note" className="text-size-13-5">
           La matrícula de ingreso no se pagó a tiempo: la aprobación venció.
-        </div>
+        </Notice>
       )}
     </GlassCard>
   );
@@ -263,6 +279,14 @@ export function SolicitudDeIngresoDetalle() {
     if (advanced && loadedId) headingRef.current?.focus();
   }, [advanced, loadedId]);
 
+  if (applicationQuery.isError && applicationQuery.error?.status === 403) {
+    return (
+      <PageContainer>
+        <LoadErrorState distinguishForbidden error={applicationQuery.error} backTo={listPath} backLabel="Solicitudes de ingreso" />
+      </PageContainer>
+    );
+  }
+
   if (applicationQuery.isError) {
     return (
       <UnavailableRequestState
@@ -290,6 +314,7 @@ export function SolicitudDeIngresoDetalle() {
   const busy = approve.isPending || reject.isPending;
   const blockReason = check.isLoading ? 'Verificando condiciones…' : approvalBlockReason(check.data);
   const showActions = isPending && !conflict;
+  const awaitingRefresh = conflict && isPending;
   const age = ageLabel(application.requestedAt);
 
   function handleConflict() {
@@ -342,61 +367,75 @@ export function SolicitudDeIngresoDetalle() {
 
   return (
     <PageContainer>
-      <Link to={listPath} className="flex w-fit items-center gap-1.5 text-size-13 font-semibold text-ink-soft hover:text-ink">
-        ← Volver a Solicitudes de ingreso
-      </Link>
+      <nav aria-label="Ruta">
+        <Link
+          to={listPath}
+          className="inline-flex min-h-11 w-fit items-center gap-1.5 text-size-13 font-semibold text-primary hover:underline"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Solicitudes de ingreso
+        </Link>
+      </nav>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 ref={headingRef} tabIndex={-1} className="font-heading text-2xl font-bold text-ink outline-none">
             {application.studentFullName ?? 'Solicitud de ingreso'}
           </h1>
-          <p className="mt-0.5 text-sm text-ink-soft">
+          <p className="mt-0.5 text-sm text-ink-faint">
             {application.programName}
             {cohort ? ` · ${cohort}` : ''}
           </p>
         </div>
-        <StatusPill tone={status.tone}>{status.label}</StatusPill>
+        <StatusPill tone={awaitingRefresh ? 'neutral' : status.tone}>{awaitingRefresh ? 'Estado actualizado' : status.label}</StatusPill>
       </div>
 
       <div role="status" aria-live="polite">
         {conflict && (
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-warning-bg px-4 py-3 text-size-13-5 font-medium text-warning-ink">
+          <div className="flex flex-wrap items-center gap-3 rounded-card border border-warning bg-warning-bg px-4 py-3 text-size-13-5 font-medium text-warning-ink">
+            <TriangleAlert className="size-[18px] shrink-0" aria-hidden="true" />
             <span>
               <b>Otra persona ya resolvió esta solicitud.</b> No se hizo ningún cambio.
             </span>
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" className="min-h-11 px-4 font-bold">
               <Link to={listPath}>Volver a la bandeja</Link>
             </Button>
           </div>
         )}
       </div>
 
-      <GlassCard className="flex flex-col gap-3 p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <ReadOnlyField id="student-name" label="Alumno" value={application.studentFullName} />
-          <ReadOnlyField id="student-dni" label="DNI" value={application.studentDni} />
-          <ReadOnlyField id="student-email" label="Email" value={application.studentEmail} />
-          <ReadOnlyField id="program-name" label="Carrera" value={application.programName} />
-          <ReadOnlyField id="cohort-name" label="Cohorte" value={cohort} />
-          <ReadOnlyField
-            id="requested-at"
-            label="Solicitada"
-            value={`${formatearFecha(application.requestedAt) ?? '—'}${age ? ` · ${age}` : ''}`}
-          />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <GlassCard className="flex flex-col gap-3 p-4" aria-labelledby="applicant-title">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle icon={User} id="applicant-title">
+                Solicitante
+              </CardTitle>
+              <Button asChild variant="link" size="inline" className="min-h-11">
+                <Link to={`${basePath}/alumnos/${application.studentId}`}>Ver legajo del alumno</Link>
+              </Button>
+            </div>
+            <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <DetailTerm label="Alumno">{application.studentFullName}</DetailTerm>
+              <DetailTerm label="DNI">{application.studentDni}</DetailTerm>
+              <DetailTerm label="Email">{application.studentEmail}</DetailTerm>
+              <DetailTerm label="Carrera">{application.programName}</DetailTerm>
+              <DetailTerm label="Cohorte">{cohort}</DetailTerm>
+              <DetailTerm label="Solicitada">
+                {`${formatearFecha(application.requestedAt) ?? '—'}${age ? ` · ${age}` : ''}`}
+              </DetailTerm>
+            </dl>
+          </GlassCard>
+          <DocumentationCard application={application} />
         </div>
-        <Button asChild variant="link" size="inline" className="w-fit">
-          <Link to={`${basePath}/alumnos/${application.studentId}`}>Ver legajo del alumno</Link>
-        </Button>
-      </GlassCard>
-
-      <DocumentationCard application={application} />
-
-      {isPending ? (
-        <BeforeApprovingCard check={check} application={application} basePath={basePath} />
-      ) : (
-        <ResolutionCard application={application} />
-      )}
+        <div className="min-w-0">
+          {isPending ? (
+            <BeforeApprovingCard check={check} application={application} basePath={basePath} />
+          ) : (
+            <ResolutionCard application={application} />
+          )}
+        </div>
+      </div>
 
       {showActions && (
         <StickyActionBar
@@ -410,6 +449,7 @@ export function SolicitudDeIngresoDetalle() {
           <Button
             type="button"
             variant="primary"
+            className="min-h-11 px-5 aria-disabled:cursor-not-allowed aria-disabled:opacity-55"
             aria-disabled={blockReason ? 'true' : undefined}
             aria-describedby="approve-hint"
             disabled={busy}
@@ -420,7 +460,7 @@ export function SolicitudDeIngresoDetalle() {
           >
             Aprobar solicitud
           </Button>
-          <Button type="button" variant="destructive" disabled={busy} onClick={() => setRejectOpen(true)}>
+          <Button type="button" variant="destructive" className="min-h-11 px-5 font-bold" disabled={busy} onClick={() => setRejectOpen(true)}>
             Rechazar
           </Button>
         </StickyActionBar>

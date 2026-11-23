@@ -27,6 +27,7 @@ const ETIQUETA_ROL = {
   DOCENTE: 'Docente',
   PRECEPTOR: 'Preceptor',
   ADMINISTRATIVO: 'Administrativo',
+  SUBDIRECTOR: 'Subdirector',
 };
 
 const ESTADO_BADGE = {

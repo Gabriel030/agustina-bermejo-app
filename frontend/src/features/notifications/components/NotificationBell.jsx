@@ -8,7 +8,7 @@ import { Paginador } from '@/components/Paginador';
 import { NOTIFICATIONS_PAGE_SIZE, useMisNotificaciones, useNotificacionesNoLeidas, useMarcarNotificacionLeida } from '@/features/notifications/hooks/useNotifications';
 import { StaleStamp } from '@/components/offline/StaleStamp';
 import { useActiveRole } from '@/hooks/useActiveRole';
-import { notificationDestination } from '@/lib/notificationDestination';
+import { notificationDestination } from '@/features/notifications/lib/notificationDestination';
 import { TONO_NOTIFICACION, etiquetaNotificacion, tiempoRelativo } from '@/lib/notificaciones';
 
 const BORDE_TONO = {
@@ -90,7 +90,7 @@ export function NotificationBell() {
         align="end"
         aria-label="Notificaciones"
         sideOffset={8}
-        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay backdrop-blur-[28px] backdrop-saturate-[1.6]"
+        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)"
       >
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-size-13 font-semibold text-ink">
           Notificaciones

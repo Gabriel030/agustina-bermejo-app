@@ -9,7 +9,6 @@ import com.red_escuela.backend.billing.configuration.service.ChangeBillingConfig
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDate;
 
@@ -27,7 +26,6 @@ public class ProposeBillingConfigurationChangeService implements ProposeBillingC
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public BillingOperationOutcome<ConfigurationVersion> proposeChange(ConfigurationTopic topic, ConfigurationValues values, LocalDate effectiveFrom, String changeReason) {
         ChangeBillingConfigurationCommand command = new ChangeBillingConfigurationCommand(topic, values, effectiveFrom, changeReason,
                 actorResolver.currentPersonId(), actorResolver.currentActorIsDirector());

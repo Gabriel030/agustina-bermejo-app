@@ -1,5 +1,8 @@
 package com.red_escuela.backend.graduation.certificate.engine;
 
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -14,6 +17,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +28,8 @@ import java.util.List;
 public class CertificatePdfRenderer {
 
     private static final String FONT_RESOURCE = "/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf";
+    public static final String ENGINE_VERSION = "1";
+
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final float QUIET_ZONE_MODULES = 2;
 
@@ -55,6 +63,7 @@ public class CertificatePdfRenderer {
                 drawQr(content, definition.qrRect(), verificationUrl);
                 drawCode(content, font, definition.codeRect(), code, verificationUrl);
             }
+            fixDocumentId(document, code);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             document.save(out);
             return out.toByteArray();
@@ -77,11 +86,24 @@ public class CertificatePdfRenderer {
                 new ApprovalCertificateDesign().draw(document, content, size, fonts, snapshot, code, assets,
                         (stream, rect) -> drawQr(stream, rect, verificationUrl));
             }
+            fixDocumentId(document, code);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             document.save(out);
             return out.toByteArray();
         } catch (IOException e) {
             throw new UncheckedIOException("No se pudo generar el PDF del certificado", e);
+        }
+    }
+
+    private void fixDocumentId(PDDocument document, CertificateCode code) {
+        try {
+            COSString id = new COSString(MessageDigest.getInstance("MD5").digest(code.value().getBytes(StandardCharsets.UTF_8)));
+            COSArray ids = new COSArray();
+            ids.add(id);
+            ids.add(id);
+            document.getDocument().getTrailer().setItem(COSName.ID, ids);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("MD5 no disponible", e);
         }
     }
 
@@ -100,6 +122,12 @@ public class CertificatePdfRenderer {
         for (String line : wrap(font, fontSize, rect.width(), expand(definition.bodyTemplate(), snapshot))) {
             text(content, font, fontSize, rect.x(), y, line);
             y -= leading;
+        }
+        if (snapshot.recipientLabel() != null) {
+            for (String line : wrap(font, fontSize, rect.width(), snapshot.recipientLabel())) {
+                y -= leading;
+                text(content, font, fontSize, rect.x(), y, line);
+            }
         }
         text(content, font, 11, rect.x(), y - 20, "Emitido el " + snapshot.issuedOn().format(DATE_FORMAT));
     }

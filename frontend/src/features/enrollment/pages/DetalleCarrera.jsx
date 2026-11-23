@@ -7,6 +7,7 @@ import {
   useProgramaPlanDeEstudio,
 } from '@/features/enrollment/hooks/useCatalogo';
 import { formatMoney } from '@/lib/utils';
+import { useMyModules } from '@/hooks/useMyModules';
 import { formatCredits, groupSubjectsByYear, isListedInCatalog, programSummary, subjectTag } from '@/lib/catalog';
 import { useProgramViewerStatus } from '@/features/enrollment/hooks/useCatalogViewer';
 import { CatalogBlock } from '@/features/enrollment/components/CatalogBlock';
@@ -32,7 +33,8 @@ export function DetalleCarrera() {
   const navigate = useNavigate();
 
   const programQuery = usePrograma(id);
-  const pricingQuery = useProgramaPricing(id);
+  const { billingEnabled } = useMyModules();
+  const pricingQuery = useProgramaPricing(id, { enabled: billingEnabled });
   const cohortsQuery = useOpenProgramCohorts(id);
   const planQuery = useProgramaPlanDeEstudio(id);
   const viewer = useProgramViewerStatus(id);
@@ -92,22 +94,24 @@ export function DetalleCarrera() {
         />
       }
     >
-      <CatalogBlock query={pricingQuery} resource="los precios">
-        <GlassCard className="flex flex-wrap gap-6 p-5">
-          <div>
-            <div className="text-xs text-ink-faint">Matrícula (1ª cohorte)</div>
-            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte1) || 'A definir'}</div>
-          </div>
-          <div>
-            <div className="text-xs text-ink-faint">Matrícula (2ª cohorte)</div>
-            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte2) || 'A definir'}</div>
-          </div>
-          <div>
-            <div className="text-xs text-ink-faint">Cuota mensual</div>
-            <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.cuotaMensual) || 'A definir'}</div>
-          </div>
-        </GlassCard>
-      </CatalogBlock>
+      {billingEnabled && (
+        <CatalogBlock query={pricingQuery} resource="los precios">
+          <GlassCard className="flex flex-wrap gap-6 p-5">
+            <div>
+              <div className="text-xs text-ink-faint">Matrícula (1ª cohorte)</div>
+              <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte1) || 'A definir'}</div>
+            </div>
+            <div>
+              <div className="text-xs text-ink-faint">Matrícula (2ª cohorte)</div>
+              <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.matriculaCohorte2) || 'A definir'}</div>
+            </div>
+            <div>
+              <div className="text-xs text-ink-faint">Cuota mensual</div>
+              <div className="text-size-15 font-bold text-ink">{formatMoney(pricing?.cuotaMensual) || 'A definir'}</div>
+            </div>
+          </GlassCard>
+        </CatalogBlock>
+      )}
 
       <h2 className="font-heading text-size-15 font-semibold text-ink-soft">Plan de estudio</h2>
       <CatalogBlock query={planQuery} resource="el plan de estudio" skeletonClassName="h-40">

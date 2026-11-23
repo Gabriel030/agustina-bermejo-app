@@ -18,7 +18,7 @@ export function EnrollmentActionsMenu({ actions, label, onSelect }) {
           <MoreHorizontal aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72 bg-dialog-bg backdrop-blur-[28px] backdrop-saturate-[1.6]">
+      <DropdownMenuContent align="end" className="w-72 bg-dialog-bg">
         {actions.map((action) => {
           const Icon = action.disabledReason ? Lock : (ICONS[action.kind] ?? UserMinus);
           return (

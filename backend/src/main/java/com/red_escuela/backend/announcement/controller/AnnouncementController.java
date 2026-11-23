@@ -23,9 +23,10 @@ import com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncement
 import com.red_escuela.backend.announcement.usecase.audience.ListAudienceSegmentsUseCase;
 import com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceCommand;
 import com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceUseCase;
+import com.red_escuela.backend.shared.permission.PermissionGate;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@PreAuthorize("hasRole('DOCENTE')")
 public class AnnouncementController {
 
     private final CreateAnnouncementUseCase createAnnouncement;
@@ -54,6 +54,7 @@ public class AnnouncementController {
     private final ListAnnouncementRecipientsUseCase listAnnouncementRecipients;
     private final ListAnnouncementReadReceiptsUseCase listAnnouncementReadReceipts;
     private final CountAnnouncementReadsUseCase countAnnouncementReads;
+    private final PermissionGate permissionGate;
 
     public AnnouncementController(CreateAnnouncementUseCase createAnnouncement,
                                   UpdateAnnouncementUseCase updateAnnouncement,
@@ -64,7 +65,8 @@ public class AnnouncementController {
                                   PreviewAudienceUseCase previewAudience,
                                   ListAnnouncementRecipientsUseCase listAnnouncementRecipients,
                                   ListAnnouncementReadReceiptsUseCase listAnnouncementReadReceipts,
-                                  CountAnnouncementReadsUseCase countAnnouncementReads) {
+                                  CountAnnouncementReadsUseCase countAnnouncementReads,
+                                  PermissionGate permissionGate) {
         this.createAnnouncement = createAnnouncement;
         this.updateAnnouncement = updateAnnouncement;
         this.deleteAnnouncement = deleteAnnouncement;
@@ -75,9 +77,11 @@ public class AnnouncementController {
         this.listAnnouncementRecipients = listAnnouncementRecipients;
         this.listAnnouncementReadReceipts = listAnnouncementReadReceipts;
         this.countAnnouncementReads = countAnnouncementReads;
+        this.permissionGate = permissionGate;
     }
 
     @PostMapping("/subject-sections/{sectionId}/announcements")
+    @RequiresPermission(code = "announcement.create", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.CREATED)
     public AnnouncementResponse createForSubjectSection(@PathVariable Long sectionId,
                                                         @Valid @RequestBody CreateAnnouncementRequest request) {
@@ -85,6 +89,7 @@ public class AnnouncementController {
     }
 
     @PostMapping("/course-sections/{sectionId}/announcements")
+    @RequiresPermission(code = "announcement.create", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.CREATED)
     public AnnouncementResponse createForCourseSection(@PathVariable Long sectionId,
                                                        @Valid @RequestBody CreateAnnouncementRequest request) {
@@ -92,50 +97,61 @@ public class AnnouncementController {
     }
 
     @GetMapping("/subject-sections/{sectionId}/announcements")
+    @RequiresPermission(code = "announcement.read", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     public List<AnnouncementResponse> listForSubjectSection(@PathVariable Long sectionId) {
         return toResponses(listSectionAnnouncements.list(SectionType.PROGRAM, sectionId));
     }
 
     @GetMapping("/course-sections/{sectionId}/announcements")
+    @RequiresPermission(code = "announcement.read", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     public List<AnnouncementResponse> listForCourseSection(@PathVariable Long sectionId) {
         return toResponses(listSectionAnnouncements.list(SectionType.COURSE, sectionId));
     }
 
     @GetMapping("/subject-sections/{sectionId}/announcements/read-receipts")
-    @PreAuthorize("hasAnyRole('PRECEPTOR', 'DIRECTOR')")
+    @RequiresPermission(code = "announcement.view_read_receipts", legacyRoles = "ROLE_PRECEPTOR,ROLE_DIRECTOR")
     public List<AnnouncementResponse> listReadReceiptsForSubjectSection(@PathVariable Long sectionId) {
-        return listStaffSectionAnnouncements.listForProgramSection(sectionId);
+        return isLegacyStaff()
+                ? listStaffSectionAnnouncements.listForProgramSection(sectionId)
+                : listStaffSectionAnnouncements.listForProgramSectionAsInstructor(sectionId);
     }
 
     @GetMapping("/course-sections/{sectionId}/announcements/read-receipts")
-    @PreAuthorize("hasAnyRole('PRECEPTOR', 'DIRECTOR')")
+    @RequiresPermission(code = "announcement.view_read_receipts", legacyRoles = "ROLE_PRECEPTOR,ROLE_DIRECTOR")
     public List<AnnouncementResponse> listReadReceiptsForCourseSection(@PathVariable Long sectionId) {
-        return listStaffSectionAnnouncements.listForCourseSection(sectionId);
+        return isLegacyStaff()
+                ? listStaffSectionAnnouncements.listForCourseSection(sectionId)
+                : listStaffSectionAnnouncements.listForCourseSectionAsInstructor(sectionId);
     }
 
     @GetMapping("/subject-sections/{sectionId}/audience-segments")
+    @RequiresPermission(code = "announcement.read", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     public List<AudienceSegmentResponse> segmentsForSubjectSection(@PathVariable Long sectionId) {
         return listAudienceSegments.list(SectionType.PROGRAM, sectionId);
     }
 
     @GetMapping("/course-sections/{sectionId}/audience-segments")
+    @RequiresPermission(code = "announcement.read", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     public List<AudienceSegmentResponse> segmentsForCourseSection(@PathVariable Long sectionId) {
         return listAudienceSegments.list(SectionType.COURSE, sectionId);
     }
 
     @PostMapping("/subject-sections/{sectionId}/audience-preview")
+    @RequiresPermission(code = "announcement.preview_audience", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     public AudiencePreviewResponse previewForSubjectSection(@PathVariable Long sectionId,
                                                             @Valid @RequestBody AudienceSpecRequest request) {
         return previewAudience.preview(new PreviewAudienceCommand(SectionType.PROGRAM, sectionId, request.toSpec()));
     }
 
     @PostMapping("/course-sections/{sectionId}/audience-preview")
+    @RequiresPermission(code = "announcement.preview_audience", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     public AudiencePreviewResponse previewForCourseSection(@PathVariable Long sectionId,
                                                            @Valid @RequestBody AudienceSpecRequest request) {
         return previewAudience.preview(new PreviewAudienceCommand(SectionType.COURSE, sectionId, request.toSpec()));
     }
 
     @PutMapping("/announcements/{id}")
+    @RequiresPermission(code = "announcement.update", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     public AnnouncementResponse update(@PathVariable Long id, @Valid @RequestBody UpdateAnnouncementRequest request) {
         return toResponse(updateAnnouncement.update(new UpdateAnnouncementCommand(
                 id, request.title(), request.body(), request.category(), request.urgent(), request.expiresAt(),
@@ -144,20 +160,29 @@ public class AnnouncementController {
     }
 
     @GetMapping("/announcements/{id}/recipients")
-    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'DIRECTOR')")
+    @RequiresPermission(code = "announcement.view_recipients", legacyRoles = "ROLE_DOCENTE,ROLE_PRECEPTOR,ROLE_DIRECTOR")
     public List<AnnouncementRecipientResponse> recipients(@PathVariable Long id) {
-        return isInstructor() ? listAnnouncementRecipients.list(id) : listAnnouncementReadReceipts.list(id);
+        if (!canViewReadReceipts()) {
+            return listAnnouncementRecipients.list(id);
+        }
+        return isLegacyStaff() ? listAnnouncementReadReceipts.list(id) : listAnnouncementReadReceipts.listAsSectionInstructor(id);
     }
 
     @DeleteMapping("/announcements/{id}")
+    @RequiresPermission(code = "announcement.delete", legacyRoles = "ROLE_DOCENTE,ROLE_DIRECTOR")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         deleteAnnouncement.delete(id);
     }
 
-    private boolean isInstructor() {
+    private boolean isLegacyStaff() {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_DOCENTE"));
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_DIRECTOR") || authority.getAuthority().equals("ROLE_PRECEPTOR"));
+    }
+
+    private boolean canViewReadReceipts() {
+        return permissionGate.allows(SecurityContextHolder.getContext().getAuthentication(),
+                "announcement.view_read_receipts", "ROLE_PRECEPTOR,ROLE_DIRECTOR");
     }
 
     private AnnouncementResponse toResponse(Announcement announcement) {

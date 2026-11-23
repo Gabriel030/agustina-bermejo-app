@@ -9,7 +9,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorFallback } from '@/components/ErrorFallback';
 import { SkipToContent } from '@/components/SkipToContent';
 import { SystemBar } from '@/pwa/SystemBar';
-import { LegalNoticeBanner } from '@/features/identity/legal/LegalNoticeBanner';
+import { LegalNoticeBanner } from '@/features/identity';
 import { isDesignB } from '@/theme/design';
 import { useAuth } from '@/context/AuthContext';
 import { readLastRole } from '@/lib/activeRole';

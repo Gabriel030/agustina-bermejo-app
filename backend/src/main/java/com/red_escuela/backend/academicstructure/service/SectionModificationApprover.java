@@ -10,6 +10,8 @@ import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionModificationProposalRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.events.SectionModificationApprovedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,8 @@ public class SectionModificationApprover {
     private final SectionModificationProposalRepository proposalRepository;
     private final SectionConflictChecker conflictChecker;
     private final ClassroomRepository classroomRepository;
+    private final SectionCycleApprovalGuard cycleApprovalGuard;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public SectionModificationApprover(
@@ -34,6 +38,8 @@ public class SectionModificationApprover {
             SectionModificationProposalRepository proposalRepository,
             SectionConflictChecker conflictChecker,
             ClassroomRepository classroomRepository,
+            SectionCycleApprovalGuard cycleApprovalGuard,
+            ApplicationEventPublisher eventPublisher,
             Clock clock
     ) {
         this.sectionRepository = sectionRepository;
@@ -41,6 +47,8 @@ public class SectionModificationApprover {
         this.proposalRepository = proposalRepository;
         this.conflictChecker = conflictChecker;
         this.classroomRepository = classroomRepository;
+        this.cycleApprovalGuard = cycleApprovalGuard;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
@@ -51,6 +59,8 @@ public class SectionModificationApprover {
         var proposal = proposalRepository.findFirstBySubjectSectionIdAndStatus(sectionId, SectionModificationStatus.PENDING)
                 .orElseThrow(() -> new SectionModificationNotPendingException(sectionId));
 
+        cycleApprovalGuard.ensureCycleIsApproved(section);
+
         if (proposal.isReplacesSchedule()) {
             replaceSchedule(section, proposal);
         }
@@ -59,6 +69,7 @@ public class SectionModificationApprover {
         proposalRepository.save(proposal);
         section.setPendingApproval(false);
         sectionRepository.save(section);
+        eventPublisher.publishEvent(SectionModificationApprovedEvent.approvedFor(proposal));
     }
 
     private void replaceSchedule(SubjectSection section, SectionModificationProposal proposal) {

@@ -165,9 +165,15 @@ export function NightlyRunsTab() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button type="button" aria-label="Cómo funciona el proceso nocturno" className="rounded-full text-ink-faint hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Button
+                type="button"
+                variant="subtle"
+                size="inline"
+                aria-label="Cómo funciona el proceso nocturno"
+                className="rounded-full transition-none focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
+              >
                 <Info className="size-4" />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-pretty">{SCHEDULE_HINT}</TooltipContent>
           </Tooltip>

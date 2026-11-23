@@ -1,4 +1,4 @@
-import { Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup } from 'lucide-react';
+import { PenLine, Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup, KeyRound, Award, FileKey } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -19,23 +19,58 @@ const paymentMethods = { slug: 'medios-de-pago', label: 'Medios de pago', icon: 
 const annualTerms = { slug: 'terminos-del-pago-anual', label: 'Términos del pago anual', icon: ScrollText };
 const financial ={ slug: 'financiero', label: 'Financiero', icon: BarChart2 };
 const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText };
+const debtExceptionCertificates = { slug: 'constancias-por-excepcion', label: 'Emitir por excepción', icon: FileKey };
 const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicitudes de ingreso', icon: UserPlus };
 const waitlists = { slug: 'inscripciones/listas-de-espera', label: 'Listas de espera', icon: ListOrdered };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const graduationCertificates = { slug: 'egresos', label: 'Egresos', icon: GraduationCap };
 const certificateTemplate = { slug: 'plantilla-de-certificados', label: 'Plantilla de certificados', icon: FileSignature };
+const graduationSignatories = { slug: 'firmantes', label: 'Firmantes', icon: PenLine };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const closures = { slug: 'cierres-de-comision', label: 'Cierres de comisión', icon: FileSignature };
 const broadcasts = { slug: 'comunicaciones', label: 'Comunicaciones', icon: Megaphone };
 const audit = { slug: 'auditoria', label: 'Auditoría', icon: History };
+const permissions = { slug: 'permisos', label: 'Roles y permisos', icon: KeyRound };
 const backups = { slug: 'backups', label: 'Backups', icon: DatabaseBackup };
 const approvals = { slug: 'aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 };
+
+const administrativeMenu = [
+  inicio,
+  alumnos,
+  personal,
+  enrollmentApplications,
+  waitlists,
+  { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
+  closures,
+  invoicing,
+  discounts,
+  prices,
+  reminders,
+  paymentMethods,
+  runs,
+  monthlyRun,
+  approvals,
+  graduationVerification,
+  graduationCertificates,
+  certificateTemplate,
+  graduationSignatories,
+  financial,
+  certificates,
+  debtExceptionCertificates,
+  solicitudes,
+  academicManagement,
+  periodos,
+  { slug: 'feriados', label: 'Feriados', icon: CalendarDays },
+  broadcasts,
+];
 
 export const ROLE_MENU = {
   alumno: [
     inicio,
+    { slug: 'calendario', label: 'Calendario', icon: CalendarDays },
     { slug: 'mis-cursos', label: 'Mis cursos', icon: BookOpen },
     { slug: 'mis-carreras', label: 'Mis carreras', icon: GraduationCap },
+    { slug: 'mis-certificados', label: 'Mis certificados', icon: Award },
     { slug: 'pagos', label: 'Pagos', icon: CreditCard },
     { to: '/catalogo', label: 'Catálogo', icon: LayoutGrid },
     { slug: 'opciones', label: 'Opciones', icon: Settings },
@@ -56,33 +91,8 @@ export const ROLE_MENU = {
     solicitudes,
     periodos,
   ],
-  administrativo: [
-    inicio,
-    alumnos,
-    personal,
-    enrollmentApplications,
-    waitlists,
-    { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
-    closures,
-    invoicing,
-    discounts,
-    prices,
-    reminders,
-    paymentMethods,
-    runs,
-    monthlyRun,
-    approvals,
-    graduationVerification,
-    graduationCertificates,
-    certificateTemplate,
-    financial,
-    certificates,
-    solicitudes,
-    academicManagement,
-    periodos,
-    { slug: 'feriados', label: 'Feriados', icon: CalendarDays },
-    broadcasts,
-  ],
+  administrativo: administrativeMenu,
+  subdirector: [...administrativeMenu.filter((entry) => entry !== debtExceptionCertificates), permissions],
   director: [
     inicio,
     alumnos,
@@ -93,6 +103,7 @@ export const ROLE_MENU = {
     approvals,
     graduationCertificates,
     certificateTemplate,
+    graduationSignatories,
     academicManagement,
     { slug: 'esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
@@ -100,6 +111,7 @@ export const ROLE_MENU = {
     { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
     { slug: 'importacion-inicial', label: 'Importación inicial', icon: Upload },
     audit,
+    permissions,
     backups,
     invoicing,
     discounts,
@@ -111,6 +123,7 @@ export const ROLE_MENU = {
     monthlyRun,
     financial,
     certificates,
+    debtExceptionCertificates,
     periodos,
   ],
   platform_admin: [{ ...inicio, hidden: true }, { slug: 'modulos', label: 'Módulos', icon: Puzzle }, { slug: 'primer-director', label: 'Primer director', icon: UserPlus }, audit, backups],
@@ -134,7 +147,7 @@ const MENU_GROUPS = {
     {
       id: 'academic',
       label: 'Académico',
-      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'egresos', 'plantilla-de-certificados'],
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'],
     },
     {
       id: 'billing',
@@ -150,7 +163,7 @@ const MENU_GROUPS = {
         'financiero',
       ],
     },
-    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto', 'importacion-inicial', 'auditoria', 'backups'] },
+    { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto', 'importacion-inicial', 'auditoria', 'permisos', 'backups'] },
   ],
 };
 

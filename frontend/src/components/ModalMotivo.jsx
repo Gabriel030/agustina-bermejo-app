@@ -21,6 +21,7 @@ export function ModalMotivo({
   showCounter = false,
   disableUntilMinLength = false,
   mensajeRequerido = 'El motivo del rechazo es obligatorio.',
+  errorMessage,
 }) {
   const [motivo, setMotivo] = useState('');
   const [error, setError] = useState('');
@@ -66,9 +67,10 @@ export function ModalMotivo({
           </div>
         )}
         {error && <div role="alert" className="text-size-12 font-semibold text-danger">{error}</div>}
+        {errorMessage && <div role="alert" className="text-size-12 font-semibold text-danger">{errorMessage}</div>}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button variant={confirmarVariant} loading={confirmando} disabled={belowMinLength} onClick={confirmar}>{confirmarLabel}</Button>
+          <Button variant="outline" className="min-h-11" onClick={onClose}>Cancelar</Button>
+          <Button variant={confirmarVariant} className="min-h-11" loading={confirmando} disabled={belowMinLength} onClick={confirmar}>{confirmarLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

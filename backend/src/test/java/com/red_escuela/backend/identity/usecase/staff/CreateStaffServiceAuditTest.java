@@ -6,6 +6,7 @@ import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
+import com.red_escuela.backend.identity.service.CreateStaffTransaction;
 import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
 import com.red_escuela.backend.identity.specialist.PasswordResetCodeRequester;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
@@ -50,9 +51,9 @@ class CreateStaffServiceAuditTest {
             role.setName(roleName);
             when(roleRepository.findByName(roleName)).thenReturn(Optional.of(role));
         }
-        return new CreateStaffService(personRepository, mock(StaffInstructorProfileCreator.class), roleRepository,
-                personFactory, policyActingAs(actorRole), mock(PasswordResetCodeRequester.class),
-                new IdentityAuditRecorder(auditTrail));
+        return new CreateStaffService(new CreateStaffTransaction(personRepository, mock(StaffInstructorProfileCreator.class),
+                roleRepository, personFactory, policyActingAs(actorRole), mock(PasswordResetCodeRequester.class),
+                new IdentityAuditRecorder(auditTrail)));
     }
 
     private static CreateStaffRequest request(String role) {

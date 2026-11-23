@@ -61,6 +61,7 @@ Editar `deploy/.env`. Las que no se pueden dejar con el valor de ejemplo:
 | `JWT_SECRET` | `openssl rand -base64 48 \| tr -d '\n'` |
 | `BROADCAST_UNSUBSCRIBE_SECRET` | `openssl rand -base64 48 \| tr -d '\n'`, distinta de `JWT_SECRET`; sin ella el backend no arranca en prod ni en staging |
 | `BREVO_SMTP_USERNAME`, `BREVO_SMTP_KEY`, `MAIL_FROM_ADDRESS` | Los de Brevo |
+| `RESILIENCE_ENABLED` | Opcional. Circuit breakers y bulkheads de las integraciones externas; en `prod` y staging es `true` por defecto. Poner `false` solo para apagarlos ante un incidente. Límites en `docs/context/overload-protection.md` |
 | `GOOGLE_OAUTH_CLIENT_ID` y `VITE_GOOGLE_CLIENT_ID` | El mismo Client ID en las dos |
 
 Después:
@@ -173,12 +174,14 @@ Si se trabaja con un registro de imágenes, el rollback es poner en `deploy/.env
 
 ## Rotación de secretos
 
-Todos viven en `deploy/.env`. Después de cambiar uno: `dc up -d` (recrea solo lo que cambió).
+Procedimiento completo por secreto (impacto, pasos, verificación, rollback, cadencia y checklist de ensayo en staging): [docs/security/secrets-rotation.md](../security/secrets-rotation.md). Lo que sigue es el resumen.
+
+Todos viven en `deploy/.env`. Después de cambiar uno: `dc up -d` (recrea solo lo que cambió). `dc` solo conoce `docker-compose.prod.yml`: el backup y el monitoreo son overlays aparte y hay que recrearlos con sus propios `-f` (ver el documento de rotación).
 
 | Secreto | Efecto de rotarlo | Cómo |
 |---|---|---|
-| `JWT_SECRET` | Cierra todas las sesiones abiertas (todos tienen que volver a entrar) | Generar uno nuevo, `dc up -d backend` |
-| `POSTGRES_PASSWORD` | Hay que cambiarla también dentro de Postgres | `dc exec postgres psql -U <usuario> -c "ALTER USER <usuario> PASSWORD 'nueva'"`, luego editar `.env` y `dc up -d` |
+| `JWT_SECRET` | Invalida los access tokens (15 min): el front renueva con el refresh y nadie pierde la sesión. Para cerrar las sesiones hay que revocar también los refresh tokens (ver el documento de rotación) | Generar uno nuevo, `dc up -d backend` |
+| `POSTGRES_PASSWORD` | Hay que cambiarla también dentro de Postgres; `dc up -d` recrea `postgres` y las conexiones nuevas fallan entre el cambio y el reinicio del backend. El servicio `backup` se recrea aparte | `\password` interactivo dentro de `psql` (no pasar la clave en `-c`), editar `.env` y `dcb up -d`; pasos completos en el documento de rotación |
 | `BREVO_SMTP_KEY` | Sin efecto si se cambia a la vez en Brevo | Crear la clave nueva en Brevo, editar `.env`, `dc up -d backend`, revocar la vieja |
 | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET` | Los cobros online usan el nuevo apenas reinicia | Cambiarlos en el panel de Mercado Pago y en `.env`, `dc up -d backend` |
 | `ACTUATOR_PASSWORD` | Solo afecta al monitoreo | Cambiar en `.env` y en el monitoreo |
@@ -195,6 +198,17 @@ dc logs -f --tail=100 caddy             # proxy y certificados
 dc logs --since 1h postgres             # base de datos
 dc stats --no-stream                    # memoria y CPU por contenedor
 ```
+
+## Enlace de calendario: el token viaja en la URL
+
+`GET /api/public/calendar/<token>.ics` es el feed suscribible del calendario del alumno: el token (256 bits) es la única credencial y va en el path. Estado verificado en este repositorio:
+
+- El `frontend/Caddyfile` **no define la directiva `log`**: Caddy no escribe access log por defecto, así que el path (y el token) no queda guardado en el proxy. Si alguien agrega `log` o un `access_log`, hay que enmascarar el path `/api/public/calendar/*` (filtro `replace` sobre `request>uri`) antes de habilitarlo.
+- El backend no activa el access log de Tomcat ni loguea URIs de pedidos; el nivel raíz es INFO (WARN en un perfil) y el de `com.red_escuela.backend` INFO, sin DEBUG de Spring MVC. Hay un test (`CalendarFeedSecurityIT.tokenNeverAppearsInApplicationLogs`) que falla si el token aparece en un log de aplicación.
+- Si el servidor está detrás de otro proxy o balanceador (CDN, WAF), ese componente puede guardar el path: configurar el enmascarado ahí.
+- Un token filtrado se invalida regenerándolo o revocándolo desde la cuenta del alumno; el servidor deja de aceptar el token anterior de inmediato. Esto no cuenta la caché del cliente: la respuesta lleva `Cache-Control: private, max-age=900` y el feed declara `REFRESH-INTERVAL` de 1 h, así que un cliente (navegador, Google, Apple) puede seguir mostrando o pidiendo el feed viejo entre 15 minutos y 1 hora después de revocar.
+- El límite por IP de pedidos con token inexistente (los que dan 404) usa la IP del cliente: requiere `FORWARD_HEADERS_STRATEGY=native` con `TRUSTED_PROXIES_REGEX` cubriendo la red del proxy (ver `docs/context/overload-protection.md`). Sin eso todos los clientes comparten la IP del proxy y los pedidos inválidos de un atacante bloquean los pedidos inexistentes de todos. Los pedidos con token válido nunca se cortan por IP, solo por el límite del propio token (120 por hora).
+- Si no hay ningún bean `MyCalendarProvider`, el feed y la exportación responden 503 y el arranque deja un WARN `No MyCalendarProvider bean is registered`.
 
 ## Problemas típicos
 

@@ -9,3 +9,8 @@ export { fieldProps } from './lib/offeringForm';
 export { describeSection } from './lib/describeSection';
 export { useTerminos } from './hooks/useTerminos';
 export { usePendingOfferCycles } from './hooks/useOfferApproval';
+export { SectionScheduleApprovalsPanel } from './components/SectionScheduleApprovalsPanel';
+export { useHolidays } from './hooks/useHolidays';
+export { TERM_TYPE_LABELS } from './lib/terms';
+export { useSubjects } from './hooks/useSubjects';
+export { useUnsavedChangesGuard } from './components/UnsavedChangesGuard';

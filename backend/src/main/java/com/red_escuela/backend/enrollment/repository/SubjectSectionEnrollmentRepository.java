@@ -61,6 +61,15 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
             """)
     List<SubjectSectionEnrollment> findWithSectionByProgramEnrollmentId(@Param("programEnrollmentId") Long programEnrollmentId);
 
+    @Query("""
+            select e from SubjectSectionEnrollment e
+            join fetch e.subjectSection ss join fetch ss.subject
+            where e.student.id = :studentId and e.status in :statuses
+            order by ss.id
+            """)
+    List<SubjectSectionEnrollment> findWithSectionByStudentIdAndStatusIn(
+            @Param("studentId") Long studentId, @Param("statuses") List<EnrollmentStatus> statuses);
+
     List<SubjectSectionEnrollment> findBySubjectSectionIdAndStatusIn(Long subjectSectionId, List<EnrollmentStatus> statuses);
 
     @Query("""
@@ -95,6 +104,32 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
             @Param("programEnrollmentIds") java.util.Collection<Long> programEnrollmentIds,
             @Param("subjectIds") java.util.Collection<Long> subjectIds,
             @Param("statuses") java.util.Collection<EnrollmentStatus> statuses);
+
+    interface CurriculumProgressRow {
+        Long getEnrollmentId();
+
+        Long getSubjectId();
+
+        EnrollmentStatus getStatus();
+
+        com.red_escuela.backend.shared.domain.Grade getFinalScore();
+    }
+
+    @Query("""
+            select e.id as enrollmentId, e.subjectSection.subject.id as subjectId, e.status as status, e.finalScore as finalScore
+            from SubjectSectionEnrollment e
+            where e.programEnrollment.id = :programEnrollmentId
+            """)
+    List<CurriculumProgressRow> findCurriculumProgressRows(@Param("programEnrollmentId") Long programEnrollmentId);
+
+    @Query("""
+            select min(e.subjectSection.term.startDate)
+            from SubjectSectionEnrollment e
+            where e.programEnrollment.id = :programEnrollmentId and e.status in :statuses
+            """)
+    Optional<LocalDateTime> findFirstTermStartOfProgramEnrollment(
+            @Param("programEnrollmentId") Long programEnrollmentId,
+            @Param("statuses") Collection<EnrollmentStatus> statuses);
 
     List<SubjectSectionEnrollment> findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
             Long programEnrollmentId, Long subjectId, List<EnrollmentStatus> statuses);

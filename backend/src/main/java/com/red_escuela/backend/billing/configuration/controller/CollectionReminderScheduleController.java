@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.configuration.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
 import com.red_escuela.backend.billing.configuration.domain.TeachingGroup;
@@ -20,7 +21,6 @@ import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +34,6 @@ import java.util.Map;
 @RestController
 @RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing-configuration/collection-reminder-schedules")
-@PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
 public class CollectionReminderScheduleController {
     private final ListReminderSchedulePoliciesUseCase listPoliciesUseCase;
     private final ProposeReminderScheduleChangeUseCase proposeChangeUseCase;
@@ -53,30 +52,35 @@ public class CollectionReminderScheduleController {
     }
 
     @GetMapping
+    @RequiresPermission(code = "billing.read_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ReminderSchedulePoliciesResponse listPolicies() {
         return ReminderSchedulePoliciesResponse.from(listPoliciesUseCase.listPolicies());
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{group}/changes")
+    @RequiresPermission(code = "billing.manage_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<?> proposeGroupChange(@PathVariable TeachingGroup group, @Valid @RequestBody ChangeReminderScheduleRequest request) {
         return respond(proposeChangeUseCase.proposeChange(new ReminderScheduleTarget(group, null), request.schedule().toSchedule(), request.effectiveFrom(),
                 request.changeReason()));
     }
 
     @PostMapping("/{group}/validation")
+    @RequiresPermission(code = "billing.manage_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ConfigurationChangeValidationResponse validateGroupChange(@PathVariable TeachingGroup group, @Valid @RequestBody ChangeReminderScheduleRequest request) {
         return new ConfigurationChangeValidationResponse(validateChangeUseCase.validateChange(new ReminderScheduleTarget(group, null), request.schedule().toSchedule(),
                 request.effectiveFrom(), request.changeReason()));
     }
 
     @GetMapping("/{group}/versions")
+    @RequiresPermission(code = "billing.read_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ReminderScheduleVersionResponse> listGroupVersions(@PathVariable TeachingGroup group) {
         return versionsOf(new ReminderScheduleTarget(group, null));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{group}/exceptions/{targetId}/changes")
+    @RequiresPermission(code = "billing.manage_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<?> proposeExceptionChange(@PathVariable TeachingGroup group, @PathVariable Long targetId,
                                                     @Valid @RequestBody ChangeReminderScheduleRequest request) {
         return respond(proposeChangeUseCase.proposeChange(new ReminderScheduleTarget(group, targetId), request.schedule().toSchedule(), request.effectiveFrom(),
@@ -84,6 +88,7 @@ public class CollectionReminderScheduleController {
     }
 
     @PostMapping("/{group}/exceptions/{targetId}/validation")
+    @RequiresPermission(code = "billing.manage_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ConfigurationChangeValidationResponse validateExceptionChange(@PathVariable TeachingGroup group, @PathVariable Long targetId,
                                                                          @Valid @RequestBody ChangeReminderScheduleRequest request) {
         return new ConfigurationChangeValidationResponse(validateChangeUseCase.validateChange(new ReminderScheduleTarget(group, targetId),
@@ -91,12 +96,14 @@ public class CollectionReminderScheduleController {
     }
 
     @GetMapping("/{group}/exceptions/{targetId}/versions")
+    @RequiresPermission(code = "billing.read_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ReminderScheduleVersionResponse> listExceptionVersions(@PathVariable TeachingGroup group, @PathVariable Long targetId) {
         return versionsOf(new ReminderScheduleTarget(group, targetId));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{group}/exceptions/{targetId}/removal")
+    @RequiresPermission(code = "billing.manage_reminder_config", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<?> proposeExceptionRemoval(@PathVariable TeachingGroup group, @PathVariable Long targetId,
                                                      @Valid @RequestBody RemoveReminderScheduleExceptionRequest request) {
         return respond(proposeChangeUseCase.proposeExceptionRemoval(new ReminderScheduleTarget(group, targetId), request.effectiveFrom(), request.changeReason()));

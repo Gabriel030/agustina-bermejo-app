@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.annualupfront.dto.AnnualUpfrontTermsResponse;
 import com.red_escuela.backend.billing.annualupfront.dto.AuditedAnnualUpfrontTermsResponse;
 import com.red_escuela.backend.billing.annualupfront.dto.PublishAnnualUpfrontTermsRequest;
@@ -40,6 +41,7 @@ public class AnnualUpfrontTermsController {
     }
 
     @GetMapping("/annual-upfront-terms/versions")
+    @RequiresPermission(code = "billing.read_annual_upfront_terms_versions", legacyRoles = "ROLE_DIRECTOR")
     public List<AuditedAnnualUpfrontTermsResponse> listTermsVersions() {
         return viewUseCase.listAnnualUpfrontTermsVersions().stream().map(AuditedAnnualUpfrontTermsResponse::from).toList();
     }
@@ -47,6 +49,7 @@ public class AnnualUpfrontTermsController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/annual-upfront-terms/versions")
     @ResponseStatus(HttpStatus.CREATED)
+    @RequiresPermission(code = "billing.publish_annual_upfront_terms", legacyRoles = "ROLE_DIRECTOR")
     public AuditedAnnualUpfrontTermsResponse publishNewTermsVersion(@Valid @RequestBody PublishAnnualUpfrontTermsRequest request) {
         return AuditedAnnualUpfrontTermsResponse.from(publishUseCase.publishNewAnnualUpfrontTermsVersion(request.text()));
     }

@@ -51,14 +51,16 @@ function LockedMark({ label }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
+        <Button
           type="button"
+          variant="subtle"
+          size="inline"
           aria-label={`${label}: ${LOCK_TEXT}`}
-          className="inline-flex items-center gap-1.5 rounded-md p-1 text-ink-faint hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="gap-1.5 rounded-md p-1 transition-none focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
         >
           <Lock className="size-3.5" />
           <span className="hidden text-xs sm:inline">Siempre activo</span>
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-60 bg-dialog-bg p-3 text-xs text-ink-soft text-pretty">{LOCK_TEXT}</PopoverContent>
     </Popover>
@@ -77,7 +79,7 @@ function NotificationName({ children, alwaysOn }) {
 function ChannelCell({ event, channel, locked, active, disabled, onToggle }) {
   const label = `${EVENT_LABELS[event]} — ${CHANNEL_LABELS[channel]}`;
   return (
-    <TableCell className="text-center">
+    <TableCell className="py-3 text-center">
       {locked ? (
         <LockedMark label={label} />
       ) : (
@@ -192,7 +194,7 @@ export function NotificationMatrix() {
             ))}
             <SectionRow title="General" />
             {GENERAL_EVENTS.map(renderRow)}
-            {roles.includes('ADMINISTRATIVO') && ADMINISTRATIVE_EVENTS.map(renderRow)}
+            {(roles.includes('ADMINISTRATIVO') || roles.includes('SUBDIRECTOR')) && ADMINISTRATIVE_EVENTS.map(renderRow)}
           </TableBody>
         </Table>
       </div>

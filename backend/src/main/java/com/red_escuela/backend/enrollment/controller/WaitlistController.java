@@ -14,7 +14,7 @@ import com.red_escuela.backend.enrollment.usecase.waitlist.RemoveWaitlistEntryUs
 import com.red_escuela.backend.enrollment.usecase.waitlist.ListWaitlistQueuesUseCase.ListWaitlistQueuesCommand;
 import com.red_escuela.backend.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,7 +49,7 @@ public class WaitlistController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_waitlists", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PageResponse<WaitlistQueueSummaryResponse> listQueues(@RequestParam(required = false) WaitlistKind kind,
                                                                  @RequestParam(required = false) Long termId,
                                                                  @RequestParam(required = false) Integer expiringWithinDays,
@@ -59,13 +59,13 @@ public class WaitlistController {
     }
 
     @GetMapping("/{kind}/{id}")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_waitlists", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public WaitlistQueueResponse getQueue(@PathVariable WaitlistKind kind, @PathVariable Long id) {
         return getWaitlistQueueUseCase.get(kind, id);
     }
 
     @GetMapping("/{kind}/{id}/history")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.read_waitlists", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PageResponse<WaitlistHistoryEntryResponse> getHistory(@PathVariable WaitlistKind kind, @PathVariable Long id,
                                                                  @RequestParam(defaultValue = "0") int page,
                                                                  @RequestParam(defaultValue = "20") int size) {
@@ -73,19 +73,19 @@ public class WaitlistController {
     }
 
     @PostMapping("/{kind}/entries/{enrollmentId}/promote")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.manage_waitlist", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void promote(@PathVariable WaitlistKind kind, @PathVariable Long enrollmentId) {
         promoteWaitlistEntryUseCase.promote(kind, enrollmentId);
     }
 
     @PostMapping("/{kind}/entries/{enrollmentId}/prioritize")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.manage_waitlist", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void prioritize(@PathVariable WaitlistKind kind, @PathVariable Long enrollmentId, @Valid @RequestBody WaitlistReasonRequest request) {
         prioritizeWaitlistEntryUseCase.prioritize(kind, enrollmentId, request.reason());
     }
 
     @PostMapping("/{kind}/entries/{enrollmentId}/remove")
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    @RequiresPermission(code = "enrollment.manage_waitlist", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public void remove(@PathVariable WaitlistKind kind, @PathVariable Long enrollmentId, @Valid @RequestBody WaitlistReasonRequest request) {
         removeWaitlistEntryUseCase.remove(kind, enrollmentId, request.reason());
     }

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AvisoMatricula } from './AvisoMatricula';
-import { obligacionPendiente } from '@/lib/matricula';
+import { obligacionPendiente } from '../lib/matricula';
 
 describe('AvisoMatricula', () => {
   it('shows the pay button with the due date and sends the invoice id when the fee is pending', async () => {

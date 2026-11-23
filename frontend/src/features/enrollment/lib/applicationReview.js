@@ -109,3 +109,24 @@ export function nextPendingId(pending, currentId) {
   const next = sortByRequestedAt((pending ?? []).filter((application) => application.id !== currentId))[0];
   return next?.id ?? null;
 }
+
+export function filterPendingApplications(applications, { programs, documentations } = {}) {
+  return (applications ?? []).filter(
+    (application) =>
+      (!Array.isArray(programs) || programs.includes(application.programName)) &&
+      (!Array.isArray(documentations) || documentations.includes(documentationFilterValue(application.documentation))),
+  );
+}
+
+export function pendingFilterOptions(applications) {
+  const programCounts = new Map();
+  const documentationCounts = new Map();
+  (applications ?? []).forEach((application) => {
+    programCounts.set(application.programName, (programCounts.get(application.programName) ?? 0) + 1);
+    const documentation = documentationFilterValue(application.documentation);
+    documentationCounts.set(documentation, (documentationCounts.get(documentation) ?? 0) + 1);
+  });
+  const toOptions = (counts) =>
+    Array.from(counts, ([value, count]) => ({ value, label: value, count })).sort((a, b) => a.label.localeCompare(b.label, 'es'));
+  return { programs: toOptions(programCounts), documentations: toOptions(documentationCounts) };
+}

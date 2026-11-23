@@ -18,13 +18,39 @@ const API = 'http://localhost:8080';
 const daysAgo = (days) => new Date(Date.now() - days * 86400000).toISOString();
 const tomorrow = () => new Date(Date.now() + 86400000).toISOString();
 
+const inDays = (days) => {
+  const date = new Date(Date.now());
+  date.setDate(date.getDate() + days);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+const at = (date) => `${date}T12:00:00.000Z`;
+const holiday = (id, date, name) => ({ id, date, name, type: 'NATIONAL', description: name });
+const term = (id, overrides = {}) => ({
+  id,
+  type: 'FIRST_SEMESTER',
+  status: 'ACTIVE',
+  year: 2026,
+  description: null,
+  enrollmentOpen: false,
+  enrollmentOverride: null,
+  startDate: at(inDays(200)),
+  endDate: at(inDays(260)),
+  enrollmentStart: at(inDays(200)),
+  enrollmentEnd: at(inDays(201)),
+  ...overrides,
+});
+
 const SOURCES = {
+  '/holidays': () => contractList('/holidays', []),
+  '/terms': () => contractList('/terms', []),
   '/graduation-requests': () => contractList('/graduation-requests', [{ requestedAt: daysAgo(9) }, { requestedAt: daysAgo(2) }]),
   '/academic-offering-cycles': () => contractList('/academic-offering-cycles', [{ submittedAt: daysAgo(7) }]),
   '/section-evaluation-configs': () => contractList('/section-evaluation-configs', [{ submittedAt: daysAgo(3) }]),
   '/director-approval-requests': () => contractList('/director-approval-requests', [{ requestedAt: daysAgo(4) }]),
   '/commission-closures': () => contractList('/commission-closures', [{ statusDate: daysAgo(6) }]),
-  '/exam-boards': () => contractList('/exam-boards', [{ examDate: tomorrow(), status: 'SCHEDULED' }]),
+  '/exam-boards': () => contractList('/exam-boards', [{ id: 1, examDate: tomorrow(), status: 'SCHEDULED', subjectName: 'Didáctica' }]),
   '/authorization-requests': () => contractList('/authorization-requests', [{ requestedAt: daysAgo(5), amount: null }]),
   '/regular-certificate-requests': () => contractList('/regular-certificate-requests', [{ requestedAt: daysAgo(3) }]),
   '/program-enrollment-applications/pending': () => contractList('/program-enrollment-applications/pending', [{ requestedAt: daysAgo(5), admissionInvoice: null }]),
@@ -32,10 +58,13 @@ const SOURCES = {
   '/attendance/change-requests': () => contractList('/attendance/change-requests', [{ createdAt: daysAgo(1) }]),
 };
 
-function serve({ billing = 'FULL', empty = false, failing = [] } = {}) {
+function serve({ billing = 'FULL', empty = false, failing = [], boards, holidays = [], terms = [] } = {}) {
   const handlers = Object.entries(SOURCES).map(([path, build]) =>
     http.get(`${API}${path}`, () => {
       if (failing.includes(path)) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+      if (path === '/holidays' && !empty) return HttpResponse.json(contractList(path, holidays));
+      if (path === '/terms' && !empty) return HttpResponse.json(contractList(path, terms));
+      if (path === '/exam-boards' && boards) return HttpResponse.json(contractList(path, boards));
       return HttpResponse.json(empty ? contractList(path, []) : build());
     }),
   );
@@ -59,7 +88,7 @@ describe('StaffHome', () => {
     expect(within(approvals).getByRole('link', { name: 'Otras aprobaciones' })).toHaveAttribute('href', '/director/aprobaciones');
     expect(within(approvals).getByRole('link', { name: /Egresos/ })).toHaveAttribute('href', '/director/aprobaciones/egresos');
     expect(within(approvals).getByText('Más antiguo: hace 9 días')).toBeInTheDocument();
-    expect(within(await readyCard('Excepciones elevadas')).getByRole('link', { name: 'Excepciones elevadas' })).toHaveAttribute('href', '/director/aprobaciones/excepciones');
+    expect(within(await readyCard('Excepciones elevadas')).getByRole('link', { name: 'Excepciones elevadas' })).toHaveAttribute('href', '/director/aprobaciones/excepciones?status=PENDING');
     expect(within(await readyCard('Cierres sin acta')).getByText('Más antiguo: hace 6 días')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Empezar por lo más urgente' })).toHaveAttribute('href', '/director/aprobaciones');
     expect(screen.getByText('Alumnos en riesgo')).toBeInTheDocument();
@@ -98,6 +127,49 @@ describe('StaffHome', () => {
     renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
     expect(await screen.findByText('Todo al día')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Empezar por lo más urgente' })).not.toBeInTheDocument();
+  });
+
+  it('upcoming card lists at most five events of the next 30 days in date order', async () => {
+    serve({
+      boards: [],
+      holidays: [
+        ...[1, 2, 3, 4, 5, 6].map((days) => holiday(days, inDays(days), `Feriado ${days}`)),
+        holiday(7, inDays(45), 'Feriado lejano'),
+      ],
+      terms: [term(8, { startDate: at(inDays(90)), endDate: at(inDays(120)), enrollmentStart: at(inDays(91)), enrollmentEnd: at(inDays(92)) })],
+    });
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    const upcoming = await readyCard('Próximos eventos');
+    expect(within(upcoming).getAllByRole('listitem')).toHaveLength(5);
+    expect(within(upcoming).getByText('Feriado 1')).toBeInTheDocument();
+    expect(within(upcoming).getByText('Feriado 5')).toBeInTheDocument();
+    expect(within(upcoming).queryByText('Feriado 6')).not.toBeInTheDocument();
+    expect(within(upcoming).queryByText('Feriado lejano')).not.toBeInTheDocument();
+    expect(within(upcoming).queryByText('Primer cuatrimestre')).not.toBeInTheDocument();
+  });
+
+  it('upcoming card shows a specific empty text when nothing falls in the window', async () => {
+    serve({ boards: [], holidays: [holiday(1, inDays(45), 'Feriado lejano')] });
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    const upcoming = await readyCard('Próximos eventos');
+    expect(within(upcoming).getByText('No hay eventos próximos')).toBeInTheDocument();
+    expect(within(upcoming).queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('upcoming card reports a failed source instead of an empty calendar', async () => {
+    serve({ failing: ['/holidays'] });
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No pudimos cargar los próximos eventos');
+    expect(alert.closest('article')).toHaveAccessibleName('Próximos eventos');
+    expect(screen.queryByText('No hay eventos próximos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Todo al día')).not.toBeInTheDocument();
+  });
+
+  it('administrativo sees the upcoming events card', async () => {
+    serve({ holidays: [holiday(1, inDays(2), 'Feriado de prueba')] });
+    renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
+    expect(await readyCard('Próximos eventos')).toHaveTextContent('Feriado de prueba');
   });
 
   it('administrativo does not see director cards', async () => {
@@ -156,5 +228,51 @@ describe('StaffHome', () => {
     recorder.stop();
     expect(recorder.duplicates()).toEqual([]);
     expect(requests.filter((request) => request.startsWith('GET /commission-closures'))).toHaveLength(1);
+  });
+
+  it('administrativo cards link to their pending destinations', async () => {
+    serve();
+    renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
+    const destinations = {
+      'Egresos por verificar': '/administrativo/egresos-por-verificar',
+      'Constancias solicitadas': '/administrativo/constancias',
+      'Solicitudes de ingreso': '/administrativo/solicitudes-de-ingreso',
+      Justificaciones: '/administrativo/solicitudes-de-asistencia?tab=justificaciones',
+      'Cambios de asistencia': '/administrativo/solicitudes-de-asistencia?tab=correcciones',
+      'Cierres a aprobar': '/administrativo/cierres-de-comision?status=TEACHER_CONFIRMED',
+    };
+    for (const [title, href] of Object.entries(destinations)) {
+      expect(within(await readyCard(title)).getByRole('link', { name: title })).toHaveAttribute('href', href);
+    }
+  });
+
+  it('director cards link to their pending destinations', async () => {
+    serve();
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    expect(within(await readyCard('Cierres sin acta')).getByRole('link', { name: 'Cierres sin acta' })).toHaveAttribute('href', '/director/cierres-de-comision?status=TEACHER_CONFIRMED');
+    expect(within(await readyCard('Facturación por autorizar')).getByRole('link', { name: 'Facturación por autorizar' })).toHaveAttribute('href', '/director/aprobaciones/facturacion?status=PENDING');
+  });
+
+  it('administrativo failing card shows retry and keeps the all-clear message hidden', async () => {
+    serve({ empty: true, failing: ['/regular-certificate-requests'] });
+    renderWithAppCache(<AdministrativoInicio />, { route: '/administrativo/inicio' });
+    const alert = await screen.findByRole('alert');
+    const failed = alert.closest('article');
+    expect(failed).toHaveAccessibleName('Constancias solicitadas');
+    expect(alert).toHaveTextContent('No pudimos cargar esta tarjeta');
+    expect(await screen.findByText(/Cierres a aprobar.*sin pendientes/)).not.toHaveTextContent('Constancias solicitadas');
+    expect(screen.queryByText('Todo al día')).not.toBeInTheDocument();
+    serve({ empty: true });
+    await userEvent.click(within(failed).getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByText('Todo al día')).toBeInTheDocument();
+  });
+
+  it('director failing card is not counted as settled', async () => {
+    serve({ empty: true, failing: ['/commission-closures'] });
+    renderWithAppCache(<DirectorInicio />, { route: '/director/inicio' });
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar esta tarjeta');
+    expect(screen.getByRole('article', { name: 'Cierres sin acta' })).toBeInTheDocument();
+    expect(await screen.findByText(/Mesas de examen.*sin pendientes/)).not.toHaveTextContent('Cierres sin acta');
+    expect(screen.queryByText('Todo al día')).not.toBeInTheDocument();
   });
 });

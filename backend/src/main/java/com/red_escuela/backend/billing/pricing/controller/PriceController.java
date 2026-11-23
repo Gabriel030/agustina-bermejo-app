@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.pricing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.pricing.dto.CancelPriceVersionRequest;
 import com.red_escuela.backend.billing.pricing.dto.ChangePriceRequest;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
@@ -57,26 +58,26 @@ public class PriceController {
     }
 
     @GetMapping("/prices")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.read_prices", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<PriceSummaryResponse> listPrices(@RequestParam(required = false) Long programId, @RequestParam(required = false) Long courseId) {
         return listPricesUseCase.listPrices(programId, courseId);
     }
 
     @GetMapping("/prices/{priceId}/versions")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.read_prices", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<PriceVersionHistoryEntryResponse> listPriceVersionHistory(@PathVariable Long priceId) {
         return listPriceVersionHistoryUseCase.listPriceVersionHistory(priceId);
     }
 
     @PostMapping("/prices/{priceId}/versions/impact")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.preview_price_change", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PriceChangeImpactResponse getPriceChangeImpact(@PathVariable Long priceId, @Valid @RequestBody ChangePriceRequest request) {
         return PriceChangeImpactResponse.from(getPriceChangeImpactUseCase.getPriceChangeImpact(priceId, request.amount(), request.discountOrNull(), request.effectiveFrom()));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/prices/{priceId}/versions")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.propose_price_change", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = PriceVersionResponse.class))),
             @ApiResponse(responseCode = "202", description = "Accepted", content = @Content(schema = @Schema(implementation = PriceChangePendingAuthorizationResponse.class)))})
@@ -91,7 +92,7 @@ public class PriceController {
     }
 
     @PostMapping("/prices/{priceId}/versions/validation")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.preview_price_change", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PriceChangeValidationResponse validatePriceChange(@PathVariable Long priceId, @Valid @RequestBody ChangePriceRequest request) {
         return new PriceChangeValidationResponse(validatePriceChangeUseCase.validatePriceChange(priceId, request.amount(), request.discountOrNull(),
                 request.effectiveFrom(), request.changeReason(), request.appliesToLectiveYear()));
@@ -99,7 +100,7 @@ public class PriceController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/price-versions/{priceVersionId}/cancellation")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.cancel_price_version", legacyRoles = "ROLE_DIRECTOR")
     public PriceVersionResponse cancelScheduledPriceVersion(@PathVariable Long priceVersionId, @Valid @RequestBody CancelPriceVersionRequest request) {
         return PriceVersionResponse.from(cancelScheduledPriceVersionUseCase.cancelScheduledVersion(priceVersionId, request.reason()));
     }

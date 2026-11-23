@@ -4,7 +4,6 @@ import com.red_escuela.backend.billing.payment.domain.AnnualUpfrontCashPaymentRe
 import com.red_escuela.backend.billing.payment.dto.RegisterAnnualUpfrontCashPaymentRequest;
 import com.red_escuela.backend.billing.payment.service.AnnualUpfrontCashPaymentOperationRunner;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @UseCase
 public class RegisterAnnualUpfrontCashPaymentService implements RegisterAnnualUpfrontCashPaymentUseCase {
@@ -15,7 +14,6 @@ public class RegisterAnnualUpfrontCashPaymentService implements RegisterAnnualUp
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public AnnualUpfrontCashPaymentResult registerAnnualUpfrontCashPayment(Long studentId, Long requestId, RegisterAnnualUpfrontCashPaymentRequest request, String idempotencyKey) {
         return operationRunner.run(studentId, requestId, request, idempotencyKey);
     }

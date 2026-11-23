@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
@@ -7,7 +8,6 @@ import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,19 +26,19 @@ public class InvoiceController {
     }
 
     @GetMapping("/course-enrollments/{id}/invoices")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_student_billing", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public EnrollmentBillingStatusResponse byCourse(@PathVariable Long id) {
         return EnrollmentBillingStatusResponse.of(invoiceQueryService.courseBillable(id), invoiceQueryService.courseStanding(id), invoiceQueryService.byCourse(id));
     }
 
     @GetMapping("/program-enrollments/{id}/invoices")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_student_billing", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public EnrollmentBillingStatusResponse byProgram(@PathVariable Long id) {
         return EnrollmentBillingStatusResponse.of(invoiceQueryService.programBillable(id), invoiceQueryService.programStanding(id), invoiceQueryService.byProgram(id));
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.read_student_billing", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PriceBreakdownResponse priceBreakdown(@PathVariable Long id) {
         return invoiceQueryService.priceBreakdown(id);
     }

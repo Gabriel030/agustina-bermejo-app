@@ -111,7 +111,7 @@ export function GradeStudentSheet({ student, columns, drafts, onPatch, onClose }
                 );
               })}
             </div>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="min-h-11 md:min-h-8">
               Listo
             </Button>
           </>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
+import { useBackNavigationGuard } from '@/hooks/useBackNavigationGuard';
 
 function findInternalAnchor(event) {
   if (event.defaultPrevented || event.button !== 0) return null;
@@ -12,9 +13,10 @@ function findInternalAnchor(event) {
   return url;
 }
 
-export function useUnsavedChangesGuard(dirty) {
+export function useUnsavedChangesGuard(dirty, description = 'Tenés cambios sin guardar. Si salís ahora, se pierden.') {
   const navigate = useNavigate();
   const [pendingPath, setPendingPath] = useState(null);
+  const back = useBackNavigationGuard(dirty);
   const dirtyRef = useRef(dirty);
   useEffect(() => {
     dirtyRef.current = dirty;
@@ -54,14 +56,21 @@ export function useUnsavedChangesGuard(dirty) {
 
   const guardDialog = (
     <ConfirmActionDialog
-      open={pendingPath !== null}
+      open={pendingPath !== null || back.isBackPending}
       onOpenChange={(open) => {
-        if (!open) setPendingPath(null);
+        if (!open) {
+          setPendingPath(null);
+          back.cancelBackNavigation();
+        }
       }}
       title="¿Salir sin guardar?"
-      description="Tenés cambios sin guardar. Si salís ahora, se pierden."
+      description={description}
       confirmLabel="Salir sin guardar"
       onConfirm={() => {
+        if (back.isBackPending) {
+          back.confirmBackNavigation();
+          return;
+        }
         const path = pendingPath;
         setPendingPath(null);
         navigate(path);

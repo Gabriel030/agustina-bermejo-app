@@ -1,9 +1,9 @@
-import { FEATURE_ROUTES } from '@/routes/featureRoutes';
+import { FEATURE_ROUTES, withSubdirectorInheritance } from '@/routes/featureRoutes';
 
 export const BILLING_MODULE = 'billing';
 
 export function isBillingPath(role, path) {
-  return FEATURE_ROUTES.billing.role.some((route) => route.path === path && route.roles.includes(role));
+  return withSubdirectorInheritance(FEATURE_ROUTES.billing.role).some((route) => route.path === path && route.roles.includes(role));
 }
 
 export function isModuleEnabled(modules, moduleCode) {

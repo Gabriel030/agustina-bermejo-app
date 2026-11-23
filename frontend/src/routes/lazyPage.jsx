@@ -2,7 +2,17 @@ import { Suspense, lazy } from 'react';
 import { CargaInicial } from '@/pages/CargaInicial';
 
 export function lazyPage(loader, exportName) {
-  const Page = lazy(() => loader().then((module) => ({ default: module[exportName] })));
+  const createPage = () =>
+    lazy(() =>
+      loader().then(
+        (module) => ({ default: module[exportName] }),
+        (error) => {
+          Page = createPage();
+          throw error;
+        },
+      ),
+    );
+  let Page = createPage();
   function LazyPage(props) {
     return (
       <Suspense fallback={<CargaInicial />}>

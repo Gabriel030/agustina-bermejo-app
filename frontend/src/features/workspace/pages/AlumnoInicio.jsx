@@ -1,50 +1,52 @@
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
+import { Skeleton } from '@/components/Skeleton';
 import { PageContainer } from '@/components/PageContainer';
-import { BannerCarousel } from '@/components/BannerCarousel';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
-import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
 import { useMyModules } from '@/hooks/useMyModules';
-import { usePaymentStanding, AdmissionInvoicePendingCard, useAdmissionInvoicesPending } from '@/features/billing';
+import { AdmissionInvoicePendingCard, usePaymentStanding } from '@/features/billing';
 import { useMisCursos } from '@/features/enrollment';
+import { Link } from 'react-router-dom';
+import { StudentBalanceNotice } from '@/features/workspace/components/StudentBalanceNotice';
+import { coursesSummary } from '@/features/workspace/lib/studentHome';
 import { useNovedades, useMarcarAvisoLeido } from '@/features/announcements';
-import { ScheduleCard } from '@/features/schedule';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Bell } from 'lucide-react';
+import { StudentHomeIdentity } from '@/features/workspace/components/StudentHomeIdentity';
+import { StudentHomeKpis } from '@/features/workspace/components/StudentHomeKpis';
+import { StudentCurrentSubjects } from '@/features/workspace/components/StudentCurrentSubjects';
+import { UpcomingEventsCard } from '@/features/workspace/components/UpcomingEventsCard';
+import { useStudentHome } from '@/features/workspace/hooks/useStudentHome';
+import { useStudentUpcomingEvents } from '@/features/workspace/hooks/useStudentUpcomingEvents';
 import { StaleStamp } from '@/components/offline/StaleStamp';
-import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
-import { tiempoRelativo } from '@/lib/notificaciones';
-
-const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'REGULAR']);
-
-function resumenDeCursos(activos, enEspera) {
-  const partes = [];
-  if (activos > 0) partes.push(`Tenés ${activos} curso${activos === 1 ? '' : 's'} en curso`);
-  if (enEspera > 0) {
-    const espera = `lista de espera de ${enEspera} curso${enEspera === 1 ? '' : 's'}`;
-    partes.push(activos > 0 ? `y estás en ${espera}` : `Estás en ${espera}`);
-  }
-  return partes.join(' ');
-}
+import { CATEGORIA_AVISO_LABEL, parseAnnouncementId } from '@/lib/avisos';
+import { describeTime } from '@/lib/notificaciones';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 const NOVEDADES_INICIAL = 3;
-
-function estadoDePago(standing) {
-  if (standing === 'MOROSO') return { label: 'Atrasado', tone: 'danger' };
-  if (standing === 'AL_DIA') return { label: 'Al día', tone: 'success' };
-  return { label: 'Sin información', tone: 'neutral' };
-}
-
-function iniciales(nombre, apellido) {
-  return `${nombre?.[0] ?? ''}${apellido?.[0] ?? ''}`.toUpperCase();
-}
 
 function fueEditado(aviso) {
   if (!aviso.updatedAt || !aviso.createdAt) return false;
   return new Date(aviso.updatedAt) - new Date(aviso.createdAt) > 60_000;
+}
+
+function timeMeta(aviso) {
+  if (!fueEditado(aviso)) return { text: describeTime(aviso.createdAt).text, isoDate: aviso.createdAt };
+  const { text, isRelative } = describeTime(aviso.updatedAt);
+  return { text: isRelative ? `editado ${text}` : `editado el ${text}`, isoDate: aviso.updatedAt };
+}
+
+const VISIBLE_LINES = 6;
+
+function bodyOverflows(el, expandido) {
+  if (!expandido) return el.scrollHeight > el.clientHeight + 2;
+  const lineHeightPx = parseFloat(window.getComputedStyle(el).lineHeight);
+  return Number.isFinite(lineHeightPx) && el.scrollHeight > lineHeightPx * VISIBLE_LINES + 2;
 }
 
 function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
@@ -53,7 +55,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
   const [previousExpandidoPorUrl, setPreviousExpandidoPorUrl] = useState(false);
 
   function measureBody(el) {
-    if (el) setDesborda(el.scrollHeight > el.clientHeight + 2);
+    if (el) setDesborda(bodyOverflows(el, expandido));
   }
 
   if (expandidoPorUrl !== previousExpandidoPorUrl) {
@@ -70,11 +72,15 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
     setExpandido((v) => !v);
   }
 
+  const meta = timeMeta(aviso);
+
   return (
     <div
       ref={refProp}
       data-aviso-id={aviso.id}
-      className={`rounded-xl px-3 py-3 transition-colors ${expandidoPorUrl ? 'animate-[stagger-in_0.3s_ease-out_both] bg-accent-soft/40' : ''}`}
+      tabIndex={expandidoPorUrl ? -1 : undefined}
+      aria-current={expandidoPorUrl ? 'true' : undefined}
+      className={`rounded-card px-3 py-3 transition-colors outline-none ${expandidoPorUrl ? 'animate-[stagger-in_0.3s_ease-out_both] bg-accent-soft/40' : ''}`}
     >
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -85,9 +91,9 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {aviso.urgent && <StatusPill tone="danger">Urgente</StatusPill>}
-          <span className="text-size-10-5 text-ink-faint">
-            {fueEditado(aviso) ? `editado ${tiempoRelativo(aviso.updatedAt)}` : tiempoRelativo(aviso.createdAt)}
-          </span>
+          <time dateTime={meta.isoDate} className="text-size-10-5 text-ink-faint">
+            {meta.text}
+          </time>
         </div>
       </div>
       <div className="mt-1 flex items-center gap-2">
@@ -101,7 +107,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
           type="button"
           aria-expanded={expandido}
           onClick={alternar}
-          className="w-full text-left text-size-13-5 font-semibold text-ink"
+          className="min-h-11 w-full text-left text-size-13-5 font-semibold text-ink"
         >
           {aviso.title}
         </button>
@@ -118,7 +124,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
           size="inline"
           type="button"
           onClick={alternar}
-          className="mt-1 text-size-12 font-semibold"
+          className="mt-1 min-h-11 text-size-12 font-semibold"
           >
           {expandido ? 'Ver menos' : 'Ver más'}
         </Button>
@@ -127,176 +133,172 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
   );
 }
 
-// Mapeo al mockup Alumno · Inicio (Vidrio Líquido), con la carrera sacada del
-// todo — decisión de producto: Inicio no se ata a ninguna carrera puntual
-// (ver Spec - Núcleo académico del alumno, Épica 2 Fase 1). Banner, Novedades
-// y "De tu interés" quedan con contenido placeholder (features sin definir
-// todavía), pero con el mismo tratamiento visual del mockup — no un párrafo
-// de texto suelto.
 export function AlumnoInicio() {
   const { usuario } = useAuth();
   const modules = useMyModules();
-  const { data: standing, isLoading: cargandoStanding, isError: errorStanding, refetch: refetchStanding } = usePaymentStanding({ enabled: modules.billingEnabled });
-  const { data: cursos } = useMisCursos();
-  const { pendientes: matriculasPendientes } = useAdmissionInvoicesPending();
-  const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades, isFetching: actualizandoNovedades, refetch: refetchNovedades, dataUpdatedAt: novedadesActualizadas } = useNovedades();
-  const [searchParams] = useSearchParams();
+  const home = useStudentHome();
+  const standing = usePaymentStanding({ enabled: modules.billingEnabled });
+  const courses = useMisCursos();
+  const coursesText = coursesSummary(courses.data);
+  const upcoming = useStudentUpcomingEvents();
+  const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades, error: errorDeNovedades, isFetching: actualizandoNovedades, refetch: refetchNovedades, dataUpdatedAt: novedadesActualizadas } = useNovedades();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [verTodos, setVerTodos] = useState(false);
   const marcarLeido = useMarcarAvisoLeido();
   const avisoResaltadoRef = useRef(null);
 
-  const cargandoPago = modules.isLoading || (modules.billingEnabled && cargandoStanding);
-  const pago = standing ? estadoDePago(standing.standing) : null;
-  const cursosActivos = (cursos ?? []).filter((c) => ESTADOS_CURSO_ACTIVO.has(c.status));
-  const cursosEnEspera = (cursos ?? []).filter((c) => c.status === 'WAITLISTED');
-
-  const avisoUrlId = searchParams.get('aviso') ? Number(searchParams.get('aviso')) : null;
+  const hasAnnouncementParam = searchParams.has('aviso');
+  const avisoUrlId = hasAnnouncementParam ? parseAnnouncementId(searchParams.getAll('aviso')) : null;
   const novedades = [...(novedadesRaw ?? [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const sinLeer = novedades.filter((aviso) => !aviso.readAt).length;
-  const novedadesVisibles = verTodos ? novedades : novedades.slice(0, NOVEDADES_INICIAL);
+  const deepLinkedAnnouncementIndex = avisoUrlId ? novedades.findIndex((aviso) => aviso.id === avisoUrlId) : -1;
+  const deepLinkedAnnouncementUnavailable = hasAnnouncementParam && novedadesRaw !== undefined && !actualizandoNovedades && deepLinkedAnnouncementIndex === -1;
+  const deepLinkedAnnouncementFound = deepLinkedAnnouncementIndex !== -1;
+  const showingAll = verTodos || deepLinkedAnnouncementIndex >= NOVEDADES_INICIAL;
+  const novedadesVisibles = showingAll ? novedades : novedades.slice(0, NOVEDADES_INICIAL);
+  const identityLoading = home.enrollments.isLoading;
+  const accessDenied = home.enrollments.error?.status === 403;
+  const programLoading = identityLoading || (home.program && home.progress.isLoading);
 
   useEffect(() => {
-    if (!avisoUrlId || !avisoResaltadoRef.current) return;
-    avisoResaltadoRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [avisoUrlId, novedades.length]);
+    const highlighted = avisoResaltadoRef.current;
+    if (!avisoUrlId || !deepLinkedAnnouncementFound || !highlighted) return;
+    highlighted.focus({ preventScroll: true });
+    highlighted.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'center' });
+  }, [avisoUrlId, deepLinkedAnnouncementFound]);
+
+  function toggleFullList() {
+    if (!showingAll) {
+      setVerTodos(true);
+      return;
+    }
+    setVerTodos(false);
+    if (deepLinkedAnnouncementIndex >= NOVEDADES_INICIAL) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('aviso');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }
+
+  if (accessDenied) {
+    return (
+      <PageContainer>
+        <LoadErrorState distinguishForbidden error={home.enrollments.error} resource="tus datos" />
+      </PageContainer>
+    );
+  }
 
   return (
-    <PageContainer>
-      {/* Contenido de cada slide: placeholder genérico por ahora; el carrusel
-          configurable por Administrativo/Director es una feature aparte (ver spec).
-          La mecánica (auto-avance, flechas, dots) sí es real. */}
-      <BannerCarousel />
+    <TooltipProvider>
+      <PageContainer>
+        {modules.billingEnabled && <AdmissionInvoicePendingCard />}
 
-      {modules.billingEnabled && <AdmissionInvoicePendingCard />}
-
-      {/* Identidad + estado de pago */}
-      <GlassCard className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-2 to-brand font-heading text-base font-bold text-on-accent">
-            {iniciales(usuario?.nombre, usuario?.apellido)}
-          </div>
-          <div>
-            <div className="font-heading text-lg font-bold tracking-tight text-ink">
-              {usuario?.nombre} {usuario?.apellido}
-            </div>
-            {standing?.studentId && <div className="text-xs text-ink-faint">Legajo N° {standing.studentId}</div>}
-          </div>
-        </div>
-
-        {cargandoPago ? (
-          <Skeleton className="h-7 w-32" />
-        ) : (
-          pago && (
-            <StatusPill tone={pago.tone} dot className="px-3.5 py-1.5 text-size-12">
-              {pago.label}
-            </StatusPill>
-          )
+        {modules.billingEnabled && (
+          <StudentBalanceNotice
+            standing={standing.data?.standing}
+            isLoading={standing.isLoading}
+            isError={standing.isError}
+            onRetry={standing.refetch}
+          />
         )}
-      </GlassCard>
 
-      <ScheduleCard />
-
-      {cursosActivos.length + cursosEnEspera.length > 0 && (
-        <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <span className="text-size-13 font-semibold text-ink-soft">{resumenDeCursos(cursosActivos.length, cursosEnEspera.length)}</span>
-          <Link to="/alumno/mis-cursos" className="text-xs font-bold text-primary hover:underline">
-            Ver mis cursos →
-          </Link>
-        </GlassCard>
-      )}
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
-        <GlassCard className="flex flex-col p-5">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="font-heading text-size-15 font-semibold text-ink">Novedades</div>
-              <StaleStamp dataUpdatedAt={novedadesActualizadas} isFetching={actualizandoNovedades} isError={errorNovedades} hasData={novedadesRaw !== undefined} />
-            </div>
-            {sinLeer > 0 && <StatusPill tone="accent">{sinLeer} sin leer</StatusPill>}
-          </div>
-          {cargandoNovedades ? (
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-            </div>
-          ) : errorNovedades ? (
-            <LoadErrorState bare resource="las novedades" onRetry={refetchNovedades} />
-          ) : novedades.length === 0 ? (
-            <EmptyState
-              icon="🔔"
-              title="Todavía no hay novedades"
-              description="Acá vas a ver avisos de tus docentes y recordatorios de tu institución."
+        {home.enrollments.isError ? (
+          <LoadErrorState distinguishForbidden error={home.enrollments.error} resource="tus datos" onRetry={home.enrollments.refetch} />
+        ) : (
+          <>
+            <StudentHomeIdentity user={usuario} program={home.program} regularityView={home.regularityView} isLoading={identityLoading} />
+            <StudentHomeKpis
+              activeCount={home.activeCount}
+              progress={home.progress.data}
+              programName={home.program?.programName}
+              hasSeveralPrograms={home.hasSeveralPrograms}
+              progressFailed={home.progress.isError}
+              onRetryProgress={home.progress.refetch}
+              isLoading={programLoading || home.sectionEnrollments.isLoading}
             />
-          ) : (
-            <div className="flex flex-col gap-1">
-              {novedadesVisibles.map((aviso) => {
-                const esResaltado = aviso.id === avisoUrlId;
-                return (
-                  <AvisoItem
-                    key={aviso.id}
-                    aviso={aviso}
-                    expandidoPorUrl={esResaltado}
-                    refProp={esResaltado ? avisoResaltadoRef : null}
-                    onAbrir={marcarLeido}
-                  />
-                );
-              })}
-              {novedades.length > NOVEDADES_INICIAL && (
-                <Button
-                  variant="text"
-                  size="inline"
-                  type="button"
-                  onClick={() => setVerTodos((v) => !v)}
-                  className="mt-1 self-start text-size-12-5 font-semibold"
-                  >
-                  {verTodos ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
-                </Button>
-              )}
-            </div>
-          )}
-        </GlassCard>
+            {coursesText && (
+              <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <span className="text-size-13 font-semibold text-ink-soft">{coursesText}</span>
+                <Link to="/alumno/mis-cursos" className="inline-flex min-h-11 items-center text-xs font-bold text-primary hover:underline">
+                  Ver mis cursos →
+                </Link>
+              </GlassCard>
+            )}
+          </>
+        )}
 
-        {(modules.isLoading || modules.isError || modules.billingEnabled) && (
-          <GlassCard className="flex flex-col gap-3 p-5">
-            <div className="font-heading text-size-15 font-semibold text-ink">Estado de cuenta</div>
-            {cargandoPago ? (
-              <Skeleton className="h-14 w-full" />
-            ) : errorStanding || modules.isError ? (
-              <LoadErrorState bare resource="tu estado de cuenta" onRetry={modules.isError ? modules.refetch : refetchStanding} />
-            ) : standing?.standing === 'MOROSO' ? (
-              <div className="rounded-xl bg-warning-bg px-4 py-3">
-                <div className="text-xs font-semibold text-warning">Saldo pendiente</div>
-                <div className="text-size-13 text-ink-soft mt-1">Revisá tus cuotas en la sección de pagos.</div>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <UpcomingEventsCard card={upcoming} />
+
+          <GlassCard className="flex flex-col p-5" aria-labelledby="student-news-title">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h2 id="student-news-title" className="flex items-center gap-2 font-heading text-size-15 font-semibold text-ink">
+                  <Bell className="h-4 w-4" aria-hidden="true" />
+                  Novedades
+                </h2>
+                <StaleStamp dataUpdatedAt={novedadesActualizadas} isFetching={actualizandoNovedades} isError={errorNovedades} hasData={novedadesRaw !== undefined} />
               </div>
-            ) : matriculasPendientes.length > 0 ? (
-              <div className="rounded-xl bg-warning-bg px-4 py-3">
-                <div className="text-xs font-semibold text-warning">Matrícula de ingreso pendiente</div>
+              {sinLeer > 0 && <StatusPill tone="accent">{sinLeer} sin leer</StatusPill>}
+            </div>
+            {deepLinkedAnnouncementUnavailable && (
+              <p role="status" className="mb-2 rounded-control bg-warning-bg px-3 py-2 text-size-12-5 text-warning-ink">
+                Ese aviso ya no está disponible.
+              </p>
+            )}
+            {cargandoNovedades ? (
+              <div className="flex flex-col gap-2" role="status" aria-busy="true">
+                <span className="sr-only">Cargando novedades</span>
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
               </div>
+            ) : errorNovedades ? (
+              <LoadErrorState bare distinguishForbidden error={errorDeNovedades} resource="las novedades" onRetry={refetchNovedades} />
+            ) : novedades.length === 0 ? (
+              <EmptyState
+                icon="🔔"
+                title="Todavía no hay novedades"
+                description="Acá vas a ver avisos de tus docentes y recordatorios de tu institución."
+              />
             ) : (
-              <div className="rounded-xl bg-success-bg px-4 py-3 text-size-13 font-semibold text-success">
-                No tenés saldo pendiente.
+              <div className="flex flex-col gap-1">
+                {novedadesVisibles.map((aviso) => {
+                  const esResaltado = aviso.id === avisoUrlId;
+                  return (
+                    <AvisoItem
+                      key={aviso.id}
+                      aviso={aviso}
+                      expandidoPorUrl={esResaltado}
+                      refProp={esResaltado ? avisoResaltadoRef : null}
+                      onAbrir={marcarLeido}
+                    />
+                  );
+                })}
+                {novedades.length > NOVEDADES_INICIAL && (
+                  <Button
+                    variant="text"
+                    size="inline"
+                    type="button"
+                    onClick={toggleFullList}
+                    className="mt-1 min-h-11 self-start text-size-12-5 font-semibold"
+                  >
+                    {showingAll ? 'Mostrar menos avisos' : `Ver todos (${novedades.length})`}
+                  </Button>
+                )}
               </div>
             )}
           </GlassCard>
-        )}
-      </div>
+        </div>
 
-      <GlassCard className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="font-heading text-size-15 font-semibold text-ink">De tu interés</div>
-          <Link to="/catalogo?tab=cursos" className="text-xs font-bold text-primary hover:underline">
-            Ver todos los cursos →
-          </Link>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex flex-col gap-2 rounded-xl border border-dashed border-border p-4">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft text-sm">✨</span>
-              <span className="text-xs font-semibold text-ink-faint">Próximamente</span>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
-    </PageContainer>
+        <StudentCurrentSubjects
+          subjects={home.subjects}
+          hasProgram={Boolean(home.program)}
+          isLoading={home.sectionEnrollments.isLoading}
+          isError={home.sectionEnrollments.isError}
+          error={home.sectionEnrollments.error}
+          onRetry={home.sectionEnrollments.refetch}
+        />
+      </PageContainer>
+    </TooltipProvider>
   );
 }

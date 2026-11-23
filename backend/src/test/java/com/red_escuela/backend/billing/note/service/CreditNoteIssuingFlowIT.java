@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -246,7 +247,7 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
         mockMvc.perform(post(url).header("Authorization", "Bearer " + director.token()).contentType(APPLICATION_JSON)
                 .content(creditNoteBody("BILLING_ERROR", "Error", 1, "80000.01"))).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT"));
         mockMvc.perform(post("/invoices/987654321/credit-notes").header("Authorization", "Bearer " + director.token()).contentType(APPLICATION_JSON)
-                .content(creditNoteBody("BILLING_ERROR", "Error", 1, "1.00"))).andExpect(status().isNotFound());
+                .content(creditNoteBody("BILLING_ERROR", "Error", 1, "1.00"))).andExpect(status().isNotFound()).andExpect(content().string(""));
         assertThat(creditNoteCountOf(scenario.invoiceId())).isZero();
     }
 

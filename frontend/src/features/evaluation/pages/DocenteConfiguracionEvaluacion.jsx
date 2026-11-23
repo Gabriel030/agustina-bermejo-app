@@ -223,19 +223,20 @@ export function DocenteConfiguracionEvaluacion() {
             <span className="text-size-11 font-semibold text-ink-faint">Cantidad</span>
             <div className="flex gap-2">
               {[1, 2, 3].map((n) => (
-                <button
+                <Button
                   key={n}
                   type="button"
+                  variant="ghost"
                   disabled={soloLectura}
                   onClick={() => setForm((f) => ({ ...f, tpCount: n }))}
-                  className={`rounded-lg px-4 py-2 text-sm font-bold ${
+                  className={`min-h-11 min-w-11 rounded-lg px-4 text-sm font-bold ${
                     form.tpCount === n
-                      ? 'bg-gradient-to-br from-primary to-brand text-on-accent ring-2 ring-success ring-offset-2'
+                      ? 'bg-brand text-on-accent ring-2 ring-success ring-offset-2 hover:bg-brand hover:text-on-accent'
                       : 'bg-neutral-bg text-ink-faint'
                   } disabled:opacity-60 disabled:ring-0`}
                 >
                   {n}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -325,7 +326,7 @@ export function DocenteConfiguracionEvaluacion() {
         {!soloLectura && (
           <div className="flex flex-wrap items-center justify-end gap-3">
             {!formularioCompleto && <span className="text-xs font-semibold text-warning">Faltan {faltantes} datos para poder enviar</span>}
-            <Button variant="outline" onClick={guardar} disabled={guardarBorrador.isPending}>
+            <Button variant="outline" onClick={guardar} disabled={guardarBorrador.isPending} className="min-h-11 md:min-h-8">
               Guardar borrador
             </Button>
             <Button
@@ -334,6 +335,7 @@ export function DocenteConfiguracionEvaluacion() {
               disabled={
                 !formularioCompleto || hayFechasInvalidas || !config.canSubmit || guardarBorrador.isPending || enviarAAprobacion.isPending
               }
+              className="min-h-11 md:min-h-8"
             >
               {config.status === 'REJECTED' ? 'Reenviar a aprobación' : 'Enviar a aprobación'}
             </Button>

@@ -3,13 +3,13 @@ export const permissionCatalog = () => ({
     {
       module: 'announcement',
       permissions: [
-        { code: 'announcement.create', description: 'Crear avisos', fixedToDirector: false },
-        { code: 'announcement.delete', description: 'Eliminar avisos', fixedToDirector: false },
+        { code: 'announcement.create', description: 'Crear avisos', fixedToDirector: false, sensitive: false },
+        { code: 'announcement.delete', description: 'Eliminar avisos', fixedToDirector: false, sensitive: false },
       ],
     },
     {
       module: 'billing',
-      permissions: [{ code: 'billing.payment.revoke', description: 'Revocar la aprobación de un pago', fixedToDirector: true }],
+      permissions: [{ code: 'billing.payment.revoke', description: 'Revocar la aprobación de un pago', fixedToDirector: false, sensitive: true }],
     },
   ],
 });
@@ -29,11 +29,30 @@ export const permissionGrid = (overrides = {}) => ({
   ...overrides,
 });
 
+export const permissionGridReadOnly = () =>
+  permissionGrid({
+    editable: false,
+    roles: [
+      { role: 'DIRECTOR', permissionCodes: ['announcement.create', 'announcement.delete', 'billing.payment.revoke'] },
+      { role: 'SUBDIRECTOR', permissionCodes: ['announcement.create'] },
+      { role: 'ADMINISTRATIVO', permissionCodes: ['announcement.create'] },
+      { role: 'PRECEPTOR', permissionCodes: [] },
+      { role: 'DOCENTE', permissionCodes: [] },
+    ],
+  });
+
 export const permissionDiscrepancy = (overrides = {}) => ({
   role: 'ADMINISTRATIVO',
   module: 'announcement',
   permissionCode: 'announcement.delete',
+  direction: 'LEGACY_DENIED_GRID_ALLOWED',
   count: 3,
   lastSeenAt: '2026-11-21T12:00:00Z',
   ...overrides,
+});
+
+export const permissionDiscrepancySummary = () => ({
+  modules: [
+    { module: 'announcement', legacyAllowedGridDenied: 1, legacyDeniedGridAllowed: 2, total: 3, lastSeenAt: '2026-11-21T12:00:00Z' },
+  ],
 });

@@ -6,7 +6,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { isDesignB } from '@/theme/design';
-import { usePerfilPropio, useAvatar } from '@/features/identity/hooks/useMiPerfil';
+import { usePerfilPropio, useAvatar } from '@/features/identity';
 
 function iniciales(nombre, apellido) {
   return `${nombre?.[0] ?? ''}${apellido?.[0] ?? ''}`.toUpperCase();

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.specialist;
 
+import com.red_escuela.backend.identity.domain.PermissionModuleMode;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.audit.AuditAction;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class IdentityAuditRecorder {
+
+    private static final int AUDIT_VALUE_MAX_LENGTH = 100;
 
     private final AuditTrail auditTrail;
 
@@ -26,6 +29,33 @@ public class IdentityAuditRecorder {
     public void recordStaffCreated(Person person, String initialRole) {
         auditTrail.record(new AuditRecord(AuditAction.STAFF_CREATED, AuditEntityType.PERSON,
                 person.getId(), null, initialRole, null));
+    }
+
+    public void recordPermissionGridChanged(Long permissionId, String role, boolean granted, String reason) {
+        recordPermissionChange(AuditAction.PERMISSION_GRID_CHANGED, permissionId, role, granted, reason);
+    }
+
+    public void recordPermissionSensitiveChanged(Long permissionId, String permissionCode, String role, boolean granted,
+                                                 String reason) {
+        String subject = permissionCode + ":" + role;
+        if (subject.length() + ":DENIED".length() > AUDIT_VALUE_MAX_LENGTH) {
+            subject = permissionCode;
+        }
+        recordPermissionChange(AuditAction.PERMISSION_SENSITIVE_CHANGED, permissionId, subject, granted, reason);
+    }
+
+    private void recordPermissionChange(AuditAction action, Long permissionId, String subject, boolean granted,
+                                        String reason) {
+        auditTrail.record(new AuditRecord(action, AuditEntityType.PERMISSION, permissionId,
+                subject + ":" + (granted ? "DENIED" : "GRANTED"), subject + ":" + (granted ? "GRANTED" : "DENIED"),
+                reason));
+    }
+
+    public void recordPermissionModeChanged(Long modeSettingId, String role, String module,
+                                            PermissionModuleMode previous, PermissionModuleMode current, String reason) {
+        auditTrail.record(new AuditRecord(AuditAction.PERMISSION_GRID_CHANGED, AuditEntityType.PERMISSION,
+                modeSettingId, "Cambio de modo " + role + "/" + module + ": " + previous.name(),
+                "Cambio de modo " + role + "/" + module + ": " + current.name(), reason));
     }
 
     public void recordPasswordChanged(Person person) {
