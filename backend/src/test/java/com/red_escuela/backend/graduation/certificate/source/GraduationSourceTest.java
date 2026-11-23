@@ -10,7 +10,16 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.graduation.entity.CertificateReviewStatus;
+import com.red_escuela.backend.graduation.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
+import com.red_escuela.backend.graduation.exception.GraduationCertificateReviewRequiredException;
+import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+import java.util.Optional;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -18,9 +27,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class GraduationSourceTest {
@@ -31,7 +42,9 @@ class GraduationSourceTest {
     private final ProgramEnrollmentFinder programFinder = mock(ProgramEnrollmentFinder.class);
     private final CourseEnrollmentFinder courseFinder = mock(CourseEnrollmentFinder.class);
     private final CourseSectionOutcomeFinder outcomeFinder = mock(CourseSectionOutcomeFinder.class);
-    private final ProgramGraduationSource programSource = new ProgramGraduationSource(programFinder, debtCheck, snapshotFactory);
+    private final GraduationRequestRepository graduationRequestRepository = mock(GraduationRequestRepository.class);
+    private final ProgramGraduationSource programSource = new ProgramGraduationSource(programFinder, debtCheck, snapshotFactory,
+            graduationRequestRepository);
     private final CourseGraduationSource courseSource = new CourseGraduationSource(courseFinder, outcomeFinder, debtCheck,
             snapshotFactory, clock);
 
@@ -113,5 +126,38 @@ class GraduationSourceTest {
         course(EnrollmentStatus.IN_PROGRESS, new CourseSectionOutcomeView(3, 3, LocalDate.of(2026, 11, 4)));
 
         assertThatCode(() -> courseSource.requireEligible(2L)).doesNotThrowAnyException();
+    }
+
+    private void approvedRequestWithReview(CertificateReviewStatus reviewStatus) {
+        GraduationRequest request = new GraduationRequest();
+        request.setId(55L);
+        request.setStatus(GraduationRequestStatus.APPROVED);
+        request.setCertificateReviewStatus(reviewStatus);
+        when(graduationRequestRepository.findFirstByProgramEnrollmentIdAndStatusOrderByIdDesc(1L, GraduationRequestStatus.APPROVED))
+                .thenReturn(Optional.of(request));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = CertificateReviewStatus.class, names = {"PENDING_REVIEW", "DISABLED"})
+    void unreviewedOrDisabledGraduationBlocksCertificateBeforeDebtCheck(CertificateReviewStatus reviewStatus) {
+        program(ProgramEnrollmentStatus.COMPLETED);
+        approvedRequestWithReview(reviewStatus);
+
+        assertThatThrownBy(() -> programSource.requireEligible(1L))
+                .isInstanceOfSatisfying(GraduationCertificateReviewRequiredException.class,
+                        e -> assertThat(e.getReviewStatus()).isEqualTo(reviewStatus.name()));
+        verifyNoInteractions(debtCheck);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = CertificateReviewStatus.class, names = {"ENABLED", "NOT_REQUIRED"})
+    void enabledOrNotRequiredGraduationKeepsDebtRuleAndEligibility(CertificateReviewStatus reviewStatus) {
+        program(ProgramEnrollmentStatus.COMPLETED);
+        approvedRequestWithReview(reviewStatus);
+
+        assertThatCode(() -> programSource.requireEligible(1L)).doesNotThrowAnyException();
+
+        when(debtCheck.hasDebt(7L)).thenReturn(true);
+        assertThatThrownBy(() -> programSource.requireEligible(1L)).isInstanceOf(GraduationCertificateNotEligibleException.class);
     }
 }

@@ -2,6 +2,7 @@ package com.red_escuela.backend.graduation.api;
 
 import com.red_escuela.backend.enrollment.api.HistoricalEnrollmentRecorder;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.graduation.entity.CertificateReviewStatus;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
@@ -45,6 +46,7 @@ public class HistoricalGraduationRecorder {
         request.setDecidedAt(historical.graduationDate().atTime(HISTORICAL_TIME));
         request.setRegistryNumber(historical.registryNumber());
         request.setLegacyTitleNumber(historical.legacyTitleNumber());
+        request.setCertificateReviewStatus(CertificateReviewStatus.PENDING_REVIEW);
         return graduationRequestRepository.save(request).getId();
     }
 
