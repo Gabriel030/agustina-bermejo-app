@@ -42,6 +42,9 @@ deploy_scope='^(backend/Dockerfile|backend/\.dockerignore|frontend/Dockerfile|fr
 backend_scope='^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)'
 migration_scope='^(backend/src/main/resources/db/migration/|backend/src/test/.*Migrat[^/]*\.java$|backend/pom\.xml$|scripts/|\.github/workflows/|\.github/scripts/)'
 
+run_everything_scope='(^|/)(pom\.xml|mvnw|mvnw\.cmd|package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$|^(\.mvn/|backend/\.mvn/|\.github/|contracts/|deploy/)'
+classified_scope='^(backend/|frontend/|perf/|docs/|\.claude/|\.gitignore$|diagrama_entidades\.puml$)|\.md$'
+
 demo_seed_scope='^(backend/src/main/java/.*/(config|demo)/[^/]*Demo[^/]*\.java$|backend/src/main/java/.*/demo/|backend/src/main/java/.*Seed[^/]*\.java$|backend/src/test/java/.*Demo[^/]*SeedIT\.java$|backend/src/main/resources/application-demo\.properties$|backend/src/main/resources/db/migration/)'
 
 base=""
@@ -81,6 +84,14 @@ if [ -n "$base" ]; then
     if [ "$full_tier" = false ]; then
       if ! grep -qE "$migration_scope" <<< "$changed"; then
         run_migration=false
+      fi
+    fi
+    if [ "$event" = pull_request ] && [ -n "$changed" ]; then
+      if grep -qE "$run_everything_scope" <<< "$changed" || grep -qvE "$classified_scope" <<< "$changed"; then
+        relevant=true
+        frontend=true
+        run_migration=true
+        echo "pull request touches shared or unclassified paths: backend and frontend run"
       fi
     fi
   fi

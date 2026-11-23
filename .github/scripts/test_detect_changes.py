@@ -137,6 +137,68 @@ class DetectChangesTest(unittest.TestCase):
         result = self.pull_request_changing({'frontend/a.js': 'b'})
         self.assertEqual('false', result['deploy_ops'])
 
+    def assert_areas(self, files, backend, frontend):
+        result = self.pull_request_changing(files)
+        self.assertEqual((backend, frontend), (result['relevant'], result['frontend']))
+
+    def test_pull_request_touching_only_the_frontend_skips_the_backend(self):
+        self.assert_areas({'frontend/src/App.jsx': 'x'}, 'false', 'true')
+
+    def test_pull_request_touching_only_the_backend_skips_the_frontend(self):
+        self.assert_areas({'backend/src/main/java/com/red_escuela/backend/billing/Invoice.java': 'x'}, 'true', 'false')
+
+    def test_pull_request_touching_backend_and_frontend_runs_both(self):
+        self.assert_areas({'backend/B.java': 'x', 'frontend/b.js': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_only_docs_runs_neither(self):
+        self.assert_areas({'docs/context/x.md': 'x', 'README.md': 'x'}, 'false', 'false')
+
+    def test_pull_request_touching_docs_and_the_frontend_skips_the_backend(self):
+        self.assert_areas({'docs/x.md': 'x', 'frontend/b.js': 'x'}, 'false', 'true')
+
+    def test_pull_request_touching_the_workflows_runs_everything(self):
+        self.assert_areas({'.github/workflows/ci.yml': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_other_github_files_runs_everything(self):
+        self.assert_areas({'.github/dependabot.yml': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_the_contracts_runs_everything(self):
+        self.assert_areas({'contracts/openapi.json': '{}'}, 'true', 'true')
+
+    def test_pull_request_touching_the_deploy_folder_runs_everything(self):
+        self.assert_areas({'deploy/.env.example': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_the_frontend_lockfile_runs_everything(self):
+        self.assert_areas({'frontend/package-lock.json': '{"a":1}'}, 'true', 'true')
+
+    def test_pull_request_touching_the_frontend_package_json_runs_everything(self):
+        self.assert_areas({'frontend/package.json': '{}'}, 'true', 'true')
+
+    def test_pull_request_touching_the_backend_pom_runs_everything(self):
+        self.assert_areas({'backend/pom.xml': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_the_maven_wrapper_runs_everything(self):
+        self.assert_areas({'backend/mvnw': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_an_unclassified_root_file_runs_everything(self):
+        self.assert_areas({'docker-compose.yml': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_an_unclassified_folder_with_docs_runs_everything(self):
+        self.assert_areas({'e2e/spec.js': 'x', 'docs/x.md': 'x'}, 'true', 'true')
+
+    def test_pull_request_that_runs_everything_for_shared_paths_also_runs_migration(self):
+        result = self.pull_request_changing({'contracts/openapi.json': '{}'})
+        self.assertEqual('true', result['run_migration'])
+
+    def test_pull_request_touching_only_the_frontend_skips_migration(self):
+        result = self.pull_request_changing({'frontend/src/App.jsx': 'x'})
+        self.assertEqual('false', result['run_migration'])
+
+    def test_push_with_an_unclassified_root_file_keeps_skipping_the_areas(self):
+        commit_files(self.repo, {'docker-compose.yml': 'x'}, 'compose')
+        result = self.push(GH_LAST_PUSH_SHA=self.base)
+        self.assertEqual(('false', 'false'), (result['relevant'], result['frontend']))
+
     def test_push_never_runs_the_demo_seed_job(self):
         result = self.push()
         self.assertEqual('false', result['run_demo_seed'])
