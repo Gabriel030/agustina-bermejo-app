@@ -3,7 +3,7 @@ import { Camera, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { SEX_LABEL } from '@/lib/person';
+import { SEX_LABEL } from '@/features/identity/lib/person';
 import { DocumentField } from '@/components/DocumentField';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';

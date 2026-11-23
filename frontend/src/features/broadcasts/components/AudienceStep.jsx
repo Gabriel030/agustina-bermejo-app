@@ -1,8 +1,7 @@
 import { GlassCard } from '@/components/GlassCard';
 import { ChoiceChip } from '@/components/ChoiceChip';
 import { StatusPill } from '@/components/StatusPill';
-import { usePrograms } from '@/features/academic-structure';
-import { useSubjects } from '@/features/academic-structure/hooks/useSubjects';
+import { usePrograms, useSubjects } from '@/features/academic-structure';
 import { OptionCombobox } from './OptionCombobox';
 import { AudienceCounter } from './AudienceCounter';
 import { ENROLLMENT_STATUS_LABELS, EXCLUSION_REASON_LABELS, STAFF_ROLE_LABELS } from '../lib/broadcastWizard';

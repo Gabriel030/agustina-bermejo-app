@@ -9,13 +9,13 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Paginador } from '@/components/Paginador';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { EstadoColumnFilter } from '@/components/alumno/EstadoColumnFilter';
-import { AnioColumnFilter } from '@/components/alumno/AnioColumnFilter';
+import { EstadoColumnFilter } from '@/features/evaluation/components/EstadoColumnFilter';
+import { AnioColumnFilter } from '@/features/evaluation/components/AnioColumnFilter';
 import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
-import { SortableColumnHeader } from '@/components/alumno/SortableColumnHeader';
+import { SortableColumnHeader } from '@/features/evaluation/components/SortableColumnHeader';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiFetch } from '@/api/client';
-import { useGrillaDeMaterias } from '@/hooks/useGrillaDeMaterias';
+import { useGrillaDeMaterias } from '@/features/evaluation/hooks/useGrillaDeMaterias';
 import { COLUMNAS_NOTAS, FINAL_GRADE_TYPE_LABEL, mapearNotasAColumnas } from '@/lib/notas';
 
 function GradeWithCorrection({ score, correction }) {

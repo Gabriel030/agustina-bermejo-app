@@ -270,4 +270,50 @@ class CircuitBreakerTest {
     void settingsRejectAThresholdLargerThanTheWindow() {
         assertThatThrownBy(() -> new CircuitBreakerSettings(true, 3, 4, WAIT_OPEN)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void isNotRejectingCallsWhileClosed() {
+        failTimes(2);
+
+        assertThat(breaker.isRejectingCalls()).isFalse();
+    }
+
+    @Test
+    void isRejectingCallsWhileOpenAndWaitHasNotElapsed() {
+        failTimes(3);
+        clock.advance(WAIT_OPEN.minusSeconds(1));
+
+        assertThat(breaker.isRejectingCalls()).isTrue();
+    }
+
+    @Test
+    void stopsRejectingCallsOnceTheWaitElapsedSoTheProbeCanPass() {
+        failTimes(3);
+        clock.advance(WAIT_OPEN);
+
+        assertThat(breaker.isRejectingCalls()).isFalse();
+    }
+
+    @Test
+    void isNotRejectingCallsWhileHalfOpen() {
+        failTimes(3);
+        clock.advance(WAIT_OPEN);
+        assertThatThrownBy(() -> breaker.execute(() -> {
+            assertThat(breaker.state()).isEqualTo(CircuitBreakerState.HALF_OPEN);
+            assertThat(breaker.isRejectingCalls()).isFalse();
+            throw new IllegalStateException("probe");
+        })).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void neverRejectsCallsWhenDisabled() {
+        CircuitBreaker disabled = new CircuitBreaker("off", new CircuitBreakerSettings(false, 5, 3, WAIT_OPEN), clock, meters);
+        for (int i = 0; i < 5; i++) {
+            assertThatThrownBy(() -> disabled.execute(() -> {
+                throw new IllegalStateException("boom");
+            })).isInstanceOf(IllegalStateException.class);
+        }
+
+        assertThat(disabled.isRejectingCalls()).isFalse();
+    }
 }

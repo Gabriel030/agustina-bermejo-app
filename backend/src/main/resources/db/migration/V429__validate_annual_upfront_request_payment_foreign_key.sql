@@ -1,0 +1,1 @@
+alter table annual_upfront_request validate constraint fk_annual_upfront_request_payment;

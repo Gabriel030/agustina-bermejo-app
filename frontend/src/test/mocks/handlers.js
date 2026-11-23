@@ -568,6 +568,7 @@ export const handlers = [
   http.get(`${API}/elective-groups`, () => HttpResponse.json([])),
   http.get(`${API}/programs/:id/year-billing-templates`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json([])),
+  http.get(`${API}/section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-enrollments`, () => HttpResponse.json([])),
   http.post(`${API}/me/section-enrollments/:id/change-section`, async ({ params, request }) => {
     const { newSectionId } = await request.json().catch(() => ({}));

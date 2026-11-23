@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AttendanceConfirmDialog } from '@/features/attendance/components/AttendanceConfirmDialog';
+import { useBackNavigationGuard } from '@/hooks/useBackNavigationGuard';
 
 function internalLink(event) {
   if (event.defaultPrevented || event.button !== 0) return null;
@@ -18,6 +19,7 @@ export function useDraftExitGuard(changedCount, active) {
   const navigate = useNavigate();
   const [pendingLink, setPendingLink] = useState(null);
   const releasedAnchorRef = useRef(null);
+  const back = useBackNavigationGuard(active);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -46,9 +48,12 @@ export function useDraftExitGuard(changedCount, active) {
 
   const leaveDialog = (
     <AttendanceConfirmDialog
-      open={pendingLink !== null}
+      open={pendingLink !== null || back.isBackPending}
       onOpenChange={(open) => {
-        if (!open) setPendingLink(null);
+        if (!open) {
+          setPendingLink(null);
+          back.cancelBackNavigation();
+        }
       }}
       title="¿Salir sin guardar?"
       description={`${changedCount > 1 ? `Tenés ${changedCount} cambios sin guardar` : 'Tenés cambios sin guardar'}. Quedan como borrador en este dispositivo hasta 12 horas, pero los alumnos y Secretaría no los ven hasta que guardes.`}
@@ -56,6 +61,10 @@ export function useDraftExitGuard(changedCount, active) {
       confirmLabel="Salir"
       confirmVariant="destructive"
       onConfirm={() => {
+        if (back.isBackPending) {
+          back.confirmBackNavigation();
+          return;
+        }
         const link = pendingLink;
         setPendingLink(null);
         if (link.anchor.isConnected) {

@@ -318,5 +318,13 @@ where status in ('ENROLLED', 'IN_PROGRESS', 'WAITLISTED')
 group by student_id, course_id
 having count(*) > 1;
 
+\echo
+\echo [V428] Solicitudes de pago anual adelantado cuyo payment_id no existe en payment; V428 ABORTA si hay filas (corregir antes: apuntar al pago correcto o dejar payment_id en null; no se borran datos):
+select r.id as annual_upfront_request_id, r.payment_id, r.status
+from annual_upfront_request r
+where r.payment_id is not null
+  and not exists (select 1 from payment p where p.id = r.payment_id)
+order by r.id;
+
 rollback;
 \echo ===== fin =====

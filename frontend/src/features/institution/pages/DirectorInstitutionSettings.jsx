@@ -14,7 +14,7 @@ import { InfoTip } from '@/components/charts/InfoTip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
+import { useUnsavedChangesGuard } from '@/features/academic-structure';
 import { useInstitutionSettings, useSaveInstitutionSettings } from '../hooks/useInstitutionSettings';
 import { SETTING_FIELDS, SETTING_GROUPS, buildChangeRows, isChanged, toDraft, toPayload, validateField } from '../institutionSettings';
 
