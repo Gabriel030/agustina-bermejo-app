@@ -28,7 +28,7 @@ export function CopyableCommand({ stepNumber, stepTitle, actor, command }) {
     <div className="mt-2 flex min-w-0 flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2 text-size-12 font-bold text-ink-soft">
         <span>{actor}</span>
-        <Button type="button" variant="outline" size="xs" aria-label={`Copiar comandos del paso ${stepNumber}: ${stepTitle}`} onClick={copyCommand}>
+        <Button className="min-h-11 md:min-h-6" type="button" variant="outline" size="xs" aria-label={`Copiar comandos del paso ${stepNumber}: ${stepTitle}`} onClick={copyCommand}>
           <Copy aria-hidden="true" />
           {message === MESSAGES.copied ? 'Copiado' : 'Copiar'}
         </Button>

@@ -39,7 +39,7 @@ export function AuditFilters({ filters, onChange, onClear }) {
 
   return (
     <section aria-label="Filtros de auditoría" className="flex flex-col gap-2">
-      <Button type="button" variant="outline" className="self-start md:hidden" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+      <Button type="button" variant="outline" className="min-h-11 self-start md:hidden" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
         Filtros
         <ChevronDown className="size-4" aria-hidden="true" />
       </Button>
@@ -80,7 +80,7 @@ export function AuditFilters({ filters, onChange, onClear }) {
           <Input type="date" aria-label="Hasta" className="w-fit" value={filters.to} min={filters.from || undefined} onChange={(event) => set({ to: event.target.value })} />
         </div>
         {active && (
-          <Button type="button" className="md:ml-auto" onClick={onClear}>
+          <Button type="button" className="min-h-11 md:ml-auto md:min-h-8" onClick={onClear}>
             Limpiar filtros
           </Button>
         )}
