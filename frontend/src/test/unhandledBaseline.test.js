@@ -1,6 +1,15 @@
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import baseline from './unhandled-baseline.json';
+import { grownEntries, inheritRenamedBaseline, renamedKeysFrom } from './unhandledBaselineGuard';
+
+const readFromDevelop = (command, args) => {
+  try {
+    return execFileSync(command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch {
+    return null;
+  }
+};
 
 const total = (entries) =>
   Object.values(entries).reduce((sum, perFile) => sum + Object.values(perFile).reduce((a, b) => a + b, 0), 0);
@@ -16,22 +25,12 @@ describe('unhandled requests baseline', () => {
   });
 
   it('baselineCanOnlyShrink', () => {
-    let base;
-    try {
-      const raw = execFileSync('git', ['show', 'origin/develop:frontend/src/test/unhandled-baseline.json'], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      });
-      base = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    const grown = Object.entries(baseline).flatMap(([file, perKey]) =>
-      Object.entries(perKey)
-        .filter(([key, count]) => count > (base[file]?.[key] ?? 0))
-        .map(([key, count]) => `${file} ${key} ${count} > ${base[file]?.[key] ?? 0}`),
-    );
-    expect(grown).toEqual([]);
+    const raw = readFromDevelop('git', ['show', 'origin/develop:frontend/src/test/unhandled-baseline.json']);
+    if (raw === null) return;
+    const base = JSON.parse(raw);
+    const nameStatus = readFromDevelop('git', ['diff', '--find-renames', '--name-status', 'origin/develop']) ?? '';
+    const expectedBase = inheritRenamedBaseline(base, renamedKeysFrom(nameStatus));
+    expect(grownEntries(baseline, expectedBase)).toEqual([]);
     expect(total(baseline)).toBeLessThanOrEqual(total(base));
   });
 });
