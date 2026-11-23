@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.regular.repository;
 
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateChannel;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,6 +21,8 @@ public interface RegularStudentCertificateRepository extends JpaRepository<Regul
     Optional<RegularStudentCertificate> findByProgramEnrollmentIdAndStatus(Long programEnrollmentId, RegularCertificateStatus status);
 
     Optional<RegularStudentCertificate> findByCourseEnrollmentIdAndStatus(Long courseEnrollmentId, RegularCertificateStatus status);
+
+    long countByStudentIdAndIssueChannelAndIssuedAtGreaterThanEqual(Long studentId, RegularCertificateChannel channel, LocalDateTime since);
 
     Optional<RegularStudentCertificate> findByIdAndStudentId(Long id, Long studentId);
 
