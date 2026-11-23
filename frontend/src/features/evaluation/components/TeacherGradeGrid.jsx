@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/Skeleton';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { describeError } from '@/api/describeError';
 import { Button } from '@/components/ui/button';
-import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { useUnsavedChangesGuard } from '@/features/evaluation/hooks/useUnsavedChangesGuard';
 import { usePublishGradeItem, useSaveGradeCells, useTeacherGradeGrid } from '../hooks/useTeacherGradeGrid';
 import {
   collectPendingJobs,

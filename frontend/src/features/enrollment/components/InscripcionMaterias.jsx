@@ -17,9 +17,9 @@ import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMyModules } from '@/hooks/useMyModules';
 import { AvisoMatricula } from './AvisoMatricula';
-import { obligacionPendiente, CODIGO_MATRICULA_IMPAGA } from '@/lib/matricula';
+import { obligacionPendiente, CODIGO_MATRICULA_IMPAGA } from '../lib/matricula';
 import { ESTADOS_EN_CURSO } from '@/lib/notas';
-import { horarioMockDeComision, seSuperponen } from '@/lib/horarioMock';
+import { horarioMockDeComision, seSuperponen } from '../lib/horarioMock';
 
 // Inscripción a materias (Épica 2 Fase 2) — flujo de 3 pasos EN LA MISMA
 // PANTALLA (pedido explícito del usuario, para poder anotarse a varias

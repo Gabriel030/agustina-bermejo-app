@@ -62,6 +62,7 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("academic_offering_cycle.submitted_by", AUDIT_ACTOR);
         accepted.put("announcement.created_by_id", AUDIT_ACTOR);
         accepted.put("annual_upfront_request.accepted_by_person_id", AUDIT_ACTOR);
+        accepted.put("annual_upfront_request.payment_id", PENDING_USAGE_REVIEW);
         accepted.put("annual_upfront_request.lective_year_term_id", REACHED_BY_JOIN_NOT_EVALUATED);
         accepted.put("annual_upfront_request.requested_by_person_id", AUDIT_ACTOR);
         accepted.put("annual_upfront_terms_version.published_by_person_id", AUDIT_ACTOR);

@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { ERROR_MESSAGES, describeError } from '@/api/describeError';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { formatearFecha } from '@/lib/comisiones';
-import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { useUnsavedChangesGuard } from '@/features/evaluation/hooks/useUnsavedChangesGuard';
 import { useSaveFinalGrades } from '../hooks/useMesasDeExamen';
 import {
   boardAccess,

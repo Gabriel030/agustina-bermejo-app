@@ -326,57 +326,27 @@ class ApprovalCertificateDesignTest {
         }
     }
 
-    private static boolean intersects(Rect first, Rect second) {
-        return first.x() < second.x() + second.width() && second.x() < first.x() + first.width()
-                && first.y() < second.y() + second.height() && second.y() < first.y() + first.height();
+    @Test
+    void marginsBesideTheTextStayFreeOfOrnaments() throws IOException {
+        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"));
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            BufferedImage image = new PDFRenderer(document).renderImageWithDPI(0, 96);
+            assertThat(inkedPixels(image, new Rect(58, 118, 92, 430))).isZero();
+            assertThat(inkedPixels(image, new Rect(973, 118, 92, 430))).isZero();
+            assertThat(inkedPixels(image, new Rect(160, 130, 40, 150))).isZero();
+        }
     }
 
     @Test
-    void guillocheLinesStayInsideTheirBandBoxes() {
-        for (Rect band : List.of(GuillocheBand.LEFT, GuillocheBand.RIGHT)) {
-            for (List<float[]> line : GuillocheBand.polylines(band)) {
-                assertThat(line).allSatisfy(point -> {
-                    assertThat(point[0]).isBetween(band.x(), band.x() + band.width());
-                    assertThat(point[1]).isBetween(band.y(), band.y() + band.height());
-                });
-            }
-        }
-        assertThat(GuillocheBand.LEFT.x()).isEqualTo(58);
-        assertThat(GuillocheBand.LEFT.x() + GuillocheBand.LEFT.width()).isEqualTo(150);
-        assertThat(GuillocheBand.RIGHT.x() + GuillocheBand.RIGHT.width()).isEqualTo(1123 - 58);
-        assertThat(GuillocheBand.LEFT.y()).isEqualTo(118);
-        assertThat(GuillocheBand.LEFT.y() + GuillocheBand.LEFT.height()).isEqualTo(548);
-    }
-
-    @Test
-    void guillocheBandsDoNotCrossTextQrOrLogo() throws IOException {
-        List<Rect> reserved = List.of(ApprovalCertificateDesign.LOGO, ApprovalCertificateDesign.HOLDER,
-                ApprovalCertificateDesign.DOCUMENT, ApprovalCertificateDesign.PROGRAM, ApprovalCertificateDesign.QR);
-        for (Rect band : List.of(GuillocheBand.LEFT, GuillocheBand.RIGHT)) {
-            assertThat(reserved).noneMatch(box -> intersects(band, box));
-        }
+    void textStaysInsideTheFrameWithoutSideBands() throws IOException {
         for (CertificateSnapshot snapshot : List.of(
                 snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"),
                 snapshot(LONG_HOLDER, LONG_PROGRAM, "Instituto Superior de Formación Técnica y Profesional Agustina Bermejo de Ciencias de la Salud",
                         "Dra. María Laura Fernández de la Cruz y Alvarado", "Secretaria Legal"))) {
             for (Word word : wordsOf(pdfOf(snapshot))) {
-                Rect text = new Rect(word.left(), word.top(), word.right() - word.left(), word.bottom() - word.top());
-                if (text.y() >= 118 && text.y() <= 548) {
-                    assertThat(intersects(GuillocheBand.LEFT, text)).as(word.text()).isFalse();
-                    assertThat(intersects(GuillocheBand.RIGHT, text)).as(word.text()).isFalse();
-                }
+                assertThat(word.left()).isBetween(38f, 1123f - 38);
+                assertThat(word.right()).isBetween(38f, 1123f - 38);
             }
-        }
-    }
-
-    @Test
-    void guillocheBandsArePaintedOnBothSidesAndNowhereElseOutsideTextAndFrames() throws IOException {
-        byte[] pdf = pdfOf(snapshot(SHORT_HOLDER, SHORT_PROGRAM, "Instituto Agustina Bermejo", "Dra. Laura Pérez", "Secretaria Legal"));
-        try (PDDocument document = Loader.loadPDF(pdf)) {
-            BufferedImage image = new PDFRenderer(document).renderImageWithDPI(0, 96);
-            assertThat(inkedPixels(image, GuillocheBand.LEFT)).isGreaterThan(400);
-            assertThat(inkedPixels(image, GuillocheBand.RIGHT)).isGreaterThan(400);
-            assertThat(inkedPixels(image, new Rect(160, 130, 40, 150))).isZero();
         }
     }
 
