@@ -22,7 +22,9 @@ import com.red_escuela.backend.attendance.specialist.AttendanceFinder;
 import com.red_escuela.backend.attendance.specialist.AttendanceHistoryBuilder;
 import com.red_escuela.backend.attendance.specialist.AttendanceRiskCalculator;
 import com.red_escuela.backend.attendance.specialist.AttendanceSectionAccessChecker;
+import com.red_escuela.backend.attendance.specialist.CancelCourseSectionClassSessionTransaction;
 import com.red_escuela.backend.attendance.specialist.ClassSessionCanceller;
+import com.red_escuela.backend.attendance.specialist.LoadCourseSectionAttendanceTransaction;
 import com.red_escuela.backend.attendance.specialist.SectionAttendanceLoader;
 import com.red_escuela.backend.attendance.specialist.ClassSessionUpserter;
 import com.red_escuela.backend.attendance.specialist.SectionAttendanceRecorder;
@@ -74,10 +76,12 @@ class CourseSectionAttendanceServicesTest {
     private static final LocalDate CLASS_DAY = LocalDate.of(2025, 9, 15);
 
     private final LoadCourseSectionAttendanceService loadService = new LoadCourseSectionAttendanceService(
-            new SectionAttendanceLoader(attendanceRecorder, sectionAccess, classSessionUpserter,
-                    enrollmentFinder, classSessionRepository), eventPublisher);
+            new LoadCourseSectionAttendanceTransaction(
+                    new SectionAttendanceLoader(attendanceRecorder, sectionAccess, classSessionUpserter,
+                            enrollmentFinder, classSessionRepository), eventPublisher));
     private final CancelCourseSectionClassSessionService cancelService = new CancelCourseSectionClassSessionService(
-            new ClassSessionCanceller(classSessionRepository, sectionAccess, classSessionUpserter));
+            new CancelCourseSectionClassSessionTransaction(
+                    new ClassSessionCanceller(classSessionRepository, sectionAccess, classSessionUpserter)));
     private final GetCourseSectionAbsenceReportService absenceReportService =
             new GetCourseSectionAbsenceReportService(sectionAccess, rosterBuilder);
     private final GetCourseSectionAttendanceHistoryService historyService =

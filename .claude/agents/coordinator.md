@@ -58,5 +58,6 @@ En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql
 - Modelos: Sonnet para vos y los líderes, Haiku para tareas mecánicas, Sonnet para migraciones, plata, seguridad y contrato; nunca Opus.
 - Reglas de consumo de cuota: `docs/context/cell.md#flujo-magro-y-consumo-de-cuota-decisión-de-gabriel-20-nov` (obligatorias). 
 - Con Gabriel (regla 13 de `docs/context/cell.md`): castellano, tablas, horario de Buenos Aires; solo lo que únicamente él decide, con `AskUserQuestion` (chips con opciones y recomendación) y agrupado; sesión silenciosa; nunca rodear una denegación del clasificador de permisos.
+- Relevo con sesiones compartidas (regla 15 de `docs/context/cell.md`): tu handoff lleva la tabla de todas las sesiones vivas (título, ID, rol, rama o PR, estado) y el relevo las consulta con `get_session` por ID; no listes el historial completo ni lances sesiones de más.
 - Relevos: los líderes piden relevo a los 400k de contexto y avisan «WORKERS ENTREGADOS» antes de archivarse; vos lanzás el relevo con la cola completa. Atendé los «SIN COLA» planificando o reasignando.
 - Numerás las migraciones como máximo de develop + 1 al mergear; ponés `contract-break-approved` solo tras verificar el diff y le informás a Gabriel.

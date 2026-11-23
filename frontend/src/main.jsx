@@ -6,6 +6,16 @@ import { reportClientError } from '@/lib/reportClientError'
 import { registerServiceWorker } from '@/pwa/registerServiceWorker'
 import { captureInstallPrompt } from '@/pwa/installPromptStore'
 import { preloadPageForPath } from '@/routes/preloadPage'
+import { startClientErrorMonitoring } from '@/lib/monitoring/startClientErrorMonitoring'
+
+if (import.meta.env.VITE_SENTRY_DSN) {
+  startClientErrorMonitoring({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    release: import.meta.env.VITE_APP_VERSION,
+  }).catch((error) => reportClientError(error, { scope: 'monitoring-start' }))
+  window.addEventListener('error', (event) => reportClientError(event.error ?? new Error(event.message), { scope: 'window-error' }))
+}
 
 window.addEventListener('unhandledrejection', (event) => reportClientError(event.reason, { scope: 'unhandledrejection' }))
 

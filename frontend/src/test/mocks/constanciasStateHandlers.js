@@ -1,7 +1,14 @@
 import { http, HttpResponse } from 'msw';
 import { springPage } from '@/test/fixtures/certificates';
 import { errorBody } from '@/test/fixtures/errors';
-import { examCertificateCandidates, ineligibleProcedure, publicDocumentVerification } from '@/test/fixtures/constancias';
+import {
+  certificateExceptionSummary,
+  examCertificateCandidates,
+  ineligibleProcedure,
+  publicDocumentVerification,
+  regularCertificateRequest,
+  regularCertificateRequestList,
+} from '@/test/fixtures/constancias';
 
 const API = 'http://localhost:8080';
 
@@ -89,6 +96,10 @@ export const documentTemplatePublishIncompleteHandler = http.post(`${API}/certif
   failure(422, 'TEMPLATE_INCOMPLETE'),
 );
 
+export const documentTemplatePublishSignatureMissingHandler = http.post(`${API}/certificate-templates/documents/:documentType/publish`, () =>
+  failure(422, 'TEMPLATE_SIGNATURE_MISSING'),
+);
+
 export const ownDocumentLimitReachedHandler = http.post(`${API}/me/documents/:type`, () =>
   failure(429, 'ISSUANCE_LIMIT_REACHED'),
 );
@@ -124,3 +135,15 @@ export const debtExceptionNotFoundHandler = http.get(`${API}/document-debt-excep
 );
 
 export const debtExceptionForbiddenHandler = http.post(`${API}/document-debt-exceptions`, () => failure(403, 'FORBIDDEN'));
+
+export const regularRequestsWithDebtDataHandler = http.get(`${API}/regular-certificate-requests`, () =>
+  HttpResponse.json(regularCertificateRequestList()),
+);
+
+export const regularRequestsBillingOffHandler = http.get(`${API}/regular-certificate-requests`, () =>
+  HttpResponse.json([regularCertificateRequest({ totalDue: null, overdueInstallments: null, hasDebt: null })]),
+);
+
+export const certificateExceptionSummaryEmptyHandler = http.get(`${API}/certificate-exceptions/summary`, () =>
+  HttpResponse.json(certificateExceptionSummary({ pending: 0, approved: 0, rejected: 0, withdrawn: 0, expired: 0, consumed: 0 })),
+);
