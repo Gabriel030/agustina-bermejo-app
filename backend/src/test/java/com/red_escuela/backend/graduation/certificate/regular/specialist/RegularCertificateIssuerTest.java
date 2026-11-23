@@ -25,6 +25,7 @@ import com.red_escuela.backend.graduation.certificate.regular.repository.Regular
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularStandingGate.StandingResolution;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.graduation.events.RegularCertificateIssuedEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
@@ -97,7 +98,8 @@ class RegularCertificateIssuerTest {
     private RegularCertificateIssuer issuer(int validityDays) {
         return new RegularCertificateIssuer(certificateRepository, requestRepository, regularityEvaluator, standingGate,
                 factsFinder, template, renderer, fileStore, verificationUrl, new CertificateDigest(), currentActorFinder,
-                eventPublisher, new SimpleMeterRegistry(), clock, settingsFinderOf(validityDays), exceptionConsumer);
+                eventPublisher, new SimpleMeterRegistry(), clock, settingsFinderOf(validityDays), exceptionConsumer,
+                mock(VerifiableDocumentRegistry.class));
     }
 
     @BeforeEach

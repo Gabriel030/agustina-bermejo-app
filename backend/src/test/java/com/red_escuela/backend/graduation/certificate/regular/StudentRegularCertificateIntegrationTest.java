@@ -268,6 +268,14 @@ class StudentRegularCertificateIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/me/regular-certificates/" + id + "/pdf").header("Authorization", "Bearer " + studentToken))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_PDF));
         state(studentToken).andExpect(jsonPath("$.state").value("VALID")).andExpect(jsonPath("$.certificate.id").value(id));
+        String code = certificateRepository.findById(id).orElseThrow().getCode();
+        mockMvc.perform(get("/public/documents/" + code).with(request -> {
+                    request.setRemoteAddr("203.0.113.51");
+                    return request;
+                }))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.documentType").value("REGULAR_STUDENT_CERTIFICATE"))
+                .andExpect(jsonPath("$.status").value("VALID"));
     }
 
     @Test
