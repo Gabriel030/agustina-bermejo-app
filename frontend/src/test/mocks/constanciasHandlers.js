@@ -48,6 +48,33 @@ const OWN_TYPES = ['REGULAR_STUDENT_CERTIFICATE', 'APPROVED_SUBJECTS_CERTIFICATE
 const TEMPLATES = `${API}/certificate-templates/documents/:documentType`;
 
 export const constanciasHandlers = [
+  http.get(`${API}/certificate-exceptions`, ({ request }) => {
+    const status = new URL(request.url).searchParams.get('status');
+    return HttpResponse.json([
+      certificateException(),
+      certificateException({ id: 10, studentId: 45, enrollmentId: 81, status: 'APPROVED', decidedById: 3, decidedAt: '2026-11-22T09:00:00', decisionReason: 'Reclamo verificado', validUntil: '2026-11-29T09:00:00' }),
+    ].filter((exception) => !status || exception.status === status));
+  }),
+  http.post(`${API}/certificate-exceptions/direct`, async ({ request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(
+      certificateException({ id: 11, ...body, status: 'APPROVED', createdByDirector: true, validUntil: '2026-11-30T09:00:00' }),
+      { status: 201 },
+    );
+  }),
+  http.post(`${API}/certificate-exceptions/:id/approve`, ({ params }) =>
+    HttpResponse.json(certificateException({ id: Number(params.id), status: 'APPROVED', validUntil: '2026-11-30T09:00:00' })),
+  ),
+  http.post(`${API}/certificate-exceptions/:id/reject`, ({ params }) =>
+    HttpResponse.json(certificateException({ id: Number(params.id), status: 'REJECTED', decisionReason: 'Falta la documentación' })),
+  ),
+  http.post(`${API}/certificate-exceptions/:id/withdraw`, ({ params }) =>
+    HttpResponse.json(certificateException({ id: Number(params.id), status: 'WITHDRAWN' })),
+  ),
+  http.post(`${API}/certificate-exceptions`, async ({ request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(certificateException({ id: 12, ...body }), { status: 201 });
+  }),
   http.get(`${API}/certificate-exceptions/summary`, () => HttpResponse.json(certificateExceptionSummary())),
   http.get(`${API}/certificate-exceptions/:id`, ({ params }) => HttpResponse.json(certificateException({ id: Number(params.id) }))),
   http.get(`${API}/public/documents/:code`, ({ params }) => {
