@@ -4,6 +4,8 @@ const STATES = {
   AVAILABLE: { label: 'Para emitir', tone: 'accent', selectable: true },
   ALREADY_ISSUED: { label: 'Emitida', tone: 'success', selectable: false },
   ABSENT: { label: 'Ausente', tone: 'neutral', selectable: false },
+  NOT_ELIGIBLE_DEBT: { label: 'Debe regularizar sus pagos', tone: 'warning', selectable: false },
+  REVOKED: { label: 'Revocada', tone: 'danger', selectable: true },
 };
 
 const UNKNOWN_STATE = { label: 'No disponible', tone: 'neutral', selectable: false };
@@ -12,6 +14,7 @@ const OMISSION_REASONS = {
   ALREADY_ISSUED: 'ya tenía una constancia vigente y no se emitió otra.',
   ABSENT: 'figura como ausente y no se emitió.',
   NOT_REGISTERED: 'ya no está inscripto y no se emitió.',
+  DEBT: 'debe regularizar sus pagos y no se emitió.',
 };
 
 const DEFAULT_OMISSION_REASON = 'no se pudo emitir su constancia.';
@@ -30,6 +33,24 @@ export function isSelectable(candidate) {
 
 export function hasIssuedCertificate(candidate) {
   return candidate.availability === 'ALREADY_ISSUED' && candidate.certificateId != null;
+}
+
+export function isRevoked(candidate) {
+  return candidate.availability === 'REVOKED';
+}
+
+export function revocationDetail(candidate) {
+  if (!isRevoked(candidate) || candidate.revokedAt == null) return null;
+  return { reason: candidate.revokedReason ?? null, revokedAt: candidate.revokedAt };
+}
+
+export function issuedAtOf(candidate) {
+  if (candidate.availability !== 'ALREADY_ISSUED') return null;
+  return candidate.issuedAt ?? null;
+}
+
+export function downloadErrorCode(error) {
+  return error?.code ?? null;
 }
 
 export function issueTitle(count) {

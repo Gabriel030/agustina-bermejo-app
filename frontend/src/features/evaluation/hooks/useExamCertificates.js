@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '@/api/client';
+import { apiFetch, apiFetchBlob } from '@/api/client';
 
 function candidatesKey(boardId) {
   return ['exam-boards', boardId, 'exam-certificates'];
@@ -28,5 +28,11 @@ export function useRevokeExamCertificate(boardId) {
     mutationFn: ({ certificateId, reason }) =>
       apiFetch(`/exam-certificates/${certificateId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: candidatesKey(boardId) }),
+  });
+}
+
+export function useDownloadExamCertificatePdf() {
+  return useMutation({
+    mutationFn: (certificateId) => apiFetchBlob(`/exam-certificates/${certificateId}/pdf`),
   });
 }

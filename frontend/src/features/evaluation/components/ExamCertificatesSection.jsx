@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
@@ -8,14 +9,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { ModalMotivo } from '@/components/ModalMotivo';
 import { describeError } from '@/api/describeError';
+import { saveBlob } from '@/features/graduation/certificates/lib/saveBlob';
 import {
   certificateCaps,
+  downloadErrorCode,
   isSelectable,
   issueTitle,
   issuedHeadline,
   summarizeBatch,
 } from '@/features/evaluation/lib/examCertificates';
 import {
+  useDownloadExamCertificatePdf,
   useExamCertificateCandidates,
   useIssueExamCertificateBatch,
   useRevokeExamCertificate,
@@ -68,6 +72,8 @@ export function ExamCertificatesSection({ mesaId, role, onBack }) {
   const candidatesQuery = useExamCertificateCandidates(mesaId);
   const issueBatch = useIssueExamCertificateBatch(mesaId);
   const revoke = useRevokeExamCertificate(mesaId);
+  const download = useDownloadExamCertificatePdf();
+  const [downloadingId, setDownloadingId] = useState(null);
   const [selected, setSelected] = useState(() => new Set());
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState(null);
@@ -121,6 +127,18 @@ export function ExamCertificatesSection({ mesaId, role, onBack }) {
     } catch (error) {
       setRevokeError(describeError(error).message);
       return false;
+    }
+  }
+
+  async function downloadPdf(candidate) {
+    setDownloadingId(candidate.certificateId);
+    try {
+      const { blob, filename } = await download.mutateAsync(candidate.certificateId);
+      saveBlob(blob, filename === 'archivo' ? 'constancia-de-examen.pdf' : filename);
+    } catch (error) {
+      toast.error(describeError(error).message, { description: downloadErrorCode(error) ?? undefined });
+    } finally {
+      setDownloadingId(null);
     }
   }
 
@@ -187,8 +205,10 @@ export function ExamCertificatesSection({ mesaId, role, onBack }) {
           selected={selected}
           busy={issueBatch.isPending}
           canRevoke={caps.revokes}
+          downloadingId={downloadingId}
           onToggle={toggle}
           onRevoke={setRevoking}
+          onDownload={downloadPdf}
         />
       </>
     );

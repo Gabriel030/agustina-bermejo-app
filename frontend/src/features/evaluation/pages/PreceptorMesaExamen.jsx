@@ -263,7 +263,7 @@ function DetalleMesa({ mesaId, role, onBack }) {
         />
       </GlassCard>
 
-      {certificateCaps(role).issues && !cancelada && !examenPendiente && <ExamCertificatesSection mesaId={mesaId} role={role} onBack={onBack} />}
+      {certificateCaps(role).issues && mesa.status === 'CLOSED' && <ExamCertificatesSection mesaId={mesaId} role={role} onBack={onBack} />}
 
       {reprogramando && (
         <ReprogramarMesaDialog open onClose={() => setReprogramando(false)} mesa={mesa} enviando={reprogramar.isPending} onConfirmar={enviarReprogramacion} />

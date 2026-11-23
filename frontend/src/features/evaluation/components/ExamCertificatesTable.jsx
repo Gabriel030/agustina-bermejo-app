@@ -1,11 +1,12 @@
-import { Ban } from 'lucide-react';
+import { Ban, Download } from 'lucide-react';
+import { formatearFechaCorta } from '@/lib/avisos';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTable } from '@/components/table/DataTable';
-import { candidateState, hasIssuedCertificate, isSelectable } from '@/features/evaluation/lib/examCertificates';
+import { candidateState, hasIssuedCertificate, isRevoked, isSelectable, issuedAtOf, revocationDetail } from '@/features/evaluation/lib/examCertificates';
 
-function columnsFor({ selected, busy, canRevoke, onToggle, onRevoke }) {
+function columnsFor({ selected, busy, canRevoke, downloadingId, onToggle, onRevoke, onDownload }) {
   return [
     {
       id: 'student',
@@ -43,7 +44,23 @@ function columnsFor({ selected, busy, canRevoke, onToggle, onRevoke }) {
       enableSorting: false,
       cell: ({ row }) => {
         const state = candidateState(row.original);
-        return <StatusPill tone={state.tone}>{state.label}</StatusPill>;
+        const candidate = row.original;
+        const issuedAt = issuedAtOf(candidate);
+        const revocation = revocationDetail(candidate);
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <StatusPill tone={state.tone}>
+              {isRevoked(candidate) && <Ban aria-hidden="true" className="size-3" />}
+              {state.label}
+            </StatusPill>
+            {issuedAt && <span className="text-size-12 text-ink-soft">Emitida el {formatearFechaCorta(issuedAt)}</span>}
+            {revocation && (
+              <span className="text-size-12 text-ink-soft">
+                {revocation.reason ? `${revocation.reason}. ` : ''}Revocada el {formatearFechaCorta(revocation.revokedAt)}
+              </span>
+            )}
+          </div>
+        );
       },
     },
     {
@@ -52,21 +69,36 @@ function columnsFor({ selected, busy, canRevoke, onToggle, onRevoke }) {
       enableSorting: false,
       cell: ({ row }) => {
         const candidate = row.original;
-        if (!canRevoke || !hasIssuedCertificate(candidate)) return null;
+        if (!hasIssuedCertificate(candidate)) return null;
         const name = candidate.studentName;
         return (
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="min-h-11 text-danger md:min-h-8"
-              aria-label={`Revocar constancia de ${name}`}
-              onClick={() => onRevoke(candidate)}
+              className="min-h-11 md:min-h-8"
+              aria-label={`Descargar PDF de ${name}`}
+              loading={downloadingId === candidate.certificateId}
+              disabled={downloadingId != null}
+              onClick={() => onDownload(candidate)}
             >
-              <Ban aria-hidden="true" />
-              Revocar
+              <Download aria-hidden="true" />
+              PDF
             </Button>
+            {canRevoke && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="min-h-11 text-danger md:min-h-8"
+                aria-label={`Revocar constancia de ${name}`}
+                onClick={() => onRevoke(candidate)}
+              >
+                <Ban aria-hidden="true" />
+                Revocar
+              </Button>
+            )}
           </div>
         );
       },
@@ -74,7 +106,7 @@ function columnsFor({ selected, busy, canRevoke, onToggle, onRevoke }) {
   ];
 }
 
-export function ExamCertificatesTable({ candidates, selected, busy, canRevoke, onToggle, onRevoke }) {
-  const columns = columnsFor({ selected, busy, canRevoke, onToggle, onRevoke });
+export function ExamCertificatesTable({ candidates, selected, busy, canRevoke, downloadingId, onToggle, onRevoke, onDownload }) {
+  const columns = columnsFor({ selected, busy, canRevoke, downloadingId, onToggle, onRevoke, onDownload });
   return <DataTable columns={columns} data={candidates} getRowId={(row) => String(row.registrationId)} minWidth={520} />;
 }

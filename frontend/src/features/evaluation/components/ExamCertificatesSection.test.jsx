@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -6,8 +6,13 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { axe } from '@/test/axe';
 import { errorBody } from '@/test/fixtures/errors';
+import { saveBlob } from '@/features/graduation/certificates/lib/saveBlob';
 import { examCertificate, examCertificateBatch, examCertificateCandidates } from '@/test/fixtures/constancias';
 import { ExamCertificatesSection } from './ExamCertificatesSection';
+
+const toastMock = vi.hoisted(() => ({ success: vi.fn(), warning: vi.fn(), error: vi.fn() }));
+vi.mock('sonner', () => ({ toast: toastMock }));
+vi.mock('@/features/graduation/certificates/lib/saveBlob', () => ({ saveBlob: vi.fn() }));
 
 const API = 'http://localhost:8080';
 const CANDIDATES_URL = `${API}/exam-boards/9/exam-certificates/candidates`;
@@ -15,12 +20,10 @@ const BATCH_URL = `${API}/exam-boards/9/exam-certificates/batch`;
 
 function candidate(overrides) {
   return {
+    ...examCertificateCandidates()[0],
     registrationId: 60,
     studentId: 8,
     studentName: 'Juan Pérez',
-    maskedDocument: '***.***.555',
-    availability: 'AVAILABLE',
-    certificateId: null,
     ...overrides,
   };
 }
@@ -30,6 +33,10 @@ function renderSection(role = 'docente') {
 }
 
 describe('ExamCertificatesSection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('lists eligible students with a checkbox and the others only with their reason', async () => {
     renderSection();
 
@@ -40,6 +47,142 @@ describe('ExamCertificatesSection', () => {
     expect(screen.getByText('Emitida')).toBeInTheDocument();
     expect(screen.getByText('Ausente')).toBeInTheDocument();
     expect(screen.queryByText(/\$|Administración|excepción/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the debt student as not selectable with the regularize payments text and no amounts', async () => {
+    renderSection();
+
+    expect(await screen.findByText('Debe regularizar sus pagos')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Seleccionar a Julián Sosa' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/\$|Administración|excepción/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the revoked student as selectable with the pill, the reason and the revocation date', async () => {
+    renderSection();
+
+    expect(await screen.findByRole('checkbox', { name: 'Seleccionar a Carla Ibarra' })).toBeInTheDocument();
+    expect(screen.getByText('Revocada')).toBeInTheDocument();
+    expect(screen.getByText(/Emitida con datos incorrectos\. Revocada el 20\/11\/2026/)).toBeInTheDocument();
+  });
+
+  it('does not show revocation details when the revoked student has no revocation date', async () => {
+    server.use(http.get(CANDIDATES_URL, () => HttpResponse.json([candidate({ availability: 'REVOKED', certificateId: 14, revokedAt: null, revokedReason: 'Motivo' })])));
+    renderSection();
+
+    expect(await screen.findByText('Revocada')).toBeInTheDocument();
+    expect(screen.queryByText(/Motivo/)).not.toBeInTheDocument();
+  });
+
+  it('reissues a revoked student through the batch', async () => {
+    let body;
+    server.use(
+      http.post(BATCH_URL, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(
+          examCertificateBatch({
+            issuedCount: 1,
+            skippedCount: 0,
+            items: [{ registrationId: 59, studentName: 'Carla Ibarra', outcome: 'ISSUED', certificateId: 91 }],
+          }),
+        );
+      }),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Seleccionar a Carla Ibarra' }));
+    await user.click(screen.getByRole('button', { name: 'Emitir constancias (1)' }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Emitir' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 emitida.'));
+    expect(body).toEqual({ registrationIds: [59] });
+  });
+
+  it('shows the issue date only when the issued certificate has one', async () => {
+    renderSection();
+
+    expect(await screen.findByText('Emitida el 19/11/2026')).toBeInTheDocument();
+  });
+
+  it('does not show an issue date when issuedAt is null', async () => {
+    server.use(http.get(CANDIDATES_URL, () => HttpResponse.json([candidate({ availability: 'ALREADY_ISSUED', certificateId: 12, issuedAt: null })])));
+    renderSection();
+
+    expect(await screen.findByText('Emitida')).toBeInTheDocument();
+    expect(screen.queryByText(/Emitida el/)).not.toBeInTheDocument();
+  });
+
+  it('reports a debt outcome of the batch with its message', async () => {
+    server.use(
+      http.post(BATCH_URL, () =>
+        HttpResponse.json(
+          examCertificateBatch({
+            issuedCount: 0,
+            skippedCount: 1,
+            items: [{ registrationId: 55, studentName: 'Ana Paz', outcome: 'DEBT', certificateId: null }],
+          }),
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Seleccionar a Ana Paz' }));
+    await user.click(screen.getByRole('button', { name: 'Emitir constancias (1)' }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Emitir' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ana Paz: debe regularizar sus pagos y no se emitió.'));
+  });
+
+  it.each(['docente', 'administrativo', 'director'])('downloads the PDF with the header filename for the %s', async (role) => {
+    server.use(
+      http.get(`${API}/exam-certificates/12/pdf`, () =>
+        new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), {
+          headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="constancia-ce-45.pdf"' },
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderSection(role);
+
+    await user.click(await screen.findByRole('button', { name: 'Descargar PDF de Luis Gómez' }));
+
+    await waitFor(() => expect(saveBlob).toHaveBeenCalledTimes(1));
+    expect(saveBlob.mock.calls[0][1]).toBe('constancia-ce-45.pdf');
+    expect(saveBlob.mock.calls[0][0].type).toBe('application/pdf');
+  });
+
+  it('disables the PDF button while downloading', async () => {
+    let release;
+    server.use(
+      http.get(`${API}/exam-certificates/12/pdf`, async () => {
+        await new Promise((resolve) => {
+          release = resolve;
+        });
+        return new HttpResponse(new Uint8Array([0x25]), { headers: { 'Content-Type': 'application/pdf' } });
+      }),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(await screen.findByRole('button', { name: 'Descargar PDF de Luis Gómez' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Descargar PDF de Luis Gómez' })).toBeDisabled());
+    release();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Descargar PDF de Luis Gómez' })).toBeEnabled());
+  });
+
+  it('shows a toast with a small error code when the PDF download fails', async () => {
+    server.use(http.get(`${API}/exam-certificates/12/pdf`, () => HttpResponse.json(errorBody('EXAM_CERTIFICATE_NOT_FOUND'), { status: 404 })));
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(await screen.findByRole('button', { name: 'Descargar PDF de Luis Gómez' }));
+
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith('No encontramos la constancia de examen.', { description: 'EXAM_CERTIFICATE_NOT_FOUND' }),
+    );
+    expect(saveBlob).not.toHaveBeenCalled();
   });
 
   it('keeps the issue button disabled until somebody is selected and counts the selection', async () => {
