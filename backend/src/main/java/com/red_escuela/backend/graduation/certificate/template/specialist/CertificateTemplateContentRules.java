@@ -38,6 +38,10 @@ public class CertificateTemplateContentRules {
     }
 
     public void requireKnownMarkers(CertificateTemplateContent content) {
+        requireKnownMarkers(content, ALLOWED_MARKERS);
+    }
+
+    public void requireKnownMarkers(CertificateTemplateContent content, Set<String> allowedMarkers) {
         List<String> texts = new ArrayList<>(List.of(
                 orEmpty(content.instituteName()), orEmpty(content.title()), orEmpty(content.introText()),
                 orEmpty(content.approvalText()), orEmpty(content.dictationText()), orEmpty(content.qrLabel()),
@@ -51,7 +55,7 @@ public class CertificateTemplateContentRules {
         for (String text : texts) {
             Matcher matcher = MARKER.matcher(text);
             while (matcher.find()) {
-                if (!ALLOWED_MARKERS.contains(matcher.group(1))) {
+                if (!allowedMarkers.contains(matcher.group(1))) {
                     throw new TemplateUnknownMarkerException(matcher.group(1));
                 }
             }
