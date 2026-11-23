@@ -10,10 +10,10 @@ import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { NextYearBlock, ACCOUNT_ANCHOR } from '@/features/billing/advance-enrollment-fee/NextYearBlock';
-import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
-import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
-import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
-import { useExpandedRows } from '@/hooks/useExpandedRows';
+import { InvoiceAmountCell } from '@/features/billing/components/InvoiceAmountCell';
+import { InvoiceDetail } from '@/features/billing/components/InvoiceDetail';
+import { PaymentDateCell } from '@/features/billing/components/PaymentDateCell';
+import { useExpandedRows } from '@/features/billing/hooks/useExpandedRows';
 import { useFacturasDeCurso, useFacturasDeMatricula, useMisComprobantes } from '@/hooks/useBilling';
 import {
   formatDate,

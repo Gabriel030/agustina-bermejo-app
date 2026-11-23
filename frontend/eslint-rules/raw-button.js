@@ -3,7 +3,7 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/components/KpiFilterChip.jsx',
   'src/components/MobileMenu.jsx',
   'src/features/academic-structure/components/MonthGrid.jsx',
-  'src/components/MonthPicker.jsx',
+  'src/features/billing/components/MonthPicker.jsx',
   'src/components/NavGroups.jsx',
   'src/components/RoleSwitcher.jsx',
   'src/components/Sidebar.jsx',
