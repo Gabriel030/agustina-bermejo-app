@@ -271,14 +271,10 @@ class PermissionGateCoverageTest {
             ROOT + ".graduation.certificate.regular.controller.RegularCertificateController",
             ROOT + ".graduation.certificate.regular.controller.RegularCertificateRequestController",
             ROOT + ".graduation.certificate.regular.controller.CertificateExceptionController",
-            ROOT + ".graduation.certificate.regular.controller.RegularCertificateSettingsController",
-            ROOT + ".graduation.certificate.template.controller.DocumentCertificateTemplateController",
-            ROOT + ".graduation.certificate.signatory.controller.CertificateSignatoryController",
-            ROOT + ".graduation.documentsettings.controller.DocumentIssuanceSettingsController",
             ROOT + ".graduation.debtexception.controller.DocumentDebtExceptionController");
 
     private static final Set<String> ENDPOINTS_FIXED_BY_CONDITIONAL_ROLE_RULE = Set.of(
-            "CertificateTemplateController#preview");
+            "CertificateTemplateController#preview", "DocumentCertificateTemplateController#preview");
 
 
     private static final Set<String> LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
@@ -583,6 +579,58 @@ class PermissionGateCoverageTest {
                 }
             }
         }
+        assertThat(violations).isEmpty();
+    }
+
+    private static final Set<String> CONSTANCIAS_A_MIGRATED_ENDPOINTS = Set.of(
+            "DocumentCertificateTemplateController#get", "DocumentCertificateTemplateController#versions", "DocumentCertificateTemplateController#version",
+            "DocumentCertificateTemplateController#saveDraft", "DocumentCertificateTemplateController#discardDraft", "DocumentCertificateTemplateController#publish",
+            "DocumentCertificateTemplateController#uploadImage", "DocumentCertificateTemplateController#image",
+            "CertificateSignatoryController#list", "CertificateSignatoryController#get", "CertificateSignatoryController#create", "CertificateSignatoryController#update",
+            "CertificateSignatoryController#deactivate", "CertificateSignatoryController#activate", "CertificateSignatoryController#uploadSignature",
+            "CertificateSignatoryController#deleteSignature", "CertificateSignatoryController#signature",
+            "DocumentIssuanceSettingsController#get", "DocumentIssuanceSettingsController#update",
+            "RegularCertificateSettingsController#get", "RegularCertificateSettingsController#update");
+
+    @Test
+    void constanciasConfigurationEndpointsUseTheCertificateGridGateAndTheirClassesCarryNoRoleRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        Set<String> found = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                if (!CONSTANCIAS_A_MIGRATED_ENDPOINTS.contains(endpoint) || !moduleOf(controller).equals("graduation")) {
+                    continue;
+                }
+                found.add(endpoint);
+                RequiresPermission requiresPermission = AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class);
+                if (requiresPermission == null || !requiresPermission.code().startsWith("certificate.") || !usesGate(method, controller)) {
+                    violations.add(endpoint + " must be guarded by a certificate permission");
+                }
+            }
+        }
+        assertThat(found).isEqualTo(CONSTANCIAS_A_MIGRATED_ENDPOINTS);
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter((reader, factory) -> true);
+        int scanned = 0;
+        for (String basePackage : List.of(".graduation.certificate.template", ".graduation.certificate.signatory", ".graduation.documentsettings", ".graduation.certificate.regular")) {
+            for (BeanDefinition definition : scanner.findCandidateComponents(ROOT + basePackage)) {
+                Class<?> type = Class.forName(definition.getBeanClassName(), false, PermissionGateCoverageTest.class.getClassLoader());
+                if (type.getSimpleName().endsWith("Controller") || !type.getSimpleName().matches(".*(Template|Signatory|Signature|Settings).*")) {
+                    continue;
+                }
+                scanned++;
+                if (AnnotatedElementUtils.findMergedAnnotation(type, PreAuthorize.class) != null) {
+                    violations.add(type.getSimpleName() + " must not carry a role rule");
+                }
+                for (Method method : type.getDeclaredMethods()) {
+                    if (AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class) != null) {
+                        violations.add(type.getSimpleName() + "#" + method.getName() + " must not carry a role rule");
+                    }
+                }
+            }
+        }
+        assertThat(scanned).isGreaterThan(10);
         assertThat(violations).isEmpty();
     }
 

@@ -4,6 +4,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.permission.PermissionSnapshotCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.GatePermissionProbeConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -25,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles({"test", "gate-probe"})
-@Import(PermissionGridIT.ProbeConfig.class)
+@Import(GatePermissionProbeConfiguration.class)
 class PermissionModesIT extends AbstractIntegrationTest {
 
     @Autowired

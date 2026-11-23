@@ -4,8 +4,8 @@ import com.red_escuela.backend.graduation.documentsettings.dto.DocumentIssuanceS
 import com.red_escuela.backend.graduation.documentsettings.dto.UpdateDocumentIssuanceSettingsRequest;
 import com.red_escuela.backend.graduation.documentsettings.usecase.GetDocumentIssuanceSettingsUseCase;
 import com.red_escuela.backend.graduation.documentsettings.usecase.UpdateDocumentIssuanceSettingsUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,13 +26,13 @@ public class DocumentIssuanceSettingsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.document_settings_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public DocumentIssuanceSettingsResponse get() {
         return getUseCase.get();
     }
 
     @PutMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.document_settings_manage", legacyRoles = "ROLE_DIRECTOR")
     public DocumentIssuanceSettingsResponse update(@Valid @RequestBody UpdateDocumentIssuanceSettingsRequest request) {
         return updateUseCase.update(request);
     }
