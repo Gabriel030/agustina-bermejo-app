@@ -249,7 +249,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
     void gridAndCatalogExposeTheSeedGroupedByModuleWithDirectorHoldingEverything() throws Exception {
         mockMvc.perform(get("/permissions/catalog").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.modules[?(@.module=='certificate')].permissions.length()").value(org.hamcrest.Matchers.contains(24)))
+                .andExpect(jsonPath("$.modules[?(@.module=='certificate')].permissions.length()").value(org.hamcrest.Matchers.contains(25)))
                 .andExpect(jsonPath("$.modules[?(@.module=='audit')].permissions[0].code").value(org.hamcrest.Matchers.contains("audit.read")));
         mockMvc.perform(get("/permissions/grid").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())

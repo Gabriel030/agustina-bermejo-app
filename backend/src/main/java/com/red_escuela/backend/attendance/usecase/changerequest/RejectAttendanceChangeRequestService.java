@@ -1,41 +1,20 @@
 package com.red_escuela.backend.attendance.usecase.changerequest;
 
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
-import com.red_escuela.backend.attendance.repository.AttendanceChangeRequestRepository;
-import com.red_escuela.backend.attendance.specialist.AttendanceChangeRequestFinder;
-import com.red_escuela.backend.attendance.specialist.AttendanceChangeRequestDecisionRecorder;
-import com.red_escuela.backend.attendance.events.AttendanceChangeRequestRejectedEvent;
+import com.red_escuela.backend.attendance.specialist.RejectAttendanceChangeRequestTransaction;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.annotation.Transactional;
-
 
 @UseCase
 public class RejectAttendanceChangeRequestService implements RejectAttendanceChangeRequestUseCase {
 
-    private final AttendanceChangeRequestRepository attendanceChangeRequestRepository;
-    private final AttendanceChangeRequestFinder finder;
-    private final AttendanceChangeRequestDecisionRecorder decisionRecorder;
-    private final ApplicationEventPublisher eventPublisher;
+    private final RejectAttendanceChangeRequestTransaction rejectTransaction;
 
-    public RejectAttendanceChangeRequestService(AttendanceChangeRequestRepository attendanceChangeRequestRepository,
-                                                 AttendanceChangeRequestFinder finder,
-                                                 AttendanceChangeRequestDecisionRecorder decisionRecorder,
-                                                 ApplicationEventPublisher eventPublisher) {
-        this.attendanceChangeRequestRepository = attendanceChangeRequestRepository;
-        this.finder = finder;
-        this.decisionRecorder = decisionRecorder;
-        this.eventPublisher = eventPublisher;
+    public RejectAttendanceChangeRequestService(RejectAttendanceChangeRequestTransaction rejectTransaction) {
+        this.rejectTransaction = rejectTransaction;
     }
 
     @Override
-    @Transactional
     public AttendanceChangeRequest reject(RejectAttendanceChangeRequestCommand command) {
-        AttendanceChangeRequest request = finder.findOrThrow(command.requestId());
-        finder.requirePending(request);
-        decisionRecorder.recordRejectionByCurrentActor(request, command.reason());
-        AttendanceChangeRequest saved = attendanceChangeRequestRepository.save(request);
-        eventPublisher.publishEvent(AttendanceChangeRequestRejectedEvent.rejectedFor(saved));
-        return saved;
+        return rejectTransaction.reject(command.requestId(), command.reason());
     }
 }

@@ -35,8 +35,8 @@ class ConstanciasBPermissionComparisonIT extends AuthorizationMatrixSupport {
 
     static void restoreCertificateDefaultGrants(JdbcTemplate jdbcTemplate) {
         jdbcTemplate.update("delete from role_permission where role in ('ALUMNO', 'DOCENTE', 'ADMINISTRATIVO') and permission_id in (select id from permission where module = 'certificate')");
-        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'ADMINISTRATIVO', id from permission where code in ('certificate.issue', 'certificate.download', 'certificate.templates_view', 'certificate.signers_view', 'certificate.document_settings_view', 'certificate.regular_settings_view', 'certificate.exceptions_view', 'certificate.exceptions_request', 'certificate.exceptions_withdraw', 'certificate.regular_view', 'certificate.regular_requests_view', 'certificate.regular_requests_reject', 'certificate.exam_candidates_view', 'certificate.exam_issue_batch')");
-        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'DOCENTE', id from permission where code in ('certificate.exam_candidates_view', 'certificate.exam_issue_batch')");
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'ADMINISTRATIVO', id from permission where code in ('certificate.issue', 'certificate.download', 'certificate.templates_view', 'certificate.signers_view', 'certificate.document_settings_view', 'certificate.regular_settings_view', 'certificate.exceptions_view', 'certificate.exceptions_request', 'certificate.exceptions_withdraw', 'certificate.regular_view', 'certificate.regular_requests_view', 'certificate.regular_requests_reject', 'certificate.exam_candidates_view', 'certificate.exam_download', 'certificate.exam_issue_batch')");
+        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'DOCENTE', id from permission where code in ('certificate.exam_candidates_view', 'certificate.exam_download', 'certificate.exam_issue_batch')");
     }
 
     private static final List<String> MIGRATED_CONTROLLERS = List.of("CertificateExceptionController", "RegularCertificateController", "RegularCertificateRequestController", "ExamBoardCertificateController", "ExamCertificateController", "ApprovedSubjectsCertificateController");
@@ -74,7 +74,7 @@ class ConstanciasBPermissionComparisonIT extends AuthorizationMatrixSupport {
     private void assertDecisionsMatchLegacy(String mode) throws Exception {
         List<AuthorizationMatrixRow> rows = constanciasRows();
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
-        assertThat(rows).hasSize(19);
+        assertThat(rows).hasSize(20);
         List<String> mismatches = new ArrayList<>();
         for (AuthorizationMatrixRow row : rows) {
             assertThat(endpoints.get(row.key())).as(row.key()).isNotNull();
@@ -95,18 +95,18 @@ class ConstanciasBPermissionComparisonIT extends AuthorizationMatrixSupport {
     }
 
     @Test
-    void legacyModeMatchesTheOldRulesForEveryConstanciasConfigurationEndpointAndRole() throws Exception {
+    void legacyModeMatchesTheOldRulesForEveryConstanciasIssuanceEndpointAndRole() throws Exception {
         assertDecisionsMatchLegacy("LEGACY");
     }
 
     @Test
-    void shadowModeMatchesTheOldRulesForEveryConstanciasConfigurationEndpointAndRole() throws Exception {
+    void shadowModeMatchesTheOldRulesForEveryConstanciasIssuanceEndpointAndRole() throws Exception {
         setModuleMode("SHADOW");
         assertDecisionsMatchLegacy("SHADOW");
     }
 
     @Test
-    void enforceModeWithTheDefaultGridMatchesTheOldRulesForEveryConstanciasConfigurationEndpointAndRole() throws Exception {
+    void enforceModeWithTheDefaultGridMatchesTheOldRulesForEveryConstanciasIssuanceEndpointAndRole() throws Exception {
         setModuleMode("ENFORCE");
         assertDecisionsMatchLegacy("ENFORCE");
     }

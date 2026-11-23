@@ -633,7 +633,7 @@ class PermissionGateCoverageTest {
             "RegularCertificateController#eligibility", "RegularCertificateController#issue", "RegularCertificateController#list",
             "RegularCertificateController#get", "RegularCertificateController#revoke", "RegularCertificateController#pdf",
             "RegularCertificateRequestController#reject", "RegularCertificateRequestController#list",
-            "ExamBoardCertificateController#candidates", "ExamBoardCertificateController#issueBatch",
+            "ExamBoardCertificateController#candidates", "ExamBoardCertificateController#issueBatch", "ExamCertificateController#pdf",
             "ExamCertificateController#revoke", "ApprovedSubjectsCertificateController#revoke");
 
     @Test

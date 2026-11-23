@@ -9,6 +9,7 @@ insert into permission (code, module, description, fixed_to_director, sensitive)
     ('certificate.regular_requests_view', 'certificate', 'Ver los pedidos de constancia de alumno regular', false, false),
     ('certificate.regular_requests_reject', 'certificate', 'Rechazar un pedido de constancia de alumno regular', false, false),
     ('certificate.exam_candidates_view', 'certificate', 'Ver los alumnos que pueden recibir constancia de examen en una mesa', false, false),
+    ('certificate.exam_download', 'certificate', 'Descargar en PDF una constancia de examen', false, false),
     ('certificate.exam_issue_batch', 'certificate', 'Emitir en lote las constancias de examen de una mesa', false, true);
 
 insert into role_permission (role, permission_id)
@@ -22,6 +23,8 @@ from (values
     ('ADMINISTRATIVO', 'certificate.regular_requests_reject'),
     ('ADMINISTRATIVO', 'certificate.exam_candidates_view'),
     ('ADMINISTRATIVO', 'certificate.exam_issue_batch'),
+    ('ADMINISTRATIVO', 'certificate.exam_download'),
+    ('DOCENTE', 'certificate.exam_download'),
     ('DOCENTE', 'certificate.exam_candidates_view'),
     ('DOCENTE', 'certificate.exam_issue_batch')
 ) as grants (role, code)
