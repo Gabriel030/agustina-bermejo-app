@@ -173,7 +173,7 @@ Ningún endpoint de esta tanda cambia de resultado para el Director en Activo: t
 
 ## Billing: estado
 
-Billing queda en LEGACY hasta resolver el Issue #1254 (el resultado de aplicar directo o dejar pendiente depende del rol Director real y no de la grilla): no pasar a Sombra real ni a Activo antes. Todos sus permisos monetarios (tandas B1 y B2, 33 permisos) son sensibles; los de lectura (A1 y A2) no. Todo endpoint de billing sin `@RequiresPermission` está en una lista explícita por endpoint de `PermissionGateCoverageTest` (alumno `/me/*`, webhook de Mercado Pago y los mixtos), y el test falla si aparece uno nuevo sin gate.
+Billing queda en LEGACY hasta resolver el Issue #1254 (el resultado de aplicar directo o dejar pendiente depende del rol Director real y no de la grilla): no pasar a Sombra real ni a Activo antes. Sus 33 permisos monetarios sensibles son los 13 de B1 más los 20 de B2; los de lectura (A1 y A2) no. Todo endpoint de billing sin `@RequiresPermission` está en una lista explícita por endpoint de `PermissionGateCoverageTest` y son 33 endpoints: `/me/*` de alumno, webhook de Mercado Pago, mixtos (ADMINISTRATIVO o ALUMNO, cohorts GET) y lecturas sin rol (payment-config GET y qr-image, listProgramCohorts, términos del pago anual `current` y `versions/{n}`). El test falla si aparece uno nuevo sin gate.
 
 ## Academicrecord
 
