@@ -1,6 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
-import com.red_escuela.backend.billing.api.CourseEnrollmentNonpaymentWithdrawalPort;
+import com.red_escuela.backend.shared.module.CourseEnrollmentNonpaymentWithdrawalPort;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
