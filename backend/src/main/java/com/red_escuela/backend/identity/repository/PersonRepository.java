@@ -40,7 +40,7 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
 
     @Query("""
             select distinct p from Person p join p.roles r
-            where p.id in :ids and r.name = 'ALUMNO' and p.password is null
+            where p.id in :ids and r.name = 'ALUMNO' and p.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE and p.password is null
               and (p.grantSystemAccess is null or p.grantSystemAccess = false)
             order by p.id
             """)

@@ -3,7 +3,11 @@ package com.red_escuela.backend.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.shared.permission.PermissionSnapshot;
+import com.red_escuela.backend.shared.permission.PermissionSnapshotCache;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +22,8 @@ class InvitationWavePermissionsIT extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private PermissionSnapshotCache permissionSnapshotCache;
 
     @Test
     void invitationWavePermissionsExistInTheNotificationModule() {
@@ -41,6 +47,14 @@ class InvitationWavePermissionsIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void directorIsGrantedAllInvitationWavePermissions() {
+        permissionSnapshotCache.invalidate();
+        PermissionSnapshot snapshot = permissionSnapshotCache.current();
+
+        CODES.forEach(code -> assertThat(snapshot.grants("DIRECTOR", code)).as(code).isTrue());
+    }
+
+    @Test
     void noOtherRoleReceivesInvitationWavePermissionsThroughTheMigration() {
         assertThat(rolesHolding()).containsOnlyKeys("ADMINISTRATIVO");
     }
@@ -53,8 +67,8 @@ class InvitationWavePermissionsIT extends AbstractIntegrationTest {
         assertThat(fixed).isZero();
     }
 
-    private java.util.Map<String, Long> rolesHolding() {
-        java.util.Map<String, Long> roles = new java.util.HashMap<>();
+    private Map<String, Long> rolesHolding() {
+        Map<String, Long> roles = new HashMap<>();
         jdbc.query("""
                 select rp.role, count(*) as total from role_permission rp
                 join permission p on p.id = rp.permission_id
