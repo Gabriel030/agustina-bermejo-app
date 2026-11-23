@@ -57,7 +57,7 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
     void enrollingInACohortWhoseAdmissionEndedYesterdayIsRejectedWithConflictAndPersistsNothing() throws Exception {
         Student student = persistStudent();
         Program program = persistProgram();
-        ProgramCohort closed = persistCohort(persistTemplate(program, LocalDate.now().getYear()), LocalDate.now().minusDays(30), LocalDate.now().minusDays(1));
+        ProgramCohort closed = persistCohort(persistTemplate(program, today.getYear()), today.minusDays(30), today.minusDays(1));
 
         mockMvc.perform(post("/students/" + student.getId() + "/program-enrollments").header("Authorization", directorBearer())
                         .contentType(MediaType.APPLICATION_JSON).content(enrollBody(program, closed.getId())))
@@ -70,7 +70,7 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
     void enrollingInACohortWhoseAdmissionStartsTomorrowIsRejectedAsClosed() {
         Student student = persistStudent();
         Program program = persistProgram();
-        ProgramCohort notYetOpen = persistCohort(persistTemplate(program, LocalDate.now().getYear()), LocalDate.now().plusDays(1), LocalDate.now().plusDays(30));
+        ProgramCohort notYetOpen = persistCohort(persistTemplate(program, today.getYear()), today.plusDays(1), today.plusDays(30));
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId(), notYetOpen.getId())))
                 .isInstanceOf(CohortAdmissionWindowClosedException.class);
@@ -79,8 +79,8 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
     @Test
     void admissionWindowBoundariesAreInclusiveOnBothEnds() {
         Program program = persistProgram();
-        ProgramCohort endsToday = persistCohort(persistTemplate(program, LocalDate.now().getYear()), LocalDate.now().minusDays(30), LocalDate.now());
-        ProgramCohort startsToday = persistCohort(persistTemplate(program, LocalDate.now().getYear() + 1), LocalDate.now(), LocalDate.now().plusDays(30));
+        ProgramCohort endsToday = persistCohort(persistTemplate(program, today.getYear()), today.minusDays(30), today);
+        ProgramCohort startsToday = persistCohort(persistTemplate(program, today.getYear() + 1), today, today.plusDays(30));
 
         programEnrollmentService.validateAdmissionWindow(endsToday);
         programEnrollmentService.validateAdmissionWindow(startsToday);
@@ -89,7 +89,7 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
     @Test
     void cohortWithAdmissionStartAfterEndIsRejectedAsMisconfiguredWindow() {
         Program program = persistProgram();
-        ProgramCohort inverted = persistCohort(persistTemplate(program, LocalDate.now().getYear()), LocalDate.now().plusDays(10), LocalDate.now().minusDays(10));
+        ProgramCohort inverted = persistCohort(persistTemplate(program, today.getYear()), today.plusDays(10), today.minusDays(10));
 
         assertThatThrownBy(() -> programEnrollmentService.validateAdmissionWindow(inverted))
                 .isInstanceOf(com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException.class);
@@ -112,7 +112,7 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
     void enrollmentAfterAdmissionPaymentIgnoresTheClosedAdmissionWindow() {
         Student student = persistStudent();
         Program program = persistProgram();
-        ProgramCohort closed = persistCohort(persistTemplate(program, LocalDate.now().getYear()), LocalDate.now().minusDays(60), LocalDate.now().minusDays(30));
+        ProgramCohort closed = persistCohort(persistTemplate(program, today.getYear()), today.minusDays(60), today.minusDays(30));
 
         ProgramEnrollment created = programEnrollmentService.enrollAfterAdmissionPayment(student.getId(),
                 new CreateProgramEnrollmentRequest(program.getId(), closed.getId()));
@@ -135,7 +135,7 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
     }
 
     @Test
-    void enrollingInAProgramWithACohortOfAnotherProgramIsAcceptedWithoutCheckingTheyMatch() {
+    void currentBehaviorToReviewEnrollingInAProgramWithACohortOfAnotherProgramIsAcceptedWithoutCheckingTheyMatch() {
         Student student = persistStudent();
         Program program = persistProgram();
         ProgramCohort cohortOfOtherProgram = persistOpenCohortOf(persistProgram());

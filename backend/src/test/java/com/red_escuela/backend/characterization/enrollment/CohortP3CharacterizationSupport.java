@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 
 abstract class CohortP3CharacterizationSupport extends WithdrawalP2CharacterizationSupport {
 
+    protected final LocalDate today = LocalDate.now();
+
     @Autowired
     protected TermRepository termRepository;
     @Autowired
@@ -64,7 +66,7 @@ abstract class CohortP3CharacterizationSupport extends WithdrawalP2Characterizat
     }
 
     protected ProgramCohort persistOpenCohortOf(Program program) {
-        return persistCohort(persistTemplate(program, LocalDate.now().getYear()), LocalDate.now().minusDays(10), LocalDate.now().plusDays(10));
+        return persistCohort(persistTemplate(program, today.getYear()), today.minusDays(10), today.plusDays(10));
     }
 
     protected Long storedCohortIdOf(Long programEnrollmentId) {

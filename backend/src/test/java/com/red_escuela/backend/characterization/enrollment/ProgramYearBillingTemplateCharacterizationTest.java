@@ -49,7 +49,7 @@ class ProgramYearBillingTemplateCharacterizationTest extends CohortP3Characteriz
     void assigningTheTemplateIfMissingKeepsAnAlreadyAssignedTemplate() {
         Program program = persistProgram();
         ProgramCohort cohort = persistOpenCohortOf(program);
-        ProgramYearBillingTemplate other = persistTemplate(program, LocalDate.now().getYear() + 1);
+        ProgramYearBillingTemplate other = persistTemplate(program, today.getYear() + 1);
         ProgramEnrollment enrollment = enrollmentInCohort(program, cohort);
         enrollment.setCurrentBillingTemplate(other);
         programEnrollmentRepository.save(enrollment);
@@ -74,7 +74,7 @@ class ProgramYearBillingTemplateCharacterizationTest extends CohortP3Characteriz
         ProgramCohort cohort = persistOpenCohortOf(program);
         ProgramEnrollment enrollment = enrollmentInCohort(program, cohort);
         billingSetup.assignTemplateIfMissing(enrollment);
-        ProgramYearBillingTemplate nextYear = persistTemplate(program, LocalDate.now().getYear() + 1);
+        ProgramYearBillingTemplate nextYear = persistTemplate(program, today.getYear() + 1);
 
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), nextYear.getId());
 
@@ -88,7 +88,7 @@ class ProgramYearBillingTemplateCharacterizationTest extends CohortP3Characteriz
         ProgramEnrollment enrollment = enrollmentInCohort(program, persistOpenCohortOf(program));
         billingSetup.assignTemplateIfMissing(enrollment);
         Long before = storedTemplateIdOf(enrollment.getId());
-        ProgramYearBillingTemplate foreign = persistTemplate(persistProgram(), LocalDate.now().getYear() + 1);
+        ProgramYearBillingTemplate foreign = persistTemplate(persistProgram(), today.getYear() + 1);
 
         mockMvc.perform(post("/program-enrollments/" + enrollment.getId() + "/advance-billing-year").header("Authorization", bearerWithRole("ADMINISTRATIVO"))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"templateId\":" + foreign.getId() + "}"))
@@ -103,7 +103,7 @@ class ProgramYearBillingTemplateCharacterizationTest extends CohortP3Characteriz
     void advancingTheBillingYearThroughHttpWithATemplateOfTheSameProgramReturnsTheEnrollment() throws Exception {
         Program program = persistProgram();
         ProgramEnrollment enrollment = enrollmentInCohort(program, persistOpenCohortOf(program));
-        ProgramYearBillingTemplate nextYear = persistTemplate(program, LocalDate.now().getYear() + 1);
+        ProgramYearBillingTemplate nextYear = persistTemplate(program, today.getYear() + 1);
 
         mockMvc.perform(post("/program-enrollments/" + enrollment.getId() + "/advance-billing-year").header("Authorization", bearerWithRole("PRECEPTOR"))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"templateId\":" + nextYear.getId() + "}"))
