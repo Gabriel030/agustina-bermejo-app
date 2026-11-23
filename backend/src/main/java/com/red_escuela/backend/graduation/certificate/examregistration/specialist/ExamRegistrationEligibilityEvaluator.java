@@ -14,6 +14,7 @@ import com.red_escuela.backend.graduation.procedure.dto.ProcedureNextStep;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureNextStepKind;
 import com.red_escuela.backend.graduation.procedure.dto.StudentProcedureType;
 import com.red_escuela.backend.graduation.procedure.exception.ProcedureDocumentNotFoundException;
+import com.red_escuela.backend.graduation.procedure.specialist.ProcedureEligibilityStrategy;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.platform.api.BillingModeGate;
 import com.red_escuela.backend.shared.module.BillingMode;
@@ -28,7 +29,7 @@ import java.util.List;
 
 @Component
 @Transactional(readOnly = true)
-public class ExamRegistrationEligibilityEvaluator {
+public class ExamRegistrationEligibilityEvaluator implements ProcedureEligibilityStrategy {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -52,6 +53,16 @@ public class ExamRegistrationEligibilityEvaluator {
         this.overdueDebtProbe = overdueDebtProbe;
         this.currentActorFinder = currentActorFinder;
         this.clock = clock;
+    }
+
+    @Override
+    public StudentProcedureType type() {
+        return StudentProcedureType.EXAM_REGISTRATION_CERTIFICATE;
+    }
+
+    @Override
+    public ProcedureEligibilityResponse eligibilityOf(Long studentId, Long enrollmentId, Long registrationId) {
+        return evaluate(registrationId);
     }
 
     public ProcedureEligibilityResponse evaluate(Long registrationId) {

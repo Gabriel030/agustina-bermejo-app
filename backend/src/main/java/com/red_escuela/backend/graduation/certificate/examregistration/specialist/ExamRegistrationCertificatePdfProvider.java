@@ -12,7 +12,6 @@ import com.red_escuela.backend.graduation.certificate.specialist.CertificateDige
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDocumentAuditRecorder;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureDocumentPdf;
-import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,14 +33,13 @@ public class ExamRegistrationCertificatePdfProvider {
     private final CertificateVerificationUrl verificationUrl;
     private final CertificateDigest digest;
     private final CertificateDocumentAuditRecorder auditRecorder;
-    private final CurrentActorFinder currentActorFinder;
     private final Clock clock;
 
     public ExamRegistrationCertificatePdfProvider(ExamRegistrationCertificateRepository repository, CertificateFileStore fileStore,
                                                   CertificatePdfRenderer renderer, ExamRegistrationCertificateTemplate template,
                                                   CertificateVerificationUrl verificationUrl, CertificateDigest digest,
                                                   CertificateDocumentAuditRecorder auditRecorder,
-                                                  CurrentActorFinder currentActorFinder, Clock clock) {
+                                                  Clock clock) {
         this.repository = repository;
         this.fileStore = fileStore;
         this.renderer = renderer;
@@ -49,13 +47,12 @@ public class ExamRegistrationCertificatePdfProvider {
         this.verificationUrl = verificationUrl;
         this.digest = digest;
         this.auditRecorder = auditRecorder;
-        this.currentActorFinder = currentActorFinder;
         this.clock = clock;
     }
 
     @Transactional
-    public ProcedureDocumentPdf pdfOfOwn(Long id) {
-        ExamRegistrationCertificate certificate = repository.findByIdAndStudentId(id, currentActorFinder.currentStudentId())
+    public ProcedureDocumentPdf pdfOfOwn(Long id, Long studentId) {
+        ExamRegistrationCertificate certificate = repository.findByIdAndStudentId(id, studentId)
                 .filter(found -> found.isValidAt(LocalDateTime.now(clock)))
                 .orElseThrow(ExamRegistrationCertificateNotFoundException::new);
         Optional<byte[]> stored = fileStore.load(certificate.getPdfPath())
