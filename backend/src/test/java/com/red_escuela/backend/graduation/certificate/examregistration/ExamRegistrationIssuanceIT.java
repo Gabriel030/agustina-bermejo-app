@@ -48,6 +48,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.beans.factory.annotation.Value;
+import com.jayway.jsonpath.JsonPath;
+import org.hamcrest.Matchers;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -248,7 +252,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
 
     private Long issuedId(String token) throws Exception {
         MvcResult result = generate(token, "{}").andExpect(status().isCreated()).andReturn();
-        return ((Number) com.jayway.jsonpath.JsonPath.read(result.getResponse().getContentAsString(), "$.id")).longValue();
+        return ((Number) JsonPath.read(result.getResponse().getContentAsString(), "$.id")).longValue();
     }
 
     @Test
@@ -257,7 +261,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.documentType").value("EXAM_REGISTRATION_CERTIFICATE"))
                 .andExpect(jsonPath("$.status").value("VALID"))
                 .andExpect(jsonPath("$.expiresAt").value("2026-11-21T00:00:00"))
-                .andExpect(jsonPath("$.verificationUrl").value(org.hamcrest.Matchers.containsString("/verificar/")));
+                .andExpect(jsonPath("$.verificationUrl").value(Matchers.containsString("/verificar/")));
 
         Map<String, Object> row = jdbc.queryForMap("select * from exam_registration_certificate");
         assertThat(row.get("pdf_sha256").toString()).hasSize(64);
@@ -431,7 +435,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
     void regenerationWithRecipientProducesTheRecordedHash() throws Exception {
         MvcResult created = generate(studentToken, "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"OSDE 210\"}")
                 .andExpect(status().isCreated()).andReturn();
-        Long id = ((Number) com.jayway.jsonpath.JsonPath.read(created.getResponse().getContentAsString(), "$.id")).longValue();
+        Long id = ((Number) JsonPath.read(created.getResponse().getContentAsString(), "$.id")).longValue();
         String sha = jdbc.queryForObject("select pdf_sha256 from exam_registration_certificate", String.class);
         String path = jdbc.queryForObject("select pdf_path from exam_registration_certificate", String.class);
         Files.delete(Path.of(certificatesDirectory).toAbsolutePath().normalize().resolve(path));
@@ -504,7 +508,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         String sha = jdbc.queryForObject("select pdf_sha256 from exam_registration_certificate", String.class);
         jdbc.update("update person set name = 'Otro', last_name = 'Cambiado' where id = (select person_id from student where id = (select student_id from exam_registration_certificate))");
         jdbc.update("update subject set name = 'Materia renombrada' where id = ?", subjectId);
-        jdbc.update("update exam_board set exam_date = ? where id = ?", java.sql.Timestamp.valueOf("2026-12-15 09:00:00"), boardId);
+        jdbc.update("update exam_board set exam_date = ? where id = ?", Timestamp.valueOf("2026-12-15 09:00:00"), boardId);
         jdbc.update("update institution set name = 'Otra institucion' where id = (select institution_id from student where id = (select student_id from exam_registration_certificate))");
         deleteStoredFile();
 
@@ -557,11 +561,11 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
 
     @Test
     void sameRequestWithADifferentRecipientReturnsTheCurrentDocumentUnchanged() throws Exception {
-        Long first = ((Number) com.jayway.jsonpath.JsonPath.read(generate(studentToken,
+        Long first = ((Number) JsonPath.read(generate(studentToken,
                 "{\"recipientType\":\"EMPLOYER\",\"recipientText\":\"Empresa A\"}").andExpect(status().isCreated()).andReturn()
                 .getResponse().getContentAsString(), "$.id")).longValue();
 
-        Long second = ((Number) com.jayway.jsonpath.JsonPath.read(generate(studentToken,
+        Long second = ((Number) JsonPath.read(generate(studentToken,
                 "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}").andReturn()
                 .getResponse().getContentAsString(), "$.id")).longValue();
 
@@ -572,26 +576,31 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         assertThat(certificateCount()).isEqualTo(1L);
     }
 
+    private static final int CONCURRENCY_ROUNDS = 8;
+
     @Test
     void concurrentRequestsForTwoRegistrationsLetOnlyOnePassTheDailyLimit() throws Exception {
         Long other = secondRegistrationOn(LocalDateTime.of(2026, 11, 25, 9, 0));
-        CountDownLatch ready = new CountDownLatch(2);
-        CountDownLatch go = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
-            List<Future<Integer>> results = List.of(registrationId, other).stream().map(target -> executor.submit(() -> {
-                ready.countDown();
-                go.await();
-                return generate(studentToken, "{\"registrationId\":" + target + "}").andReturn().getResponse().getStatus();
-            })).toList();
-            ready.await();
-            go.countDown();
-            List<Integer> statuses = new java.util.ArrayList<>();
-            for (Future<Integer> result : results) {
-                statuses.add(result.get());
+            for (int round = 0; round < CONCURRENCY_ROUNDS; round++) {
+                jdbc.update("delete from exam_registration_certificate");
+                CountDownLatch ready = new CountDownLatch(2);
+                CountDownLatch go = new CountDownLatch(1);
+                List<Future<Integer>> results = List.of(registrationId, other).stream().map(target -> executor.submit(() -> {
+                    ready.countDown();
+                    go.await();
+                    return generate(studentToken, "{\"registrationId\":" + target + "}").andReturn().getResponse().getStatus();
+                })).toList();
+                ready.await();
+                go.countDown();
+                List<Integer> statuses = new ArrayList<>();
+                for (Future<Integer> result : results) {
+                    statuses.add(result.get());
+                }
+                assertThat(statuses).as("round " + round).containsExactlyInAnyOrder(201, 429);
+                assertThat(certificateCount()).as("round " + round).isEqualTo(1L);
             }
-            assertThat(statuses).containsExactlyInAnyOrder(201, 429);
-            assertThat(certificateCount()).isEqualTo(1L);
         } finally {
             executor.shutdownNow();
         }
