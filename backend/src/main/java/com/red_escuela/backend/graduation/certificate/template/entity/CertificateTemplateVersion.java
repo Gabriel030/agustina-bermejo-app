@@ -52,7 +52,7 @@ public class CertificateTemplateVersion {
     @Column(name = "title", length = 80)
     private String title;
 
-    @Column(name = "intro_text", length = 160)
+    @Column(name = "intro_text", length = 240)
     private String introText;
 
     @Column(name = "approval_text", length = 160)

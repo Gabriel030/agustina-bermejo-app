@@ -407,6 +407,7 @@ POST,/prospects/{id}/send-verification,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DE
 GET,/public/calendar/{token}.ics,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/public/certificates/{code},PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/public/modules,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
+POST,/public/monitoring/tunnel,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/public/unsubscribe/{token},PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/public/unsubscribe/{token},PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/refunds/{refundId}/completion,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
@@ -627,9 +628,9 @@ GET,/me/procedures/approved/{documentType}/{id}/pdf,DENY,ALLOW,ALLOW,ALLOW,ALLOW
 POST,/me/approved-subjects-certificates,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,"{""enrollmentId"":1}"
 GET,/me/section-enrollments/{id}/change-section-candidates,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
 POST,/approved-subjects-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
-GET,/exam-boards/{id}/exam-certificates/candidates,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,
-POST,/exam-boards/{id}/exam-certificates/batch,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""registrationIds"":[1]}"
-GET,/exam-certificates/{id}/pdf,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/exam-boards/{id}/exam-certificates/candidates,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
+POST,/exam-boards/{id}/exam-certificates/batch,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,"{""registrationIds"":[1]}"
+GET,/exam-certificates/{id}/pdf,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,ALLOW,DENY,exam-certificate-tribunal,
 POST,/exam-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/certificate-templates/documents/{documentType},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/certificate-templates/documents/{documentType}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
@@ -646,3 +647,15 @@ PUT,/certificate-settings/documents,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{
 POST,/document-debt-exceptions,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,"{""studentId"":1,""documentType"":""REGULAR_STUDENT_CERTIFICATE"",""reason"":""Motivo suficiente de al menos veinte caracteres"",""validityDays"":7}"
 GET,/document-debt-exceptions,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,
 GET,/document-debt-exceptions/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,
+POST,/auth/activation-token/status,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
+POST,/invitation-waves,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""name"":""Oleada"",""batchSize"":10,""intervalMinutes"":15,""dailyCap"":100}"
+GET,/invitation-waves,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/settings,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/import-batches,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/{id}/recipients,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/{id}/report.csv,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/invitation-waves/{id}/start,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/invitation-waves/{id}/pause,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/invitation-waves/{id}/resume,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/invitation-waves/{id}/cancel,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,

@@ -6,5 +6,5 @@ import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTempl
 
 public interface SaveDraftDocumentTemplateUseCase {
 
-    CertificateTemplateVersionResponse save(DocumentTemplateType type, CertificateTemplateContent content);
+    CertificateTemplateVersionResponse save(DocumentTemplateType type, CertificateTemplateContent content, Integer basedOnVersionNumber);
 }

@@ -78,7 +78,7 @@ export function NotificationBell() {
           {!badgeFailed && noLeidas > 0 && (
             <span
               aria-hidden="true"
-              className="absolute -right-1 -top-1 flex h-4 min-w-4 animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-on-accent motion-reduce:animate-none design-b:animate-none"
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-on-accent"
             >
               {noLeidas > 9 ? '9+' : noLeidas}
             </span>
