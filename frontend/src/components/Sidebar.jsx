@@ -61,10 +61,6 @@ export function Sidebar({ titulo, items, groups }) {
         <RoleSwitcher variant="menu" />
       </div>
 
-      {/* overflow-x-hidden explícito: sin esto, fijar solo overflow-y hace que el
-          browser compute overflow-x como "auto" también (no "visible") — el
-          hover:translate-x-[3px] de los NavLink alcanza para gatillar un scroll
-          horizontal fantasma en el menú. */}
       <nav
         ref={containerRef}
         className="scroll-fade-y relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden"

@@ -7,7 +7,7 @@ export const FONT_SIZE_TOKENS = [
 ];
 
 const twMerge = extendTailwindMerge({
-  extend: { classGroups: { 'font-size': [{ text: FONT_SIZE_TOKENS }], rounded: [{ rounded: ['card', 'control'] }] } },
+  extend: { classGroups: { 'font-size': [{ text: FONT_SIZE_TOKENS }] } },
 });
 
 export function cn(...inputs) {
