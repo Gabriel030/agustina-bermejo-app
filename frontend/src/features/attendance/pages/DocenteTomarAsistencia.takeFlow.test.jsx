@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -8,6 +8,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { TabAsistencia } from '@/features/attendance/pages/DocenteTomarAsistencia';
 import { localIsoDate } from '@/lib/calendario';
 import { rosterEntryFixture } from '@/test/fixtures/rosterEntries';
+import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
 const API = 'http://localhost:8080';
 
@@ -79,6 +80,31 @@ describe('TabAsistencia take flow', () => {
     expect(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Presente' })).toHaveAttribute('aria-pressed', 'false');
     expect(localStorage.getItem(`attendanceDraft:PROGRAM:5:${localIsoDate()}`)).toBeNull();
     expect(screen.getByRole('button', { name: 'Guardar asistencia' })).toBeDisabled();
+  });
+
+  describe('on a compact viewport', () => {
+    afterEach(restoreViewport);
+
+    it('asks for confirmation when discarding from the more menu and then discards', async () => {
+      useCompactViewport();
+      mockEmptySection();
+      const user = userEvent.setup();
+      renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+      await screen.findByText('Ana Gómez');
+      await user.click(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Presente' }));
+      const bar = screen.getByRole('region', { name: 'Guardado de asistencia' });
+      expect(within(bar).getByText('Quedan 2 sin marcar')).toBeInTheDocument();
+      expect(within(bar).queryByRole('button', { name: 'Descartar' })).not.toBeInTheDocument();
+
+      await user.click(within(bar).getByRole('button', { name: 'Más acciones' }));
+      await user.click(await screen.findByRole('menuitem', { name: 'Descartar' }));
+      expect(await screen.findByText('¿Descartar 1 cambio?')).toBeInTheDocument();
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Descartar' }));
+
+      expect(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Presente' })).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('button', { name: 'Guardar asistencia' })).toBeDisabled();
+    });
   });
 
   it('asks before leaving through a link while there are unsaved changes', async () => {
