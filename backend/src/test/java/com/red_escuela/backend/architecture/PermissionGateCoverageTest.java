@@ -647,12 +647,12 @@ class PermissionGateCoverageTest {
                 String endpoint = controller.getSimpleName() + "#" + method.getName();
                 if (controller.getSimpleName().equals("DocumentDebtExceptionController") && AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class) != null) {
                     found.add(endpoint);
-                    PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
-                    boolean fixedRule = preAuthorize != null && preAuthorize.value().contains("!hasRole('SUBDIRECTOR')") && !usesGate(method, controller);
                     RequiresPermissionWithoutInheritance delegable = AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermissionWithoutInheritance.class);
-                    boolean delegableRule = delegable != null && usesGate(method, controller);
-                    if (!fixedRule && !delegableRule) {
-                        violations.add(endpoint + " must keep its conditional role rule");
+                    boolean delegableRule = delegable != null && usesGate(method, controller)
+                            && delegable.code().equals("document.debt-exception.issue")
+                            && !delegable.legacyRoles().contains("SUBDIRECTOR");
+                    if (!delegableRule) {
+                        violations.add(endpoint + " must use the delegable debt-exception permission without inheritance");
                     }
                 }
                 if (!CONSTANCIAS_B_MIGRATED_ENDPOINTS.contains(endpoint) || !moduleOf(controller).equals("graduation")) {

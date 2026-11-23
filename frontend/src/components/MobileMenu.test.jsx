@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -22,24 +22,19 @@ const GROUPS = [
   { id: 'staff', label: 'Equipo', items: [ITEMS[2]] },
 ];
 
-async function openDrawer() {
+async function openDrawer({ withGroups = true } = {}) {
   render(
     <ThemeProvider>
       <MemoryRouter initialEntries={['/director/alumnos']}>
-        <MobileMenu titulo="Director" items={ITEMS} groups={GROUPS} />
+        <MobileMenu titulo="Director" items={ITEMS} groups={withGroups ? GROUPS : undefined} />
       </MemoryRouter>
     </ThemeProvider>,
   );
   await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
 }
 
-afterEach(() => {
-  delete document.documentElement.dataset.design;
-});
-
 describe('MobileMenu', () => {
   it('starts with only the group of the current page expanded', async () => {
-    document.documentElement.dataset.design = 'b';
     await openDrawer();
 
     expect(screen.getByRole('button', { name: 'Personas' })).toHaveAttribute('aria-expanded', 'true');
@@ -48,7 +43,6 @@ describe('MobileMenu', () => {
   });
 
   it('expands a collapsed group when its heading is pressed', async () => {
-    document.documentElement.dataset.design = 'b';
     await openDrawer();
 
     await userEvent.click(screen.getByRole('button', { name: 'Equipo' }));
@@ -57,16 +51,14 @@ describe('MobileMenu', () => {
     expect(screen.getByRole('button', { name: 'Equipo' })).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('lists every item flat with design vl', async () => {
-    document.documentElement.dataset.design = 'vl';
-    await openDrawer();
+  it('lists every item flat when the menu has no groups', async () => {
+    await openDrawer({ withGroups: false });
 
     expect(screen.getByRole('link', { name: 'Personal' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Personas' })).not.toBeInTheDocument();
   });
 
   it('closes with Escape', async () => {
-    document.documentElement.dataset.design = 'b';
     await openDrawer();
 
     await userEvent.keyboard('{Escape}');

@@ -1,8 +1,8 @@
 package com.red_escuela.backend.graduation.debtexception.usecase;
 
-import com.red_escuela.backend.graduation.procedure.dto.ProcedureDocumentPdf;
+import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionPdf;
 
 public interface GetDebtExceptionPdfUseCase {
 
-    ProcedureDocumentPdf pdfOf(Long id);
+    DebtExceptionPdf pdfOf(Long id);
 }

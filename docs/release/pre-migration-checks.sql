@@ -175,6 +175,8 @@ begin
       ('discount_definition_status_change', 'event', array['DEFINITION_CLOSED', 'DEFINITION_CREATED']),
       ('discount_definition_status_change', 'from_status', array['ACTIVE', 'CLOSED']),
       ('discount_definition_status_change', 'to_status', array['ACTIVE', 'CLOSED']),
+      ('document_debt_exception', 'document_type', array['APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'GRADUATION_CERTIFICATE', 'REGULAR_STUDENT_CERTIFICATE']),
+      ('document_debt_exception', 'status', array['ACTIVE', 'EXPIRED', 'USED']),
       ('evaluation_scheme', 'aggregation_method', array['LAST_ATTEMPT', 'MAX_SCORE', 'SIMPLE_AVERAGE', 'WEIGHTED_AVERAGE']),
       ('exam_board', 'status', array['CANCELED', 'CLOSED', 'SCHEDULED']),
       ('exam_board_registration', 'status', array['ABSENT', 'GRADED', 'REGISTERED', 'WITHDRAWN']),
