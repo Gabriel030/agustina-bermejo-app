@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ArrowRight, GraduationCap, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
@@ -11,6 +10,7 @@ import { GraduationTab } from '../../components/GraduationTab';
 import { useApprovedProcedures } from '../hooks/useStudentProcedures';
 import { PROCEDURES, procedureOf } from '../lib/procedures';
 import { ApprovedProceduresList } from './ApprovedProceduresList';
+import { ChangeMySectionFlow } from './ChangeMySectionFlow';
 import { ProcedureDetail } from './ProcedureDetail';
 import { ProcedureRow } from './ProcedureRow';
 
@@ -33,6 +33,7 @@ export function StudentProceduresSection({ carreraId, onSeeStudyPlan }) {
   const [section, setSection] = useState('procedures');
   const [openType, setOpenType] = useState(null);
   const [showGraduation, setShowGraduation] = useState(false);
+  const [changingSection, setChangingSection] = useState(false);
   const approved = useApprovedProcedures();
 
   if (approved.isLoading) {
@@ -92,8 +93,8 @@ export function StudentProceduresSection({ carreraId, onSeeStudyPlan }) {
               />
             ))}
             <LinkRow icon={RefreshCw} title="Cambio de comisión" description="Pasá de una comisión a otra en una materia que cursás.">
-              <Button asChild variant="outline" className="w-full sm:w-auto">
-                <Link to={`/alumno/mis-carreras?carrera=${carreraId}&tab=materias`}>Abrir</Link>
+              <Button variant="outline" className="h-auto min-h-11 w-full sm:w-auto md:h-8 md:min-h-0" onClick={() => setChangingSection(true)}>
+                Abrir
               </Button>
             </LinkRow>
             <LinkRow icon={GraduationCap} title="Solicitud de egreso" description="Pedí tu título cuando completes el plan de estudios.">
@@ -104,6 +105,7 @@ export function StudentProceduresSection({ carreraId, onSeeStudyPlan }) {
             </LinkRow>
           </ul>
         </GlassCard>
+        {changingSection && <ChangeMySectionFlow carreraId={carreraId} onClose={() => setChangingSection(false)} />}
       </TabsContent>
       <TabsContent value="approved">
         <ApprovedProceduresList items={items} onRegenerate={setOpenType} />

@@ -80,7 +80,7 @@ Se recomienda correrlo antes de mergear cambios de plata (dominio puro de `share
 
 - **Detección de cambios.** `.github/scripts/detect-changes.sh` (con tests en `test_detect_changes.py`) diferencia contra el `headSha` del último push exitoso de `develop` (`gh run list`); si no hay (o `gh` falla, o el commit ya no existe por un force-push) no hay base y corre todo. Backend, frontend y `audit:prod` (solo si cambió `frontend/package-lock.json`) se saltan si el diff no los toca. Un push a `master` siempre corre todo.
 - **Dedupe por árbol.** Si el árbol de `HEAD` coincide con el árbol que verificó el run verde del PR del segundo padre (`HEAD^2`, artifact `tested-tree` que sube cada run de PR), se saltan los tests de esa área que el PR sí corrió, el agregador `backend` queda verde con «reusado del PR #N» y el baseline de tiempos se hereda de los `shard-reports-*` del run del PR. Si el árbol difiere (por ejemplo porque `develop` avanzó después del run del PR), si el merge fue squash o si el push es directo, corre todo. Auditoría: el resumen del run muestra «Reused from PR #N», el árbol y los minutos de cómputo ahorrados. Consecuencia: el grupo `docs` (`ModuleDocumentationTest`), que solo corre en push, no se ejecuta en los merges deduplicados.
-- **Concurrencia.** `cancel-in-progress: true` en PRs y en `develop`: cada push cancela al anterior y el run que sobrevive diferencia contra el último verde, así que cubre también los cambios de los runs cancelados. El baseline de tiempos lo publica el run que sobrevive. `master` no cancela.
+- **Concurrencia.** Grupo `ci-<ref>`. `cancel-in-progress` solo en eventos `pull_request`: cada push al PR cancela la corrida anterior. En push a `develop` y `master` NO se cancela: la corrida en curso termina y, con `cancel-in-progress: false`, GitHub deja como máximo UNA corrida pendiente por grupo; si entra otro push, el pendiente más viejo se reemplaza (se cancela) por el más nuevo, y la que ya corre nunca se toca. La cola no crece sin límite (1 corriendo + 1 pendiente) y `develop` completa corridas enteras en vez de quedar siempre cancelado. El run pendiente que sobrevive diferencia contra el último push verde, así que cubre también los cambios del pendiente reemplazado. El baseline de tiempos lo publica el run que termina.
 - **Caches.** `~/.m2/repository` y `~/.m2/wrapper` bajo una sola clave `maven-<os>-<hash del pom>`: todos los jobs la restauran (`actions/cache/restore`), solo el shard 0 de un push a `develop` la guarda. `TESTCONTAINERS_RYUK_DISABLED=true` en todo el workflow y `postgres:16-alpine` se baja en segundo plano al empezar cada shard (Ryuk no se baja: está desactivado).
 - **Frontend.** `npm ci --no-audit --no-fund --prefer-offline`; Vitest en 3 shards (`frontend-tests (1)`, `(2)` y `(3)`, `--shard=N/3`) en paralelo con `frontend-checks` (audita si cambió el lockfile, lint y build); el job `frontend` solo agrega los resultados de todos los shards.
 
@@ -138,7 +138,7 @@ está arriba.
 
 El CI del backend corre en 8 shards balanceados por tiempo (`.github/scripts/test-shards.py`). No hay presupuesto de tiempo: ningún límite por clase, por `@SlowTest` ni por shard hace fallar el CI (se eliminaron el 13-nov-2026, a pedido de Gabriel, después de cuatro rojos por tiempos al borde sin bug real). Los tiempos se miden y se reportan, nada más.
 
-**Lo único que bloquea es el tope de contextos de Spring distintos en toda la corrida (24)**, que no es una regla de tiempo: lo hace cumplir `test-report.py aggregate` (parámetro `--max-contexts`), en el job `test-report`, solo en pushes (en un PR es una advertencia). Subirlo es una decisión de producto que va en un PR aparte, con motivo.
+**Lo único que bloquea es el tope de contextos de Spring distintos en toda la corrida (32)**, que no es una regla de tiempo: lo hace cumplir `test-report.py aggregate` (parámetro `--max-contexts`), en el job `test-report`, solo en pushes (en un PR es una advertencia). Subirlo es una decisión de producto que va en un PR aparte, con motivo.
 
 Las reglas ArchUnit sobre los tests (`TestSuiteRulesTest`) no cambian: sin violaciones nuevas.
 
@@ -191,7 +191,7 @@ Las reglas de `TestSuiteRulesTest` usan `FreezingArchRule`, igual que las de `Ar
 El job `test-report` publica un comentario en el PR (se actualiza en cada push, no se duplica) y el mismo contenido en el resumen del job:
 
 - **Tiempo de pared y suma de tests**, con la diferencia contra la última corrida de `develop` que publicó mediciones.
-- **Contextos de Spring distintos** (unión entre shards) contra el tope de 24, con su diferencia.
+- **Contextos de Spring distintos** (unión entre shards) contra el tope de 32, con su diferencia.
 - **Top 5 de clases más lentas tocadas por el PR** (o del total si el PR no toca clases de test), con su tiempo en `develop`.
 - **Clases `@SlowTest`** con su tiempo y motivo.
 
@@ -226,7 +226,7 @@ python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con
 
 | Falla | Qué hacer |
 |---|---|
-| Más de 24 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
+| Más de 32 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
 | ArchUnit en tests | Leé el mensaje: sleep → Awaitility; `@DirtiesContext` → limpiar estado; `@SpringBootTest` en `domain`/`policy` → test puro; job global → caso de uso con ids. |
 
 **Arranque en frío.** `testsupport/SharedInfrastructureWarmUp` (un `LauncherSessionListener` registrado en `META-INF/services`) inicializa Postgres (Testcontainers), las migraciones de Flyway y el snapshot de `TestDatabaseIsolation` al abrir la sesión de JUnit, antes de que arranque cualquier clase. Solo actúa con la variable `CI` definida (GitHub Actions la define); en local no cambia nada.

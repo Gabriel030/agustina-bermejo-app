@@ -4,10 +4,14 @@ import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificatePdf;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditLogRepository;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.dto.IssueGraduationCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
+import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateStatus;
@@ -31,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
@@ -59,6 +64,10 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
     private CertificateFileStore fileStore;
     @Autowired
     private CertificateDigest digest;
+    @Autowired
+    private AuditLogRepository auditLogRepository;
+    @Autowired
+    private JdbcTemplate jdbc;
 
     private Program program;
     private ProgramEnrollment enrollment;
@@ -141,8 +150,93 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
 
         assertThat(fileStore.load(stored.getPdfPath())).isPresent();
         assertThat(stored.getPdfSha256()).isEqualTo(digest.sha256(pdf.content()));
+        assertThat(stored.getPdfSha256()).isEqualTo(originalHash);
         assertThat(pdf.code()).isEqualTo(response.code());
         assertThat(originalHash).hasSize(64);
+    }
+
+    @Test
+    void issuedCertificateRecordsTheRenderEngineVersion() {
+        GraduationCertificate stored = repository.findById(issue().id()).orElseThrow();
+
+        assertThat(stored.getRenderEngineVersion()).isEqualTo(CertificatePdfRenderer.ENGINE_VERSION);
+    }
+
+    @Test
+    void deletingTheCachedFileLosesNothingAndServesTheSameBytes() {
+        GraduationCertificateResponse response = issue();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        byte[] original = fileStore.load(stored.getPdfPath()).orElseThrow();
+        fileStore.deleteIfRolledBack(stored.getPdfPath());
+
+        GraduationCertificatePdf pdf = pdfUseCase.pdfOf(response.id());
+
+        assertThat(pdf.content()).isEqualTo(original);
+    }
+
+    @Test
+    void everyDownloadIsAuditedIncludingRepeatedOnes() {
+        GraduationCertificateResponse response = issue();
+
+        pdfUseCase.pdfOf(response.id());
+        pdfUseCase.pdfOf(response.id());
+
+        assertThat(auditLogRepository.findAll().stream()
+                .filter(entry -> entry.getAction() == AuditAction.DOCUMENT_PDF_DOWNLOADED)
+                .filter(entry -> entry.getEntityId().equals(response.id())))
+                .hasSize(2)
+                .allSatisfy(entry -> assertThat(entry.getReason()).contains("documentType=GRADUATION_CERTIFICATE", "engineVersion=" + CertificatePdfRenderer.ENGINE_VERSION));
+    }
+
+    @Test
+    void hashMismatchIsAuditedWithoutBeingServed() {
+        GraduationCertificateResponse response = issue();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        stored.replacePdf("f".repeat(64), stored.getPdfPath());
+        fileStore.deleteIfRolledBack(stored.getPdfPath());
+
+        assertThatThrownBy(() -> pdfUseCase.pdfOf(response.id())).isInstanceOf(CertificatePdfIntegrityMismatchException.class);
+
+        assertThat(auditLogRepository.findAll().stream()
+                .filter(entry -> entry.getAction() == AuditAction.DOCUMENT_PDF_HASH_MISMATCH)
+                .filter(entry -> entry.getEntityId().equals(response.id())))
+                .hasSize(1)
+                .allSatisfy(entry -> assertThat(entry.getBeforeValue()).isEqualTo("f".repeat(64)));
+        assertThat(committedAuditCount("DOCUMENT_PDF_HASH_MISMATCH", response.id())).isEqualTo(1);
+        assertThat(stored.getPdfSha256()).isEqualTo("f".repeat(64));
+    }
+
+    private int committedAuditCount(String action, Long certificateId) {
+        return jdbc.queryForObject("select count(*) from audit_log where action = ? and entity_id = ?", Integer.class, action, certificateId);
+    }
+
+    @Test
+    void regenerationThatDiffersFromTheStoredHashIsNotServed() {
+        GraduationCertificateResponse response = issue();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        String originalHash = stored.getPdfSha256();
+        stored.replacePdf("f".repeat(64), stored.getPdfPath());
+        fileStore.deleteIfRolledBack(stored.getPdfPath());
+
+        assertThatThrownBy(() -> pdfUseCase.pdfOf(response.id())).isInstanceOf(CertificatePdfIntegrityMismatchException.class);
+        assertThat(stored.getPdfSha256()).isEqualTo("f".repeat(64)).isNotEqualTo(originalHash);
+        assertThat(fileStore.load(stored.getPdfPath())).isEmpty();
+    }
+
+    @Test
+    void legacyCertificateWithoutEngineVersionIsRegeneratedAndItsHashRefreshed() {
+        GraduationCertificateResponse response = issue();
+        GraduationCertificate stored = repository.findById(response.id()).orElseThrow();
+        entityManager.flush();
+        entityManager.createNativeQuery("update graduation_certificate set render_engine_version = null where id = :id")
+                .setParameter("id", response.id()).executeUpdate();
+        entityManager.clear();
+        GraduationCertificate legacy = repository.findById(response.id()).orElseThrow();
+        legacy.replacePdf("e".repeat(64), stored.getPdfPath());
+
+        GraduationCertificatePdf pdf = pdfUseCase.pdfOf(response.id());
+
+        assertThat(legacy.getPdfSha256()).isEqualTo(digest.sha256(pdf.content()));
     }
 
     @Test

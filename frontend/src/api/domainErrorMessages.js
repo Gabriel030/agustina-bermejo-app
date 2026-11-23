@@ -366,6 +366,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   PROSPECT_ALREADY_CONFIRMED: 'El postulante ya fue confirmado.',
   REGULAR_CERTIFICATE_ALREADY_ISSUED: 'El certificado de alumno regular ya fue emitido.',
   CERTIFICATE_EXPIRED: 'La constancia está vencida. Pedí una nueva.',
+  CERTIFICATE_PDF_INTEGRITY_MISMATCH: 'No se pudo regenerar el documento con la integridad esperada. Se registró el hecho; avisá a administración.',
   CERTIFICATE_REVOKED: 'La constancia fue revocada.',
   REGULAR_CERTIFICATE_REQUEST_NOT_FOUND: 'No encontramos el pedido de constancia.',
   REGULAR_CERTIFICATE_REQUEST_NOT_PENDING: 'El pedido ya no está pendiente.',
