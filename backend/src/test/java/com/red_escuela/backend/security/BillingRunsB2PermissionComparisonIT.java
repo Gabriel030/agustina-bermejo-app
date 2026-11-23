@@ -164,13 +164,15 @@ class BillingRunsB2PermissionComparisonIT extends AuthorizationMatrixSupport {
     }
 
     @Test
-    void enforceModeFollowsTheGridWhenADirectorOnlyPermissionIsDelegatedAndWhenAnAdministrativeGrantIsRemoved() throws Exception {
+    void enforceModeRefusesToDelegateADirectorOnlyPermissionAndFollowsTheGridWhenAnAdministrativeGrantIsRemoved() throws Exception {
         setModuleMode("ENFORCE");
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
         AuthorizationMatrixRow executionRow = rowOf("POST /billing-runs/executions");
         assertThat(isForbiddenByTheGate(endpoints, executionRow, MatrixRole.ADMINISTRATIVO)).isTrue();
-        grantToRole("ADMINISTRATIVO", "billing.run_billing");
-        assertThat(isForbiddenByTheGate(endpoints, executionRow, MatrixRole.ADMINISTRATIVO)).isFalse();
+        assertThat(tryToDelegateThroughTheGrid("ADMINISTRATIVO", "billing.run_billing")).isEqualTo(422);
+        assertThat(lastResponseBody).contains("FIXED_TO_DIRECTOR_PERMISSION_NOT_EDITABLE");
+        assertThat(isForbiddenByTheGate(endpoints, executionRow, MatrixRole.ADMINISTRATIVO)).isTrue();
+        assertThat(isForbiddenByTheGate(endpoints, executionRow, MatrixRole.DIRECTOR)).isFalse();
 
         AuthorizationMatrixRow revocationRow = rowOf("POST /student-discounts/{id}/revocation");
         assertThat(isForbiddenByTheGate(endpoints, revocationRow, MatrixRole.ADMINISTRATIVO)).isFalse();
@@ -184,12 +186,11 @@ class BillingRunsB2PermissionComparisonIT extends AuthorizationMatrixSupport {
         setModuleMode("ENFORCE");
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
         List<AuthorizationMatrixRow> rows = List.of(
-                rowOf("POST /program-enrollments/{id}/student-discounts"), rowOf("POST /promotions/{id}/close"),
-                rowOf("POST /price-versions/{priceVersionId}/cancellation"), rowOf("POST /program-enrollments/{id}/advance-enrollment-fee"));
+                rowOf("POST /program-enrollments/{id}/student-discounts"), rowOf("POST /program-enrollments/{id}/advance-enrollment-fee"));
         for (AuthorizationMatrixRow row : rows) {
             assertThat(statusFor(endpoints, row, MatrixRole.PRECEPTOR)).as(row.key()).isEqualTo(403);
         }
-        for (String code : List.of("billing.grant_student_discount", "billing.manage_promotion", "billing.cancel_price_version", "billing.request_advance_enrollment_fee")) {
+        for (String code : List.of("billing.grant_student_discount", "billing.request_advance_enrollment_fee")) {
             grantToRole("PRECEPTOR", code);
         }
         for (AuthorizationMatrixRow row : rows) {
@@ -198,7 +199,7 @@ class BillingRunsB2PermissionComparisonIT extends AuthorizationMatrixSupport {
     }
 
     @Test
-    void enforceModeLetsADelegatedNonDirectorPassTheGridButTheDomainStillRefusesToDecideTheAuthorizationRequest() throws Exception {
+    void enforceModeRefusesToDelegateTheDecisionAndTheDomainRefusesAStaleGrantToDecideTheAuthorizationRequest() throws Exception {
         setModuleMode("ENFORCE");
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
         MappedEndpoint approve = endpoints.get("POST /authorization-requests/{id}/approve");
@@ -208,6 +209,7 @@ class BillingRunsB2PermissionComparisonIT extends AuthorizationMatrixSupport {
         assertThat(statusWithToken(approve, "", token, requestId)).isEqualTo(403);
         assertThat(lastResponseBody).doesNotContain("AuthorizationRequestAccessDeniedException");
 
+        assertThat(tryToDelegateThroughTheGrid("PRECEPTOR", "billing.decide_authorization_request")).isEqualTo(422);
         grantToRole("PRECEPTOR", "billing.decide_authorization_request");
 
         assertThat(statusWithToken(approve, "", token, requestId)).isEqualTo(403);

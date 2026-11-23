@@ -18,6 +18,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.util.List;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -77,5 +78,14 @@ abstract class AuthorizationMatrixSupport extends AbstractIntegrationTest {
         var response = result.getResponse();
         lastResponseBody = response.getContentAsString() + " EX " + result.getResolvedException();
         return response.getStatus();
+    }
+
+    protected int tryToDelegateThroughTheGrid(String role, String permissionCode) throws Exception {
+        String body = "{\"reason\":\"Delegar permiso\",\"sensitiveConfirmed\":true,\"changes\":[{\"role\":\"" + role
+                + "\",\"permissionCode\":\"" + permissionCode + "\",\"granted\":true}]}";
+        var result = mockMvc.perform(put("/permissions/grid").header("Authorization", "Bearer " + fixtures.tokenFor(MatrixRole.DIRECTOR))
+                .contentType("application/json").content(body)).andReturn();
+        lastResponseBody = result.getResponse().getContentAsString();
+        return result.getResponse().getStatus();
     }
 }

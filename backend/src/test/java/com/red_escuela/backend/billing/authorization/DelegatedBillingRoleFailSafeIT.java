@@ -14,6 +14,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -196,23 +198,27 @@ class DelegatedBillingRoleFailSafeIT extends AbstractIntegrationTest {
         assertEveryRoleBehavesFailSafe("ENFORCE");
     }
 
-    @Test
-    void deciderPermissionIsFixedToTheDirectorAndTheGridRefusesToDelegateIt() throws Exception {
-        assertThat(jdbc.queryForObject("select fixed_to_director from permission where code = ?", Boolean.class, DECIDE_REQUEST)).isTrue();
-        assertThat(jdbc.queryForObject("select count(*) from role_permission where role <> 'DIRECTOR' and permission_id = (select id from permission where code = ?)", Long.class, DECIDE_REQUEST)).isZero();
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "billing.decide_authorization_request", "billing.run_billing", "billing.issue_monthly_invoices_manually", "billing.manage_promotion",
+            "billing.cancel_price_version", "billing.manage_payment_plan_options", "billing.manage_year_billing_template",
+            "billing.set_late_payment_settings", "billing.manage_payment_gateway", "billing.publish_annual_upfront_terms", "billing.revoke_payment_approval"})
+    void permissionsWithoutAnApprovalFlowAreFixedToTheDirectorAndTheGridRefusesToDelegateThem(String code) throws Exception {
+        assertThat(jdbc.queryForObject("select fixed_to_director from permission where code = ?", Boolean.class, code)).isTrue();
+        assertThat(jdbc.queryForObject("select count(*) from role_permission where role <> 'DIRECTOR' and permission_id = (select id from permission where code = ?)", Long.class, code)).isZero();
 
-        Map<String, Object> change = Map.of("role", "PRECEPTOR", "permissionCode", DECIDE_REQUEST, "granted", true);
+        Map<String, Object> change = Map.of("role", "PRECEPTOR", "permissionCode", code, "granted", true);
         Map<String, Object> request = Map.of("reason", "Delegar la decisión", "sensitiveConfirmed", true, "changes", List.of(change));
         mockMvc.perform(put("/permissions/grid").header("Authorization", "Bearer " + jwtService.generateAccessToken(director)).contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FIXED_TO_DIRECTOR_PERMISSION_NOT_EDITABLE"));
 
-        assertThat(jdbc.queryForObject("select count(*) from role_permission where role = 'PRECEPTOR' and permission_id = (select id from permission where code = ?)", Long.class, DECIDE_REQUEST)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from role_permission where role = 'PRECEPTOR' and permission_id = (select id from permission where code = ?)", Long.class, code)).isZero();
         String catalog = mockMvc.perform(get("/permissions/catalog").header("Authorization", "Bearer " + jwtService.generateAccessToken(director)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        boolean decidePermissionIsFixed = objectMapper.readTree(catalog).get("modules").valueStream()
+        boolean markedAsFixed = objectMapper.readTree(catalog).get("modules").valueStream()
                 .flatMap(module -> module.get("permissions").valueStream())
-                .anyMatch(permission -> DECIDE_REQUEST.equals(permission.get("code").asString()) && permission.get("fixedToDirector").asBoolean());
-        assertThat(decidePermissionIsFixed).isTrue();
+                .anyMatch(permission -> code.equals(permission.get("code").asString()) && permission.get("fixedToDirector").asBoolean());
+        assertThat(markedAsFixed).isTrue();
     }
 }
