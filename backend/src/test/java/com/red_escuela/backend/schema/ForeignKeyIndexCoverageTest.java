@@ -151,6 +151,7 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("institute_setting_change_log.actor_person_id", AUDIT_ACTOR);
         accepted.put("invitation_wave.cancelled_by_person_id", AUDIT_ACTOR);
         accepted.put("invitation_wave.paused_by_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.resumed_by_person_id", AUDIT_ACTOR);
         accepted.put("invitation_wave.started_by_person_id", AUDIT_ACTOR);
         accepted.put("invoice.monthly_invoice_run_id", SERVED_BY_EQUIVALENT_PARTIAL);
         accepted.put("invoice.origin_invoice_id,student_current_account_id", COMPOSITE_CONSISTENCY);

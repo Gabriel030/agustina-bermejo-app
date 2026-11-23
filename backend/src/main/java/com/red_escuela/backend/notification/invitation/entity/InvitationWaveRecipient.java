@@ -1,9 +1,11 @@
 package com.red_escuela.backend.notification.invitation.entity;
 
+import com.red_escuela.backend.notification.invitation.domain.InvitationErrorCode;
 import com.red_escuela.backend.notification.invitation.domain.InvitationExclusionReason;
 import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientEvent;
 import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientStatus;
 import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientStatusStateMachine;
+import com.red_escuela.backend.notification.invitation.exception.InvitationRecipientDeliveryRequiredException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -52,8 +54,9 @@ public class InvitationWaveRecipient {
     @Column(name = "attempts", nullable = false)
     private int attempts = 0;
 
-    @Column(name = "last_error_code", length = 60)
-    private String lastErrorCode;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "last_error_code", length = 40)
+    private InvitationErrorCode lastErrorCode;
 
     @Column(name = "sent_at")
     private Instant sentAt;
@@ -69,6 +72,9 @@ public class InvitationWaveRecipient {
     }
 
     public void queue(Long deliveryId) {
+        if (deliveryId == null) {
+            throw new InvitationRecipientDeliveryRequiredException();
+        }
         status = InvitationRecipientStatusStateMachine.requireTargetStateFor(status, InvitationRecipientEvent.QUEUE);
         this.deliveryId = deliveryId;
         attempts = attempts + 1;
@@ -80,7 +86,7 @@ public class InvitationWaveRecipient {
         sentAt = now;
     }
 
-    public void markFailed(String errorCode) {
+    public void markFailed(InvitationErrorCode errorCode) {
         status = InvitationRecipientStatusStateMachine.requireTargetStateFor(status, InvitationRecipientEvent.MARK_FAILED);
         lastErrorCode = errorCode;
     }

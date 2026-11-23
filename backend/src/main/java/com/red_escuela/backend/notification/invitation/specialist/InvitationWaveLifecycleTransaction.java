@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.invitation.specialist;
 
+import com.red_escuela.backend.notification.invitation.domain.InvitationExclusionReason;
 import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientStatus;
 import com.red_escuela.backend.notification.invitation.dto.InvitationWaveResponse;
 import com.red_escuela.backend.notification.invitation.entity.InvitationWave;
@@ -18,6 +19,7 @@ import java.util.List;
 @Component
 public class InvitationWaveLifecycleTransaction {
 
+    private static final List<InvitationRecipientStatus> RELEASED_ON_CANCEL_STATUSES = List.of(InvitationRecipientStatus.PENDING, InvitationRecipientStatus.QUEUED, InvitationRecipientStatus.FAILED);
     private static final List<InvitationRecipientStatus> OPEN_STATUSES = List.of(InvitationRecipientStatus.PENDING, InvitationRecipientStatus.QUEUED);
 
     private final InvitationWaveRepository waveRepository;
@@ -52,9 +54,9 @@ public class InvitationWaveLifecycleTransaction {
     }
 
     @Transactional
-    public InvitationWaveResponse resumeInvitationWave(Long waveId) {
+    public InvitationWaveResponse resumeInvitationWave(Long waveId, Long actorPersonId) {
         InvitationWave wave = lockWave(waveId);
-        wave.resume();
+        wave.resume(Instant.now(clock), actorPersonId);
         return responseFactory.createWaveResponse(waveRepository.saveAndFlush(wave));
     }
 
@@ -62,6 +64,8 @@ public class InvitationWaveLifecycleTransaction {
     public InvitationWaveResponse cancelInvitationWave(Long waveId, Long actorPersonId) {
         InvitationWave wave = lockWave(waveId);
         wave.cancel(Instant.now(clock), actorPersonId);
+        recipientRepository.findByWaveIdAndStatusIn(waveId, RELEASED_ON_CANCEL_STATUSES)
+                .forEach(recipient -> recipient.exclude(InvitationExclusionReason.WAVE_CANCELLED));
         return responseFactory.createWaveResponse(waveRepository.saveAndFlush(wave));
     }
 

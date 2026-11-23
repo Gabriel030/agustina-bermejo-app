@@ -26,7 +26,7 @@ public class CreateInvitationWaveTransaction {
 
     private static final String OPEN_INVITATION_INDEX = "ux_invitation_wave_recipient_open_person";
     private static final int LOOKUP_CHUNK_SIZE = 500;
-    private static final List<InvitationRecipientStatus> OPEN_STATUSES = List.of(InvitationRecipientStatus.PENDING, InvitationRecipientStatus.QUEUED);
+    private static final List<InvitationRecipientStatus> OPEN_STATUSES = List.of(InvitationRecipientStatus.PENDING, InvitationRecipientStatus.QUEUED, InvitationRecipientStatus.FAILED);
 
     private final InvitationWaveRepository waveRepository;
     private final InvitationWaveRecipientRepository recipientRepository;

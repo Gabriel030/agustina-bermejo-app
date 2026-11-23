@@ -12,6 +12,8 @@ create table invitation_wave (
     started_by_person_id bigint references person (id),
     paused_at timestamptz,
     paused_by_person_id bigint references person (id),
+    resumed_at timestamptz,
+    resumed_by_person_id bigint references person (id),
     completed_at timestamptz,
     cancelled_at timestamptz,
     cancelled_by_person_id bigint references person (id),
@@ -37,16 +39,17 @@ create table invitation_wave_recipient (
     exclusion_reason varchar(20),
     delivery_id bigint,
     attempts integer not null default 0,
-    last_error_code varchar(60),
+    last_error_code varchar(40),
     sent_at timestamptz,
     constraint uq_invitation_wave_recipient unique (wave_id, person_id),
     constraint invitation_wave_recipient_status_enum check (status in ('PENDING', 'QUEUED', 'SENT', 'FAILED', 'ACTIVATED', 'EXCLUDED')),
-    constraint invitation_wave_recipient_exclusion_reason_enum check (exclusion_reason in ('NO_EMAIL', 'ALREADY_ACTIVE', 'NOT_ELIGIBLE', 'IN_OTHER_WAVE')),
+    constraint invitation_wave_recipient_exclusion_reason_enum check (exclusion_reason in ('NO_EMAIL', 'ALREADY_ACTIVE', 'NOT_ELIGIBLE', 'IN_OTHER_WAVE', 'WAVE_CANCELLED')),
     constraint ck_invitation_wave_recipient_reason check ((status = 'EXCLUDED') = (exclusion_reason is not null)),
+    constraint invitation_wave_recipient_last_error_code_enum check (last_error_code in ('PROVIDER_REJECTED', 'PROVIDER_UNAVAILABLE', 'CIRCUIT_OPEN', 'BULKHEAD_FULL', 'TOKEN_ISSUE_FAILED', 'UNKNOWN')),
     constraint ck_invitation_wave_recipient_delivery check (status not in ('QUEUED', 'SENT') or delivery_id is not null),
     constraint ck_invitation_wave_recipient_sent_at check (status <> 'SENT' or sent_at is not null)
 );
 
 create index ix_invitation_wave_recipient_status on invitation_wave_recipient (wave_id, status);
 create index ix_invitation_wave_recipient_person on invitation_wave_recipient (person_id);
-create unique index ux_invitation_wave_recipient_open_person on invitation_wave_recipient (person_id) where status in ('PENDING', 'QUEUED');
+create unique index ux_invitation_wave_recipient_open_person on invitation_wave_recipient (person_id) where status in ('PENDING', 'QUEUED', 'FAILED');

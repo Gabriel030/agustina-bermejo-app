@@ -23,6 +23,8 @@ public interface InvitationWaveRecipientRepository extends JpaRepository<Invitat
 
     Page<InvitationWaveRecipient> findByWaveIdAndStatus(Long waveId, InvitationRecipientStatus status, Pageable pageable);
 
+    List<InvitationWaveRecipient> findByWaveIdAndStatusIn(Long waveId, Collection<InvitationRecipientStatus> statuses);
+
     long countByWaveIdAndStatus(Long waveId, InvitationRecipientStatus status);
 
     long countByWaveIdAndStatusIn(Long waveId, Collection<InvitationRecipientStatus> statuses);

@@ -4,5 +4,5 @@ import com.red_escuela.backend.notification.invitation.dto.InvitationWaveRespons
 
 public interface ResumeInvitationWaveUseCase {
 
-    InvitationWaveResponse resumeInvitationWave(Long waveId);
+    InvitationWaveResponse resumeInvitationWave(Long waveId, Long actorPersonId);
 }

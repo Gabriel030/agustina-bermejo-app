@@ -68,6 +68,12 @@ public class InvitationWave {
     @Column(name = "paused_by_person_id")
     private Long pausedByPersonId;
 
+    @Column(name = "resumed_at")
+    private Instant resumedAt;
+
+    @Column(name = "resumed_by_person_id")
+    private Long resumedByPersonId;
+
     @Column(name = "completed_at")
     private Instant completedAt;
 
@@ -93,8 +99,10 @@ public class InvitationWave {
         pausedByPersonId = actorPersonId;
     }
 
-    public void resume() {
+    public void resume(Instant now, Long actorPersonId) {
         status = InvitationWaveStatusStateMachine.requireTargetStateFor(status, InvitationWaveEvent.RESUME);
+        resumedAt = now;
+        resumedByPersonId = actorPersonId;
     }
 
     public void complete(Instant now) {

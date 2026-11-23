@@ -14,7 +14,7 @@ public class ResumeInvitationWaveService implements ResumeInvitationWaveUseCase 
     }
 
     @Override
-    public InvitationWaveResponse resumeInvitationWave(Long waveId) {
-        return lifecycleTransaction.resumeInvitationWave(waveId);
+    public InvitationWaveResponse resumeInvitationWave(Long waveId, Long actorPersonId) {
+        return lifecycleTransaction.resumeInvitationWave(waveId, actorPersonId);
     }
 }

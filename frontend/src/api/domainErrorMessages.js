@@ -40,6 +40,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   INVITATION_WAVE_NOT_FOUND: 'No encontramos esa oleada de invitaciones.',
   INVITATION_WAVE_INVALID_TRANSITION: 'La oleada ya no está en un estado que permita esa acción.',
   INVITATION_RECIPIENT_INVALID_TRANSITION: 'El destinatario ya no está en un estado que permita esa acción.',
+  INVITATION_RECIPIENT_DELIVERY_REQUIRED: 'No se pudo poner el destinatario en cola porque falta el envío asociado.',
   INVITATION_WAVE_WITHOUT_RECIPIENTS: 'La oleada no tiene destinatarios pendientes para iniciar.',
   INVITATION_WAVE_HAS_OPEN_RECIPIENTS: 'La oleada todavía tiene destinatarios pendientes o en cola.',
   INVITATION_PERSON_ALREADY_INVITED: 'Alguna persona ya está pendiente de invitación en otra oleada. Volvé a armar la oleada.',

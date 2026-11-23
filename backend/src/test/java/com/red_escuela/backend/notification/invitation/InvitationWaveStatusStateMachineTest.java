@@ -92,10 +92,11 @@ class InvitationWaveStatusStateMachineTest {
         InvitationWave wave = InvitationWave.builder().status(RUNNING).build();
 
         wave.pause(NOW, 8L);
-        wave.resume();
+        wave.resume(NOW, 10L);
 
         assertThat(wave.getStatus()).isEqualTo(RUNNING);
         assertThat(wave.getPausedAt()).isEqualTo(NOW);
+        assertThat(wave.getResumedByPersonId()).isEqualTo(10L);
         assertThat(wave.getPausedByPersonId()).isEqualTo(8L);
     }
 

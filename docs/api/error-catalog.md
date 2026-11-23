@@ -180,6 +180,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_TERM_DATES` | no | `InvalidTermDatesException` | academicstructure |
 | `INVALID_WINDOW_CONFIGURATION` | no | `InvalidWindowConfigurationException` | enrollment |
 | `INVALID_YEAR_BILLING_CONFIGURATION` | no | `InvalidYearBillingConfigurationException` | billing |
+| `INVITATION_RECIPIENT_DELIVERY_REQUIRED` | no | `InvitationRecipientDeliveryRequiredException` | notification |
 | `LEGACY_RECEIPT_HAS_NO_VERIFIABLE_PAYMENT` | no | `LegacyReceiptHasNoVerifiablePaymentException` | billing |
 | `LEGAL_ACCEPTANCE_REQUIRED` | no | `LegalAcceptanceRequiredException` | identity |
 | `MAX_EXAM_ATTEMPTS_EXCEEDED` | no | `MaxExamAttemptsExceededException` | evaluation |
