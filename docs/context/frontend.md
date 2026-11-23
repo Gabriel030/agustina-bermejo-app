@@ -123,12 +123,27 @@ El front se organiza por módulo de backend, no por rol:
 - Un módulo expone a los demás solo lo que sale de su `index.js`.
 
 Regla de límites (ESLint, `no-restricted-imports`, en `warn` hasta M6): una feature no importa
-de otra salvo por su `index.js`, y `components/`, `lib/` y `layouts/` no importan de `features/`.
+de otra salvo por su `index.js`, y `components/` y `lib/` no importan de `features/`. La lista
+`FEATURES` de `eslint.config.js` cubre las 18 carpetas de `src/features/`.
 
-Estado de la regla (F0): hay 7 warnings de límites, ninguno por features cruzadas por fuera de
-`index.js` salvo `billing/dashboard/FinancialDashboardPage` (2), `components/TopHeader` (2),
-`layouts/RoleShell` (1) y 2 tests de workspace; `eslint .` termina con 0 errores y el CI no usa
-`--max-warnings`, así que no cortan. Cada feature tiene `routes.jsx`, `pages/`, `components/` y
+Política layouts/shell → features: `layouts/**` y `components/TopHeader.jsx` (la cabecera, que es
+el único archivo de shell en `components/`) pueden importar de `features/<módulo>` solo a través
+del `index.js` del módulo (`@/features/<módulo>`), nunca de rutas profundas. Por eso
+`features/identity/index.js` exporta `usePerfilPropio`, `useAvatar` y `LegalNoticeBanner`, y
+`TopHeader` y `RoleShell` importan de ahí. El resto de `components/` y `lib/` sigue sin poder
+importar de `features/`.
+
+Estado de la regla (F0, PR "límites" de E18 F1): antes había 12 warnings en `eslint .` (7 de
+límites y 5 de `react-hooks/incompatible-library` y `exhaustive-deps`, fuera de esta regla); ahora
+hay 0 de límites y 5 warnings en total, todos de `react-hooks` (`DataTable`, `InscripcionWizard`,
+`GradeGridTable`, `AlumnoPagarOnline`, `AlumnoPagos`). `eslint .` termina con 0 errores y el CI no
+usa `--max-warnings`, así que la regla sigue en `warn`. Los cruces que quedaban se reescribieron a
+los `index.js` de la feature dueña: `billing/dashboard/FinancialDashboardPage`, `broadcasts`,
+`institution`, los tests de `workspace` (`AlumnoInicio` y `pilotScreens.a11y`) y `TopHeader` /
+`RoleShell`. Se exportaron desde `academic-structure/index.js` (`useSubjects`,
+`useUnsavedChangesGuard`) e `identity/index.js`, y se creó `audit/index.js`. Un ciclo que ya
+existía (`enrollment/index.js` ↔ `InscripcionMaterias.jsx` ↔ `useMateriasDelPlan.js`) no cambió.
+Cada feature tiene `routes.jsx`, `pages/`, `components/` y
 `hooks/` (las carpetas vacías llevan `.gitkeep`); `api.js` se crea cuando el módulo tenga llamadas
 propias. Mover las páginas que siguen en `src/pages/` (F1 de billing) se coordina con líder-3 por
 las listas de paths de `eslint-rules/` y de los guards (`noStickyBottomOutsideActionBar`).
