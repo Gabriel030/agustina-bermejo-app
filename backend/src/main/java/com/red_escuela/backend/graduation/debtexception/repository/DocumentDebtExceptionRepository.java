@@ -5,6 +5,7 @@ import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus;
 import com.red_escuela.backend.graduation.debtexception.entity.DocumentDebtException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -44,4 +45,7 @@ public interface DocumentDebtExceptionRepository
             + " e.version = e.version + 1 where e.id = :id"
             + " and e.status = com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus.ACTIVE and e.expiresAt <= :now")
     int markExpiredIfDue(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    @Query("select e.status as status, e.expiresAt as expiresAt from DocumentDebtException e where e.id = :id")
+    Optional<DebtExceptionState> findStateById(@Param("id") Long id);
 }
