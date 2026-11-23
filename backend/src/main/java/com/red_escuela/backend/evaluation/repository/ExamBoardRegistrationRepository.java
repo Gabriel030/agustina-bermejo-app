@@ -62,4 +62,22 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
 
     List<ExamBoardRegistration> findByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatus(
             Long programEnrollmentId, Long subjectId, ExamBoardRegistrationStatus status);
+
+    @Query("""
+            select r from ExamBoardRegistration r join fetch r.examBoard b join fetch b.subject
+            join fetch r.programSubjectSectionEnrollment e join fetch e.programEnrollment pe join fetch pe.program
+            where e.student.id = :studentId and r.status = com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus.REGISTERED
+              and b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED and b.examDate >= :notBefore
+            """)
+    List<ExamBoardRegistration> findActiveProgramRegistrationsOfStudentFrom(@Param("studentId") Long studentId,
+                                                                            @Param("notBefore") LocalDateTime notBefore);
+
+    @Query("""
+            select r from ExamBoardRegistration r join fetch r.examBoard b join fetch b.courseSubject cs join fetch cs.course
+            join fetch r.courseSubjectSectionEnrollment e
+            where e.student.id = :studentId and r.status = com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus.REGISTERED
+              and b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED and b.examDate >= :notBefore
+            """)
+    List<ExamBoardRegistration> findActiveCourseRegistrationsOfStudentFrom(@Param("studentId") Long studentId,
+                                                                           @Param("notBefore") LocalDateTime notBefore);
 }

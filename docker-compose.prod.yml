@@ -69,6 +69,7 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
         APP_VERSION: ${APP_VERSION:-}
     image: ${FRONTEND_IMAGE:-agustina-bermejo-frontend:${APP_VERSION:-local}}
     restart: unless-stopped

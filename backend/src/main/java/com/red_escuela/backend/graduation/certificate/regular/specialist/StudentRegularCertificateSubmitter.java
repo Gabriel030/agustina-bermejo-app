@@ -36,6 +36,6 @@ public class StudentRegularCertificateSubmitter {
             throw new RequestRateLimitExceededException(decision.retryAfter());
         }
         return issuer.submitFromPortal(new IssueRegularCertificateCommand(kind, enrollmentId, false, null,
-                RegularCertificateChannel.STUDENT_PORTAL, null));
+                RegularCertificateChannel.STUDENT_PORTAL, null, null));
     }
 }

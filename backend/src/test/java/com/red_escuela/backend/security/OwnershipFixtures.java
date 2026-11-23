@@ -85,6 +85,7 @@ final class OwnershipFixtures {
     private Long sectionId;
     private Long attendanceId;
     private Long announcementId;
+    private Long announcementToDeleteId;
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
@@ -134,6 +135,7 @@ final class OwnershipFixtures {
             case AUTHORIZATION_REQUEST -> authorizationRequestId;
             case ATTENDANCE_STUDENT -> attendanceId;
             case ANNOUNCEMENT_INSTRUCTOR -> announcementId;
+            case ANNOUNCEMENT_DELETE_INSTRUCTOR -> announcementToDeleteId;
             case CERTIFICATE_EXCEPTION -> certificateExceptionId;
         };
     }
@@ -282,6 +284,7 @@ final class OwnershipFixtures {
         closureObservationEnrollmentId = persistClosureEnrollment(ownerStudent, programEnrollment, closureObservationSectionId);
         authorizationRequestId = persistAuthorizationRequest(ownerAdministrativePerson);
         announcementId = persistAnnouncement(section, instructorPerson);
+        announcementToDeleteId = persistAnnouncement(section, instructorPerson);
         certificateExceptionId = persistCertificateException(ownerAdministrativePerson, ownerStudent, programEnrollment);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term, instructor);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);

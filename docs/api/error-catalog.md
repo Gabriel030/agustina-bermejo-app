@@ -405,6 +405,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CASH_PAYMENT_PREVIEW_OUTDATED` | no | `CashPaymentPreviewOutdatedException` | billing |
 | `CERTIFICATE_EXCEPTION_ALREADY_OPEN` | no | `CertificateExceptionAlreadyOpenException` | graduation |
 | `CERTIFICATE_EXPIRED` | no | `CertificateExpiredException` | graduation |
+| `CERTIFICATE_PDF_INTEGRITY_MISMATCH` | no | `CertificatePdfIntegrityMismatchException` | graduation |
 | `CERTIFICATE_REVOKED` | no | `CertificateRevokedException` | graduation |
 | `CHANNEL_NOT_AVAILABLE` | no | `ChannelNotAvailableException` | notification |
 | `CHANNEL_NOT_ENABLED` | no | `ChannelNotEnabledException` | notification |
@@ -490,6 +491,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADUATION_CERTIFICATE_NOT_AVAILABLE` | no | `GraduationCertificateNotAvailableException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_REVOCABLE` | no | `GraduationCertificateNotRevocableException` | graduation |
+| `GRADUATION_CERTIFICATE_REVIEW_REQUIRED` | no | `GraduationCertificateReviewRequiredException` | graduation |
 | `GRADUATION_CERTIFICATE_REVOKED` | no | `GraduationCertificateRevokedException` | graduation |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
@@ -535,14 +537,17 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_ATTENDANCE_CHANGE_REQUEST_STATE` | no | `InvalidAttendanceChangeRequestStateException` | attendance |
 | `INVALID_BILLING_MODE_TRANSITION` | no | `InvalidBillingModeTransitionException` | platform |
 | `INVALID_DIRECTOR_APPROVAL_REQUEST_STATE` | no | `InvalidDirectorApprovalRequestStateException` | enrollment |
+| `INVALID_GRADUATION_CERTIFICATE_REVIEW_DECISION` | no | `InvalidGraduationCertificateReviewDecisionException` | graduation |
 | `INVALID_GRADUATION_REQUEST_STATE` | no | `InvalidGraduationRequestStateException` | graduation |
 | `INVALID_PAYMENT_RECEIPT_STATE` | no | `InvalidPaymentReceiptStateException` | billing |
 | `INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE` | no | `InvalidProgramEnrollmentApplicationStateException` | enrollment |
 | `INVALID_TRANSITION_CONFIRMATION` | no | `InvalidTransitionConfirmationException` | platform |
 | `INVITATION_PERSON_ALREADY_INVITED` | no | `InvitationPersonAlreadyInvitedException` | notification |
 | `INVITATION_RECIPIENT_INVALID_TRANSITION` | no | `InvitationRecipientInvalidTransitionException` | notification |
+| `INVITATION_SEND_DEFERRED` | no | `InvitationSendDeferredException` | notification |
 | `INVITATION_WAVE_HAS_OPEN_RECIPIENTS` | no | `InvitationWaveHasOpenRecipientsException` | notification |
 | `INVITATION_WAVE_INVALID_TRANSITION` | no | `InvitationWaveInvalidTransitionException` | notification |
+| `INVITATION_WAVE_NOT_RUNNING` | no | `InvitationWaveNotRunningException` | notification |
 | `INVITATION_WAVE_TOO_MANY_RECIPIENTS` | no | `InvitationWaveTooManyRecipientsException` | notification |
 | `INVITATION_WAVE_WITHOUT_RECIPIENTS` | no | `InvitationWaveWithoutRecipientsException` | notification |
 | `INVOICE_ALREADY_ATTACHED` | no | `InvoiceAlreadyAttachedException` | billing |
@@ -886,6 +891,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/exam-certificates/{id}/revoke` | `ExamCertificateController#revoke` |
 | POST | `/grade-items/{id}/corrections` | `GradeCorrectionController#correctPublishedGrade` |
 | POST | `/grade-items/{id}/recovery` | `ExamRecoveryController#recordExamRecovery` |
+| POST | `/graduation-certificate-reviews/batch` | `GraduationCertificateReviewController#decideBatch` |
+| POST | `/graduation-certificate-reviews/{graduationRequestId}/disable` | `GraduationCertificateReviewController#disable` |
+| POST | `/graduation-certificate-reviews/{graduationRequestId}/enable` | `GraduationCertificateReviewController#enable` |
 | POST | `/graduation-certificates` | `GraduationCertificateController#issue` |
 | POST | `/graduation-certificates/batch` | `GraduationCertificateController#issueBatch` |
 | POST | `/graduation-certificates/preview` | `GraduationCertificateController#preview` |
