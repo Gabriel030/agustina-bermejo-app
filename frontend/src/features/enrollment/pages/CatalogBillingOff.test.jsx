@@ -6,7 +6,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { DetalleCarrera } from '@/features/enrollment/pages/DetalleCarrera';
 import { DetalleCurso } from '@/features/enrollment/pages/DetalleCurso';
-import { BankAccountDetails } from '@/components/catalogo/BankAccountDetails';
+import { BankAccountDetails } from '../components/BankAccountDetails';
 
 const API = 'http://localhost:8080';
 

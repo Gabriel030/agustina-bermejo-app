@@ -33,6 +33,24 @@ export function eligibleGraduate(overrides = {}) {
   };
 }
 
+export function graduationCertificateReview(overrides = {}) {
+  return {
+    graduationRequestId: 31,
+    enrollmentId: 11,
+    studentId: 21,
+    studentFullName: 'Gómez, Tomás',
+    documentNumber: '41003221',
+    titleName: 'Tecnicatura en Administración',
+    registryNumber: null,
+    legacyTitleNumber: '1234',
+    reviewStatus: 'PENDING_REVIEW',
+    reviewedById: null,
+    reviewedByName: null,
+    reviewedAt: null,
+    ...overrides,
+  };
+}
+
 export function graduationCertificateSummary(overrides = {}) {
   return {
     id: 101,

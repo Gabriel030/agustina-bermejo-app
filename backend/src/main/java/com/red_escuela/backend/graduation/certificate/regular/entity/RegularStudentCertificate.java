@@ -106,6 +106,9 @@ public class RegularStudentCertificate {
     @Column(name = "pdf_sha256", nullable = false, length = 64)
     private String pdfSha256;
 
+    @Column(name = "render_engine_version", length = 20, updatable = false)
+    private String renderEngineVersion;
+
     @Column(name = "pdf_path", nullable = false, length = 300)
     private String pdfPath;
 
@@ -137,6 +140,10 @@ public class RegularStudentCertificate {
         this.revokedAt = now;
         this.revokedById = directorId;
         this.revocationReason = reason;
+    }
+
+    public boolean isPdfRegenerationVerifiable() {
+        return renderEngineVersion != null;
     }
 
     public void replacePdf(String newSha256, String newPath) {

@@ -29,6 +29,8 @@ import com.red_escuela.backend.graduation.certificate.regular.specialist.Regular
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularStandingGate.StandingResolution;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
+import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.events.RegularCertificateIssuedEvent;
 import com.red_escuela.backend.graduation.events.RegularCertificateRequestFulfilledEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
@@ -67,6 +69,7 @@ public class RegularCertificateIssuer {
     private final Clock clock;
     private final RegularCertificateSettingsFinder settingsFinder;
     private final CertificateExceptionConsumer exceptionConsumer;
+    private final VerifiableDocumentRegistry verifiableDocumentRegistry;
     private final SecureRandom random = new SecureRandom();
 
     public RegularCertificateIssuer(RegularStudentCertificateRepository certificateRepository,
@@ -78,7 +81,8 @@ public class RegularCertificateIssuer {
                                     CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher,
                                     MeterRegistry meterRegistry, Clock clock,
                                     RegularCertificateSettingsFinder settingsFinder,
-                                    CertificateExceptionConsumer exceptionConsumer) {
+                                    CertificateExceptionConsumer exceptionConsumer,
+                                    VerifiableDocumentRegistry verifiableDocumentRegistry) {
         this.certificateRepository = certificateRepository;
         this.requestRepository = requestRepository;
         this.regularityEvaluator = regularityEvaluator;
@@ -95,27 +99,40 @@ public class RegularCertificateIssuer {
         this.clock = clock;
         this.settingsFinder = settingsFinder;
         this.exceptionConsumer = exceptionConsumer;
+        this.verifiableDocumentRegistry = verifiableDocumentRegistry;
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
             StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class,
             StandingEvidenceRequiredException.class, NoDebtToExceptException.class})
     public RegularCertificateResponse issue(IssueRegularCertificateCommand command) {
-        LocalDateTime now = LocalDateTime.now(clock);
-        RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
-        requireDocument(facts);
-        Long studentId = facts.student().getId();
-        Long actorId = currentActorFinder.currentPersonId();
-        rejectIfStillValid(command, studentId, actorId, now);
-        requireRegular(command, studentId, actorId, now);
-        StandingResolution standing = resolveStanding(command, studentId, actorId, now);
-        return create(command, facts, standing, actorId, now);
+        IssuanceContext context = prepare(command);
+        StandingResolution standing = resolveStanding(command, context.studentId(), context.actorId(), context.now());
+        return create(command, context.facts(), standing, context.actorId(), context.now());
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
             StudentHasDebtException.class, StandingNotConfirmedException.class, StandingEvidenceInvalidException.class,
             StandingEvidenceRequiredException.class, NoDebtToExceptException.class})
     public RegularCertificateSubmissionResponse submitFromPortal(IssueRegularCertificateCommand command) {
+        IssuanceContext context = prepare(command);
+        if (standingGate.requiresStaffConfirmation()) {
+            return RegularCertificateSubmissionResponse.pending(RegularRequestResponses.of(
+                    pendingRequestOf(command, context.studentId(), context.actorId(), context.now()), context.facts()));
+        }
+        StandingResolution standing = resolveStanding(command, context.studentId(), context.actorId(), context.now());
+        return RegularCertificateSubmissionResponse.issued(create(command, context.facts(), standing, context.actorId(), context.now()));
+    }
+
+    @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
+            StudentHasDebtException.class, StandingNotConfirmedException.class})
+    public RegularCertificateResponse issueToSelf(IssueRegularCertificateCommand command) {
+        IssuanceContext context = prepare(command);
+        StandingResolution standing = resolveSelfIssueStanding(command, context.studentId(), context.actorId(), context.now());
+        return create(command, context.facts(), standing, context.actorId(), context.now());
+    }
+
+    private IssuanceContext prepare(IssueRegularCertificateCommand command) {
         LocalDateTime now = LocalDateTime.now(clock);
         RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
         requireDocument(facts);
@@ -123,12 +140,20 @@ public class RegularCertificateIssuer {
         Long actorId = currentActorFinder.currentPersonId();
         rejectIfStillValid(command, studentId, actorId, now);
         requireRegular(command, studentId, actorId, now);
-        if (standingGate.requiresStaffConfirmation()) {
-            return RegularCertificateSubmissionResponse.pending(RegularRequestResponses.of(
-                    pendingRequestOf(command, studentId, actorId, now), facts));
+        return new IssuanceContext(facts, studentId, actorId, now);
+    }
+
+    private record IssuanceContext(RegularEnrollmentFacts facts, Long studentId, Long actorId, LocalDateTime now) {
+    }
+
+    private StandingResolution resolveSelfIssueStanding(IssueRegularCertificateCommand command, Long studentId, Long actorId,
+                                                        LocalDateTime now) {
+        try {
+            return standingGate.resolveForSelfIssue(studentId, command.kind(), command.enrollmentId());
+        } catch (StudentHasDebtException e) {
+            recordRequest(command, studentId, actorId, now, RegularRequestOutcome.REJECTED, List.of(reasonCodeOf(e)));
+            throw e;
         }
-        StandingResolution standing = resolveStanding(command, studentId, actorId, now);
-        return RegularCertificateSubmissionResponse.issued(create(command, facts, standing, actorId, now));
     }
 
     private void requireDocument(RegularEnrollmentFacts facts) {
@@ -208,7 +233,7 @@ public class RegularCertificateIssuer {
                                               StandingResolution standing, Long actorId, LocalDateTime now) {
         Long studentId = facts.student().getId();
         CertificateCode code = newUniqueCode();
-        CertificateSnapshot snapshot = template.snapshotOf(facts, now.toLocalDate());
+        CertificateSnapshot snapshot = template.snapshotOf(facts, now.toLocalDate()).withRecipientLabel(command.recipientLabel());
         ValidityDays validityDays = settingsFinder.current().validityDays();
         LocalDateTime expiresAt = now.plusDays(validityDays.value());
         String url = verificationUrl.of(code);
@@ -240,8 +265,10 @@ public class RegularCertificateIssuer {
                     .snapshot(snapshot)
                     .templateRef(snapshot.templateRef())
                     .pdfSha256(digest.sha256(pdf))
+                    .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .pdfPath(path)
                     .build());
+            verifiableDocumentRegistry.register(CertificateDocumentType.REGULAR_STUDENT_CERTIFICATE, saved.getId(), code);
             consumeExceptionIfPresent(command, saved, studentId, actorId, path);
             request.linkCertificate(saved.getId());
             pending.ifPresent(open -> open.resolveAsIssued(saved.getId()));

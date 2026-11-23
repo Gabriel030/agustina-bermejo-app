@@ -16,7 +16,7 @@ import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras'
 import { AlumnoMateriaDetalle } from '@/features/workspace/pages/AlumnoMateriaDetalle';
 import { AlumnoCalendario } from '@/features/workspace/pages/AlumnoCalendario';
 import { DirectorInicio } from '@/features/workspace/pages/StaffHome';
-import { AuditLogPage } from '@/features/audit/pages/AuditLogPage';
+import { AuditLogPage } from '@/features/audit';
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { nombre: 'Ana', apellido: 'Pérez', roles: ['DIRECTOR'] } }),

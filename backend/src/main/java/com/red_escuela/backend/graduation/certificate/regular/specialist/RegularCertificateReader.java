@@ -2,12 +2,15 @@ package com.red_escuela.backend.graduation.certificate.regular.specialist;
 
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateRequestResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
+import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionApproval;
+import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequestOutcome;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateNotFoundException;
+import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
@@ -18,13 +21,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class RegularCertificateReader {
 
+    private static final List<CertificateExceptionStatus> OPEN_STATUSES = List.of(CertificateExceptionStatus.PENDING, CertificateExceptionStatus.APPROVED);
+
     private final RegularStudentCertificateRepository certificateRepository;
+    private final CertificateExceptionApprovalRepository exceptionRepository;
+    private final RegularDebtFactsReader debtFactsReader;
     private final RegularCertificateRequestRepository requestRepository;
     private final CertificateVerificationUrl verificationUrl;
     private final PersonNameFinder personNameFinder;
@@ -32,10 +40,13 @@ public class RegularCertificateReader {
     private final Clock clock;
 
     public RegularCertificateReader(RegularStudentCertificateRepository certificateRepository,
+                                    CertificateExceptionApprovalRepository exceptionRepository, RegularDebtFactsReader debtFactsReader,
                                     RegularCertificateRequestRepository requestRepository,
                                     CertificateVerificationUrl verificationUrl, PersonNameFinder personNameFinder,
                                     EnrollmentNameFinder enrollmentNameFinder, Clock clock) {
         this.certificateRepository = certificateRepository;
+        this.exceptionRepository = exceptionRepository;
+        this.debtFactsReader = debtFactsReader;
         this.requestRepository = requestRepository;
         this.verificationUrl = verificationUrl;
         this.personNameFinder = personNameFinder;
@@ -65,8 +76,14 @@ public class RegularCertificateReader {
                 enrollmentIdsOf(requests, RegularityKind.PROGRAM));
         Map<Long, String> courseNames = enrollmentNameFinder.findCourseNamesByCourseEnrollmentId(
                 enrollmentIdsOf(requests, RegularityKind.COURSE));
+        Map<Long, RegularDebtFacts> debtByStudent = debtFactsReader.factsOf(
+                requests.stream().map(RegularCertificateRequest::getStudentId).distinct().toList());
+        boolean tracksDebt = debtFactsReader.tracksDebt();
+        Map<String, CertificateExceptionApproval> openExceptions = openExceptionsOf(requests);
         return requests.stream().map(request -> RegularRequestResponses.of(request, studentNames.get(request.getStudentId()),
-                (request.getKind() == RegularityKind.PROGRAM ? programNames : courseNames).get(request.enrollmentId()))).toList();
+                (request.getKind() == RegularityKind.PROGRAM ? programNames : courseNames).get(request.enrollmentId()),
+                tracksDebt ? debtByStudent.get(request.getStudentId()) : null,
+                openExceptions.get(request.getKind() + ":" + request.enrollmentId()))).toList();
     }
 
     @Transactional(readOnly = true)
@@ -76,6 +93,21 @@ public class RegularCertificateReader {
                 ? certificateRepository.findTop50ByProgramEnrollmentIdOrderByIssuedAtDesc(enrollmentId)
                 : certificateRepository.findTop50ByCourseEnrollmentIdOrderByIssuedAtDesc(enrollmentId);
         return responsesOf(certificates, now);
+    }
+
+    private Map<String, CertificateExceptionApproval> openExceptionsOf(List<RegularCertificateRequest> requests) {
+        Map<String, CertificateExceptionApproval> openExceptions = new HashMap<>();
+        List<Long> programIds = enrollmentIdsOf(requests, RegularityKind.PROGRAM);
+        List<Long> courseIds = enrollmentIdsOf(requests, RegularityKind.COURSE);
+        if (!programIds.isEmpty()) {
+            exceptionRepository.findByProgramEnrollmentIdInAndStatusIn(programIds, OPEN_STATUSES)
+                    .forEach(exception -> openExceptions.put(RegularityKind.PROGRAM + ":" + exception.enrollmentId(), exception));
+        }
+        if (!courseIds.isEmpty()) {
+            exceptionRepository.findByCourseEnrollmentIdInAndStatusIn(courseIds, OPEN_STATUSES)
+                    .forEach(exception -> openExceptions.put(RegularityKind.COURSE + ":" + exception.enrollmentId(), exception));
+        }
+        return openExceptions;
     }
 
     private List<Long> enrollmentIdsOf(List<RegularCertificateRequest> requests, RegularityKind kind) {

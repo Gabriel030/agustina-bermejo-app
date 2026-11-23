@@ -1,0 +1,21 @@
+package com.red_escuela.backend.enrollment.service;
+
+import com.red_escuela.backend.shared.module.CourseEnrollmentNonpaymentWithdrawalPort;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+
+@Component
+public class CourseEnrollmentNonpaymentWithdrawalPortAdapter implements CourseEnrollmentNonpaymentWithdrawalPort {
+
+    private final CourseEnrollmentService courseEnrollmentService;
+
+    public CourseEnrollmentNonpaymentWithdrawalPortAdapter(CourseEnrollmentService courseEnrollmentService) {
+        this.courseEnrollmentService = courseEnrollmentService;
+    }
+
+    @Override
+    public void withdrawForNonpayment(Long courseEnrollmentId, LocalDate effectiveDate) {
+        courseEnrollmentService.withdrawForNonpayment(courseEnrollmentId, effectiveDate);
+    }
+}

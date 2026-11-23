@@ -61,6 +61,7 @@ Editar `deploy/.env`. Las que no se pueden dejar con el valor de ejemplo:
 | `JWT_SECRET` | `openssl rand -base64 48 \| tr -d '\n'` |
 | `BROADCAST_UNSUBSCRIBE_SECRET` | `openssl rand -base64 48 \| tr -d '\n'`, distinta de `JWT_SECRET`; sin ella el backend no arranca en prod ni en staging |
 | `BREVO_SMTP_USERNAME`, `BREVO_SMTP_KEY`, `MAIL_FROM_ADDRESS` | Los de Brevo |
+| `RESILIENCE_ENABLED` | Opcional. Circuit breakers y bulkheads de las integraciones externas; en `prod` y staging es `true` por defecto. Poner `false` solo para apagarlos ante un incidente. Límites en `docs/context/overload-protection.md` |
 | `GOOGLE_OAUTH_CLIENT_ID` y `VITE_GOOGLE_CLIENT_ID` | El mismo Client ID en las dos |
 
 Después:

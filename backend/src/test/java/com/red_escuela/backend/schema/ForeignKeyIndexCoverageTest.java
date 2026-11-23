@@ -62,6 +62,7 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("academic_offering_cycle.submitted_by", AUDIT_ACTOR);
         accepted.put("announcement.created_by_id", AUDIT_ACTOR);
         accepted.put("annual_upfront_request.accepted_by_person_id", AUDIT_ACTOR);
+        accepted.put("annual_upfront_request.payment_id", PENDING_USAGE_REVIEW);
         accepted.put("annual_upfront_request.lective_year_term_id", REACHED_BY_JOIN_NOT_EVALUATED);
         accepted.put("annual_upfront_request.requested_by_person_id", AUDIT_ACTOR);
         accepted.put("annual_upfront_terms_version.published_by_person_id", AUDIT_ACTOR);
@@ -148,6 +149,10 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("import_batch_event.actor_person_id", AUDIT_ACTOR);
         accepted.put("institute_setting.updated_by_id", AUDIT_ACTOR);
         accepted.put("institute_setting_change_log.actor_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.cancelled_by_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.paused_by_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.resumed_by_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.started_by_person_id", AUDIT_ACTOR);
         accepted.put("invoice.monthly_invoice_run_id", SERVED_BY_EQUIVALENT_PARTIAL);
         accepted.put("invoice.origin_invoice_id,student_current_account_id", COMPOSITE_CONSISTENCY);
         accepted.put("invoice.student_current_account_id,currency", COMPOSITE_CONSISTENCY);
@@ -208,6 +213,8 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("regular_certificate_request.certificate_id", PENDING_USAGE_REVIEW);
         accepted.put("regular_certificate_request.requested_by_id", AUDIT_ACTOR);
         accepted.put("regular_certificate_request.resolved_by_id", AUDIT_ACTOR);
+        accepted.put("exam_certificate.issued_by_id", AUDIT_ACTOR);
+        accepted.put("exam_certificate.revoked_by_id", AUDIT_ACTOR);
         accepted.put("regular_student_certificate.issued_by_id", AUDIT_ACTOR);
         accepted.put("regular_student_certificate.request_id", PENDING_USAGE_REVIEW);
         accepted.put("regular_student_certificate.revoked_by_id", AUDIT_ACTOR);

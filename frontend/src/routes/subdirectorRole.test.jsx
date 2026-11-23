@@ -17,6 +17,9 @@ function sessionWithRoles(roles) {
   auth = { usuario: { id: 9, roles }, roles };
 }
 
+const DENIED_TO_SUBDIRECTOR = 'constancias-por-excepcion';
+const DENIED_LABEL = 'Emitir por excepción';
+
 function labelsOf(role) {
   return menuItemsFor(role).map((item) => item.label);
 }
@@ -41,12 +44,22 @@ beforeEach(() => {
 
 describe('SUBDIRECTOR inherits ADMINISTRATIVO', () => {
   it('shows the same menu as administrativo plus Roles y permisos', () => {
-    expect(labelsOf('subdirector')).toEqual([...labelsOf('administrativo'), 'Roles y permisos']);
+    expect(labelsOf('subdirector')).toEqual([...labelsOf('administrativo').filter((label) => label !== DENIED_LABEL), 'Roles y permisos']);
+  });
+
+  it('keeps Emitir por excepción out of the subdirector menu, routes and pages', () => {
+    expect(labelsOf('administrativo')).toContain(DENIED_LABEL);
+    expect(labelsOf('director')).toContain(DENIED_LABEL);
+    expect(labelsOf('subdirector')).not.toContain(DENIED_LABEL);
+    expect(roleRoutesFor('administrativo').map((route) => route.path)).toContain(DENIED_TO_SUBDIRECTOR);
+    expect(roleRoutesFor('director').map((route) => route.path)).toContain(DENIED_TO_SUBDIRECTOR);
+    expect(roleRoutesFor('subdirector').map((route) => route.path)).not.toContain(DENIED_TO_SUBDIRECTOR);
+    expect(pagesFor('subdirector')).not.toContain(DENIED_TO_SUBDIRECTOR);
   });
 
   it('gets every screen that administrativo gets, and the permissions screen', () => {
     const subdirectorPaths = roleRoutesFor('subdirector').map((route) => route.path);
-    const administrativoPaths = roleRoutesFor('administrativo').map((route) => route.path);
+    const administrativoPaths = roleRoutesFor('administrativo').map((route) => route.path).filter((path) => path !== DENIED_TO_SUBDIRECTOR && path !== 'constancias/excepciones/:id');
     expect(subdirectorPaths).toEqual(expect.arrayContaining(administrativoPaths));
     expect(subdirectorPaths).toContain('permisos');
   });
@@ -56,7 +69,7 @@ describe('SUBDIRECTOR inherits ADMINISTRATIVO', () => {
   });
 
   it('keeps the subdirector pages in the layout pages list', () => {
-    expect(pagesFor('subdirector')).toEqual(expect.arrayContaining(pagesFor('administrativo')));
+    expect(pagesFor('subdirector')).toEqual(expect.arrayContaining(pagesFor('administrativo').filter((slug) => slug !== DENIED_TO_SUBDIRECTOR)));
   });
 
   it('sends a subdirector who opens an administrativo link to the same screen under /subdirector', () => {

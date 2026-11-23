@@ -5,11 +5,11 @@ const sources = import.meta.glob('/src/**/*.{js,jsx}', { query: '?raw', import: 
 const EXEMPT_PATHS = [/^\/src\/components\/ui\//, /^\/src\/test\//, /\.test\.jsx?$/];
 
 const MONEY_MONO_ALLOWED = [
-  '/src/components/catalogo/BankAccountDetails.jsx',
+  '/src/features/enrollment/components/BankAccountDetails.jsx',
   '/src/features/identity/pages/PadronAlumnos.jsx',
   '/src/features/identity/pages/GestionPersonal.jsx',
   '/src/features/evaluation/components/ClosurePrerequisitesSheet.jsx',
-  '/src/pages/AlumnoPagarTransferencia.jsx',
+  '/src/features/billing/pages/AlumnoPagarTransferencia.jsx',
   '/src/features/backups/components/BackupRestoreAndDisk.jsx',
   '/src/features/backups/components/BackupTiersTable.jsx',
   '/src/features/backups/components/BackupWhatIsBackedUp.jsx',
@@ -17,13 +17,13 @@ const MONEY_MONO_ALLOWED = [
 ];
 
 const MONEY_MONO_PENDING = [
-  '/src/components/alumno/InvoiceSummary.jsx',
-  '/src/components/alumno/AmountBreakdown.jsx',
+  '/src/features/billing/components/InvoiceSummary.jsx',
+  '/src/features/billing/components/AmountBreakdown.jsx',
 ];
 
 const ARBITRARY_RADIUS_PENDING = [
   '/src/components/InstitutionBrand.jsx',
-  '/src/components/MonthPicker.jsx',
+  '/src/features/billing/components/MonthPicker.jsx',
   '/src/components/MobileMenu.jsx',
   '/src/components/Sidebar.jsx',
   '/src/features/evaluation/pages/PreceptorMesaExamen.jsx',

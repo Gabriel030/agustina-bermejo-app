@@ -7,6 +7,7 @@ export {
   useMiProgreso,
   useMiInscripcion,
   useDarmeDeBajaDeMateria,
+  useChangeMySection,
 } from './hooks/useStudentEnrollment';
 export { useCurriculumProgress, useGraduationProjection } from './hooks/useCurriculumProgress';
 export { useProgresoStaff } from './hooks/useProgramProgress';

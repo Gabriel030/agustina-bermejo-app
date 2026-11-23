@@ -60,6 +60,7 @@ describe('DirectorAprobaciones', () => {
 
   it('links the cards, the section headers and the preview rows to their destinations', async () => {
     server.use(
+      http.get(`${API}/certificate-exceptions`, () => HttpResponse.json([])),
       http.get(`${API}/section-evaluation-configs`, () => HttpResponse.json([])),
       http.get(`${API}/graduation-requests`, () =>
         HttpResponse.json([{ id: 5, studentName: 'Martina Acosta', programName: 'Profesorado', requestedAt: '2026-09-20T10:00:00', decidedAt: null, programEnrollmentId: 2, rejectionReason: null, status: 'ADMIN_VERIFIED', studentId: 7 }]),

@@ -15,7 +15,7 @@ class GraduationCertificateTest {
 
     private final CertificateSnapshot snapshot = new CertificateSnapshot("PÉREZ, ANA", "DNI", "30123456", "el curso", "Marketing",
             null, null, LocalDate.of(2026, 7, 15), LocalDate.of(2026, 11, 5), "Instituto",
-            List.of(new SignatorySnapshot("Dirección", "Dirección académica")), "BUILT_IN_V1");
+            List.of(new SignatorySnapshot("Dirección", "Dirección académica")), "BUILT_IN_V1", null);
 
     @Test
     void issuedCertificateIsValid() {

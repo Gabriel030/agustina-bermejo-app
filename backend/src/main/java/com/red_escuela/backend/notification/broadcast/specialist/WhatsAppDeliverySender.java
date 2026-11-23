@@ -17,6 +17,8 @@ import com.red_escuela.backend.notification.delivery.specialist.WhatsAppProvider
 import com.red_escuela.backend.notification.delivery.specialist.WhatsAppProviderRejectedException;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
 import com.red_escuela.backend.shared.exception.CircuitOpenException;
+import com.red_escuela.backend.shared.resilience.Bulkhead;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreaker;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.time.ApplicationTime;
@@ -48,16 +50,23 @@ public class WhatsAppDeliverySender {
     private final PersonContactFinder personContactFinder;
     private final ObjectProvider<WhatsAppProvider> providerSource;
     private final CircuitBreaker breaker;
+    private final Bulkhead bulkhead;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
+    public boolean isCircuitOpen() {
+        return breaker.isRejectingCalls();
+    }
+
     public WhatsAppDeliverySender(NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
                                   ObjectProvider<WhatsAppProvider> providerSource, CircuitBreakerFactory circuitBreakerFactory,
+                                  BulkheadFactory bulkheadFactory,
                                   ObjectMapper objectMapper, Clock clock) {
         this.deliveryRepository = deliveryRepository;
         this.personContactFinder = personContactFinder;
         this.providerSource = providerSource;
         this.breaker = circuitBreakerFactory.breakerNamed(CIRCUIT_NAME);
+        this.bulkhead = bulkheadFactory.bulkheadNamed(CIRCUIT_NAME);
         this.objectMapper = objectMapper;
         this.clock = clock;
     }
@@ -95,10 +104,10 @@ public class WhatsAppDeliverySender {
         }
         ProviderReceipt receipt = null;
         try {
-            receipt = breaker.execute(() -> provider.sendTemplate(phone.get(), delivery.getTemplateName(), delivery.getTemplateLanguage(),
+            receipt = Bulkhead.executeProtected(bulkhead, breaker, () -> provider.sendTemplate(phone.get(), delivery.getTemplateName(), delivery.getTemplateLanguage(),
                     variablesOf(delivery)), failure -> !(failure instanceof WhatsAppProviderRejectedException));
         } catch (CircuitOpenException open) {
-            log.warn("Circuito de WhatsApp abierto, la entrega queda sin consumir intentos dedup={}", delivery.getDedupKey());
+            log.warn("Circuito de WhatsApp abierto o bulkhead lleno, la entrega queda sin consumir intentos dedup={}", delivery.getDedupKey());
             return;
         } catch (WhatsAppProviderRejectedException rejection) {
             log.warn("El proveedor rechazo el mensaje de WhatsApp sin reintento dedup={} status={} codigo={}", delivery.getDedupKey(),

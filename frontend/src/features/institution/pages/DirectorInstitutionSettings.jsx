@@ -14,7 +14,7 @@ import { InfoTip } from '@/components/charts/InfoTip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
+import { useUnsavedChangesGuard } from '@/features/academic-structure';
 import { useInstitutionSettings, useSaveInstitutionSettings } from '../hooks/useInstitutionSettings';
 import { SETTING_FIELDS, SETTING_GROUPS, buildChangeRows, isChanged, toDraft, toPayload, validateField } from '../institutionSettings';
 
@@ -99,10 +99,27 @@ function describeBlockReason(invalidCount, changedCount) {
   return 'Vas a revisar qué cambia antes de guardar';
 }
 
+function compactBlockReason(invalidCount, changedCount) {
+  if (invalidCount > 0) return `Corregí ${invalidCount} ${invalidCount === 1 ? 'campo' : 'campos'}`;
+  if (changedCount === 0) return 'Cambiá un valor';
+  return 'Se revisa antes';
+}
+
 function ChangesBar({ count, invalidCount, onDiscard, onReview }) {
   const blocked = count === 0 || invalidCount > 0;
   return (
     <StickyActionBar
+      compact="menu"
+      aria-label="Cambios sin guardar"
+      compactSummary={count === 0 ? 'Sin cambios' : `${count} ${count === 1 ? 'cambio' : 'cambios'}`}
+      compactHint={compactBlockReason(invalidCount, count)}
+      primary={{
+        label: 'Guardar cambios',
+        onClick: onReview,
+        className: 'px-5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+        'aria-disabled': blocked ? 'true' : undefined,
+      }}
+      secondary={[{ key: 'discard', label: 'Descartar', destructive: true, onSelect: onDiscard, className: 'px-4 aria-disabled:cursor-not-allowed aria-disabled:opacity-50', 'aria-disabled': count === 0 ? 'true' : undefined }]}
       summary={
         <span aria-live="polite" aria-atomic="true">
         {count === 0 ? (
@@ -116,24 +133,11 @@ function ChangesBar({ count, invalidCount, onDiscard, onReview }) {
         </span>
       }
       hint={
-        <span id="settings-bar-reason" aria-live="polite" className={invalidCount > 0 ? 'font-semibold text-danger' : undefined}>
+        <span aria-live="polite" className={invalidCount > 0 ? 'font-semibold text-danger' : undefined}>
           {describeBlockReason(invalidCount, count)}
         </span>
       }
-    >
-      <Button variant="outline" className="h-11 px-4 aria-disabled:cursor-not-allowed aria-disabled:opacity-50" onClick={onDiscard} aria-disabled={count === 0 ? 'true' : undefined}>
-        Descartar
-      </Button>
-      <Button
-        variant="primary"
-        className="h-11 px-5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-        onClick={onReview}
-        aria-disabled={blocked ? 'true' : undefined}
-        aria-describedby="settings-bar-reason"
-      >
-        Guardar cambios
-      </Button>
-    </StickyActionBar>
+    />
   );
 }
 

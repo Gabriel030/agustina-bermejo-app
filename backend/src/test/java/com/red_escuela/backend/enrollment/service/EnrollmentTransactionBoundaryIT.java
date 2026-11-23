@@ -34,11 +34,11 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.FailingEventListenersConfiguration;
+import com.red_escuela.backend.testsupport.FailingEventListenersConfiguration.FailingExemptionRevocationListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -53,47 +53,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(FailingEventListenersConfiguration.class)
 class EnrollmentTransactionBoundaryIT extends AbstractIntegrationTest {
-
-    @TestConfiguration
-    static class FailingListenerConfiguration {
-        @Bean
-        FailingExemptionRevocationListener failingExemptionRevocationListener() {
-            return new FailingExemptionRevocationListener();
-        }
-    }
-
-    static class FailingExemptionRevocationListener {
-        private volatile boolean armed;
-        private volatile boolean armedOnApproval;
-
-        void arm() {
-            this.armed = true;
-        }
-
-        void armOnApproval() {
-            this.armedOnApproval = true;
-        }
-
-        void disarm() {
-            this.armed = false;
-            this.armedOnApproval = false;
-        }
-
-        @EventListener
-        void onApproved(ProgramApplicationApprovedEvent event) {
-            if (armedOnApproval) {
-                throw new IllegalStateException("listener failed on approval");
-            }
-        }
-
-        @EventListener
-        void onRevoked(EnrollmentFeeExemptionRevokedEvent event) {
-            if (armed) {
-                throw new IllegalStateException("listener failed on revocation");
-            }
-        }
-    }
 
     @Autowired
     private RevokeEnrollmentFeeExemptionUseCase revokeExemption;

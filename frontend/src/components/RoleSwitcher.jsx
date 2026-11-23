@@ -30,7 +30,7 @@ function RoleLinks({ choices, activeRole, onNavigate, asMenuItem }) {
       </Link>
     );
     return asMenuItem ? (
-      <DropdownMenuItem key={role} asChild className="min-h-10">
+      <DropdownMenuItem key={role} asChild className="min-h-11 md:min-h-10">
         {link}
       </DropdownMenuItem>
     ) : (

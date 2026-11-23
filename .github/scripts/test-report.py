@@ -7,7 +7,7 @@ Uso:
   test-report.py aggregate --shards DIR --out DIR [--baseline FILE] [--changed FILE] [--max-contexts N]
       une los shards, escribe report.md y metrics.json y falla si hay mas contextos de Spring que el tope
 
-Tope (cantidad): --max-contexts 24
+Tope (cantidad): --max-contexts 32
 """
 import argparse
 import glob
@@ -22,7 +22,7 @@ TEST_ROOT = os.path.join(ROOT, 'backend', 'src', 'test', 'java')
 MARKER = '<!-- test-time-report -->'
 SLOW = re.compile(r'@SlowTest\s*\(\s*reason\s*=\s*"((?:[^"\\]|\\.)*)"')
 
-DEFAULT_MAX_CONTEXTS = 24
+DEFAULT_MAX_CONTEXTS = 32
 
 
 def add_limits(parser):

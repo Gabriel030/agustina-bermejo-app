@@ -1,0 +1,141 @@
+import { Button } from '@/components/ui/button';
+import { useParams } from 'react-router-dom';
+import { Banknote, CreditCard, ChevronLeft } from 'lucide-react';
+import { GlassCard } from '@/components/GlassCard';
+import { PageContainer } from '@/components/PageContainer';
+import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
+import { EmptyState } from '@/components/EmptyState';
+import { StatusPill } from '@/components/StatusPill';
+import { cn } from '@/lib/utils';
+import { usePaymentReturn } from '@/hooks/usePaymentReturn';
+import { InvoiceSummary } from '@/features/billing/components/InvoiceSummary';
+import { usePaymentConfig, usePriceBreakdown } from '@/hooks/useBilling';
+
+const PAYABLE_STATUSES = ['PENDING', 'OVERDUE'];
+
+function CardPaymentOption({ enabled, onSelect }) {
+  const content = (
+    <GlassCard interactive={enabled} className={cn('flex items-start gap-4 p-5', enabled ? 'hover:shadow-md' : 'cursor-default')}>
+      <div
+        className={cn(
+          'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+          enabled ? 'bg-brand text-on-accent' : 'bg-neutral-bg text-ink-faint',
+        )}
+      >
+        <CreditCard size={20} />
+      </div>
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className={cn('font-semibold', !enabled && 'text-ink-soft')}>Pagar con tarjeta</p>
+          {!enabled && <StatusPill tone="neutral">Próximamente</StatusPill>}
+        </div>
+        <p className="text-sm text-ink-faint">
+          {enabled
+            ? 'Pagá con tarjeta de crédito o débito a través de Mercado Pago. Podés elegir cuotas.'
+            : 'El pago con tarjeta de crédito o débito todavía no está disponible. Por ahora podés pagar por transferencia bancaria y subir tu comprobante.'}
+        </p>
+      </div>
+    </GlassCard>
+  );
+
+  if (!enabled) {
+    return <div aria-disabled="true">{content}</div>;
+  }
+  return (
+    <Button type="button" variant="row" size="row" onClick={onSelect} className="min-h-11 p-0 hover:bg-transparent active:translate-y-0">
+      {content}
+    </Button>
+  );
+}
+
+export function AlumnoPagarSeleccion() {
+  const { invoiceId } = useParams();
+  const { originLabel, goToOrigin, goTo } = usePaymentReturn();
+  const { data: config, isLoading: loadingConfig, isError: configFailed, error: configError, refetch: refetchConfig } = usePaymentConfig();
+  const {
+    data: breakdown,
+    isLoading: loadingBreakdown,
+    isError: breakdownFailed,
+    error: breakdownError,
+    refetch: refetchBreakdown,
+  } = usePriceBreakdown(invoiceId);
+  const payable = !breakdownFailed && (!breakdown || PAYABLE_STATUSES.includes(breakdown.status));
+  const settled = !breakdownFailed && !payable;
+
+  const tieneTransferencia = Boolean(config?.bankCbu || config?.bankAlias);
+  const tieneMp = config?.mpEnabled === true;
+
+  return (
+    <PageContainer className="max-w-lg">
+      <Button
+        variant="subtle"
+        size="inline"
+        type="button"
+        onClick={goToOrigin}
+        className="min-h-11 flex items-center gap-1.5 text-sm"
+        >
+        <ChevronLeft size={16} />
+        {originLabel}
+      </Button>
+
+      <h1 className="text-xl font-bold">¿Cómo querés pagar?</h1>
+
+      {loadingBreakdown && <Skeleton className="h-32" />}
+      {breakdownFailed && (
+        <LoadErrorState error={breakdownError} onRetry={refetchBreakdown} resource="la cuota" />
+      )}
+      {breakdown && <InvoiceSummary breakdown={breakdown} />}
+
+      {settled && (
+        <GlassCard className="p-6 text-center text-sm text-ink-soft">
+          Esta cuota ya está saldada. No tenés que pagar nada más.
+        </GlassCard>
+      )}
+
+      {payable && loadingConfig && <Skeleton className="h-24" />}
+
+      {payable && !loadingConfig && configFailed && (
+        <LoadErrorState error={configError} onRetry={refetchConfig} resource="los medios de pago" />
+      )}
+
+      {payable && !loadingConfig && !configFailed && (
+        <div className="flex flex-col gap-4">
+          {tieneTransferencia && (
+            <Button
+              type="button"
+              variant="row"
+              size="row"
+              onClick={() => goTo(`/alumno/pagos/${invoiceId}/transferencia`)}
+              className="min-h-11 p-0 hover:bg-transparent active:translate-y-0"
+            >
+              <GlassCard className="flex items-start gap-4 p-5 transition-shadow hover:shadow-md">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-on-accent">
+                  <Banknote size={20} />
+                </div>
+                <div>
+                  <p className="font-semibold">Transferencia bancaria</p>
+                  <p className="mt-0.5 text-sm text-ink-faint">
+                    Transferí el importe a nuestra cuenta y subí tu comprobante para confirmación.
+                  </p>
+                </div>
+              </GlassCard>
+            </Button>
+          )}
+
+          {!tieneTransferencia && (
+            <EmptyState
+              title="No hay medios de pago disponibles"
+              description="Todavía no están configurados los datos para pagar esta cuota. Contactate con administración para coordinar el pago."
+            />
+          )}
+
+          <CardPaymentOption
+            enabled={tieneMp}
+            onSelect={() => goTo(`/alumno/pagos/${invoiceId}/online`)}
+          />
+        </div>
+      )}
+    </PageContainer>
+  );
+}

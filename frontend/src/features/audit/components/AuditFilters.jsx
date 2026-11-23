@@ -11,7 +11,7 @@ import {
   auditActionLabel,
   auditEntityLabel,
   auditRoleLabel,
-} from '@/lib/auditLabels';
+} from '@/features/audit/lib/auditLabels';
 import { hasAuditFilters, isAuditRangeInvalid } from '@/features/audit/lib/auditFilters';
 
 const actionOptions = AUDIT_ACTION_CODES.map((value) => ({ value, label: auditActionLabel(value) }));

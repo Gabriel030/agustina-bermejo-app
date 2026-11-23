@@ -716,7 +716,9 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + tokenForStudent(duenio)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.requiredCredits").value(10))
-                .andExpect(jsonPath("$.subjects[0].state").value("AVAILABLE"));
+                .andExpect(jsonPath("$.subjects[0].state").value("AVAILABLE"))
+                .andExpect(jsonPath("$.subjects[0].prerequisites").isEmpty())
+                .andExpect(jsonPath("$.subjects[0].currentEnrollmentId").doesNotExist());
     }
 
     @Test
@@ -1256,5 +1258,203 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.moduleEnrollments[0].moduleName").value("Modulo 60000051"))
                 .andExpect(jsonPath("$.moduleEnrollments[0].status").value("ENROLLED"))
                 .andExpect(jsonPath("$.modulosPendientes[0]").value("Modulo 60000051"));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions changeOwnSection(ChangeScenario scenario, String studentToken) throws Exception {
+        return mockMvc.perform(post("/me/section-enrollments/{id}/change-section", scenario.origin().getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + studentToken)
+                .content(objectMapper.writeValueAsString(new ChangeSectionRequest(scenario.destination().getId(), null))));
+    }
+
+    private void persistAttendanceOf(SubjectSectionEnrollment enrollment, String key) {
+        Instructor recorder = new Instructor();
+        Person recorderPerson = new Person();
+        recorderPerson.setName("Docente");
+        recorderPerson.setLastname("Prueba");
+        recorderPerson.setDni(key);
+        recorderPerson.setUsername("docente-" + key);
+        recorderPerson.setEmail("docente-" + key + "@example.com");
+        Address address = new Address();
+        entityManager.persist(address);
+        recorderPerson.setAddress(address);
+        recorderPerson.setStatus(StatusType.ACTIVE);
+        entityManager.persist(recorderPerson);
+        recorder.setPerson(recorderPerson);
+        entityManager.persist(recorder);
+        Attendance attendance = new Attendance();
+        attendance.setProgramSubjectSectionEnrollment(enrollment);
+        attendance.setClassDate(java.time.LocalDate.of(2026, 4, 6));
+        attendance.setStatus(AttendanceStatus.PRESENT);
+        attendance.setRecordedBy(recorder);
+        entityManager.persist(attendance);
+        entityManager.flush();
+    }
+
+    private void persistGradeItemOf(SubjectSectionEnrollment enrollment) {
+        GradeItem gradeItem = new GradeItem();
+        gradeItem.setProgramSubjectSectionEnrollment(enrollment);
+        gradeItem.setType(GradeItemType.TP);
+        gradeItem.setSequenceNumber(1);
+        entityManager.persist(gradeItem);
+        entityManager.flush();
+    }
+
+    private void assertOriginStillEnrolled(ChangeScenario scenario) {
+        entityManager.clear();
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, scenario.origin().getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void studentChangesOwnSectionWhenTheOriginHasNoAttendanceNorGrades() throws Exception {
+        ChangeScenario scenario = changeScenario("60000061", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+
+        changeOwnSection(scenario, tokenForStudent(scenario.origin().getStudent()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sectionId").value(scenario.destination().getId()));
+    }
+
+    @Test
+    void studentOwnChangeIsRejectedWhenTheOriginHasAttendance() throws Exception {
+        ChangeScenario scenario = changeScenario("60000062", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        persistAttendanceOf(scenario.origin(), "60000162");
+
+        changeOwnSection(scenario, tokenForStudent(scenario.origin().getStudent()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SECTION_HAS_RECORDS"));
+
+        assertOriginStillEnrolled(scenario);
+    }
+
+    @Test
+    void studentOwnChangeIsRejectedWhenTheOriginHasGrades() throws Exception {
+        ChangeScenario scenario = changeScenario("60000063", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        persistGradeItemOf(scenario.origin());
+
+        changeOwnSection(scenario, tokenForStudent(scenario.origin().getStudent()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SECTION_HAS_RECORDS"));
+
+        assertOriginStillEnrolled(scenario);
+    }
+
+    @Test
+    void staffChangeStillWorksWhenTheOriginHasAttendanceAndGrades() throws Exception {
+        ChangeScenario scenario = changeScenario("60000064", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        persistAttendanceOf(scenario.origin(), "60000164");
+        persistGradeItemOf(scenario.origin());
+
+        changeSection(scenario, STAFF_REASON).andExpect(status().isOk());
+    }
+
+    @Test
+    void ownerListsOwnCandidatesWithSeatsAndBlockReasons() throws Exception {
+        ChangeScenario scenario = changeScenario("60000065", null, LocalTime.of(9, 0), LocalTime.of(11, 0), "DIRECTOR");
+        Subject subject = scenario.origin().getSubjectSection().getSubject();
+        Term sameTerm = scenario.origin().getSubjectSection().getTerm();
+        SubjectSection free = persistSubjectSection(subject, sameTerm, 10);
+        SubjectSection full = persistSubjectSection(subject, sameTerm, 0);
+        entityManager.flush();
+
+        mockMvc.perform(get("/me/section-enrollments/{id}/change-section-candidates", scenario.origin().getId())
+                        .header("Authorization", "Bearer " + tokenForStudent(scenario.origin().getStudent())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.sectionId==" + free.getId() + ")].selectable", org.hamcrest.Matchers.contains(true)))
+                .andExpect(jsonPath("$[?(@.sectionId==" + free.getId() + ")].availableSeats", org.hamcrest.Matchers.contains(10)))
+                .andExpect(jsonPath("$[?(@.sectionId==" + full.getId() + ")].blockReason", org.hamcrest.Matchers.contains("SECTION_FULL")))
+                .andExpect(jsonPath("$[?(@.sectionId==" + scenario.origin().getSubjectSection().getId() + ")].blockReason", org.hamcrest.Matchers.contains("CURRENT_SECTION")))
+                .andExpect(jsonPath("$[?(@.sectionId==" + scenario.destination().getId() + ")].blockReason", org.hamcrest.Matchers.contains("SCHEDULE_OVERLAP")))
+                .andExpect(jsonPath("$[?(@.sectionId==" + scenario.destination().getId() + ")].conflictingSubject", org.hamcrest.Matchers.contains("Algebra60000065")));
+    }
+
+    @Test
+    void anotherStudentGets404ListingCandidatesOfAnEnrollmentThatIsNotTheirs() throws Exception {
+        ChangeScenario scenario = changeScenario("60000066", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        Student stranger = persistStudent("60000166", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, persistInstitution());
+
+        mockMvc.perform(get("/me/section-enrollments/{id}/change-section-candidates", scenario.origin().getId())
+                        .header("Authorization", "Bearer " + tokenForStudent(stranger)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void courseModuleEnrollmentIdHasNoOwnChangeCandidates() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000067", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Term term = persistTerm(null, null);
+        Course course = persistCourse(term, null, null);
+        CourseSubjectSection section = persistCourseSubjectSection(persistCourseSubject(course, "Modulo 60000067"), term, 10);
+        CourseEnrollment courseEnrollment = new CourseEnrollment();
+        courseEnrollment.setStudent(student);
+        courseEnrollment.setCourse(course);
+        courseEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+        courseEnrollment.setEnrollmentDate(LocalDateTime.now());
+        entityManager.persist(courseEnrollment);
+        CourseSubjectSectionEnrollment moduleEnrollment = new CourseSubjectSectionEnrollment();
+        moduleEnrollment.setStudent(student);
+        moduleEnrollment.setCourseEnrollment(courseEnrollment);
+        moduleEnrollment.setCourseSubjectSection(section);
+        moduleEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+        moduleEnrollment.setEnrolledAt(LocalDateTime.now());
+        moduleEnrollment.setAttemptNumber(1);
+        entityManager.persist(moduleEnrollment);
+        entityManager.flush();
+
+        mockMvc.perform(get("/me/section-enrollments/{id}/change-section-candidates", moduleEnrollment.getId())
+                        .header("Authorization", "Bearer " + tokenForStudent(student)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void studentChangingToTheSameSectionIsANoOpEvenWithRecords() throws Exception {
+        ChangeScenario scenario = changeScenario("60000068", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        persistAttendanceOf(scenario.origin(), "60000168");
+
+        mockMvc.perform(post("/me/section-enrollments/{id}/change-section", scenario.origin().getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + tokenForStudent(scenario.origin().getStudent()))
+                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(scenario.origin().getSubjectSection().getId(), null))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(scenario.origin().getId()));
+    }
+
+    @Test
+    void anotherStudentGets404ChangingAnEnrollmentThatIsNotTheirs() throws Exception {
+        ChangeScenario scenario = changeScenario("60000069", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        Student stranger = persistStudent("60000169", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, persistInstitution());
+
+        changeOwnSection(scenario, tokenForStudent(stranger)).andExpect(status().isNotFound());
+
+        assertOriginStillEnrolled(scenario);
+    }
+
+    @Test
+    void changingOwnSectionWithACourseModuleEnrollmentIdReturns404() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000070", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Term term = persistTerm(null, null);
+        Course course = persistCourse(term, null, null);
+        CourseSubjectSection section = persistCourseSubjectSection(persistCourseSubject(course, "Modulo 60000070"), term, 10);
+        CourseEnrollment courseEnrollment = new CourseEnrollment();
+        courseEnrollment.setStudent(student);
+        courseEnrollment.setCourse(course);
+        courseEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+        courseEnrollment.setEnrollmentDate(LocalDateTime.now());
+        entityManager.persist(courseEnrollment);
+        CourseSubjectSectionEnrollment moduleEnrollment = new CourseSubjectSectionEnrollment();
+        moduleEnrollment.setStudent(student);
+        moduleEnrollment.setCourseEnrollment(courseEnrollment);
+        moduleEnrollment.setCourseSubjectSection(section);
+        moduleEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+        moduleEnrollment.setEnrolledAt(LocalDateTime.now());
+        moduleEnrollment.setAttemptNumber(1);
+        entityManager.persist(moduleEnrollment);
+        entityManager.flush();
+
+        mockMvc.perform(post("/me/section-enrollments/{id}/change-section", moduleEnrollment.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + tokenForStudent(student))
+                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(section.getId(), null))))
+                .andExpect(status().isNotFound());
     }
 }

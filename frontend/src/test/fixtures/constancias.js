@@ -145,20 +145,23 @@ export function examCertificate(overrides = {}) {
 
 export function examCertificateCandidates() {
   return [
-    { registrationId: 55, studentId: 3, studentName: 'Ana Paz', maskedDocument: '***.***.222', availability: 'AVAILABLE', certificateId: null },
-    { registrationId: 56, studentId: 4, studentName: 'Luis Gómez', maskedDocument: '***.***.333', availability: 'ALREADY_ISSUED', certificateId: 12 },
-    { registrationId: 57, studentId: 5, studentName: 'Marta Ríos', maskedDocument: '***.***.444', availability: 'ABSENT', certificateId: null },
+    { registrationId: 55, studentId: 3, studentName: 'Ana Paz', maskedDocument: '***.***.222', availability: 'AVAILABLE', certificateId: null, issuedAt: null, revokedAt: null, revokedReason: null },
+    { registrationId: 56, studentId: 4, studentName: 'Luis Gómez', maskedDocument: '***.***.333', availability: 'ALREADY_ISSUED', certificateId: 12, issuedAt: '2026-11-19T12:00:00', revokedAt: null, revokedReason: null },
+    { registrationId: 57, studentId: 5, studentName: 'Marta Ríos', maskedDocument: '***.***.444', availability: 'ABSENT', certificateId: null, issuedAt: null, revokedAt: null, revokedReason: null },
+    { registrationId: 58, studentId: 6, studentName: 'Julián Sosa', maskedDocument: '***.***.555', availability: 'NOT_ELIGIBLE_DEBT', certificateId: null, issuedAt: null, revokedAt: null, revokedReason: null },
+    { registrationId: 59, studentId: 7, studentName: 'Carla Ibarra', maskedDocument: '***.***.666', availability: 'REVOKED', certificateId: 14, issuedAt: '2026-11-18T09:00:00', revokedAt: '2026-11-20T10:00:00', revokedReason: 'Emitida con datos incorrectos' },
   ];
 }
 
 export function examCertificateBatch(overrides = {}) {
   return {
     issuedCount: 1,
-    skippedCount: 2,
+    skippedCount: 3,
     items: [
       { registrationId: 55, studentName: 'Ana Paz', outcome: 'ISSUED', certificateId: 13 },
       { registrationId: 56, studentName: 'Luis Gómez', outcome: 'ALREADY_ISSUED', certificateId: 12 },
       { registrationId: 57, studentName: 'Marta Ríos', outcome: 'ABSENT', certificateId: null },
+      { registrationId: 58, studentName: 'Julián Sosa', outcome: 'DEBT', certificateId: null },
     ],
     ...overrides,
   };
@@ -249,4 +252,65 @@ export function debtExceptionList() {
     debtException({ id: 4, status: 'USED', usedAt: '2026-11-20T12:00:00', documentId: 31, verificationUrl: verificationUrlOf('01JABCDEFGHJKMNPQRSTVWXYZ3') }),
     debtException({ id: 3, status: 'EXPIRED', documentType: 'APPROVED_SUBJECTS_CERTIFICATE' }),
   ];
+}
+
+export function regularCertificateRequest(overrides = {}) {
+  return {
+    id: 301,
+    studentId: 41,
+    studentName: 'Lucía Fernández',
+    programName: 'Tecnicatura en Enfermería',
+    kind: 'PROGRAM',
+    enrollmentId: 77,
+    channel: 'STUDENT_PORTAL',
+    outcome: 'PENDING_STAFF',
+    reasons: ['PAYMENT_STANDING'],
+    requestedAt: '2026-11-20T09:30:00',
+    certificateId: null,
+    rejectionReason: null,
+    totalDue: { amount: '45000.00', currency: 'ARS' },
+    overdueInstallments: 2,
+    hasDebt: true,
+    exceptionId: null,
+    exceptionStatus: null,
+    exceptionValidUntil: null,
+    ...overrides,
+  };
+}
+
+export function regularCertificateRequestList() {
+  return [
+    regularCertificateRequest(),
+    regularCertificateRequest({ id: 302, studentId: 42, studentName: 'Martín Gómez', enrollmentId: 78, totalDue: { amount: '0.00', currency: 'ARS' }, overdueInstallments: 0, hasDebt: false }),
+    regularCertificateRequest({ id: 303, studentId: 43, studentName: 'Sofía Ruiz', enrollmentId: 79, totalDue: null, overdueInstallments: null, hasDebt: null }),
+    regularCertificateRequest({ id: 304, studentId: 44, studentName: 'Tomás Acosta', enrollmentId: 80, exceptionId: 9, exceptionStatus: 'PENDING' }),
+    regularCertificateRequest({ id: 305, studentId: 45, studentName: 'Valeria Núñez', enrollmentId: 81, exceptionId: 10, exceptionStatus: 'APPROVED', exceptionValidUntil: '2026-11-30T10:00:00' }),
+  ];
+}
+
+export function certificateExceptionSummary(overrides = {}) {
+  return { pending: 2, approved: 1, rejected: 3, withdrawn: 0, expired: 1, consumed: 4, ...overrides };
+}
+
+export function certificateException(overrides = {}) {
+  return {
+    id: 9,
+    studentId: 44,
+    kind: 'PROGRAM',
+    enrollmentId: 80,
+    organismKind: 'COURT',
+    organismReference: 'Causa 77/2026',
+    reason: 'El alumno presentó un reclamo formal ante Defensa del Consumidor',
+    status: 'PENDING',
+    requestedById: 5,
+    requestedAt: '2026-11-21T10:00:00',
+    decidedById: null,
+    decidedAt: null,
+    decisionReason: null,
+    validUntil: null,
+    createdByDirector: false,
+    debtTotalAtRequest: { amount: '45000.00', currency: 'ARS' },
+    overdueInstallmentsAtRequest: 2,
+    ...overrides,
+  };
 }
