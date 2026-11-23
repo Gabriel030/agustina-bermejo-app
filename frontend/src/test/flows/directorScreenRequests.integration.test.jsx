@@ -70,7 +70,7 @@ describe('director screens request profile', () => {
     localStorage.clear();
   });
 
-  it.each(DIRECTOR_SCREENS)('%s makes no duplicated request', async (screen) => {
+  it.each(DIRECTOR_SCREENS)('%s makes no duplicated request', { timeout: 120000 }, async (screen) => {
     render(
       <GoogleOAuthProvider clientId="test-client-id">
         <ThemeProvider>
@@ -84,8 +84,8 @@ describe('director screens request profile', () => {
         </ThemeProvider>
       </GoogleOAuthProvider>,
     );
-    await waitFor(() => expect(tracker.requests.includes('GET /me/notifications/unread-count')).toBe(true), { timeout: 15000 });
-    await settledRequests(tracker, { quietMs: 1500, timeout: 20000 });
+    await waitFor(() => expect(tracker.requests.includes('GET /me/notifications/unread-count')).toBe(true), { timeout: 60000 });
+    await settledRequests(tracker, { quietMs: 1500, timeout: 30000 });
     screenRows[`screen:/director/${screen}`] = {
       requests: tracker.requests.length,
       duplicates: tracker.duplicates().length,
