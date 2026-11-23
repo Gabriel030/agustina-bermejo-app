@@ -627,9 +627,9 @@ GET,/me/procedures/approved/{documentType}/{id}/pdf,DENY,ALLOW,ALLOW,ALLOW,ALLOW
 POST,/me/approved-subjects-certificates,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,"{""enrollmentId"":1}"
 GET,/me/section-enrollments/{id}/change-section-candidates,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
 POST,/approved-subjects-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
-GET,/exam-boards/{id}/exam-certificates/candidates,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,
-POST,/exam-boards/{id}/exam-certificates/batch,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""registrationIds"":[1]}"
-GET,/exam-certificates/{id}/pdf,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/exam-boards/{id}/exam-certificates/candidates,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
+POST,/exam-boards/{id}/exam-certificates/batch,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,"{""registrationIds"":[1]}"
+GET,/exam-certificates/{id}/pdf,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,ALLOW,DENY,exam-certificate-tribunal,
 POST,/exam-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/certificate-templates/documents/{documentType},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/certificate-templates/documents/{documentType}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
