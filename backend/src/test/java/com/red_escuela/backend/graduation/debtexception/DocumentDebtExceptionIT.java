@@ -83,7 +83,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
                 @Override
                 public DebtExceptionDocument render(DebtExceptionScope scope) {
                     if (FAIL_RENDER.get()) {
-                        throw new IllegalStateException("render failed");
+                        throw new java.io.UncheckedIOException(new java.io.IOException("render failed"));
                     }
                     return new DebtExceptionDocument("EXC-" + scope.exceptionId(), "pdf".getBytes(), "fake=1");
                 }
