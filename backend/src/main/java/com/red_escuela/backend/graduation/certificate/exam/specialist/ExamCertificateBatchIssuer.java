@@ -58,7 +58,7 @@ public class ExamCertificateBatchIssuer {
 
     @Transactional
     public ExamCertificateBatchResponse issueBatch(Long examBoardId, IssueExamCertificateBatchRequest request) {
-        ExamBoardAttendanceView board = boardReader.attendanceOf(examBoardId);
+        ExamBoardAttendanceView board = boardReader.attendanceForUpdateOf(examBoardId);
         if (!board.held()) {
             throw new ExamCertificateBoardNotHeldException();
         }
@@ -89,7 +89,7 @@ public class ExamCertificateBatchIssuer {
                 continue;
             }
             if (withDebt.contains(attendee.studentId())) {
-                items.add(item(registrationId, attendee, ExamCertificateBatchOutcome.DEBT, null));
+                items.add(item(registrationId, null, ExamCertificateBatchOutcome.DEBT, null));
                 continue;
             }
             if (current != null && current.getStatus() == DocumentValidityStatus.VALID) {

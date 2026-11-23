@@ -213,6 +213,8 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("regular_certificate_request.certificate_id", PENDING_USAGE_REVIEW);
         accepted.put("regular_certificate_request.requested_by_id", AUDIT_ACTOR);
         accepted.put("regular_certificate_request.resolved_by_id", AUDIT_ACTOR);
+        accepted.put("exam_certificate.issued_by_id", AUDIT_ACTOR);
+        accepted.put("exam_certificate.revoked_by_id", AUDIT_ACTOR);
         accepted.put("regular_student_certificate.issued_by_id", AUDIT_ACTOR);
         accepted.put("regular_student_certificate.request_id", PENDING_USAGE_REVIEW);
         accepted.put("regular_student_certificate.revoked_by_id", AUDIT_ACTOR);

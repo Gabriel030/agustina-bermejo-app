@@ -4,7 +4,6 @@ import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateP
 import com.red_escuela.backend.graduation.certificate.exam.specialist.ExamCertificatePdfProvider;
 import com.red_escuela.backend.shared.UseCase;
 
-
 @UseCase
 public class GetExamCertificatePdfService implements GetExamCertificatePdfUseCase {
 

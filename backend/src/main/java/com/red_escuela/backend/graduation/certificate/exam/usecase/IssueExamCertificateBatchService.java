@@ -5,7 +5,6 @@ import com.red_escuela.backend.graduation.certificate.exam.dto.IssueExamCertific
 import com.red_escuela.backend.graduation.certificate.exam.specialist.ExamCertificateBatchIssuer;
 import com.red_escuela.backend.shared.UseCase;
 
-
 @UseCase
 public class IssueExamCertificateBatchService implements IssueExamCertificateBatchUseCase {
 

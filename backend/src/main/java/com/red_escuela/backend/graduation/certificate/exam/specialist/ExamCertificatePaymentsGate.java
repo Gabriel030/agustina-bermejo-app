@@ -2,7 +2,6 @@ package com.red_escuela.backend.graduation.certificate.exam.specialist;
 
 import com.red_escuela.backend.evaluation.api.PaymentsStanding;
 import com.red_escuela.backend.evaluation.api.StudentPaymentsStandingPort;
-import com.red_escuela.backend.graduation.debtexception.exception.DocumentRequiresPaymentsUpToDateException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -34,12 +33,5 @@ public class ExamCertificatePaymentsGate {
             }
         });
         return withDebt;
-    }
-
-    @Transactional(readOnly = true)
-    public void requireUpToDate(Long studentId) {
-        if (!studentsWithDebt(Set.of(studentId)).isEmpty()) {
-            throw new DocumentRequiresPaymentsUpToDateException();
-        }
     }
 }

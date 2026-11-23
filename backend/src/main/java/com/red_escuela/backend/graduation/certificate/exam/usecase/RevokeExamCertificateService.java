@@ -4,7 +4,6 @@ import com.red_escuela.backend.graduation.certificate.exam.dto.ExamCertificateRe
 import com.red_escuela.backend.graduation.certificate.exam.specialist.ExamCertificateRevoker;
 import com.red_escuela.backend.shared.UseCase;
 
-
 @UseCase
 public class RevokeExamCertificateService implements RevokeExamCertificateUseCase {
 

@@ -57,7 +57,13 @@ import java.awt.image.BufferedImage;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -336,9 +342,37 @@ class ExamCertificateHttpIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[?(@.registrationId == " + presentRegistrationId + ")].availability").value("ALREADY_ISSUED"));
         assertThat(body).contains("\"issuedCount\":1", "\"skippedCount\":3");
         assertThat(body).contains("\"outcome\":\"ISSUED\"", "\"outcome\":\"DEBT\"", "\"outcome\":\"ABSENT\"", "\"outcome\":\"NOT_REGISTERED\"");
-        assertThat(body).doesNotContainIgnoringCase("amount").doesNotContainIgnoringCase("monto").doesNotContain("15000");
+        assertThat(jdbc.queryForObject("select count(*) from exam_certificate where registration_id = ?", Integer.class, debtorRegistrationId)).isZero();
+        assertThat(body).doesNotContainIgnoringCase(debtorLastname()).doesNotContainIgnoringCase("amount").doesNotContainIgnoringCase("monto").doesNotContain("15000");
         assertThat(jdbc.queryForObject("select count(*) from exam_certificate where registration_id = ?", Integer.class, debtorRegistrationId))
                 .isZero();
+    }
+
+    private String debtorLastname() {
+        return jdbc.queryForObject("select p.last_name from exam_board_registration r join subject_section_enrollment e on e.id = r.program_section_enrollment_id "
+                + "join student s on s.id = e.student_id join person p on p.id = s.person_id where r.id = ?", String.class, debtorRegistrationId);
+    }
+
+    @Test
+    void twoConcurrentBatchesOfTheSameBoardIssueOnceAndNeitherFails() throws Exception {
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<Integer>> results = new ArrayList<>();
+            for (int index = 0; index < 2; index++) {
+                results.add(executor.submit(() -> {
+                    start.await();
+                    return batch(boardId, teacherToken, presentRegistrationId, secondPresentRegistrationId).getResponse().getStatus();
+                }));
+            }
+            start.countDown();
+            assertThat(results.get(0).get()).isEqualTo(200);
+            assertThat(results.get(1).get()).isEqualTo(200);
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertThat(jdbc.queryForObject("select count(*) from exam_certificate where exam_board_id = ?", Integer.class, boardId)).isEqualTo(2);
     }
 
     @Test

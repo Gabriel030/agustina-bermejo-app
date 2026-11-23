@@ -65,7 +65,7 @@ class ExamCertificateBatchIssuerTest {
     }
 
     private void givenBoard(boolean held, ExamBoardAttendeeView... attendees) {
-        when(boardReader.attendanceOf(BOARD)).thenReturn(new ExamBoardAttendanceView(BOARD, held, LocalDate.of(2026, 11, 2),
+        when(boardReader.attendanceForUpdateOf(BOARD)).thenReturn(new ExamBoardAttendanceView(BOARD, held, LocalDate.of(2026, 11, 2),
                 "Anatomía", List.of(attendees)));
     }
 
@@ -112,6 +112,7 @@ class ExamCertificateBatchIssuerTest {
 
         assertThat(outcomeOf(response, 1)).isEqualTo(ExamCertificateBatchOutcome.ISSUED);
         assertThat(outcomeOf(response, 2)).isEqualTo(ExamCertificateBatchOutcome.DEBT);
+        assertThat(response.items().stream().filter(item -> item.registrationId() == 2L).findFirst().orElseThrow().studentName()).isNull();
         assertThat(response.issuedCount()).isEqualTo(1);
         assertThat(response.skippedCount()).isEqualTo(1);
     }

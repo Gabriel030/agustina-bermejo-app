@@ -142,6 +142,10 @@ public class ExamBoardManager {
         return findOrThrow(id);
     }
 
+    public ExamBoard getForUpdate(Long id) {
+        return examBoardRepository.findByIdForUpdate(id).orElseThrow(() -> new ExamBoardNotFoundException(id));
+    }
+
     public List<ExamBoard> list(ExamBoardStatus status) {
         return status == null ? examBoardRepository.findAllByOrderByExamDateDesc()
                 : examBoardRepository.findByStatusOrderByExamDateDesc(status);

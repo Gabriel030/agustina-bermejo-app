@@ -42,7 +42,16 @@ public class ExamBoardAttendanceReader {
 
     public ExamBoardAttendanceView attendanceOf(Long examBoardId) {
         requireAccess(examBoardId);
-        ExamBoard board = examBoardManager.get(examBoardId);
+        return viewOf(examBoardManager.get(examBoardId));
+    }
+
+    public ExamBoardAttendanceView attendanceForUpdateOf(Long examBoardId) {
+        requireAccess(examBoardId);
+        return viewOf(examBoardManager.getForUpdate(examBoardId));
+    }
+
+    private ExamBoardAttendanceView viewOf(ExamBoard board) {
+        Long examBoardId = board.getId();
         List<ExamBoardAttendeeView> attendees = registrationRepository.findByExamBoardId(examBoardId).stream()
                 .map(this::toAttendee)
                 .toList();
