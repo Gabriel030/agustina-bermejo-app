@@ -4,7 +4,10 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.api.ActivationTokenIssuer;
 import com.red_escuela.backend.identity.api.IssuedActivationToken;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.entity.Role;
+import com.red_escuela.backend.identity.exception.PersonNotEligibleForActivationException;
+import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.identity.exception.PersonAlreadyActivatedException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -25,6 +28,11 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,6 +62,8 @@ class ActivateAccountIT extends AbstractIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
+    private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    @Autowired
     private ActivationTokenIssuer activationTokenIssuer;
 
     private Person person;
@@ -64,6 +74,10 @@ class ActivateAccountIT extends AbstractIntegrationTest {
     }
 
     private Person createPerson(String encodedPassword) {
+        return createPerson(encodedPassword, StatusType.ACTIVE, "ALUMNO");
+    }
+
+    private Person createPerson(String encodedPassword, StatusType statusType, String roleName) {
         return transactions.execute(status -> {
             Address address = new Address();
             entityManager.persist(address);
@@ -78,8 +92,8 @@ class ActivateAccountIT extends AbstractIntegrationTest {
             created.setGrantSystemAccess(false);
             created.setEmailVerified(false);
             created.setAddress(address);
-            created.setStatus(StatusType.ACTIVE);
-            Role role = roleRepository.findByName("ALUMNO").orElseThrow();
+            created.setStatus(statusType);
+            Role role = roleRepository.findByName(roleName).orElseThrow();
             created.getRoles().add(role);
             entityManager.persist(created);
             entityManager.flush();
@@ -204,5 +218,117 @@ class ActivateAccountIT extends AbstractIntegrationTest {
 
         activate(issued.token(), NEW_PASSWORD).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("ACTIVATION_TOKEN_INVALID"));
+    }
+
+    @Test
+    void anEmailChangeStartedByAThirdPartyBlocksTheRedemptionWithTheInvalidBody() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        transactions.executeWithoutResult(status -> {
+            EmailVerificationToken pending = new EmailVerificationToken();
+            pending.setPerson(entityManager.getReference(Person.class, person.getId()));
+            pending.setTokenHash(UUID.randomUUID().toString());
+            pending.setNewEmail("attacker." + UUID.randomUUID() + "@example.com");
+            pending.setExpiresAt(java.time.LocalDateTime.now().plusDays(1));
+            emailVerificationTokenRepository.save(pending);
+        });
+
+        activate(issued.token(), NEW_PASSWORD).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ACTIVATION_TOKEN_INVALID"));
+
+        assertThat(personRepository.findById(person.getId()).orElseThrow().getPassword()).isNull();
+    }
+
+    @Test
+    void changingTheEmailAfterIssuingInvalidatesTheRedemption() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        jdbc.update("update person set email = ? where id = ?", "changed." + UUID.randomUUID() + "@example.com", person.getId());
+
+        activate(issued.token(), NEW_PASSWORD).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ACTIVATION_TOKEN_INVALID"));
+
+        Person reloaded = personRepository.findById(person.getId()).orElseThrow();
+        assertThat(reloaded.getPassword()).isNull();
+        assertThat(reloaded.getEmailVerified()).isFalse();
+    }
+
+    @Test
+    void issuingIsRejectedForInactiveDeletedStaffAndMailLessPeople() {
+        Person inactive = createPerson(null, StatusType.INACTIVE, "ALUMNO");
+        Person deleted = createPerson(null, StatusType.DELETED, "ALUMNO");
+        Person staff = createPerson(null, StatusType.ACTIVE, "DOCENTE");
+        Person withoutMail = createPerson(null);
+        jdbc.update("update person set email = null where id = ?", withoutMail.getId());
+
+        for (Person ineligible : List.of(inactive, deleted, staff, withoutMail)) {
+            assertThatThrownBy(() -> activationTokenIssuer.issueActivationToken(ineligible.getId()))
+                    .isInstanceOf(PersonNotEligibleForActivationException.class);
+            assertThat(jdbc.queryForObject("select count(*) from activation_token where person_id = ?",
+                    Integer.class, ineligible.getId())).isZero();
+        }
+    }
+
+    @Test
+    void aPersonDeactivatedAfterIssuingCannotRedeem() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        jdbc.update("update person set status = 'INACTIVE' where id = ?", person.getId());
+
+        activate(issued.token(), NEW_PASSWORD).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ACTIVATION_TOKEN_INVALID"));
+    }
+
+    @Test
+    void redeemingRevokesPreviousSessionsByBumpingTheTokenVersion() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        Integer before = personRepository.findTokenVersionById(person.getId());
+
+        activate(issued.token(), NEW_PASSWORD).andExpect(status().isNoContent());
+
+        assertThat(personRepository.findTokenVersionById(person.getId())).isGreaterThan(before);
+    }
+
+    @Test
+    void concurrentIssuingLeavesASingleLiveToken() throws Exception {
+        List<IssuedActivationToken> issued = runConcurrently(
+                () -> activationTokenIssuer.issueActivationToken(person.getId()),
+                () -> activationTokenIssuer.issueActivationToken(person.getId()));
+
+        assertThat(issued).hasSize(2);
+        assertThat(jdbc.queryForObject("select count(*) from activation_token where person_id = ?",
+                Integer.class, person.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void concurrentRedemptionsOfTheSameTokenHaveExactlyOneWinner() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+
+        List<Integer> statuses = runConcurrently(
+                () -> activate(issued.token(), NEW_PASSWORD).andReturn().getResponse().getStatus(),
+                () -> activate(issued.token(), NEW_PASSWORD).andReturn().getResponse().getStatus());
+
+        assertThat(statuses).containsExactlyInAnyOrder(204, 400);
+    }
+
+    private <T> List<T> runConcurrently(Callable<T> first, Callable<T> second) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<T>> futures = List.of(
+                    executor.submit(() -> {
+                        start.await();
+                        return first.call();
+                    }),
+                    executor.submit(() -> {
+                        start.await();
+                        return second.call();
+                    }));
+            start.countDown();
+            List<T> results = new java.util.ArrayList<>();
+            for (Future<T> future : futures) {
+                results.add(future.get());
+            }
+            return results;
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }

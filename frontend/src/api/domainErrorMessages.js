@@ -187,6 +187,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   INVALID_CREDENTIALS: 'Usuario o contraseña incorrectos.',
   INVALID_GOOGLE_TOKEN: 'No pudimos validar tu cuenta de Google. Probá de nuevo.',
   PERSON_ALREADY_ACTIVATED: 'Esta persona ya activó su cuenta.',
+  PERSON_NOT_ELIGIBLE_FOR_ACTIVATION: 'Esta persona no puede activar su cuenta todavía.',
   INVALID_PASSWORD_RESET_TOKEN: 'El enlace para restablecer la contraseña venció o no es válido. Pedí uno nuevo.',
   INVALID_REFRESH_TOKEN: 'Tu sesión venció. Ingresá de nuevo.',
   NOT_EXAM_BOARD_TRIBUNAL_MEMBER: 'No integrás el tribunal de esta mesa de examen.',

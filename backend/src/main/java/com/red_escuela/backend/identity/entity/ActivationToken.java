@@ -37,6 +37,9 @@ public class ActivationToken {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Person person;
 
+    @Column(name = "email", nullable = false)
+    private String email;
+
     @Column(name = "token_hash", nullable = false, unique = true, length = 64)
     private String tokenHash;
 

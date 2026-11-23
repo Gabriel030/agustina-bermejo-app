@@ -7,7 +7,10 @@ import com.red_escuela.backend.identity.exception.ActivationTokenInvalidExceptio
 import com.red_escuela.backend.identity.repository.ActivationTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.specialist.PasswordPolicyValidator;
+import com.red_escuela.backend.identity.specialist.PublicPasswordResetBlockPolicy;
+import com.red_escuela.backend.identity.specialist.SessionRevoker;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,14 +24,20 @@ public class AccountActivationTransaction {
     private final PersonRepository personRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
+    private final PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy;
+    private final SessionRevoker sessionRevoker;
 
     public AccountActivationTransaction(ActivationTokenRepository activationTokenRepository,
                                         PersonRepository personRepository, PasswordEncoder passwordEncoder,
-                                        PasswordPolicyValidator passwordPolicyValidator) {
+                                        PasswordPolicyValidator passwordPolicyValidator,
+                                        PublicPasswordResetBlockPolicy publicPasswordResetBlockPolicy,
+                                        SessionRevoker sessionRevoker) {
         this.activationTokenRepository = activationTokenRepository;
         this.personRepository = personRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
+        this.publicPasswordResetBlockPolicy = publicPasswordResetBlockPolicy;
+        this.sessionRevoker = sessionRevoker;
     }
 
     @Transactional
@@ -44,7 +53,10 @@ public class AccountActivationTransaction {
             throw new ActivationTokenExpiredException();
         }
         Person person = token.getPerson();
-        if (person.getPassword() != null) {
+        if (person.getPassword() != null
+                || person.getStatus() != StatusType.ACTIVE
+                || !token.getEmail().equals(person.emailValue())
+                || publicPasswordResetBlockPolicy.blocks(person)) {
             throw new ActivationTokenInvalidException();
         }
         if (activationTokenRepository.markAsUsedIfRedeemable(hash, now) != 1) {
@@ -55,5 +67,6 @@ public class AccountActivationTransaction {
         person.setEmailVerified(true);
         person.setGrantSystemAccess(true);
         personRepository.save(person);
+        sessionRevoker.revokeAllSessions(person);
     }
 }

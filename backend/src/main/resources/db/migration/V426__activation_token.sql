@@ -1,6 +1,7 @@
 create table activation_token (
     id bigserial primary key,
     person_id bigint not null references person(id) on delete cascade,
+    email varchar(255) not null,
     token_hash varchar(64) not null,
     expires_at timestamp not null,
     used_at timestamp,
