@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.specialist;
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.attendance.entity.Attendance;
@@ -99,12 +100,13 @@ class CourseworkConditionRecalculatorAtomicityIT extends AbstractIntegrationTest
 
     private void failEveryEnrollmentUpdate() {
         jdbcTemplate.execute("""
-                create function fail_condition_recalculation() returns trigger as $$
+                create or replace function fail_condition_recalculation() returns trigger as $$
                 begin
                     raise exception 'condition recalculation failed';
                 end
                 $$ language plpgsql
                 """);
+        jdbcTemplate.execute("drop trigger if exists fail_condition_recalculation on subject_section_enrollment");
         jdbcTemplate.execute("create trigger fail_condition_recalculation before update on subject_section_enrollment"
                 + " for each row execute function fail_condition_recalculation()");
         sabotaged = true;
@@ -144,7 +146,8 @@ class CourseworkConditionRecalculatorAtomicityIT extends AbstractIntegrationTest
         inOneTransaction(() -> {
             CycleTestFixtures fixtures = new CycleTestFixtures(entityManager);
             Term term = fixtures.term(YEARS.incrementAndGet());
-            var cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
+            Program program = fixtures.program();
+            var cycle = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.APPROVED);
             SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
             section.setEvaluationScheme(scheme());
 
@@ -158,7 +161,7 @@ class CourseworkConditionRecalculatorAtomicityIT extends AbstractIntegrationTest
             entityManager.persist(student);
             ProgramEnrollment programEnrollment = new ProgramEnrollment();
             programEnrollment.setStudent(student);
-            programEnrollment.setProgram(fixtures.program());
+            programEnrollment.setProgram(program);
             programEnrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
             programEnrollment.setEnrollmentDate(LocalDateTime.now());
             entityManager.persist(programEnrollment);

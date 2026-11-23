@@ -153,7 +153,7 @@ class WaitlistCapacityChangeListenerAtomicityIT extends AbstractIntegrationTest 
 
     private void failPromotionsOn(String table) {
         jdbcTemplate.execute("""
-                create function fail_waitlist_promotion() returns trigger as $$
+                create or replace function fail_waitlist_promotion() returns trigger as $$
                 begin
                     if old.status = 'WAITLISTED' and new.status = 'ENROLLED' then
                         raise exception 'waitlist promotion failed';
@@ -162,6 +162,7 @@ class WaitlistCapacityChangeListenerAtomicityIT extends AbstractIntegrationTest 
                 end
                 $$ language plpgsql
                 """);
+        jdbcTemplate.execute("drop trigger if exists fail_waitlist_promotion on " + table);
         jdbcTemplate.execute("create trigger fail_waitlist_promotion before update on " + table
                 + " for each row execute function fail_waitlist_promotion()");
         sabotagedTable = table;
