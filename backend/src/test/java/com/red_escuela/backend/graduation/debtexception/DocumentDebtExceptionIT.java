@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.graduation.api.DebtExceptionGate;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
+import com.red_escuela.backend.graduation.debtexception.repository.DocumentDebtExceptionRepository;
 import com.red_escuela.backend.graduation.debtexception.specialist.DebtExceptionExpirer;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -67,6 +68,8 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     private DebtExceptionGate gate;
     @Autowired
     private DebtExceptionExpirer expirer;
+    @Autowired
+    private DocumentDebtExceptionRepository repository;
 
     private Long studentId;
     private Long otherStudentId;
@@ -245,6 +248,19 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     private Optional<Long> consume(Long student, CertificateDocumentType type, Long registrationId) {
         actAs(administrative);
         return gate.consumeActiveException(student, type, registrationId);
+    }
+
+    @Test
+    void anAlreadyUsedExceptionCannotBeMarkedUsedAgain() throws Exception {
+        issue(administrativeToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
+        LocalDateTime now = LocalDateTime.of(2026, 11, 10, 10, 0);
+
+        int first = transactions.execute(status -> repository.markUsedIfActive(id, now, administrative.getId()));
+        int second = transactions.execute(status -> repository.markUsedIfActive(id, now, administrative.getId()));
+
+        assertThat(first).isEqualTo(1);
+        assertThat(second).isZero();
     }
 
     private int auditCount(String action, Long entityId) {
