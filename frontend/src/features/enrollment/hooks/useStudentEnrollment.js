@@ -68,3 +68,16 @@ export function useDarmeDeBajaDeMateria() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me', 'section-enrollments'] }),
   });
 }
+
+export function useChangeMySection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sectionEnrollmentId, newSectionId }) =>
+      apiFetch(`/me/section-enrollments/${sectionEnrollmentId}/change-section`, { method: 'POST', body: JSON.stringify({ newSectionId }) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me', 'section-enrollments'] });
+      queryClient.invalidateQueries({ queryKey: ['me', 'program-enrollments'] });
+      queryClient.invalidateQueries({ queryKey: ['me', 'procedures'] });
+    },
+  });
+}
