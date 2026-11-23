@@ -24,6 +24,10 @@ def kind_of(path):
     return first if first[:1].islower() else "other"
 
 
+DETAIL = re.compile(r"in \([\w$]+\.java:\d+\)")
+UNPARSED = []
+
+
 def parse(lines):
     violations, cycles = [], []
     for line in lines:
@@ -33,6 +37,7 @@ def parse(lines):
             continue
         source = SOURCE.match(line)
         if not source:
+            UNPARSED.append(line)
             continue
         module = source.group(1)
         match = NON_EXPOSED.search(line)
@@ -47,6 +52,8 @@ def parse(lines):
             source_class = match.group(2).split(".")[-1].split("$")[0]
             violations.append((module, source_class, match.group(3), kind_of(match.group(4)),
                                match.group(4).split(".")[-1]))
+            continue
+        UNPARSED.append(line)
     return violations, cycles
 
 
@@ -62,8 +69,20 @@ def table(headers, rows):
 
 def main(path):
     with open(path, encoding="utf-8") as handle:
-        violations, cycles = parse(handle.read().splitlines())
+        lines = handle.read().splitlines()
+    violations, cycles = parse(lines)
+    non_cycle = [line for line in lines if not line.startswith("Cycle detected")]
+    cycle_lines = [line for line in lines if line.startswith("Cycle detected")]
+    point = sum(len(DETAIL.findall(line)) for line in non_cycle)
+    cycle_detail = sum(len(DETAIL.findall(line)) for line in cycle_lines)
     print("## Totales\n")
+    print(f"- Mensajes totales: {len(lines)} = {len(non_cycle)} violaciones + {len(cycle_lines)} ciclos")
+    print(f"- Mensajes no parseados: {len(UNPARSED)}")
+    for line in UNPARSED:
+        print(f"  - `{line[:200]}`")
+    print(f"- Accesos puntuales (líneas `in (Clase.java:N)` de violaciones): {point}")
+    print(f"- Líneas de detalle dentro de ciclos: {cycle_detail}")
+    print(f"- Detalle total (puntuales + ciclos): {point + cycle_detail}")
     print(f"- Violaciones de módulo (mensajes): {len(violations)}")
     print(f"- Ciclos entre módulos (mensajes Cycle detected): {len(cycles)}")
     print(f"- Clases origen distintas: {len({(v[0], v[1]) for v in violations})}")

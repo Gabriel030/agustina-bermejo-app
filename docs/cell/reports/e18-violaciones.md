@@ -23,14 +23,33 @@ La baseline de develop **no coincidía** con la realidad: `ModularityTest` pasab
 
 Los archivos vacíos (`academicrecord`, `attendance`, `notification`) los borra el escritor de la baseline; `ViolationBaselineFiles.read` los trata como vacíos.
 
-### Diferencia con las cifras del plan (3.574 violaciones / 100 ciclos / 3.474 accesos en 302 clases)
+### Diferencia con las cifras del plan y evolución
 
-No son reproducibles con el verificador actual, y no son un error de medición sino de definición y de fecha:
+Se midió también el commit que cita `docs/context/modules.md` (`cd1ede809`, 31-oct-2026, merge del PR #436) con el mismo `ViolationDumpTest` y el mismo script, en un worktree temporal (con Maven en línea: ese commit usa Spring Boot 3.5.16, que no estaba en la caché local). Compila y corre sin cambios.
 
-- **Violaciones**: Modulith emite un mensaje por par (clase origen, tipo destino). Hoy son 293, no 3.574. Contando el detalle (líneas `in (Clase.java:N)` de los mensajes no-ciclo) hay 214 accesos puntuales. Los mensajes de ciclo repiten los mismos accesos: sumando sus líneas de detalle salen 2.767, y 2.767 + 214 = 2.981, tampoco 3.474. El plan evidentemente contó otra cosa (probablemente detalle de ciclos más accesos, sobre un develop anterior).
-- **Ciclos**: hoy 50 mensajes `Cycle detected`, no 100. La baseline ya perdió 6 pares de ciclos (todos con `graduation`) respecto de lo versionado, y hay menos clases origen (65, no 302).
-- **Desglose por tipo** (plan: entity 2128, repository 572, service 383, exception 266, dto/usecase 121): hoy repository 160, exception 41, service 28, entity 27, api 13, dto 8, invoice 8, usecase 3, events 3, planning 2. El predominio de `entity` del plan ya no existe: lo que domina hoy es `repository` (55 %).
-- Conclusión: la modularización avanzó mucho respecto de la foto del plan (baseline previa: `billing -> academicstructure` 81, hoy 41). Si hace falta contrastar contra la foto vieja habría que correr este mismo script sobre el commit del plan.
+| métrica | cd1ede809 (31-oct) | hoy (d9d94b2cf, 23-nov) | plan |
+|---|---|---|---|
+| mensajes totales | 365 | 343 | - |
+| violaciones (mensajes) | 315 | 293 | 3.574 |
+| ciclos (mensajes) | 50 | 50 | 100 |
+| accesos puntuales (`in (Clase.java:N)`) | 237 | 214 | 3.474 |
+| líneas de detalle dentro de ciclos | 2.562 | 2.767 | - |
+| detalle total (puntuales + ciclos) | 2.799 | 2.981 | - |
+| clases origen distintas | 66 | 65 | 302 |
+| hacia arriba | 78 | 79 | - |
+| destino repository | 164 | 160 | 572 |
+| destino exception | 40 | 41 | 266 |
+| destino service | 36 | 28 | 383 |
+| destino entity | 29 | 27 | 2.128 |
+| destino usecase | 13 | 3 | dto/usecase 121 |
+| destino dto | 9 | 8 | dto/usecase 121 |
+| destino api | 9 | 13 | - |
+
+Conclusiones:
+
+- Las cifras del plan **no se reproducen ni siquiera en el commit que cita**: ahí el verificador da 315 violaciones y 50 ciclos. Por lo tanto la diferencia no es de fecha: el plan midió otra cosa (con otra definición de "violación", p. ej. un conteo por acceso incluyendo duplicados entre ciclos y violaciones, o un desglose de otra herramienta). Con este verificador ninguna combinación de las columnas medidas da 3.574 ni 3.474.
+- Desde el 31-oct a hoy bajaron: `graduation -> billing` 21 a 13 (usecase/service), `enrollment -> identity` 9 a 0, `billing -> identity` 10 a 2, `enrollment -> academicstructure` 2 a 0. Subió `billing -> academicstructure` de 37 a 41. `enrollment -> billing` pasó de 65 a 66; el resto de la matriz de origen-destino no cambió.
+- La baseline versionada ya estaba desfasada en el commit del plan (decía `billing -> academicstructure` 81 contra 37 medido), por lo que el drift es anterior a esta medición.
 
 ## Cómo regenerar
 
@@ -42,12 +61,17 @@ python3 -I ../scripts/modulith-violations-report.py /ruta/raw.txt > /ruta/inform
 
 `ViolationDumpTest` solo corre con la propiedad `modulith.violations.dump` y escribe un mensaje por línea (saltos de línea reemplazados por ` | `). El script parsea esas líneas: tipo destino = primer subpaquete conocido (`entity`, `repository`, `service`, `exception`, `dto`, `usecase`; si no, el nombre del subpaquete, p. ej. `api`, `events`, `invoice`); "arriba" = la capa del origen es menor que la del destino en `shared < identity < academicstructure < enrollment < attendance < evaluation < billing < graduation < announcement < notification`. Los módulos de composición (`academicrecord`, `dataimport`, `demo`, `config`, `platform`) no aparecen como origen ni destino en la salida actual. La clase origen de los accesos por constructor/campo se toma del archivo del mensaje (`in (Clase.java)`).
 
-Las secciones (a) a (e) de abajo son la salida literal del script.
+Las secciones (a) a (e) de abajo son la salida literal del script (incluye los totales de mensajes, no parseados y líneas de detalle). Para medir otro commit: `git worktree add --detach <dir> <commit>`, copiar `ViolationDumpTest` y correr los mismos comandos.
 
 ## (a) a (e) Datos medidos
 
 ### Totales
 
+- Mensajes totales: 343 = 293 violaciones + 50 ciclos
+- Mensajes no parseados: 0
+- Accesos puntuales (líneas `in (Clase.java:N)` de violaciones): 214
+- Líneas de detalle dentro de ciclos: 2767
+- Detalle total (puntuales + ciclos): 2981
 - Violaciones de módulo (mensajes): 293
 - Ciclos entre módulos (mensajes Cycle detected): 50
 - Clases origen distintas: 65
@@ -278,4 +302,4 @@ Procesos pedidos que **no aparecen** hacia arriba en la medición actual: evalua
 2. Hay un único cruce realmente hacia arriba que importa: `enrollment -> billing` (66 de las 79 hacia arriba), concentrado en 4 clases (`ProgramEnrollmentService`, `CourseEnrollmentApplicationService`, `ProgramEnrollmentApplicationResponse`, `EnrollmentFee*`).
 3. El par enrollment <-> billing mantiene 20 ciclos; los pares con más ciclos son billing<->evaluation 22, enrollment<->identity 22, academicstructure<->billing 20 y academicstructure<->evaluation 20; los cortes P1-P7 atacan las aristas que los sostienen (hipótesis a verificar tras cada corte).
 4. La baseline de develop tenía drift (entradas sobrantes por 81 -> 41, 10 -> 2, 21 -> 13, etc.); se regeneró aparte.
-5. Las cifras del plan (3.574 / 100 / 302) no se reproducen: el verificador actual da 293 violaciones, 50 ciclos y 65 clases origen.
+5. Las cifras del plan (3.574 / 100 / 302) no se reproducen ni en el commit que cita (`cd1ede809`: 315 violaciones, 50 ciclos, 66 clases origen); hoy 293, 50 y 65.
