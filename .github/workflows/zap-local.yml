@@ -1,0 +1,116 @@
+name: ZAP local (localhost)
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Perfil de ZAP
+        required: true
+        type: choice
+        options:
+          - baseline
+          - api
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zap-local
+  cancel-in-progress: false
+
+env:
+  ZAP_LOCAL_PORT: "8080"
+  ZAP_IMAGE_DIGEST: sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af
+
+jobs:
+  zap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Reject any target that is not localhost on the expected port
+        run: security/zap/assert-local-target.sh "http://localhost:$ZAP_LOCAL_PORT"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: |
+            21
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Pull the pinned ZAP image
+        run: docker pull -q "ghcr.io/zaproxy/zaproxy@$ZAP_IMAGE_DIGEST"
+
+      - name: Start a throwaway Postgres on localhost
+        env:
+          POSTGRES_PASSWORD: ${{ github.run_id }}-zap-local
+        run: |
+          docker run -d --name zap-postgres -p 127.0.0.1:5432:5432 -e POSTGRES_PASSWORD -e POSTGRES_DB=zap_local postgres:16-alpine
+          for _ in $(seq 1 30); do
+            docker exec zap-postgres pg_isready -U postgres -d zap_local && exit 0
+            sleep 2
+          done
+          exit 1
+
+      - name: Build the backend
+        working-directory: backend
+        run: ./mvnw -B -q -DskipTests package
+
+      - name: Start the backend with the demo seed
+        env:
+          SPRING_PROFILES_ACTIVE: local,demo
+          SERVER_PORT: ${{ env.ZAP_LOCAL_PORT }}
+          SERVER_ADDRESS: 127.0.0.1
+          DB_URL: jdbc:postgresql://localhost:5432/zap_local
+          DB_USERNAME: postgres
+          DB_PASSWORD: ${{ github.run_id }}-zap-local
+          JWT_SECRET: ${{ github.run_id }}-${{ github.run_attempt }}-zap-local-signing-secret-0123456789
+          TRANSACTIONAL_MAIL_PROVIDER: mock
+          BACKEND_BASE_URL: http://localhost:${{ env.ZAP_LOCAL_PORT }}
+        run: |
+          jar="$(find backend/target -maxdepth 1 -name "*.jar" ! -name "*plain*" | head -1)"
+          nohup java -jar "$jar" > "$RUNNER_TEMP/backend.log" 2>&1 &
+
+      - name: Wait for the backend and the demo seed
+        run: |
+          for _ in $(seq 1 90); do
+            if grep -q "Seed demo educativo incompleto\|Seed demo incompleto" "$RUNNER_TEMP/backend.log"; then
+              tail -50 "$RUNNER_TEMP/backend.log"
+              exit 1
+            fi
+            if curl -fsS "http://localhost:$ZAP_LOCAL_PORT/actuator/health" > /dev/null 2>&1 \
+              && grep -q "Seed demo listo" "$RUNNER_TEMP/backend.log" \
+              && grep -q "Seed demo educativo creado\|Seed demo educativo reutiliza" "$RUNNER_TEMP/backend.log"; then
+              exit 0
+            fi
+            sleep 5
+          done
+          tail -50 "$RUNNER_TEMP/backend.log"
+          exit 1
+
+      - name: Run the ZAP profile against localhost
+        env:
+          ZAP_PROFILE: ${{ inputs.profile }}
+          ZAP_OUTPUT_DIR: ${{ github.workspace }}/zap-reports
+        run: security/zap/run-zap-local.sh "$ZAP_PROFILE" "http://localhost:$ZAP_LOCAL_PORT"
+
+      - name: Upload the ZAP reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap-local-reports
+          path: zap-reports
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload the backend log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap-local-backend-log
+          path: ${{ runner.temp }}/backend.log
+          if-no-files-found: ignore
+          retention-days: 7
