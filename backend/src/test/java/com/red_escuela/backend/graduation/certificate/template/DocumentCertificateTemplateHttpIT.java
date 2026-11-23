@@ -217,7 +217,8 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     @Test
     void sameSignatoryTwiceIsRejected() throws Exception {
-        saveDraft(director, draftBody(firstSignatoryId, firstSignatoryId)).andExpect(status().isConflict());
+        saveDraft(director, draftBody(firstSignatoryId, firstSignatoryId)).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("SIGNATORY_DUPLICATED_IN_TEMPLATE"));
     }
 
     @Test

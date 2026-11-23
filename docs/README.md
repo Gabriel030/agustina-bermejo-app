@@ -42,6 +42,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [progress/e2-2-4a.md](cell/progress/e2-2-4a.md) | Estado de E2 2.4a (mapa curricular del alumno: correlativas completas e inscripción vigente) | vigente |
 | [progress/22-9d2.md](cell/progress/22-9d2.md) | Estado de T22.9d-2 (attendance: cargar asistencia y cancelar clase al compositor) | vigente |
 | [progress/22-9d1.md](cell/progress/22-9d1.md) | Estado de la subtarea T22.9d-1 (attendance: pedidos de cambio y justificaciones al compositor) | vigente |
+| [handoffs/1103-T1b.md](cell/handoffs/1103-T1b.md) | Handoff de #1103 T1b (plantillas extendidas de constancias): qué quedó hecho y qué falta | vigente |
 
 ## Release (`docs/release/`)
 
