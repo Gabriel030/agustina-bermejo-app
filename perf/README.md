@@ -118,3 +118,16 @@ k6 run -e BASE_URL=http://localhost:8461 perf/k6/<escenario>.js
 ```
 
 En S5 usar un periodo posterior al mes en curso (ver arriba, `NoEffectivePriceException`).
+
+### Alcance y limites del perfil perf
+
+- Con 1000000 el perfil perf mide throughput y latencia del servidor, no el limite por usuario: no puede detectar que un docente choque con las 120 escrituras/min. Para medir ese flujo con los limites de produccion arrancar sin `perf` (por ejemplo `local,demo`: login 200, escritura 120, lectura 600) o pisar las claves por entorno (`RATE_LIMIT_USER_WRITE_PER_MINUTE`, `RATE_LIMIT_USER_READ_PER_MINUTE`). Si un flujo real choca con el limite es un bug de producto, no algo para esconder con el perfil.
+- Los scripts S3-S5 deben contar y reportar los 429, no reintentar a ciegas. `seed-load.py` si reintenta ante 429 (devuelve `RATE_LIMITED` y reintenta), porque es preparacion y no medicion.
+- El perfil perf no relaja y pueden dar 429 en un escenario: refresh (30/min), register-user (5), forgot-password (5), register (20), reset-password (10), prospects (10), staff-prospects (30).
+- `initial-billing-mode=FULL` solo se aplica en una base nueva. `InitialBillingModeProvisioner` cambia el modo solo si la feature BILLING nunca cambio (`version = 0` y sin registro en el log de cambios) y el modo difiere; es idempotente (si ya cambio o ya esta en ese modo no hace nada). En una base que ya arranco con OFF se ignora en silencio y S5 mediria con billing apagado. Verificar antes de medir:
+
+```
+docker exec perf-a0-pg psql -U postgres -d perf -tc "select mode from platform_feature where code = 'BILLING'"
+```
+
+Debe devolver `FULL`; si devuelve `OFF`, recrear la base o cambiar el modo por la API de plataforma.
