@@ -236,7 +236,6 @@ public class SubjectSectionEnrollmentService {
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede cambiar de comisión");
         }
         studentEnrollmentEligibility.requireConfirmedAndActive(origen.getStudent());
-        ownSectionChangeRecordsGuard.requireNoRecords(change, origen.getId());
 
         ProgramSectionView destino = sectionFinder.findOpenProgramSection(request.newSectionId());
         if (!destino.subjectId().equals(origen.subjectId())) {
@@ -246,6 +245,7 @@ public class SubjectSectionEnrollmentService {
         if (destino.id().equals(origen.subjectSectionId())) {
             return origen;
         }
+        ownSectionChangeRecordsGuard.requireNoRecords(change, origen.getId());
         if (!destino.termId().equals(origen.termId())) {
             throw new InvalidSectionChangeException(
                     "changeSection es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");

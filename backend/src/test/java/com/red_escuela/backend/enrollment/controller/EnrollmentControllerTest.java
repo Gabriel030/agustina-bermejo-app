@@ -1402,4 +1402,57 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + tokenForStudent(student)))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void studentChangingToTheSameSectionIsANoOpEvenWithRecords() throws Exception {
+        ChangeScenario scenario = changeScenario("60000068", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        persistAttendanceOf(scenario.origin(), "60000168");
+
+        mockMvc.perform(post("/me/section-enrollments/{id}/change-section", scenario.origin().getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + tokenForStudent(scenario.origin().getStudent()))
+                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(scenario.origin().getSubjectSection().getId(), null))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(scenario.origin().getId()));
+    }
+
+    @Test
+    void anotherStudentGets404ChangingAnEnrollmentThatIsNotTheirs() throws Exception {
+        ChangeScenario scenario = changeScenario("60000069", null, LocalTime.of(10, 0), LocalTime.of(12, 0), "DIRECTOR");
+        Student stranger = persistStudent("60000169", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, persistInstitution());
+
+        changeOwnSection(scenario, tokenForStudent(stranger)).andExpect(status().isNotFound());
+
+        assertOriginStillEnrolled(scenario);
+    }
+
+    @Test
+    void changingOwnSectionWithACourseModuleEnrollmentIdReturns404() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000070", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Term term = persistTerm(null, null);
+        Course course = persistCourse(term, null, null);
+        CourseSubjectSection section = persistCourseSubjectSection(persistCourseSubject(course, "Modulo 60000070"), term, 10);
+        CourseEnrollment courseEnrollment = new CourseEnrollment();
+        courseEnrollment.setStudent(student);
+        courseEnrollment.setCourse(course);
+        courseEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+        courseEnrollment.setEnrollmentDate(LocalDateTime.now());
+        entityManager.persist(courseEnrollment);
+        CourseSubjectSectionEnrollment moduleEnrollment = new CourseSubjectSectionEnrollment();
+        moduleEnrollment.setStudent(student);
+        moduleEnrollment.setCourseEnrollment(courseEnrollment);
+        moduleEnrollment.setCourseSubjectSection(section);
+        moduleEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+        moduleEnrollment.setEnrolledAt(LocalDateTime.now());
+        moduleEnrollment.setAttemptNumber(1);
+        entityManager.persist(moduleEnrollment);
+        entityManager.flush();
+
+        mockMvc.perform(post("/me/section-enrollments/{id}/change-section", moduleEnrollment.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + tokenForStudent(student))
+                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(section.getId(), null))))
+                .andExpect(status().isNotFound());
+    }
 }
