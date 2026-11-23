@@ -67,9 +67,9 @@ describe('constancias default handlers', () => {
     expect((await call('GET', '/document-debt-exceptions/5/pdf')).status).toBe(200);
   });
 
-  it('changeSectionCandidatesIncludeTheBlockReasonsTheContractCanExpress', async () => {
+  it('changeSectionCandidatesIncludeASelectableSectionWithoutBlockFields', async () => {
     const { body } = await call('GET', '/me/section-enrollments/3/change-section-candidates');
-    expect(body.map((candidate) => candidate.blockReason)).toEqual(['CURRENT_SECTION', 'SECTION_FULL', 'SCHEDULE_OVERLAP']);
+    expect(body.map((candidate) => candidate.blockReason)).toEqual(['CURRENT_SECTION', null, 'SECTION_FULL', 'SCHEDULE_OVERLAP']);
   });
 
   it('documentTemplatesEndpointsAnswerAgainstTheContract', async () => {
