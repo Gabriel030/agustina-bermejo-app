@@ -131,6 +131,8 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void seedStudentsAndStaff() {
+        jdbc.update("insert into permission_module_mode (role, module, mode) values ('SUBDIRECTOR', 'document', 'ENFORCE') on conflict (role, module) do update set mode = 'ENFORCE'");
+        permissionSnapshotCache.invalidate();
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 10, 10, 0));
         transactions.executeWithoutResult(status -> {
             studentId = persistStudent().getId();
@@ -192,6 +194,16 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
         jdbc.update("delete from role_permission where role = 'SUBDIRECTOR' and permission_id = (select id from permission where code = 'document.debt-exception.issue')");
         permissionSnapshotCache.invalidate();
         issue(subdirectorToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void personWithBothSubdirectorAndAdministrativeRolesIsGovernedBySubdirectorOnly() throws Exception {
+        String dualToken = transactions.execute(status -> jwtService.generateAccessToken(persistPersonWithRoles("SUBDIRECTOR", "ADMINISTRATIVO")));
+        issue(dualToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isForbidden());
+
+        jdbc.update("insert into role_permission (role, permission_id) select 'SUBDIRECTOR', id from permission where code = 'document.debt-exception.issue'");
+        permissionSnapshotCache.invalidate();
+        issue(dualToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
     }
 
     @Test
@@ -620,6 +632,10 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     }
 
     private Person persistPerson(String roleName) {
+        return persistPersonWithRoles(roleName);
+    }
+
+    private Person persistPersonWithRoles(String... roleNames) {
         Address address = new Address();
         entityManager.persist(address);
         Person person = new Person();
@@ -631,8 +647,9 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
         person.setEmail("debtexc." + suffix + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
-        Role role = roleRepository.findByName(roleName).orElseThrow();
-        person.getRoles().add(role);
+        for (String roleName : roleNames) {
+            person.getRoles().add(roleRepository.findByName(roleName).orElseThrow());
+        }
         entityManager.persist(person);
         return person;
     }

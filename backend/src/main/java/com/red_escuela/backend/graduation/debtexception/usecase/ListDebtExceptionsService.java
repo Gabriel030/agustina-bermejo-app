@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 public class ListDebtExceptionsService implements ListDebtExceptionsUseCase {
 
     private final DebtExceptionLister lister;
+
     public ListDebtExceptionsService(DebtExceptionLister lister) {
         this.lister = lister;
     }
