@@ -177,6 +177,8 @@ begin
       ('evaluation_scheme', 'aggregation_method', array['LAST_ATTEMPT', 'MAX_SCORE', 'SIMPLE_AVERAGE', 'WEIGHTED_AVERAGE']),
       ('exam_board', 'status', array['CANCELED', 'CLOSED', 'SCHEDULED']),
       ('exam_board_registration', 'status', array['ABSENT', 'GRADED', 'REGISTERED', 'WITHDRAWN']),
+      ('exam_registration_certificate', 'recipient_type', array['EMPLOYER', 'HEALTH_INSURANCE', 'OTHER', 'STUDENT_TRANSPORT']),
+      ('exam_registration_certificate', 'status', array['EXPIRED', 'REPLACED', 'REVOKED', 'VALID']),
       ('feature_change_log', 'code', array['ANALYTICS', 'BILLING', 'BILLING_NOTIFICATIONS', 'EXTERNAL_BILLING', 'FISCAL_INVOICING', 'PAYMENT_METHOD_BANK_TRANSFER', 'PAYMENT_METHOD_CASH', 'PAYMENT_METHOD_GATEWAY']),
       ('gateway_checkout', 'currency', array['ARS', 'USD']),
       ('gateway_checkout', 'gateway', array['DLOCAL', 'MANUAL', 'MERCADO_PAGO']),
@@ -185,6 +187,7 @@ begin
       ('grade_item_audit', 'kind', array['CORRECTION', 'FINAL_REVERT', 'RECOVERY', 'SYSTEM_REVERT']),
       ('grade_item_audit', 'section_kind', array['COURSE', 'PROGRAM']),
       ('graduation_certificate_registry_counter', 'kind', array['COURSE', 'PROGRAM']),
+      ('graduation_request', 'certificate_review_status', array['DISABLED', 'ENABLED', 'NOT_REQUIRED', 'PENDING_REVIEW']),
       ('graduation_request', 'status', array['ADMIN_VERIFIED', 'APPROVED', 'REJECTED', 'REQUESTED']),
       ('holiday', 'type', array['BRIDGE', 'MUNICIPAL', 'NATIONAL', 'NON_WORKING_DAY', 'OTHER', 'PROVINCIAL']),
       ('identity_contact_change_log', 'change_type', array['DOCUMENT_CHANGED', 'EMAIL_CHANGE_CONFIRMED', 'EMAIL_CHANGE_REQUESTED']),
@@ -247,6 +250,9 @@ begin
       ('regular_certificate_request', 'channel', array['STAFF', 'STUDENT_PORTAL']),
       ('regular_certificate_request', 'kind', array['COURSE', 'PROGRAM']),
       ('regular_certificate_request', 'outcome', array['ALREADY_ISSUED', 'ISSUED', 'NOT_REGULAR', 'PENDING_STAFF', 'REJECTED']),
+      ('exam_certificate', 'status', array['VALID', 'EXPIRED', 'REVOKED', 'REPLACED']),
+      ('exam_certificate', 'origin', array['SELF_SERVICE', 'ISSUED_BY_TEACHER', 'ISSUED_BY_STAFF']),
+      ('exam_certificate', 'recipient_type', array['HEALTH_INSURANCE', 'EMPLOYER', 'STUDENT_TRANSPORT', 'OTHER']),
       ('regular_student_certificate', 'issue_channel', array['STAFF', 'STUDENT_PORTAL']),
       ('regular_student_certificate', 'kind', array['COURSE', 'PROGRAM']),
       ('regular_student_certificate', 'standing_basis', array['BILLING_NOT_ENFORCED', 'BILLING_VERIFIED', 'EXCEPTION_APPROVED', 'MANUALLY_CONFIRMED']),
@@ -272,6 +278,7 @@ begin
       ('subject_section_instructor', 'role', array['ASSISTANT', 'GUEST', 'LAB', 'LEAD', 'PRACTICAL']),
       ('term', 'enrollment_override', array['CLOSED', 'OPEN']),
       ('term', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
+      ('verifiable_document', 'document_type', array['APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'GRADUATION_CERTIFICATE', 'REGULAR_STUDENT_CERTIFICATE']),
       ('whatsapp_template_mapping', 'status', array['APPROVED', 'PENDING', 'REJECTED'])
     ) as t(tbl, col, allowed)
   loop

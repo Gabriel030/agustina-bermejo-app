@@ -43,6 +43,12 @@ import com.red_escuela.backend.evaluation.entity.ClosureStatus;
 import com.red_escuela.backend.evaluation.entity.CommissionClosure;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
+import com.red_escuela.backend.graduation.certificate.dto.DocumentOrigin;
+import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.exam.entity.ExamCertificate;
 import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
@@ -89,6 +95,7 @@ final class OwnershipFixtures {
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
+    private Long examCertificateId;
     private Long invoiceId;
     private Long notificationId;
     private Long sessionId;
@@ -126,6 +133,7 @@ final class OwnershipFixtures {
             case ANNUAL_UPFRONT_REQUEST -> annualUpfrontRequestId;
             case STAFF_RECORD -> instructorPersonId;
             case EXAM_BOARD_TRIBUNAL -> examBoardId;
+            case EXAM_CERTIFICATE_TRIBUNAL -> examCertificateId;
             case INVOICE -> invoiceId;
             case NOTIFICATION -> notificationId;
             case SESSION -> sessionId;
@@ -274,6 +282,7 @@ final class OwnershipFixtures {
         entityManager.flush();
         attendanceId = absence.getId();
         examBoardId = persistExamBoard(subject, term, instructor);
+        examCertificateId = persistExamCertificate(examBoardId, enrollment, ownerStudent, ownerPerson);
         closureSectionId = persistClosureSection(subject, term, scheme, instructor);
         closureId = persistClosure(closureSectionId);
         closureConfirmSectionId = persistClosureSection(subject, term, scheme, instructor);
@@ -320,6 +329,37 @@ final class OwnershipFixtures {
         entityManager.persist(board);
         entityManager.flush();
         return board.getId();
+    }
+
+    private Long persistExamCertificate(Long boardId, SubjectSectionEnrollment enrollment, Student student, Person issuer) {
+        ExamBoardRegistration registration = new ExamBoardRegistration();
+        registration.setExamBoard(entityManager.getReference(ExamBoard.class, boardId));
+        registration.setProgramSubjectSectionEnrollment(enrollment);
+        registration.setStatus(ExamBoardRegistrationStatus.GRADED);
+        registration.setRegisteredAt(LocalDateTime.now());
+        entityManager.persist(registration);
+        LocalDateTime now = LocalDateTime.now();
+        CertificateSnapshot snapshot = new CertificateSnapshot("OWNER, STUDENT", "DNI", "91000001", "examen de", "Materia", null, null,
+                LocalDate.now(), LocalDate.now(), "Instituto", List.of(), "EXAM_BUILT_IN_V1", null);
+        ExamCertificate certificate = ExamCertificate.builder()
+                .code("OWNERSHIPFIXTURE00000001")
+                .registrationId(registration.getId())
+                .examBoardId(boardId)
+                .studentId(student.getId())
+                .status(DocumentValidityStatus.VALID)
+                .origin(DocumentOrigin.ISSUED_BY_STAFF)
+                .issuedAt(now)
+                .expiresAt(now.plusDays(30))
+                .validityDays(30)
+                .issuedById(issuer.getId())
+                .snapshot(snapshot)
+                .templateRef("EXAM_BUILT_IN_V1")
+                .pdfSha256("0".repeat(64))
+                .pdfPath("missing/ownership-fixture.pdf")
+                .build();
+        entityManager.persist(certificate);
+        entityManager.flush();
+        return certificate.getId();
     }
 
     private Long persistClosureSection(Subject subject, Term term, EvaluationScheme scheme, Instructor instructor) {

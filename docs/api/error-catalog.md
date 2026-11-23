@@ -151,6 +151,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_EVALUATION_DATE` | no | `InvalidEvaluationDateException` | evaluation |
 | `INVALID_EVALUATION_SCHEME` | no | `InvalidEvaluationSchemeException` | evaluation |
 | `INVALID_EXAM_BOARD_FINAL_GRADE_ENTRY` | no | `InvalidExamBoardFinalGradeEntryException` | evaluation |
+| `INVALID_EXAM_REGISTRATION_RECIPIENT` | no | `InvalidExamRegistrationRecipientException` | graduation |
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
 | `INVALID_GRADE_CORRECTION_REASON` | no | `InvalidGradeCorrectionReasonException` | evaluation |
 | `INVALID_GRADE_ITEM_WEIGHT` | no | `InvalidGradeItemWeightException` | evaluation |
@@ -307,6 +308,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_NOT_FOUND` | no | `ExamBoardNotFoundException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_NOT_FOUND` | no | `ExamBoardRegistrationNotFoundException` | evaluation |
 | `EXAM_CERTIFICATE_NOT_FOUND` | no | `ExamCertificateNotFoundException` | graduation |
+| `EXAM_REGISTRATION_CERTIFICATE_NOT_FOUND` | no | `ExamRegistrationCertificateNotFoundException` | graduation |
 | `GOOGLE_ACCOUNT_NOT_LINKED` | no | `GoogleAccountNotLinkedException` | identity |
 | `GRADE_ITEM_NOT_FOUND` | no | `GradeItemNotFoundException` | evaluation |
 | `GRADUATION_CERTIFICATE_NOT_FOUND` | no | `GraduationCertificateNotFoundException` | graduation |
@@ -491,6 +493,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GRADUATION_CERTIFICATE_NOT_AVAILABLE` | no | `GraduationCertificateNotAvailableException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_REVOCABLE` | no | `GraduationCertificateNotRevocableException` | graduation |
+| `GRADUATION_CERTIFICATE_REVIEW_REQUIRED` | no | `GraduationCertificateReviewRequiredException` | graduation |
 | `GRADUATION_CERTIFICATE_REVOKED` | no | `GraduationCertificateRevokedException` | graduation |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
@@ -536,6 +539,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_ATTENDANCE_CHANGE_REQUEST_STATE` | no | `InvalidAttendanceChangeRequestStateException` | attendance |
 | `INVALID_BILLING_MODE_TRANSITION` | no | `InvalidBillingModeTransitionException` | platform |
 | `INVALID_DIRECTOR_APPROVAL_REQUEST_STATE` | no | `InvalidDirectorApprovalRequestStateException` | enrollment |
+| `INVALID_GRADUATION_CERTIFICATE_REVIEW_DECISION` | no | `InvalidGraduationCertificateReviewDecisionException` | graduation |
 | `INVALID_GRADUATION_REQUEST_STATE` | no | `InvalidGraduationRequestStateException` | graduation |
 | `INVALID_PAYMENT_RECEIPT_STATE` | no | `InvalidPaymentReceiptStateException` | billing |
 | `INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE` | no | `InvalidProgramEnrollmentApplicationStateException` | enrollment |
@@ -688,6 +692,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
+| `TEMPLATE_SIGNATURE_MISSING` | no | `TemplateSignatureMissingException` | graduation |
 | `TEMPLATE_UNKNOWN_MARKER` | no | `TemplateUnknownMarkerException` | graduation |
 | `UNKNOWN_PERMISSION_CODE` | no | `UnknownPermissionCodeException` | identity |
 | `UNKNOWN_PERMISSION_MODULE` | no | `UnknownPermissionModuleException` | identity |
@@ -890,6 +895,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/exam-certificates/{id}/revoke` | `ExamCertificateController#revoke` |
 | POST | `/grade-items/{id}/corrections` | `GradeCorrectionController#correctPublishedGrade` |
 | POST | `/grade-items/{id}/recovery` | `ExamRecoveryController#recordExamRecovery` |
+| POST | `/graduation-certificate-reviews/batch` | `GraduationCertificateReviewController#decideBatch` |
+| POST | `/graduation-certificate-reviews/{graduationRequestId}/disable` | `GraduationCertificateReviewController#disable` |
+| POST | `/graduation-certificate-reviews/{graduationRequestId}/enable` | `GraduationCertificateReviewController#enable` |
 | POST | `/graduation-certificates` | `GraduationCertificateController#issue` |
 | POST | `/graduation-certificates/batch` | `GraduationCertificateController#issueBatch` |
 | POST | `/graduation-certificates/preview` | `GraduationCertificateController#preview` |

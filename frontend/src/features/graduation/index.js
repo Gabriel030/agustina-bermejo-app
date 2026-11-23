@@ -5,3 +5,4 @@ export { RegularCertificateCard } from './certificates/components/RegularCertifi
 export { useEgresosPorVerificar } from './hooks/useGraduation';
 export { usePendingRegularRequests } from './certificates/hooks/useStaffRegularCertificates';
 export { StudentProceduresSection } from './procedures/components/StudentProceduresSection';
+export { DirectorExceptionsCard } from './certificate-exceptions/components/DirectorExceptionsCard';

@@ -12,6 +12,7 @@ enum OwnershipKind {
     ANNUAL_UPFRONT_REQUEST("annual-upfront-request", MatrixRole.ALUMNO, 404),
     STAFF_RECORD("staff-record", MatrixRole.DOCENTE, 404),
     EXAM_BOARD_TRIBUNAL("exam-board-tribunal", MatrixRole.DOCENTE, 404),
+    EXAM_CERTIFICATE_TRIBUNAL("exam-certificate-tribunal", MatrixRole.DOCENTE, 404),
     INVOICE("invoice", MatrixRole.ALUMNO, 404),
     NOTIFICATION("notification", MatrixRole.ALUMNO, 404),
     SESSION("session", MatrixRole.ALUMNO, 404),

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
@@ -22,10 +22,6 @@ function renderShell(route = '/director/inicio') {
   );
 }
 
-afterEach(() => {
-  delete document.documentElement.dataset.design;
-});
-
 describe('RoleShell', () => {
   it('shell wrapper reads the spacing variables', () => {
     const { container } = renderShell();
@@ -33,30 +29,20 @@ describe('RoleShell', () => {
     expect(container.firstChild).toHaveClass('p-(--shell-pad)', 'gap-(--shell-gap)');
   });
 
-  it('main carries its own padding only for design b', () => {
+  it('main carries its own padding', () => {
     renderShell();
 
-    expect(screen.getByRole('main')).toHaveClass('design-b:px-4', 'design-b:py-5');
+    expect(screen.getByRole('main')).toHaveClass('px-4', 'py-5', 'sm:px-8', 'sm:py-6');
   });
 
-  it('mobile header shows the page title with design b', () => {
-    document.documentElement.dataset.design = 'b';
+  it('mobile header shows the page title', () => {
     renderShell();
 
     const title = screen.getAllByText('Inicio').find((node) => node.className.includes('lg:hidden'));
     expect(title).toBeDefined();
   });
 
-  it('mobile header shows the role with design vl', () => {
-    document.documentElement.dataset.design = 'vl';
-    renderShell();
-
-    const title = screen.getAllByText('Director').find((node) => node.className.includes('lg:hidden'));
-    expect(title).toBeDefined();
-  });
-
-  it('theme toggle moves into the drawer on mobile with design b', async () => {
-    document.documentElement.dataset.design = 'b';
+  it('theme toggle moves into the drawer on mobile', async () => {
     renderShell();
 
     await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
@@ -64,21 +50,7 @@ describe('RoleShell', () => {
     expect(await screen.findByRole('button', { name: 'Tema oscuro' })).toBeInTheDocument();
   });
 
-  it('drawer has no theme entry with design vl', async () => {
-    document.documentElement.dataset.design = 'vl';
-    renderShell();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
-
-    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: 'Tema oscuro' })).not.toBeInTheDocument();
-  });
-
-  it.each([
-    ['b', true],
-    ['vl', false],
-  ])('focus on the heading after navigating with design %s is %s', async (design, expected) => {
-    document.documentElement.dataset.design = design;
+  it('moves focus to the page heading after navigating', async () => {
     renderWithProviders(
       <ThemeProvider>
         <Routes>
@@ -94,6 +66,6 @@ describe('RoleShell', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Ir' }));
 
     const heading = await screen.findByRole('heading', { name: 'Alumnos' });
-    await waitFor(() => expect(heading === document.activeElement).toBe(expected));
+    await waitFor(() => expect(heading).toHaveFocus());
   });
 });
