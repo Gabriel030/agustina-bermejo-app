@@ -46,6 +46,8 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
@@ -765,5 +767,89 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    private static final AtomicInteger PUBLIC_CLIENTS = new AtomicInteger(1);
+
+    private ResultActions verifyPublicly(String code) throws Exception {
+        String address = "203.0.113." + PUBLIC_CLIENTS.incrementAndGet() % 250;
+        RequestPostProcessor client = request -> {
+            request.setRemoteAddr(address);
+            return request;
+        };
+        return mockMvc.perform(get("/public/documents/{code}", code).with(client));
+    }
+
+    private String codeOf(Long id) {
+        return jdbc.queryForObject("select code from exam_registration_certificate where id = ?", String.class, id);
+    }
+
+    @Test
+    void issuedDocumentIsRegisteredAndVerifiableWithMinimalData() throws Exception {
+        Long id = generateWithRecipient("EMPLOYER", "Empresa Secreta SA");
+        String code = codeOf(id);
+
+        assertThat(jdbc.queryForObject("select count(*) from verifiable_document where code = ? and document_type = 'EXAM_REGISTRATION_CERTIFICATE' and source_id = ?",
+                Long.class, code, id)).isEqualTo(1L);
+        MvcResult result = verifyPublicly(code).andExpect(status().isOk())
+                .andExpect(jsonPath("$.documentType").value("EXAM_REGISTRATION_CERTIFICATE"))
+                .andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.maskedDocument").value(Matchers.startsWith("*")))
+                .andExpect(jsonPath("$.expiresAt").value("2026-11-21T00:00:00"))
+                .andExpect(jsonPath("$.replacedAt").doesNotExist())
+                .andExpect(jsonPath("$.revokedAt").doesNotExist()).andReturn();
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("Empresa Secreta", "EMPLOYER", "Materia", "recipient");
+    }
+
+    @Test
+    void publicVerificationReportsExpiredAfterTheExamDay() throws Exception {
+        String code = codeOf(issuedId(studentToken));
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 21, 8, 0));
+
+        verifyPublicly(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("EXPIRED"));
+    }
+
+    @Test
+    void publicVerificationReportsRevokedWithTheRevocationDate() throws Exception {
+        String code = codeOf(issuedId(studentToken));
+        jdbc.update("update exam_registration_certificate set status = 'REVOKED', revoked_at = ?, revoked_by_id = issued_by_id, revocation_reason = 'motivo interno'",
+                Timestamp.valueOf("2026-11-10 11:00:00"));
+
+        MvcResult result = verifyPublicly(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("REVOKED"))
+                .andExpect(jsonPath("$.revokedAt").value("2026-11-10T11:00:00")).andReturn();
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("motivo interno");
+    }
+
+    @Test
+    void publicVerificationOfAReplacedDocumentReportsReplacedWithTheReplacementDate() throws Exception {
+        Long first = generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        Long second = generateWithRecipient("HEALTH_INSURANCE", "Obra social B");
+
+        verifyPublicly(codeOf(first)).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("REPLACED"))
+                .andExpect(jsonPath("$.replacedAt").value("2026-11-11T10:00:00"));
+        verifyPublicly(codeOf(second)).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.replacedAt").doesNotExist());
+    }
+
+    @Test
+    void unregisteredCodeIsNotFound() throws Exception {
+        verifyPublicly("0".repeat(26)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void failedRegistrationRollsBackTheIssuanceAndTheFile() throws Exception {
+        List<String> filesBefore = storedFileNames();
+        jdbc.update("create unique index tmp_block_registry on verifiable_document (registered_at) where document_type = 'EXAM_REGISTRATION_CERTIFICATE' and source_id < 0");
+        try {
+            jdbc.update("alter table verifiable_document add constraint tmp_block_exam_registration check (document_type <> 'EXAM_REGISTRATION_CERTIFICATE') not valid");
+            generate(studentToken, "{}").andExpect(result -> assertThat(result.getResponse().getStatus()).isGreaterThanOrEqualTo(400));
+        } finally {
+            jdbc.update("alter table verifiable_document drop constraint if exists tmp_block_exam_registration");
+            jdbc.update("drop index if exists tmp_block_registry");
+        }
+
+        assertThat(certificateCount()).isZero();
+        assertThat(storedFileNames()).isEqualTo(filesBefore);
     }
 }
