@@ -13,7 +13,7 @@ public record OwnSubjectEquivalenceResponse(
         @Schema(nullable = true) Integer credits,
         String originInstitution,
         String originSubjectName,
-        @Schema(nullable = true) Grade originScore,
+        @Schema(implementation = java.math.BigDecimal.class, nullable = true) Grade originScore,
         LocalDate recognizedOn,
         String resolutionNumber,
         @Schema(nullable = true) EquivalenceDocumentResponse document,
