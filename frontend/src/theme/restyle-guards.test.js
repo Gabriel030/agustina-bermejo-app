@@ -5,7 +5,7 @@ const sources = import.meta.glob('/src/**/*.{js,jsx}', { query: '?raw', import: 
 const EXEMPT_PATHS = [/^\/src\/components\/ui\//, /^\/src\/test\//, /\.test\.jsx?$/];
 
 const MONEY_MONO_ALLOWED = [
-  '/src/components/catalogo/BankAccountDetails.jsx',
+  '/src/features/enrollment/components/BankAccountDetails.jsx',
   '/src/features/identity/pages/PadronAlumnos.jsx',
   '/src/features/identity/pages/GestionPersonal.jsx',
   '/src/features/evaluation/components/ClosurePrerequisitesSheet.jsx',

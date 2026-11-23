@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AUDIT_ACTION_CODES, auditActionLabel, auditActionTone } from './auditLabels';
 
-const AUDIT_ACTION_JAVA_FILE = join(import.meta.dirname, '..', '..', '..', 'backend', 'src', 'main', 'java', 'com', 'red_escuela', 'backend', 'shared', 'audit', 'AuditAction.java');
+const AUDIT_ACTION_JAVA_FILE = join(import.meta.dirname, '..', '..', '..', '..', '..', 'backend', 'src', 'main', 'java', 'com', 'red_escuela', 'backend', 'shared', 'audit', 'AuditAction.java');
 
 function backendAuditActions() {
   const source = readFileSync(AUDIT_ACTION_JAVA_FILE, 'utf8');

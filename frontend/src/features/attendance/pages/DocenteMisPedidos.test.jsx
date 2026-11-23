@@ -76,7 +76,7 @@ describe('DocenteTomarAsistencia pedidos tab', () => {
     await screen.findByText('Joaquín Benítez');
     const rows = screen.getAllByRole('row').slice(1);
     expect(within(rows[0]).getByText('Valentina Suárez')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Asistencia' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Tomar asistencia' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Mis pedidos/ })).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -163,7 +163,7 @@ describe('DocenteTomarAsistencia pedidos tab', () => {
 
     await user.click(await screen.findByRole('tab', { name: /Mis pedidos/ }));
     expect(screen.getByTestId('location')).toHaveTextContent('/docente/tomar-asistencia?tab=pedidos');
-    await user.click(screen.getByRole('tab', { name: 'Asistencia' }));
+    await user.click(screen.getByRole('tab', { name: 'Tomar asistencia' }));
     expect(screen.getByTestId('location')).toHaveTextContent(/^\/docente\/tomar-asistencia$/);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { matchPath } from 'react-router-dom';
 import { TIPO_NOTIFICACION_LABEL } from '@/lib/notificaciones';
-import { NOTIFICATION_DESTINATIONS, notificationDestination } from '@/lib/notificationDestination';
+import { NOTIFICATION_DESTINATIONS, notificationDestination } from '@/features/notifications/lib/notificationDestination';
 import { SHARED_ROUTES, roleRoutesFor } from '@/routes/featureRoutes';
 
 const ROLES = ['ALUMNO', 'DOCENTE', 'PRECEPTOR', 'ADMINISTRATIVO', 'DIRECTOR'];

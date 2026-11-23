@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.controller;
 
+import com.red_escuela.backend.identity.dto.ActivateAccountRequest;
 import com.red_escuela.backend.identity.dto.AuthResponse;
 import com.red_escuela.backend.identity.dto.ClientContext;
 import com.red_escuela.backend.identity.dto.ForgotPasswordRequest;
@@ -17,6 +18,8 @@ import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.infrastructure.LoginRateLimiter;
 import com.red_escuela.backend.identity.infrastructure.RefreshCookieSession;
 import com.red_escuela.backend.identity.dto.AuthTokens;
+import com.red_escuela.backend.identity.usecase.auth.ActivateAccountCommand;
+import com.red_escuela.backend.identity.usecase.auth.ActivateAccountUseCase;
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
 import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
 import com.red_escuela.backend.identity.usecase.auth.LoginWithGoogleUseCase;
@@ -53,6 +56,7 @@ public class AuthController {
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final VerifyResetCodeUseCase verifyResetCodeUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
+    private final ActivateAccountUseCase activateAccountUseCase;
     private final LoginRateLimiter rateLimiter;
     private final RefreshCookieSession refreshCookieSession;
 
@@ -60,7 +64,8 @@ public class AuthController {
                            LoginWithGoogleUseCase loginWithGoogleUseCase, RegisterWithGoogleUseCase registerWithGoogleUseCase,
                            RefreshTokenUseCase refreshTokenUseCase, LogoutUseCase logoutUseCase,
                            RequestPasswordResetUseCase requestPasswordResetUseCase, VerifyResetCodeUseCase verifyResetCodeUseCase,
-                           ResetPasswordUseCase resetPasswordUseCase, LoginRateLimiter rateLimiter,
+                           ResetPasswordUseCase resetPasswordUseCase, ActivateAccountUseCase activateAccountUseCase,
+                           LoginRateLimiter rateLimiter,
                            RefreshCookieSession refreshCookieSession) {
         this.registerUseCase = registerUseCase;
         this.loginUseCase = loginUseCase;
@@ -71,6 +76,7 @@ public class AuthController {
         this.requestPasswordResetUseCase = requestPasswordResetUseCase;
         this.verifyResetCodeUseCase = verifyResetCodeUseCase;
         this.resetPasswordUseCase = resetPasswordUseCase;
+        this.activateAccountUseCase = activateAccountUseCase;
         this.rateLimiter = rateLimiter;
         this.refreshCookieSession = refreshCookieSession;
     }
@@ -158,6 +164,12 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         resetPasswordUseCase.reset(new ResetPasswordCommand(request.resetToken(), request.newPassword()));
+    }
+
+    @PostMapping("/activate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void activateAccount(@Valid @RequestBody ActivateAccountRequest request) {
+        activateAccountUseCase.activate(new ActivateAccountCommand(request.token(), request.newPassword()));
     }
 
     private ResponseEntity<AuthResponse> withRefreshCookie(HttpStatus status, AuthTokens tokens) {
