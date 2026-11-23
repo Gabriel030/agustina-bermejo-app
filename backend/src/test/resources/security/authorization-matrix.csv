@@ -9,7 +9,7 @@ GET,/academic-offering-cycles/{id}/sections,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,A
 POST,/academic-offering-cycles/{id}/sections,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/academic-offering-cycles/{id}/submit,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 GET,/academic-offering-cycles/{id}/occupancy,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
-DELETE,/announcements/{id},DENY,DENY,ALLOW,DENY,DENY,DENY,ALLOW,DENY,,
+DELETE,/announcements/{id},DENY,DENY,OWNER,DENY,DENY,DENY,ALLOW,DENY,announcement-delete-instructor,
 PUT,/announcements/{id},DENY,DENY,OWNER,DENY,DENY,DENY,ALLOW,DENY,announcement-instructor,"{""title"":""x"",""body"":""x"",""category"":""REMINDER"",""urgent"":false}"
 GET,/announcements/{id}/recipients,DENY,DENY,OWNER,ALLOW,DENY,DENY,ALLOW,DENY,announcement-instructor,
 GET,/attendance/change-requests,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
@@ -628,6 +628,7 @@ GET,/me/section-enrollments/{id}/change-section-candidates,DENY,OWNER,ALLOW,ALLO
 POST,/approved-subjects-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/exam-boards/{id}/exam-certificates/candidates,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards/{id}/exam-certificates/batch,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""registrationIds"":[1]}"
+GET,/exam-certificates/{id}/pdf,DENY,DENY,ALLOW,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/certificate-templates/documents/{documentType},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/certificate-templates/documents/{documentType}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,

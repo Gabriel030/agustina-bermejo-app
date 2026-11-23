@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("migration")
 class ImportedGraduationReviewCorrectionMigrationTest {
 
-    private static final String VERSION_WITH_REVIEW_STATUS = "443";
+    private static final String VERSION_WITH_REVIEW_STATUS = "447";
 
     private static final long IMPORTED_NOT_REQUIRED_WITHOUT_CERTIFICATE = 301;
     private static final long IMPORTED_NOT_REQUIRED_WITH_VALID_CERTIFICATE = 302;

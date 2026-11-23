@@ -8,7 +8,7 @@ import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
-import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
+import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
@@ -85,7 +85,7 @@ class CourseEnrollmentRulesTest {
     @Mock
     private StudentRoleGranter studentRoleGranter;
     @Mock
-    private EnrollmentDebtGuard enrollmentDebtGuard;
+    private EnrollmentDebtGuardPort enrollmentDebtGuard;
     @Mock
     private EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     @Mock

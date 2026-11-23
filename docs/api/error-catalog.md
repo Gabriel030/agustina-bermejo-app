@@ -405,6 +405,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CASH_PAYMENT_PREVIEW_OUTDATED` | no | `CashPaymentPreviewOutdatedException` | billing |
 | `CERTIFICATE_EXCEPTION_ALREADY_OPEN` | no | `CertificateExceptionAlreadyOpenException` | graduation |
 | `CERTIFICATE_EXPIRED` | no | `CertificateExpiredException` | graduation |
+| `CERTIFICATE_PDF_INTEGRITY_MISMATCH` | no | `CertificatePdfIntegrityMismatchException` | graduation |
 | `CERTIFICATE_REVOKED` | no | `CertificateRevokedException` | graduation |
 | `CHANNEL_NOT_AVAILABLE` | no | `ChannelNotAvailableException` | notification |
 | `CHANNEL_NOT_ENABLED` | no | `ChannelNotEnabledException` | notification |
@@ -543,8 +544,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_TRANSITION_CONFIRMATION` | no | `InvalidTransitionConfirmationException` | platform |
 | `INVITATION_PERSON_ALREADY_INVITED` | no | `InvitationPersonAlreadyInvitedException` | notification |
 | `INVITATION_RECIPIENT_INVALID_TRANSITION` | no | `InvitationRecipientInvalidTransitionException` | notification |
+| `INVITATION_SEND_DEFERRED` | no | `InvitationSendDeferredException` | notification |
 | `INVITATION_WAVE_HAS_OPEN_RECIPIENTS` | no | `InvitationWaveHasOpenRecipientsException` | notification |
 | `INVITATION_WAVE_INVALID_TRANSITION` | no | `InvitationWaveInvalidTransitionException` | notification |
+| `INVITATION_WAVE_NOT_RUNNING` | no | `InvitationWaveNotRunningException` | notification |
 | `INVITATION_WAVE_TOO_MANY_RECIPIENTS` | no | `InvitationWaveTooManyRecipientsException` | notification |
 | `INVITATION_WAVE_WITHOUT_RECIPIENTS` | no | `InvitationWaveWithoutRecipientsException` | notification |
 | `INVOICE_ALREADY_ATTACHED` | no | `InvoiceAlreadyAttachedException` | billing |

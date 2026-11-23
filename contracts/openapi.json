@@ -5878,6 +5878,10 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "currentEnrollmentId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "curricularTerm" : {
             "enum" : [ "FIRST", "SECOND", "ANNUAL", null ],
             "type" : [ "string", "null" ]
@@ -5892,6 +5896,12 @@
           },
           "finalScore" : {
             "type" : [ "number", "null" ]
+          },
+          "prerequisites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumBlockingPrerequisiteResponse"
+            },
+            "type" : "array"
           },
           "programSubjectId" : {
             "format" : "int64",
@@ -5912,7 +5922,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attempts", "blockedBy", "category", "corequisites", "credits", "curricularTerm", "curricularYear", "electiveGroupId", "finalScore", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
+        "required" : [ "attempts", "blockedBy", "category", "corequisites", "credits", "currentEnrollmentId", "curricularTerm", "curricularYear", "electiveGroupId", "finalScore", "prerequisites", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
         "type" : "object"
       },
       "CurriculumSummaryResponse" : {
@@ -7421,7 +7431,7 @@
             "type" : [ "integer", "null" ]
           },
           "outcome" : {
-            "enum" : [ "ISSUED", "ALREADY_ISSUED", "ABSENT", "NOT_REGISTERED" ],
+            "enum" : [ "ISSUED", "ALREADY_ISSUED", "ABSENT", "NOT_REGISTERED", "DEBT" ],
             "type" : "string"
           },
           "registrationId" : {
@@ -7458,12 +7468,16 @@
       "ExamCertificateCandidateResponse" : {
         "properties" : {
           "availability" : {
-            "enum" : [ "AVAILABLE", "ALREADY_ISSUED", "ABSENT" ],
+            "enum" : [ "AVAILABLE", "ALREADY_ISSUED", "ABSENT", "NOT_ELIGIBLE_DEBT", "REVOKED" ],
             "type" : "string"
           },
           "certificateId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "issuedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
           },
           "maskedDocument" : {
             "type" : "string"
@@ -7471,6 +7485,13 @@
           "registrationId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "revokedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "revokedReason" : {
+            "type" : [ "string", "null" ]
           },
           "studentId" : {
             "format" : "int64",
@@ -14252,7 +14273,7 @@
             "type" : "string"
           },
           "standingBasis" : {
-            "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED" ],
+            "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED", "BILLING_NOT_ENFORCED" ],
             "type" : "string"
           },
           "status" : {
@@ -48961,6 +48982,7 @@
     },
     "/exam-boards/{id}/exam-certificates/batch" : {
       "post" : {
+        "description" : "Emisión en lote: omite con outcome DEBT a quien no esté al día con los pagos o pase a deber entre candidatos y emisión (sin montos); reemite las REVOKED; skippedCount cuenta los omitidos. Misma condición de mesa rendida y mismos roles que candidates.",
         "operationId" : "ExamBoardCertificate_issueBatch",
         "parameters" : [ {
           "in" : "path",
@@ -49098,6 +49120,7 @@
     },
     "/exam-boards/{id}/exam-certificates/candidates" : {
       "get" : {
+        "description" : "Elegibles: alumnos presentes con la mesa rendida (ExamBoardStatus CLOSED, acta cerrada; si no, EXAM_CERTIFICATE_BOARD_NOT_HELD). NOT_ELIGIBLE_DEBT no es seleccionable y no informa montos, excepción ni link. REVOKED es seleccionable y el lote lo reemite. issuedAt informa ALREADY_ISSUED y REVOKED. Docente de la mesa (404 si es ajena), Administrativo y Director; el Preceptor no tiene acceso.",
         "operationId" : "ExamBoardCertificate_candidates",
         "parameters" : [ {
           "in" : "path",
@@ -49893,6 +49916,135 @@
           }
         },
         "tags" : [ "exam-board-controller" ]
+      }
+    },
+    "/exam-certificates/{id}/pdf" : {
+      "get" : {
+        "description" : "Descarga individual. Docente de la mesa (404 si es ajena), Administrativo y Director. Audita DOCUMENT_PDF_DOWNLOADED.",
+        "operationId" : "ExamCertificate_pdf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "exam-certificate-controller" ]
       }
     },
     "/exam-certificates/{id}/revoke" : {
