@@ -5,12 +5,15 @@ import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -29,6 +32,7 @@ class GraduationCertificateReviewMigrationTest {
     private static final long ENROLLMENT_IMPORTED_WITH_CERTIFICATE_OF_ANOTHER = 107;
     private static final long ENROLLMENT_REQUESTED = 108;
     private static final long ENROLLMENT_CERTIFICATE_OF_ANOTHER = 109;
+    private static final long ENROLLMENT_ADMIN_VERIFIED = 110;
 
     @Test
     void backfillClassifiesEachExistingGraduationRequest() {
@@ -44,6 +48,7 @@ class GraduationCertificateReviewMigrationTest {
             insertGraduationRequest(jdbc, ENROLLMENT_APPROVED_BY_DIRECTOR_WITH_CERTIFICATE, "APPROVED", 7L);
             insertGraduationRequest(jdbc, ENROLLMENT_IMPORTED_WITH_CERTIFICATE_OF_ANOTHER, "APPROVED", null);
             insertGraduationRequest(jdbc, ENROLLMENT_REQUESTED, "REQUESTED", null);
+            insertGraduationRequest(jdbc, ENROLLMENT_ADMIN_VERIFIED, "ADMIN_VERIFIED", null);
             insertCertificate(jdbc, "0123456789ABCDEFGHJKMNP001", ENROLLMENT_WITH_VALID_CERTIFICATE, "VALID");
             insertCertificate(jdbc, "0123456789ABCDEFGHJKMNP002", ENROLLMENT_WITH_REVOKED_CERTIFICATE, "REVOKED");
             insertCertificate(jdbc, "0123456789ABCDEFGHJKMNP003", ENROLLMENT_APPROVED_BY_DIRECTOR_WITH_CERTIFICATE, "VALID");
@@ -54,7 +59,7 @@ class GraduationCertificateReviewMigrationTest {
             Map<Long, String> reviewStatusByEnrollment = jdbc.query(
                     "select program_enrollment_id, certificate_review_status from graduation_request",
                     rs -> {
-                        Map<Long, String> result = new java.util.HashMap<>();
+                        Map<Long, String> result = new HashMap<>();
                         while (rs.next()) {
                             result.put(rs.getLong(1), rs.getString(2));
                         }
@@ -68,7 +73,8 @@ class GraduationCertificateReviewMigrationTest {
                     Map.entry(ENROLLMENT_REJECTED, "NOT_REQUIRED"),
                     Map.entry(ENROLLMENT_APPROVED_BY_DIRECTOR_WITH_CERTIFICATE, "NOT_REQUIRED"),
                     Map.entry(ENROLLMENT_IMPORTED_WITH_CERTIFICATE_OF_ANOTHER, "PENDING_REVIEW"),
-                    Map.entry(ENROLLMENT_REQUESTED, "NOT_REQUIRED"));
+                    Map.entry(ENROLLMENT_REQUESTED, "NOT_REQUIRED"),
+                    Map.entry(ENROLLMENT_ADMIN_VERIFIED, "NOT_REQUIRED"));
             assertThat(jdbc.queryForObject(
                     "select count(*) from graduation_request where certificate_reviewed_by_id is not null or certificate_reviewed_at is not null",
                     Integer.class)).isZero();
@@ -84,17 +90,20 @@ class GraduationCertificateReviewMigrationTest {
             insertGraduationRequest(jdbc, 201, "APPROVED", null);
             assertThat(reviewStatusOf(jdbc, 201)).isEqualTo("NOT_REQUIRED");
 
-            assertThat(accepts(jdbc, 202, "ENABLED", null, false)).isTrue();
-            assertThat(accepts(jdbc, 203, "ENABLED", 7L, true)).isTrue();
-            assertThat(accepts(jdbc, 204, "DISABLED", 7L, true)).isTrue();
-            assertThat(accepts(jdbc, 205, "PENDING_REVIEW", null, false)).isTrue();
+            assertThat(violatedConstraint(jdbc, 202, "ENABLED", null, false)).isNull();
+            assertThat(violatedConstraint(jdbc, 203, "ENABLED", 7L, true)).isNull();
+            assertThat(violatedConstraint(jdbc, 204, "DISABLED", 7L, true)).isNull();
+            assertThat(violatedConstraint(jdbc, 205, "PENDING_REVIEW", null, false)).isNull();
 
-            assertThat(accepts(jdbc, 206, "PENDING_REVIEW", 7L, true)).isFalse();
-            assertThat(accepts(jdbc, 207, "NOT_REQUIRED", null, true)).isFalse();
-            assertThat(accepts(jdbc, 208, "NOT_REQUIRED", 7L, false)).isFalse();
-            assertThat(accepts(jdbc, 209, "ENABLED", 7L, false)).isFalse();
-            assertThat(accepts(jdbc, 210, "DISABLED", null, true)).isFalse();
-            assertThat(accepts(jdbc, 211, "UNKNOWN", null, false)).isFalse();
+            assertThat(violatedConstraint(jdbc, 206, "PENDING_REVIEW", 7L, true)).contains("ck_graduation_request_certificate_review_coherence");
+            assertThat(violatedConstraint(jdbc, 207, "NOT_REQUIRED", null, true)).contains("ck_graduation_request_certificate_review_coherence");
+            assertThat(violatedConstraint(jdbc, 208, "NOT_REQUIRED", 7L, false)).contains("ck_graduation_request_certificate_review_coherence");
+            assertThat(violatedConstraint(jdbc, 209, "ENABLED", 7L, false)).contains("ck_graduation_request_certificate_review_coherence");
+            assertThat(violatedConstraint(jdbc, 210, "DISABLED", null, true)).contains("ck_graduation_request_certificate_review_coherence");
+            assertThat(violatedConstraint(jdbc, 211, "UNKNOWN", null, false)).contains("graduation_request");
+            assertThat(jdbc.queryForObject(
+                    "select pg_get_constraintdef(oid) from pg_constraint where conname = 'graduation_request_certificate_review_status_enum'",
+                    String.class)).contains("DISABLED", "ENABLED", "NOT_REQUIRED", "PENDING_REVIEW");
         }
     }
 
@@ -103,6 +112,20 @@ class GraduationCertificateReviewMigrationTest {
         try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(latestMigrationVersion())) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 
+            assertThat(jdbc.queryForList(
+                    "select conname from pg_constraint where not convalidated and conname in ("
+                            + "'graduation_request_certificate_review_status_enum', 'fk_graduation_request_certificate_reviewed_by', "
+                            + "'ck_graduation_request_certificate_review_coherence', 'ck_audit_log_action', 'ck_audit_log_entity_type')",
+                    String.class)).isEmpty();
+            assertThat(jdbc.queryForObject(
+                    "select count(*) from pg_constraint where convalidated and conname in ("
+                            + "'graduation_request_certificate_review_status_enum', 'fk_graduation_request_certificate_reviewed_by', "
+                            + "'ck_graduation_request_certificate_review_coherence', 'ck_audit_log_action', 'ck_audit_log_entity_type')",
+                    Integer.class)).isEqualTo(5);
+            assertThat(jdbc.queryForObject(
+                    "select count(*) from pg_indexes where indexname in ("
+                            + "'ix_graduation_request_certificate_reviewed_by', 'ix_graduation_request_certificate_review')",
+                    Integer.class)).isEqualTo(2);
             assertThat(jdbc.queryForMap(
                     "select fixed_to_director, sensitive from permission where code = 'graduation.review_imported_certificate'"))
                     .containsEntry("fixed_to_director", true)
@@ -125,15 +148,15 @@ class GraduationCertificateReviewMigrationTest {
         }
     }
 
-    private static boolean accepts(JdbcTemplate jdbc, long enrollmentId, String reviewStatus, Long reviewerId, boolean withDate) {
+    private static String violatedConstraint(JdbcTemplate jdbc, long enrollmentId, String reviewStatus, Long reviewerId, boolean withDate) {
         try {
             jdbc.update(
                     "insert into graduation_request (program_enrollment_id, status, requested_at, certificate_review_status, certificate_reviewed_by_id, certificate_reviewed_at) "
                             + "values (?, 'APPROVED', now(), ?, ?, " + (withDate ? "now()" : "null") + ")",
                     enrollmentId, reviewStatus, reviewerId);
-            return true;
-        } catch (RuntimeException e) {
-            return false;
+            return null;
+        } catch (DataIntegrityViolationException e) {
+            return e.getMessage();
         }
     }
 
@@ -163,7 +186,7 @@ class GraduationCertificateReviewMigrationTest {
         return migrationVersions().keySet().stream()
                 .map(Integer::parseInt)
                 .filter(version -> version < reviewVersion)
-                .max(java.util.Comparator.naturalOrder())
+                .max(Comparator.naturalOrder())
                 .map(String::valueOf)
                 .orElseThrow();
     }
@@ -177,7 +200,7 @@ class GraduationCertificateReviewMigrationTest {
     }
 
     private static String latestMigrationVersion() {
-        return migrationVersions().keySet().stream().max(java.util.Comparator.comparingInt(Integer::parseInt)).orElseThrow();
+        return migrationVersions().keySet().stream().max(Comparator.comparingInt(Integer::parseInt)).orElseThrow();
     }
 
     private static Map<String, String> migrationVersions() {
