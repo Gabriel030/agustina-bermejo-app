@@ -67,6 +67,10 @@ public class BroadcastEmailDispatchJob {
             if (!settings.window().isOpenAt(LocalTime.now(clock)) || remainingQuotaToday() == 0) {
                 break;
             }
+            if (emailChannel.isMailCircuitOpen()) {
+                log.warn("Circuito de mail abierto, se corta el lote de mails masivos con {} sin enviar", ids.size() - attempted);
+                break;
+            }
             if (dispatchOne(id)) {
                 attempted++;
             }

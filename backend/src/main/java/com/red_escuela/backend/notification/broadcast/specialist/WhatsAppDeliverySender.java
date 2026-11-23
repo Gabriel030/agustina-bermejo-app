@@ -51,6 +51,10 @@ public class WhatsAppDeliverySender {
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
+    public boolean isCircuitOpen() {
+        return breaker.isRejectingCalls();
+    }
+
     public WhatsAppDeliverySender(NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
                                   ObjectProvider<WhatsAppProvider> providerSource, CircuitBreakerFactory circuitBreakerFactory,
                                   ObjectMapper objectMapper, Clock clock) {
