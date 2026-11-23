@@ -4,6 +4,9 @@ import com.red_escuela.backend.announcement.events.AnnouncementDeletedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementPublishedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionRevokedEvent;
+import com.red_escuela.backend.graduation.events.GraduationRequestApprovedEvent;
+import com.red_escuela.backend.graduation.events.GraduationRequestRejectedEvent;
+import com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigApprovedEvent;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigProposedEvent;
@@ -28,6 +31,44 @@ public class FailingEventListenersConfiguration {
     @Bean
     FailingAnnouncementListener failingAnnouncementListener() {
         return new FailingAnnouncementListener();
+    }
+
+    @Bean
+    FailingGraduationListener failingGraduationListener() {
+        return new FailingGraduationListener();
+    }
+
+    public static class FailingGraduationListener {
+        private volatile Class<?> failingOn;
+
+        public void failOn(Class<?> eventType) {
+            this.failingOn = eventType;
+        }
+
+        public void stopFailing() {
+            this.failingOn = null;
+        }
+
+        @EventListener
+        public void onApproved(GraduationRequestApprovedEvent event) {
+            failIfArmedFor(GraduationRequestApprovedEvent.class);
+        }
+
+        @EventListener
+        public void onRejected(GraduationRequestRejectedEvent event) {
+            failIfArmedFor(GraduationRequestRejectedEvent.class);
+        }
+
+        @EventListener
+        public void onVerified(GraduationRequestVerifiedEvent event) {
+            failIfArmedFor(GraduationRequestVerifiedEvent.class);
+        }
+
+        private void failIfArmedFor(Class<?> eventType) {
+            if (eventType.equals(failingOn)) {
+                throw new IllegalStateException("listener failed on " + eventType.getSimpleName());
+            }
+        }
     }
 
     public static class FailingExemptionRevocationListener {

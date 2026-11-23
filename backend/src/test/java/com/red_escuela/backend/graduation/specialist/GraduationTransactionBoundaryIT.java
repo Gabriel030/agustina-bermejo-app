@@ -1,6 +1,13 @@
 package com.red_escuela.backend.graduation.specialist;
 
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.config.TestSubjectCodes;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
@@ -22,16 +29,16 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.testsupport.FailingEventListenersConfiguration;
+import com.red_escuela.backend.testsupport.FailingEventListenersConfiguration.FailingGraduationListener;
+import com.red_escuela.backend.testsupport.TermFixtures;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.context.event.EventListener;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -51,59 +58,8 @@ import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(FailingEventListenersConfiguration.class)
 class GraduationTransactionBoundaryIT extends AbstractIntegrationTest {
-
-    @TestConfiguration
-    static class GraduationTestConfiguration {
-        @Bean
-        FailingGraduationListener failingGraduationListener() {
-            return new FailingGraduationListener();
-        }
-
-        @Bean
-        @Primary
-        GraduationEligibilityChecker alwaysEligibleGraduationChecker() {
-            return new GraduationEligibilityChecker(null) {
-                @Override
-                public boolean isEligibleToGraduate(Long programEnrollmentId) {
-                    return true;
-                }
-            };
-        }
-    }
-
-    static class FailingGraduationListener {
-        private volatile Class<?> failingOn;
-
-        void failOn(Class<?> eventType) {
-            this.failingOn = eventType;
-        }
-
-        void stopFailing() {
-            this.failingOn = null;
-        }
-
-        @EventListener
-        void onApproved(GraduationRequestApprovedEvent event) {
-            failIfArmedFor(GraduationRequestApprovedEvent.class);
-        }
-
-        @EventListener
-        void onRejected(GraduationRequestRejectedEvent event) {
-            failIfArmedFor(GraduationRequestRejectedEvent.class);
-        }
-
-        @EventListener
-        void onVerified(GraduationRequestVerifiedEvent event) {
-            failIfArmedFor(GraduationRequestVerifiedEvent.class);
-        }
-
-        private void failIfArmedFor(Class<?> eventType) {
-            if (eventType.equals(failingOn)) {
-                throw new IllegalStateException("listener failed on " + eventType.getSimpleName());
-            }
-        }
-    }
 
     @Autowired
     private ApproveGraduationRequestUseCase approveGraduationRequest;
@@ -148,7 +104,7 @@ class GraduationTransactionBoundaryIT extends AbstractIntegrationTest {
             Program program = new Program();
             program.setName("Carrera " + suffix);
             program.setTotalYears(3);
-            program.setTotalCreditsRequired(100);
+            program.setTotalCreditsRequired(10);
             entityManager.persist(program);
 
             programEnrollment = new ProgramEnrollment();
@@ -157,6 +113,36 @@ class GraduationTransactionBoundaryIT extends AbstractIntegrationTest {
             programEnrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
             programEnrollment.setEnrollmentDate(LocalDateTime.now());
             entityManager.persist(programEnrollment);
+
+            Subject subject = new Subject();
+            subject.setCode(TestSubjectCodes.next());
+            subject.setName("Materia " + suffix);
+            entityManager.persist(subject);
+            ProgramSubject programSubject = new ProgramSubject();
+            programSubject.setProgram(program);
+            programSubject.setSubject(subject);
+            programSubject.setCredits(10);
+            programSubject.setStatus(StatusType.ACTIVE);
+            entityManager.persist(programSubject);
+            Term term = TermFixtures.newTerm();
+            term.setYear(2026);
+            term.setDescription("2026-1C");
+            term.setStatus(StatusType.ACTIVE);
+            entityManager.persist(term);
+            SubjectSection section = new SubjectSection();
+            section.setName("Comision " + suffix);
+            section.setSubject(subject);
+            section.setTerm(term);
+            section.setStatus(StatusType.ACTIVE);
+            entityManager.persist(section);
+            SubjectSectionEnrollment passed = new SubjectSectionEnrollment();
+            passed.setStudent(student);
+            passed.setProgramEnrollment(programEnrollment);
+            passed.setSubjectSection(section);
+            passed.setStatus(EnrollmentStatus.APPROVED);
+            passed.setEnrolledAt(LocalDateTime.now());
+            passed.setAttemptNumber(1);
+            entityManager.persist(passed);
 
             Person admin = persistPerson("admin" + suffix);
             SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(admin.getId().toString(), null));
