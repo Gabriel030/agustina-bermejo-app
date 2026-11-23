@@ -27,6 +27,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.mail.TransactionalEmail;
 import com.red_escuela.backend.shared.mail.TransactionalEmailGateway;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.time.MutableClock;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -80,6 +81,8 @@ abstract class AbstractBroadcastDispatchIT extends AbstractIntegrationTest {
     private PolicySet<EmailDeliveryContext> emailDeliveryPolicySet;
     @Autowired
     private CircuitBreakerFactory circuitBreakerFactory;
+    @Autowired
+    private BulkheadFactory bulkheadFactory;
 
     protected final List<String> sentSubjects = new CopyOnWriteArrayList<>();
 
@@ -166,7 +169,7 @@ abstract class AbstractBroadcastDispatchIT extends AbstractIntegrationTest {
             return receipt;
         };
         return new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceFinder, emailDeliveryPolicySet, recording,
-                circuitBreakerFactory, (category, kind, recipientPersonId) -> Optional.empty()) {
+                circuitBreakerFactory, bulkheadFactory, (category, kind, recipientPersonId) -> Optional.empty()) {
             @Override
             public void dispatchDelivery(Long deliveryId) {
                 transactionTemplate.executeWithoutResult(status -> super.dispatchDelivery(deliveryId));

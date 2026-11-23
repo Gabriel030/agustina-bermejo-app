@@ -38,7 +38,8 @@ describe('constancias default handlers', () => {
       expect(generated.status).toBe(201);
       expect(generated.body.documentType).toBe(type);
     }
-    expect((await call('GET', '/exam-boards/9/exam-certificates/candidates')).body).toHaveLength(3);
+    expect((await call('GET', '/exam-boards/9/exam-certificates/candidates')).body).toHaveLength(5);
+    expect((await call('GET', '/exam-certificates/12/pdf')).status).toBe(200);
     expect((await call('POST', '/exam-boards/9/exam-certificates/batch', { registrationIds: [55] })).body.issuedCount).toBe(1);
     expect((await call('POST', '/exam-certificates/12/revoke', { reason: 'Motivo suficiente' })).body.status).toBe('REVOKED');
   });

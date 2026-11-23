@@ -65,6 +65,6 @@ public class ActivationTokenIssuer {
                 .expiresAt(expiresAt)
                 .createdAt(now)
                 .build());
-        return new IssuedActivationToken(clearToken, expiresAt);
+        return new IssuedActivationToken(clearToken, expiresAt, person.emailValue());
     }
 }

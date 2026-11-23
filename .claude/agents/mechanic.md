@@ -21,6 +21,7 @@ Subagente del líder (lanzado con la herramienta Agent, uno por tarea, contexto 
 
 ## Reglas
 - Rama propia desde `origin/develop` (`git fetch origin && git switch -c docs/<slug> origin/develop`); nunca commit ni push a `develop`/`master`; nunca `--force` ni `--admin`; no mergeás.
+- Commit y push de tu propia rama sin pedir OK por cada uno (autorizado por Gabriel el 23-nov para toda la célula, regla 6 de `docs/context/cell.md`). Ponerte al día con develop: `git merge origin/develop` y push normal; nunca rebase de una rama ya pusheada, `--force` ni `--force-with-lease`.
 - Cero comentarios en código; castellano en docs; identificadores en inglés. No corrés Maven ni Vitest.
 - Commits en castellano con trailer `Co-Authored-By: Claude <noreply@anthropic.com>`. PR `--base develop`, cuerpo terminado en `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 - Verificar con datos reales (`git status`, `git diff --stat`, `gh pr view`) y reportar lo que no pudiste comprobar.
