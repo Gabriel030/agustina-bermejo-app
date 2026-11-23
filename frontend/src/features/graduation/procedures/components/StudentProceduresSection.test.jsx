@@ -325,8 +325,10 @@ describe('StudentProceduresSection', () => {
     expect(screen.getAllByRole('button', { name: 'Generar' })).toHaveLength(4);
   });
 
-  it('keeps the form and shows an error when generation fails with a network error', async () => {
-    server.use(http.post(`${API}/me/documents/:type`, () => HttpResponse.error()));
+  it('keeps the form and shows an error when the service is unavailable', async () => {
+    server.use(
+      http.post(`${API}/me/documents/:type`, () => HttpResponse.json(errorBody('SERVICE_UNAVAILABLE'), { status: 503 })),
+    );
     const user = userEvent.setup();
     renderSection();
 
