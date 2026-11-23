@@ -40,6 +40,8 @@ Memoria: cada limitador guarda como máximo `app.rate-limit.max-tracked-keys` (5
 | `data-source-properties.connectTimeout` / `socketTimeout` (`DB_CONNECT_TIMEOUT_SECONDS`, `DB_SOCKET_TIMEOUT_SECONDS`) | 10 / 300 | Conexión TCP y lectura del driver (red de seguridad) |
 | `mercadopago.connection-timeout-ms` / `connection-request-timeout-ms` / `socket-timeout-ms` | 3000 / 3000 / 10000 | SDK de Mercado Pago; un timeout termina en `502 MERCADO_PAGO_GATEWAY` con `retryable=true` |
 | `spring.mail.properties.mail.smtp.*timeout` | 5000 | Brevo (SMTP); ya existía |
+| `app.mail.brevo.connect-timeout-ms` / `read-timeout-ms` | 3000 / 5000 | API HTTP de Brevo (`BrevoTransactionalEmailGateway`); un timeout cuenta como fallo del circuito `mail` |
+| `resilience.<nombre>.max-wait` (`RESILIENCE_MAX_WAIT`) | 200ms | Espera de un permiso del bulkhead (ver más abajo) |
 
 ## Límites de entrada
 
@@ -60,12 +62,46 @@ Un archivo mayor al límite responde `400 MAX_UPLOAD_SIZE_EXCEEDED`. Spring solo
 
 ## Circuit breakers
 
-Propiedades por nombre: `resilience.<nombre>.window`, `failure-threshold`, `wait-open`; `enabled` hereda `resilience.default.enabled` (`RESILIENCE_ENABLED`, default `false`). En producción poner `RESILIENCE_ENABLED=true`.
+Propiedades por nombre: `resilience.<nombre>.window`, `failure-threshold`, `wait-open`; `enabled` hereda `resilience.default.enabled` (`RESILIENCE_ENABLED`). El default base es `false` (local y tests), pero los perfiles `prod` y `staging` (`application-prod.properties`; staging usa `STAGING_SPRING_PROFILES=prod`) lo arrancan en `true`. Con `enabled=false` el circuit breaker y el bulkhead son pass-through.
 
 | Nombre | Propiedades | Cuenta como fallo | Respuesta con el circuito abierto |
 |---|---|---|---|
 | `mercadopago` | `RESILIENCE_MERCADOPAGO_WINDOW` (10), `_FAILURE_THRESHOLD` (5), `_WAIT_OPEN` (30s) | `MPException` (red/timeout) y `MPApiException` 5xx o 429; los 4xx no cuentan | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After` |
 | `google` | `RESILIENCE_GOOGLE_WINDOW` (10), `_FAILURE_THRESHOLD` (5), `_WAIT_OPEN` (30s) | `IOException` al verificar el token (`502 GOOGLE_SERVICE_UNAVAILABLE`); un token inválido no cuenta | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After` |
+| `mail` | Sin propiedades propias (hereda `resilience.default.*`) | Fallo de envío por SMTP o por la API HTTP de Brevo (red/timeout/5xx) | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After`; en jobs de notificación el envío queda para reintento |
+| `whatsapp-meta` | `RESILIENCE_WHATSAPP_META_WINDOW` (10), `_FAILURE_THRESHOLD` (5), `_WAIT_OPEN` (30s) | Red/timeout y 5xx o 429 de la API de Meta; los 4xx no cuentan | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After`; los envíos quedan para reintento |
+
+## Bulkhead
+
+Un proveedor lento que no devuelve errores no abre el circuit breaker y ocupa hilos y conexiones hasta el timeout. El bulkhead (`shared/resilience/Bulkhead`) acota las llamadas simultáneas a cada integración con un semáforo: si no consigue permiso en `max-wait` rechaza con `CircuitOpenException` (`503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After`, sin código de error nuevo). El permiso se libera siempre en `finally`, aunque la llamada lance.
+
+Propiedades por nombre: `resilience.<nombre>.max-concurrent` y `resilience.<nombre>.max-wait`, con fallback a `resilience.default.*` (`BulkheadFactory`, mismo patrón que `CircuitBreakerFactory`). `enabled` es el mismo `resilience.default.enabled`.
+
+| Nombre | Variable | Default |
+|---|---|---|
+| `mail` | `RESILIENCE_MAIL_MAX_CONCURRENT` | 4 |
+| `whatsapp-meta` | `RESILIENCE_WHATSAPP_META_MAX_CONCURRENT` | 4 |
+| `mercadopago` | `RESILIENCE_MERCADOPAGO_MAX_CONCURRENT` | 4 |
+| `google` | `RESILIENCE_GOOGLE_MAX_CONCURRENT` | 8 |
+| resto (`default`) | `RESILIENCE_MAX_CONCURRENT` / `RESILIENCE_MAX_WAIT` | 8 / 200ms |
+
+Composición: el bulkhead va por fuera del circuit breaker, con `Bulkhead.executeProtected(bulkhead, breaker, call[, countsAsFailure])`. Un rechazo del bulkhead ocurre antes de entrar al breaker, así que no cuenta como fallo del proveedor ni abre el circuito.
+
+Métricas: `resilience.bulkhead.rejected{name}` (contador) y `resilience.bulkhead.available{name}` (permisos libres). Alerta sugerida: `rate(resilience_bulkhead_rejected_total[5m]) > 0` sostenido indica un proveedor lento o un límite chico.
+
+Dónde está aplicado (S3-d):
+
+| Punto | Comportamiento con el bulkhead lleno |
+|---|---|
+| `EmailDeliveryChannel.dispatchDelivery` (API HTTP de Brevo, nombre `mail`) | La entrega queda `QUEUED`/diferida sin consumir intento, igual que con el circuito abierto |
+| `CircuitBreakingMailSender` (SMTP, `BrevoEmailService`, nombre `mail`) | `CircuitOpenException` => `503` + `Retry-After`; no toca SMTP ni cuenta como fallo |
+| `WhatsAppDeliverySender.sendQueued` (`whatsapp-meta`) | La entrega queda sin consumir intento |
+| `GoogleIdTokenService.verify` (`google`, `POST /auth/google`) | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After` (el mapeo de `CircuitOpenException` lo cubre `GlobalExceptionHandlerTest`; no hay MockMvc propio de `/auth/google` para no sumar un contexto de Spring); un token inválido sigue sin contar como fallo del circuito (`countsAsFailure`) |
+| `SdkMercadoPagoPaymentFetcher.fetchApproved` (`mercadopago`) | `CircuitOpenException`; solo el fetcher de pagos, `createPreference` queda fuera (B4, D-226). El webhook (`MercadoPagoWebhookRegistration.register`, llamado desde `MpWebhookController`) no captura la excepción: sale como `503` + `Retry-After` y no se registra ningún pago, igual que con el circuito abierto; Mercado Pago reintenta las notificaciones que no reciben `2xx`, y el registro es idempotente por `mpPaymentId` |
+
+Comportamiento conocido: en `BroadcastWhatsAppDispatchJob` con el bulkhead lleno el lote sigue iterando y cada entrega espera hasta `max-wait` (200ms) antes de quedar sin consumir intento; solo suma latencia y infla el contador `attempted`, no pierde ni consume entregas.
+
+`mail` comparte un único bulkhead entre la API HTTP y SMTP (son dos transportes del mismo proveedor y nunca se anidan). Pendiente: S3-e (sacar la llamada HTTP de la transacción) y un pool propio para los jobs de envío.
 
 ## Señales de fallo
 

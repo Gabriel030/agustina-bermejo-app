@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { describeError } from '@/api/describeError';
 import { useChangeSection, useWithdrawEnrollment } from '@/features/identity/hooks/useEnrollmentChanges';
-import { describeOverlap, isInlineError } from '@/features/identity/lib/enrollmentChanges';
+import { describeOverlap, isInlineError } from '@/lib/enrollmentChanges';
 
 const WITHDRAW_DONE = {
   'withdraw-subject': 'Materia dada de baja',

@@ -19,7 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import com.red_escuela.backend.shared.permission.RequiresPermission;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,13 +47,13 @@ public class DocumentDebtExceptionController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @RequiresPermission(code = "document.debt-exception.issue", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
+    @PreAuthorize("hasRole('DIRECTOR') or (hasRole('ADMINISTRATIVO') and !hasRole('SUBDIRECTOR'))")
     public DebtExceptionResponse issue(@Valid @RequestBody IssueDebtExceptionRequest request) {
         return issueUseCase.issue(request);
     }
 
     @GetMapping
-    @RequiresPermission(code = "document.debt-exception.issue", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
+    @PreAuthorize("hasRole('DIRECTOR') or (hasRole('ADMINISTRATIVO') and !hasRole('SUBDIRECTOR'))")
     public Page<DebtExceptionResponse> list(@RequestParam(required = false) DebtExceptionStatus status,
                                             @RequestParam(required = false) Long studentId,
                                             @PageableDefault(size = 50) Pageable pageable) {
@@ -62,7 +62,7 @@ public class DocumentDebtExceptionController {
 
     @GetMapping("/{id}/pdf")
     @ApiResponse(responseCode = "200", content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")))
-    @RequiresPermission(code = "document.debt-exception.issue", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
+    @PreAuthorize("hasRole('DIRECTOR') or (hasRole('ADMINISTRATIVO') and !hasRole('SUBDIRECTOR'))")
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
         ProcedureDocumentPdf pdf = pdfUseCase.pdfOf(id);
         return ResponseEntity.ok()

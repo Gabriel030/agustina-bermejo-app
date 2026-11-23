@@ -15,6 +15,8 @@ import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.exception.CircuitOpenException;
 import com.red_escuela.backend.shared.mail.EmailDeliveryReceipt;
 import com.red_escuela.backend.shared.mail.MailCircuit;
+import com.red_escuela.backend.shared.resilience.Bulkhead;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreaker;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.mail.MaskedEmailAddress;
@@ -44,15 +46,18 @@ public class EmailDeliveryChannel {
     private final PolicySet<EmailDeliveryContext> emailDeliveryPolicySet;
     private final TransactionalEmailGateway gateway;
     private final CircuitBreaker mailBreaker;
+    private final Bulkhead mailBulkhead;
     private final DeliveryUnsubscribeLinkProvider unsubscribeLinkProvider;
 
     @Autowired
     public EmailDeliveryChannel(NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
                                 NotificationPreferenceFinder notificationPreferenceQuery,
                                 PolicySet<EmailDeliveryContext> emailDeliveryPolicySet, TransactionalEmailGateway gateway,
-                                CircuitBreakerFactory circuitBreakerFactory, DeliveryUnsubscribeLinkProvider unsubscribeLinkProvider) {
+                                CircuitBreakerFactory circuitBreakerFactory, BulkheadFactory bulkheadFactory,
+                                DeliveryUnsubscribeLinkProvider unsubscribeLinkProvider) {
         this.unsubscribeLinkProvider = unsubscribeLinkProvider;
         this.mailBreaker = circuitBreakerFactory.breakerNamed(MailCircuit.NAME);
+        this.mailBulkhead = bulkheadFactory.bulkheadNamed(MailCircuit.NAME);
         this.deliveryRepository = deliveryRepository;
         this.personContactFinder = personContactFinder;
         this.notificationPreferenceQuery = notificationPreferenceQuery;
@@ -108,9 +113,9 @@ public class EmailDeliveryChannel {
         TransactionalEmail email = new TransactionalEmail(recipient.get().address(), delivery.getSubject(), delivery.getBodyText(), delivery.getBodyHtml(), unsubscribeUrl);
         EmailDeliveryReceipt receipt = null;
         try {
-            receipt = mailBreaker.execute(() -> gateway.send(email), MailCircuit::countsAsProviderFailure);
+            receipt = Bulkhead.executeProtected(mailBulkhead, mailBreaker, () -> gateway.send(email), MailCircuit::countsAsProviderFailure);
         } catch (CircuitOpenException open) {
-            log.warn("Circuito de mail abierto, la entrega queda sin consumir intentos dedup={}", delivery.getDedupKey());
+            log.warn("Circuito de mail abierto o bulkhead lleno, la entrega queda sin consumir intentos dedup={}", delivery.getDedupKey());
             return;
         } catch (TransactionalEmailRejectedException rejection) {
             log.warn("El proveedor rechazo el mail sin reintento dedup={} status={}", delivery.getDedupKey(), rejection.statusCode());
