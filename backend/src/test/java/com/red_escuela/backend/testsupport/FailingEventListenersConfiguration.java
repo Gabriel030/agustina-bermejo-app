@@ -3,6 +3,9 @@ package com.red_escuela.backend.testsupport;
 import com.red_escuela.backend.announcement.events.AnnouncementDeletedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementPublishedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceChangeRequestApprovedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceChangeRequestRejectedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceJustificationApprovedEvent;
 import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionRevokedEvent;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
@@ -12,8 +15,6 @@ import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigRejected
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.EventListener;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 @TestConfiguration
 public class FailingEventListenersConfiguration {
@@ -39,23 +40,39 @@ public class FailingEventListenersConfiguration {
     }
 
     public static class FailingAttendanceListener {
-        private final AtomicInteger seen = new AtomicInteger();
-        private volatile int failOnNth;
+        private volatile Class<?> failingOn;
 
-        public void failOnNthEvent(int nth) {
-            seen.set(0);
-            this.failOnNth = nth;
+        public void failOn(Class<?> eventType) {
+            this.failingOn = eventType;
         }
 
         public void stopFailing() {
-            this.failOnNth = 0;
+            this.failingOn = null;
         }
 
         @EventListener
         public void onStatusChanged(AttendanceStatusChangedEvent event) {
-            int position = seen.incrementAndGet();
-            if (failOnNth > 0 && position == failOnNth) {
-                throw new IllegalStateException("listener failed on event " + position);
+            failIfArmedFor(AttendanceStatusChangedEvent.class);
+        }
+
+        @EventListener
+        public void onChangeRequestApproved(AttendanceChangeRequestApprovedEvent event) {
+            failIfArmedFor(AttendanceChangeRequestApprovedEvent.class);
+        }
+
+        @EventListener
+        public void onChangeRequestRejected(AttendanceChangeRequestRejectedEvent event) {
+            failIfArmedFor(AttendanceChangeRequestRejectedEvent.class);
+        }
+
+        @EventListener
+        public void onJustificationApproved(AttendanceJustificationApprovedEvent event) {
+            failIfArmedFor(AttendanceJustificationApprovedEvent.class);
+        }
+
+        private void failIfArmedFor(Class<?> eventType) {
+            if (eventType.equals(failingOn)) {
+                throw new IllegalStateException("listener failed on " + eventType.getSimpleName());
             }
         }
     }

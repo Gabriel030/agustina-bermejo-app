@@ -14,13 +14,9 @@ vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: auth.usuario }),
 }));
 
-vi.mock('@/features/identity/hooks/useEnrollmentChanges', async (importOriginal) => {
-  const original = await importOriginal();
-  return {
-    ...original,
-    useChangeSectionCandidates: () => ({ data: candidatesMock.data, isLoading: false, isError: false, isSuccess: true, refetch: () => {} }),
-  };
-});
+vi.mock('@/hooks/useChangeSectionCandidates', () => ({
+  useChangeSectionCandidates: () => ({ data: candidatesMock.data, isLoading: false, isError: false, isSuccess: true, refetch: () => {} }),
+}));
 
 const API = 'http://localhost:8080';
 

@@ -4,8 +4,8 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertifi
 import com.red_escuela.backend.graduation.certificate.regular.dto.UpdateRegularCertificateSettingsRequest;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetRegularCertificateSettingsUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.UpdateRegularCertificateSettingsUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,13 +26,13 @@ public class RegularCertificateSettingsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.regular_settings_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public RegularCertificateSettingsResponse get() {
         return getUseCase.get();
     }
 
     @PutMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.regular_settings_manage", legacyRoles = "ROLE_DIRECTOR")
     public RegularCertificateSettingsResponse update(@Valid @RequestBody UpdateRegularCertificateSettingsRequest request) {
         return updateUseCase.update(request);
     }

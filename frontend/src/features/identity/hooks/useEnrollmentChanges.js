@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
 function post(path, body) {
@@ -34,14 +34,5 @@ export function useChangeSection(studentId) {
       queryClient.invalidateQueries({ queryKey: ['program-enrollment'] });
       queryClient.invalidateQueries({ queryKey: ['alumno', studentId] });
     },
-  });
-}
-
-export function useChangeSectionCandidates(sectionEnrollmentId, enabled) {
-  return useQuery({
-    queryKey: ['section-enrollments', sectionEnrollmentId, 'change-section-candidates'],
-    queryFn: () => apiFetch(`/section-enrollments/${sectionEnrollmentId}/change-section-candidates`),
-    enabled: !!sectionEnrollmentId && enabled,
-    staleTime: 0,
   });
 }

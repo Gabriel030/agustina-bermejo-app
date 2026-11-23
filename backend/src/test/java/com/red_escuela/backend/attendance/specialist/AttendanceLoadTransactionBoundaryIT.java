@@ -10,6 +10,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
 import com.red_escuela.backend.attendance.usecase.record.CancelProgramSectionClassSessionCommand;
 import com.red_escuela.backend.attendance.usecase.record.CancelProgramSectionClassSessionUseCase;
@@ -182,8 +183,8 @@ class AttendanceLoadTransactionBoundaryIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void loadFailingWhilePublishingTheSecondEventLeavesNoAttendanceNorClassSession() {
-        failingListener.failOnNthEvent(2);
+    void loadFailingWhilePublishingAnEventLeavesNoAttendanceNorClassSession() {
+        failingListener.failOn(AttendanceStatusChangedEvent.class);
         long attendanceBefore = count("attendance");
         long sessionsBefore = count("class_session");
 
