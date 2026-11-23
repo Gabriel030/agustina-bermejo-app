@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { springPage } from '@/test/fixtures/certificates';
 import { errorBody } from '@/test/fixtures/errors';
 import { examCertificateCandidates, ineligibleProcedure, publicDocumentVerification } from '@/test/fixtures/constancias';
 
@@ -103,3 +104,23 @@ export const ownDocumentExamNotHeldHandler = http.post(`${API}/me/documents/:typ
 export const documentSettingsConflictHandler = http.put(`${API}/certificate-settings/documents`, () =>
   failure(409, 'OPTIMISTIC_LOCK_CONFLICT'),
 );
+
+export const ownDocumentRequiresPaymentsHandler = http.post(`${API}/me/documents/:type`, () =>
+  failure(409, 'DOCUMENT_REQUIRES_PAYMENTS_UP_TO_DATE'),
+);
+
+export const debtExceptionsEmptyHandler = http.get(`${API}/document-debt-exceptions`, () => HttpResponse.json(springPage([])));
+
+export const debtExceptionAlreadyUsedHandler = http.get(`${API}/me/procedures/approved/:documentType/:id/pdf`, () =>
+  failure(409, 'DEBT_EXCEPTION_ALREADY_USED'),
+);
+
+export const debtExceptionExpiredHandler = http.get(`${API}/me/procedures/approved/:documentType/:id/pdf`, () =>
+  failure(409, 'DEBT_EXCEPTION_EXPIRED'),
+);
+
+export const debtExceptionNotFoundHandler = http.get(`${API}/document-debt-exceptions/:id/pdf`, () =>
+  failure(404, 'DEBT_EXCEPTION_NOT_FOUND'),
+);
+
+export const debtExceptionForbiddenHandler = http.post(`${API}/document-debt-exceptions`, () => failure(403, 'FORBIDDEN'));

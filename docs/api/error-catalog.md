@@ -292,6 +292,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `COURSE_SUBJECT_NOT_FOUND` | no | `CourseSubjectNotFoundException` | academicstructure |
 | `CREDIT_NOTE_INVOICE_NOT_FOUND` | no | `CreditNoteInvoiceNotFoundException` | billing |
 | `CYCLE_NOT_FOUND` | no | `CycleNotFoundException` | academicstructure |
+| `DEBT_EXCEPTION_NOT_FOUND` | no | `DebtExceptionNotFoundException` | graduation |
 | `DIRECTOR_APPROVAL_REQUEST_NOT_FOUND` | no | `DirectorApprovalRequestNotFoundException` | enrollment |
 | `DISCOUNT_DEFINITION_NOT_FOUND` | no | `DiscountDefinitionNotFoundException` | billing |
 | `DISCOUNT_SCOPE_OFFERING_NOT_FOUND` | no | `DiscountScopeOfferingNotFoundException` | billing |
@@ -435,11 +436,14 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CYCLE_DECISION_IDEMPOTENCY_KEY_CONFLICT` | no | `CycleDecisionIdempotencyKeyConflictException` | academicstructure |
 | `CYCLE_NOT_EDITABLE` | no | `CycleNotEditableException` | academicstructure |
 | `CYCLE_NOT_PENDING_APPROVAL` | no | `CycleNotPendingApprovalException` | academicstructure |
+| `DEBT_EXCEPTION_ALREADY_USED` | no | `DebtExceptionAlreadyUsedException` | graduation |
+| `DEBT_EXCEPTION_EXPIRED` | no | `DebtExceptionExpiredException` | graduation |
 | `DIRECTOR_ALREADY_EXISTS` | no | `DirectorAlreadyExistsException` | identity |
 | `DIRECTOR_APPROVAL_REQUEST_ALREADY_ACTIVE` | no | `DirectorApprovalRequestAlreadyActiveException` | enrollment |
 | `DISCOUNT_DEFINITION_CLOSED` | no | `DiscountDefinitionClosedException` | billing |
 | `DISCOUNT_EXCEEDS_LINE_AMOUNT` | no | `DiscountExceedsLineAmountException` | billing |
 | `DISCOUNT_INVOICE_TYPE_MISMATCH` | no | `DiscountInvoiceTypeMismatchException` | billing |
+| `DOCUMENT_REQUIRES_PAYMENTS_UP_TO_DATE` | no | `DocumentRequiresPaymentsUpToDateException` | graduation |
 | `DRAFT_NOT_PENDING` | no | `DraftNotPendingException` | billing |
 | `DUE_DATE_BEFORE_ISSUE_DATE` | no | `DueDateBeforeIssueDateException` | billing |
 | `DUPLICATE_CHARGE` | no | `DuplicateChargeException` | billing |
@@ -850,6 +854,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/discount-definitions` | `DiscountDefinitionController#createDiscountDefinition` |
 | POST | `/discount-definitions/validation` | `DiscountDefinitionController#validateDiscountDefinition` |
 | POST | `/discount-definitions/{id}/closure` | `DiscountDefinitionController#closeDiscountDefinition` |
+| POST | `/document-debt-exceptions` | `DocumentDebtExceptionController#issue` |
 | POST | `/elective-groups` | `ElectiveGroupController#create` |
 | POST | `/email-change-preview` | `OwnerEmailChangeApprovalController#previewEmailChange` |
 | POST | `/enrollment-fee-exemptions/{id}/revoke` | `EnrollmentFeeController#revoke` |

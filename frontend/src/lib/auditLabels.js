@@ -59,6 +59,10 @@ const ACTIONS = {
   EXAM_CERTIFICATE_BATCH_ISSUED: ['Constancias de examen emitidas en lote', 'success'],
   EXAM_CERTIFICATE_REVOKED: ['Constancia de examen revocada', 'danger'],
   DOCUMENT_GENERATED_BY_STUDENT: ['Constancia generada por el alumno', 'neutral'],
+  DOCUMENT_DEBT_EXC_ISSUED: ['Documento emitido por excepción de deuda', 'warning'],
+  DOCUMENT_DEBT_EXC_USED: ['Excepción de deuda utilizada', 'accent'],
+  DOCUMENT_DEBT_EXC_EXPIRED: ['Excepción de deuda vencida', 'neutral'],
+  DOCUMENT_DEBT_EXC_DOWNLOADED: ['Documento por excepción descargado por Administración', 'warning'],
   DOCUMENT_SETTINGS_CHANGED: ['Configuración de emisión de documentos modificada', 'accent'],
 };
 
@@ -81,6 +85,7 @@ const ENTITIES = {
   CERTIFICATE_DOCUMENT: 'Documento verificable',
   CERTIFICATE_TEMPLATE: 'Plantilla de documento',
   EXAM_CERTIFICATE: 'Constancia de examen',
+  DOCUMENT_DEBT_EXCEPTION: 'Excepción de deuda de documento',
 };
 
 const ROLES = {
