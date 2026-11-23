@@ -16,11 +16,11 @@ import com.red_escuela.backend.graduation.certificate.signatory.usecase.GetCerti
 import com.red_escuela.backend.graduation.certificate.signatory.usecase.ListCertificateSignatoriesUseCase;
 import com.red_escuela.backend.graduation.certificate.signatory.usecase.UpdateCertificateSignatoryUseCase;
 import com.red_escuela.backend.graduation.certificate.signatory.usecase.UploadCertificateSignatorySignatureUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

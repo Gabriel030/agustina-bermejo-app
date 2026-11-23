@@ -22,6 +22,7 @@ import com.red_escuela.backend.graduation.certificate.template.usecase.PreviewDo
 import com.red_escuela.backend.graduation.certificate.template.usecase.PublishDocumentTemplateUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.SaveDraftDocumentTemplateUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.UploadImageDocumentTemplateUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,7 +35,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
