@@ -17,7 +17,7 @@ class DocumentTemplateMigrationTest {
 
     @Test
     void seedsOnePublishedVersionOnePerDocumentTypeAndKeepsEgresoTemplates() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("456")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("462")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 
             List<Map<String, Object>> rows = jdbc.queryForList("select t.document_type, v.version_number, v.status, v.title "
@@ -38,7 +38,7 @@ class DocumentTemplateMigrationTest {
 
     @Test
     void rejectsUnknownDocumentTypeRowsWithBothOrNoDiscriminatorAndDuplicates() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("456")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("462")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 
             assertThatThrownBy(() -> jdbc.update("insert into certificate_template (document_type) values ('OTHER')"))
