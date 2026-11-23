@@ -33,6 +33,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [plans/954.md](cell/plans/954.md) | Cierre de 33.4: conteo de consultas en /me y asistencia, con N>50 | vigente |
 | [plans/955.md](cell/plans/955.md) | Cierre de 24-B: el dueño aprueba el cambio de email pedido por el personal | vigente |
 | [plans/956.md](cell/plans/956.md) | Cierre de 24-D: límites de tamaño de subidas probados con servidor real | vigente |
+| [plans/1196.md](cell/plans/1196.md) | E29-D11: invitaciones por oleadas a alumnos importados | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 
