@@ -223,7 +223,18 @@ class GraduationTransactionBoundaryIT extends AbstractIntegrationTest {
         approveGraduationRequest.approve(requestId);
 
         assertThat(requestStatus()).isEqualTo(GraduationRequestStatus.APPROVED.name());
-        assertThat(programEnrollmentStatus()).isNotEqualTo(ProgramEnrollmentStatus.ENROLLED.name());
+        assertThat(programEnrollmentStatus()).isEqualTo(ProgramEnrollmentStatus.COMPLETED.name());
+    }
+
+    @Test
+    void approvingWithOverdueDebtThrowsAndWritesNothing() {
+        seedRequestAt(GraduationRequestStatus.ADMIN_VERIFIED);
+        seedTwoOverdueInstallments();
+
+        assertThatThrownBy(() -> approveGraduationRequest.approve(requestId)).isInstanceOf(PendingDebtException.class);
+
+        assertThat(requestStatus()).isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED.name());
+        assertThat(programEnrollmentStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED.name());
     }
 
     @Test
