@@ -112,7 +112,7 @@ export function generateErrorMessage(error) {
   return null;
 }
 
-export function examOptionsOf(registrations, carreraId, now = new Date()) {
+export function examOptionsOf(registrations, carreraId, now) {
   return (registrations ?? [])
     .filter(
       (registration) =>

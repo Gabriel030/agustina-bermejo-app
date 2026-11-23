@@ -9,7 +9,7 @@ export function ExamPicker({ carreraId, value, onChange, disabled }) {
   const { data, isLoading, isError, error, refetch } = useMisInscripcionesAMesas();
   if (isLoading) return <Skeleton className="h-24" />;
   if (isError) return <LoadErrorState bare error={error} onRetry={refetch} resource="tus exámenes" />;
-  const options = examOptionsOf(data, carreraId);
+  const options = examOptionsOf(data, carreraId, new Date());
   if (options.length === 0) {
     return <p className="text-sm text-ink-soft">Todavía no rendiste ningún examen.</p>;
   }

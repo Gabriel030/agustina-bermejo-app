@@ -35,7 +35,13 @@ export function ProcedureRow({ procedure, carreraId, onOpen, onShowApproved }) {
   const eligible = data?.eligible === true;
   const reasons = data?.reasons ?? [];
 
-  if (isLoading) return <Skeleton className="h-[68px]" />;
+  if (isLoading) {
+    return (
+      <li>
+        <Skeleton className="h-[68px]" />
+      </li>
+    );
+  }
 
   return (
     <li className="flex flex-wrap items-center gap-3 px-4 py-3.5">

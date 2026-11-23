@@ -60,7 +60,7 @@ describe('AlumnoMisCarreras', () => {
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       ...curriculumProgressHandlers,
       ...constanciasHandlers,
-    http.get(`${API}/*`, () => HttpResponse.json([])),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
     );
 
     renderWithProviders(<AlumnoMisCarreras />);
@@ -102,7 +102,7 @@ describe('AlumnoMisCarreras', () => {
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       ...curriculumProgressHandlers,
       ...constanciasHandlers,
-    http.get(`${API}/*`, () => HttpResponse.json([])),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
     );
   }
 
@@ -173,7 +173,7 @@ describe('AlumnoMisCarreras — load failure', () => {
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       ...curriculumProgressHandlers,
       ...constanciasHandlers,
-    http.get(`${API}/*`, () => HttpResponse.json([])),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     const user = userEvent.setup();
     renderWithProviders(<AlumnoMisCarreras />);
@@ -192,7 +192,7 @@ describe('AlumnoMisCarreras — no permission', () => {
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       ...curriculumProgressHandlers,
       ...constanciasHandlers,
-    http.get(`${API}/*`, () => HttpResponse.json([])),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     renderWithProviders(<AlumnoMisCarreras />);
 
@@ -249,7 +249,7 @@ describe('AlumnoMisCarreras — regularity', () => {
       http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
       ...curriculumProgressHandlers,
       ...constanciasHandlers,
-    http.get(`${API}/*`, () => HttpResponse.json([])),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     return requested;
   }
@@ -322,7 +322,7 @@ describe('AlumnoMisCarreras — regularity', () => {
         http.get(`${API}/me/modules`, () => HttpResponse.json(MODULES_FULL)),
         ...curriculumProgressHandlers,
         ...constanciasHandlers,
-    http.get(`${API}/*`, () => HttpResponse.json([])),
+        http.get(`${API}/*`, () => HttpResponse.json([])),
       );
     }
 

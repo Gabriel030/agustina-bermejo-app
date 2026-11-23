@@ -63,7 +63,9 @@ export function ApprovedProceduresList({ items, onRegenerate }) {
           <ApprovedRow
             key={`${item.documentType}-${item.id}`}
             item={item}
-            downloading={downloadPdf.isPending && downloadPdf.variables?.id === item.id}
+            downloading={downloadPdf.isPending &&
+              downloadPdf.variables?.id === item.id &&
+              downloadPdf.variables?.documentType === item.documentType}
             onDownload={download}
             onRegenerate={onRegenerate}
           />

@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
 import { axe } from '@/test/axe';
 import {
+  approvedProcedure,
   approvedSubjectsCertificate,
   ineligibleProcedure,
   ownDocument,
@@ -252,7 +253,7 @@ describe('StudentProceduresSection', () => {
   it('tells the student to contact Administration on debt without amounts', async () => {
     server.use(
       http.post(`${API}/me/documents/:type`, () =>
-        HttpResponse.json(errorBody('DOCUMENT_REQUIRES_PAYMENTS_UP_TO_DATE'), { status: 422 }),
+        HttpResponse.json(errorBody('DOCUMENT_REQUIRES_PAYMENTS_UP_TO_DATE'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();
@@ -291,6 +292,57 @@ describe('StudentProceduresSection', () => {
     expect(within(expired).getByText('Vencida')).toBeInTheDocument();
     await user.click(within(expired).getByRole('button', { name: 'Generar de nuevo' }));
     expect(await screen.findByRole('button', { name: 'Generar y descargar' })).toBeInTheDocument();
+  });
+
+  it.each(['ISSUED_BY_STAFF', 'ISSUED_BY_TEACHER'])('never shows an exception state for %s procedures', async (origin) => {
+    server.use(http.get(`${API}/me/procedures/approved`, () => HttpResponse.json([approvedProcedure({ origin, detail: null })])));
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(await screen.findByRole('tab', { name: /Trámites aprobados/ }));
+
+    expect(await screen.findByRole('button', { name: 'Descargar PDF' })).toBeInTheDocument();
+    expect(screen.queryByText(/excepción/i)).not.toBeInTheDocument();
+  });
+
+  it('shows a retry on the row when the eligibility check fails and recovers', async () => {
+    let failing = true;
+    server.use(
+      http.get(`${API}/me/procedures/REGULAR_STUDENT_CERTIFICATE/eligibility`, () =>
+        failing
+          ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 })
+          : HttpResponse.json(procedureEligibility()),
+      ),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    const retry = await screen.findByRole('button', { name: 'Reintentar' }, { timeout: 8000 });
+    failing = false;
+    await user.click(retry);
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument());
+    expect(screen.getAllByRole('button', { name: 'Generar' })).toHaveLength(4);
+  });
+
+  it('keeps the form and shows an error when generation fails with a network error', async () => {
+    server.use(http.post(`${API}/me/documents/:type`, () => HttpResponse.error()));
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[0]);
+    await user.click(screen.getByRole('button', { name: 'Generar y descargar' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Generar y descargar' })).toBeEnabled());
+    expect(screen.queryByText('Tu constancia está lista.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeEnabled();
+  });
+
+  it('links Cambio de comisión to the subjects tab of the career', async () => {
+    renderSection();
+
+    const row = (await screen.findByText('Cambio de comisión')).closest('li');
+    expect(within(row).getByRole('link', { name: 'Abrir' })).toHaveAttribute('href', '/alumno/mis-carreras?carrera=5&tab=materias');
   });
 
   it('shows the empty state when there are no approved procedures', async () => {
