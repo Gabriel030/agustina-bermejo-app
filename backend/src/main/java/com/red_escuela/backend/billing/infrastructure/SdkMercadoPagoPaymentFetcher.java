@@ -11,6 +11,9 @@ import com.red_escuela.backend.billing.payment.gateway.mercadopago.MercadoPagoCi
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.resilience.Bulkhead;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
+import com.red_escuela.backend.shared.resilience.BulkheadSettings;
 import com.red_escuela.backend.shared.resilience.CircuitBreaker;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerSettings;
@@ -36,16 +39,20 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
 
     private final String accessToken;
     private final CircuitBreaker breaker;
+    private final Bulkhead bulkhead;
 
     @Autowired
-    public SdkMercadoPagoPaymentFetcher(@Value("${mercadopago.access-token:}") String accessToken, CircuitBreakerFactory circuitBreakerFactory) {
+    public SdkMercadoPagoPaymentFetcher(@Value("${mercadopago.access-token:}") String accessToken, CircuitBreakerFactory circuitBreakerFactory,
+                                        BulkheadFactory bulkheadFactory) {
         this.accessToken = accessToken;
+        this.bulkhead = bulkheadFactory.bulkheadNamed(MercadoPagoCircuit.NAME);
         this.breaker = circuitBreakerFactory.breakerNamed(MercadoPagoCircuit.NAME);
     }
 
     public SdkMercadoPagoPaymentFetcher(String accessToken) {
         this.accessToken = accessToken;
         this.breaker = new CircuitBreaker(MercadoPagoCircuit.NAME, new CircuitBreakerSettings(false, 1, 1, Duration.ofSeconds(1)), Clock.systemUTC(), new SimpleMeterRegistry());
+        this.bulkhead = new Bulkhead(MercadoPagoCircuit.NAME, new BulkheadSettings(false, 1, Duration.ofMillis(1)), new SimpleMeterRegistry());
     }
 
     @PostConstruct
@@ -55,7 +62,7 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
 
     @Override
     public Optional<MercadoPagoApprovedPayment> fetchApproved(String mpPaymentId) {
-        Payment payment = breaker.execute(() -> {
+        Payment payment = Bulkhead.executeProtected(bulkhead, breaker, () -> {
             try {
                 return new PaymentClient().get(Long.parseLong(mpPaymentId));
             } catch (MPException | MPApiException e) {
