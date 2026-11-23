@@ -1,5 +1,4 @@
 export const RAW_BUTTON_EXCEPTIONS = [
-  'src/components/BannerCarousel.jsx',
   'src/components/ChoiceChip.jsx',
   'src/components/KpiFilterChip.jsx',
   'src/components/MobileMenu.jsx',

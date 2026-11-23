@@ -202,6 +202,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   UNKNOWN_PERMISSION_CODE: 'El permiso indicado no existe en el catálogo.',
   DUPLICATE_PERMISSION_GRID_CHANGE: 'Hay cambios repetidos para el mismo rol y permiso.',
   DIRECTOR_PERMISSIONS_NOT_EDITABLE: 'El Director conserva todos los permisos y no se puede editar.',
+  FIXED_TO_DIRECTOR_PERMISSION_NOT_EDITABLE: 'Este permiso es exclusivo del Director y no se puede delegar.',
   REFRESH_CSRF_REJECTED: 'No pudimos validar tu sesión. Recargá la página e ingresá de nuevo.',
   ROLE_NOT_ASSIGNABLE_BY_ACTOR: 'No tenés permiso para asignar ese rol.',
   ANNOUNCEMENT_NOT_FOUND: 'No encontramos el aviso.',

@@ -60,6 +60,10 @@ public class EmailDeliveryChannel {
         this.gateway = gateway;
     }
 
+    public boolean isMailCircuitOpen() {
+        return mailBreaker.isRejectingCalls();
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void enqueue(DeliveryRequest request) {
         DeliveryEnvelope envelope = request.envelope();

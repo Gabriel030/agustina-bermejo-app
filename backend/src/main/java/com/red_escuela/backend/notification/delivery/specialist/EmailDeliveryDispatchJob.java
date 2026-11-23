@@ -66,11 +66,19 @@ public class EmailDeliveryDispatchJob {
             warnIfPendingAfterWindowClosed(today, window);
             return 0;
         }
+        if (emailChannel.isMailCircuitOpen()) {
+            log.warn("Despacho de mails omitido: circuito de mail abierto fecha={}", today);
+            return 0;
+        }
         List<Long> toSend = planningService.planAndApplyFor(today, settings, nextBusinessDayAfter(today));
         int attempted = 0;
         for (Long id : toSend) {
             if (!window.isOpenAt(LocalTime.now(clock))) {
                 log.warn("La franja de envio de mails se cerro con {} mails planificados sin enviar fecha={}", toSend.size() - attempted, today);
+                return attempted;
+            }
+            if (emailChannel.isMailCircuitOpen()) {
+                log.warn("Circuito de mail abierto, se corta el lote con {} mails sin enviar fecha={}", toSend.size() - attempted, today);
                 return attempted;
             }
             if (planningService.suppressBeforeSending(id, today)) {

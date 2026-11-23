@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -122,4 +123,30 @@ class EmailDeliveryDispatchJobTest {
         verify(channel, never()).dispatchDelivery(anyLong());
     }
 
+
+    @Test
+    void openCircuitSkipsPlanningAndLeavesEveryDeliveryUntouched() {
+        idsAreReturnedOnce(1L, 2L);
+        when(channel.isMailCircuitOpen()).thenReturn(true);
+
+        int attempted = job.dispatchDueEmails();
+
+        assertThat(attempted).isZero();
+        verify(planning, never()).planAndApplyFor(any(), any(), any());
+        verify(planning, never()).suppressBeforeSending(anyLong(), any());
+        verify(channel, never()).dispatchDelivery(anyLong());
+    }
+
+    @Test
+    void circuitOpeningMidBatchStopsTheRemainingDeliveries() {
+        idsAreReturnedOnce(1L, 2L);
+        when(channel.isMailCircuitOpen()).thenReturn(false, false, true);
+
+        int attempted = job.dispatchDueEmails();
+
+        assertThat(attempted).isEqualTo(1);
+        verify(channel).dispatchDelivery(1L);
+        verify(channel, never()).dispatchDelivery(2L);
+        verify(planning, never()).suppressBeforeSending(eq(2L), any());
+    }
 }
