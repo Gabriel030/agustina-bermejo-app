@@ -9,7 +9,7 @@ import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentS
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentEndView;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.api.CourseEnrollmentNonpaymentWithdrawalPort;
+import com.red_escuela.backend.shared.module.CourseEnrollmentNonpaymentWithdrawalPort;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.exception.ReportsPolicyViolations;
 import org.junit.jupiter.api.Tag;

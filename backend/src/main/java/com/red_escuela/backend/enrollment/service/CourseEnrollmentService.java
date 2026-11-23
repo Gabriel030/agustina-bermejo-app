@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
-import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
+import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
 
 @Service
 public class CourseEnrollmentService {
@@ -57,7 +57,7 @@ public class CourseEnrollmentService {
     private final WaitlistPromoter waitlistPromoter;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final StudentRoleGranter studentRoleGranter;
-    private final EnrollmentDebtGuard enrollmentDebtGuard;
+    private final EnrollmentDebtGuardPort enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final CatalogAvailabilityGuard catalogAvailabilityGuard;
@@ -69,7 +69,7 @@ public class CourseEnrollmentService {
             CourseCatalogFinder courseCatalogFinder,
             SectionFinder sectionFinder,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            StudentRoleGranter studentRoleGranter, EnrollmentDebtGuard enrollmentDebtGuard,
+            StudentRoleGranter studentRoleGranter, EnrollmentDebtGuardPort enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             CatalogAvailabilityGuard catalogAvailabilityGuard,
