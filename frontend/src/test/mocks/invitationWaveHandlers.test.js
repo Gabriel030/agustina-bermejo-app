@@ -40,7 +40,7 @@ describe('invitation wave default handlers', () => {
     expect((await call('GET', '/invitation-waves/import-batches')).body).toHaveLength(2);
     const report = await call('GET', '/invitation-waves/2/report.csv');
     expect(report.headers.get('content-disposition')).toContain('attachment');
-    expect(report.body.startsWith('﻿personId,status')).toBe(true);
+    expect(report.body).toContain('personId,status,exclusionReason,lastErrorCode,attempts,sentAt');
   });
 
   it('recipientsCarryNameAndEmailWhenTheCallerMayReadStudents', async () => {
