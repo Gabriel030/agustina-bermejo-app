@@ -4,6 +4,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.red_escuela.backend.identity.exception.GoogleServiceUnavailableException;
 import com.red_escuela.backend.identity.exception.InvalidGoogleTokenException;
 import com.red_escuela.backend.shared.exception.CircuitOpenException;
+import com.red_escuela.backend.shared.resilience.Bulkhead;
+import com.red_escuela.backend.shared.resilience.BulkheadSaturator;
+import com.red_escuela.backend.shared.resilience.BulkheadSettings;
 import com.red_escuela.backend.shared.resilience.CircuitBreaker;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerState;
@@ -16,6 +19,7 @@ import org.springframework.mock.env.MockEnvironment;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,6 +28,7 @@ class GoogleIdTokenServiceCircuitTest {
 
     private GoogleIdTokenVerifier verifier;
     private CircuitBreaker breaker;
+    private Bulkhead bulkhead;
     private GoogleIdTokenService service;
 
     @BeforeEach
@@ -35,7 +40,8 @@ class GoogleIdTokenServiceCircuitTest {
                 .withProperty("resilience.default.wait-open", "30s");
         breaker = new CircuitBreakerFactory(environment, Clock.systemUTC(), new SimpleMeterRegistry()).breakerNamed(GoogleCircuit.NAME);
         verifier = Mockito.mock(GoogleIdTokenVerifier.class);
-        service = new GoogleIdTokenService(verifier, breaker);
+        bulkhead = new Bulkhead(GoogleCircuit.NAME, new BulkheadSettings(true, 1, Duration.ofMillis(20)), new SimpleMeterRegistry());
+        service = new GoogleIdTokenService(verifier, breaker, bulkhead);
     }
 
     @Test
@@ -46,6 +52,22 @@ class GoogleIdTokenServiceCircuitTest {
         assertThat(breaker.state()).isEqualTo(CircuitBreakerState.OPEN);
         assertThatThrownBy(() -> service.verify("t")).isInstanceOf(CircuitOpenException.class);
         Mockito.verify(verifier, Mockito.times(2)).verify(Mockito.anyString());
+    }
+
+    @Test
+    void aFullBulkheadRejectsWithCircuitOpenWithoutCallingGoogleOrCountingAsFailure() throws Exception {
+        try (BulkheadSaturator saturated = BulkheadSaturator.occupying(bulkhead, 1)) {
+            for (int i = 0; i < 5; i++) {
+                assertThatThrownBy(() -> service.verify("t")).isInstanceOf(CircuitOpenException.class);
+            }
+            Mockito.verify(verifier, Mockito.never()).verify(Mockito.anyString());
+            assertThat(breaker.state()).isEqualTo(CircuitBreakerState.CLOSED);
+            assertThat(bulkhead.rejectedCount()).isEqualTo(5);
+        }
+        assertThat(bulkhead.availablePermits()).isEqualTo(1);
+        Mockito.when(verifier.verify(Mockito.anyString())).thenThrow(new GeneralSecurityException("bad"));
+        assertThatThrownBy(() -> service.verify("t")).isInstanceOf(InvalidGoogleTokenException.class);
+        assertThat(bulkhead.availablePermits()).isEqualTo(1);
     }
 
     @Test

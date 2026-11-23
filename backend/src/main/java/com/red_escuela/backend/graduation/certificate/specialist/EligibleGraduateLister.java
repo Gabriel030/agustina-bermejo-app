@@ -9,6 +9,8 @@ import com.red_escuela.backend.graduation.certificate.entity.GraduationCertifica
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateBlockedByDebtException;
 import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateNotEligibleException;
+import com.red_escuela.backend.graduation.entity.CertificateReviewStatus;
+import com.red_escuela.backend.graduation.exception.GraduationCertificateReviewRequiredException;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.source.GraduationSource;
 import org.springframework.data.domain.Page;
@@ -87,6 +89,9 @@ public class EligibleGraduateLister {
         try {
             source.requireEligible(enrollmentId);
             return Optional.of(GraduateEligibilityStatus.PENDING);
+        } catch (GraduationCertificateReviewRequiredException e) {
+            return Optional.of(CertificateReviewStatus.DISABLED.name().equals(e.getReviewStatus())
+                    ? GraduateEligibilityStatus.DISABLED : GraduateEligibilityStatus.PENDING_REVIEW);
         } catch (GraduationCertificateBlockedByDebtException e) {
             return Optional.of(GraduateEligibilityStatus.BLOCKED_BY_DEBT);
         } catch (GraduationCertificateNotEligibleException e) {

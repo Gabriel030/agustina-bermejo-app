@@ -38,7 +38,9 @@ public record CurriculumProgressResponse(
             CurriculumSubjectState state, @Schema(nullable = true) BigDecimal finalScore, int attempts,
             List<CurriculumBlockingPrerequisiteResponse> blockedBy, List<CurriculumCorequisiteResponse> corequisites,
             @Schema(nullable = true) ApprovalSource approvalSource,
-            @Schema(nullable = true) CurriculumEquivalenceResponse equivalence, boolean prerequisitesWaived) {
+            @Schema(nullable = true) CurriculumEquivalenceResponse equivalence, boolean prerequisitesWaived,
+            List<CurriculumBlockingPrerequisiteResponse> prerequisites,
+            @Schema(nullable = true) Long currentEnrollmentId) {
     }
 
     public record CurriculumEquivalenceResponse(
@@ -84,15 +86,21 @@ public record CurriculumProgressResponse(
                         .toList());
     }
 
+    private static List<CurriculumBlockingPrerequisiteResponse> prerequisiteResponsesOf(
+            List<CurriculumProgressView.BlockingPrerequisite> prerequisites) {
+        return prerequisites.stream()
+                .map(prerequisite -> new CurriculumBlockingPrerequisiteResponse(prerequisite.subjectId(),
+                        prerequisite.subjectCode(), prerequisite.subjectName(), prerequisite.requirementType(),
+                        prerequisite.standing()))
+                .toList();
+    }
+
     private static CurriculumSubjectResponse subjectOf(CurriculumProgressView.SubjectView subject) {
         return new CurriculumSubjectResponse(subject.programSubjectId(), subject.subjectId(), subject.subjectCode(),
                 subject.subjectName(), subject.credits(), subject.curricularYear(), subject.curricularTerm(),
                 subject.category(), subject.electiveGroupId(), subject.state(),
                 Optional.ofNullable(subject.finalScore()).map(Grade::value).orElse(null), subject.attempts(),
-                subject.blockedBy().stream()
-                        .map(blocking -> new CurriculumBlockingPrerequisiteResponse(blocking.subjectId(), blocking.subjectCode(),
-                                blocking.subjectName(), blocking.requirementType(), blocking.standing()))
-                        .toList(),
+                prerequisiteResponsesOf(subject.blockedBy()),
                 subject.corequisites().stream()
                         .map(corequisite -> new CurriculumCorequisiteResponse(corequisite.subjectId(), corequisite.subjectCode(),
                                 corequisite.subjectName(), corequisite.state()))
@@ -102,6 +110,7 @@ public record CurriculumProgressResponse(
                         equivalence.id(), equivalence.originInstitution(), equivalence.originSubjectName(),
                         Optional.ofNullable(equivalence.originScore()).map(Grade::value).orElse(null),
                         equivalence.recognizedOn(), equivalence.resolutionNumber())).orElse(null),
-                subject.prerequisitesWaived());
+                subject.prerequisitesWaived(),
+                prerequisiteResponsesOf(subject.prerequisites()), subject.currentEnrollmentId());
     }
 }

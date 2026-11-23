@@ -37,7 +37,7 @@ public class SubjectApprovalLookup {
         Map<Long, List<CourseworkEntry>> courseworkBySubject = subjectSectionEnrollmentRepository
                 .findCurriculumProgressRows(programEnrollmentId).stream()
                 .collect(Collectors.groupingBy(CurriculumProgressRow::getSubjectId,
-                        Collectors.mapping(row -> new CourseworkEntry(row.getStatus(), row.getFinalScore()),
+                        Collectors.mapping(row -> new CourseworkEntry(row.getStatus(), row.getFinalScore(), row.getEnrollmentId()),
                                 Collectors.toList())));
         Map<Long, RecognizedEquivalence> equivalenceBySubject = activeEquivalencesBySubject(
                 List.of(programEnrollmentId), null).getOrDefault(programEnrollmentId, Map.of());
@@ -61,7 +61,7 @@ public class SubjectApprovalLookup {
                 programEnrollmentIds, subjectIds, courseworkStatuses)) {
             coursework.computeIfAbsent(row.getProgramEnrollmentId(), id -> new HashMap<>())
                     .computeIfAbsent(row.getSubjectId(), id -> new ArrayList<>())
-                    .add(new CourseworkEntry(row.getStatus(), null));
+                    .add(new CourseworkEntry(row.getStatus(), null, null));
         }
         Map<Long, Map<Long, RecognizedEquivalence>> equivalences = activeEquivalencesBySubject(programEnrollmentIds, subjectIds);
         Map<Long, Map<Long, SubjectStanding>> standings = new HashMap<>();

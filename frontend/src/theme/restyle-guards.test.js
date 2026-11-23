@@ -37,9 +37,7 @@ const SHELL_ALLOWED = [
   '/src/components/ThemeToggle.jsx',
 ];
 
-const SHELL_PENDING = [
-  '/src/features/notifications/components/NotificationBell.jsx',
-];
+const SHELL_PENDING = [];
 
 const RULES = [
   {

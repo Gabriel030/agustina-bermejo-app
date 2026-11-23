@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -12,7 +13,12 @@ import java.util.List;
 @Repository
 public class StudentUnpaidDocumentsQuery {
 
-    public record UnprotectedUnpaidDocument(Long invoiceId, LocalDate dueDate, boolean markedOverdue) {
+    public record UnprotectedUnpaidDocument(Long invoiceId, LocalDate dueDate, boolean markedOverdue, BigDecimal outstandingAmount,
+                                            String currency) {
+
+        public UnprotectedUnpaidDocument(Long invoiceId, LocalDate dueDate, boolean markedOverdue) {
+            this(invoiceId, dueDate, markedOverdue, null, null);
+        }
     }
 
     public record StudentUnprotectedUnpaidDocument(Long studentId, UnprotectedUnpaidDocument document) {
@@ -33,7 +39,7 @@ public class StudentUnpaidDocumentsQuery {
         MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("studentIds", studentIds)
                 .addValue("today", Date.valueOf(today)).addValue("protectionFloor", Date.valueOf(protectionFloor));
         return jdbc.query("""
-                select a.student_id, i.id, i.due_date, i.payment_status
+                select a.student_id, i.id, i.due_date, i.payment_status, i.outstanding_amount, a.currency
                 from invoice i
                 join student_current_account a on a.id = i.student_current_account_id
                 where a.student_id in (:studentIds)
@@ -51,6 +57,6 @@ public class StudentUnpaidDocumentsQuery {
                 order by a.student_id, i.id
                 """, parameters, (row, index) -> new StudentUnprotectedUnpaidDocument(row.getLong("student_id"),
                 new UnprotectedUnpaidDocument(row.getLong("id"), row.getDate("due_date").toLocalDate(),
-                        "OVERDUE".equals(row.getString("payment_status")))));
+                        "OVERDUE".equals(row.getString("payment_status")), row.getBigDecimal("outstanding_amount"), row.getString("currency"))));
     }
 }

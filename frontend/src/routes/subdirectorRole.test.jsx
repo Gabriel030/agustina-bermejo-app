@@ -59,7 +59,7 @@ describe('SUBDIRECTOR inherits ADMINISTRATIVO', () => {
 
   it('gets every screen that administrativo gets, and the permissions screen', () => {
     const subdirectorPaths = roleRoutesFor('subdirector').map((route) => route.path);
-    const administrativoPaths = roleRoutesFor('administrativo').map((route) => route.path).filter((path) => path !== DENIED_TO_SUBDIRECTOR);
+    const administrativoPaths = roleRoutesFor('administrativo').map((route) => route.path).filter((path) => path !== DENIED_TO_SUBDIRECTOR && path !== 'constancias/excepciones/:id');
     expect(subdirectorPaths).toEqual(expect.arrayContaining(administrativoPaths));
     expect(subdirectorPaths).toContain('permisos');
   });

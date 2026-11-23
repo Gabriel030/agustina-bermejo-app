@@ -30,7 +30,8 @@ public record CurriculumProgressView(
             Integer curricularYear, CurricularTerm curricularTerm, ProgramSubjectCategory category,
             Long electiveGroupId, CurriculumSubjectState state, Grade finalScore, int attempts,
             List<BlockingPrerequisite> blockedBy, List<Corequisite> corequisites, ApprovalSource approvalSource,
-            RecognizedEquivalence equivalence, boolean prerequisitesWaived) {
+            RecognizedEquivalence equivalence, boolean prerequisitesWaived,
+            List<BlockingPrerequisite> prerequisites, Long currentEnrollmentId) {
     }
 
     public record BlockingPrerequisite(

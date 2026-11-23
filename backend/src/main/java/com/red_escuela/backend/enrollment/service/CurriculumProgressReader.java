@@ -2,10 +2,12 @@ package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.enrollment.api.ApprovalSource;
+import com.red_escuela.backend.enrollment.api.CourseworkEntry;
 import com.red_escuela.backend.enrollment.api.CurriculumProgressView;
 import com.red_escuela.backend.enrollment.api.ElectiveGroupProgressView;
 import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
 import com.red_escuela.backend.enrollment.api.SubjectStanding;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.academicstructure.api.ProgramCorequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumEntryView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
@@ -85,10 +87,13 @@ public class CurriculumProgressReader {
 
         Map<Long, CurriculumSubjectState> stateByProgramSubject = new HashMap<>();
         Map<Long, List<CurriculumProgressView.BlockingPrerequisite>> unmetByProgramSubject = new HashMap<>();
+        Map<Long, List<CurriculumProgressView.BlockingPrerequisite>> allByProgramSubject = new HashMap<>();
         for (ProgramCurriculumEntryView entry : entries) {
             boolean waived = waivedSubjectIds.contains(entry.subjectId());
-            List<CurriculumProgressView.BlockingPrerequisite> unmet = waived ? List.of()
-                    : unmetPrerequisites(prerequisites.getOrDefault(entry.programSubjectId(), List.of()), standings);
+            List<CurriculumProgressView.BlockingPrerequisite> all = allPrerequisites(
+                    prerequisites.getOrDefault(entry.programSubjectId(), List.of()), standings);
+            List<CurriculumProgressView.BlockingPrerequisite> unmet = waived ? List.of() : unmetOf(all);
+            allByProgramSubject.put(entry.programSubjectId(), waived ? waivedOf(all) : all);
             unmetByProgramSubject.put(entry.programSubjectId(), unmet);
             SubjectStanding standing = standings.getOrDefault(entry.subjectId(), SubjectStanding.NONE);
             stateByProgramSubject.put(entry.programSubjectId(), statePolicy.stateOf(
@@ -109,7 +114,8 @@ public class CurriculumProgressReader {
                     corequisitesOf(corequisites.getOrDefault(entry.programSubjectId(), List.of()), stateByProgramSubject),
                     standing.approvalSource(),
                     standing.approvalSource() == ApprovalSource.EQUIVALENCE ? standing.equivalence() : null,
-                    waivedSubjectIds.contains(entry.subjectId())));
+                    waivedSubjectIds.contains(entry.subjectId()),
+                    allByProgramSubject.get(entry.programSubjectId()), currentEnrollmentIdOf(standing.coursework())));
         }
 
         return new CurriculumProgressView(enrollment.getId(), program.getName(),
@@ -158,19 +164,45 @@ public class CurriculumProgressReader {
         return counts.getOrDefault(state, 0L).intValue();
     }
 
-    private List<CurriculumProgressView.BlockingPrerequisite> unmetPrerequisites(
+    private List<CurriculumProgressView.BlockingPrerequisite> allPrerequisites(
             List<PrerequisiteView> prerequisites, Map<Long, SubjectStanding> standings) {
         return prerequisites.stream()
                 .map(prerequisite -> new CurriculumProgressView.BlockingPrerequisite(
                         prerequisite.prerequisiteSubjectId(), prerequisite.prerequisiteSubjectCode(),
                         prerequisite.prerequisiteSubjectName(), prerequisite.requirementType(),
                         standingOf(standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE))))
-                .filter(blocking -> !requirementPolicy.isMet(blocking.requirementType(), blocking.standing()))
                 .toList();
     }
 
     private PrerequisiteStanding standingOf(SubjectStanding standing) {
         return requirementPolicy.standingOf(standing.courseworkStatuses(), standing.isApprovedByEquivalence());
+    }
+
+    private List<CurriculumProgressView.BlockingPrerequisite> unmetOf(
+            List<CurriculumProgressView.BlockingPrerequisite> prerequisites) {
+        return prerequisites.stream()
+                .filter(prerequisite -> !requirementPolicy.isMet(prerequisite.requirementType(), prerequisite.standing()))
+                .toList();
+    }
+
+    private List<CurriculumProgressView.BlockingPrerequisite> waivedOf(
+            List<CurriculumProgressView.BlockingPrerequisite> prerequisites) {
+        return prerequisites.stream()
+                .map(prerequisite -> requirementPolicy.isMet(prerequisite.requirementType(), prerequisite.standing())
+                        ? prerequisite
+                        : new CurriculumProgressView.BlockingPrerequisite(prerequisite.subjectId(),
+                                prerequisite.subjectCode(), prerequisite.subjectName(), prerequisite.requirementType(),
+                                PrerequisiteStanding.WAIVED))
+                .toList();
+    }
+
+    private Long currentEnrollmentIdOf(List<CourseworkEntry> coursework) {
+        return coursework.stream()
+                .filter(entry -> entry.status() == EnrollmentStatus.ENROLLED || entry.status() == EnrollmentStatus.IN_PROGRESS)
+                .map(CourseworkEntry::enrollmentId)
+                .filter(java.util.Objects::nonNull)
+                .max(Long::compare)
+                .orElse(null);
     }
 
     private List<CurriculumProgressView.Corequisite> corequisitesOf(List<ProgramCorequisiteView> corequisites,

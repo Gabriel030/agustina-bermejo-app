@@ -5,6 +5,7 @@ import com.red_escuela.backend.graduation.certificate.specialist.CertificateDige
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateImageResponse;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateImageUpload;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplateImagePurpose;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplate;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateImage;
 import com.red_escuela.backend.graduation.certificate.template.exception.TemplateImageInvalidException;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.function.Supplier;
 
 @Service
 public class CertificateTemplateImageUploader {
@@ -41,6 +43,15 @@ public class CertificateTemplateImageUploader {
 
     @Transactional
     public CertificateTemplateImageResponse upload(GraduationCertificateKind kind, CertificateTemplateImageUpload upload) {
+        return store(upload, () -> templateFinder.find(kind));
+    }
+
+    @Transactional
+    public CertificateTemplateImageResponse upload(DocumentTemplateType type, CertificateTemplateImageUpload upload) {
+        return store(upload, () -> templateFinder.find(type));
+    }
+
+    private CertificateTemplateImageResponse store(CertificateTemplateImageUpload upload, Supplier<CertificateTemplate> templateSupplier) {
         if (upload.purpose() == null) {
             throw new TemplateImageInvalidException();
         }
@@ -48,7 +59,7 @@ public class CertificateTemplateImageUploader {
         if (upload.purpose() == TemplateImagePurpose.SIGNATURE && !facts.hasAlpha()) {
             throw new TemplateImageInvalidException();
         }
-        CertificateTemplate template = templateFinder.find(kind);
+        CertificateTemplate template = templateSupplier.get();
         CertificateTemplateImage image = imageRepository.saveAndFlush(CertificateTemplateImage.builder()
                 .templateId(template.getId())
                 .purpose(upload.purpose())

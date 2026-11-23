@@ -123,6 +123,12 @@ public class CertificatePdfRenderer {
             text(content, font, fontSize, rect.x(), y, line);
             y -= leading;
         }
+        if (snapshot.recipientLabel() != null) {
+            for (String line : wrap(font, fontSize, rect.width(), snapshot.recipientLabel())) {
+                y -= leading;
+                text(content, font, fontSize, rect.x(), y, line);
+            }
+        }
         text(content, font, 11, rect.x(), y - 20, "Emitido el " + snapshot.issuedOn().format(DATE_FORMAT));
     }
 

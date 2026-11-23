@@ -49,6 +49,6 @@ public class GraduationSnapshotFactory {
                 LocalDate.now(clock),
                 student.getInstitution().getName(),
                 List.of(new SignatorySnapshot(signerName, signerTitle), new SignatorySnapshot(secondSignerName, secondSignerTitle)),
-                BuiltInCertificateTemplate.BUILT_IN_V1);
+                BuiltInCertificateTemplate.BUILT_IN_V1, null);
     }
 }
