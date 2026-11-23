@@ -978,6 +978,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/prospects/{id}/confirm` | `ProspectController#confirm` |
 | POST | `/prospects/{id}/documents` | `ProspectController#addDocument` |
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |
+| POST | `/public/monitoring/tunnel` | `SentryTunnelController#forwardEnvelope` |
 | POST | `/public/unsubscribe/{token}` | `PublicUnsubscribeController#confirmUnsubscribe` |
 | POST | `/refunds/{refundId}/completion` | `RefundController#completeRefund` |
 | POST | `/refunds/{refundId}/failure` | `RefundController#failRefund` |
