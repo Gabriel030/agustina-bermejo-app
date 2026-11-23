@@ -43,6 +43,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   INVITATION_RECIPIENT_DELIVERY_REQUIRED: 'No se pudo poner el destinatario en cola porque falta el envío asociado.',
   INVITATION_WAVE_WITHOUT_RECIPIENTS: 'La oleada no tiene destinatarios pendientes para iniciar.',
   INVITATION_WAVE_HAS_OPEN_RECIPIENTS: 'La oleada todavía tiene destinatarios pendientes o en cola.',
+  INVITATION_WAVE_NOT_RUNNING: 'La oleada no está en curso, por eso no se puede reintentar.',
   INVITATION_PERSON_ALREADY_INVITED: 'Alguna persona ya está pendiente de invitación en otra oleada. Volvé a armar la oleada.',
   INVITATION_WAVE_IMPORT_BATCH_NOT_FOUND: 'No encontramos ese lote de importación.',
   INVITATION_WAVE_TOO_MANY_RECIPIENTS: 'La oleada supera la cantidad máxima de destinatarios. Elegí un lote de importación más chico.',

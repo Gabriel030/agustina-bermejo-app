@@ -9,7 +9,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import java.util.List;
+import java.util.Optional;
 
 public interface InvitationWaveRecipientRepository extends JpaRepository<InvitationWaveRecipient, Long> {
 
@@ -18,6 +21,16 @@ public interface InvitationWaveRecipientRepository extends JpaRepository<Invitat
 
         long getTotal();
     }
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from InvitationWaveRecipient r where r.id = :id")
+    Optional<InvitationWaveRecipient> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("select r.waveId from InvitationWaveRecipient r where r.id = :id")
+    Optional<Long> findWaveIdById(@Param("id") Long id);
+
+    List<InvitationWaveRecipient> findByWaveIdAndStatusAndAttemptsLessThanOrderByIdAsc(Long waveId, InvitationRecipientStatus status,
+                                                                                       int attempts, Pageable pageable);
 
     Page<InvitationWaveRecipient> findByWaveId(Long waveId, Pageable pageable);
 
