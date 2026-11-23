@@ -8,7 +8,6 @@ import com.red_escuela.backend.attendance.entity.ClassSessionStatus;
 import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
 import com.red_escuela.backend.attendance.repository.ClassSessionRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
@@ -27,7 +26,6 @@ public class ClassSessionCanceller {
         this.classSessionUpserter = classSessionUpserter;
     }
 
-    @Transactional
     public void cancelCourseSectionSession(Long sectionId, Long instructorId, LocalDate classDate) {
         CourseSubjectSection section = sectionAccess.findCourseSection(sectionId);
         sectionAccess.requireOwnCourseSection(sectionId, instructorId);
@@ -36,7 +34,6 @@ public class ClassSessionCanceller {
         cancel(session);
     }
 
-    @Transactional
     public void cancelProgramSectionSession(Long sectionId, Long instructorId, LocalDate classDate) {
         SubjectSection section = sectionAccess.findProgramSection(sectionId);
         sectionAccess.requireOwnProgramSection(sectionId, instructorId);

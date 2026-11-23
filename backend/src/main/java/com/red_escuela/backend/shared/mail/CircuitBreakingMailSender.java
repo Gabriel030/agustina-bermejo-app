@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.mail;
 
+import com.red_escuela.backend.shared.resilience.Bulkhead;
 import com.red_escuela.backend.shared.resilience.CircuitBreaker;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.MailException;
@@ -12,10 +13,12 @@ import java.io.InputStream;
 public class CircuitBreakingMailSender implements JavaMailSender {
     private final JavaMailSender delegate;
     private final CircuitBreaker breaker;
+    private final Bulkhead bulkhead;
 
-    public CircuitBreakingMailSender(JavaMailSender delegate, CircuitBreaker breaker) {
+    public CircuitBreakingMailSender(JavaMailSender delegate, CircuitBreaker breaker, Bulkhead bulkhead) {
         this.delegate = delegate;
         this.breaker = breaker;
+        this.bulkhead = bulkhead;
     }
 
     public JavaMailSender delegate() {
@@ -63,7 +66,7 @@ public class CircuitBreakingMailSender implements JavaMailSender {
     }
 
     private void guarded(Runnable send) {
-        breaker.execute(() -> {
+        Bulkhead.executeProtected(bulkhead, breaker, () -> {
             send.run();
             return null;
         }, MailCircuit::countsAsProviderFailure);

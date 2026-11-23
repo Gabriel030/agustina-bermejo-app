@@ -13,13 +13,13 @@ import com.red_escuela.backend.graduation.certificate.regular.usecase.GetRegular
 import com.red_escuela.backend.graduation.certificate.regular.usecase.IssueRegularCertificateUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListRegularCertificatesUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RevokeRegularCertificateUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,39 +57,39 @@ public class RegularCertificateController {
     }
 
     @GetMapping("/eligibility")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.regular_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public RegularityResponse eligibility(@RequestParam RegularityKind kind, @RequestParam Long enrollmentId) {
         return checkRegularityUseCase.check(kind, enrollmentId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.issue", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public RegularCertificateResponse issue(@Valid @RequestBody IssueRegularCertificateRequest request) {
         return issueUseCase.issue(request);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.regular_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<RegularCertificateResponse> list(@RequestParam(required = false) Long studentId,
                                                  @RequestParam(required = false) RegularCertificateStatus status) {
         return listUseCase.list(studentId, status);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.regular_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public RegularCertificateResponse get(@PathVariable Long id) {
         return getUseCase.get(id);
     }
 
     @PostMapping("/{id}/revoke")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.revoke", legacyRoles = "ROLE_DIRECTOR")
     public RegularCertificateResponse revoke(@PathVariable Long id, @Valid @RequestBody RevokeRegularCertificateRequest request) {
         return revokeUseCase.revoke(id, request.reason());
     }
 
     @GetMapping("/{id}/pdf")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.download", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
         RegularCertificatePdf pdf = pdfUseCase.pdfOf(id);
         return ResponseEntity.ok()

@@ -80,10 +80,10 @@ class RegularCertificateIssuerTest {
     private final CertificateExceptionConsumer exceptionConsumer = mock(CertificateExceptionConsumer.class);
     private final Clock clock = Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
     private final IssueRegularCertificateCommand command = new IssueRegularCertificateCommand(RegularityKind.PROGRAM,
-            ENROLLMENT_ID, true, "Recibo 1234 en el sistema contable", RegularCertificateChannel.STAFF, null);
+            ENROLLMENT_ID, true, "Recibo 1234 en el sistema contable", RegularCertificateChannel.STAFF, null, null);
     private final CertificateSnapshot snapshot = new CertificateSnapshot("PEREZ, ANA", "DNI", "30111222", "la carrera",
             "Tecnicatura", null, null, NOW.toLocalDate(), NOW.toLocalDate(), "Instituto", List.of(),
-            RegularCertificateTemplate.REGULAR_BUILT_IN_V1);
+            RegularCertificateTemplate.REGULAR_BUILT_IN_V1, null);
     private final StandingResolution manualResolution = new StandingResolution(StandingBasis.MANUALLY_CONFIRMED, BillingMode.OFF,
             ACTOR_ID, NOW, "Recibo 1234 en el sistema contable");
     private final byte[] pdf = {1, 2, 3};
@@ -276,7 +276,7 @@ class RegularCertificateIssuerTest {
     @Test
     void exceptionIssuanceUsesTheExceptionStandingLinksItAndConsumesItWithTheCertificateId() {
         IssueRegularCertificateCommand withException = new IssueRegularCertificateCommand(RegularityKind.PROGRAM, ENROLLMENT_ID, false, null,
-                RegularCertificateChannel.STAFF, 55L);
+                RegularCertificateChannel.STAFF, 55L, null);
         when(standingGate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID))
                 .thenReturn(new StandingResolution(StandingBasis.EXCEPTION_APPROVED, BillingMode.FULL, null, null, null));
         when(certificateRepository.saveAndFlush(any(RegularStudentCertificate.class))).thenAnswer(invocation -> {
@@ -299,7 +299,7 @@ class RegularCertificateIssuerTest {
     @Test
     void failingExceptionConsumptionRemovesTheStoredFileAndPropagates() {
         IssueRegularCertificateCommand withException = new IssueRegularCertificateCommand(RegularityKind.PROGRAM, ENROLLMENT_ID, false, null,
-                RegularCertificateChannel.STAFF, 55L);
+                RegularCertificateChannel.STAFF, 55L, null);
         when(standingGate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID))
                 .thenReturn(new StandingResolution(StandingBasis.EXCEPTION_APPROVED, BillingMode.FULL, null, null, null));
         doThrow(new ExceptionAlreadyConsumedException()).when(exceptionConsumer).consume(any(), any(), any(), any(), any(), any());
