@@ -31,7 +31,6 @@ function renderSidebar(props = {}) {
 }
 
 afterEach(() => {
-  delete document.documentElement.dataset.design;
   logout.mockClear();
 });
 
@@ -51,24 +50,21 @@ describe('Sidebar', () => {
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the flat menu with design vl even when groups are given', () => {
-    document.documentElement.dataset.design = 'vl';
-    renderSidebar({ groups: GROUPS });
+  it('renders the flat menu when no groups are given', () => {
+    renderSidebar();
 
     expect(screen.queryByText('Personas')).not.toBeInTheDocument();
     expect(screen.queryAllByRole('list')).toHaveLength(0);
   });
 
-  it('renders labelled groups as lists with design b', () => {
-    document.documentElement.dataset.design = 'b';
+  it('renders labelled groups as lists', () => {
     renderSidebar({ groups: GROUPS });
 
     const people = screen.getByRole('list', { name: 'Personas' });
     expect(within(people).getByRole('link', { name: 'Alumnos' })).toBeInTheDocument();
   });
 
-  it('does not render the options entry with design b', () => {
-    document.documentElement.dataset.design = 'b';
+  it('does not render the options entry', () => {
     renderSidebar({ groups: GROUPS });
 
     expect(screen.queryByRole('link', { name: 'Opciones' })).not.toBeInTheDocument();
