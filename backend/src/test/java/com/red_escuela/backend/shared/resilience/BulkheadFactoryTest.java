@@ -80,6 +80,7 @@ class BulkheadFactoryTest {
     private String enabledFor(String... profiles) {
         String[] holder = new String[1];
         new ApplicationContextRunner()
+                .withInitializer(context -> context.getEnvironment().getPropertySources().remove("systemEnvironment"))
                 .withInitializer(new ConfigDataApplicationContextInitializer())
                 .withPropertyValues(profiles.length == 0 ? new String[0]
                         : new String[]{"spring.profiles.active=" + String.join(",", profiles)})

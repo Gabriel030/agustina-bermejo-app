@@ -184,6 +184,43 @@ class BulkheadTest {
     }
 
     @Test
+    void anInterruptedThreadIsRejectedKeepsItsInterruptFlagAndLeavesPermitsIntact() {
+        Bulkhead bulkhead = bulkhead(true, 2, Duration.ofSeconds(5));
+        AtomicInteger entered = new AtomicInteger();
+
+        Thread.currentThread().interrupt();
+        try {
+            assertThatThrownBy(() -> bulkhead.execute(() -> entered.incrementAndGet()))
+                    .isInstanceOf(CircuitOpenException.class);
+            assertThat(Thread.currentThread().isInterrupted()).isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+
+        assertThat(entered.get()).isZero();
+        assertThat(bulkhead.availablePermits()).isEqualTo(2);
+        assertThat(bulkhead.rejectedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void executeProtectedHonorsTheFailureClassifierOfTheBreaker() {
+        Bulkhead bulkhead = bulkhead(true, 4, Duration.ZERO);
+        CircuitBreaker breaker = new CircuitBreaker("provider",
+                new CircuitBreakerSettings(true, 2, 1, Duration.ofSeconds(30)), Clock.systemUTC(), meterRegistry);
+
+        assertThatThrownBy(() -> Bulkhead.executeProtected(bulkhead, breaker, () -> {
+            throw new IllegalArgumentException("client error");
+        }, failure -> !(failure instanceof IllegalArgumentException))).isInstanceOf(IllegalArgumentException.class);
+        assertThat(breaker.state()).isEqualTo(CircuitBreakerState.CLOSED);
+
+        assertThatThrownBy(() -> Bulkhead.executeProtected(bulkhead, breaker, () -> {
+            throw new IllegalStateException("provider down");
+        }, failure -> !(failure instanceof IllegalArgumentException))).isInstanceOf(IllegalStateException.class);
+        assertThat(breaker.state()).isEqualTo(CircuitBreakerState.OPEN);
+        assertThat(bulkhead.availablePermits()).isEqualTo(4);
+    }
+
+    @Test
     void metricsExposeRejectionsAndAvailablePermitsByName() {
         Bulkhead bulkhead = bulkhead(true, 1, Duration.ZERO);
 
