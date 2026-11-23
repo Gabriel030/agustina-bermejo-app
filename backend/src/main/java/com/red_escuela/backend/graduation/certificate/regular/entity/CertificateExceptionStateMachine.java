@@ -13,6 +13,7 @@ public final class CertificateExceptionStateMachine {
     public static final StateTransitionTable<CertificateExceptionStatus, CertificateExceptionEvent> TRANSITIONS =
             StateTransitionTable.forStatesAndEvents(CertificateExceptionStatus.class, CertificateExceptionEvent.class)
                     .allowInitialTransition(REQUEST, PENDING)
+                    .allowInitialTransition(DIRECT_APPROVE, APPROVED)
                     .allowTransition(PENDING, APPROVE, APPROVED)
                     .allowTransition(PENDING, REJECT, REJECTED)
                     .allowTransition(PENDING, WITHDRAW, WITHDRAWN)
