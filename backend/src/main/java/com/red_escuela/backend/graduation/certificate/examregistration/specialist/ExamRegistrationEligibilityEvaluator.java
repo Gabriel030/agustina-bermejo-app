@@ -133,7 +133,7 @@ public class ExamRegistrationEligibilityEvaluator {
         long issuedToday = certificateRepository.countByStudentIdAndIssuedAtGreaterThanEqualAndIssuedAtLessThan(
                 studentId, dayStart, dayStart.plusDays(1));
         return issuedToday >= dailyLimit
-                ? reason(ProcedureIneligibilityCode.ISSUANCE_LIMIT_REACHED, "Ya generaste hoy esta constancia",
+                ? reason(ProcedureIneligibilityCode.ISSUANCE_LIMIT_REACHED, "Ya generaste hoy una constancia de este tipo",
                 ProcedureNextStepKind.TRY_AGAIN_LATER, "Probá mañana")
                 : null;
     }
