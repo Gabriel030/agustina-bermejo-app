@@ -1,7 +1,8 @@
 package com.red_escuela.backend.graduation.certificate.regular;
 
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
-import com.red_escuela.backend.billing.collections.service.StudentDebtSummaryFinder;
+import com.red_escuela.backend.billing.collections.service.StudentOverdueDebtFinder;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -18,6 +19,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequ
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ApproveCertificateExceptionUseCase;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.CreateDirectCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListRegularCertificateRequestsUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RejectCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RequestCertificateExceptionUseCase;
@@ -30,11 +32,14 @@ import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.shared.persistence.QueryCountAssertions;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +61,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
+import static com.red_escuela.backend.shared.domain.TestMoney.usd;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
@@ -99,8 +105,10 @@ class RegularRequestDebtDataIntegrationTest extends AbstractIntegrationTest {
     private ApproveCertificateExceptionUseCase approveUseCase;
     @Autowired
     private RejectCertificateExceptionUseCase rejectUseCase;
+    @Autowired
+    private CreateDirectCertificateExceptionUseCase createDirectUseCase;
     @MockitoSpyBean
-    private StudentDebtSummaryFinder debtFinder;
+    private StudentOverdueDebtFinder debtFinder;
 
     private Person staff;
     private Person otherStaff;
@@ -206,13 +214,23 @@ class RegularRequestDebtDataIntegrationTest extends AbstractIntegrationTest {
                 OrganismKind.COURT, "Causa 77/2026", REASON));
     }
 
+    private long statementsOf(Runnable action) {
+        Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        statistics.setStatisticsEnabled(true);
+        statistics.clear();
+        action.run();
+        return statistics.getPrepareStatementCount();
+    }
+
     @Test
     void listingTwentyRequestsReadsDebtWithASingleBatchQuery() {
-        List<RegularCertificateRequestResponse> rows = QueryCountAssertions.assertAtMostQueries(entityManagerFactory, 8,
-                () -> listUseCase.list(null, null));
+        long oneStudent = statementsOf(() -> assertThat(listUseCase.list(studentIds.get(0), null)).hasSize(1));
+        clearInvocations(debtFinder);
 
-        assertThat(rows).hasSize(STUDENTS);
-        verify(debtFinder, times(1)).findByStudentIds(any(), any());
+        long twentyStudents = statementsOf(() -> assertThat(listUseCase.list(null, null)).hasSize(STUDENTS));
+
+        assertThat(twentyStudents).isLessThanOrEqualTo(oneStudent);
+        verify(debtFinder, times(1)).summarizeArsOverdueDebt(any(), any());
     }
 
     @Test
@@ -221,7 +239,7 @@ class RegularRequestDebtDataIntegrationTest extends AbstractIntegrationTest {
 
         RegularCertificateRequestResponse indebted = rowOf(rows, 0);
         assertThat(indebted.hasDebt()).isTrue();
-        assertThat(indebted.totalDue().amount()).isEqualByComparingTo("45000");
+        assertThat(indebted.totalDue().amount()).isEqualByComparingTo("30000");
         assertThat(indebted.overdueInstallments()).isEqualTo(2);
         RegularCertificateRequestResponse settled = rowOf(rows, 1);
         assertThat(settled.hasDebt()).isFalse();
@@ -242,7 +260,7 @@ class RegularRequestDebtDataIntegrationTest extends AbstractIntegrationTest {
             assertThat(row.overdueInstallments()).isNull();
             assertThat(row.hasDebt()).isNull();
         });
-        verify(debtFinder, times(0)).findByStudentIds(any(), any());
+        verify(debtFinder, times(0)).summarizeArsOverdueDebt(any(), any());
     }
 
     @Test
@@ -271,10 +289,10 @@ class RegularRequestDebtDataIntegrationTest extends AbstractIntegrationTest {
     void exceptionStoresTheDebtAtTheMomentOfTheRequest() {
         CertificateExceptionResponse created = requestExceptionFor(0);
 
-        assertThat(created.debtTotalAtRequest().amount()).isEqualByComparingTo("45000");
+        assertThat(created.debtTotalAtRequest().amount()).isEqualByComparingTo("30000");
         assertThat(created.overdueInstallmentsAtRequest()).isEqualTo(2);
         assertThat(jdbc.queryForObject("select debt_total_at_request from certificate_exception_approval where id = ?", java.math.BigDecimal.class,
-                created.id())).isEqualByComparingTo("45000");
+                created.id())).isEqualByComparingTo("30000");
         assertThat(jdbc.queryForObject("select overdue_installments_at_request from certificate_exception_approval where id = ?", Integer.class,
                 created.id())).isEqualTo(2);
     }
@@ -306,5 +324,98 @@ class RegularRequestDebtDataIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.pending").value(1)).andExpect(jsonPath("$.approved").value(0));
         mockMvc.perform(get("/certificate-exceptions/summary").header("Authorization", "Bearer " + directorToken))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.pending").value(2)).andExpect(jsonPath("$.approved").value(1));
+    }
+
+    private Long addInvoice(int index, YearMonth period, LocalDate dueDate, Money amount, InvoicePaymentStatus status) {
+        return transactions.execute(tx -> {
+            ProgramEnrollment enrollment = entityManager.find(ProgramEnrollment.class, enrollmentIds.get(index));
+            Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT)
+                    .forPeriod(period).dueOn(dueDate).withBaseAmount(amount).inState(status).build();
+            return invoice.getId();
+        });
+    }
+
+    private RegularCertificateRequestResponse studentRow(int index) {
+        return rowOf(listUseCase.list(null, null), index);
+    }
+
+    @Test
+    void onlyUpcomingInstallmentsAreNotDebt() {
+        addInvoice(1, YearMonth.of(2026, 12), LocalDate.of(2026, 12, 10), ars(15000), InvoicePaymentStatus.PENDING);
+        addInvoice(1, YearMonth.of(2027, 1), LocalDate.of(2027, 1, 10), ars(15000), InvoicePaymentStatus.PENDING);
+
+        RegularCertificateRequestResponse row = studentRow(1);
+
+        assertThat(row.hasDebt()).isFalse();
+        assertThat(row.overdueInstallments()).isZero();
+        assertThat(row.totalDue().amount()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void installmentDueTodayIsNotDebtButTheOneDueYesterdayIs() {
+        addInvoice(1, YearMonth.of(2026, 11), LocalDate.of(2026, 11, 10), ars(15000), InvoicePaymentStatus.PENDING);
+        assertThat(studentRow(1).hasDebt()).isFalse();
+
+        addInvoice(1, YearMonth.of(2026, 10), LocalDate.of(2026, 11, 9), ars(7000), InvoicePaymentStatus.PENDING);
+
+        RegularCertificateRequestResponse row = studentRow(1);
+        assertThat(row.hasDebt()).isTrue();
+        assertThat(row.overdueInstallments()).isEqualTo(1);
+        assertThat(row.totalDue().amount()).isEqualByComparingTo("7000");
+    }
+
+    @Test
+    void paidCancelledDraftAndAwaitingPaymentInstallmentsAreNotDebt() {
+        addInvoice(1, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 10), ars(15000), InvoicePaymentStatus.PAID);
+        Long cancelled = addInvoice(1, YearMonth.of(2026, 4), LocalDate.of(2026, 4, 10), ars(15000), InvoicePaymentStatus.PENDING);
+        Long draft = addInvoice(1, YearMonth.of(2026, 5), LocalDate.of(2026, 5, 10), ars(15000), InvoicePaymentStatus.PENDING);
+        Long awaiting = addInvoice(1, YearMonth.of(2026, 6), LocalDate.of(2026, 6, 10), ars(15000), InvoicePaymentStatus.PENDING);
+        jdbc.update("update invoice set payment_status = 'CANCELLED', paid_amount = 0, outstanding_amount = 0, credited_amount = total where id = ?", cancelled);
+        jdbc.update("update invoice set document_status = 'DRAFT', payment_status = null, invoice_number = null, issue_date = null, due_date = null, student_snapshot = null where id = ?", draft);
+        jdbc.update("update invoice set document_status = 'AWAITING_PAYMENT', payment_status = null, invoice_number = null, issue_date = null, due_date = null, student_snapshot = null, invoice_type = 'ANNUAL_UPFRONT', payment_deadline = date '2026-12-31' where id = ?", awaiting);
+
+        RegularCertificateRequestResponse row = studentRow(1);
+
+        assertThat(row.hasDebt()).isFalse();
+        assertThat(row.totalDue().amount()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void installmentUnderReviewWithoutAProtectingReceiptCountsAsDebtLikeTheGate() {
+        Long underReview = addInvoice(1, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 10), ars(15000), InvoicePaymentStatus.PENDING);
+        jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", underReview);
+
+        RegularCertificateRequestResponse row = studentRow(1);
+
+        assertThat(row.hasDebt()).isTrue();
+        assertThat(row.totalDue().amount()).isEqualByComparingTo("15000");
+        assertThat(debtFinder.hasOverdueDebt(studentIds.get(1), LocalDate.of(2026, 11, 10))).isTrue();
+    }
+
+    @Test
+    void foreignCurrencyDebtIsNeverSummedAsPesos() {
+        addInvoice(1, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 10), usd(100), InvoicePaymentStatus.PENDING);
+        assertThat(studentRow(1).hasDebt()).isFalse();
+        addInvoice(1, YearMonth.of(2026, 4), LocalDate.of(2026, 4, 10), ars(15000), InvoicePaymentStatus.PENDING);
+
+        RegularCertificateRequestResponse row = studentRow(1);
+
+        assertThat(row.totalDue().amount()).isEqualByComparingTo("15000");
+        assertThat(row.totalDue().currency().name()).isEqualTo("ARS");
+        assertThat(row.overdueInstallments()).isEqualTo(1);
+    }
+
+    @Test
+    void directExceptionByTheDirectorAlsoStoresTheDebtAtRequest() {
+        actAs(director);
+
+        CertificateExceptionResponse created = createDirectUseCase.create(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM,
+                enrollmentIds.get(0), OrganismKind.COURT, "Causa 77/2026", REASON));
+
+        assertThat(created.createdByDirector()).isTrue();
+        assertThat(created.debtTotalAtRequest().amount()).isEqualByComparingTo("30000");
+        assertThat(created.overdueInstallmentsAtRequest()).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select debt_currency_at_request from certificate_exception_approval where id = ?", String.class,
+                created.id())).isEqualTo("ARS");
     }
 }

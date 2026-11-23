@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.configuration.service.BillingConfiguratio
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,6 +18,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class StudentOverdueDebtFinder {
+
+    private static final String ARS = "ARS";
 
     private final StudentUnpaidDocumentsQuery unpaidDocuments;
     private final PendingReceiptProtectionWindow protectionWindow;
@@ -46,6 +49,28 @@ public class StudentOverdueDebtFinder {
                 .filter(entry -> isPastGrace(entry.document(), today, graceByDueDate))
                 .map(StudentUnprotectedUnpaidDocument::studentId)
                 .collect(Collectors.toSet());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, OverdueDebtTotals> summarizeArsOverdueDebt(Collection<Long> studentIds, LocalDate today) {
+        if (studentIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<LocalDate, Integer> graceByDueDate = new HashMap<>();
+        Map<Long, OverdueDebtTotals> totals = new HashMap<>();
+        unpaidDocuments.findUnprotectedDueBefore(studentIds.stream().distinct().toList(), today, protectionWindow.earliestProtectedUploadDateAsOf(today)).stream()
+                .filter(entry -> ARS.equals(entry.document().currency()))
+                .filter(entry -> isPastGrace(entry.document(), today, graceByDueDate))
+                .forEach(entry -> totals.merge(entry.studentId(), new OverdueDebtTotals(entry.document().outstandingAmount(), 1),
+                        OverdueDebtTotals::plus));
+        return totals;
+    }
+
+    public record OverdueDebtTotals(BigDecimal totalDue, int overdueInstallments) {
+
+        OverdueDebtTotals plus(OverdueDebtTotals other) {
+            return new OverdueDebtTotals(totalDue.add(other.totalDue), overdueInstallments + other.overdueInstallments);
+        }
     }
 
     private boolean isPastGrace(UnprotectedUnpaidDocument document, LocalDate today, Map<LocalDate, Integer> graceByDueDate) {

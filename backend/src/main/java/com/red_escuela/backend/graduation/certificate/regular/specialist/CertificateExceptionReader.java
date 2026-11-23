@@ -6,6 +6,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.Certificate
 import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionStatus;
 import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionNotFoundException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
+import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionStatusCount;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -56,9 +57,9 @@ public class CertificateExceptionReader {
 
     @Transactional(readOnly = true)
     public CertificateExceptionSummaryResponse summary(boolean seesAll) {
-        List<Object[]> rows = seesAll ? repository.countAllByStatus() : repository.countByRequesterAndStatus(currentActorFinder.currentPersonId());
+        List<CertificateExceptionStatusCount> rows = seesAll ? repository.countAllByStatus() : repository.countByRequesterAndStatus(currentActorFinder.currentPersonId());
         Map<CertificateExceptionStatus, Long> counts = new EnumMap<>(CertificateExceptionStatus.class);
-        rows.forEach(row -> counts.put((CertificateExceptionStatus) row[0], (Long) row[1]));
+        rows.forEach(row -> counts.put(row.status(), row.total()));
         return new CertificateExceptionSummaryResponse(counts.getOrDefault(CertificateExceptionStatus.PENDING, 0L),
                 counts.getOrDefault(CertificateExceptionStatus.APPROVED, 0L), counts.getOrDefault(CertificateExceptionStatus.REJECTED, 0L),
                 counts.getOrDefault(CertificateExceptionStatus.WITHDRAWN, 0L), counts.getOrDefault(CertificateExceptionStatus.EXPIRED, 0L),
