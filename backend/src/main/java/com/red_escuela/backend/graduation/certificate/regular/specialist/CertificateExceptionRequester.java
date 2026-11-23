@@ -38,10 +38,12 @@ public class CertificateExceptionRequester {
     private final RegularCertificateSettingsFinder settingsFinder;
     private final AuditTrail auditTrail;
     private final Clock clock;
+    private final RegularDebtFactsReader debtFactsReader;
 
     public CertificateExceptionRequester(CertificateExceptionApprovalRepository repository, RegularEnrollmentFactsFinder factsFinder,
                                          RegularStandingGate standingGate, CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher,
-                                         RegularCertificateSettingsFinder settingsFinder, AuditTrail auditTrail, Clock clock) {
+                                         RegularCertificateSettingsFinder settingsFinder, AuditTrail auditTrail, Clock clock,
+                                         RegularDebtFactsReader debtFactsReader) {
         this.repository = repository;
         this.factsFinder = factsFinder;
         this.standingGate = standingGate;
@@ -50,6 +52,7 @@ public class CertificateExceptionRequester {
         this.settingsFinder = settingsFinder;
         this.auditTrail = auditTrail;
         this.clock = clock;
+        this.debtFactsReader = debtFactsReader;
     }
 
     @Transactional
@@ -62,6 +65,7 @@ public class CertificateExceptionRequester {
         CertificateExceptionApproval approval = CertificateExceptionApproval.request(command.kind(), command.enrollmentId(),
                 facts.student().getId(), command.organismKind(), command.organismReference(), command.reason(),
                 currentActorFinder.currentPersonId(), LocalDateTime.now(clock));
+        recordDebt(approval);
         CertificateExceptionApproval saved = saveRejectingSecondOpenException(approval);
         eventPublisher.publishEvent(CertificateExceptionRequestedEvent.of(saved.getId(), saved.getStudentId(), saved.getRequestedById()));
         return CertificateExceptionResponses.of(saved);
@@ -77,11 +81,19 @@ public class CertificateExceptionRequester {
         CertificateExceptionApproval approval = CertificateExceptionApproval.createApprovedByDirector(command.kind(), command.enrollmentId(),
                 facts.student().getId(), command.organismKind(), command.organismReference(), command.reason(),
                 currentActorFinder.currentPersonId(), settingsFinder.current().exceptionValidityDays(), LocalDateTime.now(clock));
+        recordDebt(approval);
         CertificateExceptionApproval saved = saveRejectingSecondOpenException(approval);
         auditTrail.record(new AuditRecord(AuditAction.CERTIFICATE_EXCEPTION_DIRECT_CREATED, AuditEntityType.CERTIFICATE_EXCEPTION, saved.getId(),
                 null, "APPROVED hasta " + saved.getValidUntil(), saved.getOrganismKind() + " " + saved.getOrganismReference()));
         eventPublisher.publishEvent(CertificateExceptionCreatedByDirectorEvent.of(saved.getId(), saved.getStudentId(), saved.getRequestedById()));
         return CertificateExceptionResponses.of(saved);
+    }
+
+    private void recordDebt(CertificateExceptionApproval approval) {
+        RegularDebtFacts debt = debtFactsReader.factsOf(List.of(approval.getStudentId())).get(approval.getStudentId());
+        if (debt != null) {
+            approval.recordDebtAtRequest(debt.totalDue(), debt.overdueInstallments());
+        }
     }
 
     private CertificateExceptionApproval saveRejectingSecondOpenException(CertificateExceptionApproval approval) {
