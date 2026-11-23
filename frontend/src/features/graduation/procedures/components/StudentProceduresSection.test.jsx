@@ -294,22 +294,6 @@ describe('StudentProceduresSection', () => {
     expect(await screen.findByRole('button', { name: 'Generar y descargar' })).toBeInTheDocument();
   });
 
-  it('marks staff-issued procedures as enabled by exception with a single download', async () => {
-    server.use(
-      http.get(`${API}/me/procedures/approved`, () =>
-        HttpResponse.json([approvedProcedure({ origin: 'ISSUED_BY_STAFF', detail: null })]),
-      ),
-    );
-    const user = userEvent.setup();
-    renderSection();
-
-    await user.click(await screen.findByRole('tab', { name: /Trámites aprobados/ }));
-
-    expect(await screen.findByText('Habilitada por excepción')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Descargar' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Descargar PDF' })).not.toBeInTheDocument();
-  });
-
   it('shows the empty state when there are no approved procedures', async () => {
     server.use(http.get(`${API}/me/procedures/approved`, () => HttpResponse.json([])));
     const user = userEvent.setup();

@@ -11,8 +11,7 @@ import { useApprovedProcedurePdf } from '../hooks/useStudentProcedures';
 import { APPROVED_STATUS_PILL, isRegeneratable, procedureOf } from '../lib/procedures';
 
 function ApprovedRow({ item, downloading, onDownload, onRegenerate }) {
-  const byException = item.origin === 'ISSUED_BY_STAFF' && item.status === 'VALID';
-  const pill = byException ? { tone: 'accent', label: 'Habilitada por excepción' } : APPROVED_STATUS_PILL[item.status];
+  const pill = APPROVED_STATUS_PILL[item.status];
   return (
     <li className="flex flex-wrap items-center gap-3 px-4 py-3.5">
       <div className="flex min-w-[200px] flex-1 flex-col gap-0.5">
@@ -20,15 +19,12 @@ function ApprovedRow({ item, downloading, onDownload, onRegenerate }) {
         <span className="text-sm text-ink-soft">
           {item.detail ? `${item.detail} · ` : ''}emitida el {formatearFechaCorta(item.issuedAt)}
         </span>
-        {byException && (
-          <span className="text-size-13 text-ink-faint">Habilitada por Administración. La podés descargar una sola vez.</span>
-        )}
       </div>
       <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
       {item.status === 'VALID' && (
         <Button variant="outline" className="w-full sm:w-auto" loading={downloading} onClick={() => onDownload(item)}>
           {!downloading && <Download aria-hidden="true" />}
-          {byException ? 'Descargar' : 'Descargar PDF'}
+          Descargar PDF
         </Button>
       )}
       {isRegeneratable(item) && procedureOf(item.documentType) && (
