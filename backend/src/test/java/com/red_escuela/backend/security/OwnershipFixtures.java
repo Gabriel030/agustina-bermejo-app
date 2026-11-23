@@ -340,7 +340,7 @@ final class OwnershipFixtures {
         entityManager.persist(registration);
         LocalDateTime now = LocalDateTime.now();
         CertificateSnapshot snapshot = new CertificateSnapshot("OWNER, STUDENT", "DNI", "91000001", "examen de", "Materia", null, null,
-                LocalDate.now(), LocalDate.now(), "Instituto", List.of(), "EXAM_BUILT_IN_V1");
+                LocalDate.now(), LocalDate.now(), "Instituto", List.of(), "EXAM_BUILT_IN_V1", null);
         ExamCertificate certificate = ExamCertificate.builder()
                 .code("OWNERSHIPFIXTURE00000001")
                 .registrationId(registration.getId())

@@ -16,7 +16,7 @@ class ExamCertificateTemplateTest {
     private final ExamCertificateTemplate template = new ExamCertificateTemplate(mock(GraduationSnapshotFactory.class));
     private final CertificateSnapshot snapshot = new CertificateSnapshot("PEREZ, ANA", "DNI", "30111222", "examen de", "Anatomía",
             null, null, LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 5), "Instituto Demo", List.of(),
-            ExamCertificateTemplate.EXAM_BUILT_IN_V1);
+            ExamCertificateTemplate.EXAM_BUILT_IN_V1, null);
     private final LocalDate validUntil = LocalDate.of(2026, 12, 5);
 
     @Test
@@ -31,7 +31,7 @@ class ExamCertificateTemplateTest {
         CertificateTemplateDefinition definition = template.definitionFor(snapshot, validUntil, RecipientType.HEALTH_INSURANCE, "OSDE");
 
         assertThat(definition.bodyTemplate()).contains("obra social: OSDE").contains("Válido hasta 05/12/2026");
-        assertThat(definition.templateRef()).isEqualTo(ExamCertificateTemplate.EXAM_BUILT_IN_V1);
+        assertThat(definition.templateRef()).isEqualTo(ExamCertificateTemplate.EXAM_BUILT_IN_V1, null);
     }
 
     @Test

@@ -28,7 +28,7 @@ public class ExamCertificateTemplate {
         CertificateSnapshot base = snapshotFactory.create(student, "examen de", subjectName, null, null, examDate);
         return new CertificateSnapshot(base.holderFullName(), base.documentTypeLabel(), base.documentNumber(), base.titleKind(),
                 base.titleName(), base.programLevel(), base.hours(), base.graduationDate(), issuedOn,
-                base.institutionName(), base.signatories(), EXAM_BUILT_IN_V1);
+                base.institutionName(), base.signatories(), EXAM_BUILT_IN_V1, null);
     }
 
     public CertificateTemplateDefinition definitionFor(CertificateSnapshot snapshot, LocalDate validUntil,
