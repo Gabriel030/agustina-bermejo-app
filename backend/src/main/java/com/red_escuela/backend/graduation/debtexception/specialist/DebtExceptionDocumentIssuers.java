@@ -1,6 +1,6 @@
 package com.red_escuela.backend.graduation.debtexception.specialist;
 
-import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocumentIssuer;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import java.util.EnumMap;
 import java.util.List;

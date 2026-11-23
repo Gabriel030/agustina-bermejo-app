@@ -1,6 +1,5 @@
 package com.red_escuela.backend.graduation.debtexception.specialist;
 
-import com.red_escuela.backend.graduation.api.DebtExceptionConsumption;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.debtexception.repository.DocumentDebtExceptionRepository;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
@@ -13,7 +12,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-public class DebtExceptionConsumer implements DebtExceptionConsumption {
+public class DebtExceptionConsumer {
 
     private final DocumentDebtExceptionRepository repository;
     private final DebtExceptionAuditRecorder auditRecorder;
@@ -28,7 +27,6 @@ public class DebtExceptionConsumer implements DebtExceptionConsumption {
         this.clock = clock;
     }
 
-    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public Optional<Long> consumeActive(Long studentId, CertificateDocumentType documentType, Long registrationId) {
         LocalDateTime now = LocalDateTime.now(clock);

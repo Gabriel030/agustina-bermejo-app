@@ -1,4 +1,4 @@
-package com.red_escuela.backend.graduation.api;
+package com.red_escuela.backend.graduation.debtexception.port;
 
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 

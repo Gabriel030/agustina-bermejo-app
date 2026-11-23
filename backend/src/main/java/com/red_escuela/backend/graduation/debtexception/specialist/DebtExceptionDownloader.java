@@ -1,8 +1,8 @@
 package com.red_escuela.backend.graduation.debtexception.specialist;
 
-import com.red_escuela.backend.graduation.api.DebtExceptionDocument;
-import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
-import com.red_escuela.backend.graduation.api.DebtExceptionScope;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocument;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocumentIssuer;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionScope;
 import com.red_escuela.backend.graduation.certificate.exception.DocumentOperationPendingException;
 import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionPdf;
 import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus;

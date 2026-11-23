@@ -1,6 +1,6 @@
 package com.red_escuela.backend.graduation.debtexception.specialist;
 
-import com.red_escuela.backend.graduation.api.DebtExceptionScope;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionScope;
 import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionResponse;
 import com.red_escuela.backend.graduation.debtexception.dto.IssueDebtExceptionRequest;
 import com.red_escuela.backend.graduation.debtexception.entity.DocumentDebtException;

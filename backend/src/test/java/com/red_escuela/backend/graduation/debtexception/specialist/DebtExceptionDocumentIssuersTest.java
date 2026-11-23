@@ -3,9 +3,9 @@ package com.red_escuela.backend.graduation.debtexception.specialist;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.red_escuela.backend.graduation.api.DebtExceptionDocument;
-import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
-import com.red_escuela.backend.graduation.api.DebtExceptionScope;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocument;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocumentIssuer;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionScope;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import java.util.List;
 import org.junit.jupiter.api.Test;

@@ -9,8 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.red_escuela.backend.graduation.api.DebtExceptionDocument;
-import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocument;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocumentIssuer;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.exception.DocumentOperationPendingException;
 import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionPdf;

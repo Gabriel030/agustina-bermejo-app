@@ -8,10 +8,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.graduation.api.DebtExceptionDocument;
-import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocument;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionDocumentIssuer;
 import com.red_escuela.backend.graduation.api.DebtExceptionGate;
-import com.red_escuela.backend.graduation.api.DebtExceptionScope;
+import com.red_escuela.backend.graduation.debtexception.port.DebtExceptionScope;
 import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
