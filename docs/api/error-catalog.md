@@ -363,6 +363,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SIGNATORY_NOT_FOUND` | no | `SignatoryNotFoundException` | graduation |
 | `STUDENT_DISCOUNT_NOT_FOUND` | no | `StudentDiscountNotFoundException` | billing |
 | `STUDENT_NOT_FOUND` | no | `StudentNotFoundException` | identity |
+| `SUBJECT_EQUIVALENCE_NOT_FOUND` | no | `SubjectEquivalenceNotFoundException` | enrollment |
 | `SUBJECT_NOT_FOUND` | no | `SubjectNotFoundException` | academicstructure |
 | `TEMPLATE_IMAGE_NOT_FOUND` | no | `TemplateImageNotFoundException` | graduation |
 | `TEMPLATE_VERSION_NOT_FOUND` | no | `TemplateVersionNotFoundException` | graduation |
@@ -462,6 +463,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_EXISTS` | no | `EnrollmentFeeExemptionAlreadyExistsException` | enrollment |
 | `ENROLLMENT_FEE_EXEMPTION_ALREADY_REVOKED` | no | `EnrollmentFeeExemptionAlreadyRevokedException` | enrollment |
 | `ENROLLMENT_FEE_EXEMPTION_NOT_NEEDED` | no | `EnrollmentFeeExemptionNotNeededException` | enrollment |
+| `ENROLLMENT_NOT_ACTIVE` | no | `EnrollmentNotActiveException` | enrollment |
+| `EQUIVALENCE_ALREADY_ACTIVE` | no | `EquivalenceAlreadyActiveException` | enrollment |
+| `EQUIVALENCE_ALREADY_VOIDED` | no | `EquivalenceAlreadyVoidedException` | enrollment |
 | `EVALUATION_SCHEME_IN_USE` | no | `EvaluationSchemeInUseException` | evaluation |
 | `EXAM_BOARD_CANCELED` | no | `ExamBoardCanceledException` | evaluation |
 | `EXAM_BOARD_CLOSED` | no | `ExamBoardClosedException` | evaluation |
@@ -646,6 +650,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
 | `SUBJECT_ALREADY_REGULAR` | no | `SubjectAlreadyRegularException` | enrollment |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
+| `SUBJECT_IN_PROGRESS` | no | `SubjectInProgressException` | enrollment |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
 | `TEMPLATE_NOTHING_TO_DISCARD` | no | `TemplateNothingToDiscardException` | graduation |
@@ -673,15 +678,20 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `DOCUMENT_OPERATION_PENDING` | no | `DocumentOperationPendingException` | graduation |
 | `DUPLICATE_PERMISSION_GRID_CHANGE` | no | `DuplicatePermissionGridChangeException` | identity |
 | `DUPLICATE_PERMISSION_MODE_CHANGE` | no | `DuplicatePermissionModeChangeException` | identity |
+| `EQUIVALENCE_DOCUMENT_INVALID` | no | `EquivalenceDocumentInvalidException` | enrollment |
+| `EQUIVALENCE_REASON_INVALID` | no | `EquivalenceReasonInvalidException` | enrollment |
 | `EXAM_CERTIFICATE_BOARD_NOT_HELD` | no | `ExamCertificateBoardNotHeldException` | graduation |
 | `EXAM_CERTIFICATE_REGISTRATION_NOT_ELIGIBLE` | no | `ExamCertificateRegistrationNotEligibleException` | graduation |
 | `FIXED_TO_DIRECTOR_PERMISSION_NOT_EDITABLE` | no | `FixedToDirectorPermissionNotEditableException` | identity |
+| `FUTURE_DATE` | no | `FutureDateException` | enrollment |
+| `INVALID_SCORE` | no | `InvalidScoreException` | enrollment |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
 | `PROCEDURE_NOT_ELIGIBLE` | no | `ProcedureNotEligibleException` | graduation |
 | `SENSITIVE_PERMISSION_CONFIRMATION_REQUIRED` | no | `SensitivePermissionConfirmationRequiredException` | identity |
 | `SIGNATORY_DUPLICATED_IN_TEMPLATE` | no | `SignatoryDuplicatedInTemplateException` | graduation |
 | `SIGNATORY_ROLE_INVALID` | no | `SignatoryRoleInvalidException` | graduation |
 | `SIGNATORY_SIGNATURE_INVALID` | no | `SignatorySignatureInvalidException` | graduation |
+| `SUBJECT_NOT_IN_PLAN` | no | `SubjectNotInPlanException` | enrollment |
 | `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
@@ -943,6 +953,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/program-enrollments/{id}/advance-billing-year` | `ProgramEnrollmentController#advanceAcademicYear` |
 | POST | `/program-enrollments/{id}/advance-enrollment-fee` | `AdvanceEnrollmentFeeController#requestForStudent` |
 | POST | `/program-enrollments/{id}/enrollment-fee-exemptions` | `EnrollmentFeeController#grant` |
+| POST | `/program-enrollments/{id}/equivalences` | `SubjectEquivalenceController#record` |
+| POST | `/program-enrollments/{id}/equivalences/{equivalenceId}/void` | `SubjectEquivalenceController#voidEquivalence` |
 | POST | `/program-enrollments/{id}/payment-plan` | `PaymentPlanSelectionController#selectForProgram` |
 | POST | `/program-enrollments/{id}/section-enrollments` | `SubjectSectionEnrollmentController#enroll` |
 | POST | `/program-enrollments/{id}/student-discounts` | `StudentDiscountController#grantForProgramEnrollment` |

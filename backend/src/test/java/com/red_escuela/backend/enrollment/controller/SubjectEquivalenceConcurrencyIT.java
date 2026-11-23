@@ -1,0 +1,171 @@
+package com.red_escuela.backend.enrollment.controller;
+
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
+import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.config.TestSubjectCodes;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.SubjectEquivalenceStatus;
+import com.red_escuela.backend.enrollment.repository.SubjectEquivalenceRepository;
+import com.red_escuela.backend.identity.entity.Institution;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Role;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.infrastructure.JwtService;
+import com.red_escuela.backend.identity.repository.RoleRepository;
+import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.StatusType;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+    @Autowired
+    private EntityManager entityManager;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private JwtService jwtService;
+    @Autowired
+    private SubjectEquivalenceRepository equivalenceRepository;
+
+    @Test
+    void twoSimultaneousRecordsForTheSameSubjectLeaveExactlyOneActiveEquivalence() throws Exception {
+        long[] ids = transactionTemplate.execute(status -> seed());
+        long enrollmentId = ids[0];
+        long subjectId = ids[1];
+        String token = ids[2] == 0 ? null : tokenOf(ids[2]);
+        String body = "{\"subjectId\":" + subjectId + ",\"originInstitution\":\"Universidad de origen\","
+                + "\"originSubjectName\":\"Materia de origen\",\"recognizedOn\":\"" + LocalDate.now()
+                + "\",\"resolutionNumber\":\"RES-1\",\"reason\":\"Estudios previos reconocidos\"}";
+        int attempts = 2;
+        CountDownLatch ready = new CountDownLatch(attempts);
+        CountDownLatch go = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(attempts);
+        List<Future<String>> results = new ArrayList<>();
+        for (int i = 0; i < attempts; i++) {
+            results.add(executor.submit(() -> {
+                ready.countDown();
+                go.await();
+                var response = mockMvc.perform(post("/program-enrollments/{id}/equivalences", enrollmentId)
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON).content(body))
+                        .andReturn().getResponse();
+                return response.getStatus() == 201 ? "CREATED" : response.getStatus() + ":" + response.getContentAsString();
+            }));
+        }
+        ready.await(10, TimeUnit.SECONDS);
+        go.countDown();
+        List<String> outcomes = new ArrayList<>();
+        for (Future<String> result : results) {
+            outcomes.add(result.get(30, TimeUnit.SECONDS));
+        }
+        executor.shutdown();
+
+        assertThat(outcomes).hasSize(2).contains("CREATED");
+        assertThat(outcomes.stream().filter(outcome -> !outcome.equals("CREATED")).toList())
+                .singleElement().asString().startsWith("409:").contains("EQUIVALENCE_ALREADY_ACTIVE");
+        assertThat(equivalenceRepository.findByProgramEnrollmentIdAndStatusOrderByRecognizedOnDescIdDesc(enrollmentId,
+                SubjectEquivalenceStatus.ACTIVE)).hasSize(1);
+    }
+
+    private String tokenOf(long personId) {
+        Person person = transactionTemplate.execute(status -> {
+            Person found = entityManager.find(Person.class, personId);
+            found.getRoles().size();
+            return found;
+        });
+        return jwtService.generateAccessToken(person);
+    }
+
+    private long[] seed() {
+        Institution institution = new Institution();
+        institution.setName("Instituto concurrente");
+        entityManager.persist(institution);
+        Address studentAddress = new Address();
+        entityManager.persist(studentAddress);
+        Person studentPerson = new Person();
+        studentPerson.setName("Alumno");
+        studentPerson.setLastname("Concurrente");
+        studentPerson.setDni("62000001");
+        studentPerson.setUsername("62000001");
+        studentPerson.setEmail("62000001@example.com");
+        studentPerson.setAddress(studentAddress);
+        studentPerson.setStatus(StatusType.ACTIVE);
+        entityManager.persist(studentPerson);
+        Student student = new Student();
+        student.setPerson(studentPerson);
+        student.setInstitution(institution);
+        student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
+        entityManager.persist(student);
+        Program program = new Program();
+        program.setName("Carrera concurrente");
+        program.setTotalYears(3);
+        program.setTotalCreditsRequired(10);
+        entityManager.persist(program);
+        Subject subject = new Subject();
+        subject.setCode(TestSubjectCodes.next());
+        subject.setName("Materia concurrente");
+        entityManager.persist(subject);
+        ProgramSubject planEntry = new ProgramSubject();
+        planEntry.setProgram(program);
+        planEntry.setSubject(subject);
+        planEntry.setCredits(5);
+        planEntry.setCurricularYear(1);
+        planEntry.setCurricularTerm(CurricularTerm.FIRST);
+        planEntry.setStatus(StatusType.ACTIVE);
+        entityManager.persist(planEntry);
+        ProgramEnrollment enrollment = new ProgramEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setProgram(program);
+        enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
+        enrollment.setEnrollmentDate(LocalDateTime.now());
+        entityManager.persist(enrollment);
+        Address staffAddress = new Address();
+        entityManager.persist(staffAddress);
+        Person staff = new Person();
+        staff.setUsername("equiv-concurrent-admin");
+        staff.setDni("62000002");
+        staff.setName("Persona");
+        staff.setLastname("Concurrente");
+        staff.setEmail("equiv-concurrent-admin@example.com");
+        staff.setAddress(staffAddress);
+        staff.setStatus(StatusType.ACTIVE);
+        Role role = roleRepository.findByName("ADMINISTRATIVO").orElseThrow();
+        staff.getRoles().add(role);
+        entityManager.persist(staff);
+        entityManager.flush();
+        return new long[] {enrollment.getId(), subject.getId(), staff.getId()};
+    }
+}

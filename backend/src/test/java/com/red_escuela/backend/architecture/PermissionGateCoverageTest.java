@@ -69,7 +69,7 @@ class PermissionGateCoverageTest {
             ROOT + ".academicrecord.controller.PublicCalendarFeedController");
 
     private static final Set<String> ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
-            "CurriculumProgressController#myCurriculumProgress", "CurriculumProgressController#myGraduationProjection",
+            "CurriculumProgressController#myCurriculumProgress", "SubjectEquivalenceController#listOwn", "CurriculumProgressController#myGraduationProjection",
             "EnrollmentFeeController#myStatus", "ProgramEnrollmentApplicationController#request",
             "ProgramEnrollmentApplicationController#mine", "ProgramEnrollmentApplicationController#addDocument",
             "ProgramEnrollmentApplicationController#myDocuments", "ProspectController#createProspect");

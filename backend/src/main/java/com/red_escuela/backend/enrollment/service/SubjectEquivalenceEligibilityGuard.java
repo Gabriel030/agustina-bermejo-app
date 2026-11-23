@@ -1,0 +1,36 @@
+package com.red_escuela.backend.enrollment.service;
+
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.exception.SubjectAlreadyApprovedException;
+import com.red_escuela.backend.enrollment.exception.SubjectInProgressException;
+import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+public class SubjectEquivalenceEligibilityGuard {
+
+    private static final List<EnrollmentStatus> BLOCKING_STATUSES = List.of(
+            EnrollmentStatus.APPROVED, EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
+
+    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
+
+    public SubjectEquivalenceEligibilityGuard(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository) {
+        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
+    }
+
+    public void requireSubjectOpenForEquivalence(Long programEnrollmentId, Long subjectId) {
+        List<EnrollmentStatus> blockingStatuses = subjectSectionEnrollmentRepository
+                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(programEnrollmentId, subjectId, BLOCKING_STATUSES)
+                .stream()
+                .map(enrollment -> enrollment.getStatus())
+                .toList();
+        if (blockingStatuses.contains(EnrollmentStatus.APPROVED)) {
+            throw new SubjectAlreadyApprovedException(programEnrollmentId, subjectId);
+        }
+        if (!blockingStatuses.isEmpty()) {
+            throw new SubjectInProgressException(programEnrollmentId, subjectId);
+        }
+    }
+}
