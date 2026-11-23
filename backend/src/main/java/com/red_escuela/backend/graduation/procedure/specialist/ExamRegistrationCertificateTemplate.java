@@ -30,7 +30,7 @@ public class ExamRegistrationCertificateTemplate {
                 registration.careerName(), null, registration.examDateTime().toLocalDate());
         return new CertificateSnapshot(base.holderFullName(), base.documentTypeLabel(), base.documentNumber(), base.titleKind(),
                 base.titleName(), base.programLevel(), base.hours(), base.graduationDate(), base.issuedOn(),
-                base.institutionName(), base.signatories(), EXAM_REGISTRATION_BUILT_IN_V1);
+                base.institutionName(), base.signatories(), EXAM_REGISTRATION_BUILT_IN_V1, null);
     }
 
     public CertificateTemplateDefinition definitionFor(CertificateSnapshot snapshot, RecipientType recipientType, String recipientText) {
