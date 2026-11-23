@@ -1,6 +1,6 @@
 package com.red_escuela.backend.enrollment.dto;
 
-import jakarta.validation.constraints.NotNull;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-public record VoidSubjectEquivalenceRequest(@NotNull String reason) {
+public record VoidSubjectEquivalenceRequest(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String reason) {
 }

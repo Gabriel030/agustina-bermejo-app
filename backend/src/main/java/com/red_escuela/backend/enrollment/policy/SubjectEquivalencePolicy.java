@@ -16,6 +16,7 @@ import java.time.LocalDate;
 
 public final class SubjectEquivalencePolicy {
 
+    public static final String ACTIVE_UNIQUE_INDEX = "uk_subject_equivalence_active";
     public static final int MIN_REASON_LENGTH = 10;
     public static final int MAX_REASON_LENGTH = 500;
 
@@ -51,6 +52,18 @@ public final class SubjectEquivalencePolicy {
             throw new EquivalenceReasonInvalidException(MIN_REASON_LENGTH, MAX_REASON_LENGTH);
         }
         return reason;
+    }
+
+    public static boolean isActiveUniquenessViolation(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause.getMessage() != null && cause.getMessage().contains(ACTIVE_UNIQUE_INDEX)) {
+                return true;
+            }
+            if (cause.getCause() == cause) {
+                break;
+            }
+        }
+        return false;
     }
 
     public static void requireActive(SubjectEquivalence equivalence) {

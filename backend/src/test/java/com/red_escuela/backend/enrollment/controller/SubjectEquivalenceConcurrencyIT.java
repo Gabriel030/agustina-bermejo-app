@@ -62,7 +62,7 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
 
     @Test
     void twoSimultaneousRecordsForTheSameSubjectLeaveExactlyOneActiveEquivalence() throws Exception {
-        long[] ids = transactionTemplate.execute(status -> seed());
+        long[] ids = transactionTemplate.execute(status -> seed("1"));
         long enrollmentId = ids[0];
         long subjectId = ids[1];
         String token = ids[2] == 0 ? null : tokenOf(ids[2]);
@@ -100,6 +100,47 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
                 SubjectEquivalenceStatus.ACTIVE)).hasSize(1);
     }
 
+    @Test
+    void twoSimultaneousVoidsOfTheSameEquivalenceLeaveOneVoidedAndOneConflict() throws Exception {
+        long[] ids = transactionTemplate.execute(status -> seed("2"));
+        long enrollmentId = ids[0];
+        String token = tokenOf(ids[2]);
+        String recordBody = "{\"subjectId\":" + ids[1] + ",\"originInstitution\":\"Universidad de origen\","
+                + "\"originSubjectName\":\"Materia de origen\",\"recognizedOn\":\"" + LocalDate.now()
+                + "\",\"resolutionNumber\":\"RES-1\",\"reason\":\"Estudios previos reconocidos\"}";
+        String created = mockMvc.perform(post("/program-enrollments/{id}/equivalences", enrollmentId)
+                        .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON).content(recordBody))
+                .andReturn().getResponse().getContentAsString();
+        long equivalenceId = Long.parseLong(created.replaceAll(".*\"id\":(\\d+).*", "$1"));
+        int attempts = 2;
+        CountDownLatch ready = new CountDownLatch(attempts);
+        CountDownLatch go = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(attempts);
+        List<Future<String>> results = new ArrayList<>();
+        for (int i = 0; i < attempts; i++) {
+            results.add(executor.submit(() -> {
+                ready.countDown();
+                go.await();
+                var response = mockMvc.perform(post("/program-enrollments/{id}/equivalences/{eid}/void", enrollmentId, equivalenceId)
+                                .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"reason\":\"Anulación por carga errónea\"}"))
+                        .andReturn().getResponse();
+                return response.getStatus() == 200 ? "VOIDED" : response.getStatus() + ":" + response.getContentAsString();
+            }));
+        }
+        ready.await(10, TimeUnit.SECONDS);
+        go.countDown();
+        List<String> outcomes = new ArrayList<>();
+        for (Future<String> result : results) {
+            outcomes.add(result.get(30, TimeUnit.SECONDS));
+        }
+        executor.shutdown();
+
+        assertThat(outcomes).contains("VOIDED");
+        assertThat(outcomes.stream().filter(outcome -> !outcome.equals("VOIDED")).toList())
+                .singleElement().asString().startsWith("409:").contains("EQUIVALENCE_ALREADY_VOIDED");
+    }
+
     private String tokenOf(long personId) {
         Person person = transactionTemplate.execute(status -> {
             Person found = entityManager.find(Person.class, personId);
@@ -109,18 +150,18 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(person);
     }
 
-    private long[] seed() {
+    private long[] seed(String suffix) {
         Institution institution = new Institution();
-        institution.setName("Instituto concurrente");
+        institution.setName("Instituto concurrente " + suffix);
         entityManager.persist(institution);
         Address studentAddress = new Address();
         entityManager.persist(studentAddress);
         Person studentPerson = new Person();
         studentPerson.setName("Alumno");
         studentPerson.setLastname("Concurrente");
-        studentPerson.setDni("62000001");
-        studentPerson.setUsername("62000001");
-        studentPerson.setEmail("62000001@example.com");
+        studentPerson.setDni("6200000" + suffix + "1");
+        studentPerson.setUsername("6200000" + suffix + "1");
+        studentPerson.setEmail("6200000" + suffix + "1@example.com");
         studentPerson.setAddress(studentAddress);
         studentPerson.setStatus(StatusType.ACTIVE);
         entityManager.persist(studentPerson);
@@ -130,13 +171,13 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         entityManager.persist(student);
         Program program = new Program();
-        program.setName("Carrera concurrente");
+        program.setName("Carrera concurrente " + suffix);
         program.setTotalYears(3);
         program.setTotalCreditsRequired(10);
         entityManager.persist(program);
         Subject subject = new Subject();
         subject.setCode(TestSubjectCodes.next());
-        subject.setName("Materia concurrente");
+        subject.setName("Materia concurrente " + suffix);
         entityManager.persist(subject);
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(program);
@@ -155,11 +196,11 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         Address staffAddress = new Address();
         entityManager.persist(staffAddress);
         Person staff = new Person();
-        staff.setUsername("equiv-concurrent-admin");
-        staff.setDni("62000002");
+        staff.setUsername("equiv-concurrent-admin" + suffix);
+        staff.setDni("6200000" + suffix + "2");
         staff.setName("Persona");
         staff.setLastname("Concurrente");
-        staff.setEmail("equiv-concurrent-admin@example.com");
+        staff.setEmail("equiv-concurrent-admin" + suffix + "@example.com");
         staff.setAddress(staffAddress);
         staff.setStatus(StatusType.ACTIVE);
         Role role = roleRepository.findByName("ADMINISTRATIVO").orElseThrow();

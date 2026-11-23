@@ -17,5 +17,5 @@ public record RecordSubjectEquivalenceRequest(
         @NotNull LocalDate recognizedOn,
         @NotBlank @Size(max = 100) String resolutionNumber,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Long studentDocumentId,
-        @NotNull String reason) {
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String reason) {
 }

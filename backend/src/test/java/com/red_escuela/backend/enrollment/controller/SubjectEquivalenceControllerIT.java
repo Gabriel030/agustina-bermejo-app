@@ -236,6 +236,32 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void missingReasonOnRecordAndVoidReturnsReasonInvalid() throws Exception {
+        String token = token("ADMINISTRATIVO");
+        String withoutReason = "{\"subjectId\":" + subject.getId() + ",\"originInstitution\":\"U\",\"originSubjectName\":\"M\","
+                + "\"recognizedOn\":\"" + LocalDate.now() + "\",\"resolutionNumber\":\"R\"}";
+        record(token, withoutReason).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("EQUIVALENCE_REASON_INVALID"));
+        record(token, body(subject.getId(), null, LocalDate.now(), "          ")).andExpect(status().isUnprocessableEntity());
+        record(token, body(subject.getId(), null, LocalDate.now(), REASON)).andExpect(status().isCreated());
+        Long id = equivalenceRepository.findByProgramEnrollmentIdOrderByRecognizedOnDescIdDesc(enrollment.getId()).get(0).getId();
+        mockMvc.perform(post("/program-enrollments/{id}/equivalences/{eid}/void", enrollment.getId(), id)
+                        .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("EQUIVALENCE_REASON_INVALID"));
+    }
+
+    @Test
+    void voidIsAllowedEvenWhenEnrollmentIsNoLongerEnrolled() throws Exception {
+        String token = token("ADMINISTRATIVO");
+        record(token, body(subject.getId(), null, LocalDate.now(), REASON)).andExpect(status().isCreated());
+        Long id = equivalenceRepository.findByProgramEnrollmentIdOrderByRecognizedOnDescIdDesc(enrollment.getId()).get(0).getId();
+        enrollment.setStatus(ProgramEnrollmentStatus.COMPLETED);
+        entityManager.flush();
+        voidEquivalence(token, id, REASON).andExpect(status().isOk());
+    }
+
+    @Test
     void documentOfAnotherStudentIsRejected() throws Exception {
         record(token("ADMINISTRATIVO"), bodyWithDocument(subject.getId(), 999999L))
                 .andExpect(status().isUnprocessableEntity())

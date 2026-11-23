@@ -106,6 +106,9 @@ public class RecordSubjectEquivalenceTransaction {
         try {
             return subjectEquivalenceRepository.saveAndFlush(equivalence);
         } catch (DataIntegrityViolationException exception) {
+            if (!SubjectEquivalencePolicy.isActiveUniquenessViolation(exception)) {
+                throw exception;
+            }
             throw new EquivalenceAlreadyActiveException(enrollment.getId(), request.subjectId());
         }
     }

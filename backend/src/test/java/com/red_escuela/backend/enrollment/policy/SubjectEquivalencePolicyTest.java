@@ -84,4 +84,14 @@ class SubjectEquivalencePolicyTest {
         assertThatThrownBy(() -> SubjectEquivalencePolicy.requireActive(voided)).isInstanceOf(EquivalenceAlreadyVoidedException.class);
         assertThatCode(() -> SubjectEquivalencePolicy.requireActive(active)).doesNotThrowAnyException();
     }
+
+    @Test
+    void onlyTheActiveUniqueIndexCountsAsActiveUniquenessViolation() {
+        Throwable unique = new RuntimeException("wrapper", new RuntimeException("ERROR: duplicate key value violates unique constraint \"uk_subject_equivalence_active\""));
+        Throwable foreignKey = new RuntimeException("wrapper", new RuntimeException("ERROR: insert violates foreign key constraint \"subject_equivalence_recorded_by_id_fkey\""));
+
+        assertThat(SubjectEquivalencePolicy.isActiveUniquenessViolation(unique)).isTrue();
+        assertThat(SubjectEquivalencePolicy.isActiveUniquenessViolation(foreignKey)).isFalse();
+        assertThat(SubjectEquivalencePolicy.isActiveUniquenessViolation(new RuntimeException())).isFalse();
+    }
 }

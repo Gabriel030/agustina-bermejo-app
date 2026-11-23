@@ -4,6 +4,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalenceStatus;
 import com.red_escuela.backend.enrollment.events.SubjectEquivalenceVoidedEvent;
+import com.red_escuela.backend.enrollment.exception.EquivalenceAlreadyVoidedException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SubjectEquivalenceNotFoundException;
 import com.red_escuela.backend.enrollment.policy.SubjectEquivalencePolicy;
@@ -14,6 +15,7 @@ import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditRecord;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +57,11 @@ public class VoidSubjectEquivalenceTransaction {
         equivalence.setVoidedById(staffPersonResolver.currentStaffPersonId());
         equivalence.setVoidedAt(LocalDateTime.now(clock));
         equivalence.setVoidReason(reason);
-        subjectEquivalenceRepository.saveAndFlush(equivalence);
+        try {
+            subjectEquivalenceRepository.saveAndFlush(equivalence);
+        } catch (ObjectOptimisticLockingFailureException exception) {
+            throw new EquivalenceAlreadyVoidedException(equivalenceId);
+        }
         auditTrail.record(new AuditRecord(AuditAction.SUBJECT_EQUIVALENCE_VOIDED, AuditEntityType.SUBJECT_EQUIVALENCE,
                 equivalenceId, null, null, reason));
         eventPublisher.publishEvent(SubjectEquivalenceVoidedEvent.voidedFor(equivalenceId, programEnrollmentId,
