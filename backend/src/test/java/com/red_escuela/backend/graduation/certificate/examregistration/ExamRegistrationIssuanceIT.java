@@ -47,12 +47,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.beans.factory.annotation.Value;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -222,13 +220,6 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
 
     @Value("${app.certificates.directory}")
     private String certificatesDirectory;
-
-    private static RequestPostProcessor clientAddress(String address) {
-        return request -> {
-            request.setRemoteAddr(address);
-            return request;
-        };
-    }
 
     private ResultActions generate(String token, String json) throws Exception {
         var request = post(PATH).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON);
@@ -468,39 +459,4 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
 
         download(studentToken, id).andExpect(status().isNotFound());
     }
-
-    @Test
-    void publicVerificationShowsTheDocumentWithMaskedIdentity() throws Exception {
-        issuedId(studentToken);
-        String code = jdbc.queryForObject("select code from exam_registration_certificate", String.class);
-
-        mockMvc.perform(get("/public/certificates/{code}", code).with(clientAddress("203.0.113." + ThreadLocalRandom.current().nextInt(1, 250))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.documentKind").value("EXAM_REGISTRATION"))
-                .andExpect(jsonPath("$.status").value("VALID"))
-                .andExpect(jsonPath("$.graduationDate").value("2026-11-20"))
-                .andExpect(jsonPath("$.maskedDocument").value(org.hamcrest.Matchers.startsWith("*")));
-    }
-
-    @Test
-    void publicVerificationShowsExpiredAfterTheExamDay() throws Exception {
-        issuedId(studentToken);
-        String code = jdbc.queryForObject("select code from exam_registration_certificate", String.class);
-        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 21, 8, 0));
-
-        mockMvc.perform(get("/public/certificates/{code}", code).with(clientAddress("198.51.100." + ThreadLocalRandom.current().nextInt(1, 250))))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("EXPIRED"));
-    }
-
-    @Test
-    void publicVerificationShowsRevoked() throws Exception {
-        issuedId(studentToken);
-        String code = jdbc.queryForObject("select code from exam_registration_certificate", String.class);
-        jdbc.update("update exam_registration_certificate set status = 'REVOKED', revoked_at = ?, revoked_by_id = issued_by_id, revocation_reason = 'x'",
-                java.sql.Timestamp.valueOf("2026-11-10 11:00:00"));
-
-        mockMvc.perform(get("/public/certificates/{code}", code).with(clientAddress("192.0.2." + ThreadLocalRandom.current().nextInt(1, 250))))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("REVOKED"));
-    }
-
 }

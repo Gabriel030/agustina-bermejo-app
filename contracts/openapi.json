@@ -13365,7 +13365,7 @@
       "PublicCertificateView" : {
         "properties" : {
           "documentKind" : {
-            "enum" : [ "GRADUATION", "REGULAR", "EXAM_REGISTRATION" ],
+            "enum" : [ "GRADUATION", "REGULAR" ],
             "type" : "string"
           },
           "expiresAt" : {

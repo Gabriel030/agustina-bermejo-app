@@ -1,4 +1,4 @@
-package com.red_escuela.backend.graduation.certificate.examregistration.specialist;
+package com.red_escuela.backend.graduation.procedure.specialist;
 
 import com.red_escuela.backend.evaluation.api.OwnExamRegistrationView;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
@@ -10,7 +10,8 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot
 import com.red_escuela.backend.graduation.certificate.examregistration.entity.ExamRegistrationCertificate;
 import com.red_escuela.backend.graduation.certificate.examregistration.exception.InvalidExamRegistrationRecipientException;
 import com.red_escuela.backend.graduation.certificate.examregistration.repository.ExamRegistrationCertificateRepository;
-import com.red_escuela.backend.graduation.certificate.examregistration.specialist.ExamRegistrationEligibilityEvaluator.ExamRegistrationSelection;
+import com.red_escuela.backend.graduation.procedure.specialist.ExamRegistrationEligibilityEvaluator.ExamRegistrationSelection;
+import com.red_escuela.backend.graduation.certificate.examregistration.specialist.ExamRegistrationCertificateTemplate;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDocumentAuditRecorder;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;

@@ -5,7 +5,6 @@ import com.red_escuela.backend.graduation.certificate.dto.DocumentOrigin;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.examregistration.entity.ExamRegistrationCertificate;
 import com.red_escuela.backend.graduation.certificate.examregistration.repository.ExamRegistrationCertificateRepository;
-import com.red_escuela.backend.graduation.certificate.examregistration.specialist.ExamRegistrationCertificatePdfProvider;
 import com.red_escuela.backend.graduation.procedure.dto.ApprovedProcedureResponse;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureDocumentPdf;
 import java.time.Clock;

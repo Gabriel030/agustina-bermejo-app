@@ -1,6 +1,6 @@
 package com.red_escuela.backend.graduation.procedure.usecase;
 
-import com.red_escuela.backend.graduation.certificate.examregistration.specialist.ExamRegistrationCertificateIssuer;
+import com.red_escuela.backend.graduation.procedure.specialist.ExamRegistrationCertificateIssuer;
 import com.red_escuela.backend.graduation.certificate.exception.DocumentOperationPendingException;
 import com.red_escuela.backend.graduation.procedure.dto.GenerateOwnDocumentRequest;
 import com.red_escuela.backend.graduation.procedure.dto.OwnDocumentResponse;

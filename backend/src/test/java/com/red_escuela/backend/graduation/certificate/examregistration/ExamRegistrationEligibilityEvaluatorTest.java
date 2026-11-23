@@ -7,7 +7,7 @@ import com.red_escuela.backend.graduation.api.DocumentIssuanceSettings.DocumentI
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.examregistration.entity.ExamRegistrationCertificate;
 import com.red_escuela.backend.graduation.certificate.examregistration.repository.ExamRegistrationCertificateRepository;
-import com.red_escuela.backend.graduation.certificate.examregistration.specialist.ExamRegistrationEligibilityEvaluator;
+import com.red_escuela.backend.graduation.procedure.specialist.ExamRegistrationEligibilityEvaluator;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.OverdueDebtProbe;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureEligibilityResponse;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureIneligibilityCode;
