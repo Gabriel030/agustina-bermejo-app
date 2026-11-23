@@ -33,7 +33,7 @@ public class DebtExceptionIssuer {
         this.clock = clock;
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public DebtExceptionResponse issue(IssueDebtExceptionRequest request) {
         studentExistenceChecker.requireExistingStudent(request.studentId());
         DocumentDebtException exception = repository.save(DocumentDebtException.issue(request.studentId(),

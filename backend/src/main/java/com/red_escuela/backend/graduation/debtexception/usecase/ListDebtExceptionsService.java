@@ -7,7 +7,6 @@ import com.red_escuela.backend.graduation.debtexception.specialist.DebtException
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class ListDebtExceptionsService implements ListDebtExceptionsUseCase {
@@ -21,7 +20,6 @@ public class ListDebtExceptionsService implements ListDebtExceptionsUseCase {
     }
 
     @Override
-    @Transactional
     public Page<DebtExceptionResponse> list(DebtExceptionStatus status, Long studentId, Pageable pageable) {
         accessGuard.requireNotSubdirector();
         return lister.list(status, studentId, pageable);

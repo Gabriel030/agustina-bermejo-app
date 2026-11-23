@@ -5,7 +5,6 @@ import com.red_escuela.backend.graduation.debtexception.dto.IssueDebtExceptionRe
 import com.red_escuela.backend.graduation.debtexception.specialist.DebtExceptionIssuer;
 import com.red_escuela.backend.graduation.debtexception.specialist.DebtExceptionAccessGuard;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class IssueDebtExceptionService implements IssueDebtExceptionUseCase {
@@ -19,7 +18,6 @@ public class IssueDebtExceptionService implements IssueDebtExceptionUseCase {
     }
 
     @Override
-    @Transactional
     public DebtExceptionResponse issue(IssueDebtExceptionRequest request) {
         accessGuard.requireNotSubdirector();
         return issuer.issue(request);

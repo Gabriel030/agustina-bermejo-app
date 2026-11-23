@@ -28,7 +28,7 @@ public class DebtExceptionLister {
         this.responses = responses;
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public Page<DebtExceptionResponse> list(DebtExceptionStatus status, Long studentId, Pageable pageable) {
         expirer.expireDue();
         Specification<DocumentDebtException> filter = (root, query, builder) -> builder.conjunction();
