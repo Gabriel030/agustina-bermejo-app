@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -78,7 +78,7 @@ public class CertificateSignatoryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public Page<CertificateSignatorySummaryResponse> list(
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) String q,
@@ -88,40 +88,40 @@ public class CertificateSignatoryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public CertificateSignatoryDetailResponse get(@PathVariable Long id) {
         return getUseCase.get(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateSignatoryDetailResponse create(@Valid @RequestBody SaveCertificateSignatoryRequest request) {
         return createUseCase.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateSignatoryDetailResponse update(@PathVariable Long id,
                                                      @Valid @RequestBody SaveCertificateSignatoryRequest request) {
         return updateUseCase.update(id, request);
     }
 
     @PostMapping("/{id}/deactivate")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateSignatoryDetailResponse deactivate(@PathVariable Long id) {
         return deactivateUseCase.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateSignatoryDetailResponse activate(@PathVariable Long id) {
         return activateUseCase.activate(id);
     }
 
     @Operation(description = "Solo PNG, hasta 2 MB (se valida por magic bytes); la imagen no se guarda en la auditoría")
     @PutMapping(value = "/{id}/signature", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateSignatoryDetailResponse uploadSignature(@PathVariable Long id,
                                                               @RequestPart("file") MultipartFile file) throws IOException {
         return uploadSignatureUseCase.upload(id,
@@ -129,14 +129,14 @@ public class CertificateSignatoryController {
     }
 
     @DeleteMapping("/{id}/signature")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateSignatoryDetailResponse deleteSignature(@PathVariable Long id) {
         return deleteSignatureUseCase.delete(id);
     }
 
     @GetMapping("/{id}/signature")
     @ApiResponse(responseCode = "200", content = @Content(mediaType = "image/png", schema = @Schema(type = "string", format = "binary")))
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.signers_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<byte[]> signature(@PathVariable Long id) {
         SignatorySignatureContent signature = getSignatureUseCase.get(id);
         return ResponseEntity.ok()
