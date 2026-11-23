@@ -1,4 +1,4 @@
-package com.red_escuela.backend.graduation.certificate.examregistration.specialist;
+package com.red_escuela.backend.graduation.procedure.specialist;
 
 import com.red_escuela.backend.evaluation.api.OwnExamRegistrationFinder;
 import com.red_escuela.backend.evaluation.api.OwnExamRegistrationView;
@@ -28,7 +28,7 @@ import java.util.List;
 
 @Component
 @Transactional(readOnly = true)
-public class ExamRegistrationEligibilityEvaluator {
+public class ExamRegistrationEligibilityEvaluator implements ProcedureEligibilityStrategy {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -52,6 +52,16 @@ public class ExamRegistrationEligibilityEvaluator {
         this.overdueDebtProbe = overdueDebtProbe;
         this.currentActorFinder = currentActorFinder;
         this.clock = clock;
+    }
+
+    @Override
+    public StudentProcedureType type() {
+        return StudentProcedureType.EXAM_REGISTRATION_CERTIFICATE;
+    }
+
+    @Override
+    public ProcedureEligibilityResponse eligibilityOf(Long studentId, Long enrollmentId, Long registrationId) {
+        return evaluate(registrationId);
     }
 
     public ProcedureEligibilityResponse evaluate(Long registrationId) {
