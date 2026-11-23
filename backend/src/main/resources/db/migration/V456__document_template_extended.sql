@@ -1,5 +1,7 @@
 alter table certificate_template add column if not exists document_type varchar(40);
 alter table certificate_template alter column kind drop not null;
+alter table certificate_template drop constraint if exists certificate_template_document_type_enum;
+alter table certificate_template drop constraint if exists ck_certificate_template_single_discriminator;
 alter table certificate_template
     add constraint certificate_template_document_type_enum check (document_type in
         ('REGULAR_STUDENT_CERTIFICATE', 'APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'EXAM_CERTIFICATE')),
@@ -14,10 +16,10 @@ insert into certificate_template_version (template_id, version_number, status, i
                                           dictation_text, qr_label, footer_legend, updated_at, published_at, published_by_name)
 select t.id, 1, 'PUBLISHED', 'INSTITUTO AGUSTINA BERMEJO',
        case t.document_type
-           when 'REGULAR_STUDENT_CERTIFICATE' then 'Constancia de alumno regular'
-           when 'APPROVED_SUBJECTS_CERTIFICATE' then 'Constancia de materias aprobadas'
-           when 'EXAM_REGISTRATION_CERTIFICATE' then 'Constancia de inscripción a examen'
-           else 'Constancia de examen' end,
+           when 'REGULAR_STUDENT_CERTIFICATE' then 'CONSTANCIA DE ALUMNO REGULAR'
+           when 'APPROVED_SUBJECTS_CERTIFICATE' then 'CONSTANCIA DE MATERIAS APROBADAS'
+           when 'EXAM_REGISTRATION_CERTIFICATE' then 'CONSTANCIA DE INSCRIPCIÓN A EXAMEN'
+           else 'CONSTANCIA DE EXAMEN RENDIDO' end,
        case t.document_type
            when 'REGULAR_STUDENT_CERTIFICATE' then 'Se deja constancia de que {holder}, {documentType} {documentNumber}, es alumno/a regular de la carrera {titleName}.'
            when 'APPROVED_SUBJECTS_CERTIFICATE' then 'Se deja constancia de que {holder}, {documentType} {documentNumber}, cursa la carrera {titleName}.'

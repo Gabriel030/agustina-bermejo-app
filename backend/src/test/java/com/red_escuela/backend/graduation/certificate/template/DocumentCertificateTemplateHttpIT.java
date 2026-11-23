@@ -116,6 +116,16 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
         return DRAFT.replace("%SIG1%", String.valueOf(first)).replace("%SIG2%", String.valueOf(second));
     }
 
+    private void uploadSignature(int signatoryId) throws Exception {
+        mockMvc.perform(multipart("/certificate-signatories/" + signatoryId + "/signature")
+                        .file(new MockMultipartFile("file", "firma.png", "image/png", png()))
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        }).header("Authorization", "Bearer " + director))
+                .andExpect(status().isOk());
+    }
+
     private String withBasedOn(String body, int versionNumber) {
         String trimmed = body.trim();
         return trimmed.substring(0, trimmed.length() - 1) + ",\"basedOnVersionNumber\":" + versionNumber + "}";
@@ -173,6 +183,51 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void existingDraftWithUnknownBaseVersionIsRejected() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        saveDraft(director, withBasedOn(draftBody(firstSignatoryId, secondSignatoryId), 99)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void draftIsBasedOnRequestedPublishedVersionOrOtherwiseOnTheLatest() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        entityManager.createNativeQuery("update certificate_template_version set status = 'PUBLISHED', version_number = 2, "
+                + "published_at = now(), published_by_name = 'Test' where status = 'DRAFT' and template_id = "
+                + "(select id from certificate_template where document_type = 'REGULAR_STUDENT_CERTIFICATE')").executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+
+        saveDraft(director, withBasedOn(draftBody(firstSignatoryId, secondSignatoryId), 1))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.basedOnVersionNumber").value(1));
+        send(delete(REGULAR + "/draft"), director).andExpect(status().isNoContent());
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.basedOnVersionNumber").value(2));
+    }
+
+    @Test
+    void signatoryWithSignatureCopiesItToTheTemplateAndReusesItBySha256() throws Exception {
+        uploadSignature(firstSignatoryId);
+        String first = saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        int imageId = JsonPath.read(first, "$.content.firstSigner.signatureImageId");
+        assertThat(JsonPath.<Object>read(first, "$.content.secondSigner.signatureImageId")).isNull();
+        send(get(REGULAR + "/images/" + imageId), administrative).andExpect(status().isOk());
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE/images/" + imageId), administrative)
+                .andExpect(status().isNotFound());
+        String second = saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat((Integer) JsonPath.read(second, "$.content.firstSigner.signatureImageId")).isEqualTo(imageId);
+    }
+
+    @Test
+    void signatoryWithoutSignatureIsSavedWithoutSignatureImage() throws Exception {
+        String body = saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<Object>read(body, "$.content.firstSigner.signatureImageId")).isNull();
+        assertThat(JsonPath.<Object>read(body, "$.content.firstSigner.name")).isEqualTo("Ana Gómez");
+    }
+
+    @Test
     void studentCannotReadDocumentTemplates() throws Exception {
         send(get(REGULAR), student).andExpect(status().isForbidden());
     }
@@ -189,7 +244,7 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
 
         send(get(REGULAR), administrative)
                 .andExpect(jsonPath("$.published.versionNumber").value(1))
-                .andExpect(jsonPath("$.published.content.title").value("Constancia de alumno regular"))
+                .andExpect(jsonPath("$.published.content.title").value("CONSTANCIA DE ALUMNO REGULAR"))
                 .andExpect(jsonPath("$.draft.content.title").value("CONSTANCIA NUEVA"))
                 .andExpect(jsonPath("$.hasUnpublishedChanges").value(true));
     }

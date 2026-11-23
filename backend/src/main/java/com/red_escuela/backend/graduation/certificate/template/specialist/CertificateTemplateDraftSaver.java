@@ -65,11 +65,14 @@ public class CertificateTemplateDraftSaver {
         LocalDateTime now = LocalDateTime.now(clock);
         CertificateTemplateVersion draft = versionRepository.findByTemplateIdAndStatus(template.getId(), TemplateVersionStatus.DRAFT)
                 .orElse(null);
+        if (requestedBasedOn != null) {
+            versionRepository.findByTemplateIdAndVersionNumber(template.getId(), requestedBasedOn)
+                    .filter(version -> version.getStatus() == TemplateVersionStatus.PUBLISHED)
+                    .orElseThrow(TemplateVersionNotFoundException::new);
+        }
         if (draft == null) {
             Integer basedOn = requestedBasedOn != null
-                    ? versionRepository.findByTemplateIdAndVersionNumber(template.getId(), requestedBasedOn)
-                            .filter(version -> version.getStatus() == TemplateVersionStatus.PUBLISHED)
-                            .orElseThrow(TemplateVersionNotFoundException::new).getVersionNumber()
+                    ? requestedBasedOn
                     : versionRepository
                     .findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
                     .map(CertificateTemplateVersion::getVersionNumber).orElse(null);

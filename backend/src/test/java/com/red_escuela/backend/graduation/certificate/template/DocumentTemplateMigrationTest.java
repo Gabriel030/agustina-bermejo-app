@@ -26,6 +26,8 @@ class DocumentTemplateMigrationTest {
 
             assertThat(rows).extracting(row -> row.get("document_type")).containsExactly("APPROVED_SUBJECTS_CERTIFICATE",
                     "EXAM_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "REGULAR_STUDENT_CERTIFICATE");
+            assertThat(rows).extracting(row -> row.get("title")).containsExactly("CONSTANCIA DE MATERIAS APROBADAS",
+                    "CONSTANCIA DE EXAMEN RENDIDO", "CONSTANCIA DE INSCRIPCIÓN A EXAMEN", "CONSTANCIA DE ALUMNO REGULAR");
             assertThat(rows).allSatisfy(row -> {
                 assertThat(row.get("version_number")).isEqualTo(1);
                 assertThat(row.get("status")).isEqualTo("PUBLISHED");
