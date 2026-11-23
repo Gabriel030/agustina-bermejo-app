@@ -1,5 +1,7 @@
 export const DOMAIN_ERROR_MESSAGES = {
   ADMISSION_WINDOW_CLOSED: 'El período de admisión está cerrado.',
+  ACTIVATION_TOKEN_EXPIRED: 'El enlace de activación venció. Pedí uno nuevo a la institución.',
+  ACTIVATION_TOKEN_INVALID: 'El enlace de activación no es válido o ya fue usado.',
   AMBIGUOUS_SECTION: 'Hay más de una comisión posible. Elegí una de la lista.',
   APPLICATION_DECISION_IDEMPOTENCY_KEY_CONFLICT: 'Esta decisión ya se registró de otra forma. Recargá la solicitud para ver el estado actual.',
   APPLICATION_DECISION_IDEMPOTENCY_KEY_INVALID: 'No pudimos identificar el pedido. Recargá la página e intentá de nuevo.',
@@ -184,6 +186,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   WITHDRAWAL_DATE_OUT_OF_ALLOWED_RANGE: 'La fecha de baja está fuera del rango permitido.',
   INVALID_CREDENTIALS: 'Usuario o contraseña incorrectos.',
   INVALID_GOOGLE_TOKEN: 'No pudimos validar tu cuenta de Google. Probá de nuevo.',
+  PERSON_ALREADY_ACTIVATED: 'Esta persona ya activó su cuenta.',
   INVALID_PASSWORD_RESET_TOKEN: 'El enlace para restablecer la contraseña venció o no es válido. Pedí uno nuevo.',
   INVALID_REFRESH_TOKEN: 'Tu sesión venció. Ingresá de nuevo.',
   NOT_EXAM_BOARD_TRIBUNAL_MEMBER: 'No integrás el tribunal de esta mesa de examen.',
