@@ -211,3 +211,64 @@ export function documentIssuanceSettings(overrides = {}) {
     ...overrides,
   };
 }
+
+export function regularCertificateRequest(overrides = {}) {
+  return {
+    id: 301,
+    studentId: 41,
+    studentName: 'Lucía Fernández',
+    programName: 'Tecnicatura en Enfermería',
+    kind: 'PROGRAM',
+    enrollmentId: 77,
+    channel: 'STUDENT_PORTAL',
+    outcome: 'PENDING_STAFF',
+    reasons: ['PAYMENT_STANDING'],
+    requestedAt: '2026-11-20T09:30:00',
+    certificateId: null,
+    rejectionReason: null,
+    totalDue: { amount: '45000.00', currency: 'ARS' },
+    overdueInstallments: 2,
+    hasDebt: true,
+    exceptionId: null,
+    exceptionStatus: null,
+    exceptionValidUntil: null,
+    ...overrides,
+  };
+}
+
+export function regularCertificateRequestList() {
+  return [
+    regularCertificateRequest(),
+    regularCertificateRequest({ id: 302, studentId: 42, studentName: 'Martín Gómez', enrollmentId: 78, totalDue: { amount: '0.00', currency: 'ARS' }, overdueInstallments: 0, hasDebt: false }),
+    regularCertificateRequest({ id: 303, studentId: 43, studentName: 'Sofía Ruiz', enrollmentId: 79, totalDue: null, overdueInstallments: null, hasDebt: null }),
+    regularCertificateRequest({ id: 304, studentId: 44, studentName: 'Tomás Acosta', enrollmentId: 80, exceptionId: 9, exceptionStatus: 'PENDING' }),
+    regularCertificateRequest({ id: 305, studentId: 45, studentName: 'Valeria Núñez', enrollmentId: 81, exceptionId: 10, exceptionStatus: 'APPROVED', exceptionValidUntil: '2026-11-30T10:00:00' }),
+  ];
+}
+
+export function certificateExceptionSummary(overrides = {}) {
+  return { pending: 2, approved: 1, rejected: 3, withdrawn: 0, expired: 1, consumed: 4, ...overrides };
+}
+
+export function certificateException(overrides = {}) {
+  return {
+    id: 9,
+    studentId: 44,
+    kind: 'PROGRAM',
+    enrollmentId: 80,
+    organismKind: 'COURT',
+    organismReference: 'Causa 77/2026',
+    reason: 'El alumno presentó un reclamo formal ante Defensa del Consumidor',
+    status: 'PENDING',
+    requestedById: 5,
+    requestedAt: '2026-11-21T10:00:00',
+    decidedById: null,
+    decidedAt: null,
+    decisionReason: null,
+    validUntil: null,
+    createdByDirector: false,
+    debtTotalAtRequest: { amount: '45000.00', currency: 'ARS' },
+    overdueInstallmentsAtRequest: 2,
+    ...overrides,
+  };
+}

@@ -1,6 +1,13 @@
 import { http, HttpResponse } from 'msw';
 import { errorBody } from '@/test/fixtures/errors';
-import { examCertificateCandidates, ineligibleProcedure, publicDocumentVerification } from '@/test/fixtures/constancias';
+import {
+  certificateExceptionSummary,
+  examCertificateCandidates,
+  ineligibleProcedure,
+  publicDocumentVerification,
+  regularCertificateRequest,
+  regularCertificateRequestList,
+} from '@/test/fixtures/constancias';
 
 const API = 'http://localhost:8080';
 
@@ -102,4 +109,16 @@ export const ownDocumentExamNotHeldHandler = http.post(`${API}/me/documents/:typ
 
 export const documentSettingsConflictHandler = http.put(`${API}/certificate-settings/documents`, () =>
   failure(409, 'OPTIMISTIC_LOCK_CONFLICT'),
+);
+
+export const regularRequestsWithDebtDataHandler = http.get(`${API}/regular-certificate-requests`, () =>
+  HttpResponse.json(regularCertificateRequestList()),
+);
+
+export const regularRequestsBillingOffHandler = http.get(`${API}/regular-certificate-requests`, () =>
+  HttpResponse.json([regularCertificateRequest({ totalDue: null, overdueInstallments: null, hasDebt: null })]),
+);
+
+export const certificateExceptionSummaryEmptyHandler = http.get(`${API}/certificate-exceptions/summary`, () =>
+  HttpResponse.json(certificateExceptionSummary({ pending: 0, approved: 0, rejected: 0, withdrawn: 0, expired: 0, consumed: 0 })),
 );
