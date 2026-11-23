@@ -11,6 +11,8 @@ const readFromDevelop = (command, args) => {
   }
 };
 
+const eventName = globalThis.process.env.GITHUB_EVENT_NAME;
+
 const total = (entries) =>
   Object.values(entries).reduce((sum, perFile) => sum + Object.values(perFile).reduce((a, b) => a + b, 0), 0);
 
@@ -24,10 +26,13 @@ describe('unhandled requests baseline', () => {
     expect(invalid).toEqual([]);
   });
 
-  it('baselineCanOnlyShrink', () => {
+  it.skipIf(eventName === 'push')('baselineCanOnlyShrink', () => {
     const raw = readFromDevelop('git', ['show', 'origin/develop:frontend/src/test/unhandled-baseline.json']);
     if (raw === null) {
-      if (globalThis.process.env.CI) console.warn('baseline guard skipped: origin/develop missing');
+      if (eventName === 'pull_request' && globalThis.process.env.CI) {
+        throw new Error('origin/develop no existe en el runner: el job de tests debe traer la rama base antes de correr el guard');
+      }
+      console.warn('baseline guard skipped: origin/develop missing');
       return;
     }
     const base = JSON.parse(raw);

@@ -554,6 +554,8 @@ jobs:
     name: frontend-tests (${{ matrix.shard }})
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: ${{ matrix.shard == 1 && '0' || '1' }}
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -568,7 +570,12 @@ jobs:
 
       - name: Run the frontend test shard
         working-directory: frontend
-        run: npm run test -- --shard=${{ matrix.shard }}/3
+        run: npm run test -- --shard=${{ matrix.shard }}/3 --exclude src/test/unhandledBaseline.test.js
+
+      - name: Run the baseline guard against the base branch
+        if: matrix.shard == 1
+        working-directory: frontend
+        run: npx vitest run src/test/unhandledBaseline.test.js
 
   frontend-checks:
     runs-on: ubuntu-latest
