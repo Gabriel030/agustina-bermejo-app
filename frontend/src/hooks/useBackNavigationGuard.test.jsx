@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
@@ -99,18 +99,23 @@ describe('back navigation guard on unsaved changes', () => {
     await waitFor(() => expect(window.location.pathname).toBe('/a'));
   });
 
-  it('does not let two consecutive back presses leave without the dialog', async () => {
+  it('intercepts a second back press whose popstate arrives before the restoration of the first', async () => {
     const user = userEvent.setup();
     renderFlow();
     await advanceTo(user, 'Paso B');
     await advanceTo(user, 'Paso C');
+    const goSpy = vi.spyOn(window.history, 'go').mockImplementation(() => {});
+    const reachedRouter = vi.fn();
+    window.addEventListener('popstate', reachedRouter);
 
-    window.history.back();
-    window.history.back();
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { idx: 1 } }));
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { idx: 0 } }));
 
+    window.removeEventListener('popstate', reachedRouter);
     await screen.findByRole('alertdialog', { name: '¿Salir sin guardar?' });
-    await waitFor(() => expect(window.location.pathname).toBe('/c'));
-    expect(screen.getByText('Paso C')).toBeInTheDocument();
+    expect(reachedRouter).not.toHaveBeenCalled();
+    expect(goSpy).toHaveBeenCalledTimes(2);
+    goSpy.mockRestore();
   });
 
   it('asks before going forward again into a page with unsaved changes', async () => {
