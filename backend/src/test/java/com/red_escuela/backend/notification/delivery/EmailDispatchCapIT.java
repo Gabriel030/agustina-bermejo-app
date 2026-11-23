@@ -43,6 +43,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -81,6 +82,8 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
 
     @Autowired
     private CircuitBreakerFactory circuitBreakerFactory;
+    @Autowired
+    private BulkheadFactory bulkheadFactory;
     @Autowired
     private NotificationDeliveryEnqueuer deliveryService;
     @Autowired
@@ -198,7 +201,7 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     }
 
     private EmailDeliveryChannel channelWith(TransactionalEmailGateway gateway) {
-        return new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gateway, circuitBreakerFactory, (category, kind, recipientPersonId) -> Optional.empty()) {
+        return new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gateway, circuitBreakerFactory, bulkheadFactory, (category, kind, recipientPersonId) -> Optional.empty()) {
             @Override
             public void dispatchDelivery(Long deliveryId) {
                 transactionTemplate.executeWithoutResult(status -> super.dispatchDelivery(deliveryId));

@@ -89,7 +89,17 @@ Composición: el bulkhead va por fuera del circuit breaker, con `Bulkhead.execut
 
 Métricas: `resilience.bulkhead.rejected{name}` (contador) y `resilience.bulkhead.available{name}` (permisos libres). Alerta sugerida: `rate(resilience_bulkhead_rejected_total[5m]) > 0` sostenido indica un proveedor lento o un límite chico.
 
-Estado: la clase y la configuración existen; falta aplicarlo a mail, WhatsApp, Google y Mercado Pago (subtarea S3-d de la Épica 24).
+Dónde está aplicado (S3-d):
+
+| Punto | Comportamiento con el bulkhead lleno |
+|---|---|
+| `EmailDeliveryChannel.dispatchDelivery` (API HTTP de Brevo, nombre `mail`) | La entrega queda `QUEUED`/diferida sin consumir intento, igual que con el circuito abierto |
+| `CircuitBreakingMailSender` (SMTP, `BrevoEmailService`, nombre `mail`) | `CircuitOpenException` => `503` + `Retry-After`; no toca SMTP ni cuenta como fallo |
+| `WhatsAppDeliverySender.sendQueued` (`whatsapp-meta`) | La entrega queda sin consumir intento |
+| `GoogleIdTokenService.verify` (`google`, `POST /auth/google`) | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After`; un token inválido sigue sin contar como fallo del circuito (`countsAsFailure`) |
+| `SdkMercadoPagoPaymentFetcher.fetchApproved` (`mercadopago`) | `CircuitOpenException`; solo el fetcher de pagos, `createPreference` queda fuera (B4, D-226) |
+
+`mail` comparte un único bulkhead entre la API HTTP y SMTP (son dos transportes del mismo proveedor y nunca se anidan). Pendiente: S3-e (sacar la llamada HTTP de la transacción) y un pool propio para los jobs de envío.
 
 ## Señales de fallo
 
