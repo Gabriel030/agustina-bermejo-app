@@ -47,4 +47,6 @@ El front puede enviar sus eventos al backend en lugar de hablar directo con Glit
 - Solo acepta items `event`, `transaction` y `session`; cualquier otro tipo responde 400. Si el proveedor responde 3xx/4xx/5xx, el túnel responde 502.
 - Rate limit por IP con instancia propia (no comparte bucket con refresh) y la misma capacidad que `RATE_LIMIT_REFRESH_PER_MINUTE`; 429 con `Retry-After`. Seguimiento: un tope global del túnel, hoy solo hay tope por IP.
 - Al cablear `main.jsx`, el DSN del front (`VITE_SENTRY_DSN`) debe ser idéntico al `SENTRY_DSN` del backend, o el túnel responde 400.
-- Pendiente (fuera de este PR): cablear `tunnel` en `main.jsx` con su variable de build y ajustar la CSP/Caddy.
+- Cableado hecho: `main.jsx` pasa `tunnel` = `<VITE_API_BASE_URL>/public/monitoring/tunnel` (en producción `/api/public/monitoring/tunnel`, mismo origen; Caddy quita `/api`). No hay variable de build nueva: solo `VITE_SENTRY_DSN` (ARG en `frontend/Dockerfile` y `docker-compose.prod.yml`). Sin DSN no se inicializa nada.
+- CSP: no se tocó. `connect-src` queda en `'self'` y Google; no se agrega el host del proveedor. `caddyHeaders.test.js` lo fija.
+- Pendiente: NO cargar un DSN real hasta que Gabriel resuelva proveedor y privacidad de menores. Si el proveedor es GlitchTip, exigir sin almacenamiento de IP y sin data scrubbing avanzado.
