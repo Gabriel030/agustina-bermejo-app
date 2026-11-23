@@ -94,15 +94,14 @@ function ModalAsignarTribunal({ open, onClose, onAsignar, asignando }) {
           </SelectContent>
         </Select>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cerrar</Button>
+          <Button variant="outline" onClick={onClose} className="min-h-11 md:min-h-8">Cerrar</Button>
           <Button
             variant="primary"
             disabled={!instructorId || asignando}
             onClick={() => {
               onAsignar(Number(instructorId));
               setInstructorId('');
-            }}
-          >
+            }} className="min-h-11 md:min-h-8">
             Agregar al tribunal
           </Button>
         </DialogFooter>
@@ -288,8 +287,8 @@ function DetalleMesa({ mesaId, role }) {
           )}
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmarCierre(false)}>Volver</Button>
-            <Button variant="primary" disabled={cerrando} onClick={confirmarCerrarActa}>Cerrar acta</Button>
+            <Button variant="outline" onClick={() => setConfirmarCierre(false)} className="min-h-11 md:min-h-8">Volver</Button>
+            <Button variant="primary" disabled={cerrando} onClick={confirmarCerrarActa} className="min-h-11 md:min-h-8">Cerrar acta</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

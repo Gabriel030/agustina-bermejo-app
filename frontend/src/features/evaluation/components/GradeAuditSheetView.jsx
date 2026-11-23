@@ -36,7 +36,7 @@ export function GradeAuditSheetView({ student, column, cell, onBack }) {
         <EmptyState title="Esta nota no tiene correcciones" />
       ) : (
         <>
-          <Button type="button" variant="ghost" size="sm" className="w-fit" aria-label="Ordenar por fecha" onClick={() => setAscending((current) => !current)}>
+          <Button type="button" variant="ghost" size="sm" className="min-h-11 md:min-h-7 w-fit" aria-label="Ordenar por fecha" onClick={() => setAscending((current) => !current)}>
             Fecha
             <SortIcon aria-hidden="true" className="size-3.5" />
           </Button>

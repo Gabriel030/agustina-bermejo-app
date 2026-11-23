@@ -62,16 +62,20 @@ function ChipSelector({ opciones, valor, onChange }) {
   return (
     <div className="flex gap-2">
       {opciones.map((op) => (
-        <button
+        <Button
           key={op.value}
           type="button"
+          size="lg"
+          variant={valor === op.value ? 'default' : 'ghost'}
           onClick={() => onChange(op.value)}
-          className={`rounded-lg px-4 py-2 text-sm font-bold ${
-            valor === op.value ? 'bg-gradient-to-br from-primary to-brand text-on-accent' : 'bg-neutral-bg text-ink-faint'
+          className={`min-h-11 rounded-lg px-4 font-bold md:min-h-9 ${
+            valor === op.value
+              ? 'bg-brand text-on-accent hover:bg-brand'
+              : 'bg-neutral-bg text-ink-faint hover:bg-neutral-bg hover:text-ink-faint'
           }`}
         >
           {op.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -160,7 +164,7 @@ export function DirectorEsquemasEvaluacion() {
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusPill tone={e.inUse ? 'warning' : 'success'}>{e.inUse ? 'En uso' : 'Editable'}</StatusPill>
                   {!e.inUse && (
-                    <Button variant="outline" size="sm" aria-label={`Editar ${e.name}`} onClick={() => empezarEdicion(e)}>
+                    <Button variant="outline" size="sm" aria-label={`Editar ${e.name}`} onClick={() => empezarEdicion(e)} className="min-h-11 md:min-h-7">
                       Editar
                     </Button>
                   )}
@@ -232,15 +236,14 @@ export function DirectorEsquemasEvaluacion() {
 
           <div className="flex flex-wrap gap-2">
             {editando && (
-              <Button variant="outline" onClick={cancelarEdicion}>
+              <Button variant="outline" onClick={cancelarEdicion} className="min-h-11 md:min-h-8">
                 Cancelar
               </Button>
             )}
             <Button
               onClick={guardar}
               loading={guardando}
-              disabled={guardando || !form.name || !!problema || (form.esPromocional && !form.promotionMinGrade)}
-            >
+              disabled={guardando || !form.name || !!problema || (form.esPromocional && !form.promotionMinGrade)} className="min-h-11 md:min-h-8">
               {editando ? 'Guardar cambios' : 'Crear esquema'}
             </Button>
           </div>

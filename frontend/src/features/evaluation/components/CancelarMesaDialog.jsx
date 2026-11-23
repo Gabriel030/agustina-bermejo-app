@@ -24,8 +24,8 @@ export function CancelarMesaDialog({ open, onClose, onConfirmar, enviando, inscr
           <Textarea id="cancelar-motivo" value={motivo} maxLength={255} onChange={(e) => setMotivo(e.target.value)} />
         </div>
         <DialogFooter>
-          <Button variant="outline" disabled={enviando} onClick={onClose}>Volver</Button>
-          <Button variant="destructive" disabled={!motivoLimpio || enviando} onClick={() => onConfirmar(motivoLimpio)}>
+          <Button variant="outline" disabled={enviando} onClick={onClose} className="min-h-11 md:min-h-8">Volver</Button>
+          <Button variant="destructive" disabled={!motivoLimpio || enviando} onClick={() => onConfirmar(motivoLimpio)} className="min-h-11 md:min-h-8">
             Cancelar mesa
           </Button>
         </DialogFooter>

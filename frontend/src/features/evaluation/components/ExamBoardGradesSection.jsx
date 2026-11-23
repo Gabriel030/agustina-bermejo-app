@@ -59,7 +59,7 @@ function ReviewSheet({ open, changes, failure, saving, onClose, onConfirm, onDro
             <span className="font-semibold">{failure.message}</span>
             <span>Tus cambios siguen acá.</span>
             {failure.registrationId != null && failure.student && (
-              <Button type="button" variant="outline" size="sm" onClick={onDropFailed}>
+              <Button type="button" variant="outline" size="sm" onClick={onDropFailed} className="min-h-11 md:min-h-7">
                 Quitar a {failure.student} y revisar el resto
               </Button>
             )}
@@ -67,10 +67,10 @@ function ReviewSheet({ open, changes, failure, saving, onClose, onConfirm, onDro
         )}
         <ChangesTable rows={changes} />
         <SheetFooter className="mt-auto flex-row justify-end gap-2 p-0">
-          <Button type="button" variant="outline" disabled={saving} onClick={onClose}>
+          <Button type="button" variant="outline" disabled={saving} onClick={onClose} className="min-h-11 md:min-h-8">
             Volver
           </Button>
-          <Button type="button" variant="primary" loading={saving} disabled={!changes.length} onClick={onConfirm}>
+          <Button type="button" variant="primary" loading={saving} disabled={!changes.length} onClick={onConfirm} className="min-h-11 md:min-h-8">
             Guardar las notas
           </Button>
         </SheetFooter>
@@ -197,10 +197,10 @@ export function ExamBoardGradesSection({ mesa, rows, role, canWithdraw, onWithdr
           summary={`${Object.keys(drafts).length} ${Object.keys(drafts).length === 1 ? 'cambio' : 'cambios'} sin guardar`}
           hint={invalid ? 'Hay notas fuera de 1 a 10' : undefined}
         >
-          <Button type="button" variant="outline" onClick={() => setDiscarding(true)}>
+          <Button type="button" variant="outline" onClick={() => setDiscarding(true)} className="min-h-11 md:min-h-8">
             Descartar
           </Button>
-          <Button type="button" variant="primary" disabled={invalid || !changes.length} onClick={() => setReviewing(true)}>
+          <Button type="button" variant="primary" disabled={invalid || !changes.length} onClick={() => setReviewing(true)} className="min-h-11 md:min-h-8">
             Revisar y guardar
           </Button>
         </StickyActionBar>

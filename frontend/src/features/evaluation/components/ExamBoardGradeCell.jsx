@@ -135,7 +135,7 @@ export function ExamBoardWithdrawButton({ row, onWithdraw, pending }) {
             disabled={pending}
             aria-label={`Dar de baja a ${row.studentName}`}
             onClick={() => onWithdraw(row.id)}
-            className="text-ink-soft"
+            className="size-11 md:size-8 text-ink-soft"
           >
             <UserMinus aria-hidden="true" />
           </Button>
@@ -149,7 +149,7 @@ export function ExamBoardWithdrawButton({ row, onWithdraw, pending }) {
 export function ExamBoardCorrectButton({ row, access, onCorrect }) {
   if (access === 'enabled') {
     return (
-      <Button type="button" variant="outline" size="sm" aria-label={`Corregir la nota de ${row.studentName}`} onClick={() => onCorrect(row)}>
+      <Button type="button" variant="outline" size="sm" aria-label={`Corregir la nota de ${row.studentName}`} onClick={() => onCorrect(row)} className="min-h-11 md:min-h-7">
         <Pencil aria-hidden="true" />
         <span className="sr-only md:not-sr-only">Corregir</span>
       </Button>
@@ -157,7 +157,7 @@ export function ExamBoardCorrectButton({ row, access, onCorrect }) {
   }
   return (
     <WithReason reason={CLOSED_CORRECTION_REASON}>
-      <Button type="button" variant="outline" size="sm" disabled aria-label={`Corregir la nota de ${row.studentName}`}>
+      <Button type="button" variant="outline" size="sm" disabled aria-label={`Corregir la nota de ${row.studentName}`} className="min-h-11 md:min-h-7">
         <Pencil aria-hidden="true" />
         <span className="sr-only md:not-sr-only">Corregir</span>
       </Button>

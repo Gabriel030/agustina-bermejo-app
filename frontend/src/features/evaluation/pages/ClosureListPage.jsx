@@ -119,7 +119,7 @@ export function ClosureListPage({ role }) {
             <EmptyState
               title="Ninguna comisión coincide con la búsqueda."
               description="Probá con otro nombre o quitá los filtros."
-              action={hasFilters ? <Button variant="outline" onClick={clearFilters}>Limpiar filtros</Button> : null}
+              action={hasFilters ? <Button variant="outline" onClick={clearFilters} className="min-h-11 md:min-h-8">Limpiar filtros</Button> : null}
             />
           }
         />

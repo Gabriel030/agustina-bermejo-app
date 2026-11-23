@@ -326,7 +326,7 @@ export function DocenteConfiguracionEvaluacion() {
         {!soloLectura && (
           <div className="flex flex-wrap items-center justify-end gap-3">
             {!formularioCompleto && <span className="text-xs font-semibold text-warning">Faltan {faltantes} datos para poder enviar</span>}
-            <Button variant="outline" onClick={guardar} disabled={guardarBorrador.isPending}>
+            <Button variant="outline" onClick={guardar} disabled={guardarBorrador.isPending} className="min-h-11 md:min-h-8">
               Guardar borrador
             </Button>
             <Button
@@ -334,8 +334,7 @@ export function DocenteConfiguracionEvaluacion() {
               onClick={enviar}
               disabled={
                 !formularioCompleto || hayFechasInvalidas || !config.canSubmit || guardarBorrador.isPending || enviarAAprobacion.isPending
-              }
-            >
+              } className="min-h-11 md:min-h-8">
               {config.status === 'REJECTED' ? 'Reenviar a aprobación' : 'Enviar a aprobación'}
             </Button>
           </div>
