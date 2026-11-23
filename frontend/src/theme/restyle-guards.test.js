@@ -9,7 +9,7 @@ const MONEY_MONO_ALLOWED = [
   '/src/features/identity/pages/PadronAlumnos.jsx',
   '/src/features/identity/pages/GestionPersonal.jsx',
   '/src/features/evaluation/components/ClosurePrerequisitesSheet.jsx',
-  '/src/pages/AlumnoPagarTransferencia.jsx',
+  '/src/features/billing/pages/AlumnoPagarTransferencia.jsx',
   '/src/features/backups/components/BackupRestoreAndDisk.jsx',
   '/src/features/backups/components/BackupTiersTable.jsx',
   '/src/features/backups/components/BackupWhatIsBackedUp.jsx',
@@ -17,8 +17,8 @@ const MONEY_MONO_ALLOWED = [
 ];
 
 const MONEY_MONO_PENDING = [
-  '/src/components/alumno/InvoiceSummary.jsx',
-  '/src/components/alumno/AmountBreakdown.jsx',
+  '/src/features/billing/components/InvoiceSummary.jsx',
+  '/src/features/billing/components/AmountBreakdown.jsx',
 ];
 
 const ARBITRARY_RADIUS_PENDING = [

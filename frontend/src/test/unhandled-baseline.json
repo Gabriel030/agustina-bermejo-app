@@ -30,10 +30,10 @@
   "src/features/platform/pages/PrimerDirector.test.jsx": {
     "GET /platform/provisioning/first-director/status": 2
   },
-  "src/pages/AlumnoPagos.loadError.test.jsx": {
+  "src/features/billing/pages/AlumnoPagos.loadError.test.jsx": {
     "GET /me/credit-balance": 1
   },
-  "src/pages/AlumnoPagos.test.jsx": {
+  "src/features/billing/pages/AlumnoPagos.test.jsx": {
     "GET /me/credit-balance": 15
   },
   "src/routes/financialAccess.test.jsx": {
