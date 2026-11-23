@@ -188,6 +188,17 @@ class SentryTunnelTest {
     }
 
     @Test
+    void rejectsItemsDeclaringAnOversizedOrNegativeLength() {
+        for (String length : List.of("2147483647", "2147483640", "9999999999", "-1", "999")) {
+            String body = "{\"dsn\":\"" + dsn + "\"}\n{\"type\":\"event\",\"length\":" + length + "}\n{}\n";
+
+            assertThat(tunnel(dsn, 10_000).forward(body.getBytes(StandardCharsets.UTF_8)))
+                    .as(length).isEqualTo(SentryTunnelOutcome.REJECTED_ENVELOPE);
+        }
+        assertThat(upstreamPaths).isEmpty();
+    }
+
+    @Test
     void rejectsEnvelopeWithoutItemsOrWithUntypedItem() {
         assertThat(tunnel(dsn, 10_000).forward(("{\"dsn\":\"" + dsn + "\"}\n").getBytes(StandardCharsets.UTF_8)))
                 .isEqualTo(SentryTunnelOutcome.REJECTED_ENVELOPE);

@@ -99,11 +99,12 @@ public class SentryTunnel {
             items++;
             int payloadStart = Math.min(headerEnd + 1, envelope.length);
             JsonNode length = itemHeader.get("length");
-            if (length != null && length.isIntegralNumber() && length.asInt() >= 0) {
-                position = payloadStart + length.asInt();
-                if (position > envelope.length) {
+            if (length != null && length.isIntegralNumber()) {
+                long declared = length.asLong();
+                if (declared < 0 || declared > envelope.length - payloadStart) {
                     return false;
                 }
+                position = payloadStart + (int) declared;
                 if (position < envelope.length && envelope[position] == '\n') {
                     position++;
                 }
