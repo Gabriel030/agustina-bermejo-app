@@ -242,7 +242,8 @@ class PermissionGateCoverageTest {
             ROOT + ".graduation.certificate.regular.controller.RegularCertificateSettingsController",
             ROOT + ".graduation.certificate.template.controller.DocumentCertificateTemplateController",
             ROOT + ".graduation.certificate.signatory.controller.CertificateSignatoryController",
-            ROOT + ".graduation.documentsettings.controller.DocumentIssuanceSettingsController");
+            ROOT + ".graduation.documentsettings.controller.DocumentIssuanceSettingsController",
+            ROOT + ".graduation.debtexception.controller.DocumentDebtExceptionController");
 
     private static final Set<String> ENDPOINTS_FIXED_BY_CONDITIONAL_ROLE_RULE = Set.of(
             "CertificateTemplateController#preview");

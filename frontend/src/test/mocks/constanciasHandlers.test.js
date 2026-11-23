@@ -55,6 +55,18 @@ describe('constancias default handlers', () => {
     expect(saved.body.version).toBe(1);
   });
 
+  it('debtExceptionsAnswerAgainstTheContract', async () => {
+    const issued = await call('POST', '/document-debt-exceptions', {
+      studentId: 3,
+      documentType: 'REGULAR_STUDENT_CERTIFICATE',
+      reason: 'Cuota abonada en efectivo pendiente de acreditar',
+      validityDays: 7,
+    });
+    expect(issued.status).toBe(201);
+    expect((await call('GET', '/document-debt-exceptions?status=ACTIVE')).body.content).toHaveLength(3);
+    expect((await call('GET', '/document-debt-exceptions/5/pdf')).status).toBe(200);
+  });
+
   it('changeSectionCandidatesIncludeTheBlockReasonsTheContractCanExpress', async () => {
     const { body } = await call('GET', '/me/section-enrollments/3/change-section-candidates');
     expect(body.map((candidate) => candidate.blockReason)).toEqual(['CURRENT_SECTION', 'SECTION_FULL', 'SCHEDULE_OVERLAP']);
@@ -90,6 +102,11 @@ describe('constancias state handlers', () => {
     ['ownDocumentNotEligibleHandler', 'POST', '/me/documents/REGULAR_STUDENT_CERTIFICATE', 422, 'code', 'PROCEDURE_NOT_ELIGIBLE', {}],
     ['ownDocumentExamNotHeldHandler', 'POST', '/me/documents/EXAM_CERTIFICATE', 422, 'code', 'EXAM_CERTIFICATE_BOARD_NOT_HELD', { registrationId: 1 }],
     ['documentSettingsConflictHandler', 'PUT', '/certificate-settings/documents', 409, 'code', 'OPTIMISTIC_LOCK_CONFLICT', { examRegistrationAdvanceDays: 15, examAttendanceValidityDays: 30, approvedSubjectsValidityDays: 30, dailyIssuanceLimitPerType: 1, version: 0 }],
+    ['ownDocumentRequiresPaymentsHandler', 'POST', '/me/documents/REGULAR_STUDENT_CERTIFICATE', 409, 'code', 'DOCUMENT_REQUIRES_PAYMENTS_UP_TO_DATE', {}],
+    ['debtExceptionAlreadyUsedHandler', 'GET', '/me/procedures/approved/REGULAR_STUDENT_CERTIFICATE/31/pdf', 409, 'code', 'DEBT_EXCEPTION_ALREADY_USED'],
+    ['debtExceptionExpiredHandler', 'GET', '/me/procedures/approved/REGULAR_STUDENT_CERTIFICATE/31/pdf', 409, 'code', 'DEBT_EXCEPTION_EXPIRED'],
+    ['debtExceptionNotFoundHandler', 'GET', '/document-debt-exceptions/9/pdf', 404, 'code', 'DEBT_EXCEPTION_NOT_FOUND'],
+    ['debtExceptionForbiddenHandler', 'POST', '/document-debt-exceptions', 403, 'code', 'FORBIDDEN', { studentId: 3, documentType: 'REGULAR_STUDENT_CERTIFICATE', reason: 'Cuota abonada en efectivo pendiente de acreditar', validityDays: 7 }],
     ['examCertificateRegistrationNotEligibleHandler', 'POST', '/exam-boards/1/exam-certificates/batch', 422, 'code', 'EXAM_CERTIFICATE_REGISTRATION_NOT_ELIGIBLE', { registrationIds: [1] }],
     ['examCertificateNotRevocableHandler', 'POST', '/exam-certificates/1/revoke', 409, 'code', 'EXAM_CERTIFICATE_NOT_REVOCABLE', { reason: 'Motivo suficiente' }],
     ['changeSectionCandidatesNotFoundHandler', 'GET', '/me/section-enrollments/1/change-section-candidates', 404, 'code', 'SECTION_ENROLLMENT_NOT_FOUND'],
@@ -108,6 +125,7 @@ describe('constancias state handlers', () => {
   it.each([
     ['approvedProceduresEmptyHandler', '/me/procedures/approved', (body) => body],
     ['examCertificateCandidatesEmptyHandler', '/exam-boards/1/exam-certificates/candidates', (body) => body],
+    ['debtExceptionsEmptyHandler', '/document-debt-exceptions', (body) => body.content],
     ['changeSectionCandidatesEmptyHandler', '/me/section-enrollments/1/change-section-candidates', (body) => body],
   ])('%s', async (name, path, pick) => {
     server.use(states[name]);

@@ -386,5 +386,9 @@ export const DOMAIN_ERROR_MESSAGES = {
   EXAM_CERTIFICATE_NOT_REVOCABLE: 'La constancia de examen ya no se puede revocar.',
   ISSUANCE_LIMIT_REACHED: 'Ya generaste hoy esta constancia. Si sigue vigente, podés volver a descargarla desde Trámites.',
   DOCUMENT_OPERATION_PENDING: 'Esta operación de documentos todavía no está disponible.',
+  DOCUMENT_REQUIRES_PAYMENTS_UP_TO_DATE: 'Para generar este documento tenés que estar al día con los pagos. Consultá en Administración.',
+  DEBT_EXCEPTION_NOT_FOUND: 'No encontramos la excepción.',
+  DEBT_EXCEPTION_ALREADY_USED: 'Esta constancia ya se descargó y no se puede descargar de nuevo.',
+  DEBT_EXCEPTION_EXPIRED: 'La excepción venció.',
   SECTION_HAS_RECORDS: 'Para cambiar de comisión hablá con Administración.',
 };

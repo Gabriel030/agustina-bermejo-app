@@ -636,3 +636,6 @@ POST,/certificate-templates/documents/{documentType}/preview,DENY,DENY,DENY,DENY
 POST,/me/documents/{type},DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,"{}"
 GET,/certificate-settings/documents,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 PUT,/certificate-settings/documents,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""examRegistrationAdvanceDays"":15,""examAttendanceValidityDays"":30,""approvedSubjectsValidityDays"":30,""dailyIssuanceLimitPerType"":1,""version"":0}"
+POST,/document-debt-exceptions,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,"{""studentId"":1,""documentType"":""REGULAR_STUDENT_CERTIFICATE"",""reason"":""Motivo suficiente de al menos veinte caracteres"",""validityDays"":7}"
+GET,/document-debt-exceptions,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,
+GET,/document-debt-exceptions/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,

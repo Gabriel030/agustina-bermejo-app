@@ -1,3 +1,5 @@
+const verificationUrlOf = (code) => `/verificar/${code}`;
+
 export const CERTIFICATE_DOCUMENT_TYPES = [
   'GRADUATION_CERTIFICATE',
   'REGULAR_STUDENT_CERTIFICATE',
@@ -113,7 +115,7 @@ export function approvedSubjectsCertificate(overrides = {}) {
     approvedSubjectsCount: 12,
     totalSubjectsCount: 30,
     approvedPercentage: 40,
-    verificationUrl: 'http://localhost:5173/verificar/01JABCDEFGHJKMNPQRSTVWXYZ0',
+    verificationUrl: verificationUrlOf('01JABCDEFGHJKMNPQRSTVWXYZ0'),
     ...overrides,
   };
 }
@@ -136,7 +138,7 @@ export function examCertificate(overrides = {}) {
     issuedAt: '2026-11-19T12:00:00',
     expiresAt: '2026-12-19T12:00:00',
     registryNumber: 'CE-2026-000045',
-    verificationUrl: 'http://localhost:5173/verificar/01JABCDEFGHJKMNPQRSTVWXYZ1',
+    verificationUrl: verificationUrlOf('01JABCDEFGHJKMNPQRSTVWXYZ1'),
     ...overrides,
   };
 }
@@ -170,7 +172,7 @@ export function ownDocument(overrides = {}) {
     status: 'VALID',
     issuedAt: '2026-11-21T10:00:00',
     expiresAt: '2026-12-21T10:00:00',
-    verificationUrl: 'http://localhost:5173/verificar/01JABCDEFGHJKMNPQRSTVWXYZ2',
+    verificationUrl: verificationUrlOf('01JABCDEFGHJKMNPQRSTVWXYZ2'),
     ...overrides,
   };
 }
@@ -210,4 +212,30 @@ export function documentIssuanceSettings(overrides = {}) {
     version: 0,
     ...overrides,
   };
+}
+
+export function debtException(overrides = {}) {
+  return {
+    id: 5,
+    studentId: 3,
+    studentName: 'Ana Paz',
+    documentType: 'REGULAR_STUDENT_CERTIFICATE',
+    status: 'ACTIVE',
+    reason: 'Cuota abonada en efectivo pendiente de acreditar',
+    issuedBy: 'Lucía Fernández',
+    issuedAt: '2026-11-21T10:00:00',
+    expiresAt: '2026-11-28T10:00:00',
+    usedAt: null,
+    documentId: null,
+    verificationUrl: null,
+    ...overrides,
+  };
+}
+
+export function debtExceptionList() {
+  return [
+    debtException(),
+    debtException({ id: 4, status: 'USED', usedAt: '2026-11-20T12:00:00', documentId: 31, verificationUrl: verificationUrlOf('01JABCDEFGHJKMNPQRSTVWXYZ3') }),
+    debtException({ id: 3, status: 'EXPIRED', documentType: 'APPROVED_SUBJECTS_CERTIFICATE' }),
+  ];
 }
