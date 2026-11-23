@@ -84,6 +84,7 @@ describe('subject equivalence handlers', () => {
   it.each([
     ['outOfRangeScoreIsInvalidScore', { originScore: 11 }, 422, 'INVALID_SCORE'],
     ['shortReasonIsReasonInvalid', { reason: 'corto' }, 422, 'EQUIVALENCE_REASON_INVALID'],
+    ['missingReasonIsReasonInvalid', { reason: undefined }, 422, 'EQUIVALENCE_REASON_INVALID'],
     ['futureDateIsFutureDate', { recognizedOn: '2999-01-01' }, 422, 'FUTURE_DATE'],
     ['foreignDocumentIsDocumentInvalid', { studentDocumentId: EQUIVALENCE_DOCUMENT_IDS.invalid }, 422, 'EQUIVALENCE_DOCUMENT_INVALID'],
     ['unknownSubjectIsNotInPlan', { subjectId: EQUIVALENCE_SUBJECT_IDS.notInPlan }, 422, 'SUBJECT_NOT_IN_PLAN'],
@@ -116,5 +117,8 @@ describe('subject equivalence handlers', () => {
     expect(again.body.code).toBe('EQUIVALENCE_ALREADY_VOIDED');
     const short = await call('POST', `/program-enrollments/101/equivalences/303/void`, { reason: 'x' });
     expect(short.body.code).toBe('EQUIVALENCE_REASON_INVALID');
+    const missing = await call('POST', `/program-enrollments/101/equivalences/303/void`, {});
+    expect(missing.status).toBe(422);
+    expect(missing.body.code).toBe('EQUIVALENCE_REASON_INVALID');
   });
 });

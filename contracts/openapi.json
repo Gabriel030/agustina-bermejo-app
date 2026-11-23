@@ -13731,7 +13731,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "originInstitution", "originSubjectName", "reason", "recognizedOn", "resolutionNumber", "subjectId" ],
+        "required" : [ "originInstitution", "originSubjectName", "recognizedOn", "resolutionNumber", "subjectId" ],
         "type" : "object"
       },
       "RefreshRequest" : {
@@ -17472,7 +17472,6 @@
             "type" : "string"
           }
         },
-        "required" : [ "reason" ],
         "type" : "object"
       },
       "WaitlistEntryResponse" : {
