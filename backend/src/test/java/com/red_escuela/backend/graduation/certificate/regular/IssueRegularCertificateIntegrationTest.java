@@ -13,6 +13,9 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.graduation.certificate.regular.dto.IssueRegularCertificateRequest;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
+import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateRequest;
@@ -103,6 +106,8 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private CertificateFileStore fileStore;
     @Autowired
     private MockMvc mockMvc;
     @Autowired
@@ -274,6 +279,46 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
         assertThat(pdf.content()).hasSizeGreaterThan(100);
         assertThat(requests()).extracting(RegularCertificateRequest::getOutcome).containsExactly(RegularRequestOutcome.ISSUED);
         assertThat(requests().get(0).getCertificateId()).isEqualTo(response.id());
+    }
+
+    @Test
+    void regularCertificateRecordsTheRenderEngineVersion() {
+        RegularCertificateResponse response = issueConfirmed();
+
+        assertThat(certificateRepository.findById(response.id()).orElseThrow().getRenderEngineVersion())
+                .isEqualTo(CertificatePdfRenderer.ENGINE_VERSION);
+    }
+
+    @Test
+    void everyRegularCertificateDownloadIsAuditedIncludingRepeatedOnes() {
+        RegularCertificateResponse response = issueConfirmed();
+
+        pdfUseCase.pdfOf(response.id());
+        pdfUseCase.pdfOf(response.id());
+
+        assertThat(auditCount("DOCUMENT_PDF_DOWNLOADED", response.id())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select reason from audit_log where action = 'DOCUMENT_PDF_DOWNLOADED' and entity_id = ? limit 1",
+                String.class, response.id())).contains("documentType=REGULAR_CERTIFICATE", "engineVersion=" + CertificatePdfRenderer.ENGINE_VERSION);
+    }
+
+    @Test
+    void regularCertificateWhoseRegenerationDiffersFromTheStoredHashIsNotServedAndIsAudited() {
+        RegularCertificateResponse response = issueConfirmed();
+        String path = certificateRepository.findById(response.id()).orElseThrow().getPdfPath();
+        jdbc.update("update regular_student_certificate set pdf_sha256 = ? where id = ?", "f".repeat(64), response.id());
+        fileStore.deleteIfRolledBack(path);
+
+        assertThatThrownBy(() -> pdfUseCase.pdfOf(response.id())).isInstanceOf(CertificatePdfIntegrityMismatchException.class);
+
+        assertThat(auditCount("DOCUMENT_PDF_HASH_MISMATCH", response.id())).isEqualTo(1);
+        assertThat(auditCount("DOCUMENT_PDF_DOWNLOADED", response.id())).isZero();
+        assertThat(jdbc.queryForObject("select pdf_sha256 from regular_student_certificate where id = ?", String.class, response.id()))
+                .isEqualTo("f".repeat(64));
+        assertThat(fileStore.load(path)).isEmpty();
+    }
+
+    private int auditCount(String action, Long certificateId) {
+        return jdbc.queryForObject("select count(*) from audit_log where action = ? and entity_id = ?", Integer.class, action, certificateId);
     }
 
     @Test

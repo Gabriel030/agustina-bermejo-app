@@ -17,6 +17,7 @@ import com.red_escuela.backend.graduation.certificate.regular.specialist.Regular
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateDocumentAuditRecorder;
 import com.red_escuela.backend.graduation.certificate.specialist.GraduationCertificatePdfProvider;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,8 @@ class PdfProviderLogsTest {
         when(renderer.render(any(), any(), any(), any(), any())).thenReturn(new byte[] {1});
         when(digest.sha256(any())).thenReturn("h");
         GraduationCertificatePdfProvider provider = new GraduationCertificatePdfProvider(repository, fileStore, renderer,
-                new BuiltInCertificateTemplate(), mock(CertificateTemplateRenderSource.class), url, digest);
+                new BuiltInCertificateTemplate(), mock(CertificateTemplateRenderSource.class), url, digest,
+                mock(CertificateDocumentAuditRecorder.class));
 
         String logs = capture(() -> provider.pdfOf(42L));
 
@@ -85,7 +87,7 @@ class PdfProviderLogsTest {
         when(renderer.render(any(), any(), any(), any())).thenReturn(new byte[] {1});
         when(digest.sha256(any())).thenReturn("h");
         RegularCertificatePdfProvider provider = new RegularCertificatePdfProvider(repository, fileStore, renderer,
-                mock(RegularCertificateTemplate.class), url, digest);
+                mock(RegularCertificateTemplate.class), url, digest, mock(CertificateDocumentAuditRecorder.class));
 
         String logs = capture(() -> provider.pdfOf(43L));
 
