@@ -1,24 +1,28 @@
 import { describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { axe } from '@/test/axe';
 import { server } from '@/test/mocks/server';
 import { createDeferred } from '@/test/deferred';
-import { installFixedClock } from '@/test/fixedClock';
 import { errorBody } from '@/test/fixtures/errors';
+import { CERTIFICATE_CODE, CERTIFICATE_CODE_PRINTED } from '@/test/fixtures/certificates';
+import { PUBLIC_DOCUMENT_VERIFICATION_BY_TYPE, publicDocumentVerification } from '@/test/fixtures/constancias';
 import {
-  CERTIFICATE_CODE,
-  CERTIFICATE_CODE_PRINTED,
-  graduationCertificate,
-  regularCertificate,
-} from '@/test/fixtures/certificates';
+  publicDocumentExpiredHandler,
+  publicDocumentNotFoundHandler,
+  publicDocumentRateLimitedHandler,
+  publicDocumentReplacedHandler,
+  publicDocumentRevokedHandler,
+} from '@/test/mocks/constanciasStateHandlers';
 import { VerifyCertificate } from '@/features/graduation/certificates/pages/VerifyCertificate';
 
 const API = 'http://localhost:8080';
-const ENDPOINT = `${API}/public/certificates/:code`;
+const ENDPOINT = `${API}/public/documents/:code`;
+const UNKNOWN_CODE = '00000000000000000000000000';
 
 function LocationProbe() {
   return <span data-testid="location">{useLocation().pathname}</span>;
@@ -44,65 +48,136 @@ function respondWith(body, init) {
   server.use(http.get(ENDPOINT, () => HttpResponse.json(body, init)));
 }
 
+const verdictHeading = (name) => screen.findByRole('heading', { level: 1, name });
+
 describe('VerifyCertificate', () => {
-  installFixedClock();
-
-  it('showsValidGraduationCertificateWithRegistryAndHours', async () => {
-    respondWith(graduationCertificate());
+  it('showsValidDocumentWithVerdictFirstAndMaskedData', async () => {
+    respondWith(publicDocumentVerification({ holderFullName: 'L*** M*** F*******', maskedDocument: '**.***.088', registryNumber: '0004217/2026' }));
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Válido' })).toBeInTheDocument();
-    expect(screen.getByText('Documento auténtico.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'Certificado de egreso' })).toBeInTheDocument();
-    expect(screen.getByText('Pérez, Ana')).toBeInTheDocument();
-    expect(screen.getByText('*****678')).toBeInTheDocument();
-    expect(screen.getByText('15/07/2026')).toBeInTheDocument();
-    expect(screen.getByText('N.º 1284 · 1.860 horas')).toBeInTheDocument();
-    expect(screen.getByText(CERTIFICATE_CODE_PRINTED)).toBeInTheDocument();
-    expect(screen.getByText('Consultado el 05/11/2026 12:00')).toBeInTheDocument();
+    expect(await verdictHeading('Este documento fue emitido por el instituto')).toBeInTheDocument();
+    const verdict = screen.getByRole('status');
+    expect(within(verdict).getByText('Auténtica y vigente')).toBeInTheDocument();
+    expect(within(verdict).getByText('Coincide con el registro oficial y sigue vigente.')).toBeInTheDocument();
+    expect(screen.getByText('Constancia de alumno regular')).toBeInTheDocument();
+    expect(screen.getByText('L*** M*** F*******')).toBeInTheDocument();
+    expect(screen.getByText('**.***.088')).toBeInTheDocument();
+    expect(screen.getByText('0004217/2026')).toBeInTheDocument();
+    expect(screen.getByText('18 de noviembre de 2026')).toBeInTheDocument();
+    expect(screen.getByText('Vigente hasta el 18 de diciembre de 2026')).toBeInTheDocument();
+    expect(screen.getByText(`verificar/${CERTIFICATE_CODE_PRINTED}`)).toBeInTheDocument();
+    expect(screen.getByText(/esta página no muestra notas ni materias/)).toBeInTheDocument();
   });
 
-  it('showsValidRegularCertificateWithValidityEnd', async () => {
-    respondWith(regularCertificate());
+  it.each([
+    ['GRADUATION_CERTIFICATE', 'Certificado de egreso'],
+    ['REGULAR_STUDENT_CERTIFICATE', 'Constancia de alumno regular'],
+    ['APPROVED_SUBJECTS_CERTIFICATE', 'Constancia de materias aprobadas'],
+    ['EXAM_REGISTRATION_CERTIFICATE', 'Constancia de inscripción a examen'],
+    ['EXAM_CERTIFICATE', 'Constancia de examen'],
+  ])('labelsTheDocumentTypeFor%s', async (documentType, label) => {
+    respondWith(PUBLIC_DOCUMENT_VERIFICATION_BY_TYPE[documentType]());
     renderPage();
 
-    expect(await screen.findByText('Documento auténtico y vigente.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'Constancia de alumno regular' })).toBeInTheDocument();
-    expect(screen.getByText('Vigente hasta')).toBeInTheDocument();
-    expect(screen.getByText('06/12/2026')).toBeInTheDocument();
-    expect(screen.queryByText('Registro')).not.toBeInTheDocument();
+    await verdictHeading('Este documento fue emitido por el instituto');
+    expect(screen.getByText(label)).toBeInTheDocument();
   });
 
-  it('showsExpiredCertificateWithExpirationDate', async () => {
-    respondWith(regularCertificate({ status: 'EXPIRED', expiresAt: '2026-10-06T23:59:59' }));
+  it('showsVigentWithoutEndDateWhenTheDocumentDoesNotExpire', async () => {
+    respondWith(PUBLIC_DOCUMENT_VERIFICATION_BY_TYPE.GRADUATION_CERTIFICATE());
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Vencido' })).toBeInTheDocument();
+    await verdictHeading('Este documento fue emitido por el instituto');
+    expect(screen.getByText('Vigente')).toBeInTheDocument();
+    expect(screen.getByText('EG-2026-000123')).toBeInTheDocument();
+  });
+
+  it('showsExpiredDocumentAsAuthenticButNoLongerValid', async () => {
+    server.use(publicDocumentExpiredHandler);
+    renderPage();
+
+    expect(await verdictHeading('Este documento es auténtico, pero su vigencia terminó')).toBeInTheDocument();
+    expect(screen.getByText('Auténtica · vencida')).toBeInTheDocument();
     expect(
-      screen.getByText('Venció el 06/10/2026. Ya no acredita la condición de alumno regular.'),
+      screen.getByText('Venció el 18 de diciembre de 2026. Pedí a la persona interesada una constancia nueva.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Venció')).toBeInTheDocument();
+    expect(screen.getByText('Venció el 18 de diciembre de 2026')).toBeInTheDocument();
   });
 
-  it('showsRevokedCertificateWithRevocationDate', async () => {
-    respondWith(graduationCertificate({ status: 'REVOKED', revokedAt: '2026-11-02T08:30:00' }));
+  it('showsRevokedDocumentWithTheRevocationDate', async () => {
+    server.use(publicDocumentRevokedHandler);
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Revocado' })).toBeInTheDocument();
-    expect(screen.getByText('El instituto lo anuló. Ya no acredita el título.')).toBeInTheDocument();
-    expect(screen.getByText('Revocado el')).toBeInTheDocument();
-    expect(screen.getByText('02/11/2026')).toBeInTheDocument();
+    expect(await verdictHeading('Este documento fue anulado por el instituto')).toBeInTheDocument();
+    expect(screen.getByText('Revocada')).toBeInTheDocument();
+    expect(screen.getByText('No tiene validez desde el 20 de noviembre de 2026.')).toBeInTheDocument();
+    expect(screen.getByText('Revocada el 20 de noviembre de 2026')).toBeInTheDocument();
+    expect(screen.queryByText(/motivo/i)).not.toBeInTheDocument();
   });
 
-  it('showsNeutralNotFoundWithoutImplyingTheCodeExisted', async () => {
+  it('showsReplacedDocumentWithoutExplainingWhy', async () => {
+    server.use(publicDocumentReplacedHandler);
+    renderPage();
+
+    expect(await verdictHeading('Este documento fue reemplazado por una versión nueva')).toBeInTheDocument();
+    expect(screen.getByText('Pedí a la persona interesada la versión vigente.')).toBeInTheDocument();
+    expect(screen.getByText('Reemplazada el 20 de noviembre de 2026')).toBeInTheDocument();
+  });
+
+  it('showsGenericNotFoundForAnUnknownCode', async () => {
+    server.use(publicDocumentNotFoundHandler);
+    renderPage();
+
+    expect(await verdictHeading('No encontramos un documento con ese código')).toBeInTheDocument();
+    expect(screen.getByText('No encontrada')).toBeInTheDocument();
+    expect(
+      screen.getByText('Revisá el código impreso debajo del QR y volvé a intentar. Si el problema sigue, el documento podría no ser auténtico.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/venci|revoc|anul|reemplaz/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Verificar código' })).toBeInTheDocument();
+  });
+
+  it('rendersTheSameNotFoundPageForAnyCode', async () => {
+    server.use(publicDocumentNotFoundHandler);
+    const unknown = renderPage(`/verificar/${UNKNOWN_CODE}`);
+    await verdictHeading('No encontramos un documento con ese código');
+    const unknownText = unknown.container.firstChild.textContent;
+    unknown.unmount();
+
+    const malformed = renderPage('/verificar/ABC-12');
+    await verdictHeading('No encontramos un documento con ese código');
+    const malformedText = malformed.container.firstChild.textContent;
+    malformed.unmount();
+
+    const short = renderPage('/verificar/AB-7QK4-M2XD-91');
+    await verdictHeading('No encontramos un documento con ese código');
+
+    expect(malformedText).toBe(unknownText);
+    expect(short.container.firstChild.textContent).toBe(unknownText);
+  });
+
+  it('doesNotQueryMalformedCodes', async () => {
+    let calls = 0;
     server.use(
-      http.get(ENDPOINT, () => HttpResponse.json(errorBody('CERTIFICATE_NOT_FOUND'), { status: 404 })),
+      http.get(ENDPOINT, () => {
+        calls += 1;
+        return HttpResponse.json(publicDocumentVerification());
+      }),
     );
+    renderPage('/verificar/ABC-123');
+
+    await verdictHeading('No encontramos un documento con ese código');
+    expect(calls).toBe(0);
+  });
+
+  it('neverRendersGradesSubjectsOrResultsOnExamCertificates', async () => {
+    respondWith(publicDocumentVerification({ documentType: 'EXAM_CERTIFICATE' }));
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Sin resultados' })).toBeInTheDocument();
-    expect(screen.getByText('No encontramos un documento con este código. Revisá que esté completo.')).toBeInTheDocument();
-    expect(screen.queryByText(/venci|revoc|anul/i)).not.toBeInTheDocument();
+    await verdictHeading('Este documento fue emitido por el instituto');
+    const labels = [...document.querySelectorAll('dt')].map((node) => node.textContent);
+    expect(labels).toEqual(['Documento', 'A nombre de', 'DNI', 'Emitido el', 'Vigencia']);
+    expect(screen.queryByText(/Matemática|Tecnicatura|aprobad|nota\b|resultado|condición/i)).not.toBeInTheDocument();
   });
 
   it('showsLoadingSkeletonUntilTheLookupResolves', async () => {
@@ -110,28 +185,29 @@ describe('VerifyCertificate', () => {
     server.use(
       http.get(ENDPOINT, async () => {
         await gate.promise;
-        return HttpResponse.json(graduationCertificate());
+        return HttpResponse.json(publicDocumentVerification());
       }),
     );
     const { container } = renderPage();
 
     await waitFor(() => expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument());
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Verificar otro código/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Verificar código' })).not.toBeInTheDocument();
 
     gate.resolve();
-    expect(await screen.findByRole('heading', { level: 1, name: 'Válido' })).toBeInTheDocument();
+    expect(await verdictHeading('Este documento fue emitido por el instituto')).toBeInTheDocument();
   });
 
   it('retriesAfterNetworkErrorAndShowsTheResult', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('Failed to fetch'));
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'No pudimos verificar' })).toBeInTheDocument();
-    respondWith(graduationCertificate());
+    expect(await verdictHeading('No pudimos consultar el documento')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    respondWith(publicDocumentVerification());
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Válido' })).toBeInTheDocument();
+    expect(await verdictHeading('Este documento fue emitido por el instituto')).toBeInTheDocument();
     fetchSpy.mockRestore();
   });
 
@@ -139,87 +215,31 @@ describe('VerifyCertificate', () => {
     server.use(http.get(ENDPOINT, () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 })));
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'No pudimos verificar' })).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(await verdictHeading('No pudimos consultar el documento')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeEnabled();
   });
 
-  it('doesNotQueryMalformedCodesAndShowsNotFound', async () => {
-    let calls = 0;
-    server.use(
-      http.get(ENDPOINT, () => {
-        calls += 1;
-        return HttpResponse.json(graduationCertificate());
-      }),
-    );
-    renderPage('/verificar/ABC-123');
-
-    expect(await screen.findByRole('heading', { level: 1, name: 'Sin resultados' })).toBeInTheDocument();
-    expect(calls).toBe(0);
-  });
-
-  it('sendsNormalizedCodeWithoutCredentialsCacheOrReferrer', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    respondWith(graduationCertificate());
-    renderPage(`/verificar/${CERTIFICATE_CODE_PRINTED.toLowerCase()}`);
-
-    await screen.findByRole('heading', { level: 1, name: 'Válido' });
-    const [url, init] = fetchSpy.mock.calls.find(([target]) => String(target).includes('/public/certificates/'));
-    expect(String(url)).toBe(`${API}/public/certificates/${CERTIFICATE_CODE}`);
-    expect(init).toMatchObject({ credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer' });
-    expect(init.headers).not.toHaveProperty('Authorization');
-    fetchSpy.mockRestore();
-  });
-
-  it('keepsTheOtherCodeFieldCollapsedUntilOpened', async () => {
-    respondWith(graduationCertificate());
+  it('showsAFriendlyRateLimitMessageWithTheDefaultWait', async () => {
+    server.use(publicDocumentRateLimitedHandler);
     renderPage();
 
-    await screen.findByRole('heading', { level: 1, name: 'Válido' });
-    const toggle = screen.getByRole('button', { name: /Verificar otro código/ });
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByLabelText('Código del documento')).not.toBeInTheDocument();
-
-    await userEvent.click(toggle);
-    expect(screen.getByLabelText('Código del documento')).toBeInTheDocument();
+    expect(await verdictHeading('Hiciste muchas verificaciones seguidas')).toBeInTheDocument();
+    expect(screen.getByText('Probá de nuevo en 60 s.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeDisabled();
   });
 
-  it('formatsTypedCodeInGroupsAndAcceptsTwentySixCharacters', async () => {
-    respondWith(graduationCertificate());
-    renderPage();
-    await screen.findByRole('heading', { level: 1, name: 'Válido' });
-    await userEvent.click(screen.getByRole('button', { name: /Verificar otro código/ }));
-
-    const input = screen.getByLabelText('Código del documento');
-    await userEvent.type(input, ' 7qk3m 9xh2v-bn4t8rgjda1b2c3xEXTRA');
-
-    expect(input).toHaveValue(CERTIFICATE_CODE_PRINTED);
-    expect(screen.getByRole('button', { name: 'Verificar' })).toBeEnabled();
-  });
-
-  it('navigatesToTheNormalizedCodeWhenVerifyingAnotherOne', async () => {
-    respondWith(graduationCertificate());
-    renderPage('/verificar/00000000000000000000000000');
-    await screen.findByRole('heading', { level: 1, name: 'Válido' });
-    await userEvent.click(screen.getByRole('button', { name: /Verificar otro código/ }));
-    await userEvent.type(screen.getByLabelText('Código del documento'), '7qk3m-9xh2v bn4t8 rgjda 1b2c3x');
-    await userEvent.click(screen.getByRole('button', { name: 'Verificar' }));
-
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(`/verificar/${CERTIFICATE_CODE}`));
-  });
-
-  it('showsRateLimitCountdownFromRetryAfterAndBlocksActionsUntilItEnds', async () => {
+  it('countsDownFromRetryAfterAndEnablesRetryWhenItEnds', async () => {
     server.use(
       http.get(ENDPOINT, () =>
-        HttpResponse.json(errorBody('RATE_LIMITED'), { status: 429, headers: { 'Retry-After': '3' } }),
+        HttpResponse.json(errorBody('RATE_LIMIT_EXCEEDED'), { status: 429, headers: { 'Retry-After': '3' } }),
       ),
     );
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
     try {
       renderPage();
 
-      expect(await screen.findByRole('heading', { level: 1, name: 'Demasiadas consultas' })).toBeInTheDocument();
+      expect(await verdictHeading('Hiciste muchas verificaciones seguidas')).toBeInTheDocument();
       expect(screen.getByText('Probá de nuevo en 3 s.')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Reintentar' })).toBeDisabled();
 
       for (let second = 0; second < 3; second += 1) {
         await act(() => vi.advanceTimersByTimeAsync(1000));
@@ -232,10 +252,49 @@ describe('VerifyCertificate', () => {
     }
   });
 
-  it('usesDefaultWaitWhenRateLimitHasNoRetryAfter', async () => {
-    server.use(http.get(ENDPOINT, () => HttpResponse.json(errorBody('RATE_LIMITED'), { status: 429 })));
-    renderPage();
+  it('sendsNormalizedCodeToThePublicEndpointWithoutCredentialsCacheOrReferrer', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    respondWith(publicDocumentVerification());
+    renderPage(`/verificar/${CERTIFICATE_CODE_PRINTED.toLowerCase()}`);
 
-    expect(await screen.findByText('Probá de nuevo en 60 s.')).toBeInTheDocument();
+    await verdictHeading('Este documento fue emitido por el instituto');
+    const [url, init] = fetchSpy.mock.calls.find(([target]) => String(target).includes('/public/documents/'));
+    expect(String(url)).toBe(`${API}/public/documents/${CERTIFICATE_CODE}`);
+    expect(init).toMatchObject({ credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer' });
+    expect(init.headers).not.toHaveProperty('Authorization');
+    fetchSpy.mockRestore();
+  });
+
+  it('navigatesToTheNormalizedCodeWhenVerifyingAnotherOne', async () => {
+    respondWith(publicDocumentVerification());
+    renderPage(`/verificar/${UNKNOWN_CODE}`);
+    await verdictHeading('Este documento fue emitido por el instituto');
+
+    await userEvent.type(screen.getByLabelText('¿Tenés otro documento? Verificá otro código'), ' 7qk3m-9xh2v bn4t8 rgjda 1b2c3x ');
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar código' }));
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(`/verificar/${CERTIFICATE_CODE}`));
+  });
+
+  it('keepsTheVerifyButtonDisabledUntilThereIsACode', async () => {
+    server.use(publicDocumentNotFoundHandler);
+    renderPage();
+    await verdictHeading('No encontramos un documento con ese código');
+
+    expect(screen.getByRole('button', { name: 'Verificar código' })).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Código de verificación'), '  - ');
+    expect(screen.getByRole('button', { name: 'Verificar código' })).toBeDisabled();
+  });
+
+  it.each([
+    ['valid', () => respondWith(publicDocumentVerification())],
+    ['revoked', () => server.use(publicDocumentRevokedHandler)],
+    ['notFound', () => server.use(publicDocumentNotFoundHandler)],
+  ])('hasNoAccessibilityViolationsWhen%s', async (_name, arrange) => {
+    arrange();
+    const { container } = renderPage();
+    await screen.findByRole('heading', { level: 1 });
+
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

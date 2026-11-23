@@ -2,6 +2,7 @@ import { API_BASE_URL } from '@/api/client';
 
 const TIMEOUT_MS = 15000;
 const NOT_FOUND = 404;
+const BAD_REQUEST = 400;
 const RATE_LIMITED = 429;
 
 export class CertificateLookupError extends Error {
@@ -22,7 +23,7 @@ export async function fetchPublicCertificate(normalizedCode, { signal } = {}) {
   const timeout = AbortSignal.timeout(TIMEOUT_MS);
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}/public/certificates/${normalizedCode}`, {
+    response = await fetch(`${API_BASE_URL}/public/documents/${normalizedCode}`, {
       method: 'GET',
       headers: { Accept: 'application/json' },
       credentials: 'omit',
@@ -34,7 +35,7 @@ export async function fetchPublicCertificate(normalizedCode, { signal } = {}) {
     if (signal?.aborted) throw error;
     throw new CertificateLookupError('FAILED');
   }
-  if (response.status === NOT_FOUND) throw new CertificateLookupError('NOT_FOUND');
+  if (response.status === NOT_FOUND || response.status === BAD_REQUEST) throw new CertificateLookupError('NOT_FOUND');
   if (response.status === RATE_LIMITED) throw new CertificateLookupError('RATE_LIMITED', retryAfterOf(response));
   if (!response.ok) throw new CertificateLookupError('FAILED');
   try {
