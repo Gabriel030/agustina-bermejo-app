@@ -128,7 +128,7 @@ function billingMetricRequests(requests) {
   return requests.filter((url) => url.pathname.startsWith('/billing/metrics/'));
 }
 
-function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], reminderGoal = false, requests = [], refusals = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], debtorPages = 1, discounts, firstMonth = '2020-01' } = {}) {
+function install({ currencies = ['ARS'], serverCurrencies = currencies, onTime = {}, lateFeesAvailable = true, failing = [], reminderGoal = false, requests = [], refusals = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], debtorPages = 1, discounts, firstMonth = '2020-01' } = {}) {
   server.use(
     http.get(`${API}/financial-dashboard`, () =>
       dashboardStatus !== 200 ? new HttpResponse(null, { status: dashboardStatus }) : HttpResponse.json({
@@ -158,7 +158,7 @@ function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, 
     }),
     http.get(`${API}/billing/metrics/first-month`, () => HttpResponse.json({ month: firstMonth })),
     http.get(`${API}/billing/metrics/:panel`, ({ request, params }) => {
-      if (currencies.length > 1 && !new URL(request.url).searchParams.has('currency')) {
+      if (serverCurrencies.length > 1 && !new URL(request.url).searchParams.has('currency')) {
         refusals.push(new URL(request.url));
         return HttpResponse.json({ code: 'CURRENCY_REQUIRED', message: 'Hay cuentas en más de una moneda' }, { status: 400 });
       }
@@ -214,16 +214,35 @@ describe('FinancialDashboardPage', () => {
     await screen.findByText('Alumnos al día');
   });
 
-  it('requests each metric once when only one currency is in use', async () => {
+  it('requests each metric with the currency of the loaded dashboard, once per currency', async () => {
     const requests = [];
     install({ requests });
     renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
 
     await screen.findByText('Alumnos al día');
-    await screen.findByText('Pago a término', { selector: 'h3' });
-    await waitFor(() => expect(requests.some((url) => url.pathname.endsWith('/issued-invoices'))).toBe(true));
-    const keys = requests.map((url) => `${url.pathname}${url.search}`);
+    await waitFor(() => expect(requests.some((url) => url.pathname.endsWith('/on-time-payment') && url.searchParams.get('currency') === 'ARS')).toBe(true));
+    const withCurrency = billingMetricRequests(requests).filter((url) => url.searchParams.get('currency') === 'ARS');
+    const keys = withCurrency.map((url) => `${url.pathname}${url.search}`);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('does not stay on a skeleton when the server needs a currency the dashboard did not list', async () => {
+    const requests = [];
+    install({ currencies: ['ARS'], serverCurrencies: ['ARS', 'USD'], requests });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    await screen.findAllByText(/Por debajo de la meta/);
+    expect(requests.some((url) => url.searchParams.get('currency') === 'ARS')).toBe(true);
+    expect(screen.queryByText('No se pudo cargar')).not.toBeInTheDocument();
+  });
+
+  it('still shows the metrics when the financial dashboard fails', async () => {
+    const requests = [];
+    install({ dashboardStatus: 500, requests });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    await screen.findAllByText(/Por debajo de la meta/);
+    expect(requests.some((url) => url.pathname.endsWith('/on-time-payment'))).toBe(true);
   });
 
   it('asks again with the explicit currency when several currencies are in use without showing an error', async () => {

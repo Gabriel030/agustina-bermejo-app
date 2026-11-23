@@ -209,7 +209,8 @@ export function FinancialDashboardPage() {
 
   const currencies = (dashboard.data?.totalsByCurrency ?? []).map((totals) => totals.totalDebt?.currency).filter(Boolean);
   const currency = pickedCurrency ?? currencies[0];
-  const metricCurrency = currencies.length > 1 ? currency : undefined;
+  const currencyPending = dashboard.isPending;
+  const metricCurrency = currencyPending ? undefined : currency;
   const { from: rangeFrom, to } = rangeFor(range);
   const firstMonth = useFirstBillingMonth();
   const earliestMonth = firstMonth.data?.month ?? undefined;
@@ -225,6 +226,7 @@ export function FinancialDashboardPage() {
     from,
     to,
     currency: metricCurrency,
+    currencyPending,
     invoiceType: invoiceType === ALL_TYPES ? undefined : invoiceType,
     programId: scopeKind === 'program' ? scopeId : undefined,
     courseId: scopeKind === 'course' ? scopeId : undefined,
