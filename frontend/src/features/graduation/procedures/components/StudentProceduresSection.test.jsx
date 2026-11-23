@@ -5,7 +5,6 @@ import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
 import { axe } from '@/test/axe';
 import {
-  approvedProcedure,
   approvedSubjectsCertificate,
   ineligibleProcedure,
   ownDocument,
