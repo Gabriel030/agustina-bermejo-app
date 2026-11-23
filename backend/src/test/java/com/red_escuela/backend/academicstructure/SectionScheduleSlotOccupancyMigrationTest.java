@@ -13,7 +13,7 @@ class SectionScheduleSlotOccupancyMigrationTest {
 
     @Test
     void existingSlotsAreBackfilledWithOccupancyTermPeriodAndTimeSpan() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("445")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("447")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) values (2026, 'ACTIVE', '2026-03-01', '2026-12-15', '2026-02-01', '2026-03-01')");
             Long termId = jdbc.queryForObject("select max(id) from term", Long.class);
