@@ -138,12 +138,12 @@ docker rm -f smoke-pg
 - Desactivar o enmascarar los logs de acceso de Tomcat y del proxy para `/public/certificates/` y `/verificar/` (la URL lleva el código de verificación).
 - La migración V194 regeneró los códigos: los PDFs viejos quedan huérfanos en disco como `<códigoViejo>.pdf` con datos personales; pendiente un runbook o job de limpieza.
 
-## 9. Recuperacion si V392 falla (validacion de annual_upfront_request.payment_id)
+## 9. Recuperacion si V423 falla (validacion de annual_upfront_request.payment_id)
 
-V391 aborta con mensaje claro si hay huerfanos; si aun asi V392 falla (por ejemplo, una fila huerfana aparecio entre V391 y V392), la constraint `fk_annual_upfront_request_payment` queda `NOT VALID` y Flyway marca V392 como fallida en `flyway_schema_history`.
+V422 aborta con mensaje claro si hay huerfanos; si aun asi V423 falla (por ejemplo, una fila huerfana aparecio entre V422 y V423), la constraint `fk_annual_upfront_request_payment` queda `NOT VALID` y Flyway marca V423 como fallida en `flyway_schema_history`.
 
 Recuperacion:
 
-1. Corregir las filas huerfanas: apuntar `payment_id` al pago correcto o dejarlo en null (no borrar solicitudes). Detectarlas con la consulta [V391] de `docs/release/pre-migration-checks.sql`.
-2. Ejecutar `flyway repair` para quitar el registro fallido de V392.
-3. Reiniciar el backend: Flyway reaplica V392 y valida la constraint.
+1. Corregir las filas huerfanas: apuntar `payment_id` al pago correcto o dejarlo en null (no borrar solicitudes). Detectarlas con la consulta [V422] de `docs/release/pre-migration-checks.sql`.
+2. Ejecutar `flyway repair` para quitar el registro fallido de V423.
+3. Reiniciar el backend: Flyway reaplica V423 y valida la constraint.
