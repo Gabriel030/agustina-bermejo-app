@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
         this.emitFile({
           type: 'asset',
           fileName: 'theme-init.js',
-          source: source.replace('%VITE_DEFAULT_DESIGN%', env.VITE_DEFAULT_DESIGN ?? ''),
+          source,
         })
       },
       transformIndexHtml(html) {
