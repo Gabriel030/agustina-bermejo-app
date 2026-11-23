@@ -24,7 +24,7 @@ class TemplateCertificateRenderTest {
         return new CertificateSnapshot(holder, "DNI", "30123456", "la Tecnicatura en", titleName, null, hours,
                 LocalDate.of(2026, 7, 15), LocalDate.of(2026, 11, 5), "Instituto de prueba",
                 List.of(new SignatorySnapshot("Ana Firmante", "Rectora"), new SignatorySnapshot("Luis Firmante", "Secretario")),
-                "TEMPLATE_V2");
+                "TEMPLATE_V2", null);
     }
 
     private String textOf(byte[] pdf) throws Exception {

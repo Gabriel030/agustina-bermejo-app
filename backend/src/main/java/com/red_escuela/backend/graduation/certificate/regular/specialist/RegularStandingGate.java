@@ -48,6 +48,15 @@ public class RegularStandingGate {
         return resolveFromManualConfirmation(mode, confirmation);
     }
 
+    public StandingResolution resolveForSelfIssue(Long studentId, RegularityKind kind, Long enrollmentId) {
+        BillingMode mode = billingModeGate.currentMode();
+        return switch (mode) {
+            case FULL -> resolveFromBilling(studentId, kind, enrollmentId, mode);
+            case OFF -> new StandingResolution(StandingBasis.BILLING_NOT_ENFORCED, mode, null, null, null);
+            case MIRROR -> throw new StandingNotConfirmedException();
+        };
+    }
+
     public void requireDebtToExcept(Long studentId, RegularityKind kind, Long enrollmentId) {
         if (billingModeGate.currentMode() == BillingMode.FULL && isSettled(studentId, kind, enrollmentId)) {
             throw new NoDebtToExceptException();
