@@ -19,6 +19,8 @@ import { ReprogramarMesaDialog } from '@/features/evaluation/components/Reprogra
 import { CancelarMesaDialog } from '@/features/evaluation/components/CancelarMesaDialog';
 import { boardRoleCaps } from '@/features/evaluation/lib/examBoardGrades';
 import { ExamBoardGradesSection } from '@/features/evaluation/components/ExamBoardGradesSection';
+import { ExamCertificatesSection } from '@/features/evaluation/components/ExamCertificatesSection';
+import { certificateCaps } from '@/features/evaluation/lib/examCertificates';
 import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion, useReprogramarMesa, useCancelarMesa } from '@/features/evaluation/hooks/useMesasDeExamen';
 
 const ESTADO_MESA = {
@@ -260,6 +262,8 @@ function DetalleMesa({ mesaId, role }) {
           withdrawing={darDeBaja.isPending}
         />
       </GlassCard>
+
+      {certificateCaps(role).issues && !cancelada && !examenPendiente && <ExamCertificatesSection mesaId={mesaId} role={role} />}
 
       {reprogramando && (
         <ReprogramarMesaDialog open onClose={() => setReprogramando(false)} mesa={mesa} enviando={reprogramar.isPending} onConfirmar={enviarReprogramacion} />

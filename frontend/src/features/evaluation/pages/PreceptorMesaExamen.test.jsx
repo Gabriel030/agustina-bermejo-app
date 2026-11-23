@@ -114,6 +114,39 @@ describe('PreceptorMesaExamen', () => {
     expect(screen.queryByRole('button', { name: /Dar de baja a/ })).not.toBeInTheDocument();
   });
 
+  it('shows the exam certificates section to the teacher once the exam was held', async () => {
+    const pasada = mesa({ examDate: '2020-01-10T18:00:00' });
+    server.use(
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([pasada])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(pasada)),
+      http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([anotado(1, 'REGISTERED')])),
+      http.get(`${API}/exam-boards/6/exam-certificates/candidates`, () => HttpResponse.json([])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PreceptorMesaExamen role="docente" />);
+
+    await abrirMesa(user);
+
+    expect(await screen.findByRole('heading', { name: 'Constancias de examen' })).toBeInTheDocument();
+    expect(await screen.findByText('Todavía no hay presentes')).toBeInTheDocument();
+  });
+
+  it('does not show the exam certificates section before the exam or to the preceptor', async () => {
+    const futura = mesa({ examDate: '2099-11-20T18:00:00' });
+    server.use(
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([futura])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(futura)),
+      http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PreceptorMesaExamen role="docente" />);
+
+    await abrirMesa(user);
+
+    await screen.findByText('Alumnos anotados');
+    expect(screen.queryByRole('heading', { name: 'Constancias de examen' })).not.toBeInTheDocument();
+  });
+
   it('shows the preceptor the sheet read only and keeps the management buttons', async () => {
     const pasada = mesa({ examDate: '2020-01-10T18:00:00' });
     server.use(
