@@ -51,6 +51,10 @@ public class AnnouncementEmailDispatchJob {
             List<Long> ids = deliveryRepository.findDispatchableIds(DeliveryChannel.EMAIL, DeliveryCategory.ANNOUNCEMENT, WAITING, scheduledFor,
                     clock.instant(), 0L, PageRequest.of(0, MAX_DISPATCHES_PER_RUN - attempted));
             for (Long id : ids) {
+                if (emailChannel.isMailCircuitOpen()) {
+                    log.warn("Circuito de mail abierto, se corta el lote de avisos tras {} despachos", attempted);
+                    return attempted;
+                }
                 dispatchOne(id);
                 attempted++;
             }
