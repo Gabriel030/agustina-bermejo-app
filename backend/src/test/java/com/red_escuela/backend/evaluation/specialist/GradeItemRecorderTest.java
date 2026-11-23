@@ -1120,7 +1120,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
 
     private GradeItemAuditResponse correct(GradeItem item, double newScore, String reason) {
         return publishedGradeCorrector.correct(item.getId(),
-                new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(newScore)), reason), item.getProgramSubjectSectionEnrollment().getStudent().getPerson().getId());
+                new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(newScore)), reason, null), item.getProgramSubjectSectionEnrollment().getStudent().getPerson().getId());
     }
 
     private SubjectSectionEnrollment publishedPair(String dni, double first, double second, Double promotionMinGrade) {

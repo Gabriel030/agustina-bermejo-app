@@ -14,5 +14,6 @@ public record GradeGridCellResponse(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) LocalDateTime date,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String comments,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean published,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean corrected) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean corrected,
+        Long version) {
 }

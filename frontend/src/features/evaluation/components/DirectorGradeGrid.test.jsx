@@ -35,8 +35,8 @@ function buildGrid(correctionDeadline = '2026-12-18') {
         condition: 'REGULAR',
         finalEnabled: true,
         grades: [
-          { gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: true, corrected: true },
-          { gradeItemId: 2, type: 'EXAM', sequenceNumber: 2, score: 8, date: '2026-10-28T10:00:00', comments: null, published: false, corrected: false },
+          { gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: true, corrected: true, version: 0 },
+          { gradeItemId: 2, type: 'EXAM', sequenceNumber: 2, score: 8, date: '2026-10-28T10:00:00', comments: null, published: false, corrected: false, version: 0 },
         ],
       },
     ],
