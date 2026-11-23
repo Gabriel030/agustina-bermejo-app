@@ -1,12 +1,12 @@
 package com.red_escuela.backend.graduation.debtexception.controller;
 
+import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionPdf;
 import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionResponse;
 import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus;
 import com.red_escuela.backend.graduation.debtexception.dto.IssueDebtExceptionRequest;
 import com.red_escuela.backend.graduation.debtexception.usecase.GetDebtExceptionPdfUseCase;
 import com.red_escuela.backend.graduation.debtexception.usecase.IssueDebtExceptionUseCase;
 import com.red_escuela.backend.graduation.debtexception.usecase.ListDebtExceptionsUseCase;
-import com.red_escuela.backend.graduation.procedure.dto.ProcedureDocumentPdf;
 import com.red_escuela.backend.shared.permission.RequiresPermissionWithoutInheritance;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -64,7 +64,7 @@ public class DocumentDebtExceptionController {
     @ApiResponse(responseCode = "200", content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")))
     @RequiresPermissionWithoutInheritance(code = "document.debt-exception.issue", legacyRoles = "DIRECTOR,ADMINISTRATIVO")
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
-        ProcedureDocumentPdf pdf = pdfUseCase.pdfOf(id);
+        DebtExceptionPdf pdf = pdfUseCase.pdfOf(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()

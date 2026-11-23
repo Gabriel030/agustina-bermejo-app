@@ -4,13 +4,13 @@ import com.red_escuela.backend.graduation.api.DebtExceptionDocument;
 import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
 import com.red_escuela.backend.graduation.api.DebtExceptionScope;
 import com.red_escuela.backend.graduation.certificate.exception.DocumentOperationPendingException;
+import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionPdf;
 import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus;
 import com.red_escuela.backend.graduation.debtexception.entity.DocumentDebtException;
 import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionAlreadyUsedException;
 import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionExpiredException;
 import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionNotFoundException;
 import com.red_escuela.backend.graduation.debtexception.repository.DocumentDebtExceptionRepository;
-import com.red_escuela.backend.graduation.procedure.dto.ProcedureDocumentPdf;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -38,7 +38,7 @@ public class DebtExceptionDownloader {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public ProcedureDocumentPdf download(Long id) {
+    public DebtExceptionPdf download(Long id) {
         DocumentDebtException exception = repository.findById(id).orElseThrow(DebtExceptionNotFoundException::new);
         DebtExceptionDocumentIssuer issuer = issuers.forType(exception.getDocumentType())
                 .orElseThrow(DocumentOperationPendingException::new);
@@ -51,7 +51,7 @@ public class DebtExceptionDownloader {
                 exception.getDocumentType(), exception.getEnrollmentId(), exception.getRegistrationId()));
         auditRecorder.used(id, exception.getDocumentType().name(), exception.getStudentId());
         auditRecorder.downloaded(id, exception.getDocumentType().name(), exception.getStudentId(), DebtExceptionAuditDetail.requireAllowed(document.auditDetail()));
-        return new ProcedureDocumentPdf(document.code(), document.content());
+        return new DebtExceptionPdf(document.code(), document.content());
     }
 
     private void requireDownloadable(DocumentDebtException exception, LocalDateTime now) {

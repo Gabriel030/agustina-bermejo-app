@@ -13,6 +13,7 @@ import com.red_escuela.backend.graduation.api.DebtExceptionDocument;
 import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.exception.DocumentOperationPendingException;
+import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionPdf;
 import com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus;
 import com.red_escuela.backend.graduation.debtexception.entity.DocumentDebtException;
 import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionAlreadyUsedException;
@@ -20,7 +21,6 @@ import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionE
 import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionNotFoundException;
 import com.red_escuela.backend.graduation.debtexception.repository.DebtExceptionState;
 import com.red_escuela.backend.graduation.debtexception.repository.DocumentDebtExceptionRepository;
-import com.red_escuela.backend.graduation.procedure.dto.ProcedureDocumentPdf;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -129,7 +129,7 @@ class DebtExceptionDownloaderTest {
         when(repository.markUsedIfActive(ID, NOW, 9L)).thenReturn(1);
         when(issuer.render(any())).thenReturn(new DebtExceptionDocument("EXC-5", new byte[] {1}, "documentId=5"));
 
-        ProcedureDocumentPdf pdf = downloader.download(ID);
+        DebtExceptionPdf pdf = downloader.download(ID);
 
         assertThat(pdf.code()).isEqualTo("EXC-5");
         verify(auditRecorder).downloaded(ID, "EXAM_CERTIFICATE", 3L, "documentId=5");
