@@ -40,6 +40,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 | [progress/e2-2-4a.md](cell/progress/e2-2-4a.md) | Estado de E2 2.4a (mapa curricular del alumno: correlativas completas e inscripción vigente) | vigente |
+| [progress/22-9d2.md](cell/progress/22-9d2.md) | Estado de T22.9d-2 (attendance: cargar asistencia y cancelar clase al compositor) | vigente |
 | [progress/22-9d1.md](cell/progress/22-9d1.md) | Estado de la subtarea T22.9d-1 (attendance: pedidos de cambio y justificaciones al compositor) | vigente |
 
 ## Release (`docs/release/`)

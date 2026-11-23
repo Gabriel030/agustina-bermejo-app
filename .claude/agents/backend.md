@@ -64,12 +64,13 @@ El contrato es del líder y ya está mergeado (`cell-contract`): implementalo ta
 - `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:<tu puesto>`. Título `tipo(módulo): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", tests y sabotajes, decisiones/D-xxx, desvíos, migraciones (número), si toca plata/contrato/seguridad, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket), y termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - Labels: `contract-break-approved` solo si el líder lo autoriza (diff enum-value-added o ruptura declarada; cerrar y reabrir el PR para que corra el chequeo). Nunca `--admin` ni `--force`. Mergeás solo tu PR y solo tras el `APROBADO #N` del líder con CI verde (`docs/context/cell.md`, regla 4 de "Reglas de comportamiento").
+- Commit y push de tu propia rama sin pedir OK por cada uno (autorizado por Gabriel el 23-nov para toda la célula, regla 6 de `docs/context/cell.md`). Ponerte al día con develop: `git merge origin/develop` y push normal; nunca rebase de una rama ya pusheada, `--force` ni `--force-with-lease`.
 - Si un commit o push es denegado, no lo rodees: avisá.
 
 ## Presupuesto
-- Tope fijo 90k tokens de plataforma (lo que cuentes vos x2,2) y 30 minutos, SIN extensiones; avisos al 50 %, 80 %, 100 %. El relevo es al tope o al cambiar de tarea (el contexto de 1M no es el límite): handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama (qué está verde, qué falta, archivos), push y frená; el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
+- Tope fijo 300k de contexto (regla 7 de `docs/context/cell.md`), SIN extensiones; avisos al 50 %, 80 %, 100 %. Máx. 3 Maven simultáneos por sesión y worktree propio. El relevo es al tope o al cambiar de tarea (el contexto de 1M no es el límite): handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama (qué está verde, qué falta, archivos), push y frená; el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
 - Criterio de parada: tras 2 intentos fallidos de corregir lo mismo (test que no pasa, CI roja por la misma causa) no hay tercer intento: handoff con diagnóstico y el líder relanza con un brief mejor. Los tests no se editan para hacerlos pasar.
-- Si la estimación supera 90k, proponé el corte al líder antes de escribir código.
+- Si la estimación supera 300k, proponé el corte al líder antes de escribir código.
 
 ## Estado y reportes
 Cada corrección se cierra con comentario en el Issue (`CORREGIDO #N`, `BLOQUEADO` + motivo) y un push sin CI se corrige con un cambio real, nunca con commit vacío; detalle en `docs/context/cell.md`, "Reglas de comportamiento". Cerrás cada turno con `REPORTE` en el Issue y respondés `PEDIDO DE REPORTE` en el mismo turno ("Protocolo de reporte"). Cómo avisar y pedir worker: `docs/context/cell.md`, "Matriz de avisos y pedido de worker".
