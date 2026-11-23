@@ -17,6 +17,8 @@ const STEPS = [
   { key: 'confirm', label: 'Confirmar' },
 ];
 
+const STALE_CORRECTION_CODES = ['STALE_EDIT', 'CONCURRENT_MODIFICATION'];
+
 export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, onBack, onDone }) {
   const [step, setStep] = useState('data');
   const [scoreText, setScoreText] = useState('');
@@ -35,7 +37,7 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
       toast.success(`Nota corregida. ${student.name} recibió un aviso y se recalculó su condición.`);
       onDone({ periodEnded: false });
     } catch (error) {
-      if (error?.code === 'STALE_EDIT') {
+      if (STALE_CORRECTION_CODES.includes(error?.code)) {
         setStaleMessage(describeError(error).message);
         setStep('data');
         return;

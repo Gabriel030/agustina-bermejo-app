@@ -65,14 +65,16 @@ function ScopeChip({ label, onClear }) {
   return (
     <div className="inline-flex min-w-0 max-w-full items-center self-start rounded-full border border-border bg-surface pl-3 text-sm text-ink">
       <span className="truncate">{label}</span>
-      <button
+      <Button
         type="button"
+        variant="subtle"
+        size="icon"
         aria-label="Quitar filtro de oferta"
         onClick={onClear}
-        className="-my-1.5 flex size-11 shrink-0 items-center justify-center text-ink-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="-my-1.5 flex size-11 rounded-none border-0 text-ink-soft transition-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
       >
         <X className="size-4" />
-      </button>
+      </Button>
     </div>
   );
 }
