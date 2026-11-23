@@ -21,6 +21,7 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
   const [step, setStep] = useState('data');
   const [scoreText, setScoreText] = useState('');
   const [reasonText, setReasonText] = useState('');
+  const [staleMessage, setStaleMessage] = useState(null);
   const correct = useCorrectGradeItem(sectionId, kind);
   const label = gradeColumnLabel(column);
   const studentName = `${student.lastname}, ${student.name}`;
@@ -28,11 +29,17 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
   const counterBad = form.reasonTooLong || form.reasonTooShort;
 
   async function confirm() {
+    setStaleMessage(null);
     try {
-      await correct.mutateAsync({ gradeItemId: cell.gradeItemId, newScore: form.value, reason: form.reason });
+      await correct.mutateAsync({ gradeItemId: cell.gradeItemId, newScore: form.value, reason: form.reason, expectedVersion: cell.version });
       toast.success(`Nota corregida. ${student.name} recibió un aviso y se recalculó su condición.`);
       onDone({ periodEnded: false });
     } catch (error) {
+      if (error?.code === 'STALE_EDIT') {
+        setStaleMessage(describeError(error).message);
+        setStep('data');
+        return;
+      }
       const outcome = correctionErrorOutcome(error);
       toast.error(outcome ? outcome.message : describeError(error).message);
       onDone({ periodEnded: outcome?.periodEnded ?? false });
@@ -56,6 +63,11 @@ export function GradeCorrectionSteps({ student, column, cell, sectionId, kind, o
       </div>
       {step === 'data' ? (
         <>
+          {staleMessage && (
+            <p role="alert" className="text-xs font-semibold text-danger">
+              {staleMessage}
+            </p>
+          )}
           <div className="flex items-start gap-3">
             <div className="flex flex-1 flex-col gap-1.5">
               <Label htmlFor="correction-current">Nota actual</Label>
