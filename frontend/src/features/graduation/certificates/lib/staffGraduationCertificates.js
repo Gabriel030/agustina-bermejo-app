@@ -10,6 +10,8 @@ export const KIND_TABS = [
 const ELIGIBLE_STATUS = {
   PENDING: { label: 'Pendiente', tone: 'warning' },
   BLOCKED_BY_DEBT: { label: 'Bloqueado por deuda', tone: 'danger' },
+  PENDING_REVIEW: { label: 'Pendiente de revisión', tone: 'warning' },
+  DISABLED: { label: 'Certificado deshabilitado', tone: 'danger' },
 };
 
 export function eligibleStatusOf(status) {

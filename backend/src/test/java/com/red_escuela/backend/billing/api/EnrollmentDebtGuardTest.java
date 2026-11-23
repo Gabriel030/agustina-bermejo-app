@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.api;
 
+import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Money;
@@ -61,7 +62,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     private static final int GRACE_DAYS = 2;
 
     @Autowired
-    private EnrollmentDebtGuard enrollmentDebtGuard;
+    private EnrollmentDebtGuardPort enrollmentDebtGuard;
 
     @Autowired
     private CourseEnrollmentService courseEnrollmentService;

@@ -8,6 +8,7 @@ import {
   eligibleGraduate,
   graduationCertificateBatch,
   graduationCertificateDetail,
+  graduationCertificateReview,
   graduationCertificateSummary,
   ownGraduationCertificate,
   springPage,
@@ -16,6 +17,7 @@ import { sectionEnrollment } from '@/test/fixtures/studentHome';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 import { subjectEquivalenceHandlers } from '@/test/mocks/subjectEquivalenceHandlers';
+import { invitationWaveHandlers } from '@/test/mocks/invitationWaveHandlers';
 
 import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
@@ -167,6 +169,28 @@ export const handlers = [
         revocationReason: 'Error en los datos del alumno',
       }),
     ),
+  ),
+  http.get(`${API}/graduation-certificate-reviews`, () => HttpResponse.json(springPage([graduationCertificateReview()]))),
+  http.post(`${API}/graduation-certificate-reviews/batch`, async ({ request }) => {
+    const { graduationRequestIds = [31], decision = 'ENABLE' } = await request.json().catch(() => ({}));
+    const reviewStatus = decision === 'ENABLE' ? 'ENABLED' : 'DISABLED';
+    return HttpResponse.json({
+      requested: graduationRequestIds.length,
+      decided: graduationRequestIds.length,
+      failed: 0,
+      results: graduationRequestIds.map((graduationRequestId) => ({
+        graduationRequestId,
+        outcome: 'DECIDED',
+        review: graduationCertificateReview({ graduationRequestId, reviewStatus }),
+        errorCode: null,
+      })),
+    });
+  }),
+  http.post(`${API}/graduation-certificate-reviews/:graduationRequestId/enable`, ({ params }) =>
+    HttpResponse.json(graduationCertificateReview({ graduationRequestId: Number(params.graduationRequestId), reviewStatus: 'ENABLED' })),
+  ),
+  http.post(`${API}/graduation-certificate-reviews/:graduationRequestId/disable`, ({ params }) =>
+    HttpResponse.json(graduationCertificateReview({ graduationRequestId: Number(params.graduationRequestId), reviewStatus: 'DISABLED' })),
   ),
   http.post(`${API}/graduation-certificates/:id/reissue`, ({ params }) =>
     HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) + 1, replacesCertificateId: Number(params.id) })),
@@ -602,4 +626,5 @@ export const handlers = [
   ),
   ...constanciasHandlers,
   ...subjectEquivalenceHandlers,
+  ...invitationWaveHandlers,
 ];

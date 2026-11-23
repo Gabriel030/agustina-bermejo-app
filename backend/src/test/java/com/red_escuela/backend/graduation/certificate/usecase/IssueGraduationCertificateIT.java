@@ -6,7 +6,10 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificatePdf;
 import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditLogRepository;
+import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
+import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateResponse;
+import com.red_escuela.backend.graduation.certificate.verification.specialist.PublicDocumentLookup;
 import com.red_escuela.backend.graduation.certificate.dto.IssueGraduationCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
@@ -68,6 +71,8 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
     private AuditLogRepository auditLogRepository;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private PublicDocumentLookup publicDocumentLookup;
 
     private Program program;
     private ProgramEnrollment enrollment;
@@ -121,6 +126,17 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
         assertThat(stored.getPdfSha256()).isEqualTo(digest.sha256(file));
         assertThat(response.verificationUrl()).endsWith("/verificar/" + response.code());
         assertThat(response.titleName()).isEqualTo(program.getName());
+    }
+
+    @Test
+    void issuedGraduationCertificateResolvesInThePublicDocumentVerification() {
+        GraduationCertificateResponse response = issue();
+
+        var verification = publicDocumentLookup.verify(response.code(), "203.0.113.50");
+
+        assertThat(verification.documentType()).isEqualTo(CertificateDocumentType.GRADUATION_CERTIFICATE);
+        assertThat(verification.status()).isEqualTo(DocumentValidityStatus.VALID);
+        assertThat(verification.registryNumber()).isEqualTo(repository.findById(response.id()).orElseThrow().getRegistryNumber());
     }
 
     @Test

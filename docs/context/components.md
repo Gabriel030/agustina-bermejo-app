@@ -13,6 +13,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `PageContainer` [shared] | Envoltorio de toda pantalla de contenido (ancho máximo, gap); con `title`/`action` dibuja la cabecera (h1 + acción principal a la derecha) | `className`, `title`, `action` |
 | `GlassCard` [shared] | Superficie de vidrio; base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
+| `StickyActionBar` [shared] | Barra de acciones pegada abajo. En móvil (<768px) va a ancho completo, sin sombra ni blur y respeta la safe-area; es una región con `aria-label` (por defecto "Acciones de la página") y anuncia "Guardando…" | `summary`, `hint`, `children` (modo `row` por defecto: botones en fila y el estado en una línea; para pasos de flujo como Volver o Cancelar), `compact="menu"` con `primary` (props de `Button`, `loading`, `loadingLabel`) y `secondary` (`[{ key, label, icon, onSelect, disabled, destructive }]`): en móvil las secundarias van al menú «Más acciones» (para Descartar); en escritorio quedan como botones. `compactSummary`/`compactHint` (textos cortos visuales; el lector de pantalla sigue leyendo los completos), `busy`, `aria-label` |
 | `InstitutionBrand` [shared] | Marca de la institución en pantallas públicas | — |
 | `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `ROLE_CONFIG` (`routes/roleConfig.js`) | — |
 
@@ -43,6 +44,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `RefundsSection` [domain: billing] | Reembolsos de un alumno (pedidos agrupados, partes expandibles, "Marcar como hecho" / "No se pudo"); vive en el Financiero de la ficha del alumno | `studentId` |
 | `SortableColumnHeader` [domain: evaluation] | Encabezado ordenable (hook `useOrdenamiento`) | — |
 | `AnioColumnFilter` `EstadoColumnFilter` [domain: evaluation] | Filtro tipo Excel en el encabezado de columna (checkboxes + seleccionar todo) | — |
+| `ExamCertificatesSection` `ExamCertificatesTable` [domain: evaluation] | Lote de constancias de examen en la mesa (candidatos con checkbox, confirmación, resultado en `Notice`, revocación con `ModalMotivo` solo para el Director) | `mesaId`, `role` |
 | `AnioGroupHeaderRow` [domain: alumno] | Fila de agrupación por año | — |
 | `AmountBreakdown` [domain: billing] (`features/billing/components/`) | Desglose de una cuota: importe base + recargo, beca, promoción o descuento con signo | `baseAmount`, `lines` (`{ label, amount }` con signo) |
 | `InvoiceSummary` [domain: billing] (`features/billing/components/`) | Resumen de la cuota que se está pagando (concepto, desglose y total) arriba de los pasos de pago | `breakdown` (respuesta de `/me/invoices/{id}/price-breakdown`) |
