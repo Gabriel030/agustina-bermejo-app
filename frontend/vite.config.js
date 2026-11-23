@@ -16,6 +16,7 @@ const cspInHeader = (env) => env.VITE_CSP_IN_HEADER === 'true'
 export default defineConfig(({ mode }) => ({
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.GITHUB_SHA || Date.now().toString()),
+    'import.meta.env.VITE_SENTRY_DSN': JSON.stringify(loadEnv(mode, '.', 'VITE_').VITE_SENTRY_DSN ?? ''),
   },
   plugins: [
     {
