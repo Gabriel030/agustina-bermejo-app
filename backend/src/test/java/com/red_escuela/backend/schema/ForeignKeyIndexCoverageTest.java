@@ -230,6 +230,8 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("student_discount.revoked_by_id", AUDIT_ACTOR);
         accepted.put("student_discount_status_change.actor_person_id", AUDIT_ACTOR);
         accepted.put("student_status_change.actor_person_id", AUDIT_ACTOR);
+        accepted.put("subject_equivalence.recorded_by_id", AUDIT_ACTOR);
+        accepted.put("subject_equivalence.voided_by_id", AUDIT_ACTOR);
         return accepted;
     }
 

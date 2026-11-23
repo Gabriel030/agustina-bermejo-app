@@ -65,6 +65,8 @@ const ACTIONS = {
   DOCUMENT_DEBT_EXC_USED: ['Excepción de deuda utilizada', 'accent'],
   DOCUMENT_DEBT_EXC_EXPIRED: ['Excepción de deuda vencida', 'neutral'],
   DOCUMENT_DEBT_EXC_DOWNLOADED: ['Documento por excepción descargado por Administración', 'warning'],
+  SUBJECT_EQUIVALENCE_RECORDED: ['Equivalencia de materia registrada', 'accent'],
+  SUBJECT_EQUIVALENCE_VOIDED: ['Equivalencia de materia anulada', 'warning'],
   DOCUMENT_SETTINGS_CHANGED: ['Configuración de emisión de documentos modificada', 'accent'],
 };
 
@@ -89,6 +91,7 @@ const ENTITIES = {
   CERTIFICATE_TEMPLATE: 'Plantilla de documento',
   EXAM_CERTIFICATE: 'Constancia de examen',
   DOCUMENT_DEBT_EXCEPTION: 'Excepción de deuda de documento',
+  SUBJECT_EQUIVALENCE: 'Equivalencia de materia',
 };
 
 const ROLES = {
