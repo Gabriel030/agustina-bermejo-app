@@ -12,9 +12,9 @@ import { Stepper } from '@/components/Stepper';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { BankTransferReceiptForm } from '@/components/billing/BankTransferReceiptForm';
+import { BankTransferReceiptForm } from '@/features/billing/components/BankTransferReceiptForm';
 import { useAuth } from '@/context/AuthContext';
-import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
+import { useLegajoAlumno } from '@/features/identity';
 import { useAdminBillingOverview, useSubmitBankTransferReceipt } from '@/hooks/useBilling';
 import { formatDate, formatMoney } from '@/lib/billing';
 import {
@@ -26,7 +26,7 @@ import {
   receiptSubmissionFailure,
 } from '@/lib/bankTransferReceipt';
 import { moneyValue } from '@/lib/utils';
-import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
+import { useRoleBasePath } from '@/features/academic-structure';
 
 const STEPS = [
   { key: 'datos', label: 'Datos del comprobante' },

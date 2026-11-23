@@ -4,7 +4,7 @@ import { AlertTriangle, Clock } from 'lucide-react';
 import { StickyActionBar } from '@/components/StickyActionBar';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
-import { InvoiceCoverageList } from '@/components/billing/InvoiceCoverageList';
+import { InvoiceCoverageList } from '@/features/billing/components/InvoiceCoverageList';
 import { BankTransferReceiptFields } from '@/components/billing/BankTransferReceiptFields';
 import { useReceiptFields } from '@/components/billing/useReceiptFields';
 import { useSubmitBankTransferReceipt } from '@/hooks/useBilling';

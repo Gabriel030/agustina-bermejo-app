@@ -567,6 +567,7 @@ export const handlers = [
   http.get(`${API}/elective-groups`, () => HttpResponse.json([])),
   http.get(`${API}/programs/:id/year-billing-templates`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json([])),
+  http.get(`${API}/section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-enrollments`, () => HttpResponse.json([])),
   http.get(`${API}/billing/configuration-alerts`, () => HttpResponse.json([])),
   http.get(`${API}/announcements/:id/recipients`, () => HttpResponse.json([])),

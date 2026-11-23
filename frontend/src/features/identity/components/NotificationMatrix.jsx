@@ -79,7 +79,7 @@ function NotificationName({ children, alwaysOn }) {
 function ChannelCell({ event, channel, locked, active, disabled, onToggle }) {
   const label = `${EVENT_LABELS[event]} — ${CHANNEL_LABELS[channel]}`;
   return (
-    <TableCell className="text-center">
+    <TableCell className="py-3 text-center">
       {locked ? (
         <LockedMark label={label} />
       ) : (
