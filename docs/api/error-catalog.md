@@ -791,6 +791,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/attendance/{id}/justify` | `AttendanceController#justify` |
 | POST | `/attendance/{id}/reject-justification` | `AttendanceController#rejectJustification` |
 | POST | `/auth/activate` | `AuthController#activateAccount` |
+| POST | `/auth/activation-token/status` | `AuthController#checkActivationTokenStatus` |
 | POST | `/auth/forgot-password` | `AuthController#forgotPassword` |
 | POST | `/auth/google` | `AuthController#loginWithGoogle` |
 | POST | `/auth/google/register` | `AuthController#registerWithGoogle` |
@@ -907,6 +908,11 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/graduation-requests/{id}/verify-debt` | `GraduationRequestController#verifyDebt` |
 | POST | `/holidays` | `HolidayController#create` |
 | POST | `/institute-settings/notifications/whatsapp/templates` | `WhatsAppTemplateMappingController#createMapping` |
+| POST | `/invitation-waves` | `InvitationWaveController#createInvitationWave` |
+| POST | `/invitation-waves/{id}/cancel` | `InvitationWaveController#cancelInvitationWave` |
+| POST | `/invitation-waves/{id}/pause` | `InvitationWaveController#pauseInvitationWave` |
+| POST | `/invitation-waves/{id}/resume` | `InvitationWaveController#resumeInvitationWave` |
+| POST | `/invitation-waves/{id}/start` | `InvitationWaveController#startInvitationWave` |
 | POST | `/invoices/{invoiceId}/cancellations` | `InvoiceCancellationController#cancelOrRequestInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/cancellations/preview` | `InvoiceCancellationController#previewInvoiceCancellation` |
 | POST | `/late-payment-settings` | `LatePaymentSettingsController#create` |

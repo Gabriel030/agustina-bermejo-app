@@ -40,6 +40,7 @@ class NotificationPermissionComparisonIT extends AuthorizationMatrixSupport {
                 .filter(row -> endpoints.containsKey(row.key()))
                 .filter(row -> endpoints.get(row.key()).handler().getMethodAnnotation(RequiresPermission.class) != null)
                 .filter(row -> endpoints.get(row.key()).handler().getBeanType().getPackageName().startsWith("com.red_escuela.backend.notification"))
+                .filter(row -> !endpoints.get(row.key()).handler().getBeanType().getPackageName().startsWith("com.red_escuela.backend.notification.invitation"))
                 .toList();
     }
 

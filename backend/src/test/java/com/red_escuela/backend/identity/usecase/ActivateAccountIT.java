@@ -316,6 +316,152 @@ class ActivateAccountIT extends AbstractIntegrationTest {
         activate(issued.token(), NEW_PASSWORD).andExpect(status().isNoContent());
     }
 
+    private ResultActions tokenStatus(String token) throws Exception {
+        String body = token == null ? "{}" : "{\"token\":\"" + token + "\"}";
+        return mockMvc.perform(post("/auth/activation-token/status").contentType(MediaType.APPLICATION_JSON).content(body)
+                .with(request -> {
+                    request.setRemoteAddr("10.9." + (int) (Math.random() * 250) + "." + (int) (Math.random() * 250));
+                    return request;
+                }));
+    }
+
+    private void ensureInstitution() {
+        if (jdbc.queryForObject("select count(*) from institution", Integer.class) == 0) {
+            jdbc.update("insert into institution (name) values ('Instituto de prueba')");
+        }
+        jdbc.update("update institution set email = 'contacto@instituto.test', phone_number = '011-5555-0000' where id = (select min(id) from institution)");
+        jdbc.update("insert into student (institution_id, person_id, onboarding_status) select min(id), ?, 'CONFIRMADO' from institution",
+                person.getId());
+    }
+
+    @Test
+    void tokenStatusOfAPersonWhoIsNotAStudentHasNoInstitution() throws Exception {
+        ensureInstitution();
+        jdbc.update("delete from student where person_id = ?", person.getId());
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.institution").doesNotExist());
+    }
+
+    @Test
+    void validTokenOfAPersonBlockedByAThirdPartyEmailChangeIsInvalidWithoutData() throws Exception {
+        ensureInstitution();
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        transactions.executeWithoutResult(status -> {
+            EmailVerificationToken pending = new EmailVerificationToken();
+            pending.setPerson(entityManager.getReference(Person.class, person.getId()));
+            pending.setTokenHash(UUID.randomUUID().toString());
+            pending.setNewEmail("attacker." + UUID.randomUUID() + "@example.com");
+            pending.setExpiresAt(java.time.LocalDateTime.now().plusDays(1));
+            emailVerificationTokenRepository.save(pending);
+        });
+
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("INVALID"))
+                .andExpect(jsonPath("$.username").doesNotExist())
+                .andExpect(jsonPath("$.institution").doesNotExist());
+    }
+
+    @Test
+    void validTokenStatusExposesUsernameAndInstitutionContact() throws Exception {
+        ensureInstitution();
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+
+        tokenStatus(issued.token()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.username").value(person.getUsername()))
+                .andExpect(jsonPath("$.institution.name").isNotEmpty())
+                .andExpect(jsonPath("$.institution.email").value("contacto@instituto.test"))
+                .andExpect(jsonPath("$.institution.phoneNumber").value("011-5555-0000"));
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("VALID"));
+        assertThat(jdbc.queryForObject("select count(*) from activation_token where person_id = ? and used_at is null",
+                Integer.class, person.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void validTokenStatusFallsBackToTheEmailWhenThePersonHasNoUsername() throws Exception {
+        ensureInstitution();
+        jdbc.update("update person set username = null where id = ?", person.getId());
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.username").value(person.getEmail().value()));
+    }
+
+    @Test
+    void expiredTokenStatusKeepsTheInstitutionAndHidesTheUsername() throws Exception {
+        ensureInstitution();
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        expireToken(issued.token());
+
+        tokenStatus(issued.token()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("EXPIRED"))
+                .andExpect(jsonPath("$.username").doesNotExist())
+                .andExpect(jsonPath("$.institution.email").value("contacto@instituto.test"));
+    }
+
+    @Test
+    void unknownUsedBlankAndMissingTokensAnswerTheSameInvalidBody() throws Exception {
+        ensureInstitution();
+        IssuedActivationToken used = activationTokenIssuer.issueActivationToken(person.getId());
+        activate(used.token(), NEW_PASSWORD).andExpect(status().isNoContent());
+        Person otherPerson = createPerson(null);
+        IssuedActivationToken forActivePerson = activationTokenIssuer.issueActivationToken(otherPerson.getId());
+        jdbc.update("update person set password = 'x' where id = ?", otherPerson.getId());
+
+        for (String token : new String[]{"does-not-exist", used.token(), forActivePerson.token(), "", "   ", null}) {
+            tokenStatus(token).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("INVALID"))
+                    .andExpect(jsonPath("$.username").doesNotExist())
+                    .andExpect(jsonPath("$.institution").doesNotExist());
+        }
+    }
+
+    @Test
+    void inactivePersonAndExpiredTokenOfAnActivePersonAreInvalid() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        expireToken(issued.token());
+        jdbc.update("update person set status = 'INACTIVE' where id = ?", person.getId());
+
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("INVALID"))
+                .andExpect(jsonPath("$.institution").doesNotExist());
+    }
+
+    @Test
+    void emailChangeAfterIssuingMakesTheStatusInvalid() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        jdbc.update("update person set email = ? where id = ?", "changed." + UUID.randomUUID() + "@example.com", person.getId());
+
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("INVALID"));
+    }
+
+    @Test
+    void activationTokenStatusIsRateLimitedPerIp() throws Exception {
+        String ip = "10.8.8." + (int) (Math.random() * 250);
+        int limited = 0;
+        for (int attempt = 0; attempt < 260 && limited == 0; attempt++) {
+            int httpStatus = mockMvc.perform(post("/auth/activation-token/status").contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"token\":\"x\"}").with(request -> {
+                        request.setRemoteAddr(ip);
+                        return request;
+                    })).andReturn().getResponse().getStatus();
+            if (httpStatus == 429) {
+                limited++;
+            }
+        }
+        assertThat(limited).isEqualTo(1);
+    }
+
+    @Test
+    void activatingStillAnswers204ForAValidTokenAndKeepsItsErrorCodes() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("VALID"));
+        activate(issued.token(), NEW_PASSWORD).andExpect(status().isNoContent());
+        activate("does-not-exist", NEW_PASSWORD).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ACTIVATION_TOKEN_INVALID"));
+    }
+
     @Test
     void concurrentIssuingLeavesASingleLiveToken() throws Exception {
         List<IssuedActivationToken> issued = runConcurrently(

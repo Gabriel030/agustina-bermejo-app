@@ -6,5 +6,5 @@ import com.red_escuela.backend.shared.pagination.PageResponse;
 
 public interface ListInvitationWaveRecipientsUseCase {
 
-    PageResponse<InvitationWaveRecipientEntry> listInvitationWaveRecipients(Long waveId, InvitationRecipientStatus status, int page, int size);
+    PageResponse<InvitationWaveRecipientEntry> listInvitationWaveRecipients(Long waveId, InvitationRecipientStatus status, int page, int size, boolean includePersonalData);
 }
