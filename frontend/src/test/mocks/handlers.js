@@ -164,7 +164,7 @@ export const handlers = [
   ),
   http.get(`${API}/graduation-certificate-reviews`, () => HttpResponse.json(springPage([graduationCertificateReview()]))),
   http.post(`${API}/graduation-certificate-reviews/batch`, async ({ request }) => {
-    const { graduationRequestIds, decision } = await request.json();
+    const { graduationRequestIds = [31], decision = 'ENABLE' } = await request.json().catch(() => ({}));
     const reviewStatus = decision === 'ENABLE' ? 'ENABLED' : 'DISABLED';
     return HttpResponse.json({
       requested: graduationRequestIds.length,
