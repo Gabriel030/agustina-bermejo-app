@@ -30,10 +30,16 @@ function useInvalidatingMutation(mutationFn) {
 }
 
 export function useIssueRegularCertificate() {
-  return useInvalidatingMutation(({ kind, enrollmentId, standingEvidence }) =>
+  return useInvalidatingMutation(({ kind, enrollmentId, standingEvidence, exceptionId }) =>
     apiFetch('/regular-certificates', {
       method: 'POST',
-      body: JSON.stringify({ kind, enrollmentId, standingConfirmed: true, standingEvidence: standingEvidence ?? '' }),
+      body: JSON.stringify({
+        kind,
+        enrollmentId,
+        standingConfirmed: true,
+        standingEvidence: standingEvidence ?? '',
+        ...(exceptionId ? { exceptionId } : {}),
+      }),
     }),
   );
 }

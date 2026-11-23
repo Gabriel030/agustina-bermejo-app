@@ -57,6 +57,17 @@ public class GraduationRequest {
     @Column(name = "legacy_title_number", length = 50)
     private String legacyTitleNumber;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "certificate_review_status", nullable = false)
+    private CertificateReviewStatus certificateReviewStatus = CertificateReviewStatus.NOT_REQUIRED;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "certificate_reviewed_by_id")
+    private Person certificateReviewedBy;
+
+    @Column(name = "certificate_reviewed_at")
+    private LocalDateTime certificateReviewedAt;
+
     public void requireAwaitingDirectorDecision() {
         if (status != GraduationRequestStatus.ADMIN_VERIFIED) {
             throw new InvalidGraduationRequestStateException(id);

@@ -267,8 +267,20 @@ class InvitationWaveControllerIT extends AbstractIntegrationTest {
 
         mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/start"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
         mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/cancel"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
+        mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/resume"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
         mockMvc.perform(asRole(get("/invitation-waves/" + waveId), "ADMINISTRATIVO")).andExpect(status().isOk());
         createWave("ADMINISTRATIVO").andExpect(status().isCreated());
+    }
+
+    @Test
+    void managePermissionGuardsCreateAndPauseButNotStart() throws Exception {
+        importedStudent(batchId, true, null);
+        long waveId = createWaveId();
+        removePermissionFromAdministrativo("notification", "notification.manage_invitation_waves");
+
+        createWave("ADMINISTRATIVO").andExpect(status().isForbidden());
+        mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/pause"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
+        mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/start"), "ADMINISTRATIVO")).andExpect(status().isOk());
     }
 
     @Test
@@ -278,6 +290,10 @@ class InvitationWaveControllerIT extends AbstractIntegrationTest {
         removePermissionFromAdministrativo("notification", "notification.read_invitation_waves");
 
         mockMvc.perform(asRole(get("/invitation-waves"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
+        mockMvc.perform(asRole(get("/invitation-waves/settings"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
+        mockMvc.perform(asRole(get("/invitation-waves/import-batches"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
+        mockMvc.perform(asRole(get("/invitation-waves/" + waveId), "ADMINISTRATIVO")).andExpect(status().isForbidden());
+        mockMvc.perform(asRole(get("/invitation-waves/" + waveId + "/recipients"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
         mockMvc.perform(asRole(get("/invitation-waves/" + waveId + "/report.csv"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
         mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/start"), "ADMINISTRATIVO")).andExpect(status().isOk());
     }

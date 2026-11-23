@@ -22,6 +22,9 @@ import com.red_escuela.backend.notification.invitation.usecase.StartInvitationWa
 import com.red_escuela.backend.shared.pagination.PageResponse;
 import com.red_escuela.backend.shared.permission.PermissionGate;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -135,6 +138,7 @@ public class InvitationWaveController {
     }
 
     @RequiresPermission(code = "notification.read_invitation_waves", legacyRoles = LEGACY_ROLES)
+    @ApiResponse(responseCode = "200", content = @Content(mediaType = "text/csv", schema = @Schema(type = "string")))
     @GetMapping("/{id}/report.csv")
     public ResponseEntity<byte[]> downloadInvitationWaveReport(@PathVariable Long id) {
         InvitationWaveReportDownload download = downloadInvitationWaveReport.downloadInvitationWaveReport(id);

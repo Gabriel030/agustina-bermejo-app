@@ -50,9 +50,10 @@ class CertificateExceptionRequesterTest {
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final RegularCertificateSettingsFinder settingsFinder = mock(RegularCertificateSettingsFinder.class);
     private final AuditTrail auditTrail = mock(AuditTrail.class);
+    private final RegularDebtFactsReader debtFactsReader = mock(RegularDebtFactsReader.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-05T12:00:00Z"), ZoneOffset.UTC);
     private final CertificateExceptionRequester requester = new CertificateExceptionRequester(repository, factsFinder, standingGate,
-            currentActorFinder, eventPublisher, settingsFinder, auditTrail, clock);
+            currentActorFinder, eventPublisher, settingsFinder, auditTrail, clock, debtFactsReader);
     private final RequestCertificateExceptionCommand command = new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, ENROLLMENT_ID,
             OrganismKind.COURT, "Causa 1/2026", REASON);
 
@@ -65,6 +66,7 @@ class CertificateExceptionRequesterTest {
         when(currentActorFinder.currentPersonId()).thenReturn(REQUESTER_ID);
         when(repository.existsByProgramEnrollmentIdAndStatusIn(any(), any())).thenReturn(false);
         when(settingsFinder.current()).thenReturn(RegularCertificateSettings.DEFAULT);
+        when(debtFactsReader.factsOf(any())).thenReturn(java.util.Map.of());
     }
 
     private DataIntegrityViolationException violationOf(String constraintName) {

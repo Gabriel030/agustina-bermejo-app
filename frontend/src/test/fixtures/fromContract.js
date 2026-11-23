@@ -8,6 +8,7 @@ function generate(rawSchema, contract) {
   const resolved = resolve(rawSchema, contract);
   const schema = Array.isArray(resolved.type) ? { ...resolved, type: resolved.type.find((type) => type !== 'null') } : resolved;
   if (schema.enum) return schema.enum[0];
+  if (schema.allOf) return Object.assign({}, ...schema.allOf.map((part) => generate(part, contract)).filter((value) => value !== null && typeof value === 'object'));
   if (schema.oneOf || schema.anyOf) return generate((schema.oneOf ?? schema.anyOf).find((option) => option.type !== 'null'), contract);
   if (schema.type === 'array') return [generate(schema.items, contract)];
   if (schema.type === 'object' || schema.properties) {
@@ -17,6 +18,7 @@ function generate(rawSchema, contract) {
   if (schema.type === 'boolean') return false;
   if (schema.format === 'date-time') return '2026-01-01T00:00:00Z';
   if (schema.format === 'date') return '2026-01-01';
+  if (schema.pattern === '^-?\\d+(\\.\\d+)?$') return '1.00';
   return 'x';
 }
 

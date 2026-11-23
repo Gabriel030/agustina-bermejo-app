@@ -51,6 +51,11 @@ class RequestRateLimitFilterTest {
     }
 
     @Test
+    void monitoringTunnelIsLimitedPerIp() throws Exception {
+        assertLimited("POST", "/public/monitoring/tunnel");
+    }
+
+    @Test
     void resetPasswordIsLimitedPerIp() throws Exception {
         assertLimited("POST", "/auth/reset-password");
     }

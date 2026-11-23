@@ -38,7 +38,7 @@ class PdfProviderLogsTest {
     private static final String CODE = "7QK3M9XH2VBN4T8R5W6YZ0A1B2";
 
     private final CertificateSnapshot snapshot = new CertificateSnapshot("PEREZ, ANA", "DNI", "30123456", "la carrera", "Tec", null,
-            1800, LocalDate.of(2026, 7, 15), LocalDate.of(2026, 11, 5), "Instituto", List.of(), "BUILT_IN_V1");
+            1800, LocalDate.of(2026, 7, 15), LocalDate.of(2026, 11, 5), "Instituto", List.of(), "BUILT_IN_V1", null);
     private final CertificateFileStore fileStore = mock(CertificateFileStore.class);
     private final CertificatePdfRenderer renderer = mock(CertificatePdfRenderer.class);
     private final CertificateDigest digest = mock(CertificateDigest.class);

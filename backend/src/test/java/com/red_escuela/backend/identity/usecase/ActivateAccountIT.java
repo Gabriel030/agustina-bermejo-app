@@ -330,6 +330,36 @@ class ActivateAccountIT extends AbstractIntegrationTest {
             jdbc.update("insert into institution (name) values ('Instituto de prueba')");
         }
         jdbc.update("update institution set email = 'contacto@instituto.test', phone_number = '011-5555-0000' where id = (select min(id) from institution)");
+        jdbc.update("insert into student (institution_id, person_id, onboarding_status) select min(id), ?, 'CONFIRMADO' from institution",
+                person.getId());
+    }
+
+    @Test
+    void tokenStatusOfAPersonWhoIsNotAStudentHasNoInstitution() throws Exception {
+        ensureInstitution();
+        jdbc.update("delete from student where person_id = ?", person.getId());
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.institution").doesNotExist());
+    }
+
+    @Test
+    void validTokenOfAPersonBlockedByAThirdPartyEmailChangeIsInvalidWithoutData() throws Exception {
+        ensureInstitution();
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        transactions.executeWithoutResult(status -> {
+            EmailVerificationToken pending = new EmailVerificationToken();
+            pending.setPerson(entityManager.getReference(Person.class, person.getId()));
+            pending.setTokenHash(UUID.randomUUID().toString());
+            pending.setNewEmail("attacker." + UUID.randomUUID() + "@example.com");
+            pending.setExpiresAt(java.time.LocalDateTime.now().plusDays(1));
+            emailVerificationTokenRepository.save(pending);
+        });
+
+        tokenStatus(issued.token()).andExpect(jsonPath("$.status").value("INVALID"))
+                .andExpect(jsonPath("$.username").doesNotExist())
+                .andExpect(jsonPath("$.institution").doesNotExist());
     }
 
     @Test

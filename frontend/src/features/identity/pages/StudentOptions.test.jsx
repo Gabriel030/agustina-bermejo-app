@@ -55,7 +55,6 @@ describe('StudentOptions', () => {
 
   afterEach(() => {
     localStorage.clear();
-    delete document.documentElement.dataset.design;
   });
 
   it('offers exactly the four sections: appearance, notifications, security and session', async () => {
@@ -82,8 +81,7 @@ describe('StudentOptions', () => {
     expect(screen.getByRole('switch', { name: 'Modo oscuro' })).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('offers the theme switch on the mobile design B, where the header toggle is hidden', async () => {
-    document.documentElement.dataset.design = 'b';
+  it('offers the theme switch on mobile, where the header toggle is hidden', async () => {
     mockProfileEndpoints();
     const user = userEvent.setup();
     renderOptions();
@@ -92,7 +90,6 @@ describe('StudentOptions', () => {
     await user.click(themeSwitch);
 
     expect(localStorage.getItem('tema')).toBe('dark');
-    delete document.documentElement.dataset.design;
   });
 
   it('saves the notification matrix changes', async () => {

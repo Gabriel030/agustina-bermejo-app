@@ -716,7 +716,9 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + tokenForStudent(duenio)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.requiredCredits").value(10))
-                .andExpect(jsonPath("$.subjects[0].state").value("AVAILABLE"));
+                .andExpect(jsonPath("$.subjects[0].state").value("AVAILABLE"))
+                .andExpect(jsonPath("$.subjects[0].prerequisites").isEmpty())
+                .andExpect(jsonPath("$.subjects[0].currentEnrollmentId").doesNotExist());
     }
 
     @Test
