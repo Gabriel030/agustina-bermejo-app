@@ -1,11 +1,26 @@
-const CONDITION_BY_KIND = {
-  GRADUATION: 'el título',
-  REGULAR: 'la condición de alumno regular',
+const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+const DOCUMENT_TITLES = {
+  GRADUATION_CERTIFICATE: 'Certificado de egreso',
+  REGULAR_STUDENT_CERTIFICATE: 'Constancia de alumno regular',
+  APPROVED_SUBJECTS_CERTIFICATE: 'Constancia de materias aprobadas',
+  EXAM_REGISTRATION_CERTIFICATE: 'Constancia de inscripción a examen',
+  EXAM_CERTIFICATE: 'Constancia de examen',
 };
 
-export function formatDay(value) {
+function parseDay(value) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? '');
-  return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+  return match ? { year: match[1], month: Number(match[2]), day: Number(match[3]), rawMonth: match[2], rawDay: match[3] } : null;
+}
+
+export function formatDay(value) {
+  const parts = parseDay(value);
+  return parts ? `${parts.rawDay}/${parts.rawMonth}/${parts.year}` : '';
+}
+
+export function formatLongDay(value) {
+  const parts = parseDay(value);
+  return parts ? `${parts.day} de ${MONTHS[parts.month - 1]} de ${parts.year}` : '';
 }
 
 export function formatDayAndTime(date) {
@@ -13,42 +28,75 @@ export function formatDayAndTime(date) {
   return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function verdictOf(certificate) {
-  const condition = CONDITION_BY_KIND[certificate.documentKind] ?? 'el documento';
-  if (certificate.status === 'REVOKED') {
-    return { icon: 'ban', tone: 'danger', title: 'Revocado', message: `El instituto lo anuló. Ya no acredita ${condition}.` };
-  }
-  if (certificate.status === 'EXPIRED') {
-    const since = certificate.expiresAt ? `Venció el ${formatDay(certificate.expiresAt)}. ` : '';
-    return { icon: 'clock', tone: 'warning', title: 'Vencido', message: `${since}Ya no acredita ${condition}.` };
-  }
-  const message = certificate.documentKind === 'REGULAR' ? 'Documento auténtico y vigente.' : 'Documento auténtico.';
-  return { icon: 'ok', tone: 'success', title: 'Válido', message };
+export function documentTitle(certificate) {
+  return DOCUMENT_TITLES[certificate.documentType] ?? 'Documento';
 }
 
-export function documentTitle(certificate) {
-  return certificate.documentKind === 'GRADUATION' ? 'Certificado de egreso' : 'Constancia de alumno regular';
+const withDate = (prefix, value, suffix) => (value ? `${prefix} ${formatLongDay(value)}${suffix}` : '');
+
+export function verdictOf(certificate) {
+  if (certificate?.status === 'REVOKED') {
+    return {
+      icon: 'ban',
+      tone: 'danger',
+      badge: 'Revocada',
+      title: 'Este documento fue anulado por el instituto',
+      message: certificate.revokedAt ? `No tiene validez desde el ${formatLongDay(certificate.revokedAt)}.` : 'No tiene validez.',
+    };
+  }
+  if (certificate?.status === 'REPLACED') {
+    return {
+      icon: 'alert',
+      tone: 'warning',
+      badge: 'Reemplazada',
+      title: 'Este documento fue reemplazado por una versión nueva',
+      message: 'Pedí a la persona interesada la versión vigente.',
+    };
+  }
+  if (certificate?.status === 'EXPIRED') {
+    return {
+      icon: 'alert',
+      tone: 'warning',
+      badge: 'Auténtica · vencida',
+      title: 'Este documento es auténtico, pero su vigencia terminó',
+      message: `${withDate('Venció el', certificate.expiresAt, '. ')}Pedí a la persona interesada una constancia nueva.`,
+    };
+  }
+  if (certificate?.status === 'VALID') {
+    return {
+      icon: 'ok',
+      tone: 'success',
+      badge: 'Auténtica y vigente',
+      title: 'Este documento fue emitido por el instituto',
+      message: 'Coincide con el registro oficial y sigue vigente.',
+    };
+  }
+  return {
+    icon: 'unknown',
+    tone: 'neutral',
+    badge: 'Sin determinar',
+    title: 'No pudimos determinar el estado de este documento',
+    message: 'Probá de nuevo en unos minutos. Si el problema sigue, consultá en el instituto.',
+    undetermined: true,
+  };
+}
+
+function validityOf(certificate) {
+  if (certificate.status === 'REVOKED') return certificate.revokedAt ? `Revocada el ${formatDay(certificate.revokedAt)}` : '';
+  if (certificate.status === 'REPLACED') return certificate.replacedAt ? `Reemplazada el ${formatDay(certificate.replacedAt)}` : '';
+  if (certificate.status === 'EXPIRED') return certificate.expiresAt ? `Venció el ${formatDay(certificate.expiresAt)}` : '';
+  return certificate.expiresAt ? `Vigente hasta el ${formatDay(certificate.expiresAt)}` : 'Vigente';
 }
 
 export function detailRows(certificate) {
-  const rows = [{ label: 'Documento', value: certificate.maskedDocument }];
-  if (certificate.documentKind === 'GRADUATION') {
-    rows.push({ label: 'Título', value: certificate.titleName });
-    rows.push({ label: 'Fecha de egreso', value: formatDay(certificate.graduationDate) });
-    const hours = certificate.hours ? ` · ${certificate.hours.toLocaleString('es-AR')} horas` : '';
-    rows.push({ label: 'Registro', value: `N.º ${certificate.registryNumber}${hours}` });
-  } else {
-    rows.push({ label: 'Carrera', value: certificate.titleName });
-    rows.push({ label: 'Emitida', value: formatDay(certificate.issuedAt) });
-    if (certificate.status !== 'REVOKED') {
-      rows.push({
-        label: certificate.status === 'EXPIRED' ? 'Venció' : 'Vigente hasta',
-        value: formatDay(certificate.expiresAt),
-      });
-    }
-  }
-  if (certificate.status === 'REVOKED') {
-    rows.push({ label: 'Revocado el', value: formatDay(certificate.revokedAt) });
-  }
+  const rows = [
+    { label: 'Documento', value: documentTitle(certificate) },
+    { label: 'A nombre de', value: certificate.holderFullName, masked: true },
+    { label: 'DNI', value: certificate.maskedDocument, masked: true },
+  ];
+  if (certificate.registryNumber) rows.push({ label: 'Registro', value: certificate.registryNumber });
+  rows.push({ label: 'Emitido el', value: formatLongDay(certificate.issuedAt) });
+  const validity = validityOf(certificate);
+  if (validity) rows.push({ label: 'Vigencia', value: validity });
   return rows;
 }
