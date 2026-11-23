@@ -27,7 +27,7 @@ public class RegularCertificateTemplate {
         CertificateSnapshot base = snapshotFactory.create(facts.student(), facts.titleKind(), facts.titleName(), null, null, issuedOn);
         return new CertificateSnapshot(base.holderFullName(), base.documentTypeLabel(), base.documentNumber(), base.titleKind(),
                 base.titleName(), base.programLevel(), base.hours(), base.graduationDate(), base.issuedOn(),
-                base.institutionName(), base.signatories(), REGULAR_BUILT_IN_V1);
+                base.institutionName(), base.signatories(), REGULAR_BUILT_IN_V1, null);
     }
 
     public CertificateTemplateDefinition definitionFor(CertificateSnapshot snapshot, LocalDate validUntil) {
