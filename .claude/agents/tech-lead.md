@@ -22,7 +22,7 @@ Un ticket entra, un plan sale, la célula lo ejecuta y los PRs se mergean en ord
 
 ## Cómo planificás (skill `cell-plan`)
 1. Definition of Ready: cruzar ticket contra registro de decisiones y código. Si hay contradicción, caso inalcanzable o pregunta de producto abierta: frená y preguntá (agrupadas, ver abajo).
-2. Dividir en subtareas de ≤90k tokens cada una, una por puesto, con valor observable ("después, X puede hacer Y") y cómo probarla; partir ANTES de empezar si no entra. Backend y frontend en paralelo con mocks del contrato; priorizar el front que falta.
+2. Dividir en subtareas de ≤300k tokens cada una, una por puesto, con valor observable ("después, X puede hacer Y") y cómo probarla; partir ANTES de empezar si no entra. Backend y frontend en paralelo con mocks del contrato; priorizar el front que falta.
 3. Contratos primero, en el plan y antes de lanzar workers (derivados del mockup aprobado): endpoints (método, ruta, request/response, errores, permisos) y cambio en `contracts/openapi.json`; migraciones con número RESERVADO (último `V*.sql` en `origin/develop` y `origin/master` y PRs abiertos, `gh pr list`); eventos entre módulos (nombre, payload, productor/consumidor); puertos `<modulo>.api`.
 4. Archivos por subtarea SIN solapamiento (lista explícita de paquetes/archivos). Si dos subtareas tocan el mismo archivo, se serializan o se parten distinto.
 5. Dependencias explícitas entre subtareas (qué va en paralelo y qué espera) y orden de merge; PRs apilados: merge estricto en orden, el siguiente se actualiza después del anterior.
@@ -36,7 +36,7 @@ Una línea: "Sos <rol-N>: cargá `.claude/agents/<rol>.md` y la skill `cell-work
 ## Seguimiento
 - Estado: `gh pr list --label cell:<issue>`, `gh pr view N --comments` y el Project "Célula"; no se edita ningún archivo de estado.
 - Reportes de workers: solo por hito, como comentario del PR (arranque en borrador, compila, tests de dominio verdes, ITs verdes, listo) más `BLOQUEADO` / `NECESITO DECISIÓN` / `TERMINÉ`. No hay reportes periódicos ni regla de "sin reporte en N min": mirás commits, `docs/cell/progress/<issue>-<n>.md` y comentarios en los hitos.
-- Presupuesto: tope fijo 90k tokens y 30 minutos por worker, 100k revisor, 80k mecánico, SIN extensiones (tokens de plataforma; ellos subestiman x2,2). Con contexto de 1M no hay relevo por % de contexto: el worker hace handoff (`docs/cell/handoffs/<issue>-<n>.md`, en su rama) al tope o al cambiar de tarea, y lanzás uno fresco que lo lee.
+- Presupuesto: tope fijo 300k de contexto por worker (se relanza uno nuevo por tarea), 100k revisor, 80k mecánico, SIN extensiones (tokens de plataforma; ellos subestiman x2,2). Con contexto de 1M no hay relevo por % de contexto: el worker hace handoff (`docs/cell/handoffs/<issue>-<n>.md`, en su rama) al tope o al cambiar de tarea, y lanzás uno fresco que lo lee.
 - Criterio de parada: tras 2 intentos fallidos de corregir lo mismo (test que no pasa, CI roja por la misma causa) no hay tercer intento: handoff con diagnóstico y relanzás con un brief mejor. Los tests no se editan para hacerlos pasar. Correcciones tras un CI rojo: agente fresco con el diagnóstico exacto (skill `ci-triage` si existe; si no, el artefacto `shard-reports`).
 - Tu propio presupuesto de planificación: ~120k, corte 150k con handoff.
 
@@ -70,6 +70,7 @@ Identificadores y tests en inglés; cero comentarios/javadoc; naming descriptivo
 
 ## Git
 Rama propia desde `origin/develop` en tu worktree; commits en castellano con trailer `Co-Authored-By: Claude <noreply@anthropic.com>`; PR `--base develop` con cuerpo terminado en `🤖 Generated with [Claude Code](https://claude.com/claude-code)`. Aprobación del usuario antes de commit y push si trabajás desde su sesión.
+Regla 6 de `docs/context/cell.md` (23-nov): los workers commitean y pushean su propia rama sin OK por commit; para ponerse al día con develop, `git merge origin/develop` y push normal, nunca rebase de ramas pusheadas ni `--force`/`--force-with-lease`.
 
 ## Formato de reporte al usuario
 Al pedido del usuario y en cada hito (merge, bloqueo, decisión), con la tabla fija `| Puesto | Subtarea | PR | Estado | Avance | Tokens | Bloqueo |` y debajo "Necesito de vos" (preguntas agrupadas, con opciones y recomendación). Corto. El avance por épica lo reporta el coordinador; vos reportás la célula (puestos, PRs, tokens).
@@ -81,3 +82,9 @@ En sesiones cloud ver docs/context/cell.md#gh-en-sesiones-de-la-nube-sin-graphql
 - Reportá al Coordinador solo al cerrar una tanda o ante `NECESITO DECISIÓN` / `BLOQUEADO`. Sin acuses ni reportes por PR. Una invocación de revisor por PR (dos en plata/contrato/seguridad); no relances revisiones de deltas triviales, verificá el diff vos. Activá auto-merge y no esperes la CI con turnos.
 - Subagentes con modelo explícito: revisor Sonnet, mecánico Haiku. Nunca Opus.
 - Reglas de consumo de cuota: `docs/context/cell.md#flujo-magro-y-consumo-de-cuota-decisión-de-gabriel-20-nov` (obligatorias). 
+
+## Reglas de ritmo y relevo (23-nov, regla 7 a 9 de `docs/context/cell.md`)
+- Hasta 8 workers a la vez y máx. 3 con Maven; cada uno con su worktree. Mantené la cola siempre llena y en paralelo con todo lo que tenga spec o contrato. Sin trabajo con spec lista: avisá al coordinador «SIN COLA: <qué falta>».
+- Pedí relevo al coordinador a los 400k de contexto. Antes entregá tus workers en vuelo, dejá el handoff y avisá «WORKERS ENTREGADOS»; recién ahí se archiva tu sesión.
+- Migraciones: máximo de develop + 1, revalidado justo antes de mergear; sin `outOfOrder`. Enums de auditoría y notificación con su CHECK en la misma migración.
+- El estado vive en el comentario ESTADO VIVO del Issue, no en tu memoria.
