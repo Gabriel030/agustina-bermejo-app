@@ -12,7 +12,9 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
+import com.red_escuela.backend.graduation.procedure.specialist.ApprovedProcedureSources;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
@@ -73,6 +75,8 @@ class ApprovedProceduresIntegrationTest extends AbstractIntegrationTest {
     private RoleRepository roleRepository;
     @Autowired
     private FeatureSnapshotHolder snapshotHolder;
+    @Autowired
+    private ApprovedProcedureSources approvedSources;
     @Autowired
     private RegularStudentCertificateRepository certificateRepository;
 
@@ -273,5 +277,24 @@ class ApprovedProceduresIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.eligible").value(false))
                 .andExpect(jsonPath("$.summary").value("Este trámite todavía no está disponible"))
                 .andExpect(jsonPath("$.reasons").isEmpty());
+    }
+
+    @Test
+    void expiredDocumentIsListedButCannotBeRedownloaded() throws Exception {
+        long id = issueRegularCertificate();
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 12, 31, 10, 0));
+        long auditsBefore = downloadAudits(id);
+
+        mockMvc.perform(get("/me/procedures/approved/REGULAR_STUDENT_CERTIFICATE/" + id + "/pdf")
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CERTIFICATE_EXPIRED"));
+
+        assertThat(downloadAudits(id)).isEqualTo(auditsBefore);
+    }
+
+    @Test
+    void everyIssuedDocumentTypeThatExistsTodayIsRegisteredAsASource() {
+        assertThat(approvedSources.forType(CertificateDocumentType.REGULAR_STUDENT_CERTIFICATE)).isPresent();
+        assertThat(approvedSources.forType(CertificateDocumentType.GRADUATION_CERTIFICATE)).isPresent();
     }
 }

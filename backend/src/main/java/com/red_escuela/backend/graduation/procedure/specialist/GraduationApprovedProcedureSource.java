@@ -5,9 +5,10 @@ import com.red_escuela.backend.graduation.certificate.dto.DocumentOrigin;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificate;
-import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
+import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateNotFoundException;
+import com.red_escuela.backend.graduation.certificate.exception.GraduationCertificateRevokedException;
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
-import com.red_escuela.backend.graduation.certificate.specialist.OwnGraduationCertificateDownloader;
+import com.red_escuela.backend.graduation.certificate.specialist.GraduationCertificatePdfProvider;
 import com.red_escuela.backend.graduation.procedure.dto.ApprovedProcedureResponse;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureDocumentPdf;
 import java.util.List;
@@ -20,11 +21,11 @@ public class GraduationApprovedProcedureSource implements ApprovedProcedureSourc
     private static final String TITLE = "Certificado de egreso";
 
     private final GraduationCertificateRepository repository;
-    private final OwnGraduationCertificateDownloader downloader;
+    private final GraduationCertificatePdfProvider pdfProvider;
 
-    public GraduationApprovedProcedureSource(GraduationCertificateRepository repository, OwnGraduationCertificateDownloader downloader) {
+    public GraduationApprovedProcedureSource(GraduationCertificateRepository repository, GraduationCertificatePdfProvider pdfProvider) {
         this.repository = repository;
-        this.downloader = downloader;
+        this.pdfProvider = pdfProvider;
     }
 
     @Override
@@ -41,8 +42,15 @@ public class GraduationApprovedProcedureSource implements ApprovedProcedureSourc
     }
 
     @Override
+    @Transactional
     public ProcedureDocumentPdf pdfOf(Long id, Long studentId) {
-        GraduationCertificatePdf pdf = downloader.download(id).orElseThrow(CertificatePdfIntegrityMismatchException::new);
+        GraduationCertificate certificate = repository.findById(id)
+                .filter(found -> found.getStudentId().equals(studentId))
+                .orElseThrow(() -> new GraduationCertificateNotFoundException(id));
+        if (!certificate.isRevocable()) {
+            throw new GraduationCertificateRevokedException();
+        }
+        GraduationCertificatePdf pdf = pdfProvider.pdfOf(id);
         return new ProcedureDocumentPdf(pdf.code(), pdf.content());
     }
 
