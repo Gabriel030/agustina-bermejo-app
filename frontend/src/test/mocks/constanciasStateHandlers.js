@@ -89,6 +89,10 @@ export const documentTemplatePublishIncompleteHandler = http.post(`${API}/certif
   failure(422, 'TEMPLATE_INCOMPLETE'),
 );
 
+export const documentTemplatePublishSignatureMissingHandler = http.post(`${API}/certificate-templates/documents/:documentType/publish`, () =>
+  failure(422, 'TEMPLATE_SIGNATURE_MISSING'),
+);
+
 export const ownDocumentLimitReachedHandler = http.post(`${API}/me/documents/:type`, () =>
   failure(429, 'ISSUANCE_LIMIT_REACHED'),
 );

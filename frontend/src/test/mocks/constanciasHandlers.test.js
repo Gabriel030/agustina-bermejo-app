@@ -114,6 +114,7 @@ describe('constancias state handlers', () => {
     ['changeSectionHasRecordsHandler', 'POST', '/me/section-enrollments/1/change-section', 409, 'code', 'SECTION_HAS_RECORDS', { newSectionId: 2 }],
     ['documentTemplateForbiddenHandler', 'PUT', '/certificate-templates/documents/EXAM_CERTIFICATE/draft', 403, 'code', 'FORBIDDEN', { content: certificateTemplateContent() }],
     ['documentTemplatePublishIncompleteHandler', 'POST', '/certificate-templates/documents/EXAM_CERTIFICATE/publish', 422, 'code', 'TEMPLATE_INCOMPLETE'],
+    ['documentTemplatePublishSignatureMissingHandler', 'POST', '/certificate-templates/documents/EXAM_CERTIFICATE/publish', 422, 'code', 'TEMPLATE_SIGNATURE_MISSING'],
   ];
 
   it.each(cases)('%s', async (name, method, path, status, field, value, body) => {

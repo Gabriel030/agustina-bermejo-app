@@ -2890,7 +2890,7 @@
             "type" : [ "string", "null" ]
           },
           "introText" : {
-            "maxLength" : 160,
+            "maxLength" : 240,
             "minLength" : 0,
             "type" : [ "string", "null" ]
           },
@@ -6615,6 +6615,12 @@
       },
       "DocumentTemplateResponse" : {
         "properties" : {
+          "allowedMarkers" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "documentType" : {
             "enum" : [ "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE" ],
             "type" : "string"
@@ -6637,7 +6643,7 @@
             } ]
           }
         },
-        "required" : [ "documentType", "hasUnpublishedChanges" ],
+        "required" : [ "allowedMarkers", "documentType", "hasUnpublishedChanges" ],
         "type" : "object"
       },
       "DocumentationSummary" : {
@@ -12145,9 +12151,17 @@
       },
       "PreviewCertificateTemplateRequest" : {
         "properties" : {
+          "content" : {
+            "$ref" : "#/components/schemas/CertificateTemplateContent"
+          },
           "source" : {
             "enum" : [ "PUBLISHED", "DRAFT" ],
             "type" : "string"
+          },
+          "versionNumber" : {
+            "exclusiveMinimum" : 0,
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
           }
         },
         "required" : [ "source" ],
@@ -14856,6 +14870,11 @@
       },
       "SaveCertificateTemplateDraftRequest" : {
         "properties" : {
+          "basedOnVersionNumber" : {
+            "exclusiveMinimum" : 0,
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
           "content" : {
             "$ref" : "#/components/schemas/CertificateTemplateContent"
           }

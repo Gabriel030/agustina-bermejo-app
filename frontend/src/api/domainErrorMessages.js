@@ -319,6 +319,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   GRADUATION_CERTIFICATE_NOT_AVAILABLE: 'El certificado todavía no fue emitido.',
   TEMPLATE_UNKNOWN_MARKER: 'La plantilla usa un marcador que no existe.',
   TEMPLATE_INCOMPLETE: 'La plantilla está incompleta: completá todos los campos antes de publicar.',
+  TEMPLATE_SIGNATURE_MISSING: 'Todos los firmantes de la plantilla deben tener la firma cargada para publicarla.',
   TEMPLATE_NOTHING_TO_DISCARD: 'No hay cambios para descartar.',
   TEMPLATE_NOTHING_TO_PUBLISH: 'No hay cambios para publicar.',
   TEMPLATE_IMAGE_INVALID: 'La imagen debe ser un PNG de hasta 2 MB.',

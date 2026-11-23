@@ -686,6 +686,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
 | `TEMPLATE_PERSON_NOT_FOUND` | no | `TemplatePersonNotFoundException` | notification |
+| `TEMPLATE_SIGNATURE_MISSING` | no | `TemplateSignatureMissingException` | graduation |
 | `TEMPLATE_UNKNOWN_MARKER` | no | `TemplateUnknownMarkerException` | graduation |
 | `UNKNOWN_PERMISSION_CODE` | no | `UnknownPermissionCodeException` | identity |
 | `UNKNOWN_PERMISSION_MODULE` | no | `UnknownPermissionModuleException` | identity |
