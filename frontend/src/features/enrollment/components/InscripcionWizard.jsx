@@ -20,7 +20,7 @@ import {
   useInscribirmeCurso,
   useActualizarPerfilPropio,
 } from '@/features/enrollment/hooks/useCatalogo';
-import { BankAccountDetails } from '@/components/catalogo/BankAccountDetails';
+import { BankAccountDetails } from './BankAccountDetails';
 import { BankTransferReceiptFields } from '@/components/billing/BankTransferReceiptFields';
 import { useReceiptFields } from '@/components/billing/useReceiptFields';
 import { buildCourseEnrollmentBody, receiptFormErrors, receiptSubmissionFailure, todayIsoDate } from '@/lib/bankTransferReceipt';
