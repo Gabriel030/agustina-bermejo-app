@@ -4,8 +4,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { REQUIRED_MESSAGE, fieldError, markersOf, textFieldsOf } from '@/features/graduation/certificates/lib/certificateTemplate';
 
-export function TemplateTextFields({ templateKey, form, readOnly, showRequired, onChange }) {
-  const markers = markersOf(templateKey);
+export function TemplateTextFields({ templateKey, allowedMarkers, form, readOnly, showRequired, onChange }) {
+  const markers = markersOf(templateKey, allowedMarkers);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-1.5">

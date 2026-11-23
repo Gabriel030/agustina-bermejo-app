@@ -19,7 +19,6 @@ export const TEMPLATE_TABS = [
     group: 'DOCUMENTS',
     signatoryDocumentType: 'REGULAR_STUDENT_CERTIFICATE',
     documentName: 'Constancia de alumno regular',
-    markers: ['holder', 'documentType', 'documentNumber', 'program', 'academicYear', 'issuedOn'],
   },
   {
     value: 'EXAM_REGISTRATION_CERTIFICATE',
@@ -27,7 +26,6 @@ export const TEMPLATE_TABS = [
     group: 'DOCUMENTS',
     signatoryDocumentType: 'EXAM_REGISTRATION_CERTIFICATE',
     documentName: 'Constancia de inscripción a examen',
-    markers: ['holder', 'documentType', 'documentNumber', 'subject', 'examDate', 'issuedOn'],
   },
   {
     value: 'EXAM_CERTIFICATE',
@@ -35,7 +33,6 @@ export const TEMPLATE_TABS = [
     group: 'DOCUMENTS',
     signatoryDocumentType: 'EXAM_CERTIFICATE',
     documentName: 'Constancia de examen rendido',
-    markers: ['holder', 'documentType', 'documentNumber', 'subject', 'examDate', 'issuedOn'],
   },
   {
     value: 'APPROVED_SUBJECTS_CERTIFICATE',
@@ -43,7 +40,6 @@ export const TEMPLATE_TABS = [
     group: 'DOCUMENTS',
     signatoryDocumentType: 'APPROVED_SUBJECTS_CERTIFICATE',
     documentName: 'Constancia de materias aprobadas',
-    markers: ['holder', 'documentType', 'documentNumber', 'program', 'approvedCount', 'issuedOn'],
   },
 ];
 
@@ -66,7 +62,7 @@ export const REQUIRED_MESSAGE = 'Obligatorio.';
 const EGRESS_TEXT_FIELDS = [
   { name: 'instituteName', label: 'Nombre del instituto', max: 120, required: true },
   { name: 'title', label: 'Título del certificado', max: 80, required: true },
-  { name: 'introText', label: 'Texto de apertura', max: 160 },
+  { name: 'introText', label: 'Texto de apertura', max: 240 },
   { name: 'approvalText', label: 'Texto de aprobación', max: 160, required: true },
   { name: 'dictationText', label: 'Texto de dictado y evaluación', max: 160 },
   { name: 'qrLabel', label: 'Rótulo del QR', max: 160 },
@@ -76,8 +72,7 @@ const EGRESS_TEXT_FIELDS = [
 const DOCUMENT_TEXT_FIELDS = [
   { name: 'instituteName', label: 'Nombre del instituto', max: 120, required: true },
   { name: 'title', label: 'Título del documento', max: 80, required: true },
-  { name: 'introText', label: 'Texto de apertura', max: 160 },
-  { name: 'approvalText', label: 'Texto principal', max: 160, required: true, multiline: true },
+  { name: 'introText', label: 'Texto principal', max: 240, required: true, multiline: true },
   { name: 'qrLabel', label: 'Rótulo del QR', max: 160 },
   { name: 'footerLegend', label: 'Leyenda al pie', max: 240, multiline: true },
 ];
@@ -88,8 +83,8 @@ export function textFieldsOf(value) {
   return tabOf(value).kind ? EGRESS_TEXT_FIELDS : DOCUMENT_TEXT_FIELDS;
 }
 
-export function markersOf(value) {
-  return tabOf(value).markers;
+export function markersOf(value, allowedMarkers) {
+  return allowedMarkers ?? tabOf(value).markers ?? [];
 }
 
 const MARKER_PATTERN = /\{([^{}]*)\}/g;
@@ -150,9 +145,9 @@ export function fieldError(field, value, markers) {
   return null;
 }
 
-export function validateForm(form, templateKey) {
+export function validateForm(form, templateKey, allowedMarkers) {
   const errors = {};
-  const markers = markersOf(templateKey);
+  const markers = markersOf(templateKey, allowedMarkers);
   textFieldsOf(templateKey).forEach((field) => {
     const value = form[field.name].trim();
     const message = field.required && value === '' ? REQUIRED_MESSAGE : fieldError(field, value, markers);
@@ -194,11 +189,11 @@ export function selectedSignatoriesOf(form, signatories) {
     .map((id) => ({ id, signatory: (signatories ?? []).find((candidate) => candidate.id === id) ?? null }));
 }
 
-export function publishBlockerOf({ template, dirty, form, signatories, templateKey }) {
-  if (dirty) return Object.keys(validateForm(form, templateKey)).length > 0 ? 'Corregí los errores para guardar.' : 'Guardá el borrador para poder publicar.';
+export function publishBlockerOf({ template, dirty, form, signatories, templateKey, allowedMarkers }) {
+  if (dirty) return Object.keys(validateForm(form, templateKey, allowedMarkers)).length > 0 ? 'Corregí los errores para guardar.' : 'Guardá el borrador para poder publicar.';
   if (!template.draft) return null;
   if (signatories == null) return 'Esperá a que carguen los firmantes para poder publicar.';
-  const errors = validateForm(form, templateKey);
+  const errors = validateForm(form, templateKey, allowedMarkers);
   if (errors.signatory1Id && Object.keys(errors).length === 1) return 'Elegí al menos un firmante para poder publicar.';
   if (Object.keys(errors).length > 0) return 'Completá los datos obligatorios y corregí los errores para poder publicar.';
   const chosen = selectedSignatoriesOf(form, signatories);
@@ -208,8 +203,8 @@ export function publishBlockerOf({ template, dirty, form, signatories, templateK
   return null;
 }
 
-export function canPublish({ template, dirty, form, signatories, templateKey }) {
-  return Boolean(template.draft) && publishBlockerOf({ template, dirty, form, signatories, templateKey }) === null;
+export function canPublish({ template, dirty, form, signatories, templateKey, allowedMarkers }) {
+  return Boolean(template.draft) && publishBlockerOf({ template, dirty, form, signatories, templateKey, allowedMarkers }) === null;
 }
 
 export function previewSourceOf({ showDraft, canSeeDraft, template }) {

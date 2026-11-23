@@ -222,6 +222,30 @@ describe('CertificateTemplateEditor history, publish and preview', () => {
     expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument();
   });
 
+  it('sends the version used as base when saving the draft', async () => {
+    const user = userEvent.setup({ delay: null });
+    const bodies = [];
+    withVersions();
+    server.use(
+      http.get(`${API}/certificate-templates/:kind/versions/:number`, () =>
+        HttpResponse.json(certificateTemplateVersion({ versionNumber: 2, content: certificateTemplateContent({ title: 'Título de la v2' }) })),
+      ),
+      http.put(`${API}/certificate-templates/:kind/draft`, async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json(draftVersion());
+      }),
+    );
+    renderPage();
+
+    await openHistory(user);
+    await user.click(await screen.findByRole('button', { name: 'Usar la versión 2 como base' }));
+    await user.click(await screen.findByRole('button', { name: 'Guardar borrador' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0].basedOnVersionNumber).toBe(2);
+    expect(bodies[0].content.title).toBe('Título de la v2');
+  });
+
   it('asks before replacing the saved draft when using a version as base', async () => {
     const user = userEvent.setup({ delay: null });
     withVersions();
@@ -375,6 +399,20 @@ describe('CertificateTemplateEditor history, publish and preview', () => {
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Publicar v4' }));
 
     expect(await screen.findByText(/La plantilla está incompleta/)).toBeInTheDocument();
+  });
+
+  it('shows the domain message when a signatory has no signature at publish time', async () => {
+    const user = userEvent.setup({ delay: null });
+    capturePublish(() => HttpResponse.json(errorBody('TEMPLATE_SIGNATURE_MISSING'), { status: 422 }));
+    withDraft();
+    renderPage();
+
+    const publish = await screen.findByRole('button', { name: 'Publicar' });
+    await waitFor(() => expect(publish).toBeEnabled());
+    await user.click(publish);
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Publicar v4' }));
+
+    expect(await screen.findByText(/deben tener la firma cargada/)).toBeInTheDocument();
   });
 
   it('shows the domain message when a signatory became inactive at publish time', async () => {

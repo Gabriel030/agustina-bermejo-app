@@ -23,7 +23,7 @@ import {
 const EGRESS_MARKERS = markersOf('PROGRAM');
 
 function validForm(overrides = {}) {
-  return { ...emptyForm(), instituteName: 'Instituto', title: 'Título', approvalText: 'Texto', signatory1Id: 1, ...overrides };
+  return { ...emptyForm(), instituteName: 'Instituto', title: 'Título', approvalText: 'Texto', introText: 'Texto', signatory1Id: 1, ...overrides };
 }
 
 describe('certificateTemplate lib', () => {
@@ -48,10 +48,10 @@ describe('certificateTemplate lib', () => {
   });
 
   it('gives each document its own markers and text fields', () => {
-    expect(markersOf('EXAM_CERTIFICATE')).toEqual(expect.arrayContaining(['subject', 'examDate']));
-    expect(markersOf('EXAM_CERTIFICATE')).not.toContain('program');
-    expect(markersOf('APPROVED_SUBJECTS_CERTIFICATE')).toEqual(expect.arrayContaining(['program', 'approvedCount']));
-    expect(markersOf('REGULAR_STUDENT_CERTIFICATE')).toEqual(expect.arrayContaining(['program', 'academicYear']));
+    expect(markersOf('EXAM_CERTIFICATE', ['holder', 'subjectName', 'examDate'])).toEqual(['holder', 'subjectName', 'examDate']);
+    expect(markersOf('PROGRAM')).toContain('titleName');
+    expect(markersOf('EXAM_CERTIFICATE')).toEqual([]);
+    expect(textFieldsOf('EXAM_CERTIFICATE').find((field) => field.name === 'introText')).toMatchObject({ label: 'Texto principal', max: 240 });
     expect(textFieldsOf('EXAM_CERTIFICATE').map((field) => field.name)).not.toContain('dictationText');
     expect(textFieldsOf('PROGRAM').map((field) => field.name)).toContain('dictationText');
   });
@@ -76,9 +76,9 @@ describe('certificateTemplate lib', () => {
   });
 
   it('validates markers against the document of the tab', () => {
-    const form = validForm({ approvalText: '{subject}' });
-    expect(validateForm(form, 'EXAM_CERTIFICATE').approvalText).toBeUndefined();
-    expect(validateForm(form, 'REGULAR_STUDENT_CERTIFICATE').approvalText).toBe('Marcador no permitido: {subject}.');
+    const form = validForm({ introText: '{subjectName}' });
+    expect(validateForm(form, 'EXAM_CERTIFICATE', ['subjectName']).introText).toBeUndefined();
+    expect(validateForm(form, 'REGULAR_STUDENT_CERTIFICATE', ['titleName']).introText).toBe('Marcador no permitido: {subjectName}.');
   });
 
   it('validates the length on the trimmed value', () => {

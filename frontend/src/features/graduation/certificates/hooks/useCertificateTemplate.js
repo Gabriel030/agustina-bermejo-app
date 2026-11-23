@@ -15,7 +15,11 @@ export function useCertificateTemplate(templateKey) {
 export function useSaveTemplateDraft(templateKey) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (content) => apiFetch(`${templatePath(templateKey)}/draft`, { method: 'PUT', body: JSON.stringify({ content }) }),
+    mutationFn: ({ content, basedOnVersionNumber }) =>
+      apiFetch(`${templatePath(templateKey)}/draft`, {
+        method: 'PUT',
+        body: JSON.stringify({ content, ...(basedOnVersionNumber ? { basedOnVersionNumber } : {}) }),
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [...TEMPLATE_KEY, templateKey] }),
   });
 }

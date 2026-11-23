@@ -82,6 +82,7 @@ export function TemplatePanel({ templateKey, readOnly, edit, onEdit, onSettled }
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [basedOnVersionNumber, setBasedOnVersionNumber] = useState(null);
   const historyFocus = useReturnFocus();
   const previewFocus = useReturnFocus();
   const publishFocus = useReturnFocus();
@@ -94,13 +95,13 @@ export function TemplatePanel({ templateKey, readOnly, edit, onEdit, onSettled }
   const baseline = baselineOf(data);
   const form = edit ?? baseline;
   const dirty = !isSameForm(form, baseline);
-  const errors = validateForm(form, templateKey);
+  const errors = validateForm(form, templateKey, data.allowedMarkers);
   const hasErrors = Object.keys(errors).length > 0;
   const status = statusOf({ template: data, dirty });
   const neverConfigured = !data.published && !data.draft;
   const showRequired = dirty || !neverConfigured;
-  const blocker = publishBlockerOf({ template: data, dirty, form, signatories: signatories.data, templateKey });
-  const publishable = canPublish({ template: data, dirty, form, signatories: signatories.data, templateKey });
+  const blocker = publishBlockerOf({ template: data, dirty, form, signatories: signatories.data, templateKey, allowedMarkers: data.allowedMarkers });
+  const publishable = canPublish({ template: data, dirty, form, signatories: signatories.data, templateKey, allowedMarkers: data.allowedMarkers });
   const hint = notice ?? blocker ?? defaultHintOf({ template: data });
   const nextVersion = data.draft?.versionNumber;
 
@@ -113,7 +114,8 @@ export function TemplatePanel({ templateKey, readOnly, edit, onEdit, onSettled }
   async function saveDraft() {
     setActionError(null);
     try {
-      await save.mutateAsync(contentFromForm(form));
+      await save.mutateAsync({ content: contentFromForm(form), basedOnVersionNumber });
+      setBasedOnVersionNumber(null);
       onSettled();
       setNotice('Borrador guardado.');
     } catch (error) {
@@ -125,6 +127,7 @@ export function TemplatePanel({ templateKey, readOnly, edit, onEdit, onSettled }
     setActionError(null);
     try {
       await discard.mutateAsync();
+      setBasedOnVersionNumber(null);
       onSettled();
       setNotice('Borrador descartado.');
     } catch (error) {
@@ -150,6 +153,7 @@ export function TemplatePanel({ templateKey, readOnly, edit, onEdit, onSettled }
   function useVersionAsBase(baseForm, number) {
     setActionError(null);
     onEdit(isSameForm(baseForm, baseline) ? null : baseForm);
+    setBasedOnVersionNumber(number);
     setNotice(`Cargamos la v${number} como borrador. Guardalo para conservarlo.`);
   }
 
@@ -214,7 +218,7 @@ export function TemplatePanel({ templateKey, readOnly, edit, onEdit, onSettled }
             readOnly={readOnly}
             onChange={(logoImageId) => change({ ...form, logoImageId })}
           />
-          <TemplateTextFields templateKey={templateKey} form={form} readOnly={readOnly} showRequired={showRequired} onChange={change} />
+          <TemplateTextFields templateKey={templateKey} allowedMarkers={data.allowedMarkers} form={form} readOnly={readOnly} showRequired={showRequired} onChange={change} />
         </GlassCard>
 
         <GlassCard className="flex flex-col gap-3 p-4 md:p-5">

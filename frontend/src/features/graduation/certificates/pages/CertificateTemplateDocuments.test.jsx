@@ -22,10 +22,10 @@ vi.mock('@/context/AuthContext', () => ({
 }));
 
 const DOCUMENTS = [
-  { tab: 'Alumno regular', type: 'REGULAR_STUDENT_CERTIFICATE', markers: ['program', 'academicYear'] },
-  { tab: 'Inscripción a examen', type: 'EXAM_REGISTRATION_CERTIFICATE', markers: ['subject', 'examDate'] },
-  { tab: 'Examen rendido', type: 'EXAM_CERTIFICATE', markers: ['subject', 'examDate'] },
-  { tab: 'Materias aprobadas', type: 'APPROVED_SUBJECTS_CERTIFICATE', markers: ['program', 'approvedCount'] },
+  { tab: 'Alumno regular', type: 'REGULAR_STUDENT_CERTIFICATE', markers: ['titleName', 'recipient'] },
+  { tab: 'Inscripción a examen', type: 'EXAM_REGISTRATION_CERTIFICATE', markers: ['subjectName', 'examDate'] },
+  { tab: 'Examen rendido', type: 'EXAM_CERTIFICATE', markers: ['subjectName', 'examDate'] },
+  { tab: 'Materias aprobadas', type: 'APPROVED_SUBJECTS_CERTIFICATE', markers: ['titleName', 'completionPercent'] },
 ];
 
 const draftVersion = (contentOverrides = {}) =>
@@ -109,7 +109,7 @@ describe('CertificateTemplateEditor document tabs', () => {
     expect(requests.some((request) => request.includes(`documentType=${type}`) && request.includes('active=true'))).toBe(true);
     markers.forEach((marker) => expect(screen.getByText(`{${marker}}`)).toBeInTheDocument());
     expect(screen.getByText('Publicada v3')).toBeInTheDocument();
-    expect(screen.getByLabelText('Texto principal')).toHaveValue('ha aprobado la carrera');
+    expect(screen.getByLabelText('Texto principal')).toHaveValue('Se certifica que');
     expect(screen.queryByLabelText('Texto de dictado y evaluación')).not.toBeInTheDocument();
   });
 
@@ -121,9 +121,9 @@ describe('CertificateTemplateEditor document tabs', () => {
     const body = screen.getByLabelText('Texto principal');
     await user.clear(body);
     await user.click(body);
-    await user.paste('{holder} rindió {subject}');
+    await user.paste('{holder} rindió {subjectName}');
 
-    expect(screen.getByText('Marcador no permitido: {subject}.')).toBeInTheDocument();
+    expect(screen.getByText('Marcador no permitido: {subjectName}.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled();
   });
 
@@ -136,13 +136,13 @@ describe('CertificateTemplateEditor document tabs', () => {
     const body = screen.getByLabelText('Texto principal');
     await user.clear(body);
     await user.click(body);
-    await user.paste('{holder} rindió {subject} el {examDate}');
+    await user.paste('{holder} rindió {subjectName} el {examDate}');
     await user.click(screen.getByRole('button', { name: 'Guardar borrador' }));
 
     await waitFor(() => expect(saved).toHaveLength(1));
     expect(saved[0].documentType).toBe('EXAM_CERTIFICATE');
     expect(saved[0].body.content).toMatchObject({
-      approvalText: '{holder} rindió {subject} el {examDate}',
+      introText: '{holder} rindió {subjectName} el {examDate}',
       signatory1Id: 1,
       signatory2Id: 2,
       firstSigner: null,
