@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { AUDIT_ACTION_CODES } from '@/lib/auditLabels';
+import { AUDIT_ACTION_CODES } from '@/features/audit/lib/auditLabels';
 import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';

@@ -50,7 +50,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `Card` [ui] | Sin uso hoy; usar `GlassCard` | — |
 | `DataTable` [shared: table] | Tabla con orden, filtro Excel por columna (`meta.filterable`; no se dibuja con una sola opción), filas expandibles y modo tarjeta bajo 768px | `columns`, `data`, `renderExpanded`, `onRowClick`, `emptyState` |
 | `ProgressBar` [shared] | Barra de avance con `aria-label`; en Mis descuentos con `showValue={false}` y el texto "N de M" en `label` | `value`, `label`, `showValue`, `tone` |
-| `MonthGrid` [shared] | Grilla mensual interactiva (`role="grid"`, un solo tab stop, flechas, Home/End, PageUp/PageDown cambian de mes); la celda es un botón con feriado/estado, hoy y selección | `year`, `month`, `entries` (`{ [iso]: { label, typeLabel, chip, cellClass } }`), `todayIso`, `selectedIso`, `onSelect(iso)`, `onNavigate(year, month)` |
+| `MonthGrid` [academic-structure, `features/academic-structure/components/MonthGrid.jsx`] | Grilla mensual interactiva (`role="grid"`, un solo tab stop, flechas, Home/End, PageUp/PageDown cambian de mes); la celda es un botón con feriado/estado, hoy y selección | `year`, `month`, `entries` (`{ [iso]: { label, typeLabel, chip, cellClass } }`), `todayIso`, `selectedIso`, `onSelect(iso)`, `onNavigate(year, month)` |
 | `MonthPicker` [shared] | Selector de mes (`YYYY-MM`) con mínimo/máximo; en el otorgamiento de descuentos el mínimo es la próxima cuota | `value`, `onChange`, `minMonth`, `maxMonth` |
 
 ## 4. Formularios y entrada
