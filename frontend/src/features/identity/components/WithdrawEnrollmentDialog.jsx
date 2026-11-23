@@ -11,7 +11,7 @@ import {
   reasonError,
   withdrawalDateError,
   withdrawalDateRange,
-} from '@/features/identity/lib/enrollmentChanges';
+} from '@/lib/enrollmentChanges';
 
 const COPY = {
   'withdraw-subject': {
