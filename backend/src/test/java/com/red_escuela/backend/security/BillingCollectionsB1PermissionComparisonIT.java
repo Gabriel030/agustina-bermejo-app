@@ -174,14 +174,16 @@ class BillingCollectionsB1PermissionComparisonIT extends AuthorizationMatrixSupp
     }
 
     @Test
-    void enforceModeKeepsThePaymentApprovalRevocationOutOfTheAdministrativeRoleUntilItIsGranted() throws Exception {
+    void enforceModeKeepsThePaymentApprovalRevocationOutOfEveryRoleButTheDirector() throws Exception {
         setModuleMode("ENFORCE");
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
         AuthorizationMatrixRow row = rowOf("POST /payments/{paymentId}/approval-revocation");
         assertThat(isForbiddenByTheGate(endpoints, row, MatrixRole.ADMINISTRATIVO)).isTrue();
         assertThat(isForbiddenByTheGate(endpoints, row, MatrixRole.DIRECTOR)).isFalse();
-        grantToRole("ADMINISTRATIVO", "billing.revoke_payment_approval");
-        assertThat(isForbiddenByTheGate(endpoints, row, MatrixRole.ADMINISTRATIVO)).isFalse();
+        assertThat(tryToDelegateThroughTheGrid("ADMINISTRATIVO", "billing.revoke_payment_approval")).isEqualTo(422);
+        assertThat(lastResponseBody).contains("FIXED_TO_DIRECTOR_PERMISSION_NOT_EDITABLE");
+        assertThat(isForbiddenByTheGate(endpoints, row, MatrixRole.ADMINISTRATIVO)).isTrue();
+        assertThat(isForbiddenByTheGate(endpoints, row, MatrixRole.DIRECTOR)).isFalse();
     }
 
     @Test

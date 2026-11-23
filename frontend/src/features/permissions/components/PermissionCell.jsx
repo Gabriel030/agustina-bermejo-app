@@ -12,6 +12,12 @@ export function PermissionCell({ permission, role, granted, changed, editable, o
         <Check className="size-4" aria-hidden="true" />
       </span>
     );
+  } else if (permission.fixedToDirector) {
+    control = (
+      <span role="img" aria-label={`${label}: exclusivo del Director, no se puede delegar`} title="Exclusivo del Director: no se puede delegar" className="grid min-h-11 min-w-11 place-items-center text-ink-faint">
+        <Minus className="size-4" aria-hidden="true" />
+      </span>
+    );
   } else if (!editable) {
     control = (
       <span role="img" aria-label={`${label}: ${granted ? 'tiene el permiso' : 'no lo tiene'}`} className={cn('grid min-h-11 min-w-11 place-items-center', granted ? 'text-success' : 'text-ink-faint')}>

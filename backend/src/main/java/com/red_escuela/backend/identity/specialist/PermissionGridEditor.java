@@ -6,6 +6,7 @@ import com.red_escuela.backend.identity.entity.Permission;
 import com.red_escuela.backend.identity.entity.RolePermission;
 import com.red_escuela.backend.identity.exception.DirectorPermissionsNotEditableException;
 import com.red_escuela.backend.identity.exception.DuplicatePermissionGridChangeException;
+import com.red_escuela.backend.identity.exception.FixedToDirectorPermissionNotEditableException;
 import com.red_escuela.backend.identity.exception.PermissionGridForbiddenException;
 import com.red_escuela.backend.identity.exception.SensitivePermissionConfirmationRequiredException;
 import com.red_escuela.backend.identity.exception.UnknownPermissionCodeException;
@@ -74,6 +75,9 @@ public class PermissionGridEditor {
             }
             if (PermissionGridRoles.DIRECTOR.equals(change.role())) {
                 throw new DirectorPermissionsNotEditableException();
+            }
+            if (permission.isFixedToDirector() && change.granted()) {
+                throw new FixedToDirectorPermissionNotEditableException(permission.getCode());
             }
             if (permission.isSensitive() && !sensitiveConfirmed) {
                 throw new SensitivePermissionConfirmationRequiredException(permission.getCode());
