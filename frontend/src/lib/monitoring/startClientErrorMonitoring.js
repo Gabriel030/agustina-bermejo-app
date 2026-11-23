@@ -23,10 +23,10 @@ function captureWithContext(sdk, payload) {
   });
 }
 
-export async function startClientErrorMonitoring({ dsn, environment, release, loadSdk = loadSentrySdk }) {
+export async function startClientErrorMonitoring({ dsn, environment, release, tunnel, loadSdk = loadSentrySdk }) {
   if (!dsn) return false;
   const sdk = await loadSdk();
-  sdk.init(buildClientMonitoringOptions({ dsn, environment, release }));
+  sdk.init(buildClientMonitoringOptions({ dsn, environment, release, tunnel }));
   setClientErrorReporter((payload) => captureWithContext(sdk, payload));
   return true;
 }

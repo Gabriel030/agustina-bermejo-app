@@ -36,3 +36,13 @@ Sobre lo que se conserva se aplica además un enmascarado por patrones (`[redact
 ## Advertencia de privacidad
 
 La allowlist evita que los mensajes de dominio y de base de datos (que pueden traer nombres de alumnos o familias, incluidos menores) salgan del backend. Aun así, los nombres de clase y de constraint son parte del evento. Antes de activar en producción: confirmar el contrato con el proveedor (región, retención, DPA) y no ampliar lo que se envía sin revisión de seguridad.
+
+## Túnel del front (`POST /public/monitoring/tunnel`)
+
+El front puede enviar sus eventos al backend en lugar de hablar directo con GlitchTip/Sentry (opción `tunnel` del SDK, parámetro `tunnel` de `startClientErrorMonitoring`). Así la CSP del front no necesita abrir `connect-src` al host del proveedor.
+
+- Inerte con `SENTRY_DSN` vacío: responde 404 y no abre ninguna conexión.
+- El host destino sale solo del `SENTRY_DSN` del backend (`https://<host>/api/<proyecto>/envelope/`); nunca del cuerpo ni de un header. El `dsn` del encabezado del envelope debe ser idéntico al configurado, si no responde 400.
+- Tope de tamaño: `SENTRY_TUNNEL_MAX_BYTES` (204800 por defecto), 413 si se pasa. No sigue redirecciones; timeouts de 2 s (conexión) y 3 s (lectura); 502 si el upstream no responde.
+- Rate limit por IP compartiendo capacidad con `RATE_LIMIT_REFRESH_PER_MINUTE`; 429 con `Retry-After`.
+- Pendiente (fuera de este PR): cablear `tunnel` en `main.jsx` con su variable de build y ajustar la CSP/Caddy.

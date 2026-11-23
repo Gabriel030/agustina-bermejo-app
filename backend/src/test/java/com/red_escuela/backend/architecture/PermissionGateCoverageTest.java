@@ -47,6 +47,7 @@ class PermissionGateCoverageTest {
             ROOT + ".notification.controller.MeNotificationController",
             ROOT + ".notification.broadcast.controller.ContactConsentController",
             ROOT + ".notification.broadcast.controller.PublicUnsubscribeController",
+            ROOT + ".shared.errortracking.SentryTunnelController",
             ROOT + ".graduation.controller.MeCertificateController",
             ROOT + ".graduation.controller.MeGraduationRequestController",
             ROOT + ".graduation.certificate.controller.MeGraduationCertificateController",
