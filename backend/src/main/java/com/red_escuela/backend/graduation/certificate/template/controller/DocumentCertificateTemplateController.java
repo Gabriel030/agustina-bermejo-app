@@ -22,6 +22,7 @@ import com.red_escuela.backend.graduation.certificate.template.usecase.PreviewDo
 import com.red_escuela.backend.graduation.certificate.template.usecase.PublishDocumentTemplateUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.SaveDraftDocumentTemplateUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.UploadImageDocumentTemplateUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -84,25 +85,25 @@ public class DocumentCertificateTemplateController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public DocumentTemplateResponse get(@PathVariable DocumentTemplateType documentType) {
         return getUseCase.get(documentType);
     }
 
     @GetMapping("/versions")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<CertificateTemplateVersionSummaryResponse> versions(@PathVariable DocumentTemplateType documentType) {
         return listVersionsUseCase.list(documentType);
     }
 
     @GetMapping("/versions/{number}")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public CertificateTemplateVersionResponse version(@PathVariable DocumentTemplateType documentType, @PathVariable int number) {
         return getVersionUseCase.get(documentType, number);
     }
 
     @PutMapping("/draft")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateTemplateVersionResponse saveDraft(@PathVariable DocumentTemplateType documentType,
                                                         @Valid @RequestBody SaveCertificateTemplateDraftRequest request) {
         return saveDraftUseCase.save(documentType, request.content());
@@ -110,13 +111,13 @@ public class DocumentCertificateTemplateController {
 
     @DeleteMapping("/draft")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public void discardDraft(@PathVariable DocumentTemplateType documentType) {
         discardDraftUseCase.discard(documentType);
     }
 
     @PostMapping("/publish")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateTemplateVersionResponse publish(@PathVariable DocumentTemplateType documentType) {
         return publishUseCase.publish(documentType);
     }
@@ -124,7 +125,7 @@ public class DocumentCertificateTemplateController {
     @Operation(description = "Solo PNG, hasta 2 MB (se valida por magic bytes)")
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateTemplateImageResponse uploadImage(@PathVariable DocumentTemplateType documentType,
                                                         @RequestParam TemplateImagePurpose purpose,
                                                         @RequestPart("file") MultipartFile file) throws IOException {
@@ -134,7 +135,7 @@ public class DocumentCertificateTemplateController {
 
     @GetMapping("/images/{id}")
     @ApiResponse(responseCode = "200", content = @Content(mediaType = "image/png", schema = @Schema(type = "string", format = "binary")))
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.templates_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<byte[]> image(@PathVariable DocumentTemplateType documentType, @PathVariable Long id) {
         CertificateTemplateImageContent image = getImageUseCase.get(documentType, id);
         return ResponseEntity.ok()

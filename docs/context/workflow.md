@@ -85,7 +85,7 @@ Claude puede abrir PRs contra `master`. Cadencia obligatoria de releases: con 15
 
 ## 7. CI de GitHub (costo)
 
-`ci.yml` corre en PRs y en push a `develop`/`master` y cancela corridas viejas del mismo PR. Los PRs corren siempre (sin filtro de paths) porque la protección de rama exige los checks `backend` y `frontend`: si el cambio es solo `.md` o `docs/`, `detect-changes.sh` marca todo como no relevante y esos dos checks dan verde en segundos sin correr tests. Los push a `develop`/`master` siguen sin correr con cambios solo de `.md` o `docs/`.
+`ci.yml` corre en PRs y en push a `develop`/`master` y cancela corridas viejas del mismo PR (los push a `develop`/`master` no se cancelan entre sí; ver «Concurrencia» en `testing.md`). Los PRs corren siempre (sin filtro de paths) porque la protección de rama exige los checks `backend` y `frontend`: si el cambio es solo `.md` o `docs/`, `detect-changes.sh` marca todo como no relevante y esos dos checks dan verde en segundos sin correr tests. Los push a `develop`/`master` siguen sin correr con cambios solo de `.md` o `docs/`.
 
 ### Reutilización del resultado del PR en el push a `develop` (REUSE)
 
