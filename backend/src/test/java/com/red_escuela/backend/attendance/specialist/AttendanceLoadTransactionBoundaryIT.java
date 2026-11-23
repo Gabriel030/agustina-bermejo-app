@@ -10,7 +10,6 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
-import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
 import com.red_escuela.backend.attendance.usecase.record.CancelProgramSectionClassSessionCommand;
 import com.red_escuela.backend.attendance.usecase.record.CancelProgramSectionClassSessionUseCase;
@@ -28,6 +27,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.testsupport.FailingEventListenersConfiguration;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -35,9 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.event.EventListener;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -47,44 +45,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
+@Import(FailingEventListenersConfiguration.class)
 @ActiveProfiles("test")
 class AttendanceLoadTransactionBoundaryIT extends AbstractIntegrationTest {
-
-    @TestConfiguration
-    static class FailingListenerConfiguration {
-        @Bean
-        FailingAttendanceListener failingAttendanceListener() {
-            return new FailingAttendanceListener();
-        }
-    }
-
-    static class FailingAttendanceListener {
-        private final AtomicInteger seen = new AtomicInteger();
-        private volatile int failOnNth;
-
-        void failOnNthEvent(int nth) {
-            seen.set(0);
-            this.failOnNth = nth;
-        }
-
-        void stopFailing() {
-            this.failOnNth = 0;
-        }
-
-        @EventListener
-        void onStatusChanged(AttendanceStatusChangedEvent event) {
-            int position = seen.incrementAndGet();
-            if (failOnNth > 0 && position == failOnNth) {
-                throw new IllegalStateException("listener failed on event " + position);
-            }
-        }
-    }
 
     private static final LocalDate CLASS_DAY = LocalDate.of(2026, 3, 11);
 
@@ -95,7 +63,7 @@ class AttendanceLoadTransactionBoundaryIT extends AbstractIntegrationTest {
     private CancelProgramSectionClassSessionUseCase cancelClassSession;
 
     @Autowired
-    private FailingAttendanceListener failingListener;
+    private FailingEventListenersConfiguration.FailingAttendanceListener failingListener;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

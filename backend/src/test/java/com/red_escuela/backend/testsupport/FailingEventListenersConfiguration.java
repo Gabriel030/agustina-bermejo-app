@@ -3,6 +3,7 @@ package com.red_escuela.backend.testsupport;
 import com.red_escuela.backend.announcement.events.AnnouncementDeletedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementPublishedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionRevokedEvent;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigApprovedEvent;
@@ -11,6 +12,8 @@ import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigRejected
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.EventListener;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 @TestConfiguration
 public class FailingEventListenersConfiguration {
@@ -28,6 +31,33 @@ public class FailingEventListenersConfiguration {
     @Bean
     FailingAnnouncementListener failingAnnouncementListener() {
         return new FailingAnnouncementListener();
+    }
+
+    @Bean
+    FailingAttendanceListener failingAttendanceListener() {
+        return new FailingAttendanceListener();
+    }
+
+    public static class FailingAttendanceListener {
+        private final AtomicInteger seen = new AtomicInteger();
+        private volatile int failOnNth;
+
+        public void failOnNthEvent(int nth) {
+            seen.set(0);
+            this.failOnNth = nth;
+        }
+
+        public void stopFailing() {
+            this.failOnNth = 0;
+        }
+
+        @EventListener
+        public void onStatusChanged(AttendanceStatusChangedEvent event) {
+            int position = seen.incrementAndGet();
+            if (failOnNth > 0 && position == failOnNth) {
+                throw new IllegalStateException("listener failed on event " + position);
+            }
+        }
     }
 
     public static class FailingExemptionRevocationListener {
