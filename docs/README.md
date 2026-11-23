@@ -37,6 +37,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [reports/e18-violaciones.md](cell/reports/e18-violaciones.md) | E18 M0: violaciones de Modulith medidas, ciclos, dependencias hacia arriba y procesos a cortar | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
+| [progress/e2-2-4a.md](cell/progress/e2-2-4a.md) | Estado de E2 2.4a (mapa curricular del alumno: correlativas completas e inscripción vigente) | vigente |
 
 ## Release (`docs/release/`)
 
