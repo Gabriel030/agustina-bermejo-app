@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Link, Route, Routes, useLocation, useNavigationType } from 'react-router-dom';
+import { BrowserRouter, Link, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { useDraftExitGuard } from '@/features/attendance/hooks/useDraftExitGuard';
 
@@ -53,5 +53,41 @@ describe('useDraftExitGuard', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Salir' }));
 
     expect(await screen.findByTestId('destination')).toHaveTextContent('PUSH:sin estado');
+  });
+});
+
+function BrowserDraftScreen() {
+  const navigate = useNavigate();
+  const { leaveDialog } = useDraftExitGuard(2, true);
+  return (
+    <>
+      <Routes>
+        <Route path="/borrador" element={<button onClick={() => navigate('/destino')}>Ir al destino</button>} />
+        <Route path="/destino" element={<h2>Pantalla destino</h2>} />
+      </Routes>
+      {leaveDialog}
+    </>
+  );
+}
+
+describe('useDraftExitGuard with the browser back button', () => {
+  it('asks before the back button leaves the draft and completes it when confirmed', async () => {
+    window.history.replaceState(null, '', '/borrador');
+    const user = userEvent.setup();
+    render(
+      <BrowserRouter>
+        <BrowserDraftScreen />
+      </BrowserRouter>,
+    );
+    await user.click(await screen.findByRole('button', { name: 'Ir al destino' }));
+    expect(await screen.findByRole('heading', { name: 'Pantalla destino' })).toBeInTheDocument();
+
+    window.history.back();
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() => expect(window.location.pathname).toBe('/destino'));
+    await user.click(within(dialog).getByRole('button', { name: 'Salir' }));
+
+    await waitFor(() => expect(window.location.pathname).toBe('/borrador'));
+    expect(await screen.findByRole('button', { name: 'Ir al destino' })).toBeInTheDocument();
   });
 });
