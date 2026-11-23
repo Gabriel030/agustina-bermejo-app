@@ -24,7 +24,7 @@ const examBoard = (overrides) => ({
   id: 9,
   status: 'OPEN',
   subjectName: 'Anatomía II',
-  examDate: '2026-11-18T09:00:00',
+  examDate: '2020-11-18T09:00:00',
   cancelReason: null,
   canceledAt: null,
   classroom: null,
@@ -53,7 +53,7 @@ const registrations = [
     enrollmentId: 5,
     status: 'WITHDRAWN',
     score: 0,
-    examBoard: examBoard({ id: 10, subjectName: 'Química', examDate: '2026-11-10T09:00:00' }),
+    examBoard: examBoard({ id: 10, subjectName: 'Química', examDate: '2020-11-10T09:00:00' }),
   },
 ];
 
