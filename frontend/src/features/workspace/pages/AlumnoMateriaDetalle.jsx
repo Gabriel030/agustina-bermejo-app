@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Clock, Flag, Star, UserX, XCircle } from 'lucide-react';
+import { CheckCircle2, CircleHelp, Clock, Flag, Star, UserX, XCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -27,6 +27,8 @@ const BADGE_ESTADO = {
   FAILED: { label: 'Desaprobada', tone: 'danger', Icon: XCircle },
   WITHDRAWN: { label: 'De baja', tone: 'neutral', Icon: UserX },
 };
+
+const ESTADO_DESCONOCIDO = { label: 'Estado desconocido', tone: 'neutral', Icon: CircleHelp };
 
 export function AlumnoMateriaDetalle() {
   const { id } = useParams();
@@ -88,7 +90,7 @@ export function AlumnoMateriaDetalle() {
     );
   }
 
-  const badge = BADGE_ESTADO[inscripcion.status] ?? { label: 'Sin estado', tone: 'neutral' };
+  const badge = BADGE_ESTADO[inscripcion.status] ?? ESTADO_DESCONOCIDO;
   const puedeDarseDeBaja = ESTADOS_QUE_ADMITEN_BAJA.has(inscripcion.status);
   const { columnas, extras } = mapearNotasAColumnas(notas);
 

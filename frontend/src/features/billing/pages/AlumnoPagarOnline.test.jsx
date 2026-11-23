@@ -5,7 +5,7 @@ import { Routes, Route } from 'react-router-dom';
 import { toast } from 'sonner';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
+import { AlumnoPagarOnline } from '@/features/billing/pages/AlumnoPagarOnline';
 
 const API = 'http://localhost:8080';
 

@@ -1,5 +1,5 @@
 import { GlassCard } from '@/components/GlassCard';
-import { AmountBreakdown } from '@/components/alumno/AmountBreakdown';
+import { AmountBreakdown } from './AmountBreakdown';
 import { ADJUSTMENT_TYPE_LABELS, formatMoney, invoiceConcept } from '@/lib/billing';
 import { moneyValue } from '@/lib/utils';
 

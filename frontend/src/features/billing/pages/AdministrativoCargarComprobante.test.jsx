@@ -7,7 +7,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { invoiceFixture } from '@/test/fixtures/invoices';
-import { AdministrativoCargarComprobante } from '@/pages/AdministrativoCargarComprobante';
+import { AdministrativoCargarComprobante } from '@/features/billing/pages/AdministrativoCargarComprobante';
 import { studentFixture } from '@/test/fixtures/students';
 
 vi.mock('@/context/AuthContext', () => ({

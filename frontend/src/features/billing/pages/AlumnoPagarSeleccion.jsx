@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { StatusPill } from '@/components/StatusPill';
 import { cn } from '@/lib/utils';
 import { usePaymentReturn } from '@/hooks/usePaymentReturn';
-import { InvoiceSummary } from '@/components/alumno/InvoiceSummary';
+import { InvoiceSummary } from '@/features/billing/components/InvoiceSummary';
 import { usePaymentConfig, usePriceBreakdown } from '@/hooks/useBilling';
 
 const PAYABLE_STATUSES = ['PENDING', 'OVERDUE'];

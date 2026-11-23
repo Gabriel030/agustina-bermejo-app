@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
+import { InvoiceDetail } from '@/features/billing/components/InvoiceDetail';
 import { invoiceFixture } from '@/test/fixtures/invoices';
 
 function multiLineInvoice() {

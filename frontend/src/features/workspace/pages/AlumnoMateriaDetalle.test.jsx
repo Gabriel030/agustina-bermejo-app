@@ -68,6 +68,12 @@ describe('AlumnoMateriaDetalle', () => {
     expect(screen.queryByText(/EXAM/)).not.toBeInTheDocument();
   });
 
+  it('shows a neutral badge instead of crashing when the enrollment status is unknown', async () => {
+    renderDetail('SOME_FUTURE_STATUS');
+    expect(await screen.findByText('Didáctica General')).toBeInTheDocument();
+    expect(screen.getByText('Estado desconocido')).toBeInTheDocument();
+  });
+
   it('shows the error state and reloads the enrollments on retry', async () => {
     let calls = 0;
     server.use(

@@ -39,7 +39,7 @@ function withData(built) {
 }
 
 export function MetricPanel({ panel, filters, month, className }) {
-  const query = useMonthlyMetric(panel.id, filters, panel.basePath);
+  const query = useMonthlyMetric(panel.id, panel.currencyScoped === false ? { ...filters, currency: undefined } : filters, panel.basePath);
   const metric = query.data;
   const unavailable = metric && !metric.available ? panel.unavailableText : undefined;
   const built = useMemo(() => (metric?.available ? withData(panel.build(metric)) : null), [panel, metric]);
