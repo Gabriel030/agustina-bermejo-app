@@ -4,6 +4,10 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.identity.api.EmailRecipient;
+import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.shared.domain.EmailAddress;
+import java.util.Optional;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -114,6 +118,8 @@ class InvitationSendIT extends AbstractIntegrationTest {
     private InvitationWaveSettings settings;
     @Autowired
     private InvitationFailedRetryTransaction retryTransaction;
+    @Autowired
+    private PersonRepository personRepository;
     @Autowired
     private TransactionTemplate transactions;
     @Autowired
@@ -240,7 +246,12 @@ class InvitationSendIT extends AbstractIntegrationTest {
     }
 
     private InvitationRecipientSendTransaction senderWith(TransactionalEmailGateway gateway, CircuitBreaker breaker) {
-        return new InvitationRecipientSendTransaction(waveRepository, recipientRepository, deliveryRepository, personContactFinder, tokenRequester,
+        return senderWith(gateway, breaker, tokenRequester);
+    }
+
+    private InvitationRecipientSendTransaction senderWith(TransactionalEmailGateway gateway, CircuitBreaker breaker,
+                                                          InvitationActivationTokenRequester requester) {
+        return new InvitationRecipientSendTransaction(waveRepository, recipientRepository, deliveryRepository, personContactFinder, requester,
                 emailFactory, new InvitationMailSender(gateway, breaker, looseBulkhead()), deliveryRecorder, capacity, clock);
     }
 
@@ -574,5 +585,56 @@ class InvitationSendIT extends AbstractIntegrationTest {
         assertThat(result).isEqualTo(InvitationSendResult.SENT);
         assertThat(jdbc.queryForObject("select status from notification_delivery where id = ?", String.class,
                 Long.valueOf(recipientColumn(recipientId, "delivery_id")))).isEqualTo("SENT_SIMULATED");
+    }
+
+    @Test
+    void theMailGoesExactlyToTheEmailTheTokenWasIssuedFor() {
+        long personId = importedStudent();
+        long waveId = runningWave(10);
+        long recipientId = recipientOf(waveId, personId);
+        String oldEmail = jdbc.queryForObject("select email from person where id = ?", String.class, personId);
+        String newEmail = "changed." + UUID.randomUUID() + "@example.com";
+        PersonContactFinder staleFinder = new PersonContactFinder(personRepository) {
+            @Override
+            public Optional<EmailRecipient> findEmailRecipient(Long id) {
+                return Optional.of(new EmailRecipient(id, EmailAddress.of(oldEmail), false));
+            }
+        };
+        jdbc.update("update person set email = ? where id = ?", newEmail, personId);
+        InvitationRecipientSendTransaction sender = new InvitationRecipientSendTransaction(waveRepository, recipientRepository, deliveryRepository,
+                staleFinder, tokenRequester, emailFactory, new InvitationMailSender(recordingGateway(), disabledBreaker(), looseBulkhead()),
+                deliveryRecorder, capacity, clock);
+
+        InvitationSendResult result = send(sender, recipientId);
+
+        assertThat(result).isEqualTo(InvitationSendResult.SENT);
+        assertThat(sentEmails).hasSize(1);
+        assertThat(sentEmails.get(0).recipient().value()).isEqualTo(newEmail);
+        assertThat(sentEmails).noneMatch(email -> email.recipient().value().equals(oldEmail));
+        assertThat(jdbc.queryForObject("select email from activation_token where person_id = ?", String.class, personId)).isEqualTo(newEmail);
+    }
+
+    @Test
+    void aTimeoutWithAPossiblyDeliveredMailFailsTheRecipientAndTheRetryInvalidatesTheFirstLink() throws Exception {
+        long personId = importedStudent();
+        long waveId = runningWave(10);
+        long recipientId = recipientOf(waveId, personId);
+        TransactionalEmailGateway timesOutAfterCapture = email -> {
+            sentEmails.add(email);
+            throw new TransactionalEmailDeliveryException("Brevo no respondio a tiempo", null);
+        };
+
+        assertThat(send(senderWith(timesOutAfterCapture, disabledBreaker()), recipientId)).isEqualTo(InvitationSendResult.FAILED);
+        assertThat(recipientColumn(recipientId, "last_error_code")).isEqualTo("PROVIDER_UNAVAILABLE");
+        assertThat(retryTransactionRun(waveId)).isEqualTo(1);
+        assertThat(send(senderWith(recordingGateway(), disabledBreaker()), recipientId)).isEqualTo(InvitationSendResult.SENT);
+
+        assertThat(sentEmails).hasSize(2);
+        mockMvc.perform(post("/auth/activate").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"" + tokenOf(sentEmails.get(0)) + "\",\"newPassword\":\"Brand-New-Secret-5678\"}"))
+                .andExpect(status().is4xxClientError());
+        mockMvc.perform(post("/auth/activate").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"" + tokenOf(sentEmails.get(1)) + "\",\"newPassword\":\"Brand-New-Secret-5678\"}"))
+                .andExpect(status().is2xxSuccessful());
     }
 }

@@ -19,7 +19,6 @@ import com.red_escuela.backend.notification.invitation.entity.InvitationWaveReci
 import com.red_escuela.backend.notification.invitation.repository.InvitationWaveRecipientRepository;
 import com.red_escuela.backend.notification.invitation.repository.InvitationWaveRepository;
 import com.red_escuela.backend.shared.exception.CircuitOpenException;
-import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.mail.EmailDeliveryReceipt;
 import com.red_escuela.backend.shared.mail.TransactionalEmail;
 import com.red_escuela.backend.shared.mail.TransactionalEmailDeliveryException;
@@ -80,8 +79,7 @@ public class InvitationRecipientSendTransaction {
         if (recipient == null || !isSendable(recipient)) {
             return InvitationSendResult.NOT_SENDABLE;
         }
-        Optional<EmailAddress> address = personContactFinder.findEmailRecipient(recipient.getPersonId()).map(contact -> contact.address());
-        if (address.isEmpty()) {
+        if (personContactFinder.findEmailRecipient(recipient.getPersonId()).isEmpty()) {
             return exclude(recipient, InvitationExclusionReason.NO_EMAIL);
         }
         if (!capacity.hasCapacityToday(wave)) {
@@ -94,7 +92,7 @@ public class InvitationRecipientSendTransaction {
         if (delivery == null) {
             return InvitationSendResult.NOT_SENDABLE;
         }
-        return issueTokenAndSend(recipient, delivery, address.get());
+        return issueTokenAndSend(recipient, delivery);
     }
 
     private boolean isSendable(InvitationWaveRecipient recipient) {
@@ -115,7 +113,7 @@ public class InvitationRecipientSendTransaction {
         return delivery;
     }
 
-    private InvitationSendResult issueTokenAndSend(InvitationWaveRecipient recipient, NotificationDelivery delivery, EmailAddress address) {
+    private InvitationSendResult issueTokenAndSend(InvitationWaveRecipient recipient, NotificationDelivery delivery) {
         IssuedActivationToken activation;
         try {
             activation = tokenRequester.requestActivationToken(recipient.getPersonId());
@@ -134,7 +132,7 @@ public class InvitationRecipientSendTransaction {
             recipient.markFailed(InvitationErrorCode.TOKEN_ISSUE_FAILED);
             return InvitationSendResult.FAILED;
         }
-        TransactionalEmail email = emailFactory.createActivationInvitation(address, activation);
+        TransactionalEmail email = emailFactory.createActivationInvitation(activation);
         return sendEmail(recipient, delivery, email);
     }
 

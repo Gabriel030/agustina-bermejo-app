@@ -27,7 +27,7 @@ public class ActivationInvitationEmailFactory {
                 "Invitación para activar la cuenta. El enlace de activación viaja solo en el mail y no se guarda.", null);
     }
 
-    public TransactionalEmail createActivationInvitation(EmailAddress recipient, IssuedActivationToken activation) {
+    public TransactionalEmail createActivationInvitation(IssuedActivationToken activation) {
         String link = frontendBaseUrl + ACTIVATION_PATH + activation.token();
         String expiration = activation.expiresAt().format(EXPIRATION_FORMAT);
         String text = "Hola,\n\nTe invitamos a activar tu cuenta para ingresar a la plataforma. "
@@ -38,6 +38,6 @@ public class ActivationInvitationEmailFactory {
                 + "Entrá al siguiente enlace y elegí tu contraseña:</p><p><a href=\"" + link + "\">Activar mi cuenta</a></p>"
                 + "<p>El enlace es de un solo uso y vence el " + expiration
                 + ". Si no esperabas este mail, podés ignorarlo.</p>";
-        return new TransactionalEmail(recipient, SUBJECT, text, html);
+        return new TransactionalEmail(EmailAddress.of(activation.email()), SUBJECT, text, html);
     }
 }
