@@ -109,6 +109,13 @@ describe('flujo de login end-to-end', () => {
     expect(await screen.findByRole('heading', { name: 'Solicitudes de asistencia' })).toBeInTheDocument();
   });
 
+  it('answers the Director pending configs request even after the test handlers are reset', async () => {
+    server.resetHandlers();
+    const response = await fetch('http://localhost:8080/section-evaluation-configs?status=PENDING_APPROVAL');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual([]);
+  });
+
   it('recargar con la marca de sesión restaura la sesión sin pasar por /login', async () => {
     localStorage.setItem('sessionHint', '1');
     renderApp('/preceptor/inicio');
