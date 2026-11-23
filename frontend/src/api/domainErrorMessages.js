@@ -315,6 +315,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   GRADUATION_CERTIFICATE_NOT_ELIGIBLE: 'No se puede emitir el certificado de egreso en este estado.',
   GRADUATION_CERTIFICATE_BLOCKED_BY_DEBT: 'El alumno tiene deuda pendiente: no se puede emitir el certificado de egreso.',
   GRADUATION_CERTIFICATE_REVOKED: 'El certificado fue revocado y ya no se puede descargar.',
+  GRADUATION_CERTIFICATE_REVIEW_REQUIRED: 'El certificado de este egreso importado todavía no fue habilitado por el Director.',
+  INVALID_GRADUATION_CERTIFICATE_REVIEW_DECISION: 'No se puede decidir la revisión del certificado en el estado actual del egreso.',
   GRADUATION_CERTIFICATE_NOT_REVOCABLE: 'Solo se puede revocar o reemitir un certificado vigente.',
   GRADUATION_CERTIFICATE_NOT_AVAILABLE: 'El certificado todavía no fue emitido.',
   TEMPLATE_UNKNOWN_MARKER: 'La plantilla usa un marcador que no existe.',
