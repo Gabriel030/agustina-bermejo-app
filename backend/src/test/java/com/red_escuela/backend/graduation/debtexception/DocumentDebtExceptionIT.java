@@ -212,6 +212,68 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void listingExpiresDueExceptionsBeforeFiltering() throws Exception {
+        issue(administrativeToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 1).andExpect(status().isCreated());
+        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        actAs(administrative);
+
+        mockMvc.perform(get("/document-debt-exceptions").param("status", "ACTIVE")
+                        .header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0));
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions").param("status", "EXPIRED")
+                        .header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(id));
+        assertThat(auditCount("DOCUMENT_DEBT_EXC_EXPIRED", id)).isEqualTo(1);
+    }
+
+    @Test
+    void pdfEndpointHonoursThePermissionMatrix() throws Exception {
+        issue(administrativeToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
+
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isUnprocessableEntity());
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isUnprocessableEntity());
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + subdirectorToken))
+                .andExpect(status().isForbidden());
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + studentToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anExceptionAtItsExpiryInstantCannotBeMarkedUsed() throws Exception {
+        issue(administrativeToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 1).andExpect(status().isCreated());
+        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
+        LocalDateTime expiresAt = LocalDateTime.of(2026, 11, 11, 10, 0);
+
+        int atExpiry = transactions.execute(status -> repository.markUsedIfActive(id, expiresAt, administrative.getId()));
+        int beforeExpiry = transactions.execute(status -> repository.markUsedIfActive(id, expiresAt.minusSeconds(1), administrative.getId()));
+
+        assertThat(atExpiry).isZero();
+        assertThat(beforeExpiry).isEqualTo(1);
+    }
+
+    @Test
+    void exceptionWithoutRegistrationServesAnyRegistration() throws Exception {
+        issue(administrativeToken, studentId, "EXAM_REGISTRATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+
+        assertThat(consume(studentId, CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE, 99L)).isPresent();
+        assertThat(consume(studentId, CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE, 99L)).isEmpty();
+    }
+
+    @Test
     void twoSimultaneousConsumptionsOnlyOneWins() throws Exception {
         issue(administrativeToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
         int threads = 8;

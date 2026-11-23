@@ -67,6 +67,8 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("annual_upfront_request.requested_by_person_id", AUDIT_ACTOR);
         accepted.put("annual_upfront_terms_version.published_by_person_id", AUDIT_ACTOR);
         accepted.put("attendance.justified_by_id", AUDIT_ACTOR);
+        accepted.put("document_debt_exception.issued_by_id", AUDIT_ACTOR);
+        accepted.put("document_debt_exception.used_by_id", AUDIT_ACTOR);
         accepted.put("attendance.recorded_by_id", AUDIT_ACTOR);
         accepted.put("attendance_change_request.approved_by_id", AUDIT_ACTOR);
         accepted.put("attendance_change_request.attendance_id", PENDING_USAGE_REVIEW);

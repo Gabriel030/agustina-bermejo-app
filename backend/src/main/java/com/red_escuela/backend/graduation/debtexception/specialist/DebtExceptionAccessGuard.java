@@ -15,7 +15,7 @@ public class DebtExceptionAccessGuard {
     public void requireNotSubdirector() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
-            return;
+            throw new AccessDeniedException("Acceso denegado");
         }
         boolean subdirector = false;
         boolean director = false;

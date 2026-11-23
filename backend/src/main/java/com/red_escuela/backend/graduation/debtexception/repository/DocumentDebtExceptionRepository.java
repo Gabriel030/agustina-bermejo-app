@@ -33,13 +33,13 @@ public interface DocumentDebtExceptionRepository
             + " and e.expiresAt <= :now order by e.expiresAt asc")
     List<Long> findDueIds(@Param("now") LocalDateTime now, Pageable pageable);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("update DocumentDebtException e set e.status = com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus.USED,"
             + " e.usedAt = :now, e.usedById = :usedById, e.version = e.version + 1 where e.id = :id"
             + " and e.status = com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus.ACTIVE and e.expiresAt > :now")
     int markUsedIfActive(@Param("id") Long id, @Param("now") LocalDateTime now, @Param("usedById") Long usedById);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("update DocumentDebtException e set e.status = com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus.EXPIRED,"
             + " e.version = e.version + 1 where e.id = :id"
             + " and e.status = com.red_escuela.backend.graduation.debtexception.dto.DebtExceptionStatus.ACTIVE and e.expiresAt <= :now")
