@@ -6,7 +6,7 @@ import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
 import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
+import { AdministrativoFacturacion } from '@/features/billing/pages/AdministrativoFacturacion';
 import { studentFixture } from '@/test/fixtures/students';
 import {
   creditBalanceFixture,

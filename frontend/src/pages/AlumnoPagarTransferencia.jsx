@@ -11,7 +11,7 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { InvoiceSummary } from '@/components/alumno/InvoiceSummary';
-import { BankTransferReceiptForm } from '@/components/billing/BankTransferReceiptForm';
+import { BankTransferReceiptForm } from '@/features/billing/components/BankTransferReceiptForm';
 import { useAuth } from '@/context/AuthContext';
 import { useMisSolicitudesCarrera } from '@/features/enrollment/hooks/useCatalogo';
 import { usePaymentConfig, useMisComprobantes, usePriceBreakdown, useMyOpenInvoices } from '@/hooks/useBilling';

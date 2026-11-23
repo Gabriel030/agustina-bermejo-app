@@ -7,8 +7,8 @@ const AlumnoPagarSeleccion = lazyPage(() => import('@/pages/AlumnoPagarSeleccion
 const AlumnoPagarTransferencia = lazyPage(() => import('@/pages/AlumnoPagarTransferencia'), 'AlumnoPagarTransferencia');
 const AlumnoPagarOnline = lazyPage(() => import('@/pages/AlumnoPagarOnline'), 'AlumnoPagarOnline');
 const AlumnoPagoEstado = lazyPage(() => import('@/pages/AlumnoPagoEstado'), 'AlumnoPagoEstado');
-const AdministrativoFacturacion = lazyPage(() => import('@/pages/AdministrativoFacturacion'), 'AdministrativoFacturacion');
-const AdministrativoCargarComprobante = lazyPage(() => import('@/pages/AdministrativoCargarComprobante'), 'AdministrativoCargarComprobante');
+const AdministrativoFacturacion = lazyPage(() => import('@/features/billing/pages/AdministrativoFacturacion'), 'AdministrativoFacturacion');
+const AdministrativoCargarComprobante = lazyPage(() => import('@/features/billing/pages/AdministrativoCargarComprobante'), 'AdministrativoCargarComprobante');
 const RequestRefundPage = lazyPage(() => import('@/features/billing/refunds/RequestRefundPage'), 'RequestRefundPage');
 const AuthorizationInboxPage = lazyPage(() => import('@/features/billing/authorization/AuthorizationInboxPage'), 'AuthorizationInboxPage');
 const AuthorizationRequestDetailPage = lazyPage(() => import('@/features/billing/authorization/AuthorizationRequestDetailPage'), 'AuthorizationRequestDetailPage');

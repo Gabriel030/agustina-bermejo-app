@@ -45,8 +45,7 @@ import { InvoiceDetail } from '@/features/billing/components/InvoiceDetail';
 import { PaymentDateCell } from '@/features/billing/components/PaymentDateCell';
 import { useExpandedRows } from '@/features/billing/hooks/useExpandedRows';
 import { formatMoney, moneyValue } from '@/lib/utils';
-import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
-import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
+import { useAlumnos, useLegajoAlumno } from '@/features/identity';
 import {
   useAdminBillingOverview,
   useComprobantesAdmin,
@@ -54,7 +53,7 @@ import {
   useRechazarComprobante,
 } from '@/hooks/useBilling';
 import { Input } from '@/components/ui/input';
-import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
+import { useRoleBasePath } from '@/features/academic-structure';
 import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 function useDebounce(value, delay) {
