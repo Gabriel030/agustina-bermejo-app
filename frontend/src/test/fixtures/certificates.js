@@ -187,6 +187,16 @@ export function certificateTemplate(overrides = {}) {
   };
 }
 
+export function documentTemplate(documentType = 'EXAM_CERTIFICATE', overrides = {}) {
+  return {
+    documentType,
+    published: certificateTemplateVersion(),
+    draft: null,
+    hasUnpublishedChanges: false,
+    ...overrides,
+  };
+}
+
 export function certificateTemplateImage(overrides = {}) {
   return {
     id: 1,

@@ -1,40 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { History, Eye, Lock } from 'lucide-react';
+import { describeError } from '@/api/describeError';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { EmptyState } from '@/components/EmptyState';
 import { GlassCard } from '@/components/GlassCard';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Notice } from '@/components/Notice';
 import { Skeleton } from '@/components/Skeleton';
-import { StatusPill } from '@/components/StatusPill';
-import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { Button } from '@/components/ui/button';
-import { describeError } from '@/api/describeError';
-import { TemplatePreviewDialog } from '@/features/graduation/certificates/components/TemplatePreviewDialog';
-import { TemplateSystemData } from '@/features/graduation/certificates/components/TemplateSystemData';
-import { TemplateVersions } from '@/features/graduation/certificates/components/TemplateVersions';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useReturnFocus } from '@/features/graduation/certificates/hooks/useReturnFocus';
+import { TemplateEditActions, TemplateStatusHint } from '@/features/graduation/certificates/components/TemplateActionsBar';
+import { TemplateHistorySheet } from '@/features/graduation/certificates/components/TemplateHistorySheet';
 import { TemplateLogoField } from '@/features/graduation/certificates/components/TemplateLogoField';
+import { TemplatePreviewDialog, TemplatePreviewPanel } from '@/features/graduation/certificates/components/TemplatePreview';
 import { TemplateSignatories } from '@/features/graduation/certificates/components/TemplateSignatories';
 import { TemplateTextFields } from '@/features/graduation/certificates/components/TemplateTextFields';
 import {
   useCertificateTemplate,
   useDiscardTemplateDraft,
-  useGraduationSignatories,
-  usePreviewTemplate,
   usePublishTemplate,
   useSaveTemplateDraft,
+  useTemplateSignatories,
 } from '@/features/graduation/certificates/hooks/useCertificateTemplate';
 import {
   baselineOf,
   canPublish,
   contentFromForm,
   isSameForm,
-  previewSourceOf,
+  publishBlockerOf,
   statusOf,
+  tabOf,
   validateForm,
 } from '@/features/graduation/certificates/lib/certificateTemplate';
 
+const WIDE_QUERY = '(min-width: 1280px)';
+
 function PanelSkeleton() {
   return (
-    <div className="flex flex-col gap-4" aria-label="Cargando">
+    <div className="flex flex-col gap-4" role="status" aria-label="Cargando">
       <Skeleton className="h-14" />
       <Skeleton className="h-56" />
       <Skeleton className="h-40" />
@@ -42,40 +46,66 @@ function PanelSkeleton() {
   );
 }
 
-export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSettled }) {
-  const template = useCertificateTemplate(kind);
-  const signatories = useGraduationSignatories();
-  const save = useSaveTemplateDraft(kind);
-  const discard = useDiscardTemplateDraft(kind);
-  const publish = usePublishTemplate(kind);
-  const previewTemplate = usePreviewTemplate(kind);
-  const [preview, setPreview] = useState(null);
-  const [confirmPublish, setConfirmPublish] = useState(false);
-  const previewUrl = preview?.url;
+function PanelLoadError({ error, onRetry }) {
+  if (error?.status === 422) {
+    return (
+      <GlassCard className="flex flex-1 flex-col p-12" role="alert">
+        <EmptyState
+          icon="🚧"
+          title="Esta plantilla todavía no está disponible"
+          description={describeError(error).message}
+          action={<Button onClick={onRetry}>Reintentar</Button>}
+        />
+      </GlassCard>
+    );
+  }
+  return <LoadErrorState error={error} onRetry={onRetry} resource="la plantilla" />;
+}
 
-  useEffect(() => () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-  }, [previewUrl]);
-  const [actionError, setActionError] = useState(null);
-  const [savedNotice, setSavedNotice] = useState(false);
+function defaultHintOf({ template }) {
+  if (template.draft) return 'Todavía no se usa: falta publicar.';
+  if (template.published) return 'Las emisiones nuevas usan la versión publicada.';
+  return 'Completá los datos y guardá el borrador para empezar.';
+}
+
+export function TemplatePanel({ templateKey, readOnly, edit, onEdit, onSettled }) {
+  const tab = tabOf(templateKey);
+  const template = useCertificateTemplate(templateKey);
+  const signatories = useTemplateSignatories(templateKey);
+  const save = useSaveTemplateDraft(templateKey);
+  const discard = useDiscardTemplateDraft(templateKey);
+  const publish = usePublishTemplate(templateKey);
+  const wide = useMediaQuery(WIDE_QUERY);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [actionError, setActionError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const historyFocus = useReturnFocus();
+  const previewFocus = useReturnFocus();
+  const publishFocus = useReturnFocus();
+  const discardFocus = useReturnFocus();
 
   if (template.isPending) return <PanelSkeleton />;
-  if (template.isError) {
-    return <LoadErrorState error={template.error} onRetry={template.refetch} resource="la plantilla" />;
-  }
+  if (template.isError) return <PanelLoadError error={template.error} onRetry={template.refetch} />;
 
   const data = template.data;
   const baseline = baselineOf(data);
   const form = edit ?? baseline;
   const dirty = !isSameForm(form, baseline);
-  const errors = validateForm(form);
+  const errors = validateForm(form, templateKey);
   const hasErrors = Object.keys(errors).length > 0;
   const status = statusOf({ template: data, dirty });
-  const neverPublished = !data.published && !data.draft;
+  const neverConfigured = !data.published && !data.draft;
+  const showRequired = dirty || !neverConfigured;
+  const blocker = publishBlockerOf({ template: data, dirty, form, signatories: signatories.data, templateKey });
+  const publishable = canPublish({ template: data, dirty, form, signatories: signatories.data, templateKey });
+  const hint = notice ?? blocker ?? defaultHintOf({ template: data });
+  const nextVersion = data.draft?.versionNumber;
 
   function change(next) {
-    setSavedNotice(false);
+    setNotice(null);
     setActionError(null);
     onEdit(isSameForm(next, baseline) ? null : next);
   }
@@ -85,7 +115,7 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
     try {
       await save.mutateAsync(contentFromForm(form));
       onSettled();
-      setSavedNotice(true);
+      setNotice('Borrador guardado.');
     } catch (error) {
       setActionError(describeError(error).message);
     }
@@ -96,7 +126,7 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
     try {
       await discard.mutateAsync();
       onSettled();
-      setSavedNotice(false);
+      setNotice('Borrador descartado.');
     } catch (error) {
       setActionError(describeError(error).message);
     } finally {
@@ -104,16 +134,12 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
     }
   }
 
-  const previewSource = previewSourceOf({ isDirector: !readOnly, template: data });
-  const publishable = canPublish({ template: data, dirty, form, signatories: signatories.data });
-  const nextVersion = data.draft?.versionNumber;
-
   async function publishDraft() {
     setActionError(null);
     try {
       await publish.mutateAsync();
       onSettled();
-      setSavedNotice(false);
+      setNotice(`Versión ${nextVersion} publicada.`);
     } catch (error) {
       setActionError(describeError(error).message);
     } finally {
@@ -121,129 +147,150 @@ export function TemplatePanel({ kind, documentName, readOnly, edit, onEdit, onSe
     }
   }
 
-  async function openPreview() {
+  function useVersionAsBase(baseForm, number) {
     setActionError(null);
-    try {
-      const { blob } = await previewTemplate.mutateAsync(previewSource);
-      setPreview({ url: URL.createObjectURL(blob), source: previewSource });
-    } catch (error) {
-      setActionError(describeError(error).message);
-    }
+    onEdit(isSameForm(baseForm, baseline) ? null : baseForm);
+    setNotice(`Cargamos la v${number} como borrador. Guardalo para conservarlo.`);
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      {readOnly && (
-        <Notice tone="neutral" title="Solo lectura.">
-          Esta plantilla la edita el Director. Podés ver cómo está configurada, pero no modificarla.
-        </Notice>
-      )}
+  const previewProps = { templateKey, template: data, canSeeDraft: !readOnly, dirty };
 
-      <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <StatusPill tone={status.tone}>{status.label}</StatusPill>
-          <span className="text-size-13 text-ink-faint" aria-live="polite">
-            {dirty
-              ? 'Guardá el borrador para no perder lo que editaste.'
-              : savedNotice
-                ? 'Borrador guardado.'
-                : 'Las emisiones nuevas usan la versión publicada.'}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={previewSource === null || (!readOnly && dirty)}
-            loading={previewTemplate.isPending}
-            onClick={openPreview}
-          >
-            Vista previa
+  return (
+    <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
+      <div className="flex min-w-0 flex-col gap-4">
+        {readOnly && (
+          <Notice tone="neutral" title="Solo lectura.">
+            <Lock aria-hidden="true" className="mr-1 inline size-3.5 align-text-bottom" />
+            Esta plantilla la edita el Director. Podés ver cómo está configurada, pero no modificarla.
+          </Notice>
+        )}
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button type="button" variant="outline" className="min-h-11 md:min-h-8" onClick={(event) => {
+              historyFocus.remember(event);
+              setHistoryOpen(true);
+            }}>
+            <History aria-hidden="true" className="size-4" />
+            Historial
           </Button>
-          {!readOnly && (
-            <>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!data.draft || dirty}
-              onClick={() => setConfirmDiscard(true)}
-            >
-              Descartar borrador
+          {!wide && (
+            <Button type="button" variant="outline" className="min-h-11 md:min-h-8" onClick={(event) => {
+                previewFocus.remember(event);
+                setPreviewOpen(true);
+              }}>
+              <Eye aria-hidden="true" className="size-4" />
+              Vista previa
             </Button>
-            <Button type="button" variant="primary" disabled={!dirty || hasErrors} loading={save.isPending} onClick={saveDraft}>
-              Guardar borrador
-            </Button>
-            <Button type="button" variant="primary" disabled={!publishable} onClick={() => setConfirmPublish(true)}>
-              Publicar
-            </Button>
-            </>
           )}
         </div>
-      </GlassCard>
 
-      {actionError && (
-        <p role="alert" className="text-size-14 font-medium text-danger">
-          {actionError}
-        </p>
-      )}
+        {readOnly && <TemplateStatusHint readOnly status={status} hint={hint} />}
 
-      {!readOnly && data.draft && !dirty && !publishable && (
-        <p className="text-size-13 text-ink-soft">Elegí los dos firmantes para poder publicar.</p>
-      )}
+        {actionError && (
+          <p role="alert" className="text-size-14 font-medium text-danger">
+            {actionError}
+          </p>
+        )}
 
-      {neverPublished && !dirty && (
-        <GlassCard className="p-4">
-          <EmptyState
-            icon="📄"
-            title="Todavía no hay plantilla"
-            description={
-              readOnly
-                ? 'El Director todavía no configuró este certificado.'
-                : `Completá los textos, el logo y los firmantes de «${documentName}» y guardá el borrador.`
-            }
+        {neverConfigured && !dirty && (
+          <GlassCard className="p-4">
+            <EmptyState
+              icon="📄"
+              title="Todavía no hay plantilla"
+              description={
+                readOnly
+                  ? 'El Director todavía no configuró este documento.'
+                  : `Completá textos, logo y firmantes de «${tab.documentName}», guardá el borrador y publicá.`
+              }
+            />
+          </GlassCard>
+        )}
+
+        <GlassCard className="flex flex-col gap-4 p-4 md:p-5">
+          <h2 className="font-heading text-size-15 font-semibold text-ink">Instituto y textos</h2>
+          <TemplateLogoField
+            templateKey={templateKey}
+            logoImageId={form.logoImageId}
+            readOnly={readOnly}
+            onChange={(logoImageId) => change({ ...form, logoImageId })}
+          />
+          <TemplateTextFields templateKey={templateKey} form={form} readOnly={readOnly} showRequired={showRequired} onChange={change} />
+        </GlassCard>
+
+        <GlassCard className="flex flex-col gap-3 p-4 md:p-5">
+          <h2 className="font-heading text-size-15 font-semibold text-ink">Firmantes</h2>
+          <TemplateSignatories
+            documentName={tab.documentName}
+            form={form}
+            readOnly={readOnly}
+            signatories={signatories}
+            errors={errors}
+            showRequired={showRequired}
+            onChange={change}
           />
         </GlassCard>
+
+        {!readOnly && (
+          <TemplateStatusHint
+            status={status}
+            hint={hint}
+            actions={
+              <TemplateEditActions
+                canDiscard={Boolean(data.draft) && !dirty}
+                canSave={dirty && !hasErrors}
+                canPublish={publishable}
+                saving={save.isPending}
+                onDiscard={(event) => {
+                  discardFocus.remember(event);
+                  setConfirmDiscard(true);
+                }}
+                onSave={saveDraft}
+                onPublish={(event) => {
+                  publishFocus.remember(event);
+                  setConfirmPublish(true);
+                }}
+              />
+            }
+          />
+        )}
+      </div>
+
+      {wide && (
+        <aside aria-label="Vista previa">
+          <TemplatePreviewPanel {...previewProps} />
+        </aside>
       )}
 
-      <GlassCard className="flex flex-col gap-4 p-4 md:p-5">
-        <h2 className="font-heading text-size-15 font-semibold text-ink">Instituto y textos</h2>
-        <TemplateLogoField
-          kind={kind}
-          logoImageId={form.logoImageId}
-          readOnly={readOnly}
-          onChange={(logoImageId) => change({ ...form, logoImageId })}
-        />
-        <TemplateTextFields form={form} readOnly={readOnly} onChange={change} />
-      </GlassCard>
-
-      <GlassCard className="flex flex-col gap-3 p-4 md:p-5">
-        <h2 className="font-heading text-size-15 font-semibold text-ink">Firmantes</h2>
-        <p className="text-size-13 text-ink-soft">Nombre y cargo salen de la lista de firmantes con permiso para certificados de egreso.</p>
-        <TemplateSignatories form={form} readOnly={readOnly} signatories={signatories} errors={errors} onChange={change} />
-      </GlassCard>
-
-      <TemplateSystemData />
-      <TemplateVersions kind={kind} />
-
-      <TemplatePreviewDialog preview={preview} onClose={() => setPreview(null)} />
+      {!wide && <TemplatePreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} onCloseAutoFocus={previewFocus.onCloseAutoFocus} {...previewProps} />}
+      <TemplateHistorySheet
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        templateKey={templateKey}
+        template={data}
+        canUseAsBase={!readOnly}
+        onUseAsBase={useVersionAsBase}
+        onCloseAutoFocus={historyFocus.onCloseAutoFocus}
+      />
       <ConfirmActionDialog
         open={confirmPublish}
         onOpenChange={setConfirmPublish}
         title={`Publicar la versión ${nextVersion}`}
-        description={`Las emisiones nuevas de «${documentName}» van a usar esta versión. Los certificados ya emitidos conservan la suya y no cambian. La versión publicada no se puede editar.`}
+        description={`Las emisiones nuevas de «${tab.documentName}» van a usar esta versión. Los documentos ya emitidos conservan la suya y no cambian: cada versión publicada queda guardada tal cual y no se puede editar. Para corregir algo después, se publica una versión nueva.`}
         confirmLabel={`Publicar v${nextVersion}`}
         confirmVariant="primary"
         pending={publish.isPending}
         onConfirm={publishDraft}
+        onCloseAutoFocus={publishFocus.onCloseAutoFocus}
       />
       <ConfirmActionDialog
         open={confirmDiscard}
         onOpenChange={setConfirmDiscard}
         title="Descartar el borrador"
-        description="El borrador se elimina y la plantilla vuelve a la última versión publicada. Perdés lo que editaste desde entonces."
+        description="Se elimina y la plantilla vuelve a la última versión publicada. Perdés lo que editaste desde entonces."
         confirmLabel="Descartar borrador"
         pending={discard.isPending}
         onConfirm={discardDraft}
+        onCloseAutoFocus={discardFocus.onCloseAutoFocus}
       />
     </div>
   );

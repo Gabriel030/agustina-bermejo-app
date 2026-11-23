@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import {
   certificateTemplateImage,
   certificateTemplateVersion,
+  documentTemplate,
   springPage,
 } from '@/test/fixtures/certificates';
 import {
@@ -26,14 +27,6 @@ const pdfResponse = () =>
   new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } });
 const pngResponse = () =>
   new HttpResponse(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { headers: { 'Content-Type': 'image/png' } });
-
-const documentTemplate = (documentType, overrides = {}) => ({
-  documentType,
-  published: certificateTemplateVersion(),
-  draft: null,
-  hasUnpublishedChanges: false,
-  ...overrides,
-});
 
 const draftVersion = () =>
   certificateTemplateVersion({ id: 2, versionNumber: 4, status: 'DRAFT', basedOnVersionNumber: 3, publishedAt: null, publishedBy: null });
