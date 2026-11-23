@@ -569,10 +569,9 @@ export const handlers = [
   http.get(`${API}/programs/:id/year-billing-templates`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-enrollments`, () => HttpResponse.json([])),
-  http.get(`${API}/me/section-enrollments/:id/change-section-candidates`, () => HttpResponse.json([])),
   http.post(`${API}/me/section-enrollments/:id/change-section`, async ({ params, request }) => {
-    const { newSectionId } = await request.json();
-    return HttpResponse.json(sectionEnrollment({ id: Number(params.id), sectionId: newSectionId }));
+    const { newSectionId } = await request.json().catch(() => ({}));
+    return HttpResponse.json(sectionEnrollment({ id: Number(params.id), sectionId: newSectionId ?? 1 }));
   }),
   http.get(`${API}/billing/configuration-alerts`, () => HttpResponse.json([])),
   http.get(`${API}/announcements/:id/recipients`, () => HttpResponse.json([])),

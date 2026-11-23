@@ -93,7 +93,7 @@ export function StudentProceduresSection({ carreraId, onSeeStudyPlan }) {
               />
             ))}
             <LinkRow icon={RefreshCw} title="Cambio de comisión" description="Pasá de una comisión a otra en una materia que cursás.">
-              <Button variant="outline" className="w-full sm:w-auto" onClick={() => setChangingSection(true)}>
+              <Button variant="outline" className="h-auto min-h-11 w-full sm:w-auto md:h-8 md:min-h-0" onClick={() => setChangingSection(true)}>
                 Abrir
               </Button>
             </LinkRow>

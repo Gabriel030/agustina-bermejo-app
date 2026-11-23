@@ -129,7 +129,28 @@ export function splitCandidates(candidates = []) {
   };
 }
 
-export function buildChangeRows(current, target) {
+function buildOwnChangeRows(current, target) {
+  return [
+    { key: 'section', label: 'Comisión', today: `Com. ${current.sectionName}`, next: `Com. ${target.name}`, difference: 'Cambia' },
+    {
+      key: 'schedule',
+      label: 'Días y horarios',
+      today: current.schedule || '—',
+      next: target.slots?.length ? target.slots.map(describeSlot).join(' · ') : 'Sin horario cargado',
+      difference: 'Cambia',
+    },
+    {
+      key: 'seats',
+      label: 'Lugares',
+      today: 'Tu lugar',
+      next: target.availableSeats == null ? 'Sin tope de cupo' : `Quedan ${target.availableSeats}`,
+      difference: '—',
+    },
+  ];
+}
+
+export function buildChangeRows(current, target, { own = false } = {}) {
+  if (own) return buildOwnChangeRows(current, target);
   const seats = describeSeats(target);
   const rows = [
     {
@@ -174,8 +195,21 @@ export const INLINE_ERROR_CODES = [
   'WITHDRAWAL_DATE_OUT_OF_ALLOWED_RANGE',
 ];
 
-export function isInlineError(error) {
-  return INLINE_ERROR_CODES.includes(error?.code);
+export const FINAL_ERROR_CODES = ['SECTION_HAS_RECORDS', 'ENROLLMENT_WINDOW_CLOSED', 'TERM_ENROLLMENT_OVERRIDE_CLOSED'];
+
+export const OWN_INLINE_ERROR_CODES = [
+  ...INLINE_ERROR_CODES,
+  'SECTION_NOT_OPEN_FOR_ENROLLMENT',
+  'INVALID_SECTION_CHANGE',
+  ...FINAL_ERROR_CODES,
+];
+
+export function isFinalError(code) {
+  return FINAL_ERROR_CODES.includes(code);
+}
+
+export function isInlineError(error, codes = INLINE_ERROR_CODES) {
+  return codes.includes(error?.code);
 }
 
 export function describeOverlap(error) {

@@ -439,12 +439,22 @@ describe('StudentProceduresSection', () => {
     expect(await screen.findByText('Para cambiar de comisión hablá con Administración.')).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Elegir otra comisión' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Confirmar el cambio' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Confirmar el cambio' })).toBeDisabled();
   });
 
-  it('shows the full section message inline and lets the student choose another one', async () => {
-    useSectionEnrollments();
+  it('clears the selection, refetches the candidates and warns when the section filled up while confirming', async () => {
+    let candidateRequests = 0;
     server.use(
+      http.get(`${API}/me/section-enrollments`, () => HttpResponse.json(sectionEnrollmentRows)),
+      http.get(`${API}/me/section-enrollments/:id/change-section-candidates`, () => {
+        candidateRequests += 1;
+        if (candidateRequests === 1) return HttpResponse.json(sectionCandidates);
+        return HttpResponse.json(
+          sectionCandidates.map((candidate) =>
+            candidate.sectionId === 2 ? { ...candidate, availableSeats: 0, selectable: false, blockReason: 'SECTION_FULL' } : candidate,
+          ),
+        );
+      }),
       http.post(`${API}/me/section-enrollments/:id/change-section`, () => HttpResponse.json(errorBody('SECTION_FULL'), { status: 409 })),
     );
     const user = userEvent.setup();
@@ -456,9 +466,10 @@ describe('StudentProceduresSection', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar' }));
     await user.click(screen.getByRole('button', { name: 'Confirmar el cambio' }));
 
-    expect(await screen.findByText('La comisión elegida no tiene cupo. Seguís en tu comisión actual.')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Elegir otra comisión' }));
-    expect(screen.getByRole('radio', { name: /Com\. C/ })).toBeInTheDocument();
+    expect(await screen.findByText('La comisión se llenó mientras confirmabas.')).toBeInTheDocument();
+    await waitFor(() => expect(candidateRequests).toBe(2));
+    await waitFor(() => expect(screen.queryByRole('radio', { name: /Com\. C/ })).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
   it('closes the sheet with a toast on an unexpected error', async () => {
@@ -479,11 +490,11 @@ describe('StudentProceduresSection', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('shows the closed window message when the candidates cannot be loaded', async () => {
+  it('shows the closed window message on confirm when the POST answers 400 and blocks a new attempt', async () => {
     useSectionEnrollments();
     server.use(
-      http.get(`${API}/me/section-enrollments/:id/change-section-candidates`, () =>
-        HttpResponse.json(errorBody('ENROLLMENT_WINDOW_CLOSED'), { status: 409 }),
+      http.post(`${API}/me/section-enrollments/:id/change-section`, () =>
+        HttpResponse.json(errorBody('ENROLLMENT_WINDOW_CLOSED'), { status: 400 }),
       ),
     );
     const user = userEvent.setup();
@@ -491,8 +502,119 @@ describe('StudentProceduresSection', () => {
 
     await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
     await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+    await user.click(await screen.findByRole('radio', { name: /Com\. C/ }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmar el cambio' }));
 
     expect(await screen.findByText('El período de inscripción está cerrado.')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar el cambio' })).toBeDisabled();
+  });
+
+  it('keeps the dialog open with the overlap detail', async () => {
+    useSectionEnrollments();
+    server.use(
+      http.post(`${API}/me/section-enrollments/:id/change-section`, () =>
+        HttpResponse.json(
+          { ...errorBody('SECTION_SCHEDULE_OVERLAP'), details: { conflictingSubject: 'Química', day: 'sábado', from: '09:00', to: '13:00' } },
+          { status: 409 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+    await user.click(await screen.findByRole('radio', { name: /Com\. C/ }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmar el cambio' }));
+
+    expect(await screen.findByText('Se superpone con Química (sábado de 09:00 a 13:00).')).toBeInTheDocument();
+  });
+
+  it('shows a truthful confirmation table for the student', async () => {
+    useSectionEnrollments();
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+    await user.click(await screen.findByRole('radio', { name: /Com\. C/ }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    expect(screen.getByRole('group', { name: 'Días y horarios' })).toBeInTheDocument();
+    expect(within(screen.getByRole('group', { name: 'Lugares' })).getByText('Quedan 4')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Asistencia y notas' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Cupo de la nueva comisión')).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state when no subject can be changed', async () => {
+    server.use(http.get(`${API}/me/section-enrollments`, () => HttpResponse.json([sectionEnrollmentRows[1], sectionEnrollmentRows[2]])));
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+
+    expect(await screen.findByText('No hay materias para cambiar')).toBeInTheDocument();
+    expect(screen.queryByText('Anatomía II')).not.toBeInTheDocument();
+    expect(screen.queryByText('Química')).not.toBeInTheDocument();
+  });
+
+  it('shows the loading state and then an error with retry when the enrollments fail', async () => {
+    let fail = true;
+    server.use(
+      http.get(`${API}/me/section-enrollments`, async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return fail ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }) : HttpResponse.json(sectionEnrollmentRows);
+      }),
+      http.get(`${API}/me/section-enrollments/:id/change-section-candidates`, () => HttpResponse.json(sectionCandidates)),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    expect(await screen.findByLabelText('Cargando materias')).toBeInTheDocument();
+    expect(await screen.findByText('No pudimos cargar tus materias', {}, { timeout: 5000 })).toBeInTheDocument();
+    fail = false;
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByRole('button', { name: /Bases de Datos/ })).toBeInTheDocument();
+  });
+
+  it('sends the change only once on a double click', async () => {
+    useSectionEnrollments();
+    let posts = 0;
+    server.use(
+      http.post(`${API}/me/section-enrollments/:id/change-section`, async () => {
+        posts += 1;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return HttpResponse.json(sectionEnrollment({ id: 100, sectionId: 2 }));
+      }),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await user.click(await screen.findByRole('button', { name: /Bases de Datos/ }));
+    await user.click(await screen.findByRole('radio', { name: /Com\. C/ }));
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    const confirm = screen.getByRole('button', { name: 'Confirmar el cambio' });
+    await user.dblClick(confirm);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(posts).toBe(1);
+  });
+
+  it('has no accessibility violations in the sheet', async () => {
+    useSectionEnrollments();
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(within((await screen.findByText('Cambio de comisión')).closest('li')).getByRole('button', { name: 'Abrir' }));
+    await screen.findByRole('button', { name: /Bases de Datos/ });
+
+    expect(await axe(screen.getByRole('dialog'))).toHaveNoViolations();
   });
 
   it('shows the empty state when there are no approved procedures', async () => {

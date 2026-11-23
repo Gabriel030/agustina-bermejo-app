@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { describeError } from '@/api/describeError';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Notice } from '@/components/Notice';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Stepper } from '@/components/Stepper';
@@ -17,6 +18,7 @@ import {
   REASON_MAX_LENGTH,
   REASON_MIN_LENGTH,
   buildChangeRows,
+  isFinalError,
   reasonError,
   splitCandidates,
 } from '@/lib/enrollmentChanges';
@@ -27,12 +29,28 @@ const CHOOSE_STEPS = [
 ];
 const SUBJECT_STEPS = [{ key: 'subject', label: 'Elegir materia' }, ...CHOOSE_STEPS];
 
-const BLOCKING_CANDIDATE_CODES = ['ENROLLMENT_WINDOW_CLOSED', 'SECTION_HAS_RECORDS'];
+const ACTION_BUTTON = 'h-auto min-h-11 md:h-8 md:min-h-0';
 
-function SubjectPicker({ rows, onPick, onClose }) {
+function SubjectPicker({ rows, loading, error, onRetry, onPick, onClose }) {
   return (
     <div className="flex flex-col gap-4">
-      {rows.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col gap-2" aria-busy="true" aria-label="Cargando materias">
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
+        </div>
+      ) : error ? (
+        <EmptyState
+          icon="⚠️"
+          title="No pudimos cargar tus materias"
+          description="Intentá de nuevo en un momento."
+          action={
+            <Button type="button" variant="outline" className={ACTION_BUTTON} onClick={onRetry}>
+              Reintentar
+            </Button>
+          }
+        />
+      ) : rows.length === 0 ? (
         <EmptyState icon="🗂️" title="No hay materias para cambiar" description="El cambio de comisión se pide sobre materias que estás cursando." />
       ) : (
         <ul className="flex flex-col gap-1" aria-label="Materias en curso">
@@ -50,7 +68,7 @@ function SubjectPicker({ rows, onPick, onClose }) {
         </ul>
       )}
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" className={ACTION_BUTTON} onClick={onClose}>
           Cancelar
         </Button>
       </div>
@@ -61,6 +79,10 @@ function SubjectPicker({ rows, onPick, onClose }) {
 export function ChangeSectionSheet({
   row: fixedRow,
   rows,
+  rowsLoading = false,
+  rowsError = false,
+  onRetryRows,
+  staleTarget = false,
   own = false,
   showReason = true,
   confirmNotice,
@@ -80,13 +102,27 @@ export function ChangeSectionSheet({
   const [reasonShown, setReasonShown] = useState(false);
   const row = fixedRow ?? rows?.find((candidateRow) => candidateRow.id === subjectId) ?? null;
   const candidates = useChangeSectionCandidates(row?.id, !!row, { own });
+  const { refetch: refetchCandidates } = candidates;
+
+  const [staleSeen, setStaleSeen] = useState(false);
+  if (staleTarget !== staleSeen) {
+    setStaleSeen(staleTarget);
+    if (staleTarget) {
+      setTargetId(null);
+      setStep('choose');
+    }
+  }
+
+  useEffect(() => {
+    if (staleTarget) refetchCandidates();
+  }, [staleTarget, refetchCandidates]);
 
   if (!fixedRow && !rows) return null;
   const list = candidates.data ?? [];
   const { available } = splitCandidates(list);
   const target = list.find((candidate) => candidate.sectionId === targetId);
   const localReasonError = showReason ? reasonError(reason) : null;
-  const blockingCode = BLOCKING_CANDIDATE_CODES.includes(candidates.error?.code) ? candidates.error.code : null;
+  const blockingCode = isFinalError(candidates.error?.code) ? candidates.error.code : null;
 
   function submit() {
     setReasonShown(true);
@@ -118,7 +154,7 @@ export function ChangeSectionSheet({
         </SheetHeader>
         <Stepper pasos={picksSubject ? SUBJECT_STEPS : CHOOSE_STEPS} pasoActual={step} />
 
-        {step === 'subject' && <SubjectPicker rows={rows} onPick={pickSubject} onClose={onClose} />}
+        {step === 'subject' && <SubjectPicker rows={rows} loading={rowsLoading} error={rowsError} onRetry={onRetryRows} onPick={pickSubject} onClose={onClose} />}
 
         {step === 'choose' && row && (
           <div className="flex flex-col gap-4">
@@ -146,17 +182,31 @@ export function ChangeSectionSheet({
             {candidates.isSuccess && available.length === 0 && (
               <EmptyState icon="🗂️" title="No hay otra comisión disponible" description="Esta materia no tiene otra comisión a la que se pueda pasar." />
             )}
-            {candidates.isSuccess && list.length > 0 && <SectionTargetPicker candidates={list} value={targetId} onChange={setTargetId} />}
+            {staleTarget && (
+              <Notice tone="danger" role="alert" title="La comisión se llenó mientras confirmabas.">
+                Actualizamos la lista: elegí otra.
+              </Notice>
+            )}
+            {candidates.isSuccess && list.length > 0 && (
+              <SectionTargetPicker
+                candidates={list}
+                value={targetId}
+                onChange={(next) => {
+                  setTargetId(next);
+                  if (staleTarget) onChooseAnother?.();
+                }}
+              />
+            )}
             <div className="flex justify-end gap-2">
               {picksSubject && (
-                <Button type="button" variant="outline" onClick={() => setStep('subject')}>
+                <Button type="button" variant="outline" className={ACTION_BUTTON} onClick={() => setStep('subject')}>
                   Volver
                 </Button>
               )}
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" className={ACTION_BUTTON} onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="button" variant="primary" disabled={!target} onClick={() => setStep('confirm')}>
+              <Button type="button" variant="primary" className={ACTION_BUTTON} disabled={!target} onClick={() => setStep('confirm')}>
                 Continuar
               </Button>
             </div>
@@ -165,7 +215,7 @@ export function ChangeSectionSheet({
 
         {step === 'confirm' && row && target && (
           <div className="flex flex-col gap-4">
-            <ChangesTable rows={buildChangeRows(row, target)} />
+            <ChangesTable rows={buildChangeRows(row, target, { own })} />
             {showReason && (
               <div className="flex flex-col gap-1">
                 <Label htmlFor="change-section-reason">Motivo</Label>
@@ -197,17 +247,17 @@ export function ChangeSectionSheet({
               <div role="alert" className="flex flex-col items-start gap-2 text-size-12 font-semibold text-danger">
                 {serverError}
                 {canChooseAnother && (
-                  <Button type="button" variant="outline" size="sm" onClick={chooseAnother}>
+                  <Button type="button" variant="outline" size="sm" className={ACTION_BUTTON} onClick={chooseAnother}>
                     Elegir otra comisión
                   </Button>
                 )}
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" disabled={pending} onClick={() => setStep('choose')}>
+              <Button type="button" variant="outline" className={ACTION_BUTTON} disabled={pending} onClick={() => setStep('choose')}>
                 Volver
               </Button>
-              <Button type="button" variant="primary" loading={pending} onClick={submit}>
+              <Button type="button" variant="primary" className={ACTION_BUTTON} loading={pending} disabled={!!serverError && !canChooseAnother} onClick={submit}>
                 Confirmar el cambio
               </Button>
             </div>
