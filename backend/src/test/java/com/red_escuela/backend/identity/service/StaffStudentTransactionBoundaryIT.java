@@ -30,13 +30,13 @@ import com.red_escuela.backend.testsupport.AtomicityTestSupport;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.IdentityBoundarySpyBeans;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -53,6 +53,7 @@ import static org.mockito.Mockito.reset;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@IdentityBoundarySpyBeans
 class StaffStudentTransactionBoundaryIT extends AbstractIntegrationTest {
 
     private static final String PREFIX = "txb";
@@ -84,16 +85,16 @@ class StaffStudentTransactionBoundaryIT extends AbstractIntegrationTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    @MockitoSpyBean
+    @Autowired
     private SessionRevoker sessionRevoker;
 
-    @MockitoSpyBean
+    @Autowired
     private IdentityAuditRecorder identityAuditRecorder;
 
-    @MockitoSpyBean
+    @Autowired
     private ContactChangeRecorder contactChangeRecorder;
 
-    @MockitoSpyBean
+    @Autowired
     private AuditTrail auditTrail;
 
     private final List<Long> institutionIds = new ArrayList<>();

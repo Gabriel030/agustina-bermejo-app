@@ -69,6 +69,7 @@ public class SubjectSectionEnrollmentService {
     private final FinalExamEligibilityResolver finalExamEligibilityResolver;
     private final StudentScheduleOverlapGuard scheduleOverlapGuard;
     private final EnrollmentChangeEventPublisher changeEventPublisher;
+    private final OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -86,7 +87,9 @@ public class SubjectSectionEnrollmentService {
             FinalExamEligibilityResolver finalExamEligibilityResolver,
             StudentScheduleOverlapGuard scheduleOverlapGuard,
             EnrollmentChangeEventPublisher changeEventPublisher,
+            OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard,
             Clock clock) {
+        this.ownSectionChangeRecordsGuard = ownSectionChangeRecordsGuard;
         this.scheduleOverlapGuard = scheduleOverlapGuard;
         this.changeEventPublisher = changeEventPublisher;
         this.subjectRetakeGuard = subjectRetakeGuard;
@@ -242,6 +245,7 @@ public class SubjectSectionEnrollmentService {
         if (destino.id().equals(origen.subjectSectionId())) {
             return origen;
         }
+        ownSectionChangeRecordsGuard.requireNoRecords(change, origen.getId());
         if (!destino.termId().equals(origen.termId())) {
             throw new InvalidSectionChangeException(
                     "changeSection es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");

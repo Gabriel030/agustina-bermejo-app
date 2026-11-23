@@ -1,5 +1,5 @@
 import { GlassCard } from '@/components/GlassCard';
-import { MonthPicker } from '@/components/MonthPicker';
+import { MonthPicker } from '@/features/billing/components/MonthPicker';
 import { StatusPill } from '@/components/StatusPill';
 import { formatDateTime } from '@/lib/billing';
 import { RUN_STATUS_LABELS, RUN_STATUS_TONES, RUN_TRIGGER_LABELS } from './monthlyRunLabels';

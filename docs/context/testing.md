@@ -138,7 +138,7 @@ está arriba.
 
 El CI del backend corre en 8 shards balanceados por tiempo (`.github/scripts/test-shards.py`). No hay presupuesto de tiempo: ningún límite por clase, por `@SlowTest` ni por shard hace fallar el CI (se eliminaron el 13-nov-2026, a pedido de Gabriel, después de cuatro rojos por tiempos al borde sin bug real). Los tiempos se miden y se reportan, nada más.
 
-**Lo único que bloquea es el tope de contextos de Spring distintos en toda la corrida (24)**, que no es una regla de tiempo: lo hace cumplir `test-report.py aggregate` (parámetro `--max-contexts`), en el job `test-report`, solo en pushes (en un PR es una advertencia). Subirlo es una decisión de producto que va en un PR aparte, con motivo.
+**Lo único que bloquea es el tope de contextos de Spring distintos en toda la corrida (32)**, que no es una regla de tiempo: lo hace cumplir `test-report.py aggregate` (parámetro `--max-contexts`), en el job `test-report`, solo en pushes (en un PR es una advertencia). Subirlo es una decisión de producto que va en un PR aparte, con motivo.
 
 Las reglas ArchUnit sobre los tests (`TestSuiteRulesTest`) no cambian: sin violaciones nuevas.
 
@@ -191,7 +191,7 @@ Las reglas de `TestSuiteRulesTest` usan `FreezingArchRule`, igual que las de `Ar
 El job `test-report` publica un comentario en el PR (se actualiza en cada push, no se duplica) y el mismo contenido en el resumen del job:
 
 - **Tiempo de pared y suma de tests**, con la diferencia contra la última corrida de `develop` que publicó mediciones.
-- **Contextos de Spring distintos** (unión entre shards) contra el tope de 24, con su diferencia.
+- **Contextos de Spring distintos** (unión entre shards) contra el tope de 32, con su diferencia.
 - **Top 5 de clases más lentas tocadas por el PR** (o del total si el PR no toca clases de test), con su tiempo en `develop`.
 - **Clases `@SlowTest`** con su tiempo y motivo.
 
@@ -226,7 +226,7 @@ python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con
 
 | Falla | Qué hacer |
 |---|---|
-| Más de 24 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
+| Más de 32 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
 | ArchUnit en tests | Leé el mensaje: sleep → Awaitility; `@DirtiesContext` → limpiar estado; `@SpringBootTest` en `domain`/`policy` → test puro; job global → caso de uso con ids. |
 
 **Arranque en frío.** `testsupport/SharedInfrastructureWarmUp` (un `LauncherSessionListener` registrado en `META-INF/services`) inicializa Postgres (Testcontainers), las migraciones de Flyway y el snapshot de `TestDatabaseIsolation` al abrir la sesión de JUnit, antes de que arranque cualquier clase. Solo actúa con la variable `CI` definida (GitHub Actions la define); en local no cambia nada.
