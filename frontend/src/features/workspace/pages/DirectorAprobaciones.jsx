@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { formatearFecha } from '@/lib/comisiones';
 import { useConfigsPendientes } from '@/features/evaluation';
-import { useEgresosPendientes } from '@/features/graduation';
+import { DirectorExceptionsCard, useEgresosPendientes } from '@/features/graduation';
 import { useExcepcionesPendientes } from '@/features/enrollment';
 import { useAuthorizationRequests } from '@/features/billing';
 import { usePendingOfferCycles, SectionScheduleApprovalsPanel } from '@/features/academic-structure';
@@ -121,6 +121,8 @@ export function DirectorAprobaciones() {
       </div>
 
       <SectionScheduleApprovalsPanel />
+
+      <DirectorExceptionsCard />
 
       <SeccionPreview
         titulo="Operaciones de facturación"
