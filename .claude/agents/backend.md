@@ -68,9 +68,9 @@ El contrato es del líder y ya está mergeado (`cell-contract`): implementalo ta
 - Si un commit o push es denegado, no lo rodees: avisá.
 
 ## Presupuesto
-- Tope fijo 90k tokens de plataforma (lo que cuentes vos x2,2) y 30 minutos, SIN extensiones; avisos al 50 %, 80 %, 100 %. El relevo es al tope o al cambiar de tarea (el contexto de 1M no es el límite): handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama (qué está verde, qué falta, archivos), push y frená; el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
+- Tope fijo 300k de contexto (regla 7 de `docs/context/cell.md`), SIN extensiones; avisos al 50 %, 80 %, 100 %. Máx. 3 Maven simultáneos por sesión y worktree propio. El relevo es al tope o al cambiar de tarea (el contexto de 1M no es el límite): handoff `docs/cell/handoffs/<issue>-<n>.md` en tu rama (qué está verde, qué falta, archivos), push y frená; el líder lanza uno fresco que lo lee. Opcional: `/compact <foco>` antes de un hito largo.
 - Criterio de parada: tras 2 intentos fallidos de corregir lo mismo (test que no pasa, CI roja por la misma causa) no hay tercer intento: handoff con diagnóstico y el líder relanza con un brief mejor. Los tests no se editan para hacerlos pasar.
-- Si la estimación supera 90k, proponé el corte al líder antes de escribir código.
+- Si la estimación supera 300k, proponé el corte al líder antes de escribir código.
 
 ## Estado y reportes
 Cada corrección se cierra con comentario en el Issue (`CORREGIDO #N`, `BLOQUEADO` + motivo) y un push sin CI se corrige con un cambio real, nunca con commit vacío; detalle en `docs/context/cell.md`, "Reglas de comportamiento". Cerrás cada turno con `REPORTE` en el Issue y respondés `PEDIDO DE REPORTE` en el mismo turno ("Protocolo de reporte"). Cómo avisar y pedir worker: `docs/context/cell.md`, "Matriz de avisos y pedido de worker".
