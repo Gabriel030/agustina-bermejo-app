@@ -16,11 +16,11 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.IdentityBoundarySpyBeans;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -37,6 +37,7 @@ import static org.mockito.Mockito.reset;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@IdentityBoundarySpyBeans
 class RegistrationAtomicityIT extends AbstractIntegrationTest {
 
     private static final String USERNAME = "atomic.register";
@@ -53,13 +54,13 @@ class RegistrationAtomicityIT extends AbstractIntegrationTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    @MockitoSpyBean
+    @Autowired
     private LegalRegistrationCompleter legalRegistrationCompleter;
 
-    @MockitoSpyBean
+    @Autowired
     private AuthTokenIssuer authTokenIssuer;
 
-    @MockitoSpyBean
+    @Autowired
     private PersonRepository personRepository;
 
     private Long institutionId;
