@@ -58,5 +58,8 @@ class SentryTunnelControllerTest {
 
         when(tunnel.forward(any())).thenReturn(SentryTunnelOutcome.UPSTREAM_UNAVAILABLE);
         mockMvc.perform(post(PATH).content("x")).andExpect(status().isBadGateway());
+
+        when(tunnel.forward(any())).thenReturn(SentryTunnelOutcome.UPSTREAM_REJECTED);
+        mockMvc.perform(post(PATH).content("x")).andExpect(status().isBadGateway());
     }
 }

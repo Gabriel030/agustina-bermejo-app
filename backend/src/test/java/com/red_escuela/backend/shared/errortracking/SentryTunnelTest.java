@@ -80,7 +80,7 @@ class SentryTunnelTest {
 
     @Test
     void neverContactsTheDecoyEvenWhenTheBodyEmbedsItsUrl() {
-        byte[] body = ("{\"dsn\":\"" + dsn + "\",\"url\":\"http://127.0.0.1:" + decoy.getAddress().getPort() + "/\"}\n{}\n")
+        byte[] body = ("{\"dsn\":\"" + dsn + "\",\"url\":\"http://127.0.0.1:" + decoy.getAddress().getPort() + "/\"}\n{\"type\":\"event\"}\n{}\n")
                 .getBytes(StandardCharsets.UTF_8);
 
         tunnel(dsn, 10_000).forward(body);
@@ -139,8 +139,60 @@ class SentryTunnelTest {
 
         SentryTunnelOutcome outcome = tunnel(dsn, 10_000).forward(envelope(dsn));
 
-        assertThat(outcome).isEqualTo(SentryTunnelOutcome.FORWARDED);
+        assertThat(outcome).isEqualTo(SentryTunnelOutcome.UPSTREAM_REJECTED);
         assertThat(decoyPaths).isEmpty();
+    }
+
+    @Test
+    void reportsUpstreamRejectedForClientAndServerErrorStatuses() {
+        upstream.removeContext("/");
+        upstream.createContext("/", exchange -> {
+            exchange.sendResponseHeaders(403, -1);
+            exchange.close();
+        });
+        assertThat(tunnel(dsn, 10_000).forward(envelope(dsn))).isEqualTo(SentryTunnelOutcome.UPSTREAM_REJECTED);
+
+        upstream.removeContext("/");
+        upstream.createContext("/", exchange -> {
+            exchange.sendResponseHeaders(500, -1);
+            exchange.close();
+        });
+        assertThat(tunnel(dsn, 10_000).forward(envelope(dsn))).isEqualTo(SentryTunnelOutcome.UPSTREAM_REJECTED);
+    }
+
+    @Test
+    void acceptsEventTransactionAndSessionItems() {
+        String body = "{\"dsn\":\"" + dsn + "\"}\n{\"type\":\"event\"}\n{}\n{\"type\":\"transaction\"}\n{}\n{\"type\":\"session\"}\n{}\n";
+
+        assertThat(tunnel(dsn, 10_000).forward(body.getBytes(StandardCharsets.UTF_8))).isEqualTo(SentryTunnelOutcome.FORWARDED);
+    }
+
+    @Test
+    void rejectsEnvelopeWithAnyItemTypeOutsideTheAllowlist() {
+        for (String type : List.of("attachment", "profile", "replay_event", "client_report", "check_in", "unknown")) {
+            String body = "{\"dsn\":\"" + dsn + "\"}\n{\"type\":\"event\"}\n{}\n{\"type\":\"" + type + "\"}\n{}\n";
+
+            assertThat(tunnel(dsn, 10_000).forward(body.getBytes(StandardCharsets.UTF_8)))
+                    .as(type).isEqualTo(SentryTunnelOutcome.REJECTED_ENVELOPE);
+        }
+        assertThat(upstreamPaths).isEmpty();
+    }
+
+    @Test
+    void rejectsDisallowedItemHiddenAfterAPayloadDeclaringItsLength() {
+        String payload = "{\"a\":\"x\\ny\"}";
+        String body = "{\"dsn\":\"" + dsn + "\"}\n{\"type\":\"event\",\"length\":" + payload.length() + "}\n" + payload
+                + "\n{\"type\":\"attachment\",\"length\":2}\nzz\n";
+
+        assertThat(tunnel(dsn, 10_000).forward(body.getBytes(StandardCharsets.UTF_8))).isEqualTo(SentryTunnelOutcome.REJECTED_ENVELOPE);
+    }
+
+    @Test
+    void rejectsEnvelopeWithoutItemsOrWithUntypedItem() {
+        assertThat(tunnel(dsn, 10_000).forward(("{\"dsn\":\"" + dsn + "\"}\n").getBytes(StandardCharsets.UTF_8)))
+                .isEqualTo(SentryTunnelOutcome.REJECTED_ENVELOPE);
+        assertThat(tunnel(dsn, 10_000).forward(("{\"dsn\":\"" + dsn + "\"}\n{}\n{}\n").getBytes(StandardCharsets.UTF_8)))
+                .isEqualTo(SentryTunnelOutcome.REJECTED_ENVELOPE);
     }
 
     @Test

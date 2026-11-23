@@ -88180,18 +88180,12 @@
       "post" : {
         "operationId" : "SentryTunnel_forwardEnvelope",
         "responses" : {
-          "200" : {
-            "description" : "OK"
+          "204" : {
+            "description" : "Envelope reenviado"
           },
           "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
+            "content" : { },
+            "description" : "Envelope inválido, de otro DSN o con items no permitidos"
           },
           "401" : {
             "content" : {
@@ -88214,14 +88208,8 @@
             "description" : "Forbidden"
           },
           "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Not Found"
+            "content" : { },
+            "description" : "Túnel inactivo (SENTRY_DSN vacío)"
           },
           "409" : {
             "content" : {
@@ -88232,6 +88220,9 @@
               }
             },
             "description" : "Conflict"
+          },
+          "413" : {
+            "description" : "Envelope mayor al tope"
           },
           "422" : {
             "content" : {
@@ -88251,7 +88242,7 @@
                 }
               }
             },
-            "description" : "Too Many Requests"
+            "description" : "Demasiados envíos desde la misma IP"
           },
           "500" : {
             "content" : {
@@ -88264,14 +88255,8 @@
             "description" : "Internal Server Error"
           },
           "502" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Gateway"
+            "content" : { },
+            "description" : "El proveedor no respondió o rechazó el envelope"
           },
           "503" : {
             "content" : {

@@ -44,5 +44,7 @@ El front puede enviar sus eventos al backend en lugar de hablar directo con Glit
 - Inerte con `SENTRY_DSN` vacío: responde 404 y no abre ninguna conexión.
 - El host destino sale solo del `SENTRY_DSN` del backend (`https://<host>/api/<proyecto>/envelope/`); nunca del cuerpo ni de un header. El `dsn` del encabezado del envelope debe ser idéntico al configurado, si no responde 400.
 - Tope de tamaño: `SENTRY_TUNNEL_MAX_BYTES` (204800 por defecto), 413 si se pasa. No sigue redirecciones; timeouts de 2 s (conexión) y 3 s (lectura); 502 si el upstream no responde.
-- Rate limit por IP compartiendo capacidad con `RATE_LIMIT_REFRESH_PER_MINUTE`; 429 con `Retry-After`.
+- Solo acepta items `event`, `transaction` y `session`; cualquier otro tipo responde 400. Si el proveedor responde 3xx/4xx/5xx, el túnel responde 502.
+- Rate limit por IP con instancia propia (no comparte bucket con refresh) y la misma capacidad que `RATE_LIMIT_REFRESH_PER_MINUTE`; 429 con `Retry-After`. Seguimiento: un tope global del túnel, hoy solo hay tope por IP.
+- Al cablear `main.jsx`, el DSN del front (`VITE_SENTRY_DSN`) debe ser idéntico al `SENTRY_DSN` del backend, o el túnel responde 400.
 - Pendiente (fuera de este PR): cablear `tunnel` en `main.jsx` con su variable de build y ajustar la CSP/Caddy.

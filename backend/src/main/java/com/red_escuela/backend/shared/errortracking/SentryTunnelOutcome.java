@@ -5,5 +5,6 @@ public enum SentryTunnelOutcome {
     DISABLED,
     PAYLOAD_TOO_LARGE,
     REJECTED_ENVELOPE,
+    UPSTREAM_REJECTED,
     UPSTREAM_UNAVAILABLE
 }

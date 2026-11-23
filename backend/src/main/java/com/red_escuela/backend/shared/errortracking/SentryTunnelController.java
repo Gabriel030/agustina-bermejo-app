@@ -1,5 +1,8 @@
 package com.red_escuela.backend.shared.errortracking;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import org.springframework.http.HttpStatus;
@@ -18,6 +21,14 @@ public class SentryTunnelController {
         this.sentryTunnel = sentryTunnel;
     }
 
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Envelope reenviado", content = @Content),
+        @ApiResponse(responseCode = "400", description = "Envelope inválido, de otro DSN o con items no permitidos", content = @Content),
+        @ApiResponse(responseCode = "404", description = "Túnel inactivo (SENTRY_DSN vacío)", content = @Content),
+        @ApiResponse(responseCode = "413", description = "Envelope mayor al tope", content = @Content),
+        @ApiResponse(responseCode = "429", description = "Demasiados envíos desde la misma IP"),
+        @ApiResponse(responseCode = "502", description = "El proveedor no respondió o rechazó el envelope", content = @Content)
+    })
     @PostMapping(consumes = "*/*")
     public ResponseEntity<Void> forwardEnvelope(HttpServletRequest request) throws IOException {
         if (!sentryTunnel.isEnabled()) {
@@ -33,7 +44,7 @@ public class SentryTunnelController {
             case DISABLED -> ResponseEntity.notFound().build();
             case PAYLOAD_TOO_LARGE -> ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
             case REJECTED_ENVELOPE -> ResponseEntity.badRequest().build();
-            case UPSTREAM_UNAVAILABLE -> ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
+            case UPSTREAM_REJECTED, UPSTREAM_UNAVAILABLE -> ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
         };
     }
 }
