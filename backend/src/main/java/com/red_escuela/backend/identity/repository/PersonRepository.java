@@ -38,6 +38,14 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
     @Query("select count(p) from Person p where p.id in :ids and (p.grantSystemAccess = true or p.password is not null)")
     long countWithSystemAccessByIdIn(@Param("ids") Collection<Long> ids);
 
+    @Query("""
+            select distinct p from Person p join p.roles r
+            where p.id in :ids and r.name = 'ALUMNO' and p.password is null
+              and (p.grantSystemAccess is null or p.grantSystemAccess = false)
+            order by p.id
+            """)
+    List<Person> findStudentsPendingActivationByIdIn(@Param("ids") Collection<Long> ids);
+
     @Query("select p.address.id from Person p where p.id in :ids and p.address is not null")
     List<Long> findAddressIdsByIdIn(@Param("ids") Collection<Long> ids);
 
