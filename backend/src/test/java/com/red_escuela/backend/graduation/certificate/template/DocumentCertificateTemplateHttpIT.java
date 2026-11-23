@@ -155,7 +155,7 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
 
         send(get(REGULAR), administrative)
                 .andExpect(jsonPath("$.published.versionNumber").value(1))
-                .andExpect(jsonPath("$.published.content.title").value("CONSTANCIA DE ALUMNO REGULAR"))
+                .andExpect(jsonPath("$.published.content.title").value("Constancia de alumno regular"))
                 .andExpect(jsonPath("$.draft.content.title").value("CONSTANCIA NUEVA"))
                 .andExpect(jsonPath("$.hasUnpublishedChanges").value(true));
     }
