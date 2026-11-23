@@ -44,7 +44,7 @@ export function DataImportNewPage() {
             <Button type="button" variant="outline" asChild>
               <Link to={LIST_PATH}>Cancelar</Link>
             </Button>
-            <Button type="submit" disabled={!trimmed} loading={create.isPending}>
+            <Button className="min-h-11" type="submit" disabled={!trimmed} loading={create.isPending}>
               Crear importación
             </Button>
           </div>

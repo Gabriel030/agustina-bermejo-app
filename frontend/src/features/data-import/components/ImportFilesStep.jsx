@@ -64,7 +64,7 @@ export function ImportFilesStep({ batch, onValidated }) {
         summary={loadedBlocks === 0 ? 'Todavía no cargaste archivos' : `${loadedBlocks} ${loadedBlocks === 1 ? 'bloque cargado' : 'bloques cargados'}`}
         hint="Revisar no escribe nada: solo te muestra qué se crearía."
       >
-        <Button type="button" disabled={loadedBlocks === 0} loading={validate.isPending} onClick={handleValidate}>
+        <Button className="min-h-11" type="button" disabled={loadedBlocks === 0} loading={validate.isPending} onClick={handleValidate}>
           Revisar archivos
         </Button>
       </StickyActionBar>

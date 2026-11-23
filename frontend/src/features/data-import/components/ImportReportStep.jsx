@@ -112,18 +112,18 @@ export function ImportReportStep({ batch }) {
         summary="Reporte de la importación"
         hint={readOnly ? 'Solo lectura.' : canSeal && !downloaded ? 'Descargá el reporte para poder cerrar.' : undefined}
       >
-        <Button type="button" variant="outline" loading={downloading} onClick={handleDownload}>
+        <Button className="min-h-11" type="button" variant="outline" loading={downloading} onClick={handleDownload}>
           <Download className="size-4" aria-hidden="true" />
           Descargar reporte
         </Button>
         {batch.status === 'PARTIAL' && (
-          <Button type="button" loading={retry.isPending} onClick={handleRetry}>
+          <Button className="min-h-11" type="button" loading={retry.isPending} onClick={handleRetry}>
             <RotateCcw className="size-4" aria-hidden="true" />
             Reintentar lo que falta
           </Button>
         )}
         {canSeal && (
-          <Button type="button" disabled={!downloaded} onClick={() => setSealOpen(true)}>
+          <Button className="min-h-11" type="button" disabled={!downloaded} onClick={() => setSealOpen(true)}>
             Cerrar la importación
           </Button>
         )}

@@ -14,7 +14,7 @@ export function FeatureImpactStep({ query, secondsLeft, onRecalculate }) {
     return (
       <div role="alert" className="flex flex-col items-start gap-2 text-sm text-danger">
         <span className="font-semibold">No pudimos calcular el impacto del cambio.</span>
-        <Button variant="outline" onClick={() => query.refetch()}>Reintentar</Button>
+        <Button className="min-h-11" variant="outline" onClick={() => query.refetch()}>Reintentar</Button>
       </div>
     );
   }
@@ -41,7 +41,7 @@ export function FeatureImpactStep({ query, secondsLeft, onRecalculate }) {
       {expired ? (
         <div role="alert" className="flex items-center justify-between gap-2 rounded-xl bg-warning-bg p-3 text-sm text-warning">
           <b>La verificación venció.</b>
-          <Button variant="outline" onClick={onRecalculate} loading={query.isFetching}>Recalcular</Button>
+          <Button className="min-h-11" variant="outline" onClick={onRecalculate} loading={query.isFetching}>Recalcular</Button>
         </div>
       ) : (
         <p className="text-xs text-ink-faint">

@@ -17,7 +17,7 @@ export function PermissionToolbar({ modules, filterableRoles, query, onQueryChan
             </NativeSelectOption>
           ))}
         </NativeSelect>
-        <Button type="button" variant="ghost" onClick={onToggleAll}>
+        <Button className="min-h-11 md:min-h-8" type="button" variant="ghost" onClick={onToggleAll}>
           {allOpen ? 'Contraer todo' : 'Expandir todo'}
         </Button>
       </div>
@@ -29,7 +29,7 @@ export function PermissionToolbar({ modules, filterableRoles, query, onQueryChan
           </ChoiceChip>
         ))}
         {roleFilter.length > 0 && (
-          <Button type="button" variant="ghost" size="sm" onClick={onClearRoles}>
+          <Button className="min-h-11 md:min-h-8" type="button" variant="ghost" size="sm" onClick={onClearRoles}>
             Limpiar
           </Button>
         )}
