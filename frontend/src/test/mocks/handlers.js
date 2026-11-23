@@ -15,6 +15,7 @@ import {
 import { sectionEnrollment } from '@/test/fixtures/studentHome';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
+import { invitationWaveHandlers } from '@/test/mocks/invitationWaveHandlers';
 
 import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
@@ -594,4 +595,5 @@ export const handlers = [
     HttpResponse.json({ items: [permissionDiscrepancy()], page: 0, size: 50, totalElements: 1 }),
   ),
   ...constanciasHandlers,
+  ...invitationWaveHandlers,
 ];
