@@ -106,6 +106,8 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
             @Param("statuses") java.util.Collection<EnrollmentStatus> statuses);
 
     interface CurriculumProgressRow {
+        Long getEnrollmentId();
+
         Long getSubjectId();
 
         EnrollmentStatus getStatus();
@@ -114,7 +116,7 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
     }
 
     @Query("""
-            select e.subjectSection.subject.id as subjectId, e.status as status, e.finalScore as finalScore
+            select e.id as enrollmentId, e.subjectSection.subject.id as subjectId, e.status as status, e.finalScore as finalScore
             from SubjectSectionEnrollment e
             where e.programEnrollment.id = :programEnrollmentId
             """)
