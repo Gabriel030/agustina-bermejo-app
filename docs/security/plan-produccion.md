@@ -175,6 +175,10 @@ Rate limit y bloqueo de login: **ya existen y no se tocaron**. Rate limit por IP
 3. Aprobar la tabla `audit_log` y las etapas (sección 3), y confirmar qué pasó con `import_batch_event`.
 4. Confirmar el dominio definitivo para decidir HSTS `includeSubDomains`/`preload`.
 
+## 7. Pentest: solo interno
+
+Decisión de Gabriel (23-nov-2026): no hay pentest externo (24.6b descartado). El pentest interno de [pentest-interno.md](pentest-interno.md) es el único y su criterio de aprobación (sección 3) es el cierre de seguridad previo a producción. Lo que no se puede probar desde adentro (ingeniería social, seguridad física, infraestructura del VPS y de la red, DNS y correo, denegación de servicio real, cuentas de proveedores) queda como riesgo a decidir por Gabriel en el checklist de producción. B4 (verificar la preferencia de Mercado Pago) y A7 (propiedad en justificaciones y avisos) se cierran antes de encender pagos.
+
 ## Decisiones del 14-nov
 
 - Cookie HttpOnly: aprobada para implementar, siguiendo el plan de cinco pasos compatibles hacia atrás.
