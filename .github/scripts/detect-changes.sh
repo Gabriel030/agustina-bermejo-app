@@ -45,7 +45,7 @@ migration_scope='^(backend/src/main/resources/db/migration/|backend/src/test/.*M
 run_everything_scope='(^|/)(pom\.xml|mvnw|mvnw\.cmd|package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$|^backend/\.mvn/'
 classified_scope='^(backend/|frontend/|perf/|docs/|\.claude/|\.gitignore$|diagrama_entidades\.puml$)|^[^.].*\.md$'
 docs_backend_scope='^(docs/|perf/seed-large\.sql$)|^[^.].*\.md$'
-docs_frontend_scope='^docs/(api/error-catalog|context/testing)\.md$'
+frontend_read_scope='^(docs/(api/error-catalog|context/testing)\.md|backend/src/main/java/.*/shared/audit/AuditAction\.java)$'
 
 demo_seed_scope='^(backend/src/main/java/.*/(config|demo)/[^/]*Demo[^/]*\.java$|backend/src/main/java/.*/demo/|backend/src/main/java/.*Seed[^/]*\.java$|backend/src/test/java/.*Demo[^/]*SeedIT\.java$|backend/src/main/resources/application-demo\.properties$|backend/src/main/resources/db/migration/)'
 
@@ -98,7 +98,7 @@ if [ -n "$base" ]; then
       if grep -qE "$docs_backend_scope" <<< "$changed"; then
         relevant=true
       fi
-      if grep -qE "$docs_frontend_scope" <<< "$changed"; then
+      if grep -qE "$frontend_read_scope" <<< "$changed"; then
         frontend=true
       fi
     fi

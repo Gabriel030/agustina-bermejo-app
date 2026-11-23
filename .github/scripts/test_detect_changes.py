@@ -174,6 +174,12 @@ class DetectChangesTest(unittest.TestCase):
                 result = self.pull_request_changing({path: 'x'})
                 self.assertEqual('true', result['frontend'])
 
+    def test_pull_request_touching_the_audit_action_enum_runs_the_frontend(self):
+        self.assert_areas({'backend/src/main/java/com/red_escuela/backend/shared/audit/AuditAction.java': 'x'}, 'true', 'true')
+
+    def test_pull_request_touching_another_audit_class_skips_the_frontend(self):
+        self.assert_areas({'backend/src/main/java/com/red_escuela/backend/shared/audit/AuditLog.java': 'x'}, 'true', 'false')
+
     def test_pull_request_touching_other_documents_skips_the_frontend(self):
         self.assert_areas({'docs/billing/policy-catalog.md': 'x'}, 'true', 'false')
 
