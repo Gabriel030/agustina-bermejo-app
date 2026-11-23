@@ -7,9 +7,8 @@ import { errorBody } from '@/test/fixtures/errors';
 import { InvitationWaveListPage } from './InvitationWaveListPage';
 import { API, buildWave, springPage } from '../test/fixtures';
 import { invitationWaveHandlers } from '../test/handlers';
-import { dropUnpublishedContractDeviations, renderInvitationScreen } from '../test/render';
+import { renderInvitationScreen } from '../test/render';
 
-dropUnpublishedContractDeviations();
 
 function renderList(access) {
   return renderInvitationScreen(<InvitationWaveListPage />, { path: '/director/invitaciones', route: '/director/invitaciones', access });

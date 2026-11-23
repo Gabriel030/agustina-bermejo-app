@@ -94,7 +94,7 @@ export const ROLE_MENU = {
     periodos,
   ],
   administrativo: administrativeMenu,
-  subdirector: [...administrativeMenu.filter((entry) => entry !== debtExceptionCertificates && entry !== invitations), permissions],
+  subdirector: [...administrativeMenu.filter((entry) => entry !== debtExceptionCertificates), permissions],
   director: [
     inicio,
     alumnos,

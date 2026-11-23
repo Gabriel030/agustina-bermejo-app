@@ -5,7 +5,7 @@ import { ROLE_MENU, groupMenuItems, menuItemsFor, pagesFor } from '@/routes/role
 
 const SCREEN = 'invitaciones';
 const PATHS = [SCREEN, `${SCREEN}/nueva`, `${SCREEN}/:waveId`, `${SCREEN}/:waveId/vista-previa`];
-const ROLES_WITH_ACCESS = ['administrativo', 'director'];
+const ROLES_WITH_ACCESS = ['administrativo', 'subdirector', 'director'];
 const ROLES_WITHOUT_ACCESS = Object.keys(ROLE_MENU).filter((role) => !ROLES_WITH_ACCESS.includes(role));
 
 describe('invitation waves screens access by role', () => {
@@ -28,8 +28,8 @@ describe('invitation waves screens access by role', () => {
     expect(menuItemsFor(role).map((item) => item.label)).not.toContain('Invitaciones');
   });
 
-  it('covers subdirector, teacher, student and preceptor among those without access', () => {
-    expect(ROLES_WITHOUT_ACCESS).toEqual(expect.arrayContaining(['subdirector', 'docente', 'alumno', 'preceptor']));
+  it('covers teacher, student and preceptor among those without access', () => {
+    expect(ROLES_WITHOUT_ACCESS).toEqual(expect.arrayContaining(['docente', 'alumno', 'preceptor']));
   });
 
   it('groupsTheDirectorEntryUnderPersonas', () => {

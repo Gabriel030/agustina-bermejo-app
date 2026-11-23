@@ -8,14 +8,14 @@ import { installFixedClock } from '@/test/fixedClock';
 import { InvitationWaveDetailPage } from './InvitationWaveDetailPage';
 import { API, SETTINGS, buildWave, springPage } from '../test/fixtures';
 import { invitationWaveHandlers, lifecycleHandlers, sampleRecipients } from '../test/handlers';
-import { dropUnpublishedContractDeviations, renderInvitationScreen } from '../test/render';
+import { acceptPendingRetryEndpoint, renderInvitationScreen } from '../test/render';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast: toastMock }));
 const saveBlobMock = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/saveBlob', () => ({ saveBlob: saveBlobMock }));
 
-dropUnpublishedContractDeviations();
+acceptPendingRetryEndpoint();
 installFixedClock({ now: '2026-11-23T12:00:00-03:00', advanceWithRealTime: true });
 
 beforeEach(() => {

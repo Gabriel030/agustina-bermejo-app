@@ -9,7 +9,7 @@ import { Paginador } from '@/components/Paginador';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { formatDecimal } from '@/lib/formatNumber';
-import { formatInstantDate } from '../lib/invitationWaveMath';
+import { formatInstantDate, totalPagesOf } from '../lib/invitationWaveMath';
 import { RECIPIENT_STATUS, RECIPIENT_STATUS_ORDER, lacksPersonalData } from '../lib/invitationWaveLabels';
 import { NoAccessState } from '../components/NoAccessState';
 import { PersonalDataNotice } from '../components/PersonalDataNotice';
@@ -100,7 +100,7 @@ function StatusFilters({ wave, status, onChange }) {
 
 function RecipientsSection({ wave, settings, status, page, onStatusChange, onPageChange }) {
   const recipients = useInvitationWaveRecipients(wave.id, { status, page, size: PAGE_SIZE });
-  const rows = recipients.data?.content ?? [];
+  const rows = recipients.data?.items ?? [];
   const total = recipients.data?.totalElements;
   const filterLabel = status ? RECIPIENT_STATUS[status].plural.toLowerCase() : null;
   return (
@@ -126,7 +126,7 @@ function RecipientsSection({ wave, settings, status, page, onStatusChange, onPag
         onRetry={recipients.refetch}
         emptyState={<EmptyState title="No hay destinatarios en este estado" />}
       />
-      <Paginador page={page} totalPages={recipients.data?.totalPages ?? 1} onChange={onPageChange} />
+      <Paginador page={page} totalPages={totalPagesOf(recipients.data)} onChange={onPageChange} />
     </GlassCard>
   );
 }

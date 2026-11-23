@@ -74,3 +74,8 @@ export function reportFilename(waveId, now = new Date()) {
   const pad = (number) => String(number).padStart(2, '0');
   return `invitaciones-oleada-${waveId}-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}.csv`;
 }
+
+export function totalPagesOf(page) {
+  if (!page || !page.size) return 1;
+  return Math.max(1, Math.ceil(page.totalElements / page.size));
+}

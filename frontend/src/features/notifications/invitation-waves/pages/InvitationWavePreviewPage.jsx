@@ -14,7 +14,7 @@ import { StickyActionBar } from '@/components/StickyActionBar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDecimal } from '@/lib/formatNumber';
-import { estimateSchedule } from '../lib/invitationWaveMath';
+import { estimateSchedule, totalPagesOf } from '../lib/invitationWaveMath';
 import { EXCLUSION_LABELS, lacksPersonalData } from '../lib/invitationWaveLabels';
 import { PersonalDataNotice } from '../components/PersonalDataNotice';
 import { NoAccessState } from '../components/NoAccessState';
@@ -83,7 +83,7 @@ export function InvitationWavePreviewPage() {
   }
 
   const wave = waveQuery.data;
-  const rows = recipients.data?.content ?? [];
+  const rows = recipients.data?.items ?? [];
   const eligible = wave.eligibleCount;
   const excluded = wave.excludedTotal;
   const estimate = estimateSchedule({
@@ -169,7 +169,7 @@ export function InvitationWavePreviewPage() {
         </Tabs>
         <Paginador
           page={pages[tab]}
-          totalPages={recipients.data?.totalPages ?? 1}
+          totalPages={totalPagesOf(recipients.data)}
           onChange={(next) => setPages((current) => ({ ...current, [tab]: next }))}
         />
       </GlassCard>

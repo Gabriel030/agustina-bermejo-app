@@ -7,7 +7,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { Paginador } from '@/components/Paginador';
 import { DataTable } from '@/components/table/DataTable';
 import { Button } from '@/components/ui/button';
-import { formatInstantDate } from '../lib/invitationWaveMath';
+import { formatInstantDate, totalPagesOf } from '../lib/invitationWaveMath';
 import { NoAccessState } from '../components/NoAccessState';
 import { WaveProgress } from '../components/WaveProgress';
 import { WaveStatusPill } from '../components/WaveStatusPill';
@@ -84,7 +84,7 @@ export function InvitationWaveListPage() {
       <GlassCard className="p-2 sm:p-4">
         <DataTable
           columns={columns}
-          data={query.data?.content ?? []}
+          data={query.data?.items ?? []}
           getRowId={(wave) => String(wave.id)}
           isLoading={query.isLoading}
           isError={query.isError}
@@ -112,7 +112,7 @@ export function InvitationWaveListPage() {
             />
           }
         />
-        <Paginador page={page} totalPages={query.data?.totalPages ?? 1} onChange={changePage} />
+        <Paginador page={page} totalPages={totalPagesOf(query.data)} onChange={changePage} />
       </GlassCard>
     </PageContainer>
   );

@@ -1,16 +1,13 @@
+import { invitationRecipient, invitationWave, invitationWavePage, invitationWaveSettings } from '@/test/fixtures/invitationWaves';
+
 export const API = 'http://localhost:8080';
 
-export const SETTINGS = {
-  globalDailyCap: 300,
-  maxBatchSize: 100,
-  maxRecipients: 5000,
-  sendWindow: { start: '09:00', end: '20:00', zone: 'America/Argentina/Buenos_Aires' },
-};
+export const SETTINGS = invitationWaveSettings();
 
 export const IMPORT_BATCHES = [
-  { id: 11, name: 'Carga inicial 2026', committedAt: '2026-10-01T12:00:00Z', studentsPendingActivation: 140 },
-  { id: 12, name: 'Ingresantes 2027', committedAt: '2026-11-10T12:00:00Z', studentsPendingActivation: 85 },
-  { id: 13, name: 'Lote gigante', committedAt: '2026-11-12T12:00:00Z', studentsPendingActivation: 9000 },
+  { id: 11, name: 'Carga inicial 2026', committedAt: '2026-10-01T12:00:00', studentsPendingActivation: 140 },
+  { id: 12, name: 'Ingresantes 2027', committedAt: '2026-11-10T12:00:00', studentsPendingActivation: 85 },
+  { id: 13, name: 'Lote gigante', committedAt: '2026-11-12T12:00:00', studentsPendingActivation: 9000 },
 ];
 
 const BASE_WAVE = {
@@ -70,37 +67,24 @@ const BY_STATUS = {
 };
 
 export function buildWave(status = 'DRAFT', overrides = {}) {
-  return { ...BASE_WAVE, status, ...BY_STATUS[status], ...overrides };
+  return invitationWave({ ...BASE_WAVE, status, ...BY_STATUS[status], ...overrides });
 }
 
-export function springPage(content, { page = 0, size = 20, total = content.length } = {}) {
-  const totalPages = Math.max(1, Math.ceil(total / size));
-  return {
-    content,
-    totalElements: total,
-    totalPages,
-    number: page,
-    size,
-    numberOfElements: content.length,
-    first: page === 0,
-    last: page >= totalPages - 1,
-    empty: content.length === 0,
-  };
+export function springPage(items, { page = 0, size = 20, total = items.length } = {}) {
+  return invitationWavePage(items, { page, size, totalElements: total });
 }
 
 export function buildRecipient(personId, overrides = {}) {
-  return {
+  return invitationRecipient({
     personId,
     status: 'PENDING',
-    exclusionReason: null,
     attempts: 0,
-    lastErrorCode: null,
     sentAt: null,
     lastAttemptAt: null,
     displayName: `Apellido${personId}, Nombre${personId}`,
     email: `persona${personId}@ejemplo.edu.ar`,
     ...overrides,
-  };
+  });
 }
 
 export function withoutPersonalData(recipient) {

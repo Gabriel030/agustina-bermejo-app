@@ -9,11 +9,10 @@ import { InvitationWaveListPage } from './InvitationWaveListPage';
 import { InvitationWavePreviewPage } from './InvitationWavePreviewPage';
 import { buildRecipient, buildWave } from '../test/fixtures';
 import { invitationWaveHandlers, lifecycleHandlers, sampleRecipients } from '../test/handlers';
-import { dropUnpublishedContractDeviations, renderInvitationScreen } from '../test/render';
+import { renderInvitationScreen } from '../test/render';
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-dropUnpublishedContractDeviations();
 
 describe('invitation waves accessibility', () => {
   it('listHasNoAxeViolations', async () => {

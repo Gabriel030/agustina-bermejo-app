@@ -12,9 +12,9 @@ export const routes = {
   shared: [],
   role: [
     { roles: ['administrativo', 'director'], path: 'comunicaciones/nuevo', element: <BroadcastWizard /> },
-    { roles: INVITATION_ROLES, excludeSubdirector: true, path: 'invitaciones', element: <InvitationWaveListPage /> },
-    { roles: INVITATION_ROLES, excludeSubdirector: true, path: 'invitaciones/nueva', element: <InvitationWaveCreatePage /> },
-    { roles: INVITATION_ROLES, excludeSubdirector: true, path: 'invitaciones/:waveId', element: <InvitationWaveDetailPage /> },
-    { roles: INVITATION_ROLES, excludeSubdirector: true, path: 'invitaciones/:waveId/vista-previa', element: <InvitationWavePreviewPage /> },
+    { roles: INVITATION_ROLES, path: 'invitaciones', element: <InvitationWaveListPage /> },
+    { roles: INVITATION_ROLES, path: 'invitaciones/nueva', element: <InvitationWaveCreatePage /> },
+    { roles: INVITATION_ROLES, path: 'invitaciones/:waveId', element: <InvitationWaveDetailPage /> },
+    { roles: INVITATION_ROLES, path: 'invitaciones/:waveId/vista-previa', element: <InvitationWavePreviewPage /> },
   ],
 };

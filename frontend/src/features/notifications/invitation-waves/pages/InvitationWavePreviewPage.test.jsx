@@ -7,9 +7,8 @@ import { errorBody } from '@/test/fixtures/errors';
 import { InvitationWavePreviewPage } from './InvitationWavePreviewPage';
 import { API, buildRecipient, buildWave, withoutPersonalData } from '../test/fixtures';
 import { invitationWaveHandlers } from '../test/handlers';
-import { dropUnpublishedContractDeviations, renderInvitationScreen } from '../test/render';
+import { renderInvitationScreen } from '../test/render';
 
-dropUnpublishedContractDeviations();
 
 const PATH = '/director/invitaciones/:waveId/vista-previa';
 const ROUTE = '/director/invitaciones/1/vista-previa';

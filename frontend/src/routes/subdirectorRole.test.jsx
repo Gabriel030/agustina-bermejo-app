@@ -19,9 +19,6 @@ function sessionWithRoles(roles) {
 
 const DENIED_TO_SUBDIRECTOR = 'constancias-por-excepcion';
 const DENIED_LABEL = 'Emitir por excepción';
-const INVITATIONS_LABEL = 'Invitaciones';
-const INVITATION_PATHS = ['invitaciones', 'invitaciones/nueva', 'invitaciones/:waveId', 'invitaciones/:waveId/vista-previa'];
-const DENIED_PATHS = [DENIED_TO_SUBDIRECTOR, ...INVITATION_PATHS];
 
 function labelsOf(role) {
   return menuItemsFor(role).map((item) => item.label);
@@ -47,7 +44,7 @@ beforeEach(() => {
 
 describe('SUBDIRECTOR inherits ADMINISTRATIVO', () => {
   it('shows the same menu as administrativo plus Roles y permisos', () => {
-    expect(labelsOf('subdirector')).toEqual([...labelsOf('administrativo').filter((label) => label !== DENIED_LABEL && label !== INVITATIONS_LABEL), 'Roles y permisos']);
+    expect(labelsOf('subdirector')).toEqual([...labelsOf('administrativo').filter((label) => label !== DENIED_LABEL), 'Roles y permisos']);
   });
 
   it('keeps Emitir por excepción out of the subdirector menu, routes and pages', () => {
@@ -60,21 +57,9 @@ describe('SUBDIRECTOR inherits ADMINISTRATIVO', () => {
     expect(pagesFor('subdirector')).not.toContain(DENIED_TO_SUBDIRECTOR);
   });
 
-  it('keeps the invitation waves out of the subdirector menu, routes and pages', () => {
-    expect(labelsOf('administrativo')).toContain(INVITATIONS_LABEL);
-    expect(labelsOf('director')).toContain(INVITATIONS_LABEL);
-    expect(labelsOf('subdirector')).not.toContain(INVITATIONS_LABEL);
-    INVITATION_PATHS.forEach((path) => {
-      expect(roleRoutesFor('administrativo').map((route) => route.path)).toContain(path);
-      expect(roleRoutesFor('director').map((route) => route.path)).toContain(path);
-      expect(roleRoutesFor('subdirector').map((route) => route.path)).not.toContain(path);
-    });
-    expect(pagesFor('subdirector')).not.toContain('invitaciones');
-  });
-
   it('gets every screen that administrativo gets, and the permissions screen', () => {
     const subdirectorPaths = roleRoutesFor('subdirector').map((route) => route.path);
-    const administrativoPaths = roleRoutesFor('administrativo').map((route) => route.path).filter((path) => !DENIED_PATHS.includes(path));
+    const administrativoPaths = roleRoutesFor('administrativo').map((route) => route.path).filter((path) => path !== DENIED_TO_SUBDIRECTOR);
     expect(subdirectorPaths).toEqual(expect.arrayContaining(administrativoPaths));
     expect(subdirectorPaths).toContain('permisos');
   });
@@ -84,7 +69,7 @@ describe('SUBDIRECTOR inherits ADMINISTRATIVO', () => {
   });
 
   it('keeps the subdirector pages in the layout pages list', () => {
-    expect(pagesFor('subdirector')).toEqual(expect.arrayContaining(pagesFor('administrativo').filter((slug) => !DENIED_PATHS.includes(slug))));
+    expect(pagesFor('subdirector')).toEqual(expect.arrayContaining(pagesFor('administrativo').filter((slug) => slug !== DENIED_TO_SUBDIRECTOR)));
   });
 
   it('sends a subdirector who opens an administrativo link to the same screen under /subdirector', () => {

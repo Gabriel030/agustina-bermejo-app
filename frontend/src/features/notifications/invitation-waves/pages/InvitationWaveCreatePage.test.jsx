@@ -7,12 +7,11 @@ import { errorBody } from '@/test/fixtures/errors';
 import { InvitationWaveCreatePage } from './InvitationWaveCreatePage';
 import { API, IMPORT_BATCHES, SETTINGS, buildWave } from '../test/fixtures';
 import { invitationWaveHandlers } from '../test/handlers';
-import { dropUnpublishedContractDeviations, renderInvitationScreen } from '../test/render';
+import { renderInvitationScreen } from '../test/render';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast: toastMock }));
 
-dropUnpublishedContractDeviations();
 
 beforeEach(() => {
   toastMock.success.mockClear();
