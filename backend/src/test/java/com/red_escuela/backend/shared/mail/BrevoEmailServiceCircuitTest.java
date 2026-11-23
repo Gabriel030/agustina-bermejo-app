@@ -1,6 +1,11 @@
 package com.red_escuela.backend.shared.mail;
 
 import com.red_escuela.backend.shared.exception.CircuitOpenException;
+import com.red_escuela.backend.shared.resilience.Bulkhead;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
+import com.red_escuela.backend.shared.resilience.BulkheadSaturator;
+import com.red_escuela.backend.shared.resilience.CircuitBreaker;
+import com.red_escuela.backend.shared.resilience.CircuitBreakerState;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.mail.Session;
@@ -26,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,6 +64,8 @@ class BrevoEmailServiceCircuitTest {
         };
         MockEnvironment environment = new MockEnvironment()
                 .withProperty("resilience.default.enabled", "true")
+                .withProperty("resilience.default.max-concurrent", "4")
+                .withProperty("resilience.default.max-wait", "0ms")
                 .withProperty("resilience.default.window", "2")
                 .withProperty("resilience.default.failure-threshold", "2")
                 .withProperty("resilience.default.wait-open", "30s");
@@ -65,7 +73,8 @@ class BrevoEmailServiceCircuitTest {
         when(mailSender.createMimeMessage()).thenAnswer(call -> new MimeMessage(Session.getInstance(new Properties())));
         recipient = new MailRecipient(7L, "Ana", "student@example.com");
         CircuitBreakerFactory factory = new CircuitBreakerFactory(environment, clock, new SimpleMeterRegistry());
-        service = new BrevoEmailService(new CircuitBreakingMailSender(mailSender, factory.breakerNamed(MailCircuit.NAME)),
+        service = new BrevoEmailService(new CircuitBreakingMailSender(mailSender, factory.breakerNamed(MailCircuit.NAME),
+                new BulkheadFactory(environment, new SimpleMeterRegistry()).bulkheadNamed(MailCircuit.NAME)),
                 "from@example.com");
     }
 
@@ -86,6 +95,32 @@ class BrevoEmailServiceCircuitTest {
         service.sendPasswordResetCode(recipient, "Red Escuela", "123456");
 
         verify(mailSender, times(3)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void aFullBulkheadRejectsSmtpSendsWithCircuitOpenWithoutTouchingSmtpOrOpeningTheCircuit() {
+        MockEnvironment tight = new MockEnvironment()
+                .withProperty("resilience.default.enabled", "true")
+                .withProperty("resilience.default.max-concurrent", "1")
+                .withProperty("resilience.default.max-wait", "20ms")
+                .withProperty("resilience.default.window", "2")
+                .withProperty("resilience.default.failure-threshold", "2")
+                .withProperty("resilience.default.wait-open", "30s");
+        Bulkhead bulkhead = new BulkheadFactory(tight, new SimpleMeterRegistry()).bulkheadNamed(MailCircuit.NAME);
+        CircuitBreaker breaker = new CircuitBreakerFactory(tight, Clock.systemUTC(), new SimpleMeterRegistry()).breakerNamed(MailCircuit.NAME);
+        BrevoEmailService guarded = new BrevoEmailService(new CircuitBreakingMailSender(mailSender, breaker, bulkhead), "from@example.com");
+
+        try (BulkheadSaturator saturated = BulkheadSaturator.occupying(bulkhead, 1)) {
+            for (int i = 0; i < 3; i++) {
+                assertThatThrownBy(() -> guarded.sendPasswordResetCode(recipient, "Red Escuela", "123456")).isInstanceOf(CircuitOpenException.class);
+            }
+            verify(mailSender, never()).send(any(MimeMessage.class));
+            assertThat(breaker.state()).isEqualTo(CircuitBreakerState.CLOSED);
+        }
+
+        guarded.sendPasswordResetCode(recipient, "Red Escuela", "123456");
+        verify(mailSender, times(1)).send(any(MimeMessage.class));
+        assertThat(bulkhead.availablePermits()).isEqualTo(1);
     }
 
     @Test
