@@ -595,6 +595,10 @@ POST,/graduation-certificates/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY
 POST,/graduation-certificates/batch,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""items"":[{""kind"":""PROGRAM"",""enrollmentId"":1}]}"
 POST,/graduation-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/graduation-certificates/{id}/reissue,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+GET,/graduation-certificate-reviews,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+POST,/graduation-certificate-reviews/{graduationRequestId}/enable,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+POST,/graduation-certificate-reviews/{graduationRequestId}/disable,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/graduation-certificate-reviews/batch,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""graduationRequestIds"":[1],""decision"":""ENABLE""}"
 GET,/certificate-templates/{kind},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/certificate-templates/{kind}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/certificate-templates/{kind}/versions/{number},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
