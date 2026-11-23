@@ -60,6 +60,7 @@ POST,/email-change-preview,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/approve-email-change,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/certificate-exceptions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/certificate-exceptions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1,""organismKind"":""COURT"",""organismReference"":""Causa 1/2026"",""reason"":""El alumno presentó un reclamo formal ante el organismo""}"
+POST,/certificate-exceptions/direct,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1,""organismKind"":""COURT"",""organismReference"":""Causa 1/2026"",""reason"":""El alumno presentó un reclamo formal ante el organismo""}"
 GET,/certificate-exceptions/{id},DENY,DENY,DENY,DENY,OWNER,ALLOW,ALLOW,DENY,certificate-exception,
 POST,/certificate-exceptions/{id}/approve,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/certificate-exceptions/{id}/reject,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"

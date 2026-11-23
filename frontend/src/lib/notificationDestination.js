@@ -74,6 +74,7 @@ export const NOTIFICATION_DESTINATIONS = {
   REGULAR_CERTIFICATE_REJECTED: [alumno('/alumno/mis-carreras?tab=tramites')],
   CERTIFICATE_EXCEPTION_REQUESTED: [staff(['director'], 'aprobaciones')],
   CERTIFICATE_EXCEPTION_DECIDED: [staff(['administrativo', 'director'], 'inicio')],
+  CERTIFICATE_EXCEPTION_DIRECT_CREATED: [staff(['administrativo'], 'inicio')],
   PAYMENT_RECEIPT_APPROVED: [PAYMENTS],
   PAYMENT_RECEIPT_REJECTED: [PAYMENTS],
   ANNOUNCEMENT_PUBLISHED: [

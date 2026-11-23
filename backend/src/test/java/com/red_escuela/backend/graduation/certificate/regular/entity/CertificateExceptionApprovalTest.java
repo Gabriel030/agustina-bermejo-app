@@ -238,4 +238,58 @@ class CertificateExceptionApprovalTest {
         approval.withdraw(REQUESTER, NOW);
         assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.WITHDRAWN);
     }
+
+    private CertificateExceptionApproval directlyCreated() {
+        return CertificateExceptionApproval.createApprovedByDirector(RegularityKind.PROGRAM, 7L, 3L, OrganismKind.COURT, "Causa 9/2026", REASON,
+                DIRECTOR, SEVEN, NOW);
+    }
+
+    @Test
+    void directorCreationIsBornApprovedWithValidityAndASingleHistoryEntry() {
+        CertificateExceptionApproval approval = directlyCreated();
+
+        assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.APPROVED);
+        assertThat(approval.isCreatedByDirector()).isTrue();
+        assertThat(approval.getRequestedById()).isEqualTo(DIRECTOR);
+        assertThat(approval.getDecidedById()).isEqualTo(DIRECTOR);
+        assertThat(approval.getDecisionReason()).isEqualTo(CertificateExceptionApproval.DIRECTOR_CREATION_REASON);
+        assertThat(approval.getValidUntil()).isEqualTo(NOW.plusDays(7));
+        assertThat(approval.getStatusChanges()).hasSize(1);
+        assertThat(approval.getStatusChanges().get(0).getEvent()).isEqualTo(CertificateExceptionEvent.DIRECT_APPROVE);
+        assertThat(approval.getStatusChanges().get(0).getFromStatus()).isNull();
+        assertThat(approval.getStatusChanges().get(0).getToStatus()).isEqualTo(CertificateExceptionStatus.APPROVED);
+        assertThat(approval.getStatusChanges().get(0).getReason()).isEqualTo(CertificateExceptionApproval.DIRECTOR_CREATION_REASON);
+    }
+
+    @Test
+    void directorCreationRequiresAtLeastTwentyCharactersAndAnOrganism() {
+        assertThatThrownBy(() -> CertificateExceptionApproval.createApprovedByDirector(RegularityKind.PROGRAM, 7L, 3L, OrganismKind.COURT, "Causa 9",
+                "corto", DIRECTOR, SEVEN, NOW)).isInstanceOf(CertificateExceptionReasonInvalidException.class);
+        assertThatThrownBy(() -> CertificateExceptionApproval.createApprovedByDirector(RegularityKind.PROGRAM, 7L, 3L, null, "Causa 9", REASON,
+                DIRECTOR, SEVEN, NOW)).isInstanceOf(OrganismKindRequiredException.class);
+    }
+
+    @Test
+    void directlyCreatedExceptionIsSingleUseAndExpiresLikeAnyOther() {
+        CertificateExceptionApproval approval = directlyCreated();
+
+        approval.consume(55L, 3L, RegularityKind.PROGRAM, 7L, DIRECTOR, NOW.plusDays(1));
+
+        assertThat(approval.getStatus()).isEqualTo(CertificateExceptionStatus.CONSUMED);
+        assertThatThrownBy(() -> approval.consume(56L, 3L, RegularityKind.PROGRAM, 7L, DIRECTOR, NOW.plusDays(2)))
+                .isInstanceOf(ExceptionAlreadyConsumedException.class);
+        CertificateExceptionApproval other = directlyCreated();
+        assertThat(other.isDueToExpireAt(NOW.plusDays(7))).isTrue();
+        assertThatThrownBy(() -> other.consume(57L, 3L, RegularityKind.PROGRAM, 7L, DIRECTOR, NOW.plusDays(7)))
+                .isInstanceOf(ExceptionNotApprovedException.class);
+    }
+
+    @Test
+    void directlyCreatedExceptionCanNoLongerBeDecidedOrWithdrawn() {
+        CertificateExceptionApproval approval = directlyCreated();
+
+        assertThatThrownBy(() -> approval.approve(30L, DECISION, SEVEN, NOW)).isInstanceOf(IllegalCertificateExceptionTransitionException.class);
+        assertThatThrownBy(() -> approval.reject(30L, DECISION, NOW)).isInstanceOf(IllegalCertificateExceptionTransitionException.class);
+        assertThatThrownBy(() -> approval.withdraw(DIRECTOR, NOW)).isInstanceOf(IllegalCertificateExceptionTransitionException.class);
+    }
 }

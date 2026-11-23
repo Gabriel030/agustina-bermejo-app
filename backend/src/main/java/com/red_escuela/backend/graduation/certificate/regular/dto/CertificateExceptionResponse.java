@@ -11,5 +11,5 @@ public record CertificateExceptionResponse(Long id, Long studentId, RegularityKi
                                            String organismReference, String reason, CertificateExceptionStatus status, Long requestedById,
                                            LocalDateTime requestedAt, @Schema(nullable = true) Long decidedById,
                                            @Schema(nullable = true) LocalDateTime decidedAt, @Schema(nullable = true) String decisionReason,
-                                           @Schema(nullable = true) LocalDateTime validUntil) {
+                                           @Schema(nullable = true) LocalDateTime validUntil, boolean createdByDirector) {
 }
