@@ -888,7 +888,7 @@ export function DocenteTomarAsistencia() {
         onValueChange={(value) => updateParams({ tab: value === 'pedidos' ? 'pedidos' : null, pedido: null, fecha: null })}
       >
         <TabsList variant="segmented">
-          <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
+          <TabsTrigger value="asistencia">Tomar asistencia</TabsTrigger>
           <TabsTrigger value="pedidos">
             Mis pedidos
             <TabCount count={pendingRequestCount(pedidos)} />

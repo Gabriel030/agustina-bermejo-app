@@ -1,4 +1,4 @@
-import { PenLine, Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup, KeyRound, Award } from 'lucide-react';
+import { PenLine, Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup, KeyRound, Award, FileKey } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -19,6 +19,7 @@ const paymentMethods = { slug: 'medios-de-pago', label: 'Medios de pago', icon: 
 const annualTerms = { slug: 'terminos-del-pago-anual', label: 'Términos del pago anual', icon: ScrollText };
 const financial ={ slug: 'financiero', label: 'Financiero', icon: BarChart2 };
 const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText };
+const debtExceptionCertificates = { slug: 'constancias-por-excepcion', label: 'Emitir por excepción', icon: FileKey };
 const enrollmentApplications = { slug: 'solicitudes-de-ingreso', label: 'Solicitudes de ingreso', icon: UserPlus };
 const waitlists = { slug: 'inscripciones/listas-de-espera', label: 'Listas de espera', icon: ListOrdered };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
@@ -55,6 +56,7 @@ const administrativeMenu = [
   graduationSignatories,
   financial,
   certificates,
+  debtExceptionCertificates,
   solicitudes,
   academicManagement,
   periodos,
@@ -90,7 +92,7 @@ export const ROLE_MENU = {
     periodos,
   ],
   administrativo: administrativeMenu,
-  subdirector: [...administrativeMenu, permissions],
+  subdirector: [...administrativeMenu.filter((entry) => entry !== debtExceptionCertificates), permissions],
   director: [
     inicio,
     alumnos,
@@ -121,6 +123,7 @@ export const ROLE_MENU = {
     monthlyRun,
     financial,
     certificates,
+    debtExceptionCertificates,
     periodos,
   ],
   platform_admin: [{ ...inicio, hidden: true }, { slug: 'modulos', label: 'Módulos', icon: Puzzle }, { slug: 'primer-director', label: 'Primer director', icon: UserPlus }, audit, backups],
@@ -144,7 +147,7 @@ const MENU_GROUPS = {
     {
       id: 'academic',
       label: 'Académico',
-      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'egresos', 'plantilla-de-certificados', 'firmantes'],
+      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'],
     },
     {
       id: 'billing',

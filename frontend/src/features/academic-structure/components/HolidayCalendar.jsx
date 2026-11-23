@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { MonthGrid } from '@/components/MonthGrid';
+import { MonthGrid } from '@/features/academic-structure/components/MonthGrid';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { holidayTypeInfo, monthName } from '@/features/academic-structure/lib/holidays';

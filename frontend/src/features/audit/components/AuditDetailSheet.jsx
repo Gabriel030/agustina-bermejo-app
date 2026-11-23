@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { StatusPill } from '@/components/StatusPill';
-import { auditActionLabel, auditActionTone, auditEntityLabel, auditRoleLabel, auditRoleTone } from '@/lib/auditLabels';
+import { auditActionLabel, auditActionTone, auditEntityLabel, auditRoleLabel, auditRoleTone } from '@/features/audit/lib/auditLabels';
 import { formatDateTime } from '@/lib/billing';
 import { auditActorName, diffAuditValues, formatAuditValue, MASK } from '@/features/audit/lib/auditPayload';
 import { AuditChangeSummary } from '@/features/audit/components/AuditChangeSummary';

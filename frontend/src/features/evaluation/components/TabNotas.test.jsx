@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { useGrillaDeMaterias } from '@/hooks/useGrillaDeMaterias';
+import { useGrillaDeMaterias } from '@/features/evaluation/hooks/useGrillaDeMaterias';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { TabNotas } from './TabNotas';
 
-vi.mock('@/hooks/useGrillaDeMaterias', () => ({ useGrillaDeMaterias: vi.fn() }));
+vi.mock('@/features/evaluation/hooks/useGrillaDeMaterias', () => ({ useGrillaDeMaterias: vi.fn() }));
 
 function grid(overrides) {
   return {

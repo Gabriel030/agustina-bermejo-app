@@ -8,7 +8,7 @@ import { Paginador } from '@/components/Paginador';
 import { NOTIFICATIONS_PAGE_SIZE, useMisNotificaciones, useNotificacionesNoLeidas, useMarcarNotificacionLeida } from '@/features/notifications/hooks/useNotifications';
 import { StaleStamp } from '@/components/offline/StaleStamp';
 import { useActiveRole } from '@/hooks/useActiveRole';
-import { notificationDestination } from '@/lib/notificationDestination';
+import { notificationDestination } from '@/features/notifications/lib/notificationDestination';
 import { TONO_NOTIFICACION, etiquetaNotificacion, tiempoRelativo } from '@/lib/notificaciones';
 
 const BORDE_TONO = {
