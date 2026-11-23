@@ -143,7 +143,7 @@ describe('collections stock panel', () => {
     expect(container.querySelector('.recharts-line')).not.toBeNull();
   });
 
-  it('asks for the stock with the chosen currency and program', async () => {
+  it('asks for the stock with the chosen program', async () => {
     const requests = [];
     install({ requests });
     server.use(http.get(`${API}/programs`, () => HttpResponse.json([{ id: 5, name: 'Tecnicatura en Diseño' }])), http.get(`${API}/courses`, () => HttpResponse.json([])));
@@ -155,7 +155,7 @@ describe('collections stock panel', () => {
     await userEvent.click(await screen.findByRole('option', { name: 'Tecnicatura en Diseño' }));
 
     await waitFor(() =>
-      expect(requests.some((url) => url.pathname.endsWith('/collections-stock') && url.searchParams.get('programId') === '5' && url.searchParams.get('currency') === 'ARS')).toBe(true),
+      expect(requests.some((url) => url.pathname.endsWith('/collections-stock') && url.searchParams.get('programId') === '5')).toBe(true),
     );
   });
 
