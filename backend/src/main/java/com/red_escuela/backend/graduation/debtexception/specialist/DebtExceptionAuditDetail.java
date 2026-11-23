@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.debtexception.specialist;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -15,9 +16,10 @@ final class DebtExceptionAuditDetail {
         if (detail == null || detail.isBlank()) {
             return null;
         }
+        Set<String> seen = new HashSet<>();
         for (String pair : detail.split(";", -1)) {
             int separator = pair.indexOf('=');
-            if (separator <= 0 || !ALLOWED_KEYS.contains(pair.substring(0, separator))
+            if (separator <= 0 || !ALLOWED_KEYS.contains(pair.substring(0, separator)) || !seen.add(pair.substring(0, separator))
                     || !VALUE.matcher(pair.substring(separator + 1)).matches()) {
                 throw new IllegalStateException("El detalle de auditoría del emisor no está permitido");
             }

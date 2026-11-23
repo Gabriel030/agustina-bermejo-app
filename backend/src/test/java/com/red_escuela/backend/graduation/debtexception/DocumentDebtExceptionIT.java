@@ -13,7 +13,10 @@ import com.red_escuela.backend.graduation.api.DebtExceptionDocumentIssuer;
 import com.red_escuela.backend.graduation.api.DebtExceptionGate;
 import com.red_escuela.backend.graduation.api.DebtExceptionScope;
 import com.red_escuela.backend.graduation.debtexception.exception.DebtExceptionNotFoundException;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -62,7 +65,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     private static final AtomicBoolean FAIL_RENDER = new AtomicBoolean();
-    private static final java.util.concurrent.atomic.AtomicReference<String> AUDIT_DETAIL = new java.util.concurrent.atomic.AtomicReference<>("documentId=1");
+    private static final AtomicReference<String> AUDIT_DETAIL = new AtomicReference<>("documentId=1");
 
     @TestConfiguration
     static class FakeIssuerConfig {
@@ -85,7 +88,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
                 @Override
                 public DebtExceptionDocument render(DebtExceptionScope scope) {
                     if (FAIL_RENDER.get()) {
-                        throw new java.io.UncheckedIOException(new java.io.IOException("render failed"));
+                        throw new UncheckedIOException(new IOException("render failed"));
                     }
                     return new DebtExceptionDocument("EXC-" + scope.exceptionId(), "pdf".getBytes(), AUDIT_DETAIL.get());
                 }
