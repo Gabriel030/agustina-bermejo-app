@@ -225,6 +225,7 @@ describe('StickyActionBar', () => {
   it('leaves the page interactive after choosing a menu action that opens a dialog', async () => {
     useCompactViewport();
     const user = userEvent.setup();
+    const onOutside = vi.fn();
     function Harness() {
       const [open, setOpen] = useState(false);
       return (
@@ -235,6 +236,7 @@ describe('StickyActionBar', () => {
             primary={{ label: 'Guardar' }}
             secondary={[{ key: 'discard', label: 'Descartar', onSelect: () => setOpen(true) }]}
           />
+          <Button onClick={onOutside}>Fuera del menú</Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent>
               <DialogTitle>¿Descartar 1 cambio?</DialogTitle>
@@ -246,7 +248,10 @@ describe('StickyActionBar', () => {
     }
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: 'Más acciones' }));
-    await user.click(await screen.findByRole('menuitem', { name: 'Descartar' }));
+    await screen.findByRole('menuitem', { name: 'Descartar' });
+    expect(document.body.style.pointerEvents).not.toBe('none');
+    expect(screen.getByRole('button', { name: 'Fuera del menú' })).toBeInTheDocument();
+    await user.click(screen.getByRole('menuitem', { name: 'Descartar' }));
     expect(await screen.findByRole('dialog')).toHaveTextContent('¿Descartar 1 cambio?');
     await user.click(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
