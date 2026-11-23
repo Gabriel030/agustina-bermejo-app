@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import { Routes, Route } from 'react-router-dom';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
+import { AlumnoPagoEstado } from '@/features/billing/pages/AlumnoPagoEstado';
 
 function renderStatus(route) {
   return renderWithProviders(

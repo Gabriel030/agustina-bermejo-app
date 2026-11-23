@@ -8,7 +8,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
+import { AlumnoPagarTransferencia } from '@/features/billing/pages/AlumnoPagarTransferencia';
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { nombre: 'Valentina', apellido: 'Suárez' } }),
