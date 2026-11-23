@@ -25,7 +25,14 @@ describe('Switch', () => {
   it('enlarges the touch target to 44px without changing the visual size', () => {
     render(<Switch aria-label="Recordatorios" />);
     const track = screen.getByRole('switch', { name: 'Recordatorios' });
+    const spacingPx = 4;
+    const insetYPx = 3.5 * spacingPx;
+    const borderPx = 2;
+    const visualHeightPx = 20;
+    const paddingBoxHeightPx = visualHeightPx - 2 * borderPx;
+    const touchHeightPx = paddingBoxHeightPx + 2 * insetYPx;
 
-    expect(track).toHaveClass('h-5', 'w-9', 'after:-inset-y-3');
+    expect(track).toHaveClass('h-5', 'w-9', 'after:-inset-y-3.5');
+    expect(touchHeightPx).toBe(44);
   });
 });
