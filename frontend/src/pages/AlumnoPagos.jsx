@@ -134,7 +134,7 @@ export function AlumnoPagos() {
           {!cargando && !inscripcionesFallaron && standingsFallaron && (
             <div role="alert" className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm text-ink">
               <span>No pudimos cargar el estado de tus pagos, así que no podemos mostrarte si tenés deuda.</span>
-              <Button variant="outline" size="sm" onClick={recargarTodo}>
+              <Button className="min-h-11" variant="outline" size="sm" onClick={recargarTodo}>
                 Reintentar
               </Button>
             </div>

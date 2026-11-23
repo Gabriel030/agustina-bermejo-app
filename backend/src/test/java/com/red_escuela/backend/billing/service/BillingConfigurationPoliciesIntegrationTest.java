@@ -524,6 +524,25 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
                 .filter(v -> v.getStatus() == com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus.PROPOSED).count()).isEqualTo(1);
     }
 
+    @Test
+    @Tag("D-212")
+    void aNonDirectorRoleDelegatedTheYearTemplatePermissionThroughTheServiceLeavesAProposalInsteadOfApplyingDirectly() {
+        Year year = yearWithFirstFeeIssued();
+        authenticateAs("PRECEPTOR");
+
+        Object outcome = transactionTemplate.execute(status -> {
+            try {
+                return updateYearConfiguration.update(year.templateId(), config(null, null, null, 23));
+            } catch (com.red_escuela.backend.billing.operation.AuthorizationPendingException e) {
+                return e;
+            }
+        });
+
+        assertThat(outcome).isInstanceOf(com.red_escuela.backend.billing.operation.AuthorizationPendingException.class);
+        assertThat(versionRepository.findAll().stream().filter(v -> year.termId().equals(v.getTermId()))
+                .filter(v -> v.getStatus() == com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus.PROPOSED).count()).isEqualTo(1);
+    }
+
     private CreateLatePaymentSettingsRequest policyRequest(int grace, int suspensionDays, int invoiceCount, LocalDate effectiveFrom) {
         return new CreateLatePaymentSettingsRequest(grace, Percentage.ofFraction(new BigDecimal("0.002")), suspensionDays, invoiceCount, effectiveFrom);
     }

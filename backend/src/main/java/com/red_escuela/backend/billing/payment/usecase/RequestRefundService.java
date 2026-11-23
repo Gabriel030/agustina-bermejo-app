@@ -21,7 +21,6 @@ public class RequestRefundService implements RequestRefundUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public RefundRequestResult requestRefundOnBehalfOfStudent(Long studentId, RequestRefundRequest request, String idempotencyKey) {
         return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder(), false, idempotencyKey);
     }

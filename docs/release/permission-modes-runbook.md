@@ -151,6 +151,26 @@ Migrados (33 endpoints, permisos billing.*): payment-standing de inscripciones (
 
 manage_reminder_config queda no sensible porque solo propone y valida cambios: la aprobación, que sí tiene efecto, queda fuera de esta tanda y no se puede autoaprobar. Pasaría a ser sensible solo si una tanda futura pusiera la publicación directa bajo ese permiso.
 
+### Billing (tanda B2: corridas, descuentos, promociones, precios, plantillas, recargos, pasarela y aprobaciones)
+
+Los 29 endpoints migrados (V410, 20 permisos billing.*) mueven plata o cambian su configuración, por eso los 20 permisos son sensibles: delegarlos exige la confirmación de sensible. El Director conserva todos en Activo: ningún endpoint de la tanda le está denegado hoy, así que no cambia de resultado en ninguno. Alumno y administrador de plataforma quedan fuera de la grilla; el Subdirector hereda lo de Administrativo.
+
+Seed a Administrativo (reglas AD): retry_draft_invoice_items, approve_draft_invoices, discard_draft_invoices, manage_discount_definition (crear y cerrar), grant_student_discount (carrera y curso), revoke_student_discount, propose_price_change (POST /prices/{id}/versions), manage_year_billing_cohorts (crear cohorte y descuento de matrícula), withdraw_authorization_request y request_advance_enrollment_fee (mostrador, no el /me del alumno).
+
+Decisiones exclusivas del Director, sin grants (solo se delegan con confirmación de sensible): run_billing (POST /billing-runs/executions), issue_monthly_invoices_manually, manage_promotion (crear y cerrar), cancel_price_version, manage_payment_plan_options, manage_year_billing_template (crear y configurar), set_late_payment_settings, manage_payment_gateway (PUT /payment-config y QR), decide_authorization_request (aprobar y rechazar) y publish_annual_upfront_terms.
+
+Advertencia al delegar decide_authorization_request: el servicio sigue exigiendo el rol Director para decidir (y que quien decide no sea quien pidió), así que un rol con el permiso pasa la grilla pero recibe acceso denegado del servicio. Lo mismo vale para el alcance de la bandeja de solicitudes: un Administrativo solo ve las suyas.
+
+Delegar billing.manage_payment_gateway (CBU y QR), billing.set_late_payment_settings o billing.approve_draft_invoices hace que el delegado aplique el cambio directo, sin segunda aprobación. manage_payment_gateway, run_billing e issue_monthly_invoices_manually son solo del Director y se dejan sin grants. Lo que decide si algo se aplica directo o queda como solicitud pendiente depende hoy del rol Director real (resolvers de actor), no de la grilla: un delegado no Director de manage_year_billing_template o manage_year_billing_cohorts genera una solicitud pendiente. Por eso billing se queda en Legado: no pasar a Sombra real ni a Activo hasta resolver el Issue #1254.
+
+Fuera de esta tanda: /me/*, webhook de Mercado Pago, GET payment-config/qr-image, POST payment-plan (Administrativo o Alumno), cohortes y términos de pago anual de lectura (mixtos con Alumno), previews y lecturas (A1/A2) y cobros y devoluciones (B1).
+
+### Billing (tanda B1: cobros, reversas, reembolsos, notas de crédito y anulaciones)
+
+Los 13 permisos de esta tanda son SENSIBLES: delegarlos o revocarlos desde la grilla exige confirmación explícita y queda auditado como evento destacado. Migrados (14 endpoints): pago en efectivo (register_cash_payment), pago anual adelantado en efectivo (register_annual_upfront_cash_payment), carga de comprobante por el staff (submit_bank_transfer_receipt), aprobar y rechazar comprobantes (review_bank_transfer_receipt), revocar aprobación de un pago (revoke_payment_approval, solo Director en Legado, sin grant a otros roles), contracargos y su reversa (register_chargeback, reverse_chargeback), reembolsos (request_refund, complete_refund, fail_refund), nota de crédito (issue_credit_note), anulación de factura (cancel_invoice) y aplicación del saldo a favor (allocate_account_credit).
+
+Ningún endpoint de esta tanda cambia de resultado para el Director en Activo: todas las reglas vigentes lo permiten. Quedan fuera los previews (tanda A2), /me, el webhook de la pasarela y la tanda B2. Se quitó el @PreAuthorize de los métodos de staff de los services; los métodos de alumno de SubmitBankTransferReceiptService y RequestRefundService conservan el suyo. El módulo sigue en Legado.
+
 ## Academicrecord
 
 El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración de permisos ni cambio de resultado para el Director en ENFORCE.

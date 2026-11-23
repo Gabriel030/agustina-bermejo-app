@@ -417,19 +417,19 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
       <table className="border-separate border-spacing-0 text-size-11-5">
         <thead>
           <tr>
-            <th rowSpan={3} className={`${celdaSticky} bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) whitespace-nowrap border-b border-border px-3 py-1 text-left align-bottom font-semibold text-ink-faint`}>
+            <th rowSpan={3} className={`${celdaSticky} bg-surface whitespace-nowrap border-b border-border px-3 py-1 text-left align-bottom font-semibold text-ink-faint`}>
               Alumno
             </th>
             {gruposPorAnio.map((a, i) => (
               <th
                 key={a.anio}
                 colSpan={a.meses.reduce((acc, m) => acc + m.dias.length, 0)}
-                className={`bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) border-b border-border px-1 py-1 text-center font-semibold text-ink-faint ${i < gruposPorAnio.length - 1 ? divisorDeAnio : ''}`}
+                className={`bg-surface border-b border-border px-1 py-1 text-center font-semibold text-ink-faint ${i < gruposPorAnio.length - 1 ? divisorDeAnio : ''}`}
               >
                 {a.anio}
               </th>
             ))}
-            <th rowSpan={3} className="bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) border-b border-border px-2 py-1 text-center align-bottom font-semibold text-ink-faint">%</th>
+            <th rowSpan={3} className="bg-surface border-b border-border px-2 py-1 text-center align-bottom font-semibold text-ink-faint">%</th>
           </tr>
           <tr>
             {gruposPorAnio.flatMap((a) =>
@@ -437,7 +437,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 <th
                   key={`${a.anio}-${m.mes}`}
                   colSpan={m.dias.length}
-                  className={`bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) border-b border-border px-1 py-1 text-center font-semibold capitalize text-ink-faint ${i === a.meses.length - 1 ? divisorDeAnio : divisorDeMes}`}
+                  className={`bg-surface border-b border-border px-1 py-1 text-center font-semibold capitalize text-ink-faint ${i === a.meses.length - 1 ? divisorDeAnio : divisorDeMes}`}
                 >
                   {m.etiqueta}
                 </th>
@@ -450,7 +450,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 key={fecha}
                 onMouseEnter={() => setFechaHover(fecha)}
                 onMouseLeave={() => setFechaHover(null)}
-                className={`bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
+                className={`bg-surface w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
               >
                 {Number(fecha.slice(8, 10))}
               </th>
@@ -468,7 +468,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 onClick={() => setAlumnoFijado((prev) => (prev === fila.studentId ? null : fila.studentId))}
                 className="cursor-pointer"
               >
-                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-on-accent' : 'border-transparent bg-surface backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) text-ink'}`}>
+                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-brand text-on-accent' : 'border-transparent bg-surface text-ink'}`}>
                   {fila.studentName}
                 </td>
                 {historial.classDates.map((fecha) => {
@@ -494,7 +494,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                     </td>
                   );
                 })}
-                <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-on-accent' : 'border-transparent text-ink'}`}>
+                <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-accent-2 bg-brand text-on-accent' : 'border-transparent text-ink'}`}>
                   {fila.attendancePercent == null ? '-' : `${Math.round(attendancePercentToPoints(fila.attendancePercent))}%`}
                 </td>
               </tr>

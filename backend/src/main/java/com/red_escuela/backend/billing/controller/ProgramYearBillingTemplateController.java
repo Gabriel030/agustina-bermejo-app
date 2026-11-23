@@ -82,7 +82,7 @@ public class ProgramYearBillingTemplateController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/programs/{id}/year-billing-templates")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_year_billing_template", legacyRoles = "ROLE_DIRECTOR")
     public ProgramYearBillingTemplateResponse create(@PathVariable Long id, @Valid @RequestBody CreateProgramYearBillingTemplateRequest request) {
         return templateResponse(createTemplateUseCase.create(id, request.termId(), request.recurringFeeInvoicesCount(), request.configuration()));
     }
@@ -90,7 +90,7 @@ public class ProgramYearBillingTemplateController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/year-billing-templates/{id}/cohorts")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_year_billing_cohorts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ProgramCohortResponse createCohort(@PathVariable Long id, @Valid @RequestBody CreateProgramCohortRequest request) {
         return cohortResponse(createCohortUseCase.create(id, request));
     }
@@ -109,14 +109,14 @@ public class ProgramYearBillingTemplateController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PatchMapping("/year-billing-templates/{id}/configuration")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_year_billing_template", legacyRoles = "ROLE_DIRECTOR")
     public ProgramYearBillingTemplateResponse updateConfiguration(@PathVariable Long id, @Valid @RequestBody YearBillingConfigurationRequest request) {
         return templateResponse(updateYearConfigurationUseCase.update(id, request));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PatchMapping("/cohorts/{id}/entry-fee-discount")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_year_billing_cohorts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ProgramCohortResponse updateEntryFeeDiscount(@PathVariable Long id, @Valid @RequestBody UpdateEntryFeeDiscountRequest request) {
         return cohortResponse(updateEntryFeeDiscountUseCase.update(id, request.discountPercent()));
     }

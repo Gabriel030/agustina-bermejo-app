@@ -22,7 +22,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -91,14 +90,14 @@ public class MonthlyInvoiceRunController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{monthlyRunId}/items/{itemId}/retries")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.retry_draft_invoice_items", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public MonthlyInvoiceRunItemResponse retryItem(@PathVariable Long monthlyRunId, @PathVariable Long itemId) {
         return manualRetryUseCase.retryMonthlyInvoiceRunItemManually(monthlyRunId, itemId);
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{monthlyRunId}/draft-invoices/approvals")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.approve_draft_invoices", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public DraftInvoiceBatchResponse approveDraftInvoices(@PathVariable Long monthlyRunId, @RequestHeader("Idempotency-Key") String idempotencyKey,
                                                           @Valid @RequestBody ApproveDraftInvoicesRequest request) {
         return approveDraftsUseCase.approveDraftInvoicesOfRun(monthlyRunId, request.invoiceIds(), idempotencyKey);
@@ -106,7 +105,7 @@ public class MonthlyInvoiceRunController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{monthlyRunId}/draft-invoices/discards")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.discard_draft_invoices", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public DraftInvoiceBatchResponse discardDraftInvoices(@PathVariable Long monthlyRunId, @Valid @RequestBody DiscardDraftInvoicesRequest request) {
         return discardDraftsUseCase.discardDraftInvoicesOfRun(monthlyRunId, request.invoiceIds(), request.reason());
     }

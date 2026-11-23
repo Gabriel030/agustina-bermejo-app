@@ -9,7 +9,6 @@ import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,7 +30,7 @@ public class LatePaymentSettingsController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/late-payment-settings")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.set_late_payment_settings", legacyRoles = "ROLE_DIRECTOR")
     public LatePaymentSettingsResponse create(@Valid @RequestBody CreateLatePaymentSettingsRequest request) {
         return LatePaymentSettingsResponse.from(createLatePaymentSettingsUseCase.create(request));
     }

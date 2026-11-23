@@ -55,7 +55,7 @@ public class PromotionController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/courses/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_promotion", legacyRoles = "ROLE_DIRECTOR")
     public PromotionResponse createForCourse(@PathVariable Long id, @Valid @RequestBody CreatePromotionRequest request) {
         return createUseCase.createForCourse(id, request);
     }
@@ -64,7 +64,7 @@ public class PromotionController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/programs/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_promotion", legacyRoles = "ROLE_DIRECTOR")
     public PromotionResponse createForProgram(@PathVariable Long id, @Valid @RequestBody CreatePromotionRequest request) {
         return createUseCase.createForProgram(id, request);
     }
@@ -73,7 +73,7 @@ public class PromotionController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/promotions/{id}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_promotion", legacyRoles = "ROLE_DIRECTOR")
     public void close(@PathVariable Long id) {
         closeUseCase.closePromotion(id);
     }

@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.note.service.CreditNoteCommandFactory;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @UseCase
 public class CancelInvoiceService implements CancelInvoiceUseCase {
@@ -22,7 +21,6 @@ public class CancelInvoiceService implements CancelInvoiceUseCase {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public BillingOperationOutcome<CreditNote> cancelOrRequestInvoiceCancellation(Long invoiceId, CancelInvoiceRequest request) {
         return pipeline.runOperation(operation, commandFactory.buildCancellationCommandForCurrentUser(invoiceId, request.reason(), request.justification()));
     }

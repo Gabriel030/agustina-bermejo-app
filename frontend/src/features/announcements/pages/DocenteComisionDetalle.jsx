@@ -56,7 +56,7 @@ export function DocenteComisionDetalle() {
             title="No encontramos esta comisión"
             description="Puede que no exista o que no esté asignada a vos."
             action={
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="min-h-11" asChild>
                 <Link to="/docente/mis-comisiones">Volver a Mis comisiones</Link>
               </Button>
             }
@@ -106,11 +106,11 @@ export function DocenteComisionDetalle() {
             </div>
           )}
         </div>
-        <Button variant="outline" asChild>
+        <Button variant="outline" className="min-h-11" asChild>
           <Link to={`/docente/mis-comisiones/${sectionId}/cierre${sufijoTipo}`}>Cierre</Link>
         </Button>
         {tab === 'avisos' && !cerrada && (
-          <Button variant="primary" onClick={irANuevoAviso}>
+          <Button variant="primary" className="min-h-11" onClick={irANuevoAviso}>
             Nuevo aviso
           </Button>
         )}

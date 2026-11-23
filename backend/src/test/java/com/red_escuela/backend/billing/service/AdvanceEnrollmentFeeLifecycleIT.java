@@ -15,6 +15,9 @@ import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -28,6 +31,10 @@ import java.util.concurrent.Future;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("D-523")
@@ -35,6 +42,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("D-532")
 class AdvanceEnrollmentFeeLifecycleIT extends AbstractAdvanceEnrollmentFeeTest {
 
+    @Autowired
+    private WebApplicationContext webApplicationContext;
     @Autowired
     private PreviewCashPaymentUseCase previewCashPayment;
     @Autowired
@@ -234,12 +243,13 @@ class AdvanceEnrollmentFeeLifecycleIT extends AbstractAdvanceEnrollmentFeeTest {
 
     @Test
     @Tag("D-530")
-    void thePreceptorAndTheStudentCannotUseTheStaffAction() {
+    void thePreceptorAndTheStudentCannotUseTheStaffAction() throws Exception {
         Setup setup = september();
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(String.valueOf(setup.career().directorId()), "n/a", "ROLE_PRECEPTOR"));
-        assertThatThrownBy(() -> requestUseCase.requestForStudentAtCounter(setup.enrollment())).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
-        actAsStudentOf(setup.enrollment());
-        assertThatThrownBy(() -> requestUseCase.requestForStudentAtCounter(setup.enrollment())).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+        String path = "/program-enrollments/" + setup.enrollment() + "/advance-enrollment-fee";
+
+        mockMvc.perform(post(path).with(user(String.valueOf(setup.career().directorId())).roles("PRECEPTOR"))).andExpect(status().isForbidden());
+        mockMvc.perform(post(path).with(user(String.valueOf(studentIdOf(setup.enrollment()))).roles("ALUMNO"))).andExpect(status().isForbidden());
 
         assertThat(advanceInvoices(setup.enrollment())).isEmpty();
     }

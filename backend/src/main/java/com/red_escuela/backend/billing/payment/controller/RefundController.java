@@ -63,7 +63,7 @@ public class RefundController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/students/{studentId}/refund-requests")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.request_refund", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Pedido cargado por el director: partes aprobadas directo (D-216)"),
             @ApiResponse(responseCode = "202", description = "Pedido del administrativo abierto en Aprobaciones"),
@@ -77,7 +77,7 @@ public class RefundController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/refunds/{refundId}/completion")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.complete_refund", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "400", description = "REFUND_COMPLETION_INVALID"),
             @ApiResponse(responseCode = "404", description = "REFUND_NOT_FOUND"),
@@ -88,7 +88,7 @@ public class RefundController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/refunds/{refundId}/failure")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.fail_refund", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "400", description = "REFUND_FAILURE_REASON_INVALID"),
             @ApiResponse(responseCode = "404", description = "REFUND_NOT_FOUND"),

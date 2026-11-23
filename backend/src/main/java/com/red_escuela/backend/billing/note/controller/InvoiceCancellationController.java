@@ -39,6 +39,7 @@ public class InvoiceCancellationController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/invoices/{invoiceId}/cancellations")
+    @RequiresPermission(code = "billing.cancel_invoice", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ResponseEntity<?> cancelOrRequestInvoiceCancellation(@PathVariable Long invoiceId, @Valid @RequestBody CancelInvoiceRequest request) {
         BillingOperationOutcome<CreditNote> outcome = cancelInvoiceUseCase.cancelOrRequestInvoiceCancellation(invoiceId, request);
         return switch (outcome) {

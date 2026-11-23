@@ -15,7 +15,7 @@ function ApproveBar({ sheet, pending, onApprove }) {
           {approveHint(sheet)}
         </p>
       </div>
-      <Button type="button" variant="primary" disabled={!canApproveClosure(sheet)} aria-describedby="closure-approve-hint" onClick={() => setOpen(true)}>
+      <Button type="button" variant="primary" className="min-h-11" disabled={!canApproveClosure(sheet)} aria-describedby="closure-approve-hint" onClick={() => setOpen(true)}>
         {closedWithoutTeacher(sheet) ? 'Cerrar sin confirmación del docente' : 'Aprobar y cerrar'}
       </Button>
       <ClosureApproveDialog open={open} sheet={sheet} pending={pending} onClose={() => setOpen(false)} onApprove={onApprove} />
@@ -33,7 +33,7 @@ function ReopenBar({ pending, onReopen }) {
           Reabrir pide un motivo, deja auditoría y avisa al docente y a los alumnos. El acta pasa a la versión siguiente al volver a cerrarse.
         </p>
       </div>
-      <Button type="button" variant="outline" aria-describedby="closure-reopen-hint" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" className="min-h-11" aria-describedby="closure-reopen-hint" onClick={() => setOpen(true)}>
         Reabrir con motivo
       </Button>
       <ModalMotivo

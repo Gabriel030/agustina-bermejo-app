@@ -16,7 +16,6 @@ import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepo
 import com.red_escuela.backend.billing.service.YearBillingConfiguredEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -49,7 +48,6 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
     }
 
     @Override
-    @PreAuthorize("hasRole('DIRECTOR')")
     @Transactional(noRollbackFor = AuthorizationPendingException.class)
     public ProgramYearBillingTemplate update(Long templateId, YearBillingConfigurationRequest request) {
         ProgramYearBillingTemplate template = templateRepository.findByIdForUpdate(templateId)
