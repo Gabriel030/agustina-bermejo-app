@@ -225,4 +225,31 @@ class BillingRunsB2PermissionComparisonIT extends AuthorizationMatrixSupport {
                 .toList();
         assertThat(deniedToTheDirectorInLegacy).isEmpty();
     }
+
+    private void assertFixedToDirectorEndpointsRefuseEveryRoleButTheDirector(boolean enforce) throws Exception {
+        Map<String, MappedEndpoint> endpoints = endpointsByKey();
+        Set<String> fixedCodes = Set.copyOf(DIRECTOR_ONLY_CODES);
+        List<AuthorizationMatrixRow> rows = b2Rows().stream()
+                .filter(row -> fixedCodes.contains(endpoints.get(row.key()).handler().getMethodAnnotation(RequiresPermission.class).code()))
+                .toList();
+        assertThat(rows).hasSizeGreaterThanOrEqualTo(DIRECTOR_ONLY_CODES.size());
+        for (AuthorizationMatrixRow row : rows) {
+            assertThat(statusFor(endpoints, row, MatrixRole.ADMINISTRATIVO)).as(row.key()).isEqualTo(403);
+            assertThat(statusFor(endpoints, row, MatrixRole.PRECEPTOR)).as(row.key()).isEqualTo(403);
+            if (enforce) {
+                assertThat(statusFor(endpoints, row, MatrixRole.DIRECTOR)).as(row.key()).isNotEqualTo(403);
+            }
+        }
+    }
+
+    @Test
+    void inLegacyAdministrativeAndPreceptorAreRefusedOnEveryEndpointOfTheFixedToDirectorPermissions() throws Exception {
+        assertFixedToDirectorEndpointsRefuseEveryRoleButTheDirector(false);
+    }
+
+    @Test
+    void inEnforceAdministrativeAndPreceptorAreRefusedAndTheDirectorStillReachesEveryEndpointOfTheFixedToDirectorPermissions() throws Exception {
+        setModuleMode("ENFORCE");
+        assertFixedToDirectorEndpointsRefuseEveryRoleButTheDirector(true);
+    }
 }

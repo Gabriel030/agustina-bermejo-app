@@ -94,7 +94,7 @@ class DelegatedBillingRoleFailSafeIT extends AbstractIntegrationTest {
         jdbc.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id in (" + people + "))");
         jdbc.update("delete from authorization_request where requested_by_id in (" + people + ")");
         jdbc.update("delete from permission_module_mode where module = 'billing'");
-        jdbc.update("delete from role_permission where role = 'PRECEPTOR' and permission_id in (select id from permission where code in (?, ?))", MANAGE_DEFINITION, DECIDE_REQUEST);
+        jdbc.update("delete from role_permission where role = 'PRECEPTOR' and permission_id in (select id from permission where code in (?, ?, 'announcement.read', 'billing.run_billing'))", MANAGE_DEFINITION, DECIDE_REQUEST);
         cache.invalidate();
     }
 
@@ -220,5 +220,35 @@ class DelegatedBillingRoleFailSafeIT extends AbstractIntegrationTest {
                 .flatMap(module -> module.get("permissions").valueStream())
                 .anyMatch(permission -> code.equals(permission.get("code").asString()) && permission.get("fixedToDirector").asBoolean());
         assertThat(markedAsFixed).isTrue();
+    }
+
+    private ResultActions putGrid(List<Map<String, Object>> changes) throws Exception {
+        Map<String, Object> request = Map.of("reason", "Ajuste de permisos", "sensitiveConfirmed", true, "changes", changes);
+        return mockMvc.perform(put("/permissions/grid").header("Authorization", "Bearer " + jwtService.generateAccessToken(director)).contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+    }
+
+    private long preceptorRowsOf(String code) {
+        return jdbc.queryForObject("select count(*) from role_permission where role = 'PRECEPTOR' and permission_id = (select id from permission where code = ?)", Long.class, code);
+    }
+
+    @Test
+    void revokingAFixedToDirectorPermissionIsAllowedAndRemovesAStaleGrant() throws Exception {
+        putGrid(List.of(Map.of("role", "PRECEPTOR", "permissionCode", "billing.run_billing", "granted", false))).andExpect(status().isOk());
+        assertThat(preceptorRowsOf("billing.run_billing")).isZero();
+
+        delegateToPreceptor("billing.run_billing");
+        putGrid(List.of(Map.of("role", "PRECEPTOR", "permissionCode", "billing.run_billing", "granted", false))).andExpect(status().isOk());
+        assertThat(preceptorRowsOf("billing.run_billing")).isZero();
+    }
+
+    @Test
+    void aMixedChangeWithAValidGrantAndTheRevocationOfAFixedPermissionIsApplied() throws Exception {
+        delegateToPreceptor("billing.run_billing");
+        putGrid(List.of(
+                Map.of("role", "PRECEPTOR", "permissionCode", "announcement.read", "granted", true),
+                Map.of("role", "PRECEPTOR", "permissionCode", "billing.run_billing", "granted", false))).andExpect(status().isOk());
+        assertThat(preceptorRowsOf("announcement.read")).isEqualTo(1L);
+        assertThat(preceptorRowsOf("billing.run_billing")).isZero();
     }
 }
