@@ -66,3 +66,25 @@ Vigilancia: `PerfSeedIT` (`@NightlyTest`, `backend/src/test/java/com/red_escuela
 ## Presupuestos por pantalla (Epica 31)
 
 Las claves `screen:/<ruta>` de `perf/budget.json` fijan, por pantalla del Director, el maximo de peticiones y de duplicadas. Los valores son provisorios (lo medido mas 3 de holgura, cero duplicadas). `PERF_SCOPE=screen python3 perf/check_budget.py` los compara con `perf/out/screens.json`, que escribe `frontend/src/test/flows/directorScreenRequests.integration.test.jsx` cuando existe `PERF_SCREENS_OUT`. Corre en el job `frontend-screen-budget` de `ci.yml`: en paralelo con los tests del frontend, solo si cambia el frontend, sin sumar tiempo al camino critico y sin backend ni base. Sin `PERF_SCOPE` se verifican solo los presupuestos por endpoint (requieren backend y `perf/measure.py`). Los niveles de cascada dependen de la latencia real: se miden con `perf/e31`.
+
+## Seed de carga (E25 A5-S1)
+
+`perf/seed-load.py` deja listos los datos de los escenarios k6 de carga (S3 inscripcion masiva, S4 notas de fin de cuatrimestre, S5 corrida mensual de facturacion). Necesita el backend `local,demo,perf` ya arrancado y el demo completo sembrado (ver "Reproducir"); no depende de `seed-large.sql` y no pisa sus ids. Es re-ejecutable: limpia y recarga solo sus rangos (personas 400001..499999 y 410001..410999, comisiones desde 1400000, inscripciones desde 2000000).
+
+```
+python3 perf/seed-load.py
+LOAD_STUDENTS=5000 LOAD_GRADED_STUDENTS=1000 LOAD_ENROLL_SECTIONS=100 LOAD_GRADE_SECTIONS=40 python3 perf/seed-load.py
+```
+
+Lo que crea (por la API, para que pase las validaciones reales, y por SQL para el volumen):
+
+- Ventana de inscripcion abierta: `POST /terms/{LOAD_TERM_ID}/enrollment/open` sobre el ciclo demo (id 1).
+- Esquema de evaluacion "Esquema carga perf: 2 parciales y final" (2 parciales, 3 TP, final 50 %), usado por todas las comisiones sembradas.
+- Mesas de examen: `LOAD_EXAM_BOARDS` (8) con aula `LOAD-n`, inscripcion abierta, en dias habiles; y las inscripciones (`REGISTERED`) de los alumnos del grupo de notas.
+- Plantilla de facturacion del programa (`LOAD_PROGRAM_ID`, 1) con 10 cuotas, cohorte FIRST, plan de pago MENSUAL y todas las inscripciones a carrera apuntando a plantilla, cohorte y plan, con cuenta corriente en cero.
+- Grupo de inscripcion (`LOAD_STUDENTS`, 2000): usuarios `loads1..N`, sin comisiones, para S3. Comisiones de inscripcion (`LOAD_ENROLL_SECTIONS`, 40) con cupo `LOAD_CAPACITY` (60).
+- Grupo de notas (`LOAD_GRADED_STUDENTS`, 500): usuarios `loads(N+1)..`, cada uno inscripto (ENROLLED) en 3 comisiones de notas (`LOAD_GRADE_SECTIONS`, 20), sin notas, para S4. Docentes `loadt1..loadt{LOAD_TEACHERS}` (10), LEAD de las comisiones en reparto circular. Clave de todos: la del perfil demo (`Test1234`).
+
+Para S5 correr la simulacion o la corrida con un periodo posterior al mes de alta de los precios demo (los precios nacen vigentes desde el dia en que se creo la base; el mes en curso falla con `NoEffectivePriceException`). Verificado: `POST /monthly-invoice-runs/simulations {"period":"<mes siguiente>"}` emite las 400 inscripciones con 300+100 alumnos.
+
+El script reintenta ante 429 (el limite de 120 escrituras por minuto es por usuario y el arranque `demo` completo lo consume con administrativo.demo; por eso las mesas se crean con preceptor.demo).
