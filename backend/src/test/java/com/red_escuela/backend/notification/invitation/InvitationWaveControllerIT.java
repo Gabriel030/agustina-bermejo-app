@@ -209,7 +209,7 @@ class InvitationWaveControllerIT extends AbstractIntegrationTest {
                 get("/invitation-waves/import-batches"), get("/invitation-waves/" + waveId + "/recipients"),
                 get("/invitation-waves/" + waveId + "/report.csv"), post("/invitation-waves/" + waveId + "/start"),
                 post("/invitation-waves/" + waveId + "/pause"), post("/invitation-waves/" + waveId + "/resume"),
-                post("/invitation-waves/" + waveId + "/cancel"));
+                post("/invitation-waves/" + waveId + "/cancel"), post("/invitation-waves/" + waveId + "/retry-failed"));
         for (String role : List.of("ALUMNO", "DOCENTE", "PRECEPTOR")) {
             for (MockHttpServletRequestBuilder request : requests) {
                 mockMvc.perform(asRole(request, role)).andExpect(status().isForbidden());
@@ -260,6 +260,34 @@ class InvitationWaveControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void retryFailedRequeuesFailedRecipientsOfARunningWave() throws Exception {
+        importedStudent(batchId, true, null);
+        long waveId = createWaveId();
+        mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/start"), "DIRECTOR")).andExpect(status().isOk());
+        jdbc.update("update invitation_wave_recipient set status = 'FAILED', attempts = 1, last_error_code = 'PROVIDER_UNAVAILABLE' where wave_id = ? and status = 'PENDING'", waveId);
+
+        mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/retry-failed"), "ADMINISTRATIVO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requeued").value(1));
+        mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/retry-failed"), "ADMINISTRATIVO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requeued").value(0));
+    }
+
+    @Test
+    void retryFailedAnswers409WhenWaveIsNotRunningAnd404WhenUnknown() throws Exception {
+        importedStudent(batchId, true, null);
+        long waveId = createWaveId();
+
+        mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/retry-failed"), "DIRECTOR"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVITATION_WAVE_NOT_RUNNING"));
+        mockMvc.perform(asRole(post("/invitation-waves/-1/retry-failed"), "DIRECTOR"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("INVITATION_WAVE_NOT_FOUND"));
+    }
+
+    @Test
     void sendPermissionIsIndependentFromManagePermission() throws Exception {
         importedStudent(batchId, true, null);
         long waveId = createWaveId();
@@ -268,6 +296,7 @@ class InvitationWaveControllerIT extends AbstractIntegrationTest {
         mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/start"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
         mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/cancel"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
         mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/resume"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
+        mockMvc.perform(asRole(post("/invitation-waves/" + waveId + "/retry-failed"), "ADMINISTRATIVO")).andExpect(status().isForbidden());
         mockMvc.perform(asRole(get("/invitation-waves/" + waveId), "ADMINISTRATIVO")).andExpect(status().isOk());
         createWave("ADMINISTRATIVO").andExpect(status().isCreated());
     }

@@ -5,6 +5,7 @@ import {
   emptyInvitationWavesHandlers,
   invitationRecipientsWithoutPersonalDataHandlers,
   invitationWaveErrorHandlers,
+  invitationWaveNotFoundRetryHandlers,
 } from './invitationWaveHandlers';
 
 const API = 'http://localhost:8080';
@@ -33,6 +34,7 @@ describe('invitation wave default handlers', () => {
     for (const [action, status] of [['start', 'RUNNING'], ['pause', 'PAUSED'], ['resume', 'RUNNING'], ['cancel', 'CANCELLED']]) {
       expect((await call('POST', `/invitation-waves/2/${action}`)).body.status).toBe(status);
     }
+    expect((await call('POST', '/invitation-waves/2/retry-failed')).body).toEqual({ requeued: 3 });
   });
 
   it('supportEndpointsAnswerAgainstTheContract', async () => {
@@ -82,5 +84,10 @@ describe('invitation wave state handlers', () => {
     expect((await call('GET', '/invitation-waves/9')).status).toBe(404);
     expect((await call('POST', '/invitation-waves/9/start')).status).toBe(409);
     expect((await call('GET', '/invitation-waves')).status).toBe(403);
+    const notRunning = await call('POST', '/invitation-waves/9/retry-failed');
+    expect(notRunning.status).toBe(409);
+    expect(notRunning.body.code).toBe('INVITATION_WAVE_NOT_RUNNING');
+    server.use(...invitationWaveNotFoundRetryHandlers);
+    expect((await call('POST', '/invitation-waves/9/retry-failed')).status).toBe(404);
   });
 });

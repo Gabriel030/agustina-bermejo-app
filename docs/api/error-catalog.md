@@ -912,6 +912,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/invitation-waves/{id}/cancel` | `InvitationWaveController#cancelInvitationWave` |
 | POST | `/invitation-waves/{id}/pause` | `InvitationWaveController#pauseInvitationWave` |
 | POST | `/invitation-waves/{id}/resume` | `InvitationWaveController#resumeInvitationWave` |
+| POST | `/invitation-waves/{id}/retry-failed` | `InvitationWaveController#retryFailedInvitations` |
 | POST | `/invitation-waves/{id}/start` | `InvitationWaveController#startInvitationWave` |
 | POST | `/invoices/{invoiceId}/cancellations` | `InvoiceCancellationController#cancelOrRequestInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/cancellations/preview` | `InvoiceCancellationController#previewInvoiceCancellation` |
