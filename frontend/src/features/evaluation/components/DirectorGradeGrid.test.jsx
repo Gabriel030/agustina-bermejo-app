@@ -157,7 +157,10 @@ describe('DirectorGradeGrid', () => {
     expect(posts).toEqual([{ newScore: 9, reason: 'Error de carga', expectedVersion: 4 }]);
   });
 
-  it('keeps the form open with the stale edit message and refetches the grid', async () => {
+  it.each([
+    ['STALE_EDIT', 'Otra persona modificó esta nota mientras la mirabas. Recargá para ver el valor actual.'],
+    ['CONCURRENT_MODIFICATION', 'Otra persona modificó este registro. Recargá y volvé a intentar.'],
+  ])('keeps the form open with the %s message and refetches the grid', async (code, message) => {
     let gridRequests = 0;
     const current = buildGrid();
     current.students[0].grades[0].version = 1;
@@ -170,7 +173,7 @@ describe('DirectorGradeGrid', () => {
       }),
       http.post(`${API}/grade-items/1/corrections`, async ({ request }) => {
         posts.push(await request.json());
-        if (posts.length === 1) return HttpResponse.json(errorBody('STALE_EDIT'), { status: 409 });
+        if (posts.length === 1) return HttpResponse.json(errorBody(code), { status: 409 });
         return HttpResponse.json({ id: 9, gradeItemId: 1, kind: 'CORRECTION', previousScore: 8, newScore: 9, reason: 'Error de carga', changedById: 3, changedAt: '2026-11-05T12:00:00' }, { status: 201 });
       }),
     );
@@ -182,7 +185,7 @@ describe('DirectorGradeGrid', () => {
     await user.click(screen.getByRole('button', { name: 'Revisar cambios' }));
     await user.click(await screen.findByRole('button', { name: 'Confirmar corrección' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Otra persona modificó esta nota mientras la mirabas. Recargá para ver el valor actual.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
     expect(screen.getByLabelText('Nota nueva')).toHaveValue('9');
     expect(screen.getByLabelText('Motivo')).toHaveValue('Error de carga');
     await waitFor(() => expect(gridRequests).toBeGreaterThanOrEqual(2));
