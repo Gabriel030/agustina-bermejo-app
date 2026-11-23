@@ -17,7 +17,13 @@ const OMISSION_REASONS = {
   DEBT: 'debe regularizar sus pagos y no se emitió.',
 };
 
+const UNNAMED_STUDENT = 'Alumno sin nombre';
+
 const DEFAULT_OMISSION_REASON = 'no se pudo emitir su constancia.';
+
+export function displayName(name) {
+  return typeof name === 'string' && name.trim() ? name : UNNAMED_STUDENT;
+}
 
 export function certificateCaps(role) {
   return { issues: ISSUER_ROLES.includes(role), revokes: role === 'director' };
@@ -57,12 +63,13 @@ export function issueTitle(count) {
   return count === 1 ? 'Emitir 1 constancia' : `Emitir ${count} constancias`;
 }
 
-export function summarizeBatch(response) {
+export function summarizeBatch(response, candidates = []) {
+  const namesByRegistration = new Map(candidates.map((candidate) => [candidate.registrationId, candidate.studentName]));
   const omitted = response.items
     .filter((item) => item.outcome !== 'ISSUED')
     .map((item) => ({
       registrationId: item.registrationId,
-      studentName: item.studentName,
+      studentName: displayName(item.studentName ?? namesByRegistration.get(item.registrationId)),
       reason: OMISSION_REASONS[item.outcome] ?? DEFAULT_OMISSION_REASON,
     }));
   return { issued: response.issuedCount, omitted };

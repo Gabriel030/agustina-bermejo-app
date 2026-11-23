@@ -4,19 +4,19 @@ import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTable } from '@/components/table/DataTable';
-import { candidateState, hasIssuedCertificate, isRevoked, isSelectable, issuedAtOf, revocationDetail } from '@/features/evaluation/lib/examCertificates';
+import { candidateState, displayName, hasIssuedCertificate, isRevoked, isSelectable, issuedAtOf, revocationDetail } from '@/features/evaluation/lib/examCertificates';
 
 function columnsFor({ selected, busy, canRevoke, downloadingId, onToggle, onRevoke, onDownload }) {
   return [
     {
       id: 'student',
       header: 'Alumno',
-      accessorFn: (row) => row.studentName,
+      accessorFn: (row) => displayName(row.studentName),
       enableSorting: false,
       meta: { cardTitle: true },
       cell: ({ row }) => {
         const candidate = row.original;
-        const name = candidate.studentName;
+        const name = displayName(candidate.studentName);
         const details = (
           <span className="flex flex-col">
             <span className="font-heading text-size-14 font-semibold leading-tight text-ink">{name}</span>
@@ -70,7 +70,7 @@ function columnsFor({ selected, busy, canRevoke, downloadingId, onToggle, onRevo
       cell: ({ row }) => {
         const candidate = row.original;
         if (!hasIssuedCertificate(candidate)) return null;
-        const name = candidate.studentName;
+        const name = displayName(candidate.studentName);
         return (
           <div className="flex items-center justify-end gap-2">
             <Button

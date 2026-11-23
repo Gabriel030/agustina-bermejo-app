@@ -16,6 +16,7 @@ import {
   isSelectable,
   issueTitle,
   issuedHeadline,
+  displayName,
   summarizeBatch,
 } from '@/features/evaluation/lib/examCertificates';
 import {
@@ -46,7 +47,7 @@ function ResultNotice({ result, onDismiss, noticeRef }) {
     return (
       <Notice ref={noticeRef} tabIndex={-1} tone="success" role="note" className="flex flex-wrap items-start justify-between gap-3">
         <span>
-          <b className="font-bold">Constancia revocada.</b> {result.studentName} puede recibir una nueva en el próximo lote.
+          <b className="font-bold">Constancia revocada.</b> {displayName(result.studentName)} puede recibir una nueva en el próximo lote.
         </span>
         {dismiss}
       </Notice>
@@ -108,7 +109,7 @@ export function ExamCertificatesSection({ mesaId, role, onBack }) {
   async function confirmIssue() {
     try {
       const response = await issueBatch.mutateAsync(selectedIds);
-      setResult({ kind: 'issued', ...summarizeBatch(response) });
+      setResult({ kind: 'issued', ...summarizeBatch(response, candidates) });
       setSelected(new Set());
     } catch (error) {
       setResult({ kind: 'failed', message: describeError(error).message });
@@ -265,7 +266,7 @@ export function ExamCertificatesSection({ mesaId, role, onBack }) {
         <ModalMotivo
           open
           requerido
-          titulo={`Revocar la constancia de ${revoking.studentName}`}
+          titulo={`Revocar la constancia de ${displayName(revoking.studentName)}`}
           descripcion="Deja de ser válida y la verificación pública la muestra como revocada."
           placeholder="Motivo"
           confirmarLabel="Revocar constancia"
