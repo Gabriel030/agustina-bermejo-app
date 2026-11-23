@@ -46,7 +46,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `AnioGroupHeaderRow` [domain: alumno] | Fila de agrupación por año | — |
 | `AmountBreakdown` [domain: alumno] | Desglose de una cuota: importe base + recargo, beca, promoción o descuento con signo | `baseAmount`, `lines` (`{ label, amount }` con signo) |
 | `InvoiceSummary` [domain: alumno] | Resumen de la cuota que se está pagando (concepto, desglose y total) arriba de los pasos de pago | `breakdown` (respuesta de `/me/invoices/{id}/price-breakdown`) |
-| `BankAccountDetails` [domain: catalogo] | Titular, CBU y alias de la institución (de `/payment-config`) en el paso de pago del wizard | — |
+| `BankAccountDetails` [domain: enrollment] | Titular, CBU y alias de la institución (de `/payment-config`) en el paso de pago del wizard | — |
 | `Card` [ui] | Sin uso hoy; usar `GlassCard` | — |
 | `DataTable` [shared: table] | Tabla con orden, filtro Excel por columna (`meta.filterable`; no se dibuja con una sola opción), filas expandibles y modo tarjeta bajo 768px | `columns`, `data`, `renderExpanded`, `onRowClick`, `emptyState` |
 | `ProgressBar` [shared] | Barra de avance con `aria-label`; en Mis descuentos con `showValue={false}` y el texto "N de M" en `label` | `value`, `label`, `showValue`, `tone` |
@@ -101,7 +101,8 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 
 ## 7. Componentes de dominio (no reusar fuera de su dominio)
 - **alumno:** `TabAsistencia`, `TabMaterias`, `TabMesasDeExamen`, `TabNotas`, `TabPlanDeEstudio`, `SeccionAsistencia`, `InscripcionMaterias`, `MateriaContenidoMock`, `AmountBreakdown`, `InvoiceSummary`.
-- **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo), `BankAccountDetails`.
+- **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo).
+- **enrollment:** `BankAccountDetails` (`features/enrollment/components/`, paso de pago del wizard de inscripción).
 - **director:** `BandejaTramites`.
 - **billing (descuentos):** `features/billing/discounts/` — `DiscountsPage` (catálogo, promociones, otorgados), `DiscountDefinitionFormPage`, `DiscountDefinitionDetailPage`, `GrantDiscountPage`, `StudentDiscountsSection` (Financiero del legajo), `MyDiscountsTab` (Pagos del alumno), `ViolationList`, `DiscountStatusPill` / `PromotionStatusPill` (constantes sobre `StatusPill`).
 - **docente:** `CalendarioConfiguracion`.

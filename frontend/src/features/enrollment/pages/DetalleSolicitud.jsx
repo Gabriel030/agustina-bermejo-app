@@ -14,8 +14,8 @@ import { CircleCheck, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Stepper } from '@/components/Stepper';
-import { applicationProgress } from '@/lib/applicationProgress';
-import { DOCUMENT_ACCEPT, documentUploadErrorMessage, validateDocumentFile } from '@/lib/applicationDocumentUpload';
+import { applicationProgress } from '../lib/applicationProgress';
+import { DOCUMENT_ACCEPT, documentUploadErrorMessage, validateDocumentFile } from '../lib/applicationDocumentUpload';
 import { formatFecha, formatMoney } from '@/lib/utils';
 
 const TIPOS_DOCUMENTO = [
