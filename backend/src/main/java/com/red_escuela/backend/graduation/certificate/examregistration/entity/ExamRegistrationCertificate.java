@@ -101,6 +101,10 @@ public class ExamRegistrationCertificate {
         return new CertificateCode(code);
     }
 
+    public void markReplaced() {
+        this.status = DocumentValidityStatus.REPLACED;
+    }
+
     public void replacePdfPath(String newPath) {
         this.pdfPath = newPath;
     }

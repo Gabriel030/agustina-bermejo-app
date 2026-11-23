@@ -1,6 +1,7 @@
 package com.red_escuela.backend.graduation.procedure.specialist;
 
 import com.red_escuela.backend.evaluation.api.OwnExamRegistrationView;
+import com.red_escuela.backend.graduation.api.DocumentIssuanceSettings;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
@@ -30,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE;
@@ -49,6 +51,7 @@ public class ExamRegistrationCertificateIssuer {
     private final CertificateVerificationUrl verificationUrl;
     private final CertificateDigest digest;
     private final CertificateDocumentAuditRecorder auditRecorder;
+    private final DocumentIssuanceSettings issuanceSettings;
     private final CurrentActorFinder currentActorFinder;
     private final StudentFinder studentFinder;
     private final MeterRegistry meterRegistry;
@@ -60,7 +63,7 @@ public class ExamRegistrationCertificateIssuer {
                                              ExamRegistrationCertificateTemplate template, CertificatePdfRenderer renderer,
                                              CertificateFileStore fileStore, CertificateVerificationUrl verificationUrl,
                                              CertificateDigest digest, CertificateDocumentAuditRecorder auditRecorder,
-                                             CurrentActorFinder currentActorFinder, StudentFinder studentFinder,
+                                             DocumentIssuanceSettings issuanceSettings, CurrentActorFinder currentActorFinder, StudentFinder studentFinder,
                                              MeterRegistry meterRegistry, Clock clock) {
         this.evaluator = evaluator;
         this.repository = repository;
@@ -70,6 +73,7 @@ public class ExamRegistrationCertificateIssuer {
         this.verificationUrl = verificationUrl;
         this.digest = digest;
         this.auditRecorder = auditRecorder;
+        this.issuanceSettings = issuanceSettings;
         this.currentActorFinder = currentActorFinder;
         this.studentFinder = studentFinder;
         this.meterRegistry = meterRegistry;
@@ -87,8 +91,13 @@ public class ExamRegistrationCertificateIssuer {
         OwnExamRegistrationView registration = selection.registration();
         Optional<ExamRegistrationCertificate> current = repository.findFirstByStudentIdAndRegistrationIdAndStatusOrderByIssuedAtDesc(
                 studentId, registration.registrationId(), DocumentValidityStatus.VALID).filter(valid -> valid.isValidAt(now));
-        if (current.isPresent()) {
+        if (current.isPresent() && sameRecipient(current.get(), recipientType, recipientText)) {
             return responseOf(current.get());
+        }
+        if (current.isPresent()) {
+            requireDailyAllowance(studentId, now);
+            current.get().markReplaced();
+            repository.saveAndFlush(current.get());
         }
         return responseOf(issue(student, registration, recipientType, recipientText, now));
     }
@@ -127,6 +136,19 @@ public class ExamRegistrationCertificateIssuer {
         } catch (RuntimeException failure) {
             fileStore.deleteIfRolledBack(path);
             throw failure;
+        }
+    }
+
+    private boolean sameRecipient(ExamRegistrationCertificate current, RecipientType recipientType, String recipientText) {
+        return current.getRecipientType() == recipientType && Objects.equals(current.getRecipientText(), recipientText);
+    }
+
+    private void requireDailyAllowance(Long studentId, LocalDateTime now) {
+        LocalDateTime dayStart = now.toLocalDate().atStartOfDay();
+        long issuedToday = repository.countByStudentIdAndIssuedAtGreaterThanEqualAndIssuedAtLessThan(studentId, dayStart,
+                dayStart.plusDays(1));
+        if (issuedToday >= issuanceSettings.current().dailyIssuanceLimitPerType()) {
+            throw new IssuanceLimitReachedException();
         }
     }
 

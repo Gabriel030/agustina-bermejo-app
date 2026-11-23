@@ -559,21 +559,96 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE')].verifiable").value(false));
     }
 
-    @Test
-    void sameRequestWithADifferentRecipientReturnsTheCurrentDocumentUnchanged() throws Exception {
-        Long first = ((Number) JsonPath.read(generate(studentToken,
-                "{\"recipientType\":\"EMPLOYER\",\"recipientText\":\"Empresa A\"}").andExpect(status().isCreated()).andReturn()
-                .getResponse().getContentAsString(), "$.id")).longValue();
+    private Long generateWithRecipient(String type, String text) throws Exception {
+        MvcResult result = generate(studentToken, "{\"recipientType\":\"" + type + "\",\"recipientText\":\"" + text + "\"}").andReturn();
+        return ((Number) JsonPath.read(result.getResponse().getContentAsString(), "$.id")).longValue();
+    }
 
-        Long second = ((Number) JsonPath.read(generate(studentToken,
-                "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}").andReturn()
-                .getResponse().getContentAsString(), "$.id")).longValue();
+    private List<String> statusesOfCertificates() {
+        return jdbc.queryForList("select status from exam_registration_certificate order by id", String.class);
+    }
+
+    @Test
+    void sameRecipientOnTheSameDayReusesTheCurrentDocumentWithoutCounting() throws Exception {
+        Long first = generateWithRecipient("EMPLOYER", "Empresa A");
+
+        Long second = generateWithRecipient("EMPLOYER", "Empresa A");
 
         assertThat(second).isEqualTo(first);
-        Map<String, Object> row = jdbc.queryForMap("select recipient_type, recipient_text from exam_registration_certificate");
-        assertThat(row.get("recipient_type")).isEqualTo("EMPLOYER");
-        assertThat(row.get("recipient_text")).isEqualTo("Empresa A");
-        assertThat(certificateCount()).isEqualTo(1L);
+        assertThat(statusesOfCertificates()).containsExactly("VALID");
+    }
+
+    @Test
+    void sameRecipientOnALaterDayStillReusesTheCurrentDocument() throws Exception {
+        Long first = generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+
+        Long second = generateWithRecipient("EMPLOYER", "Empresa A");
+
+        assertThat(second).isEqualTo(first);
+        assertThat(statusesOfCertificates()).containsExactly("VALID");
+    }
+
+    @Test
+    void differentRecipientOnALaterDayIssuesANewDocumentAndReplacesTheCurrentOne() throws Exception {
+        Long first = generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+
+        Long second = generateWithRecipient("HEALTH_INSURANCE", "Obra social B");
+
+        assertThat(second).isNotEqualTo(first);
+        assertThat(statusesOfCertificates()).containsExactly("REPLACED", "VALID");
+        Map<String, Object> current = jdbc.queryForMap("select recipient_type, recipient_text from exam_registration_certificate where status = 'VALID'");
+        assertThat(current.get("recipient_type")).isEqualTo("HEALTH_INSURANCE");
+        assertThat(current.get("recipient_text")).isEqualTo("Obra social B");
+    }
+
+    @Test
+    void changingFromNoRecipientToARecipientIsADifferentRecipient() throws Exception {
+        Long first = issuedId(studentToken);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+
+        Long second = generateWithRecipient("OTHER", "Club");
+
+        assertThat(second).isNotEqualTo(first);
+        assertThat(statusesOfCertificates()).containsExactly("REPLACED", "VALID");
+    }
+
+    @Test
+    void differentRecipientOnTheSameDayHitsTheLimitAndKeepsTheCurrentDocument() throws Exception {
+        generateWithRecipient("EMPLOYER", "Empresa A");
+
+        generate(studentToken, "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}")
+                .andExpect(status().isTooManyRequests()).andExpect(jsonPath("$.code").value("ISSUANCE_LIMIT_REACHED"));
+
+        assertThat(statusesOfCertificates()).containsExactly("VALID");
+        assertThat(jdbc.queryForObject("select recipient_text from exam_registration_certificate", String.class)).isEqualTo("Empresa A");
+    }
+
+    @Test
+    void replacedDocumentCannotBeDownloadedAndIsListedAsReplaced() throws Exception {
+        Long first = generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        Long second = generateWithRecipient("HEALTH_INSURANCE", "Obra social B");
+
+        download(studentToken, first).andExpect(status().isNotFound());
+        download(studentToken, second).andExpect(status().isOk());
+        mockMvc.perform(get("/me/procedures/approved").header("Authorization", "Bearer " + studentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE' && @.id == " + first + ")].status").value("REPLACED"))
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE' && @.id == " + first + ")].verifiable").value(false))
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE' && @.id == " + second + ")].status").value("VALID"))
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE' && @.id == " + second + ")].verifiable").value(true));
+    }
+
+    @Test
+    void replacingCountsTowardsTheDailyLimitForOtherRegistrations() throws Exception {
+        generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        generateWithRecipient("HEALTH_INSURANCE", "Obra social B");
+        Long other = secondRegistrationOn(LocalDateTime.of(2026, 11, 25, 9, 0));
+
+        generate(studentToken, "{\"registrationId\":" + other + "}").andExpect(status().isTooManyRequests());
     }
 
     private static final int CONCURRENCY_ROUNDS = 8;
