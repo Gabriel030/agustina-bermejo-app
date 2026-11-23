@@ -1,0 +1,5 @@
+alter table graduation_request validate constraint graduation_request_certificate_review_status_enum;
+alter table graduation_request validate constraint fk_graduation_request_certificate_reviewed_by;
+alter table graduation_request validate constraint ck_graduation_request_certificate_review_coherence;
+alter table audit_log validate constraint ck_audit_log_action;
+alter table audit_log validate constraint ck_audit_log_entity_type;
