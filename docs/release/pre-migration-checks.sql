@@ -177,6 +177,8 @@ begin
       ('evaluation_scheme', 'aggregation_method', array['LAST_ATTEMPT', 'MAX_SCORE', 'SIMPLE_AVERAGE', 'WEIGHTED_AVERAGE']),
       ('exam_board', 'status', array['CANCELED', 'CLOSED', 'SCHEDULED']),
       ('exam_board_registration', 'status', array['ABSENT', 'GRADED', 'REGISTERED', 'WITHDRAWN']),
+      ('exam_registration_certificate', 'recipient_type', array['EMPLOYER', 'HEALTH_INSURANCE', 'OTHER', 'STUDENT_TRANSPORT']),
+      ('exam_registration_certificate', 'status', array['EXPIRED', 'REPLACED', 'REVOKED', 'VALID']),
       ('feature_change_log', 'code', array['ANALYTICS', 'BILLING', 'BILLING_NOTIFICATIONS', 'EXTERNAL_BILLING', 'FISCAL_INVOICING', 'PAYMENT_METHOD_BANK_TRANSFER', 'PAYMENT_METHOD_CASH', 'PAYMENT_METHOD_GATEWAY']),
       ('gateway_checkout', 'currency', array['ARS', 'USD']),
       ('gateway_checkout', 'gateway', array['DLOCAL', 'MANUAL', 'MERCADO_PAGO']),
