@@ -24,3 +24,15 @@ create index ix_document_debt_exception_active_lookup
 create index ix_document_debt_exception_due on document_debt_exception (expires_at) where status = 'ACTIVE';
 create index ix_document_debt_exception_issued_at on document_debt_exception (issued_at desc);
 create index ix_document_debt_exception_student on document_debt_exception (student_id, issued_at desc);
+
+insert into permission (code, module, description, fixed_to_director, sensitive) values
+    ('document.debt-exception.issue', 'document', 'Emitir por excepción una constancia o certificado a un alumno con deuda: motivo obligatorio, vigencia de 1 a 90 días y uso único', false, true);
+
+insert into role_permission (role, permission_id)
+select 'ADMINISTRATIVO', permission.id
+from permission
+where permission.code = 'document.debt-exception.issue';
+
+insert into permission_module_mode (role, module, mode)
+values ('SUBDIRECTOR', 'document', 'ENFORCE')
+on conflict (role, module) do update set mode = excluded.mode;
