@@ -171,6 +171,12 @@ Los 13 permisos de esta tanda son SENSIBLES: delegarlos o revocarlos desde la gr
 
 Ningún endpoint de esta tanda cambia de resultado para el Director en Activo: todas las reglas vigentes lo permiten. Quedan fuera los previews (tanda A2), /me, el webhook de la pasarela y la tanda B2. Se quitó el @PreAuthorize de los métodos de staff de los services; los métodos de alumno de SubmitBankTransferReceiptService y RequestRefundService conservan el suyo. El módulo sigue en Legado.
 
+## Billing: estado
+
+Billing queda en LEGACY hasta resolver el Issue #1254 (el resultado de aplicar directo o dejar pendiente depende del rol Director real y no de la grilla): no pasar a Sombra real ni a Activo antes. Sus 33 permisos monetarios sensibles son los 13 de B1 más los 20 de B2; los de lectura (A1 y A2) no. Todo endpoint de billing sin `@RequiresPermission` está en una lista explícita por endpoint de `PermissionGateCoverageTest` y son 33 endpoints: `/me/*` de alumno, webhook de Mercado Pago, mixtos (ADMINISTRATIVO o ALUMNO, cohorts GET, términos del pago anual `current` y `versions/{n}` con ALUMNO, ADMINISTRATIVO o DIRECTOR) y lecturas sin rol (payment-config GET, qr-image y listProgramCohorts). El test falla si aparece uno nuevo sin gate.
+
+GET /payment-config y GET /payment-config/qr-image son visibles para cualquier usuario autenticado salvo el administrador de plataforma, por decisión de producto (el alumno necesita CBU y QR para pagar); por eso están en `BILLING_ENDPOINTS_WITHOUT_GRID_RULE` y no llevan `@RequiresPermission`. Cambiar CBU o QR sigue siendo `billing.manage_payment_gateway`, solo Director. `PaymentConfigReadRuleTest` fija esta regla contra la matriz de autorización.
+
 ## Academicrecord
 
 El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración de permisos ni cambio de resultado para el Director en ENFORCE.

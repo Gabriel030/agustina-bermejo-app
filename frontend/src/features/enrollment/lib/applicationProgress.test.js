@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applicationProgress } from '@/lib/applicationProgress';
+import { applicationProgress } from './applicationProgress';
 
 const invoice = (overrides) => ({ id: 5, paymentStatus: 'PENDING', receiptStatus: null, ...overrides });
 

@@ -32,7 +32,7 @@ const grid = {
       dni: '42007315',
       condition: 'REGULAR',
       finalEnabled: true,
-      grades: [{ gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: false, corrected: false }],
+      grades: [{ gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: false, corrected: false, version: 0 }],
     },
     {
       enrollmentId: 12,

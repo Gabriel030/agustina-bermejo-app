@@ -47,7 +47,7 @@ export function ImportBlockRow({ block, file, editable, uploading, onSelectFile 
         ) : (
           <StatusPill tone="warning">Falta cargar</StatusPill>
         )}
-        <Button type="button" variant="ghost" size="sm" onClick={handleTemplate}>
+        <Button className="min-h-11 md:min-h-8" type="button" variant="ghost" size="sm" onClick={handleTemplate}>
           <Download className="size-4" aria-hidden="true" />
           Plantilla
         </Button>

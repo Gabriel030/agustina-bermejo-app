@@ -40,7 +40,7 @@ const collect = (kind) => Object.values(FEATURE_ROUTES).flatMap((featureRoutes) 
 
 export function withSubdirectorInheritance(routes) {
   return routes.map((route) =>
-    route.roles.includes('administrativo') && !route.roles.includes('subdirector')
+    route.roles.includes('administrativo') && !route.roles.includes('subdirector') && !route.excludeSubdirector
       ? { ...route, roles: [...route.roles, 'subdirector'] }
       : route,
   );

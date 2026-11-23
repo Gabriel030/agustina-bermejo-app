@@ -46,11 +46,11 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `AnioGroupHeaderRow` [domain: alumno] | Fila de agrupación por año | — |
 | `AmountBreakdown` [domain: alumno] | Desglose de una cuota: importe base + recargo, beca, promoción o descuento con signo | `baseAmount`, `lines` (`{ label, amount }` con signo) |
 | `InvoiceSummary` [domain: alumno] | Resumen de la cuota que se está pagando (concepto, desglose y total) arriba de los pasos de pago | `breakdown` (respuesta de `/me/invoices/{id}/price-breakdown`) |
-| `BankAccountDetails` [domain: catalogo] | Titular, CBU y alias de la institución (de `/payment-config`) en el paso de pago del wizard | — |
+| `BankAccountDetails` [domain: enrollment] | Titular, CBU y alias de la institución (de `/payment-config`) en el paso de pago del wizard | — |
 | `Card` [ui] | Sin uso hoy; usar `GlassCard` | — |
 | `DataTable` [shared: table] | Tabla con orden, filtro Excel por columna (`meta.filterable`; no se dibuja con una sola opción), filas expandibles y modo tarjeta bajo 768px | `columns`, `data`, `renderExpanded`, `onRowClick`, `emptyState` |
 | `ProgressBar` [shared] | Barra de avance con `aria-label`; en Mis descuentos con `showValue={false}` y el texto "N de M" en `label` | `value`, `label`, `showValue`, `tone` |
-| `MonthGrid` [shared] | Grilla mensual interactiva (`role="grid"`, un solo tab stop, flechas, Home/End, PageUp/PageDown cambian de mes); la celda es un botón con feriado/estado, hoy y selección | `year`, `month`, `entries` (`{ [iso]: { label, typeLabel, chip, cellClass } }`), `todayIso`, `selectedIso`, `onSelect(iso)`, `onNavigate(year, month)` |
+| `MonthGrid` [academic-structure, `features/academic-structure/components/MonthGrid.jsx`] | Grilla mensual interactiva (`role="grid"`, un solo tab stop, flechas, Home/End, PageUp/PageDown cambian de mes); la celda es un botón con feriado/estado, hoy y selección | `year`, `month`, `entries` (`{ [iso]: { label, typeLabel, chip, cellClass } }`), `todayIso`, `selectedIso`, `onSelect(iso)`, `onNavigate(year, month)` |
 | `MonthPicker` [shared] | Selector de mes (`YYYY-MM`) con mínimo/máximo; en el otorgamiento de descuentos el mínimo es la próxima cuota | `value`, `onChange`, `minMonth`, `maxMonth` |
 
 ## 4. Formularios y entrada
@@ -101,7 +101,8 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 
 ## 7. Componentes de dominio (no reusar fuera de su dominio)
 - **alumno:** `TabAsistencia`, `TabMaterias`, `TabMesasDeExamen`, `TabNotas`, `TabPlanDeEstudio`, `SeccionAsistencia`, `InscripcionMaterias`, `MateriaContenidoMock`, `AmountBreakdown`, `InvoiceSummary`.
-- **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo), `BankAccountDetails`.
+- **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo).
+- **enrollment:** `BankAccountDetails` (`features/enrollment/components/`, paso de pago del wizard de inscripción).
 - **director:** `BandejaTramites`.
 - **billing (descuentos):** `features/billing/discounts/` — `DiscountsPage` (catálogo, promociones, otorgados), `DiscountDefinitionFormPage`, `DiscountDefinitionDetailPage`, `GrantDiscountPage`, `StudentDiscountsSection` (Financiero del legajo), `MyDiscountsTab` (Pagos del alumno), `ViolationList`, `DiscountStatusPill` / `PromotionStatusPill` (constantes sobre `StatusPill`).
 - **docente:** `CalendarioConfiguracion`.
@@ -110,6 +111,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 - **billing (`features/billing/credit-notes/`):** `ReasonCards` (dos o más tarjetas seleccionables como `radiogroup`, con flechas), `AmountDiffTable` (tabla Hoy / Nuevo / Diferencia con filas sin cambios; en móvil se apila en pares etiqueta/valor), `CancelInvoiceDialog` (cancelar cuota / anular recargo con vista previa de efectos), `InvoiceActions` (acciones de la cuota; entra a `InvoiceDetail` por su prop `actions`, que no conoce roles), `CreditNoteLinesForm`, `CreateCreditNotePage` (2 pasos con `Stepper`), `StudentCreditNotesSection`, `PendingAuthorizationBanner`, `CreditBalanceCard` (alumno) y `MyCreditNotesPage`.
 - **billing (pago por transferencia del alumno, `components/billing/`):** `BankTransferReceiptForm` (paso 2 de `AlumnoPagarTransferencia`: cuotas en orden, dropzone, número de operación, monto, CBU o alias, titular precargado, banco opcional, "Qué va a pasar" y barra fija con el único CTA; envía a `POST /me/bank-transfer-receipts` con `Idempotency-Key`), `InvoiceCoverageList` (cuotas por prefijo con cobertura por fila y filas informativas en revisión) y `ReceiptDropzone` (valida tipo y 5 MB, con "Quitar"). La lógica pura vive en `lib/bankTransferReceipt.js`. El paso Pago del wizard de curso todavía no lo usa (V2-04b1c-2).
 - **billing (`features/billing/reminders/`):** `ReminderSettingsPage` (Recordatorios de pago, 2 pasos con `Stepper`), `ReminderTimeline` (avisos por hito) con `NoticeEditor` inline, `SettingsFields` (ajustes generales y `SendingOverrides` con herencia), `ExceptionsTable`, `VersionHistory`, `ReminderConfirmStep` (tabla Hoy / Nuevo / Diferencia, vigencia, motivo, impacto), `ContactListTab` (pestaña Para contactar de Facturación, con `mobileLayout="scroll"`) y `SimulatedMailsPage` (solo local y demo). En identity: `NotificationMatrix` (Mi perfil › Notificaciones, candados según `mandatoryChannels`).
+- **graduation (`features/graduation/debt-exceptions/`):** `EmitDebtException` (Administración › Emitir por excepción, `/administrativo|director/constancias-por-excepcion`; Subdirector excluido con `excludeSubdirector` en la ruta), `StudentPicker` (buscador por apellido o DNI con resultados como filas de 44 px), `IssuedDebtException` (estado Emitida con Descargar para entregar / Emitir otra).
 - **oferta-academica:** `ResumeCycleButton` (retomar un ciclo en construcción o rechazado en el wizard, `?cicloId=`), `RejectionReasonNotice` (motivo de rechazo de un ciclo).
 Si un segundo dominio necesita uno de estos, se sube a `components/` (regla de `frontend.md`).
 

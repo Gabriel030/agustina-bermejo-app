@@ -6,7 +6,7 @@ const SRC_DIR = join(import.meta.dirname, '..');
 const SELF_FILE = join(import.meta.dirname, 'noStickyBottomOutsideActionBar.test.js');
 const SOURCE_FILE_PATTERN = /\.(jsx?|tsx?)$/;
 const PINNED_BOTTOM_PATTERN_STICKY_OR_FIXED = /\b(sticky|fixed)\b[^"'`]*\bbottom-/;
-const ALLOWED_PINNED_BOTTOM_FILES_PENDING_MIGRATION = ['components/StickyActionBar.jsx', 'features/permissions/components/PendingChangesBar.jsx', 'components/ui/sheet.jsx'];
+const ALLOWED_PINNED_BOTTOM_FILES_PENDING_MIGRATION = ['components/StickyActionBar.jsx', 'components/ui/sheet.jsx'];
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

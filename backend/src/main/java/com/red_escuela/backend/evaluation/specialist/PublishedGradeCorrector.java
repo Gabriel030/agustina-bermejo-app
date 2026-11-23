@@ -16,6 +16,7 @@ import com.red_escuela.backend.evaluation.exception.GradeCorrectionPeriodEndedEx
 import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
 import com.red_escuela.backend.evaluation.exception.GradeItemNotPublishedException;
 import com.red_escuela.backend.evaluation.exception.InvalidGradeCorrectionReasonException;
+import com.red_escuela.backend.evaluation.exception.StaleEditException;
 import com.red_escuela.backend.evaluation.repository.GradeItemAuditRepository;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
@@ -68,6 +69,7 @@ public class PublishedGradeCorrector {
         String reason = normalizedReason(request.reason());
         GradeItem gradeItem = gradeItemRepository.findById(gradeItemId)
                 .orElseThrow(() -> new GradeItemNotFoundException(gradeItemId));
+        requireExpectedVersion(gradeItem, request.expectedVersion());
         Target target = Target.of(gradeItem);
         lockEnrollment(target);
         requirePublished(gradeItem, target);
@@ -97,6 +99,12 @@ public class PublishedGradeCorrector {
                 gradeItemId, target.studentPersonId(), target.sectionName(), gradeItem.getType().displayName(),
                 SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber())));
         return GradeItemAuditResponse.from(audit);
+    }
+
+    private void requireExpectedVersion(GradeItem gradeItem, Long expectedVersion) {
+        if (expectedVersion != null && !expectedVersion.equals(gradeItem.getVersion())) {
+            throw new StaleEditException(gradeItem.getId());
+        }
     }
 
     private String normalizedReason(String reason) {

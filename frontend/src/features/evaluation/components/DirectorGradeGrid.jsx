@@ -43,7 +43,7 @@ export function DirectorGradeGrid({ sectionId, kind }) {
           title="No pudimos cargar las notas"
           description="Revisá tu conexión e intentá de nuevo."
           action={
-            <Button variant="outline" onClick={() => refetch()}>
+            <Button variant="outline" onClick={() => refetch()} className="min-h-11 md:min-h-8">
               Reintentar
             </Button>
           }

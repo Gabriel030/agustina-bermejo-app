@@ -1,0 +1,1 @@
+alter table certificate_signatory_permission validate constraint ck_certificate_signatory_permission_type;
