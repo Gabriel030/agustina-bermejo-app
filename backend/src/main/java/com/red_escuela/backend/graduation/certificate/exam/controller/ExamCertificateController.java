@@ -6,6 +6,7 @@ import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateP
 import com.red_escuela.backend.graduation.certificate.exam.usecase.GetExamCertificatePdfUseCase;
 import com.red_escuela.backend.graduation.certificate.exam.usecase.RevokeExamCertificateUseCase;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,6 +35,7 @@ public class ExamCertificateController {
 
     @GetMapping("/exam-certificates/{id}/pdf")
     @PreAuthorize("hasAnyRole('DOCENTE','ADMINISTRATIVO','DIRECTOR')")
+    @Operation(description = "Descarga individual. Docente de la mesa (404 si es ajena), Administrativo y Director. Audita DOCUMENT_PDF_DOWNLOADED.")
     @ApiResponse(responseCode = "200", content = @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")))
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
         GraduationCertificatePdf pdf = pdfUseCase.pdfOf(id);

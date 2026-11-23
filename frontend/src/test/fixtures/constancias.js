@@ -148,8 +148,8 @@ export function examCertificateCandidates() {
     { registrationId: 55, studentId: 3, studentName: 'Ana Paz', maskedDocument: '***.***.222', availability: 'AVAILABLE', certificateId: null, issuedAt: null, revokedAt: null, revokedReason: null },
     { registrationId: 56, studentId: 4, studentName: 'Luis Gómez', maskedDocument: '***.***.333', availability: 'ALREADY_ISSUED', certificateId: 12, issuedAt: '2026-11-19T12:00:00', revokedAt: null, revokedReason: null },
     { registrationId: 57, studentId: 5, studentName: 'Marta Ríos', maskedDocument: '***.***.444', availability: 'ABSENT', certificateId: null, issuedAt: null, revokedAt: null, revokedReason: null },
-    { registrationId: 58, studentId: 6, studentName: 'Julián Sosa', maskedDocument: '***.***.555', availability: 'PENDING_PAYMENTS', certificateId: null, issuedAt: null, revokedAt: null, revokedReason: null },
-    { registrationId: 59, studentId: 7, studentName: 'Carla Ibarra', maskedDocument: '***.***.666', availability: 'AVAILABLE', certificateId: 14, issuedAt: '2026-11-18T09:00:00', revokedAt: '2026-11-20T10:00:00', revokedReason: 'Emitida con datos incorrectos' },
+    { registrationId: 58, studentId: 6, studentName: 'Julián Sosa', maskedDocument: '***.***.555', availability: 'NOT_ELIGIBLE_DEBT', certificateId: null, issuedAt: null, revokedAt: null, revokedReason: null },
+    { registrationId: 59, studentId: 7, studentName: 'Carla Ibarra', maskedDocument: '***.***.666', availability: 'REVOKED', certificateId: 14, issuedAt: '2026-11-18T09:00:00', revokedAt: '2026-11-20T10:00:00', revokedReason: 'Emitida con datos incorrectos' },
   ];
 }
 
@@ -161,7 +161,7 @@ export function examCertificateBatch(overrides = {}) {
       { registrationId: 55, studentName: 'Ana Paz', outcome: 'ISSUED', certificateId: 13 },
       { registrationId: 56, studentName: 'Luis Gómez', outcome: 'ALREADY_ISSUED', certificateId: 12 },
       { registrationId: 57, studentName: 'Marta Ríos', outcome: 'ABSENT', certificateId: null },
-      { registrationId: 58, studentName: 'Julián Sosa', outcome: 'PENDING_PAYMENTS', certificateId: null },
+      { registrationId: 58, studentName: 'Julián Sosa', outcome: 'DEBT', certificateId: null },
     ],
     ...overrides,
   };

@@ -4,5 +4,6 @@ public enum ExamCertificateCandidateAvailability {
     AVAILABLE,
     ALREADY_ISSUED,
     ABSENT,
-    PENDING_PAYMENTS
+    NOT_ELIGIBLE_DEBT,
+    REVOKED
 }

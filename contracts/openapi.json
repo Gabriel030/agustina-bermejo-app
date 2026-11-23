@@ -7386,7 +7386,7 @@
             "type" : [ "integer", "null" ]
           },
           "outcome" : {
-            "enum" : [ "ISSUED", "ALREADY_ISSUED", "ABSENT", "NOT_REGISTERED", "PENDING_PAYMENTS" ],
+            "enum" : [ "ISSUED", "ALREADY_ISSUED", "ABSENT", "NOT_REGISTERED", "DEBT" ],
             "type" : "string"
           },
           "registrationId" : {
@@ -7423,7 +7423,7 @@
       "ExamCertificateCandidateResponse" : {
         "properties" : {
           "availability" : {
-            "enum" : [ "AVAILABLE", "ALREADY_ISSUED", "ABSENT", "PENDING_PAYMENTS" ],
+            "enum" : [ "AVAILABLE", "ALREADY_ISSUED", "ABSENT", "NOT_ELIGIBLE_DEBT", "REVOKED" ],
             "type" : "string"
           },
           "certificateId" : {
@@ -48795,6 +48795,7 @@
     },
     "/exam-boards/{id}/exam-certificates/batch" : {
       "post" : {
+        "description" : "Emisión en lote: omite con outcome DEBT a quien no esté al día con los pagos o pase a deber entre candidatos y emisión (sin montos); reemite las REVOKED; skippedCount cuenta los omitidos. Misma condición de mesa rendida y mismos roles que candidates.",
         "operationId" : "ExamBoardCertificate_issueBatch",
         "parameters" : [ {
           "in" : "path",
@@ -48932,6 +48933,7 @@
     },
     "/exam-boards/{id}/exam-certificates/candidates" : {
       "get" : {
+        "description" : "Elegibles: alumnos presentes con la mesa rendida (ExamBoardStatus CLOSED, acta cerrada; si no, EXAM_CERTIFICATE_BOARD_NOT_HELD). NOT_ELIGIBLE_DEBT no es seleccionable y no informa montos, excepción ni link. REVOKED es seleccionable y el lote lo reemite. issuedAt informa ALREADY_ISSUED y REVOKED. Docente de la mesa (404 si es ajena), Administrativo y Director; el Preceptor no tiene acceso.",
         "operationId" : "ExamBoardCertificate_candidates",
         "parameters" : [ {
           "in" : "path",
@@ -49731,6 +49733,7 @@
     },
     "/exam-certificates/{id}/pdf" : {
       "get" : {
+        "description" : "Descarga individual. Docente de la mesa (404 si es ajena), Administrativo y Director. Audita DOCUMENT_PDF_DOWNLOADED.",
         "operationId" : "ExamCertificate_pdf",
         "parameters" : [ {
           "in" : "path",
