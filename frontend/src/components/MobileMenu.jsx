@@ -131,7 +131,7 @@ export function MobileMenu({ titulo, items, groups }) {
           </nav>
 
           <div className="shrink-0 border-t border-border pt-3">
-                <button type="button" onClick={alternarTema} className={cn(NAV_ITEM_BASE, 'w-full text-left')}>
+              <button type="button" onClick={alternarTema} className={cn(NAV_ITEM_BASE, 'w-full text-left')}>
               {dark ? <Sun aria-hidden="true" className="h-4 w-4 shrink-0" /> : <Moon aria-hidden="true" className="h-4 w-4 shrink-0" />}
               {dark ? 'Tema claro' : 'Tema oscuro'}
             </button>
