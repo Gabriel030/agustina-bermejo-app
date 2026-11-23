@@ -12,11 +12,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
-public class EnrollmentBillingStandingAdapter implements EnrollmentBillingStandingPort {
+public class EnrollmentBillingStandingPortAdapter implements EnrollmentBillingStandingPort {
 
     private final EnrollmentPaymentStandingQuery standingQuery;
 
-    public EnrollmentBillingStandingAdapter(EnrollmentPaymentStandingQuery standingQuery) {
+    public EnrollmentBillingStandingPortAdapter(EnrollmentPaymentStandingQuery standingQuery) {
         this.standingQuery = standingQuery;
     }
 
