@@ -16,7 +16,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [design-system.md](context/design-system.md) | Sistema de diseño: cómo registrar un diseño nuevo cambiando solo los tokens | vigente |
 | [components.md](context/components.md) | Qué componente usar y cómo listarlos en una spec | vigente |
 | [modules.md](context/modules.md) | Límites entre módulos con Spring Modulith, línea base de violaciones | vigente |
-| [overload-protection.md](context/overload-protection.md) | Rate limit, IP real detrás de proxy, timeouts, pool, límites de entrada y dead letter de la cola de eventos | vigente |
+| [overload-protection.md](context/overload-protection.md) | Rate limit, IP real detrás de proxy, timeouts, pool, circuit breakers, bulkhead, límites de entrada y dead letter de la cola de eventos | vigente |
 | [testing.md](context/testing.md) | Mapa de herramientas de test y criterio de qué test escribir | vigente |
 | [debugging.md](context/debugging.md) | Correr todo local y resolver arranques fallidos | vigente |
 | [workflow.md](context/workflow.md) | Git, CI local, commits, PRs, migraciones y backport | vigente |
@@ -53,6 +53,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [legal/derechos-de-las-personas.md](legal/derechos-de-las-personas.md) | Procedimiento para pedidos de acceso, rectificación y supresión de datos personales (Épica 29, C5): inventario de datos, qué no se puede borrar, plantillas y paquetes futuros; pendiente de abogado | borrador |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
 | [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
+| [deploy/sentry.md](deploy/sentry.md) | Reporte de errores 5xx del backend a Sentry: cómo activarlo, qué se depura y advertencia de privacidad | vigente |
 | [deploy/backup-status.schema.json](deploy/backup-status.schema.json) | JSON Schema (draft 2020-12, `schemaVersion` 1) del archivo de estado que escriben los scripts de backup y lee `GET /backups/status` | vigente |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
 | [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
