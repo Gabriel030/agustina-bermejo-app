@@ -1,15 +1,15 @@
 package com.red_escuela.backend.graduation.certificate.exam.controller;
 
+import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.exam.dto.ExamCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.exam.dto.RevokeExamCertificateRequest;
-import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.exam.usecase.GetExamCertificatePdfUseCase;
 import com.red_escuela.backend.graduation.certificate.exam.usecase.RevokeExamCertificateUseCase;
-import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
