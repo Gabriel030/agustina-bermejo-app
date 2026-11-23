@@ -1,6 +1,7 @@
 package com.red_escuela.backend.graduation.certificate.entity;
 
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
+import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -78,6 +79,9 @@ public class GraduationCertificate {
     @Column(name = "pdf_path", nullable = false, length = 300)
     private String pdfPath;
 
+    @Column(name = "render_engine_version", length = 20, updatable = false)
+    private String renderEngineVersion;
+
     @Column(name = "registry_number", length = 20, updatable = false)
     private String registryNumber;
 
@@ -114,6 +118,7 @@ public class GraduationCertificate {
                 .templateRef(snapshot.templateRef())
                 .pdfSha256(pdfSha256)
                 .pdfPath(pdfPath)
+                .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                 .registryNumber(registryNumber)
                 .templateVersionId(templateVersionId)
                 .build();
@@ -141,6 +146,10 @@ public class GraduationCertificate {
     public void replacePdf(String newSha256, String newPath) {
         this.pdfSha256 = newSha256;
         this.pdfPath = newPath;
+    }
+
+    public boolean isPdfRegenerationVerifiable() {
+        return renderEngineVersion != null;
     }
 
     public CertificateCode certificateCode() {
