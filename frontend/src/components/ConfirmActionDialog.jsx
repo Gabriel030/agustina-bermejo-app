@@ -21,6 +21,7 @@ export default function ConfirmActionDialog({
   buttonClassName,
   children,
   onConfirm,
+  onCloseAutoFocus,
 }) {
   function handleOpenChange(next) {
     if (pending && !next) return;
@@ -29,7 +30,7 @@ export default function ConfirmActionDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent onCloseAutoFocus={onCloseAutoFocus}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>

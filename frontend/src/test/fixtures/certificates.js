@@ -169,6 +169,25 @@ export function certificateTemplate(overrides = {}) {
   };
 }
 
+const COMMON_MARKERS = ['holder', 'documentType', 'documentNumber', 'issuedOn', 'registryNumber'];
+const ALLOWED_MARKERS = {
+  REGULAR_STUDENT_CERTIFICATE: [...COMMON_MARKERS, 'titleName', 'recipient'],
+  APPROVED_SUBJECTS_CERTIFICATE: [...COMMON_MARKERS, 'titleName', 'average', 'completionPercent'],
+  EXAM_REGISTRATION_CERTIFICATE: [...COMMON_MARKERS, 'subjectName', 'examDate', 'recipient'],
+  EXAM_CERTIFICATE: [...COMMON_MARKERS, 'subjectName', 'examDate', 'recipient'],
+};
+
+export function documentTemplate(documentType = 'EXAM_CERTIFICATE', overrides = {}) {
+  return {
+    documentType,
+    published: certificateTemplateVersion(),
+    draft: null,
+    hasUnpublishedChanges: false,
+    allowedMarkers: ALLOWED_MARKERS[documentType] ?? COMMON_MARKERS,
+    ...overrides,
+  };
+}
+
 export function certificateTemplateImage(overrides = {}) {
   return {
     id: 1,

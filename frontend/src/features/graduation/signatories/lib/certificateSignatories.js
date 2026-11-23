@@ -10,6 +10,7 @@ export const DOCUMENT_TYPE_OPTIONS = [
   { value: 'GRADUATION_APPROVAL', label: 'Certificado de egreso' },
   { value: 'REGULAR_STUDENT_CERTIFICATE', label: 'Constancia de alumno regular' },
   { value: 'APPROVED_SUBJECTS_CERTIFICATE', label: 'Constancia de materias aprobadas' },
+  { value: 'EXAM_REGISTRATION_CERTIFICATE', label: 'Constancia de inscripción a examen' },
   { value: 'EXAM_CERTIFICATE', label: 'Constancia de examen' },
 ];
 
