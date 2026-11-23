@@ -6,6 +6,8 @@ import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTe
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateVersionResponse;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateVersionSummaryResponse;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplateVersionStatus;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateResponse;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplate;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateImage;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
@@ -33,6 +35,21 @@ public class CertificateTemplateReader {
         this.imageRepository = imageRepository;
     }
 
+    public DocumentTemplateResponse read(DocumentTemplateType type) {
+        CertificateTemplate template = templateFinder.find(type);
+        CertificateTemplateVersionResponse published = versionRepository
+                .findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
+                .map(CertificateTemplateResponses::of).orElse(null);
+        CertificateTemplateVersionResponse draft = versionRepository
+                .findByTemplateIdAndStatus(template.getId(), TemplateVersionStatus.DRAFT)
+                .map(CertificateTemplateResponses::of).orElse(null);
+        return new DocumentTemplateResponse(type, draft, published, draft != null);
+    }
+
+    public CertificateTemplateImageContent readImage(DocumentTemplateType type, Long imageId) {
+        return imageOf(templateFinder.find(type), imageId);
+    }
+
     public CertificateTemplateResponse read(GraduationCertificateKind kind) {
         CertificateTemplate template = templateFinder.find(kind);
         CertificateTemplateVersionResponse published = versionRepository
@@ -58,7 +75,10 @@ public class CertificateTemplateReader {
     }
 
     public CertificateTemplateImageContent readImage(GraduationCertificateKind kind, Long imageId) {
-        CertificateTemplate template = templateFinder.find(kind);
+        return imageOf(templateFinder.find(kind), imageId);
+    }
+
+    private CertificateTemplateImageContent imageOf(CertificateTemplate template, Long imageId) {
         CertificateTemplateImage image = imageRepository.findByIdAndTemplateId(imageId, template.getId())
                 .orElseThrow(TemplateImageNotFoundException::new);
         return new CertificateTemplateImageContent(image.getContentType(), image.getContent());

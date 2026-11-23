@@ -139,6 +139,7 @@ begin
       ('certificate_exception_status_change', 'from_status', array['APPROVED', 'CONSUMED', 'EXPIRED', 'PENDING', 'REJECTED', 'WITHDRAWN']),
       ('certificate_exception_status_change', 'to_status', array['APPROVED', 'CONSUMED', 'EXPIRED', 'PENDING', 'REJECTED', 'WITHDRAWN']),
       ('certificate_issuance', 'type', array['APPROVED_SUBJECTS', 'REGULAR_STUDENT']),
+      ('certificate_template', 'document_type', array['APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'REGULAR_STUDENT_CERTIFICATE']),
       ('certificate_template', 'kind', array['COURSE', 'PROGRAM']),
       ('certificate_template_image', 'purpose', array['LOGO', 'SIGNATURE']),
       ('certificate_template_version', 'status', array['DRAFT', 'PUBLISHED']),
