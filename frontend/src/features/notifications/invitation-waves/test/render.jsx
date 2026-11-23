@@ -7,9 +7,13 @@ import { LocationProbe } from './LocationProbe';
 
 export const FULL_ACCESS = { read: true, manage: true, send: true };
 
+export function unexpectedDeviations(deviations) {
+  return deviations.filter((deviation) => !deviation.key.endsWith('/retry-failed'));
+}
+
 export function acceptPendingRetryEndpoint() {
   afterEach(() => {
-    const unexpected = takeContractDeviations().filter((deviation) => !deviation.key.endsWith('/retry-failed') && !deviation.violations.every((violation) => violation.startsWith('status 0 ')));
+    const unexpected = unexpectedDeviations(takeContractDeviations());
     if (unexpected.length > 0) throw new Error(`Mocks deviate from contracts/openapi.json: ${JSON.stringify(unexpected)}`);
   });
 }

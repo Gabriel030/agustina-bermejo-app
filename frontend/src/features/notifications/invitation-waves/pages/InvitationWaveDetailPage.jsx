@@ -99,7 +99,7 @@ function StatusFilters({ wave, status, onChange }) {
 }
 
 function RecipientsSection({ wave, settings, status, page, onStatusChange, onPageChange }) {
-  const recipients = useInvitationWaveRecipients(wave.id, { status, page, size: PAGE_SIZE });
+  const recipients = useInvitationWaveRecipients(wave.id, { status, page, size: PAGE_SIZE, live: wave.status === 'RUNNING' });
   const rows = recipients.data?.items ?? [];
   const total = recipients.data?.totalElements;
   const filterLabel = status ? RECIPIENT_STATUS[status].plural.toLowerCase() : null;

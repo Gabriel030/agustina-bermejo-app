@@ -12,6 +12,14 @@ const LIFECYCLE = {
 
 export const ACTION_DEFINITIONS = LIFECYCLE;
 
+export const RETRY_FAILED_AVAILABLE = false;
+
+let retryFailedAvailable = RETRY_FAILED_AVAILABLE;
+
+export function setRetryFailedAvailableForTests(value) {
+  retryFailedAvailable = value;
+}
+
 const CAN_RETRY = ['RUNNING', 'PAUSED', 'COMPLETED'];
 const CAN_CANCEL = ['DRAFT', 'RUNNING', 'PAUSED'];
 
@@ -37,7 +45,7 @@ export function waveActions(wave, access) {
   if (wave.status === 'PAUSED') primary = item('resume', access);
 
   const secondary = [];
-  if (wave.failedTotal > 0 && CAN_RETRY.includes(wave.status)) {
+  if (retryFailedAvailable && wave.failedTotal > 0 && CAN_RETRY.includes(wave.status)) {
     secondary.push(item('retry', access, { label: `Reintentar fallidos (${wave.failedTotal})` }));
   }
   if (CAN_CANCEL.includes(wave.status)) secondary.push(item('cancel', access));

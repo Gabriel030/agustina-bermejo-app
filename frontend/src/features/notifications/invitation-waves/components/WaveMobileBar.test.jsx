@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { server } from '@/test/mocks/server';
 import { InvitationWaveDetailPage } from '../pages/InvitationWaveDetailPage';
 import { buildWave } from '../test/fixtures';
 import { lifecycleHandlers, sampleRecipients } from '../test/handlers';
+import { setRetryFailedAvailableForTests } from '../lib/invitationWaveActions';
 import { renderInvitationScreen } from '../test/render';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
@@ -12,9 +13,12 @@ vi.mock('sonner', () => ({ toast: toastMock }));
 
 
 beforeEach(() => {
+  setRetryFailedAvailableForTests(true);
   toastMock.success.mockClear();
   toastMock.error.mockClear();
 });
+
+afterEach(() => setRetryFailedAvailableForTests(false));
 
 function renderBar(wave, access) {
   const lifecycle = lifecycleHandlers(wave, { recipients: sampleRecipients() });

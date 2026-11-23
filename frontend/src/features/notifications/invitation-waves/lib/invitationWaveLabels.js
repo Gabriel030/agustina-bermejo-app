@@ -52,6 +52,9 @@ export function personLabel(recipient) {
   return recipient.displayName || `Persona N° ${recipient.personId}`;
 }
 
+const MIN_ROWS_TO_INFER_MISSING_PERMISSION = 2;
+
 export function lacksPersonalData(rows) {
-  return rows.length > 0 && rows.every((row) => row.displayName == null);
+  const named = rows.filter((row) => row.status !== 'EXCLUDED');
+  return named.length >= MIN_ROWS_TO_INFER_MISSING_PERMISSION && named.every((row) => row.displayName == null);
 }

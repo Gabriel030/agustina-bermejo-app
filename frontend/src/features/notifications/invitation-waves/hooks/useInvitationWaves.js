@@ -46,7 +46,7 @@ export function useInvitationWave(id, { enabled = true } = {}) {
   });
 }
 
-export function useInvitationWaveRecipients(id, { status, page, size, enabled = true }) {
+export function useInvitationWaveRecipients(id, { status, page, size, enabled = true, live = false }) {
   const params = new URLSearchParams({ page: String(page - 1), size: String(size) });
   if (status) params.set('status', status);
   return useQuery({
@@ -54,6 +54,8 @@ export function useInvitationWaveRecipients(id, { status, page, size, enabled = 
     queryFn: () => apiFetch(`/invitation-waves/${id}/recipients?${params}`),
     enabled: !!id && enabled,
     placeholderData: keepPreviousData,
+    refetchInterval: live ? pollWhenOnline(RUNNING_REFETCH_MS) : false,
+    refetchIntervalInBackground: false,
   });
 }
 

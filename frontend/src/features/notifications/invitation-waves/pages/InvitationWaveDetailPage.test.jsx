@@ -1,12 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { errorBody } from '@/test/fixtures/errors';
+import { takeContractDeviations } from '@/test/contract/withContract';
 import { installFixedClock } from '@/test/fixedClock';
 import { InvitationWaveDetailPage } from './InvitationWaveDetailPage';
 import { API, SETTINGS, buildWave, springPage } from '../test/fixtures';
+import { setRetryFailedAvailableForTests } from '../lib/invitationWaveActions';
 import { invitationWaveHandlers, lifecycleHandlers, sampleRecipients } from '../test/handlers';
 import { acceptPendingRetryEndpoint, renderInvitationScreen } from '../test/render';
 
@@ -19,10 +21,13 @@ acceptPendingRetryEndpoint();
 installFixedClock({ now: '2026-11-23T12:00:00-03:00', advanceWithRealTime: true });
 
 beforeEach(() => {
+  setRetryFailedAvailableForTests(true);
   toastMock.success.mockClear();
   toastMock.error.mockClear();
   saveBlobMock.mockClear();
 });
+
+afterEach(() => setRetryFailedAvailableForTests(false));
 
 const PATH = '/director/invitaciones/:waveId';
 
@@ -141,6 +146,39 @@ describe('InvitationWaveDetailPage recipients', () => {
     expect(await screen.findByText('Persona N° 4001')).toBeInTheDocument();
     expect(screen.getByText(/No tenés permiso para ver datos personales/)).toBeInTheDocument();
     expect(screen.queryByText(/ejemplo\.edu\.ar/)).not.toBeInTheDocument();
+  });
+
+  it('hidesRetryFailedWhileTheEndpointIsNotAvailable', async () => {
+    setRetryFailedAvailableForTests(false);
+    renderDetail({ wave: buildWave('RUNNING') });
+    await screen.findByRole('heading', { level: 1 });
+
+    expect(within(desktopActions()).queryByRole('button', { name: /Reintentar fallidos/ })).not.toBeInTheDocument();
+  });
+
+  describe.each([
+    ['RUNNING', 2],
+    ['PAUSED', 1],
+    ['COMPLETED', 1],
+  ])('recipients refresh', (status, expectedCalls) => {
+    it(`${status} wave requests the table ${expectedCalls === 1 ? 'only once' : 'again after 15 seconds'}`, async () => {
+      let calls = 0;
+      const counter = http.get(`${API}/invitation-waves/1/recipients`, () => {
+        calls += 1;
+        return HttpResponse.json(springPage(sampleRecipients()));
+      });
+      vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'], shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-11-23T12:00:00-03:00'));
+      renderDetail({ wave: buildWave(status), extraHandlers: [counter] });
+      await screen.findByText('Apellido4001, Nombre4001');
+      expect(calls).toBe(1);
+
+      await vi.advanceTimersByTimeAsync(15000);
+
+      await waitFor(() => expect(calls).toBe(expectedCalls));
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(calls).toBe(expectedCalls);
+    });
   });
 
   it('showsAnEmptyStateWhenAStatusHasNoRecipients', async () => {
@@ -317,6 +355,7 @@ describe('InvitationWaveDetailPage actions', () => {
 
     await waitFor(() => expect(toastMock.error).toHaveBeenCalled());
     expect(toastMock.error.mock.calls[0][1]).toEqual({ description: undefined });
+    expect(takeContractDeviations()).toEqual([{ key: 'POST /invitation-waves/{id}/pause', violations: [expect.stringMatching(/^status 0 /)] }]);
   });
 });
 
