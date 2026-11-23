@@ -118,15 +118,15 @@ export function ReprogramarMesaDialog({ open, onClose, mesa, onConfirmar, envian
         <DialogFooter>
           {paso === 1 ? (
             <>
-              <Button variant="outline" onClick={onClose}>Cerrar</Button>
-              <Button variant="primary" disabled={!form.examDate || ventanaInvalida || !hayCambios} onClick={() => setPaso(2)}>
+              <Button variant="outline" onClick={onClose} className="min-h-11 md:min-h-8">Cerrar</Button>
+              <Button variant="primary" disabled={!form.examDate || ventanaInvalida || !hayCambios} onClick={() => setPaso(2)} className="min-h-11 md:min-h-8">
                 Revisar cambios
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" disabled={enviando} onClick={() => setPaso(1)}>Volver</Button>
-              <Button variant="primary" disabled={enviando} onClick={confirmar}>Confirmar reprogramación</Button>
+              <Button variant="outline" disabled={enviando} onClick={() => setPaso(1)} className="min-h-11 md:min-h-8">Volver</Button>
+              <Button variant="primary" disabled={enviando} onClick={confirmar} className="min-h-11 md:min-h-8">Confirmar reprogramación</Button>
             </>
           )}
         </DialogFooter>

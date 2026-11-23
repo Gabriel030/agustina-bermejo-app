@@ -107,7 +107,7 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
                 <StatusPill tone="accent">Inscripto</StatusPill>
                 <Button
                   variant="outline"
-                  className="text-danger"
+                  className="min-h-11 md:min-h-8 text-danger"
                   onClick={() => darmeDeBaja.mutate(miInscripcion.id)}
                   disabled={darmeDeBaja.isPending}
                 >
@@ -116,7 +116,7 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
               </div>
             ) : (
               <div className="flex flex-col items-end gap-1">
-                <Button variant="primary" onClick={() => inscribirseA(mesa.id)} disabled={inscribirme.isPending || bloqueadaPorOtra || ineligibilityText != null}>
+                <Button variant="primary" onClick={() => inscribirseA(mesa.id)} disabled={inscribirme.isPending || bloqueadaPorOtra || ineligibilityText != null} className="min-h-11 md:min-h-8">
                   {bloqueadaPorOtra ? 'Ya estás inscripto a otro llamado' : inscribirme.isPending ? 'Inscribiendo…' : 'Inscribirme a este llamado'}
                 </Button>
                 {ineligibilityText && <span className="max-w-xs text-right text-size-11 font-medium text-danger">{ineligibilityText}</span>}
@@ -272,7 +272,7 @@ export function TabMesasDeExamen({ carreraId }) {
                   {mia.examBoard.status === 'CANCELED' ? 'Mesa cancelada' : mia.status === 'WITHDRAWN' ? 'De baja' : mia.status === 'ABSENT' ? 'Ausente' : mia.score != null ? 'Rendido' : 'Inscripto'}
                 </StatusPill>
                 {mia.status === 'REGISTERED' && mia.score == null && mia.examBoard.status !== 'CANCELED' && (
-                  <Button variant="outline" className="text-danger" onClick={() => darmeDeBaja.mutate(mia.id)} disabled={darmeDeBaja.isPending}>
+                  <Button variant="outline" className="min-h-11 md:min-h-8 text-danger" onClick={() => darmeDeBaja.mutate(mia.id)} disabled={darmeDeBaja.isPending}>
                     Darme de baja
                   </Button>
                 )}

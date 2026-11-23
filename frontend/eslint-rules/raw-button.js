@@ -36,7 +36,6 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/features/billing/runs/NightlyRunsTab.jsx',
   'src/features/enrollment/components/InscripcionMaterias.jsx',
   'src/features/enrollment/components/InscripcionWizard.jsx',
-  'src/features/evaluation/pages/DirectorEsquemasEvaluacion.jsx',
   'src/features/identity/components/NotificationMatrix.jsx',
   'src/features/identity/pages/MiPerfil.jsx',
   'src/features/notifications/components/NotificationBell.jsx',

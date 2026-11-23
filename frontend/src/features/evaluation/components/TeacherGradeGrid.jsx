@@ -140,7 +140,7 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
           title="No pudimos cargar las notas"
           description="Revisá tu conexión e intentá de nuevo."
           action={
-            <Button variant="outline" onClick={() => refetch()}>
+            <Button variant="outline" onClick={() => refetch()} className="min-h-11 md:min-h-8">
               Reintentar
             </Button>
           }
@@ -190,7 +190,7 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
           )}
           {invalid && <span className="text-danger"> · hay notas fuera de 1 a 10</span>}
         </span>
-        <Button variant="primary" disabled={!count || invalid} onClick={() => runJobs(jobs)}>
+        <Button variant="primary" disabled={!count || invalid} onClick={() => runJobs(jobs)} className="min-h-11 md:min-h-8">
           {count ? `Guardar ${count} ${count === 1 ? 'nota' : 'notas'}` : 'Guardar notas'}
         </Button>
       </div>

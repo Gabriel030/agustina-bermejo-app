@@ -6,7 +6,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { ColumnFilter } from '@/components/table/ColumnFilter';
 import { multiSelectFilter } from '@/components/table/multiSelectFilter';
 import { Button } from '@/components/ui/button';
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import {
   GRID_CONDITION,
@@ -56,7 +56,7 @@ function PublishHeader({ column, students, hasDrafts, boardHref, onPublish }) {
       </StatusPill>
       {isColumnPublishable(column) && (
         <span title={reason}>
-          <Button type="button" variant="outline" size="xs" aria-label={`Publicar ${label}`} disabled={Boolean(reason)} onClick={() => onPublish(column)}>
+          <Button type="button" variant="outline" size="xs" aria-label={`Publicar ${label}`} disabled={Boolean(reason)} onClick={() => onPublish(column)} className="min-h-11 md:min-h-6">
             Publicar
           </Button>
         </span>
@@ -185,7 +185,7 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
   return (
     <div className="relative min-w-0 max-w-full" data-board-grid={boardMode ? '' : undefined}>
       <div ref={scrollRef} className="max-h-[62vh] max-w-full overflow-auto rounded-xl">
-        <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+        <Table containerClassName="overflow-visible" className="w-max min-w-full border-separate border-spacing-0">
           <TableHeader className="bg-dialog-bg">
             <TableRow className="hover:bg-transparent">
               {table.getFlatHeaders().map((header) => {
@@ -289,7 +289,7 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
               </TableRow>
             )}
           </TableBody>
-        </table>
+        </Table>
       </div>
       <div
         aria-hidden="true"
