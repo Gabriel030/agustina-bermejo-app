@@ -1,15 +1,25 @@
 package com.red_escuela.backend.shared.errortracking;
 
+import com.red_escuela.backend.shared.exception.ExternalServiceException;
+import io.sentry.Breadcrumb;
 import io.sentry.Hint;
+import io.sentry.JsonSerializer;
 import io.sentry.SentryEvent;
+import io.sentry.SentryOptions;
 import io.sentry.protocol.Message;
 import io.sentry.protocol.Request;
 import io.sentry.protocol.SentryException;
 import io.sentry.protocol.User;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.postgresql.util.PSQLException;
+import org.postgresql.util.ServerErrorMessage;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.jpa.JpaSystemException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,99 +30,152 @@ class SentryEventScrubberTest {
 
     private final SentryEventScrubber scrubber = new SentryEventScrubber();
 
+    static class PayerGatewayException extends ExternalServiceException {
+        PayerGatewayException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
     private SentryEvent scrub(SentryEvent event) {
         return scrubber.execute(event, new Hint());
     }
 
+    private static String serialize(SentryEvent event) throws Exception {
+        StringWriter writer = new StringWriter();
+        new JsonSerializer(new SentryOptions()).serialize(event, writer);
+        return writer.toString();
+    }
+
+    private static SentryEvent eventFor(Throwable throwable) {
+        SentryEvent event = new SentryEvent(throwable);
+        List<SentryException> exceptions = new java.util.ArrayList<>();
+        java.util.List<Throwable> chain = new java.util.ArrayList<>();
+        for (Throwable current = throwable; current != null; current = current.getCause()) {
+            chain.add(current);
+        }
+        java.util.Collections.reverse(chain);
+        for (Throwable current : chain) {
+            SentryException exception = new SentryException();
+            exception.setType(current.getClass().getSimpleName());
+            exception.setValue(current.getMessage());
+            exceptions.add(exception);
+        }
+        event.setExceptions(exceptions);
+        return event;
+    }
+
+    private static PSQLException postgresViolation() {
+        String serverError = "SERROR\0C23502\0Mnull value in column\0DFailing row contains (17, María, Pérez, 2013-05-02).\0nperson_first_name_nn\0";
+        return new PSQLException(new ServerErrorMessage(serverError));
+    }
+
     @Test
-    void requestBodyCookiesAndQueryStringAreRemoved() {
+    void requestUserBreadcrumbsMessageExtrasAndContextsAreDropped() {
         Request request = new Request();
         request.setData("{\"password\":\"hunter2\"}");
         request.setCookies("session=abc");
         request.setQueryString("token=" + ACTIVATION_TOKEN);
-        SentryEvent event = new SentryEvent();
-        event.setRequest(request);
-
-        Request scrubbed = scrub(event).getRequest();
-
-        assertThat(scrubbed.getData()).isNull();
-        assertThat(scrubbed.getCookies()).isNull();
-        assertThat(scrubbed.getQueryString()).isNull();
-    }
-
-    @Test
-    void sensitiveHeadersAreRemovedRegardlessOfCase() {
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", "Bearer " + JWT);
-        headers.put("cookie", "session=abc");
-        headers.put("Set-Cookie", "session=abc");
-        headers.put("User-Agent", "Mozilla");
-        Request request = new Request();
         request.setHeaders(headers);
         SentryEvent event = new SentryEvent();
         event.setRequest(request);
-
-        Map<String, String> kept = scrub(event).getRequest().getHeaders();
-
-        assertThat(kept).containsOnlyKeys("User-Agent");
-    }
-
-    @Test
-    void urlLosesItsQueryAndAnyTokenInThePath() {
-        Request request = new Request();
-        request.setUrl("https://app.example/auth/activate/" + ACTIVATION_TOKEN + "?token=" + ACTIVATION_TOKEN);
-        SentryEvent event = new SentryEvent();
-        event.setRequest(request);
-
-        String url = scrub(event).getRequest().getUrl();
-
-        assertThat(url).isEqualTo("https://app.example/auth/activate/" + SentryEventScrubber.MASK);
-    }
-
-    @Test
-    void userAndBreadcrumbsAreRemoved() {
-        SentryEvent event = new SentryEvent();
         User user = new User();
         user.setId("42");
-        user.setEmail("ana@example.com");
         event.setUser(user);
-
-        assertThat(scrub(event).getUser()).isNull();
-    }
-
-    @Test
-    void emailDniAndJwtAreMaskedInTheMessage() {
-        SentryEvent event = new SentryEvent();
+        event.addBreadcrumb(new Breadcrumb("clicked ana@example.com"));
         Message message = new Message();
-        message.setFormatted("Alumno ana.perez@example.com DNI 40123456 y 12.345.678 token " + JWT);
+        message.setFormatted("Alumno ana@example.com");
         event.setMessage(message);
+        event.setExtra("student", "Juan Pérez");
+        event.getContexts().put("custom", Map.of("name", "Juan"));
+        event.setTransaction("POST /students/Juan");
+        event.setFingerprints(List.of("Juan"));
+        event.setModule("lib", "1.0");
 
-        String formatted = scrub(event).getMessage().getFormatted();
+        SentryEvent scrubbed = scrub(event);
 
-        assertThat(formatted).doesNotContain("ana.perez@example.com", "40123456", "12.345.678", JWT);
-        assertThat(formatted).isEqualTo("Alumno [redacted] DNI [redacted] y [redacted] token [redacted]");
+        assertThat(scrubbed.getRequest()).isNull();
+        assertThat(scrubbed.getUser()).isNull();
+        assertThat(scrubbed.getBreadcrumbs()).isNull();
+        assertThat(scrubbed.getMessage()).isNull();
+        assertThat(scrubbed.getExtras()).isNull();
+        assertThat(scrubbed.getContexts().isEmpty()).isTrue();
+        assertThat(scrubbed.getTransaction()).isNull();
+        assertThat(scrubbed.getFingerprints()).isNull();
     }
 
     @Test
-    void longUrlSafeTokensAreMaskedInExceptionValues() {
-        SentryException exception = new SentryException();
-        exception.setValue("Invalid activation token " + ACTIVATION_TOKEN + " for ana@example.com");
-        SentryEvent event = new SentryEvent();
-        event.setExceptions(List.of(exception));
+    void onlyAUuidRequestIdTagIsKept() {
+        String requestId = UUID.randomUUID().toString();
+        SentryEvent valid = new SentryEvent();
+        valid.setTags(Map.of("requestId", requestId, "other", "x"));
+        SentryEvent forged = new SentryEvent();
+        forged.setTags(Map.of("requestId", "ana@example.com"));
 
-        String value = scrub(event).getExceptions().get(0).getValue();
+        assertThat(scrub(valid).getTags()).containsOnly(Map.entry("requestId", requestId));
+        assertThat(scrub(forged).getTags()).isEmpty();
+    }
 
-        assertThat(value).isEqualTo("Invalid activation token [redacted] for [redacted]");
+    @Test
+    void personalDataInPersistenceAndExternalExceptionsNeverReachTheSerializedEvent() throws Exception {
+        DataIntegrityViolationException integrity = new DataIntegrityViolationException(
+                "could not execute statement; Detail: Key (first_name)=(Juan Pérez) already exists. CUIL 20-12345678-9");
+        JpaSystemException jpa = new JpaSystemException(new RuntimeException("Failing row contains (17, María, Pérez, 2013-05-02)", postgresViolation()));
+        PayerGatewayException gateway = new PayerGatewayException(
+                "payer Carlos Gómez CUIL 20-12345678-9 rejected", new IllegalStateException("payer Carlos Gómez", integrity));
+
+        for (Throwable throwable : List.of(integrity, jpa, gateway)) {
+            String json = serialize(scrub(eventFor(throwable)));
+
+            assertThat(json).doesNotContain("Juan", "María", "Pérez", "Carlos", "Gómez", "20-12345678-9", "12345678", "Failing row", "Detail");
+        }
+    }
+
+    @Test
+    void persistenceExceptionKeepsOnlySqlStateAndConstraint() throws Exception {
+        JpaSystemException jpa = new JpaSystemException(new RuntimeException("Failing row contains (17, María)", postgresViolation()));
+
+        String json = serialize(scrub(eventFor(jpa)));
+
+        assertThat(json).contains("code=JPA_SYSTEM", "sqlState=23502", "constraint=person_first_name_nn");
+    }
+
+    @Test
+    void everyCauseInTheChainGetsTheSafeValueNotItsMessage() {
+        PayerGatewayException gateway = new PayerGatewayException("payer Carlos", new IllegalStateException("inner Carlos"));
+
+        List<SentryException> exceptions = scrub(eventFor(gateway)).getExceptions();
+
+        assertThat(exceptions).extracting(SentryException::getValue)
+                .containsExactly("code=ILLEGAL_STATE", "code=PAYER_GATEWAY");
+    }
+
+    @Test
+    void emailDniCuilPhoneAndTokensAreMaskedByTheBelt() {
+        assertThat(SentryEventScrubber.maskText("mail ana.pérez@example.com")).isEqualTo("mail [redacted]");
+        assertThat(SentryEventScrubber.maskText("dni 40123456")).isEqualTo("dni [redacted]");
+        assertThat(SentryEventScrubber.maskText("dni 40.123.456")).isEqualTo("dni [redacted]");
+        assertThat(SentryEventScrubber.maskText("dni 40 123 456")).isEqualTo("dni [redacted]");
+        assertThat(SentryEventScrubber.maskText("dni 40,123,456")).isEqualTo("dni [redacted]");
+        assertThat(SentryEventScrubber.maskText("cuil 20-40123456-9")).isEqualTo("cuil [redacted]");
+        assertThat(SentryEventScrubber.maskText("cuit 30712345678")).isEqualTo("cuit [redacted]");
+        assertThat(SentryEventScrubber.maskText("tel +54 (11) 4567-8901")).isEqualTo("tel [redacted]");
+        assertThat(SentryEventScrubber.maskText("jwt " + JWT)).isEqualTo("jwt [redacted]");
+        assertThat(SentryEventScrubber.maskText("token " + ACTIVATION_TOKEN)).isEqualTo("token [redacted]");
+    }
+
+    @Test
+    void textIsTruncatedBeforeMasking() {
+        String masked = SentryEventScrubber.maskText("ab ".repeat(SentryEventScrubber.MAX_MASKED_LENGTH));
+
+        assertThat(masked).hasSize(SentryEventScrubber.MAX_MASKED_LENGTH);
     }
 
     @Test
     void shortNumbersAndPlainWordsAreKept() {
         assertThat(SentryEventScrubber.maskText("Invoice 12345 in status PAID for installment 6"))
                 .isEqualTo("Invoice 12345 in status PAID for installment 6");
-    }
-
-    @Test
-    void nineDigitNumbersAreNotTreatedAsDni() {
         assertThat(SentryEventScrubber.maskText("amount 123456789")).isEqualTo("amount 123456789");
     }
 
@@ -122,7 +185,7 @@ class SentryEventScrubberTest {
     }
 
     @Test
-    void anEventWithoutRequestMessageOrExceptionsIsReturnedUntouched() {
+    void anEventWithoutExceptionsIsReturnedSameInstance() {
         SentryEvent event = new SentryEvent();
 
         assertThat(scrub(event)).isSameAs(event);

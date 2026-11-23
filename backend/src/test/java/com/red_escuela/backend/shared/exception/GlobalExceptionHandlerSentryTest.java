@@ -73,6 +73,8 @@ class GlobalExceptionHandlerSentryTest {
         }
     }
 
+    private static final String REQUEST_ID = "7d1c3a52-0f5e-4a9b-9a53-6b1f7c2d8e10";
+
     private final List<SentryEvent> sent = new CopyOnWriteArrayList<>();
 
     private MockMvc mockMvc;
@@ -90,7 +92,7 @@ class GlobalExceptionHandlerSentryTest {
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
         handler.setServerErrorReporter(new SentryServerErrorReporter());
         mockMvc = MockMvcBuilders.standaloneSetup(new ThrowingController()).setControllerAdvice(handler).build();
-        MDC.put("requestId", "req-123");
+        MDC.put("requestId", REQUEST_ID);
     }
 
     @AfterEach
@@ -105,7 +107,7 @@ class GlobalExceptionHandlerSentryTest {
 
         assertThat(sent).hasSize(1);
         SentryEvent event = sent.get(0);
-        assertThat(event.getTag("requestId")).isEqualTo("req-123");
+        assertThat(event.getTag("requestId")).isEqualTo(REQUEST_ID);
         assertThat(event.getExceptions().get(0).getValue()).doesNotContain("ana@example.com");
     }
 
