@@ -10,7 +10,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -22,6 +22,8 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: read
+      checks: read
     outputs:
       relevant: ${{ steps.changes.outputs.relevant }}
       frontend: ${{ steps.changes.outputs.frontend }}
