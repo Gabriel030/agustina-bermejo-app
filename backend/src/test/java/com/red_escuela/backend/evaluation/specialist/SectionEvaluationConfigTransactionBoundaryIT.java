@@ -34,11 +34,11 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.FailingEventListenersConfiguration;
+import com.red_escuela.backend.testsupport.FailingEventListenersConfiguration.FailingConfigListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -54,48 +54,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(FailingEventListenersConfiguration.class)
 class SectionEvaluationConfigTransactionBoundaryIT extends AbstractIntegrationTest {
-
-    @TestConfiguration
-    static class FailingListenerConfiguration {
-        @Bean
-        FailingConfigListener failingConfigListener() {
-            return new FailingConfigListener();
-        }
-    }
-
-    static class FailingConfigListener {
-        private volatile Class<?> failingOn;
-
-        void failOn(Class<?> eventType) {
-            this.failingOn = eventType;
-        }
-
-        void stopFailing() {
-            this.failingOn = null;
-        }
-
-        @EventListener
-        void onProposed(SectionEvaluationConfigProposedEvent event) {
-            failIfArmedFor(SectionEvaluationConfigProposedEvent.class);
-        }
-
-        @EventListener
-        void onApproved(SectionEvaluationConfigApprovedEvent event) {
-            failIfArmedFor(SectionEvaluationConfigApprovedEvent.class);
-        }
-
-        @EventListener
-        void onRejected(SectionEvaluationConfigRejectedEvent event) {
-            failIfArmedFor(SectionEvaluationConfigRejectedEvent.class);
-        }
-
-        private void failIfArmedFor(Class<?> eventType) {
-            if (eventType.equals(failingOn)) {
-                throw new IllegalStateException("listener failed on " + eventType.getSimpleName());
-            }
-        }
-    }
 
     @Autowired
     private SaveSectionEvaluationConfigDraftUseCase saveDraft;
