@@ -46,6 +46,11 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.beans.factory.annotation.Value;
 import com.jayway.jsonpath.JsonPath;
@@ -227,6 +232,10 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         });
     }
 
+    @MockitoSpyBean
+    private CertificatePdfRenderer renderer;
+    @MockitoSpyBean
+    private CertificateDigest digest;
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
     @Value("${app.certificates.directory}")
@@ -310,13 +319,13 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void recipientIsStoredLiterally() throws Exception {
+    void recipientIsStoredTrimmedAndOtherwiseLiterally() throws Exception {
         generate(studentToken, "{\"recipientType\":\"EMPLOYER\",\"recipientText\":\"  Acme S.A. - RRHH ñ  \"}")
                 .andExpect(status().isCreated());
 
         Map<String, Object> row = jdbc.queryForMap("select recipient_type, recipient_text from exam_registration_certificate");
         assertThat(row.get("recipient_type")).isEqualTo("EMPLOYER");
-        assertThat(row.get("recipient_text")).isEqualTo("  Acme S.A. - RRHH ñ  ");
+        assertThat(row.get("recipient_text")).isEqualTo("Acme S.A. - RRHH ñ");
     }
 
     @Test
@@ -675,6 +684,83 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
                 }
                 assertThat(statuses).as("round " + round).containsExactlyInAnyOrder(201, 429);
                 assertThat(certificateCount()).as("round " + round).isEqualTo(1L);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private List<String> storedFileNames() throws Exception {
+        Path directory = Path.of(certificatesDirectory).toAbsolutePath().normalize();
+        if (!Files.isDirectory(directory)) {
+            return List.of();
+        }
+        try (var files = Files.list(directory)) {
+            return files.map(file -> file.getFileName().toString()).sorted().toList();
+        }
+    }
+
+    @Test
+    void sameRecipientWithSurroundingSpacesIsTheSameRecipient() throws Exception {
+        Long first = generateWithRecipient("EMPLOYER", "Empresa A");
+
+        Long second = generateWithRecipient("EMPLOYER", "  Empresa A  ");
+
+        assertThat(second).isEqualTo(first);
+        assertThat(statusesOfCertificates()).containsExactly("VALID");
+    }
+
+    @Test
+    void renderFailureWhileReplacingKeepsTheCurrentDocumentValid() throws Exception {
+        generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        List<String> filesBefore = storedFileNames();
+        doThrow(new IllegalStateException("render caído")).when(renderer).render(any(), any(), any(), any());
+
+        generate(studentToken, "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}")
+                .andExpect(result -> assertThat(result.getResponse().getStatus()).isGreaterThanOrEqualTo(400));
+
+        assertThat(statusesOfCertificates()).containsExactly("VALID");
+        assertThat(storedFileNames()).isEqualTo(filesBefore);
+    }
+
+    @Test
+    void failureAfterTheFileIsStoredRollsBackTheReplacementAndRemovesTheOrphanFile() throws Exception {
+        generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        List<String> filesBefore = storedFileNames();
+        doThrow(new IllegalStateException("digest caído")).when(digest).sha256(any());
+
+        generate(studentToken, "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}")
+                .andExpect(result -> assertThat(result.getResponse().getStatus()).isGreaterThanOrEqualTo(400));
+
+        assertThat(statusesOfCertificates()).containsExactly("VALID");
+        assertThat(storedFileNames()).isEqualTo(filesBefore);
+    }
+
+    @Test
+    void concurrentRequestsWithDifferentRecipientsOnTheSameRegistrationLeaveOneValidDocument() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            for (int round = 0; round < CONCURRENCY_ROUNDS; round++) {
+                jdbc.update("delete from exam_registration_certificate");
+                CountDownLatch ready = new CountDownLatch(2);
+                CountDownLatch go = new CountDownLatch(1);
+                List<Future<Integer>> results = List.of("Empresa A", "Empresa B").stream().map(text -> executor.submit(() -> {
+                    ready.countDown();
+                    go.await();
+                    return generate(studentToken, "{\"recipientType\":\"EMPLOYER\",\"recipientText\":\"" + text + "\"}")
+                            .andReturn().getResponse().getStatus();
+                })).toList();
+                ready.await();
+                go.countDown();
+                List<Integer> statuses = new ArrayList<>();
+                for (Future<Integer> result : results) {
+                    statuses.add(result.get());
+                }
+                assertThat(statuses).as("round " + round).containsExactlyInAnyOrder(201, 429);
+                assertThat(jdbc.queryForObject("select count(*) from exam_registration_certificate where status = 'VALID'", Long.class))
+                        .as("round " + round).isEqualTo(1L);
             }
         } finally {
             executor.shutdownNow();

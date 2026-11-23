@@ -81,7 +81,8 @@ public class ExamRegistrationCertificateIssuer {
     }
 
     @Transactional
-    public OwnDocumentResponse issueOrReuse(Long registrationId, RecipientType recipientType, String recipientText) {
+    public OwnDocumentResponse issueOrReuse(Long registrationId, RecipientType recipientType, String rawRecipientText) {
+        String recipientText = rawRecipientText == null ? null : rawRecipientText.strip();
         validateRecipient(recipientType, recipientText);
         Long studentId = currentActorFinder.currentStudentId();
         Student student = studentFinder.requireByIdForUpdate(studentId);
