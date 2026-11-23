@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -34,6 +35,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -283,5 +285,35 @@ class SectionScheduleSlotOccupancyIT extends AbstractIntegrationTest {
         jdbc.update("update academic_offering_cycle set status = 'APPROVED' where id = ?", draftCycle.getId());
 
         assertThat(occupies(inactiveSectionInDraftCycleSlotId)).isFalse();
+    }
+
+    @Test
+    void fractionalSecondTimesAreTruncatedInTheTimeSpanAndStayEquivalent() {
+        Long slotId = jdbc.queryForObject(
+                "insert into section_schedule_slot (subject_section_id, classroom_id, day_of_week, start_time, end_time) "
+                        + "values (?, ?, 'MONDAY', '08:00:00.600', '10:00:00.600') returning id",
+                Long.class, activeSectionId, classroomOne.getId());
+
+        assertThat(jdbc.queryForObject("select time_span::text from section_schedule_slot where id = ?", String.class, slotId))
+                .isEqualTo("[28800,36000)");
+        assertThat(occupyingIdsBySql(termA, DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(11, 0)))
+                .isEqualTo(occupyingIdsByRepository(termA, DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(11, 0)))
+                .contains(slotId);
+        assertEquivalentToRepositoryForEveryWindow();
+    }
+
+    @Test
+    void knownGapForS3ATermWithEndBeforeStartCannotExistSoTermPeriodIsNeverNullForRealSections() {
+        assertThatThrownBy(() -> jdbc.update(
+                "insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) "
+                        + "values (2050, 'ACTIVE', '2050-12-01', '2050-03-01', '2050-01-01', '2050-02-01')"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(jdbc.queryForObject("select count(*) from section_schedule_slot where term_period is null", Integer.class)).isZero();
+    }
+
+    @Test
+    void knownGapForS3ASlotWithoutAnOwningSectionHasNullTermPeriodAndDoesNotOccupy() {
+        assertThat(jdbc.queryForObject("select section_schedule_slot_term_period(null, null) is null", Boolean.class)).isTrue();
+        assertThat(jdbc.queryForObject("select section_schedule_slot_occupies(null, null)", Boolean.class)).isFalse();
     }
 }

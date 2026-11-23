@@ -14,11 +14,11 @@ as $$
         (case p_day_of_week
             when 'MONDAY' then 0 when 'TUESDAY' then 1 when 'WEDNESDAY' then 2 when 'THURSDAY' then 3
             when 'FRIDAY' then 4 when 'SATURDAY' then 5 when 'SUNDAY' then 6 end) * 86400
-            + extract(epoch from p_start_time)::int,
+            + floor(extract(epoch from p_start_time))::int,
         (case p_day_of_week
             when 'MONDAY' then 0 when 'TUESDAY' then 1 when 'WEDNESDAY' then 2 when 'THURSDAY' then 3
             when 'FRIDAY' then 4 when 'SATURDAY' then 5 when 'SUNDAY' then 6 end) * 86400
-            + extract(epoch from p_end_time)::int,
+            + floor(extract(epoch from p_end_time))::int,
         '[)')
 $$;
 
