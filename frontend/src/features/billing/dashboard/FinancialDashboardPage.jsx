@@ -206,11 +206,10 @@ export function FinancialDashboardPage() {
   }, [offersFailed]);
   const [pickedCurrency, setPickedCurrency] = useState(null);
   const [pickedMonth, setPickedMonth] = useState(null);
-  const [ready, setReady] = useState(false);
-  if (!ready && !dashboard.isLoading) setReady(true);
 
   const currencies = (dashboard.data?.totalsByCurrency ?? []).map((totals) => totals.totalDebt?.currency).filter(Boolean);
   const currency = pickedCurrency ?? currencies[0];
+  const metricCurrency = currencies.length > 1 ? currency : undefined;
   const { from: rangeFrom, to } = rangeFor(range);
   const firstMonth = useFirstBillingMonth();
   const earliestMonth = firstMonth.data?.month ?? undefined;
@@ -225,7 +224,7 @@ export function FinancialDashboardPage() {
   const filters = {
     from,
     to,
-    currency,
+    currency: metricCurrency,
     invoiceType: invoiceType === ALL_TYPES ? undefined : invoiceType,
     programId: scopeKind === 'program' ? scopeId : undefined,
     courseId: scopeKind === 'course' ? scopeId : undefined,
@@ -293,41 +292,33 @@ export function FinancialDashboardPage() {
   return (
     <PageContainer title="Financiero" description={offerName ?? (scope === ALL_SCOPE ? 'Todas las ofertas' : scopeLabel)} action={toolbar} className="gap-8">
       {scopeLabel && <ScopeChip label={scopeLabel} onClear={() => setScope(ALL_SCOPE)} />}
-      {ready ? (
-        <>
-          <MonthKpis filters={filters} month={month} />
-          <TodayKpis currency={currency} dashboard={dashboard} />
-        </>
-      ) : (
-        <Skeleton className="h-40 w-full" />
-      )}
+      <MonthKpis filters={filters} month={month} />
+      <TodayKpis currency={currency} dashboard={dashboard} />
 
-      {ready && beforeVisibleRange && (
+      {beforeVisibleRange && (
         <StatusPill tone="warning" className="self-start">
           Rango ampliado para incluir {formatLongMonth(pickedMonth)}
         </StatusPill>
       )}
 
-      {ready && (
-        <Tabs defaultValue={DASHBOARD_TABS[0].value}>
-          <TabsList variant="segmented">
-            {DASHBOARD_TABS.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value} className="px-3">
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+      <Tabs defaultValue={DASHBOARD_TABS[0].value}>
+        <TabsList variant="segmented">
           {DASHBOARD_TABS.map((tab) => (
-            <TabsContent key={tab.value} value={tab.value} className="mt-6">
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                {FINANCIAL_PANELS.filter((panel) => panel.tab === tab.value).map((panel) => (
-                  <MetricPanel key={panel.id} panel={panel} filters={filters} month={month} />
-                ))}
-              </div>
-            </TabsContent>
+            <TabsTrigger key={tab.value} value={tab.value} className="px-3">
+              {tab.label}
+            </TabsTrigger>
           ))}
-        </Tabs>
-      )}
+        </TabsList>
+        {DASHBOARD_TABS.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value} className="mt-6">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              {FINANCIAL_PANELS.filter((panel) => panel.tab === tab.value).map((panel) => (
+                <MetricPanel key={panel.id} panel={panel} filters={filters} month={month} />
+              ))}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
 
       {isDirector && (
         <Link to="/director/financiero/anios-lectivos" className="text-sm font-semibold text-primary hover:underline">
