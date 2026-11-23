@@ -316,6 +316,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
 | `INSTRUCTOR_NOT_FOUND` | no | `InstructorNotFoundException` | academicstructure |
 | `INVALID_UNSUBSCRIBE_TOKEN` | no | `InvalidUnsubscribeTokenException` | notification |
+| `INVITATION_WAVE_IMPORT_BATCH_NOT_FOUND` | no | `InvitationWaveImportBatchNotFoundException` | notification |
 | `INVITATION_WAVE_NOT_FOUND` | no | `InvitationWaveNotFoundException` | notification |
 | `INVOICE_NOT_FOUND` | no | `InvoiceNotFoundException` | billing |
 | `MESSAGE_TEMPLATE_NOT_FOUND` | no | `MessageTemplateNotFoundException` | notification |
@@ -537,8 +538,12 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_PAYMENT_RECEIPT_STATE` | no | `InvalidPaymentReceiptStateException` | billing |
 | `INVALID_PROGRAM_ENROLLMENT_APPLICATION_STATE` | no | `InvalidProgramEnrollmentApplicationStateException` | enrollment |
 | `INVALID_TRANSITION_CONFIRMATION` | no | `InvalidTransitionConfirmationException` | platform |
+| `INVITATION_PERSON_ALREADY_INVITED` | no | `InvitationPersonAlreadyInvitedException` | notification |
+| `INVITATION_RECIPIENT_INVALID_TRANSITION` | no | `InvitationRecipientInvalidTransitionException` | notification |
+| `INVITATION_WAVE_HAS_OPEN_RECIPIENTS` | no | `InvitationWaveHasOpenRecipientsException` | notification |
 | `INVITATION_WAVE_INVALID_TRANSITION` | no | `InvitationWaveInvalidTransitionException` | notification |
 | `INVITATION_WAVE_TOO_MANY_RECIPIENTS` | no | `InvitationWaveTooManyRecipientsException` | notification |
+| `INVITATION_WAVE_WITHOUT_RECIPIENTS` | no | `InvitationWaveWithoutRecipientsException` | notification |
 | `INVOICE_ALREADY_ATTACHED` | no | `InvoiceAlreadyAttachedException` | billing |
 | `INVOICE_ALREADY_UNDER_REVIEW` | no | `InvoiceAlreadyUnderReviewException` | billing |
 | `INVOICE_ATTACHMENT_MISMATCH` | no | `InvoiceAttachmentMismatchException` | billing |

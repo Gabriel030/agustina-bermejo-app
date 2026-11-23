@@ -32,6 +32,9 @@ public class CreateInvitationWaveService implements CreateInvitationWaveUseCase 
         InvitationWaveParameters parameters = new InvitationWaveParameters(command.name(),
                 required(command.batchSize(), "batchSize"), required(command.intervalMinutes(), "intervalMinutes"),
                 required(command.dailyCap(), "dailyCap")).requireWithinGlobalDailyLimit(settings.globalDailyLimit());
+        if (command.importBatchId() == null) {
+            throw new RequestFieldRequiredException("importBatchId is required");
+        }
         return transaction.createInvitationWave(parameters, command.importBatchId(),
                 currentActorFinder.currentPersonId(), candidateScanner.findCandidates(command.importBatchId()));
     }

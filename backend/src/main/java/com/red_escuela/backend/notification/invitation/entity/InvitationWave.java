@@ -16,12 +16,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.Instant;
 
 @Getter
-@Setter
 @Entity
 @Builder
 @NoArgsConstructor
@@ -49,7 +47,7 @@ public class InvitationWave {
     @Column(name = "daily_cap", nullable = false)
     private int dailyCap;
 
-    @Column(name = "import_batch_id")
+    @Column(name = "import_batch_id", nullable = false, updatable = false)
     private Long importBatchId;
 
     @Column(name = "created_by_person_id", nullable = false, updatable = false)
@@ -61,8 +59,14 @@ public class InvitationWave {
     @Column(name = "started_at")
     private Instant startedAt;
 
+    @Column(name = "started_by_person_id")
+    private Long startedByPersonId;
+
     @Column(name = "paused_at")
     private Instant pausedAt;
+
+    @Column(name = "paused_by_person_id")
+    private Long pausedByPersonId;
 
     @Column(name = "completed_at")
     private Instant completedAt;
@@ -70,34 +74,23 @@ public class InvitationWave {
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
 
-    @Builder.Default
-    @Column(name = "sent_total", nullable = false)
-    private int sentTotal = 0;
-
-    @Builder.Default
-    @Column(name = "failed_total", nullable = false)
-    private int failedTotal = 0;
-
-    @Builder.Default
-    @Column(name = "excluded_total", nullable = false)
-    private int excludedTotal = 0;
-
-    @Builder.Default
-    @Column(name = "activated_total", nullable = false)
-    private int activatedTotal = 0;
+    @Column(name = "cancelled_by_person_id")
+    private Long cancelledByPersonId;
 
     @Version
     @Column(name = "version", nullable = false)
     private Long version;
 
-    public void start(Instant now) {
+    public void start(Instant now, Long actorPersonId) {
         status = InvitationWaveStatusStateMachine.requireTargetStateFor(status, InvitationWaveEvent.START);
         startedAt = now;
+        startedByPersonId = actorPersonId;
     }
 
-    public void pause(Instant now) {
+    public void pause(Instant now, Long actorPersonId) {
         status = InvitationWaveStatusStateMachine.requireTargetStateFor(status, InvitationWaveEvent.PAUSE);
         pausedAt = now;
+        pausedByPersonId = actorPersonId;
     }
 
     public void resume() {
@@ -109,8 +102,9 @@ public class InvitationWave {
         completedAt = now;
     }
 
-    public void cancel(Instant now) {
+    public void cancel(Instant now, Long actorPersonId) {
         status = InvitationWaveStatusStateMachine.requireTargetStateFor(status, InvitationWaveEvent.CANCEL);
         cancelledAt = now;
+        cancelledByPersonId = actorPersonId;
     }
 }

@@ -1,7 +1,9 @@
 package com.red_escuela.backend.notification.invitation.entity;
 
 import com.red_escuela.backend.notification.invitation.domain.InvitationExclusionReason;
+import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientEvent;
 import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientStatus;
+import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientStatusStateMachine;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,12 +16,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.Instant;
 
 @Getter
-@Setter
 @Entity
 @Builder
 @NoArgsConstructor
@@ -52,9 +52,45 @@ public class InvitationWaveRecipient {
     @Column(name = "attempts", nullable = false)
     private int attempts = 0;
 
-    @Column(name = "last_error", length = 500)
-    private String lastError;
+    @Column(name = "last_error_code", length = 60)
+    private String lastErrorCode;
 
     @Column(name = "sent_at")
     private Instant sentAt;
+
+    public static InvitationWaveRecipient pending(Long waveId, Long personId) {
+        return InvitationWaveRecipient.builder().waveId(waveId).personId(personId)
+                .status(InvitationRecipientStatus.PENDING).build();
+    }
+
+    public static InvitationWaveRecipient excluded(Long waveId, Long personId, InvitationExclusionReason reason) {
+        return InvitationWaveRecipient.builder().waveId(waveId).personId(personId)
+                .status(InvitationRecipientStatus.EXCLUDED).exclusionReason(reason).build();
+    }
+
+    public void queue(Long deliveryId) {
+        status = InvitationRecipientStatusStateMachine.requireTargetStateFor(status, InvitationRecipientEvent.QUEUE);
+        this.deliveryId = deliveryId;
+        attempts = attempts + 1;
+        lastErrorCode = null;
+    }
+
+    public void markSent(Instant now) {
+        status = InvitationRecipientStatusStateMachine.requireTargetStateFor(status, InvitationRecipientEvent.MARK_SENT);
+        sentAt = now;
+    }
+
+    public void markFailed(String errorCode) {
+        status = InvitationRecipientStatusStateMachine.requireTargetStateFor(status, InvitationRecipientEvent.MARK_FAILED);
+        lastErrorCode = errorCode;
+    }
+
+    public void exclude(InvitationExclusionReason reason) {
+        status = InvitationRecipientStatusStateMachine.requireTargetStateFor(status, InvitationRecipientEvent.EXCLUDE);
+        exclusionReason = reason;
+    }
+
+    public void markActivated() {
+        status = InvitationRecipientStatusStateMachine.requireTargetStateFor(status, InvitationRecipientEvent.MARK_ACTIVATED);
+    }
 }

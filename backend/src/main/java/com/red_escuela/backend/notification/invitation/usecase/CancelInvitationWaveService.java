@@ -14,7 +14,7 @@ public class CancelInvitationWaveService implements CancelInvitationWaveUseCase 
     }
 
     @Override
-    public InvitationWaveResponse cancelInvitationWave(Long waveId) {
-        return lifecycleTransaction.cancelInvitationWave(waveId);
+    public InvitationWaveResponse cancelInvitationWave(Long waveId, Long actorPersonId) {
+        return lifecycleTransaction.cancelInvitationWave(waveId, actorPersonId);
     }
 }

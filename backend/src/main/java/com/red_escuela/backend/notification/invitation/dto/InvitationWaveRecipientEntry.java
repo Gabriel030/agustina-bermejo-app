@@ -6,6 +6,6 @@ import com.red_escuela.backend.notification.invitation.domain.InvitationRecipien
 import java.time.Instant;
 
 public record InvitationWaveRecipientEntry(Long personId, InvitationRecipientStatus status,
-                                           InvitationExclusionReason exclusionReason, int attempts, String lastError,
+                                           InvitationExclusionReason exclusionReason, int attempts, String lastErrorCode,
                                            Instant sentAt) {
 }

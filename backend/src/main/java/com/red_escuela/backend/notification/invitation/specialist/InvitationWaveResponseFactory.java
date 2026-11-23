@@ -8,6 +8,9 @@ import com.red_escuela.backend.notification.invitation.entity.InvitationWaveReci
 import com.red_escuela.backend.notification.invitation.repository.InvitationWaveRecipientRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 @Component
 public class InvitationWaveResponseFactory {
 
@@ -18,16 +21,22 @@ public class InvitationWaveResponseFactory {
     }
 
     public InvitationWaveResponse createWaveResponse(InvitationWave wave) {
-        long eligibleCount = recipientRepository.countByWaveIdAndStatus(wave.getId(), InvitationRecipientStatus.PENDING);
+        Map<InvitationRecipientStatus, Long> totals = new EnumMap<>(InvitationRecipientStatus.class);
+        recipientRepository.countByStatusForWave(wave.getId()).forEach(count -> totals.put(count.getStatus(), count.getTotal()));
         return new InvitationWaveResponse(wave.getId(), wave.getName(), wave.getStatus(), wave.getBatchSize(),
                 wave.getIntervalMinutes(), wave.getDailyCap(), wave.getImportBatchId(), wave.getCreatedByPersonId(),
-                wave.getCreatedAt(), wave.getStartedAt(), wave.getPausedAt(), wave.getCompletedAt(),
-                wave.getCancelledAt(), eligibleCount, wave.getSentTotal(), wave.getFailedTotal(),
-                wave.getExcludedTotal(), wave.getActivatedTotal());
+                wave.getCreatedAt(), wave.getStartedAt(), wave.getStartedByPersonId(), wave.getPausedAt(),
+                wave.getPausedByPersonId(), wave.getCompletedAt(), wave.getCancelledAt(), wave.getCancelledByPersonId(),
+                totals.getOrDefault(InvitationRecipientStatus.PENDING, 0L),
+                totals.getOrDefault(InvitationRecipientStatus.QUEUED, 0L),
+                totals.getOrDefault(InvitationRecipientStatus.SENT, 0L),
+                totals.getOrDefault(InvitationRecipientStatus.FAILED, 0L),
+                totals.getOrDefault(InvitationRecipientStatus.EXCLUDED, 0L),
+                totals.getOrDefault(InvitationRecipientStatus.ACTIVATED, 0L));
     }
 
     public InvitationWaveRecipientEntry createRecipientEntry(InvitationWaveRecipient recipient) {
         return new InvitationWaveRecipientEntry(recipient.getPersonId(), recipient.getStatus(),
-                recipient.getExclusionReason(), recipient.getAttempts(), recipient.getLastError(), recipient.getSentAt());
+                recipient.getExclusionReason(), recipient.getAttempts(), recipient.getLastErrorCode(), recipient.getSentAt());
     }
 }

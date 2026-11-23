@@ -4,5 +4,5 @@ import com.red_escuela.backend.notification.invitation.dto.InvitationWaveRespons
 
 public interface CancelInvitationWaveUseCase {
 
-    InvitationWaveResponse cancelInvitationWave(Long waveId);
+    InvitationWaveResponse cancelInvitationWave(Long waveId, Long actorPersonId);
 }

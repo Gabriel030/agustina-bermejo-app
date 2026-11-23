@@ -1,5 +1,6 @@
 package com.red_escuela.backend.dataimport.api;
 
+import com.red_escuela.backend.dataimport.repository.ImportBatchRepository;
 import com.red_escuela.backend.dataimport.repository.ImportCreatedEntityRepository;
 import com.red_escuela.backend.dataimport.repository.ImportedPersonRef;
 import com.red_escuela.backend.identity.api.PendingActivationPerson;
@@ -19,12 +20,20 @@ public class ImportedAccountsQuery {
     private static final int SCAN_CHUNK_SIZE = 500;
 
     private final ImportCreatedEntityRepository createdEntityRepository;
+    private final ImportBatchRepository importBatchRepository;
     private final PendingActivationPersonFinder pendingActivationPersonFinder;
 
     public ImportedAccountsQuery(ImportCreatedEntityRepository createdEntityRepository,
+            ImportBatchRepository importBatchRepository,
             PendingActivationPersonFinder pendingActivationPersonFinder) {
         this.createdEntityRepository = createdEntityRepository;
+        this.importBatchRepository = importBatchRepository;
         this.pendingActivationPersonFinder = pendingActivationPersonFinder;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean importBatchExists(Long importBatchId) {
+        return importBatchId != null && importBatchRepository.existsById(importBatchId);
     }
 
     @Transactional(readOnly = true)

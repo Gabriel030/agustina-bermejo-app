@@ -3,6 +3,7 @@ package com.red_escuela.backend.notification.invitation.specialist;
 import com.red_escuela.backend.dataimport.api.ImportedAccount;
 import com.red_escuela.backend.dataimport.api.ImportedAccountsPage;
 import com.red_escuela.backend.dataimport.api.ImportedAccountsQuery;
+import com.red_escuela.backend.notification.invitation.exception.InvitationWaveImportBatchNotFoundException;
 import com.red_escuela.backend.notification.invitation.exception.InvitationWaveTooManyRecipientsException;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,9 @@ public class InvitationWaveCandidateScanner {
     }
 
     public List<ImportedAccount> findCandidates(Long importBatchId) {
+        if (!importedAccountsQuery.importBatchExists(importBatchId)) {
+            throw new InvitationWaveImportBatchNotFoundException(importBatchId);
+        }
         Map<Long, ImportedAccount> byPersonId = new LinkedHashMap<>();
         Long cursor = null;
         do {
@@ -35,8 +39,12 @@ public class InvitationWaveCandidateScanner {
             if (byPersonId.size() > settings.maxRecipients()) {
                 throw new InvitationWaveTooManyRecipientsException(settings.maxRecipients());
             }
-            cursor = page.nextAfterPersonId();
-        } while (cursor != null);
+            Long next = page.nextAfterPersonId();
+            if (page.accounts().isEmpty() || next == null || (cursor != null && next <= cursor)) {
+                break;
+            }
+            cursor = next;
+        } while (true);
         return new ArrayList<>(byPersonId.values());
     }
 }

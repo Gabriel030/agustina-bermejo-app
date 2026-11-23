@@ -1,6 +1,14 @@
 package com.red_escuela.backend.notification.invitation;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.dataimport.api.ImportedAccount;
+import com.red_escuela.backend.notification.invitation.domain.InvitationWaveParameters;
+import com.red_escuela.backend.notification.invitation.exception.InvitationPersonAlreadyInvitedException;
+import com.red_escuela.backend.notification.invitation.exception.InvitationWaveHasOpenRecipientsException;
+import com.red_escuela.backend.notification.invitation.exception.InvitationWaveImportBatchNotFoundException;
+import com.red_escuela.backend.notification.invitation.exception.InvitationWaveWithoutRecipientsException;
+import com.red_escuela.backend.notification.invitation.specialist.CreateInvitationWaveTransaction;
+import com.red_escuela.backend.notification.invitation.specialist.InvitationWaveLifecycleTransaction;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -73,6 +81,10 @@ class InvitationWaveIT extends AbstractIntegrationTest {
     private ListInvitationWavesUseCase listInvitationWaves;
     @Autowired
     private ListInvitationWaveRecipientsUseCase listInvitationWaveRecipients;
+    @Autowired
+    private InvitationWaveLifecycleTransaction lifecycleTransaction;
+    @Autowired
+    private CreateInvitationWaveTransaction createTransaction;
     @Autowired
     private TransactionTemplate transactions;
     @Autowired
@@ -152,6 +164,11 @@ class InvitationWaveIT extends AbstractIntegrationTest {
 
     private long draftWave() {
         return createInvitationWave.createInvitationWave(command()).id();
+    }
+
+    private long startableWave() {
+        importedStudent(true, null);
+        return draftWave();
     }
 
     @Test
@@ -247,12 +264,12 @@ class InvitationWaveIT extends AbstractIntegrationTest {
 
     @Test
     void walksThroughStartPauseResumeAndRecordsTimestamps() {
-        long waveId = draftWave();
+        long waveId = startableWave();
 
-        InvitationWaveResponse started = startInvitationWave.startInvitationWave(waveId);
-        InvitationWaveResponse paused = pauseInvitationWave.pauseInvitationWave(waveId);
+        InvitationWaveResponse started = startInvitationWave.startInvitationWave(waveId, directorId);
+        InvitationWaveResponse paused = pauseInvitationWave.pauseInvitationWave(waveId, directorId);
         InvitationWaveResponse resumed = resumeInvitationWave.resumeInvitationWave(waveId);
-        InvitationWaveResponse cancelled = cancelInvitationWave.cancelInvitationWave(waveId);
+        InvitationWaveResponse cancelled = cancelInvitationWave.cancelInvitationWave(waveId, directorId);
 
         assertThat(started.status()).isEqualTo(InvitationWaveStatus.RUNNING);
         assertThat(started.startedAt()).isNotNull();
@@ -267,16 +284,16 @@ class InvitationWaveIT extends AbstractIntegrationTest {
 
     @Test
     void invalidTransitionsAreRejectedAndLeaveTheWaveUntouched() {
-        long waveId = draftWave();
+        long waveId = startableWave();
 
-        assertThatThrownBy(() -> pauseInvitationWave.pauseInvitationWave(waveId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
+        assertThatThrownBy(() -> pauseInvitationWave.pauseInvitationWave(waveId, directorId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
         assertThatThrownBy(() -> resumeInvitationWave.resumeInvitationWave(waveId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
-        startInvitationWave.startInvitationWave(waveId);
-        assertThatThrownBy(() -> startInvitationWave.startInvitationWave(waveId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
+        startInvitationWave.startInvitationWave(waveId, directorId);
+        assertThatThrownBy(() -> startInvitationWave.startInvitationWave(waveId, directorId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
         assertThatThrownBy(() -> resumeInvitationWave.resumeInvitationWave(waveId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
-        cancelInvitationWave.cancelInvitationWave(waveId);
-        assertThatThrownBy(() -> startInvitationWave.startInvitationWave(waveId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
-        assertThatThrownBy(() -> cancelInvitationWave.cancelInvitationWave(waveId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
+        cancelInvitationWave.cancelInvitationWave(waveId, directorId);
+        assertThatThrownBy(() -> startInvitationWave.startInvitationWave(waveId, directorId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
+        assertThatThrownBy(() -> cancelInvitationWave.cancelInvitationWave(waveId, directorId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
 
         assertThat(getInvitationWave.getInvitationWave(waveId).status()).isEqualTo(InvitationWaveStatus.CANCELLED);
     }
@@ -284,14 +301,14 @@ class InvitationWaveIT extends AbstractIntegrationTest {
     @Test
     void aCompletedWaveCannotBeCancelled() {
         long waveId = draftWave();
-        jdbc.update("update invitation_wave set status = 'COMPLETED' where id = ?", waveId);
+        jdbc.update("update invitation_wave set status = 'COMPLETED', started_at = now(), completed_at = now() where id = ?", waveId);
 
-        assertThatThrownBy(() -> cancelInvitationWave.cancelInvitationWave(waveId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
+        assertThatThrownBy(() -> cancelInvitationWave.cancelInvitationWave(waveId, directorId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
     }
 
     @Test
     void unknownWaveIsReportedAsNotFound() {
-        assertThatThrownBy(() -> startInvitationWave.startInvitationWave(-1L)).isInstanceOf(InvitationWaveNotFoundException.class);
+        assertThatThrownBy(() -> startInvitationWave.startInvitationWave(-1L, directorId)).isInstanceOf(InvitationWaveNotFoundException.class);
         assertThatThrownBy(() -> getInvitationWave.getInvitationWave(-1L)).isInstanceOf(InvitationWaveNotFoundException.class);
         assertThatThrownBy(() -> listInvitationWaveRecipients.listInvitationWaveRecipients(-1L, null, 0, 10)).isInstanceOf(InvitationWaveNotFoundException.class);
     }
@@ -308,11 +325,11 @@ class InvitationWaveIT extends AbstractIntegrationTest {
 
     @Test
     void twoConcurrentStartsLetExactlyOneWin() throws Exception {
-        long waveId = draftWave();
+        long waveId = startableWave();
 
         List<Object> outcomes = runConcurrently(
-                () -> startInvitationWave.startInvitationWave(waveId),
-                () -> startInvitationWave.startInvitationWave(waveId));
+                () -> startInvitationWave.startInvitationWave(waveId, directorId),
+                () -> startInvitationWave.startInvitationWave(waveId, directorId));
 
         assertThat(outcomes).filteredOn(InvitationWaveResponse.class::isInstance).hasSize(1);
         assertThat(outcomes).filteredOn(InvitationWaveInvalidTransitionException.class::isInstance).hasSize(1);
@@ -321,11 +338,11 @@ class InvitationWaveIT extends AbstractIntegrationTest {
 
     @Test
     void concurrentStartAndCancelEndCancelledWithoutLosingTheCancellation() throws Exception {
-        long waveId = draftWave();
+        long waveId = startableWave();
 
         List<Object> outcomes = runConcurrently(
-                () -> startInvitationWave.startInvitationWave(waveId),
-                () -> cancelInvitationWave.cancelInvitationWave(waveId));
+                () -> startInvitationWave.startInvitationWave(waveId, directorId),
+                () -> cancelInvitationWave.cancelInvitationWave(waveId, directorId));
 
         assertThat(outcomes).noneMatch(outcome -> outcome instanceof RuntimeException
                 && !(outcome instanceof InvitationWaveInvalidTransitionException));
@@ -343,13 +360,182 @@ class InvitationWaveIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void thePersonCanBeInDifferentWaves() {
-        importedStudent(true, null);
-
+    void aPersonPendingInAnotherWaveIsExcludedFromTheNewOne() {
+        long personId = importedStudent(true, null);
         long first = draftWave();
+
         long second = draftWave();
 
-        assertThat(jdbc.queryForObject("select count(*) from invitation_wave_recipient where wave_id in (?, ?)", Long.class, first, second)).isEqualTo(2);
+        InvitationWaveRecipientEntry entry = listInvitationWaveRecipients.listInvitationWaveRecipients(second, null, 0, 10).items().get(0);
+        assertThat(entry.personId()).isEqualTo(personId);
+        assertThat(entry.status()).isEqualTo(InvitationRecipientStatus.EXCLUDED);
+        assertThat(entry.exclusionReason()).isEqualTo(InvitationExclusionReason.IN_OTHER_WAVE);
+        assertThat(getInvitationWave.getInvitationWave(first).eligibleCount()).isEqualTo(1);
+        assertThat(getInvitationWave.getInvitationWave(second).excludedTotal()).isEqualTo(1);
+    }
+
+    @Test
+    void aPersonCanBeInvitedAgainOnceTheEarlierWaveLeftThemFailed() {
+        long personId = importedStudent(true, null);
+        long first = draftWave();
+        jdbc.update("update invitation_wave_recipient set status = 'FAILED' where wave_id = ? and person_id = ?", first, personId);
+
+        long second = draftWave();
+
+        assertThat(getInvitationWave.getInvitationWave(second).eligibleCount()).isEqualTo(1);
+    }
+
+    @Test
+    void theDatabaseRejectsASecondOpenInvitationForTheSamePerson() {
+        long other = draftWave();
+        long personId = importedStudent(true, null);
+        draftWave();
+
+        assertThatThrownBy(() -> jdbc.update(
+                "insert into invitation_wave_recipient (wave_id, person_id, status) values (?, ?, 'PENDING')", other, personId))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void concurrentCreationsNeverLeaveAPersonOpenInTwoWaves() throws Exception {
+        long personId = importedStudent(true, null);
+        List<ImportedAccount> candidates = List.of(new ImportedAccount(personId, "a@example.com", "Importada", batchId));
+        InvitationWaveParameters parameters = new InvitationWaveParameters("Concurrente", 10, 15, 100);
+
+        List<Object> outcomes = runConcurrently(
+                () -> createTransaction.createInvitationWave(parameters, batchId, directorId, candidates),
+                () -> createTransaction.createInvitationWave(parameters, batchId, directorId, candidates));
+
+        assertThat(outcomes).allMatch(outcome -> outcome instanceof InvitationWaveResponse
+                || outcome instanceof InvitationPersonAlreadyInvitedException);
+        assertThat(jdbc.queryForObject("select count(*) from invitation_wave_recipient where person_id = ? and status = 'PENDING'", Long.class, personId))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void importBatchIsRequiredAndMustExist() {
+        assertThatThrownBy(() -> createInvitationWave.createInvitationWave(new CreateInvitationWaveCommand("Oleada", 10, 15, 100, null)))
+                .isInstanceOf(RequestFieldRequiredException.class);
+        assertThatThrownBy(() -> createInvitationWave.createInvitationWave(new CreateInvitationWaveCommand("Oleada", 10, 15, 100, -5L)))
+                .isInstanceOf(InvitationWaveImportBatchNotFoundException.class);
+        assertThat(jdbc.queryForObject("select count(*) from invitation_wave", Long.class)).isZero();
+    }
+
+    @Test
+    void theDatabaseRejectsAWaveOfAnUnknownImportBatch() {
+        assertThatThrownBy(() -> jdbc.update("""
+                insert into invitation_wave (name, status, batch_size, interval_minutes, daily_cap, import_batch_id, created_by_person_id, created_at)
+                values ('X', 'DRAFT', 1, 1, 1, -5, ?, now())
+                """, directorId)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void startingAWaveWithoutPendingRecipientsFailsAndLeavesItInDraft() {
+        importedStudent(false, null);
+        long waveId = draftWave();
+
+        assertThatThrownBy(() -> startInvitationWave.startInvitationWave(waveId, directorId)).isInstanceOf(InvitationWaveWithoutRecipientsException.class);
+
+        InvitationWaveResponse wave = getInvitationWave.getInvitationWave(waveId);
+        assertThat(wave.status()).isEqualTo(InvitationWaveStatus.DRAFT);
+        assertThat(wave.startedAt()).isNull();
+        assertThat(wave.startedByPersonId()).isNull();
+    }
+
+    @Test
+    void startRecordsTheActorAndPauseAndCancelToo() {
+        long waveId = startableWave();
+
+        InvitationWaveResponse started = startInvitationWave.startInvitationWave(waveId, directorId);
+        InvitationWaveResponse paused = pauseInvitationWave.pauseInvitationWave(waveId, directorId);
+        InvitationWaveResponse cancelled = cancelInvitationWave.cancelInvitationWave(waveId, directorId);
+
+        assertThat(started.startedByPersonId()).isEqualTo(directorId);
+        assertThat(paused.pausedByPersonId()).isEqualTo(directorId);
+        assertThat(cancelled.cancelledByPersonId()).isEqualTo(directorId);
+        assertThat(cancelled.cancelledAt()).isNotNull();
+    }
+
+    @Test
+    void completingWithPendingOrQueuedRecipientsIsRejected() {
+        long waveId = startableWave();
+        startInvitationWave.startInvitationWave(waveId, directorId);
+
+        assertThatThrownBy(() -> lifecycleTransaction.completeInvitationWave(waveId)).isInstanceOf(InvitationWaveHasOpenRecipientsException.class);
+
+        assertThat(getInvitationWave.getInvitationWave(waveId).status()).isEqualTo(InvitationWaveStatus.RUNNING);
+        jdbc.update("update invitation_wave_recipient set status = 'QUEUED', delivery_id = 1 where wave_id = ?", waveId);
+        assertThatThrownBy(() -> lifecycleTransaction.completeInvitationWave(waveId)).isInstanceOf(InvitationWaveHasOpenRecipientsException.class);
+    }
+
+    @Test
+    void completingWithoutOpenRecipientsRecordsTheCompletion() {
+        long waveId = startableWave();
+        startInvitationWave.startInvitationWave(waveId, directorId);
+        jdbc.update("update invitation_wave_recipient set status = 'ACTIVATED' where wave_id = ?", waveId);
+
+        InvitationWaveResponse completed = lifecycleTransaction.completeInvitationWave(waveId);
+
+        assertThat(completed.status()).isEqualTo(InvitationWaveStatus.COMPLETED);
+        assertThat(completed.completedAt()).isNotNull();
+        assertThat(completed.activatedTotal()).isEqualTo(1);
+        assertThat(completed.eligibleCount()).isZero();
+    }
+
+    @Test
+    void aPausedWaveCannotBeCompleted() {
+        long waveId = startableWave();
+        startInvitationWave.startInvitationWave(waveId, directorId);
+        pauseInvitationWave.pauseInvitationWave(waveId, directorId);
+        jdbc.update("update invitation_wave_recipient set status = 'ACTIVATED' where wave_id = ?", waveId);
+
+        assertThatThrownBy(() -> lifecycleTransaction.completeInvitationWave(waveId)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
+    }
+
+    @Test
+    void totalsAreDerivedFromTheRecipientStatuses() {
+        importedStudent(true, null);
+        importedStudent(true, null);
+        importedStudent(false, null);
+        long waveId = draftWave();
+        jdbc.update("update invitation_wave_recipient set status = 'FAILED' where id = (select min(id) from invitation_wave_recipient where wave_id = ? and status = 'PENDING')", waveId);
+
+        InvitationWaveResponse wave = getInvitationWave.getInvitationWave(waveId);
+
+        assertThat(wave.eligibleCount()).isEqualTo(1);
+        assertThat(wave.failedTotal()).isEqualTo(1);
+        assertThat(wave.excludedTotal()).isEqualTo(1);
+        assertThat(wave.sentTotal()).isZero();
+    }
+
+    @Test
+    void theDatabaseChecksTheWaveEnumsAndInvariants() {
+        String insert = "insert into invitation_wave (name, status, batch_size, interval_minutes, daily_cap, import_batch_id, created_by_person_id, created_at, started_at, completed_at) values ('X', ?, ?, ?, ?, ?, ?, now(), ?, ?)";
+        Object now = new java.sql.Timestamp(System.currentTimeMillis());
+
+        assertThatThrownBy(() -> jdbc.update(insert, "BOGUS", 1, 1, 1, batchId, directorId, null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, "DRAFT", 0, 1, 1, batchId, directorId, null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, "DRAFT", 2, 1, 1, batchId, directorId, null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, "DRAFT", 1, 0, 1, batchId, directorId, null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, "DRAFT", 1, 1441, 1, batchId, directorId, null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, "RUNNING", 1, 1, 1, batchId, directorId, null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, "COMPLETED", 1, 1, 1, batchId, directorId, now, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, "DRAFT", 1, 1, 1, batchId, directorId, null, now)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(jdbc.update(insert, "COMPLETED", 1, 1440, 1, batchId, directorId, now, now)).isEqualTo(1);
+    }
+
+    @Test
+    void theDatabaseChecksTheRecipientEnumsAndInvariants() {
+        long personId = importedStudent(true, null);
+        long waveId = draftWave();
+        jdbc.update("delete from invitation_wave_recipient where wave_id = ?", waveId);
+        String insert = "insert into invitation_wave_recipient (wave_id, person_id, status, exclusion_reason, delivery_id, sent_at) values (?, ?, ?, ?, ?, ?)";
+
+        assertThatThrownBy(() -> jdbc.update(insert, waveId, personId, "BOGUS", null, null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, waveId, personId, "EXCLUDED", "BOGUS", null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, waveId, personId, "QUEUED", null, null, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, waveId, personId, "SENT", null, 1L, null)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(jdbc.update(insert, waveId, personId, "EXCLUDED", "IN_OTHER_WAVE", null, null)).isEqualTo(1);
     }
 
     @Test

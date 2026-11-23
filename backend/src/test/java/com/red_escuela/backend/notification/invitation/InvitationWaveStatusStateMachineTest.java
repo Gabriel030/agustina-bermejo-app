@@ -80,31 +80,45 @@ class InvitationWaveStatusStateMachineTest {
     void startingADraftRecordsTheStartTimestamp() {
         InvitationWave wave = InvitationWave.builder().status(DRAFT).build();
 
-        wave.start(NOW);
+        wave.start(NOW, 7L);
 
         assertThat(wave.getStatus()).isEqualTo(RUNNING);
         assertThat(wave.getStartedAt()).isEqualTo(NOW);
+        assertThat(wave.getStartedByPersonId()).isEqualTo(7L);
     }
 
     @Test
     void pausingARunningWaveRecordsThePauseTimestampAndResumingKeepsIt() {
         InvitationWave wave = InvitationWave.builder().status(RUNNING).build();
 
-        wave.pause(NOW);
+        wave.pause(NOW, 8L);
         wave.resume();
 
         assertThat(wave.getStatus()).isEqualTo(RUNNING);
         assertThat(wave.getPausedAt()).isEqualTo(NOW);
+        assertThat(wave.getPausedByPersonId()).isEqualTo(8L);
     }
 
     @Test
     void cancellingARejectedStatusLeavesTheWaveUntouched() {
         InvitationWave wave = InvitationWave.builder().status(COMPLETED).build();
 
-        assertThatThrownBy(() -> wave.cancel(NOW)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
+        assertThatThrownBy(() -> wave.cancel(NOW, 9L)).isInstanceOf(InvitationWaveInvalidTransitionException.class);
 
         assertThat(wave.getStatus()).isEqualTo(COMPLETED);
         assertThat(wave.getCancelledAt()).isNull();
+        assertThat(wave.getCancelledByPersonId()).isNull();
+    }
+
+    @Test
+    void cancellingAPausedWaveRecordsTimestampAndActor() {
+        InvitationWave wave = InvitationWave.builder().status(PAUSED).build();
+
+        wave.cancel(NOW, 9L);
+
+        assertThat(wave.getStatus()).isEqualTo(CANCELLED);
+        assertThat(wave.getCancelledAt()).isEqualTo(NOW);
+        assertThat(wave.getCancelledByPersonId()).isEqualTo(9L);
     }
 
     @Test

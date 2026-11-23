@@ -14,7 +14,7 @@ public class PauseInvitationWaveService implements PauseInvitationWaveUseCase {
     }
 
     @Override
-    public InvitationWaveResponse pauseInvitationWave(Long waveId) {
-        return lifecycleTransaction.pauseInvitationWave(waveId);
+    public InvitationWaveResponse pauseInvitationWave(Long waveId, Long actorPersonId) {
+        return lifecycleTransaction.pauseInvitationWave(waveId, actorPersonId);
     }
 }

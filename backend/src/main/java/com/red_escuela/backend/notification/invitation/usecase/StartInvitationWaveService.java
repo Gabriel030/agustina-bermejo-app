@@ -14,7 +14,7 @@ public class StartInvitationWaveService implements StartInvitationWaveUseCase {
     }
 
     @Override
-    public InvitationWaveResponse startInvitationWave(Long waveId) {
-        return lifecycleTransaction.startInvitationWave(waveId);
+    public InvitationWaveResponse startInvitationWave(Long waveId, Long actorPersonId) {
+        return lifecycleTransaction.startInvitationWave(waveId, actorPersonId);
     }
 }
