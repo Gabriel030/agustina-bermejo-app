@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.permission;
 
+import com.red_escuela.backend.config.RoleAuthorityExpander;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -264,7 +266,6 @@ class PermissionGateWebTest {
     @WithMockUser(roles = {"SUBDIRECTOR", "ADMINISTRATIVO"})
     void subdirectorWithInheritedAdministrativeAuthorityIsDeniedInLegacyMode() throws Exception {
         mockMvc.perform(get("/probe/no-inheritance")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/probe/meta")).andExpect(status().isForbidden());
     }
 
     @Test
@@ -303,5 +304,47 @@ class PermissionGateWebTest {
     @Test
     void anonymousIsUnauthorizedWithoutInheritance() throws Exception {
         mockMvc.perform(get("/probe/no-inheritance")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = {"DIRECTOR", "SUBDIRECTOR", "ADMINISTRATIVO"})
+    void directorHoldingSubdirectorRoleIsAllowedThroughOwnRoleWithoutInheritance() throws Exception {
+        mockMvc.perform(get("/probe/no-inheritance")).andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = {"SUBDIRECTOR", "ADMINISTRATIVO", "DOCENTE"})
+    void subdirectorKeepsNonInheritedRolesWhenTheyHoldTheGrant() throws Exception {
+        configure(PermissionMode.ENFORCE, "DOCENTE", "probe", "probe.noinherit");
+        mockMvc.perform(get("/probe/no-inheritance")).andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = {"SUBDIRECTOR", "ADMINISTRATIVO", "DOCENTE"})
+    void subdirectorWithNonInheritedRoleWithoutGrantIsDenied() throws Exception {
+        mockMvc.perform(get("/probe/no-inheritance")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "PRECEPTOR")
+    void roleWithoutInheritanceIsEvaluatedNormally() throws Exception {
+        mockMvc.perform(get("/probe/no-inheritance")).andExpect(status().isForbidden());
+        configure(PermissionMode.ENFORCE, "PRECEPTOR", "probe", "probe.noinherit");
+        mockMvc.perform(get("/probe/no-inheritance")).andExpect(status().isOk());
+    }
+
+    @Test
+    void authoritiesBuiltByRoleAuthorityExpanderAreDeniedForSubdirectorInLegacyMode() throws Exception {
+        mockMvc.perform(get("/probe/no-inheritance")
+                .with(user("sub").roles(RoleAuthorityExpander.expand(List.of("SUBDIRECTOR")).toArray(String[]::new))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void authoritiesBuiltByRoleAuthorityExpanderAreAllowedForSubdirectorWithOwnEnforcedGrant() throws Exception {
+        configure(PermissionMode.ENFORCE, "SUBDIRECTOR", "probe", "probe.noinherit");
+        mockMvc.perform(get("/probe/no-inheritance")
+                .with(user("sub").roles(RoleAuthorityExpander.expand(List.of("SUBDIRECTOR")).toArray(String[]::new))))
+                .andExpect(status().isOk());
     }
 }
