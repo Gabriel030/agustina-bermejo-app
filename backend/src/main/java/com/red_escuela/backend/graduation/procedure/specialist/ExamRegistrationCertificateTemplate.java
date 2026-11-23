@@ -1,4 +1,4 @@
-package com.red_escuela.backend.graduation.certificate.examregistration.specialist;
+package com.red_escuela.backend.graduation.procedure.specialist;
 
 import com.red_escuela.backend.evaluation.api.OwnExamRegistrationView;
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
