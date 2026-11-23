@@ -229,6 +229,17 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void publicConsultationsAreNotAuditedOneByOne() throws Exception {
+        String code = insertGraduation("VALID", null);
+        Integer before = jdbc.queryForObject("select count(*) from audit_log", Integer.class);
+
+        verify(code);
+        verify(CertificateCode.generate(new SecureRandom()).value());
+
+        assertThat(jdbc.queryForObject("select count(*) from audit_log", Integer.class)).isEqualTo(before);
+    }
+
+    @Test
     void migrationBackfillCoversEveryAlreadyIssuedDocument() {
         Integer missing = jdbc.queryForObject("select (select count(*) from graduation_certificate g where not exists "
                 + "(select 1 from verifiable_document v where v.code = g.code)) + (select count(*) from regular_student_certificate r "
