@@ -44,6 +44,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `RefundsSection` [domain: billing] | Reembolsos de un alumno (pedidos agrupados, partes expandibles, "Marcar como hecho" / "No se pudo"); vive en el Financiero de la ficha del alumno | `studentId` |
 | `SortableColumnHeader` [domain: evaluation] | Encabezado ordenable (hook `useOrdenamiento`) | — |
 | `AnioColumnFilter` `EstadoColumnFilter` [domain: evaluation] | Filtro tipo Excel en el encabezado de columna (checkboxes + seleccionar todo) | — |
+| `ExamCertificatesSection` `ExamCertificatesTable` [domain: evaluation] | Lote de constancias de examen en la mesa (candidatos con checkbox, confirmación, resultado en `Notice`, revocación con `ModalMotivo` solo para el Director) | `mesaId`, `role` |
 | `AnioGroupHeaderRow` [domain: alumno] | Fila de agrupación por año | — |
 | `AmountBreakdown` [domain: billing] (`features/billing/components/`) | Desglose de una cuota: importe base + recargo, beca, promoción o descuento con signo | `baseAmount`, `lines` (`{ label, amount }` con signo) |
 | `InvoiceSummary` [domain: billing] (`features/billing/components/`) | Resumen de la cuota que se está pagando (concepto, desglose y total) arriba de los pasos de pago | `breakdown` (respuesta de `/me/invoices/{id}/price-breakdown`) |
