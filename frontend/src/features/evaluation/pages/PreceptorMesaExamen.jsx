@@ -101,7 +101,9 @@ function ModalAsignarTribunal({ open, onClose, onAsignar, asignando }) {
             onClick={() => {
               onAsignar(Number(instructorId));
               setInstructorId('');
-            }} className="min-h-11 md:min-h-8">
+            }}
+            className="min-h-11 md:min-h-8"
+          >
             Agregar al tribunal
           </Button>
         </DialogFooter>

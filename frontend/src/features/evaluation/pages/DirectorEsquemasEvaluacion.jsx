@@ -243,7 +243,9 @@ export function DirectorEsquemasEvaluacion() {
             <Button
               onClick={guardar}
               loading={guardando}
-              disabled={guardando || !form.name || !!problema || (form.esPromocional && !form.promotionMinGrade)} className="min-h-11 md:min-h-8">
+              disabled={guardando || !form.name || !!problema || (form.esPromocional && !form.promotionMinGrade)}
+              className="min-h-11 md:min-h-8"
+            >
               {editando ? 'Guardar cambios' : 'Crear esquema'}
             </Button>
           </div>

@@ -334,7 +334,9 @@ export function DocenteConfiguracionEvaluacion() {
               onClick={enviar}
               disabled={
                 !formularioCompleto || hayFechasInvalidas || !config.canSubmit || guardarBorrador.isPending || enviarAAprobacion.isPending
-              } className="min-h-11 md:min-h-8">
+              }
+              className="min-h-11 md:min-h-8"
+            >
               {config.status === 'REJECTED' ? 'Reenviar a aprobación' : 'Enviar a aprobación'}
             </Button>
           </div>

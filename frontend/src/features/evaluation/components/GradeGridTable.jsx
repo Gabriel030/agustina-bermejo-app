@@ -294,7 +294,7 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
       <div
         aria-hidden="true"
         className={cn(
-          'pointer-events-none absolute inset-y-0 right-[56px] flex w-9 items-center justify-end rounded-r-xl bg-dialog-bg pr-1 text-ink-soft transition-opacity md:right-[72px]',
+          'pointer-events-none absolute inset-y-0 right-[56px] flex w-9 items-center justify-end rounded-r-xl bg-gradient-to-r from-transparent to-dialog-bg pr-1 text-ink-soft transition-opacity md:right-[72px]',
           moreToRight ? 'opacity-100' : 'opacity-0',
         )}
       >
