@@ -13,6 +13,7 @@ import com.red_escuela.backend.graduation.certificate.exception.GraduationCertif
 import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.source.GraduationSource;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
+import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -43,6 +44,7 @@ public class GraduationCertificateIssuer {
     private final CurrentActorFinder currentActorFinder;
     private final Clock clock;
     private final GraduationCertificateEventPublisher eventPublisher;
+    private final VerifiableDocumentRegistry verifiableDocumentRegistry;
     private final SecureRandom random = new SecureRandom();
 
     public GraduationCertificateIssuer(List<GraduationSource> graduationSources, GraduationCertificateRepository repository,
@@ -50,7 +52,8 @@ public class GraduationCertificateIssuer {
                                        CertificateRegistryNumberAssigner registryNumberAssigner, CertificatePdfRenderer renderer,
                                        CertificateFileStore fileStore, CertificateVerificationUrl verificationUrl,
                                        CertificateDigest digest, CurrentActorFinder currentActorFinder, Clock clock,
-                                       GraduationCertificateEventPublisher eventPublisher) {
+                                       GraduationCertificateEventPublisher eventPublisher,
+                                       VerifiableDocumentRegistry verifiableDocumentRegistry) {
         graduationSources.forEach(source -> sources.put(source.kind(), source));
         this.repository = repository;
         this.builtInTemplate = builtInTemplate;
@@ -63,6 +66,7 @@ public class GraduationCertificateIssuer {
         this.currentActorFinder = currentActorFinder;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
+        this.verifiableDocumentRegistry = verifiableDocumentRegistry;
     }
 
     @Transactional
@@ -97,6 +101,7 @@ public class GraduationCertificateIssuer {
             GraduationCertificate saved = repository.saveAndFlush(GraduationCertificate.issue(kind, enrollmentId,
                     source.studentIdOf(enrollmentId), code, snapshot, digest.sha256(pdf), path,
                     LocalDateTime.now(clock), currentActorFinder.currentPersonId(), registryNumber, templateVersion.getId()));
+            verifiableDocumentRegistry.register(CertificateDocumentType.GRADUATION_CERTIFICATE, saved.getId(), code);
             return saved;
         } catch (DataIntegrityViolationException e) {
             fileStore.deleteIfRolledBack(path);

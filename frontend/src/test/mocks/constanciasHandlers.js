@@ -29,11 +29,20 @@ const pdfResponse = () =>
 const pngResponse = () =>
   new HttpResponse(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { headers: { 'Content-Type': 'image/png' } });
 
+const COMMON_MARKERS = ['holder', 'documentType', 'documentNumber', 'issuedOn', 'registryNumber'];
+const ALLOWED_MARKERS = {
+  REGULAR_STUDENT_CERTIFICATE: [...COMMON_MARKERS, 'titleName', 'recipient'],
+  APPROVED_SUBJECTS_CERTIFICATE: [...COMMON_MARKERS, 'titleName', 'average', 'completionPercent'],
+  EXAM_REGISTRATION_CERTIFICATE: [...COMMON_MARKERS, 'subjectName', 'examDate', 'recipient'],
+  EXAM_CERTIFICATE: [...COMMON_MARKERS, 'subjectName', 'examDate', 'recipient'],
+};
+
 const documentTemplate = (documentType, overrides = {}) => ({
   documentType,
   published: certificateTemplateVersion(),
   draft: null,
   hasUnpublishedChanges: false,
+  allowedMarkers: ALLOWED_MARKERS[documentType] ?? COMMON_MARKERS,
   ...overrides,
 });
 
