@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { Children, Fragment, isValidElement, useId } from 'react';
 import { Ellipsis } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 
-const COMPACT_VIEWPORT_QUERY = '(max-width: 767px)';
+const COMPACT_VIEWPORT_QUERY = '(width < 48rem)';
 
 const BAR_CLASSES =
   'sticky bottom-[calc(14px+env(safe-area-inset-bottom,0px))] z-5 flex flex-wrap items-center gap-3.5 px-4 py-3.5 ' +
@@ -16,8 +16,19 @@ const BAR_CLASSES =
 const ROW_BAR_CLASSES = 'max-md:flex-col max-md:items-stretch';
 const MENU_BAR_CLASSES = 'max-md:flex-row max-md:items-center max-md:gap-2 max-md:pt-1.5 max-md:pb-[calc(6px+env(safe-area-inset-bottom,0px))]';
 
-const ROW_ACTIONS_CLASSES =
-  'flex w-full flex-row gap-2 md:w-auto md:items-center max-md:[&>*]:min-w-0 max-md:[&>*]:flex-1 max-md:[&>*:last-child]:flex-[1.7]';
+const MAX_ROW_ACTIONS = 2;
+
+const ACTIONS_BASE_CLASSES = 'flex w-full gap-2 md:w-auto md:flex-row md:items-center';
+const ACTIONS_ROW_CLASSES =
+  'flex-row flex-wrap md:flex-nowrap max-md:[&>*]:min-w-fit max-md:[&>*]:flex-1 max-md:[&>[data-variant=primary]]:flex-[1.7]';
+const ACTIONS_STACKED_CLASSES = 'flex-col-reverse';
+
+function countActions(children) {
+  return Children.toArray(children).reduce(
+    (total, child) => total + (isValidElement(child) && child.type === Fragment ? countActions(child.props.children) : 1),
+    0,
+  );
+}
 
 function isDisabled(action) {
   return Boolean(action.disabled) || action['aria-disabled'] === true || action['aria-disabled'] === 'true';
@@ -123,6 +134,7 @@ export function StickyActionBar({
   const hintId = useId();
   const isCompactViewport = useMediaQuery(COMPACT_VIEWPORT_QUERY);
   const menuLayout = compact === 'menu' && isCompactViewport;
+  const rowActions = compact === 'menu' || countActions(children) <= MAX_ROW_ACTIONS;
   const isBusy = busy || Boolean(primary?.loading);
 
   const desktopActions =
@@ -169,7 +181,7 @@ export function StickyActionBar({
               </small>
             )}
           </div>
-          <div className={ROW_ACTIONS_CLASSES}>{desktopActions}</div>
+          <div className={cn(ACTIONS_BASE_CLASSES, rowActions ? ACTIONS_ROW_CLASSES : ACTIONS_STACKED_CLASSES)}>{desktopActions}</div>
         </>
       )}
     </GlassCard>

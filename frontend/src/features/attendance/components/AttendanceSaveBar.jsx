@@ -40,7 +40,7 @@ function compactSummaryOf({ hasPendingChanges, changedCount, saved, canceled, ha
 
 function compactHintOf({ canceled, hasError, hasPendingChanges, unmarkedCount }) {
   if (canceled) return 'Clase cancelada';
-  if (hasError) return 'Quedan en este dispositivo';
+  if (hasError) return 'Quedan acá';
   if (unmarkedCount > 0) return `Quedan ${unmarkedCount} sin marcar`;
   return hasPendingChanges ? 'Todos marcados' : 'Marcá un alumno';
 }

@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Undo2 } from 'lucide-react';
 import { StickyActionBar } from '@/components/StickyActionBar';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { axe } from '@/test/axe';
 import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
@@ -138,6 +140,118 @@ describe('StickyActionBar', () => {
       await screen.findByRole('menuitem', { name: 'Descartar' });
       expect(await axe(container)).toHaveNoViolations();
     });
+  });
+
+  describe('actions layout', () => {
+    function actionsOf(region) {
+      return region.lastElementChild;
+    }
+
+    it('lays out one or two actions in a row', () => {
+      render(
+        <StickyActionBar summary="x">
+          <Button>Volver</Button>
+          <Button variant="primary">Continuar</Button>
+        </StickyActionBar>,
+      );
+      const actions = actionsOf(screen.getByRole('region'));
+      expect(actions).toHaveClass('flex-row', 'max-md:[&>*]:flex-1');
+      expect(actions).not.toHaveClass('flex-col-reverse');
+    });
+
+    it('counts the actions inside fragments and ignores empty ones', () => {
+      render(
+        <StickyActionBar summary="x">
+          {false}
+          <>
+            <Button>Volver</Button>
+            <Button variant="primary">Continuar</Button>
+          </>
+          {null}
+        </StickyActionBar>,
+      );
+      expect(actionsOf(screen.getByRole('region'))).toHaveClass('flex-row');
+    });
+
+    it('stacks three or more actions instead of squeezing them in a row', () => {
+      render(
+        <StickyActionBar summary="x">
+          <Button>Deseleccionar todo</Button>
+          <Button>Descartar seleccionadas</Button>
+          <Button variant="primary">Emitir seleccionadas</Button>
+        </StickyActionBar>,
+      );
+      const actions = actionsOf(screen.getByRole('region'));
+      expect(actions).toHaveClass('flex-col-reverse');
+      expect(actions).not.toHaveClass('flex-row');
+      expect(actions.className).not.toContain('max-md:[&>*]:flex-1');
+    });
+
+    it('stacks three actions declared through fragments', () => {
+      render(
+        <StickyActionBar summary="x">
+          <>
+            <Button>Rechazar</Button>
+            <Button>Volver</Button>
+          </>
+          <Button variant="primary">Confirmar aprobación</Button>
+        </StickyActionBar>,
+      );
+      expect(actionsOf(screen.getByRole('region'))).toHaveClass('flex-col-reverse');
+    });
+
+    it('gives the emphasis to the primary action and not to the last one', () => {
+      render(
+        <StickyActionBar summary="x">
+          <Button variant="primary">Aprobar</Button>
+          <Button variant="destructive">Rechazar</Button>
+        </StickyActionBar>,
+      );
+      expect(actionsOf(screen.getByRole('region')).className).toContain('max-md:[&>[data-variant=primary]]:flex-[1.7]');
+      expect(actionsOf(screen.getByRole('region')).className).not.toContain('last-child');
+    });
+  });
+
+  it('reads the compact viewport with the same boundary as the md breakpoint', () => {
+    const queries = [];
+    window.matchMedia = (query) => {
+      queries.push(query);
+      return { matches: false, addEventListener() {}, removeEventListener() {} };
+    };
+    render(<StickyActionBar summary="x" />);
+    expect(queries).toContain('(width < 48rem)');
+  });
+
+  it('leaves the page interactive after choosing a menu action that opens a dialog', async () => {
+    useCompactViewport();
+    const user = userEvent.setup();
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <StickyActionBar
+            compact="menu"
+            summary="1 cambio"
+            primary={{ label: 'Guardar' }}
+            secondary={[{ key: 'discard', label: 'Descartar', onSelect: () => setOpen(true) }]}
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent>
+              <DialogTitle>¿Descartar 1 cambio?</DialogTitle>
+              <DialogDescription>Se pierden los cambios.</DialogDescription>
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    }
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'Más acciones' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Descartar' }));
+    expect(await screen.findByRole('dialog')).toHaveTextContent('¿Descartar 1 cambio?');
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.body.style.pointerEvents).not.toBe('none');
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
   });
 
   it('announces the saving state in row mode too', () => {
