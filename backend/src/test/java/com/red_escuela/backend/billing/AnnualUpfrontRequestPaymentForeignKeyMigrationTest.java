@@ -68,7 +68,7 @@ class AnnualUpfrontRequestPaymentForeignKeyMigrationTest {
             JdbcTemplate jdbc = new JdbcTemplate(database);
             assertThat(validatedForeignKeyCount(jdbc)).isZero();
 
-            migrateTo(database, "392");
+            migrateTo(database, "429");
 
             assertThat(validatedForeignKeyCount(jdbc)).isEqualTo(1);
         }
@@ -76,7 +76,7 @@ class AnnualUpfrontRequestPaymentForeignKeyMigrationTest {
 
     @Test
     void foreignKeyReferencesPaymentIdentifier() {
-        try (MigrationTestDatabase database = MigrationTestDatabase.migratedTo("392")) {
+        try (MigrationTestDatabase database = MigrationTestDatabase.migratedTo("429")) {
             JdbcTemplate jdbc = new JdbcTemplate(database);
 
             String definition = jdbc.queryForObject(
@@ -92,7 +92,7 @@ class AnnualUpfrontRequestPaymentForeignKeyMigrationTest {
             JdbcTemplate jdbc = new JdbcTemplate(database);
             insertRequestWithoutForeignKeyChecks(database, 987654L);
 
-            assertThatThrownBy(() -> migrateTo(database, "392"))
+            assertThatThrownBy(() -> migrateTo(database, "429"))
                     .isInstanceOf(FlywayException.class)
                     .hasMessageContaining("annual_upfront_request has 1 row(s) whose payment_id does not exist in payment")
                     .hasMessageContaining("fk_annual_upfront_request_payment");
@@ -109,7 +109,7 @@ class AnnualUpfrontRequestPaymentForeignKeyMigrationTest {
             insertPaymentWithoutForeignKeyChecks(database);
             insertRequestWithoutForeignKeyChecks(database, 5001L);
 
-            migrateTo(database, "392");
+            migrateTo(database, "429");
 
             assertThat(validatedForeignKeyCount(jdbc)).isEqualTo(1);
             assertThat(jdbc.queryForObject("select payment_id from annual_upfront_request", Long.class)).isEqualTo(5001L);
@@ -122,7 +122,7 @@ class AnnualUpfrontRequestPaymentForeignKeyMigrationTest {
             JdbcTemplate jdbc = new JdbcTemplate(database);
             insertRequestWithoutForeignKeyChecks(database, null);
 
-            migrateTo(database, "392");
+            migrateTo(database, "429");
 
             assertThat(validatedForeignKeyCount(jdbc)).isEqualTo(1);
             assertThat(jdbc.queryForObject("select count(*) from annual_upfront_request", Integer.class)).isEqualTo(1);
