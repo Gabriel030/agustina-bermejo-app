@@ -3,6 +3,10 @@ package com.red_escuela.backend.academicstructure;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Classroom;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.CourseSubject;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -27,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -97,18 +102,37 @@ class SectionScheduleSlotOccupancyIT extends AbstractIntegrationTest {
             activeSectionId = active.getId();
             reactivatedSectionId = reactivated.getId();
         });
-        Long courseSubjectId = jdbc.queryForObject(
-                "insert into course_subject (name, status) values ('Materia de curso', 'ACTIVE') returning id", Long.class);
-        activeCourseSectionId = insertCourseSection(courseSubjectId, "ACTIVE");
-        Long inactiveCourseSectionId = insertCourseSection(courseSubjectId, "INACTIVE");
+        Long activeCourseSectionIdValue = persistCourseSection(StatusType.ACTIVE);
+        Long inactiveCourseSectionId = persistCourseSection(StatusType.INACTIVE);
+        activeCourseSectionId = activeCourseSectionIdValue;
         activeCourseSlotId = insertCourseSlot(activeCourseSectionId, "THURSDAY", "08:00", "10:00");
         inactiveCourseSlotId = insertCourseSlot(inactiveCourseSectionId, "THURSDAY", "08:00", "10:00");
     }
 
-    private Long insertCourseSection(Long courseSubjectId, String status) {
-        return jdbc.queryForObject(
-                "insert into course_section (course_subject_id, term_id, name, status, capacity) values (?, ?, 'Comision curso', ?, 20) returning id",
-                Long.class, courseSubjectId, termA.getId(), status);
+    private Long persistCourseSection(StatusType status) {
+        return new TransactionTemplate(transactionManager).execute(tx -> {
+            Course course = new Course();
+            course.setName("Curso " + UUID.randomUUID());
+            course.setTerm(termA);
+            course.setCapacity(30);
+            course.setIsActive(StatusType.ACTIVE);
+            course.setTeachingMode(TeachingMode.ONLINE);
+            entityManager.persist(course);
+            CourseSubject module = new CourseSubject();
+            module.setCourse(course);
+            module.setName("Modulo");
+            module.setStatus(StatusType.ACTIVE);
+            entityManager.persist(module);
+            CourseSubjectSection section = new CourseSubjectSection();
+            section.setName("Comision curso");
+            section.setCourseSubject(module);
+            section.setTerm(termA);
+            section.setCapacity(20);
+            section.setStatus(status);
+            entityManager.persist(section);
+            entityManager.flush();
+            return section.getId();
+        });
     }
 
     private Long insertCourseSlot(Long courseSectionId, String day, String start, String end) {
@@ -201,7 +225,7 @@ class SectionScheduleSlotOccupancyIT extends AbstractIntegrationTest {
                 activeSectionSlotId);
 
         assertThat(jdbc.queryForObject("select time_span::text from section_schedule_slot where id = ?", String.class, activeSectionSlotId))
-                .isEqualTo("[971600,975200)".replace("971600", "583200").replace("975200", "586800"));
+                .isEqualTo("[583200,586800)");
     }
 
     @Test
