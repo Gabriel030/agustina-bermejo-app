@@ -8,9 +8,9 @@ function historyIndex() {
 
 export function useBackNavigationGuard(active) {
   const location = useLocation();
-  const [pendingSteps, setPendingSteps] = useState(null);
+  const [pending, setPending] = useState(null);
   const currentIndexRef = useRef(null);
-  const ignoredPopStatesRef = useRef(0);
+  const confirmedTargetIndexRef = useRef(null);
 
   useEffect(() => {
     currentIndexRef.current = historyIndex();
@@ -19,37 +19,38 @@ export function useBackNavigationGuard(active) {
   useEffect(() => {
     if (!active) return undefined;
     function handlePopState(event) {
-      if (ignoredPopStatesRef.current > 0) {
-        ignoredPopStatesRef.current -= 1;
+      const arrivedIndex = typeof event.state?.idx === 'number' ? event.state.idx : null;
+      if (confirmedTargetIndexRef.current !== null && arrivedIndex === confirmedTargetIndexRef.current) {
+        confirmedTargetIndexRef.current = null;
         return;
       }
       const leftIndex = currentIndexRef.current;
-      const arrivedIndex = typeof event.state?.idx === 'number' ? event.state.idx : null;
       if (leftIndex === null || arrivedIndex === null || leftIndex === arrivedIndex) return;
       event.stopImmediatePropagation();
-      ignoredPopStatesRef.current += 1;
       window.history.go(leftIndex - arrivedIndex);
-      setPendingSteps(arrivedIndex - leftIndex);
+      setPending({ steps: arrivedIndex - leftIndex, targetIndex: arrivedIndex });
     }
     window.addEventListener('popstate', handlePopState, true);
     return () => {
       window.removeEventListener('popstate', handlePopState, true);
+      confirmedTargetIndexRef.current = null;
+      setPending(null);
     };
   }, [active]);
 
   function confirmBackNavigation() {
-    if (pendingSteps === null) return;
-    ignoredPopStatesRef.current += 1;
-    window.history.go(pendingSteps);
-    setPendingSteps(null);
+    if (pending === null) return;
+    confirmedTargetIndexRef.current = pending.targetIndex;
+    window.history.go(pending.steps);
+    setPending(null);
   }
 
   function cancelBackNavigation() {
-    setPendingSteps(null);
+    setPending(null);
   }
 
   return {
-    isBackPending: pendingSteps !== null,
+    isBackPending: pending !== null,
     confirmBackNavigation,
     cancelBackNavigation,
   };
