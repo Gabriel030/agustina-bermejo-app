@@ -14,9 +14,9 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     environment: import.meta.env.MODE,
     release: import.meta.env.VITE_APP_VERSION,
   }).catch((error) => reportClientError(error, { scope: 'monitoring-start' }))
+  window.addEventListener('error', (event) => reportClientError(event.error ?? new Error(event.message), { scope: 'window-error' }))
 }
 
-window.addEventListener('error', (event) => reportClientError(event.error ?? new Error(event.message), { scope: 'window-error' }))
 window.addEventListener('unhandledrejection', (event) => reportClientError(event.reason, { scope: 'unhandledrejection' }))
 
 captureInstallPrompt()

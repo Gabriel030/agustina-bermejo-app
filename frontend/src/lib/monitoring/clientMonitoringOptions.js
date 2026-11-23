@@ -8,6 +8,7 @@ export function buildClientMonitoringOptions({ dsn, environment, release }) {
     defaultIntegrations: false,
     integrations: [],
     sendDefaultPii: false,
+    sendClientReports: false,
     tracesSampleRate: 0,
     maxBreadcrumbs: 0,
     beforeBreadcrumb: () => null,

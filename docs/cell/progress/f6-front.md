@@ -31,3 +31,28 @@ Ticket: #1147. Rama: `feature/f6-front-sentry`.
 - Riesgo residual: nombres propios dentro del texto del error no se enmascaran (solo email, DNI, JWT, tokens). Limitación conocida.
 - Entorno: `environment` = `import.meta.env.MODE` (en Docker siempre `production`); no se agregó `VITE_APP_ENV`.
 - Bloqueo: hasta F6-csp, un DSN configurado queda bloqueado por la CSP. Con DSN vacío no hay tráfico.
+
+## Revisión de privacidad (ronda 2)
+- Enmascarado: el texto se trunca a 2000 caracteres antes y después de enmascarar; cuantificadores acotados (email, JWT, tokens); unicode en email (`\p{L}\p{N}`). Tests de 200 KB sin espacios en tiempo acotado (<500 ms).
+- Enmascara: todo query string (también relativo), email, DNI/CUIL/CUIT con separadores (7 a 11 dígitos), teléfonos argentinos, tokens opacos de 32+ caracteres, ids numéricos en path.
+- `ApiError`: se envía solo `status` y `code` (el mensaje libre no sale; puede traer nombres). Se toma `reportClientError` con `status` y `code`.
+- Tags allowlist: `scope` (enmascarado) y `request_id` solo si es UUID. Se descartan contexts, user, request, breadcrumbs, extra y el resto de tags.
+- Frames: `filename` sin query ni fragmento.
+- `sendClientReports: false`. El listener `window` `error` se registra solo con DSN (`main.jsx`), así que sin DSN no cambia el comportamiento.
+- Guard: `if (import.meta.env.VITE_SENTRY_DSN)` en `main.jsx`. Se garantiza por medición del build (sin DSN no hay chunk ni referencia a `@sentry` en `dist/`), no por test unitario: `main.jsx` renderiza la app completa.
+- Test con el cliente real del SDK (`sentryClientEnvelope.test.js`): init con transport falso y evento serializado completo que pasa por `beforeSend`.
+- Sabotajes verificados: regex de email (4 tests fallan) y allowlist de `contexts` (2 tests fallan). Restaurado.
+
+## Requisitos previos a poner un DSN (en el proyecto GlitchTip/Sentry, antes de configurar VITE_SENTRY_DSN)
+- Desactivar almacenamiento de IP.
+- No reenviar `X-Forwarded-For` desde el proxy al ingest.
+- Activar data scrubbing avanzado con los patrones de email, DNI y tokens.
+- Mantener `sendDefaultPii` en false (ya está en el código).
+
+## Deuda aparte (no se toca en este PR)
+- 7 archivos de otros dominios flakean bajo carga en la suite completa y pasan aislados: `DirectorOfertaCicloDetalle`, `FinancialDashboardPage`, `AdministrativoFacturacion`, `DetalleSolicitud`, `SolicitudesDeIngreso`, `StaffGraduationCertificates`, `PermissionsPage`.
+
+## Medidas finales (KiB)
+- Sin DSN: entry 343,3 KiB (351.509 bytes); cero referencias a `@sentry` en `dist/`.
+- Con DSN dummy: entry 345,9 KiB (354.210 bytes); chunk del SDK 442,7 KiB (453.325 bytes).
+- Decisiones: se mantiene `@sentry/react` (solo se carga con DSN). Evaluar `@sentry/browser` en F6-csp con medición. `environment` = `import.meta.env.MODE`.
