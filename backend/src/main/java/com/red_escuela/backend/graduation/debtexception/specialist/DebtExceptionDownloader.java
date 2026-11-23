@@ -45,23 +45,23 @@ public class DebtExceptionDownloader {
         LocalDateTime now = LocalDateTime.now(clock);
         requireDownloadable(exception, now);
         if (repository.markUsedIfActive(id, now, currentActorFinder.currentPersonId()) != 1) {
-            throw rejectionFor(repository.findById(id).orElseThrow(DebtExceptionNotFoundException::new));
+            throw rejectionFor(repository.findStateById(id).orElseThrow(DebtExceptionNotFoundException::new).getStatus());
         }
         DebtExceptionDocument document = issuer.render(new DebtExceptionScope(exception.getId(), exception.getStudentId(),
                 exception.getDocumentType(), exception.getEnrollmentId(), exception.getRegistrationId()));
         auditRecorder.used(id, exception.getDocumentType().name(), exception.getStudentId());
-        auditRecorder.downloaded(id, exception.getDocumentType().name(), exception.getStudentId(), document.auditDetail());
+        auditRecorder.downloaded(id, exception.getDocumentType().name(), exception.getStudentId(), DebtExceptionAuditDetail.requireAllowed(document.auditDetail()));
         return new ProcedureDocumentPdf(document.code(), document.content());
     }
 
     private void requireDownloadable(DocumentDebtException exception, LocalDateTime now) {
         if (exception.getStatus() != DebtExceptionStatus.ACTIVE || !exception.getExpiresAt().isAfter(now)) {
-            throw rejectionFor(exception);
+            throw rejectionFor(exception.getStatus());
         }
     }
 
-    private RuntimeException rejectionFor(DocumentDebtException exception) {
-        if (exception.getStatus() == DebtExceptionStatus.USED) {
+    private RuntimeException rejectionFor(DebtExceptionStatus status) {
+        if (status == DebtExceptionStatus.USED) {
             return new DebtExceptionAlreadyUsedException();
         }
         return new DebtExceptionExpiredException();
