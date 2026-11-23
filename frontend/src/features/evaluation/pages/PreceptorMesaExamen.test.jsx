@@ -131,20 +131,40 @@ describe('PreceptorMesaExamen', () => {
     expect(await screen.findByText('Todavía no hay presentes')).toBeInTheDocument();
   });
 
-  it('does not show the exam certificates section before the exam or to the preceptor', async () => {
-    const futura = mesa({ examDate: '2099-11-20T18:00:00' });
+  it.each([
+    ['before the exam', 'docente', { examDate: '2099-11-20T18:00:00' }],
+    ['to the preceptor', 'preceptor', { examDate: '2020-01-10T18:00:00' }],
+    ['when the board is canceled', 'docente', { examDate: '2020-01-10T18:00:00', status: 'CANCELED', cancelReason: 'Sin quórum' }],
+  ])('does not show the exam certificates section %s', async (_label, role, extra) => {
+    const board = mesa(extra);
     server.use(
-      http.get(`${API}/exam-boards`, () => HttpResponse.json([futura])),
-      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(futura)),
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([board])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(board)),
       http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([])),
     );
     const user = userEvent.setup();
-    renderWithProviders(<PreceptorMesaExamen role="docente" />);
+    renderWithProviders(<PreceptorMesaExamen role={role} />);
 
-    await abrirMesa(user);
+    await abrirMesa(user, board.status === 'CANCELED' ? 'Canceladas' : undefined);
 
     await screen.findByText('Alumnos anotados');
     expect(screen.queryByRole('heading', { name: 'Constancias de examen' })).not.toBeInTheDocument();
+  });
+
+  it.each(['administrativo', 'director'])('shows the exam certificates section to the %s once the exam was held', async (role) => {
+    const pasada = mesa({ examDate: '2020-01-10T18:00:00' });
+    server.use(
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([pasada])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(pasada)),
+      http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([])),
+      http.get(`${API}/exam-boards/6/exam-certificates/candidates`, () => HttpResponse.json([])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PreceptorMesaExamen role={role} />);
+
+    await abrirMesa(user);
+
+    expect(await screen.findByRole('heading', { name: 'Constancias de examen' })).toBeInTheDocument();
   });
 
   it('shows the preceptor the sheet read only and keeps the management buttons', async () => {

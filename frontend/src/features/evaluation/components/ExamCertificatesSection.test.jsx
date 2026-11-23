@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -54,6 +54,48 @@ describe('ExamCertificatesSection', () => {
     expect(screen.getByRole('button', { name: 'Emitir constancias (1)' })).toBeEnabled();
   });
 
+  it('says there is nobody to issue when no student is eligible', async () => {
+    server.use(http.get(CANDIDATES_URL, () => HttpResponse.json([candidate({ availability: 'ABSENT' })])));
+    renderSection();
+
+    expect(await screen.findByText('No hay alumnos para emitir.')).toBeInTheDocument();
+    expect(screen.queryByText('Marcá a quién emitirle la constancia.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Emitir constancias' })).toBeDisabled();
+  });
+
+  it('labels the actions column for assistive technology', async () => {
+    renderSection('director');
+
+    await screen.findByText('Emitida');
+
+    expect(screen.getByRole('columnheader', { name: 'Acciones' })).toBeInTheDocument();
+  });
+
+  it('moves the focus to the result notice after issuing', async () => {
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Seleccionar a Ana Paz' }));
+    await user.click(screen.getByRole('button', { name: 'Emitir constancias (1)' }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Emitir' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('emitida'));
+    await waitFor(() => expect(screen.getByRole('status').firstElementChild).toHaveFocus());
+  });
+
+  it('moves the focus to the result notice after revoking', async () => {
+    const user = userEvent.setup();
+    renderSection('director');
+
+    await user.click(await screen.findByRole('button', { name: 'Revocar constancia de Luis Gómez' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByPlaceholderText('Motivo'), 'Error en el DNI');
+    await user.click(within(dialog).getByRole('button', { name: 'Revocar constancia' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Constancia revocada.'));
+    await waitFor(() => expect(screen.getByRole('status').firstElementChild).toHaveFocus());
+  });
+
   it('selects every eligible student with the select all checkbox', async () => {
     server.use(
       http.get(CANDIDATES_URL, () =>
@@ -93,8 +135,7 @@ describe('ExamCertificatesSection', () => {
     expect(within(dialog).getByText('Emitir 1 constancia')).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Emitir' }));
 
-    const notice = await screen.findByRole('status');
-    expect(notice).toHaveTextContent('1 emitida.');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 emitida.'));
     expect(body).toEqual({ registrationIds: [55] });
     expect(screen.getByRole('button', { name: 'Emitir constancias' })).toBeDisabled();
   });
@@ -124,9 +165,8 @@ describe('ExamCertificatesSection', () => {
     await user.click(screen.getByRole('button', { name: 'Emitir constancias (2)' }));
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Emitir' }));
 
-    const notice = await screen.findByRole('status');
-    expect(notice).toHaveTextContent('1 emitida, 1 omitida.');
-    expect(notice).toHaveTextContent('Sofía Luna: ya no está inscripto y no se emitió.');
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 emitida, 1 omitida.'));
+    expect(screen.getByRole('status')).toHaveTextContent('Sofía Luna: ya no está inscripto y no se emitió.');
   });
 
   it('shows that nothing was issued on a total failure and keeps the selection', async () => {
@@ -138,9 +178,8 @@ describe('ExamCertificatesSection', () => {
     await user.click(screen.getByRole('button', { name: 'Emitir constancias (1)' }));
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Emitir' }));
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('No se emitió nada.');
-    expect(alert).toHaveTextContent('Podés reintentar con la misma selección.');
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se emitió nada.'));
+    expect(screen.getByRole('alert')).toHaveTextContent('Podés reintentar con la misma selección.');
     expect(screen.getByRole('checkbox', { name: 'Seleccionar a Ana Paz' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Emitir constancias (1)' })).toBeEnabled();
   });
@@ -154,7 +193,7 @@ describe('ExamCertificatesSection', () => {
     await user.click(screen.getByRole('button', { name: 'Emitir constancias (1)' }));
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Emitir' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Esta operación de documentos todavía no está disponible.');
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Esta operación de documentos todavía no está disponible.'));
   });
 
   it('lets the director revoke with a mandatory reason and makes the student eligible again', async () => {
@@ -186,6 +225,26 @@ describe('ExamCertificatesSection', () => {
     expect(revokeBody).toEqual({ reason: 'Error en el DNI' });
     expect(await screen.findByRole('checkbox', { name: 'Seleccionar a Luis Gómez' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Revocar constancia de/ })).not.toBeInTheDocument();
+
+    let issueBody;
+    server.use(
+      http.post(BATCH_URL, async ({ request }) => {
+        issueBody = await request.json();
+        return HttpResponse.json(
+          examCertificateBatch({
+            issuedCount: 1,
+            skippedCount: 0,
+            items: [{ registrationId: 56, studentName: 'Luis Gómez', outcome: 'ISSUED', certificateId: 90 }],
+          }),
+        );
+      }),
+    );
+    await user.click(screen.getByRole('checkbox', { name: 'Seleccionar a Luis Gómez' }));
+    await user.click(screen.getByRole('button', { name: 'Emitir constancias (1)' }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Emitir' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('1 emitida.'));
+    expect(issueBody).toEqual({ registrationIds: [56] });
   });
 
   it('shows the revoke error inside the dialog and keeps it open', async () => {
@@ -208,32 +267,6 @@ describe('ExamCertificatesSection', () => {
     expect(screen.queryByRole('button', { name: /Revocar constancia de/ })).not.toBeInTheDocument();
   });
 
-  it('lets a revoked student be issued again in the batch', async () => {
-    let body;
-    server.use(
-      http.get(CANDIDATES_URL, () => HttpResponse.json([candidate({ registrationId: 61, studentName: 'Nicolás Molina' })])),
-      http.post(BATCH_URL, async ({ request }) => {
-        body = await request.json();
-        return HttpResponse.json(
-          examCertificateBatch({
-            issuedCount: 1,
-            skippedCount: 0,
-            items: [{ registrationId: 61, studentName: 'Nicolás Molina', outcome: 'ISSUED', certificateId: 80 }],
-          }),
-        );
-      }),
-    );
-    const user = userEvent.setup();
-    renderSection();
-
-    await user.click(await screen.findByRole('checkbox', { name: 'Seleccionar a Nicolás Molina' }));
-    await user.click(screen.getByRole('button', { name: 'Emitir constancias (1)' }));
-    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Emitir' }));
-
-    await screen.findByText('1 emitida.');
-    expect(body).toEqual({ registrationIds: [61] });
-  });
-
   it('shows the not found state when the board belongs to another teacher', async () => {
     server.use(http.get(CANDIDATES_URL, () => HttpResponse.json(errorBody('EXAM_BOARD_NOT_FOUND'), { status: 404 })));
     renderSection();
@@ -241,6 +274,17 @@ describe('ExamCertificatesSection', () => {
     expect(await screen.findByText('No encontramos esta mesa')).toBeInTheDocument();
     expect(screen.getByText('La mesa no existe o no es una de las tuyas.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Emitir constancias/ })).not.toBeInTheDocument();
+  });
+
+  it('offers to go back to the boards when the board is not found', async () => {
+    server.use(http.get(CANDIDATES_URL, () => HttpResponse.json(errorBody('EXAM_BOARD_NOT_FOUND'), { status: 404 })));
+    const onBack = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(<ExamCertificatesSection mesaId={9} role="docente" onBack={onBack} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Ir a Mis mesas' }));
+
+    expect(onBack).toHaveBeenCalled();
   });
 
   it('shows the loading state while the candidates are fetched', async () => {
@@ -267,7 +311,8 @@ describe('ExamCertificatesSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    expect(await screen.findByText('No pudimos cargar las constancias de la mesa')).toBeInTheDocument();
+    expect(await screen.findByText('No pudimos verificar quién puede recibir constancia. No se puede emitir por ahora.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Emitir constancias/ })).not.toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
 

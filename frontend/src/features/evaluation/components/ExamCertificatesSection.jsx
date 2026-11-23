@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
-import { LoadErrorState } from '@/components/LoadErrorState';
 import { Notice } from '@/components/Notice';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
@@ -23,7 +22,7 @@ import {
 } from '@/features/evaluation/hooks/useExamCertificates';
 import { ExamCertificatesTable } from '@/features/evaluation/components/ExamCertificatesTable';
 
-function ResultNotice({ result, onDismiss }) {
+function ResultNotice({ result, onDismiss, noticeRef }) {
   const dismiss = (
     <Button type="button" variant="outline" size="sm" className="min-h-11 shrink-0 md:min-h-8" onClick={onDismiss}>
       Cerrar
@@ -31,7 +30,7 @@ function ResultNotice({ result, onDismiss }) {
   );
   if (result.kind === 'failed') {
     return (
-      <Notice tone="danger" role="alert" className="flex flex-wrap items-start justify-between gap-3">
+      <Notice ref={noticeRef} tabIndex={-1} tone="danger" role="note" className="flex flex-wrap items-start justify-between gap-3">
         <span>
           <b className="font-bold">No se emitió nada.</b> {result.message} Podés reintentar con la misma selección.
         </span>
@@ -41,7 +40,7 @@ function ResultNotice({ result, onDismiss }) {
   }
   if (result.kind === 'revoked') {
     return (
-      <Notice tone="success" role="status" className="flex flex-wrap items-start justify-between gap-3">
+      <Notice ref={noticeRef} tabIndex={-1} tone="success" role="note" className="flex flex-wrap items-start justify-between gap-3">
         <span>
           <b className="font-bold">Constancia revocada.</b> {result.studentName} puede recibir una nueva en el próximo lote.
         </span>
@@ -50,7 +49,7 @@ function ResultNotice({ result, onDismiss }) {
     );
   }
   return (
-    <Notice tone={result.omitted.length ? 'warning' : 'success'} role="status" className="flex flex-wrap items-start justify-between gap-3">
+    <Notice ref={noticeRef} tabIndex={-1} tone={result.omitted.length ? 'warning' : 'success'} role="note" className="flex flex-wrap items-start justify-between gap-3">
       <div className="flex flex-col gap-0.5">
         <b className="font-bold">{issuedHeadline(result)}</b>
         {result.omitted.map((item) => (
@@ -64,7 +63,7 @@ function ResultNotice({ result, onDismiss }) {
   );
 }
 
-export function ExamCertificatesSection({ mesaId, role }) {
+export function ExamCertificatesSection({ mesaId, role, onBack }) {
   const caps = certificateCaps(role);
   const candidatesQuery = useExamCertificateCandidates(mesaId);
   const issueBatch = useIssueExamCertificateBatch(mesaId);
@@ -74,6 +73,13 @@ export function ExamCertificatesSection({ mesaId, role }) {
   const [result, setResult] = useState(null);
   const [revoking, setRevoking] = useState(null);
   const [revokeError, setRevokeError] = useState('');
+  const resultRef = useRef(null);
+
+  useEffect(() => {
+    if (!result) return undefined;
+    const timer = setTimeout(() => resultRef.current?.focus(), 0);
+    return () => clearTimeout(timer);
+  }, [result]);
 
   const candidates = candidatesQuery.data ?? [];
   const eligible = candidates.filter(isSelectable);
@@ -125,10 +131,27 @@ export function ExamCertificatesSection({ mesaId, role }) {
 
   let content;
   if (candidatesQuery.isError && candidatesQuery.error?.status === 404) {
-    content = <EmptyState title="No encontramos esta mesa" description="La mesa no existe o no es una de las tuyas." />;
+    content = (
+      <EmptyState
+        title="No encontramos esta mesa"
+        description="La mesa no existe o no es una de las tuyas."
+        action={
+          onBack && (
+            <Button type="button" variant="outline" className="min-h-11 md:min-h-8" onClick={onBack}>
+              Ir a Mis mesas
+            </Button>
+          )
+        }
+      />
+    );
   } else if (candidatesQuery.isError) {
     content = (
-      <LoadErrorState bare error={candidatesQuery.error} resource="las constancias de la mesa" onRetry={() => candidatesQuery.refetch()} />
+      <Notice tone="danger" role="alert" className="flex flex-wrap items-start justify-between gap-3">
+        <span>No pudimos verificar quién puede recibir constancia. No se puede emitir por ahora.</span>
+        <Button type="button" variant="outline" size="sm" className="min-h-11 shrink-0 md:min-h-8" onClick={() => candidatesQuery.refetch()}>
+          Reintentar
+        </Button>
+      </Notice>
     );
   } else if (candidatesQuery.isPending) {
     content = (
@@ -192,11 +215,20 @@ export function ExamCertificatesSection({ mesaId, role }) {
             >
               {selectedIds.length > 0 ? `Emitir constancias (${selectedIds.length})` : 'Emitir constancias'}
             </Button>
-            {selectedIds.length === 0 && <span className="text-size-12 text-ink-faint">Marcá a quién emitirle la constancia.</span>}
+            {selectedIds.length === 0 && (
+              <span className="text-size-12 text-ink-faint">
+                {eligible.length > 0 ? 'Marcá a quién emitirle la constancia.' : 'No hay alumnos para emitir.'}
+              </span>
+            )}
           </div>
         )}
       </div>
-      {result && <ResultNotice result={result} onDismiss={() => setResult(null)} />}
+      <div role="status" aria-live="polite">
+        {result && result.kind !== 'failed' && <ResultNotice result={result} noticeRef={resultRef} onDismiss={() => setResult(null)} />}
+      </div>
+      <div role="alert">
+        {result?.kind === 'failed' && <ResultNotice result={result} noticeRef={resultRef} onDismiss={() => setResult(null)} />}
+      </div>
       {content}
       <ConfirmActionDialog
         open={confirming}
