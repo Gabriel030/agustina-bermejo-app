@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { SEX_LABEL } from '@/lib/person';
+import { SEX_LABEL } from '@/features/identity/lib/person';
 
 const TIPO_DOCUMENTO = {
   DNI_FRENTE: 'DNI frente',

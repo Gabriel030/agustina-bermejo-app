@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { auditActionLabel, auditActionTone, auditEntityLabel, auditRoleLabel, auditRoleTone } from '@/lib/auditLabels';
+import { auditActionLabel, auditActionTone, auditEntityLabel, auditRoleLabel, auditRoleTone } from '@/features/audit/lib/auditLabels';
 import { formatDate } from '@/lib/billing';
 import { auditActorName } from '@/features/audit/lib/auditPayload';
 import { AuditDetailSheet } from '@/features/audit/components/AuditDetailSheet';
