@@ -3,8 +3,8 @@ package com.red_escuela.backend.graduation.certificate.approvedsubjects.controll
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.ApprovedSubjectsCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.RevokeApprovedSubjectsCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.usecase.RevokeApprovedSubjectsCertificateUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,7 +21,7 @@ public class ApprovedSubjectsCertificateController {
     }
 
     @PostMapping("/approved-subjects-certificates/{id}/revoke")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "certificate.revoke", legacyRoles = "ROLE_DIRECTOR")
     public ApprovedSubjectsCertificateResponse revoke(@PathVariable Long id, @Valid @RequestBody RevokeApprovedSubjectsCertificateRequest request) {
         return revokeUseCase.revoke(id, request.reason());
     }

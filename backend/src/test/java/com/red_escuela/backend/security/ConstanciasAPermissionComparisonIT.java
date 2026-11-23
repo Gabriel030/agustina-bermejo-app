@@ -29,9 +29,7 @@ class ConstanciasAPermissionComparisonIT extends AuthorizationMatrixSupport {
     @AfterEach
     void restoreDefaultModes() {
         jdbcTemplate.update("delete from permission_module_mode where module = 'certificate'");
-        jdbcTemplate.update("delete from role_permission where role = 'ALUMNO' and permission_id in (select id from permission where module = 'certificate')");
-        jdbcTemplate.update("delete from role_permission where role = 'ADMINISTRATIVO' and permission_id in (select id from permission where module = 'certificate')");
-        jdbcTemplate.update("insert into role_permission (role, permission_id) select 'ADMINISTRATIVO', id from permission where code in ('certificate.issue', 'certificate.download', 'certificate.templates_view', 'certificate.signers_view', 'certificate.document_settings_view', 'certificate.regular_settings_view')");
+        ConstanciasBPermissionComparisonIT.restoreCertificateDefaultGrants(jdbcTemplate);
         cache.invalidate();
     }
 
