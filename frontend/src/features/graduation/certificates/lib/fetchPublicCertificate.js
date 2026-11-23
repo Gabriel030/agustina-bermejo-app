@@ -4,6 +4,7 @@ const TIMEOUT_MS = 15000;
 const NOT_FOUND = 404;
 const BAD_REQUEST = 400;
 const RATE_LIMITED = 429;
+const MAX_RETRY_AFTER_SECONDS = 300;
 
 export class CertificateLookupError extends Error {
   constructor(kind, retryAfterSeconds = null) {
@@ -16,7 +17,7 @@ export class CertificateLookupError extends Error {
 
 function retryAfterOf(response) {
   const seconds = Number(response.headers.get('Retry-After'));
-  return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : null;
+  return Number.isFinite(seconds) && seconds > 0 ? Math.min(Math.ceil(seconds), MAX_RETRY_AFTER_SECONDS) : null;
 }
 
 export async function fetchPublicCertificate(normalizedCode, { signal } = {}) {
@@ -33,14 +34,14 @@ export async function fetchPublicCertificate(normalizedCode, { signal } = {}) {
     });
   } catch (error) {
     if (signal?.aborted) throw error;
-    throw new CertificateLookupError('FAILED');
+    throw new CertificateLookupError('OFFLINE');
   }
   if (response.status === NOT_FOUND || response.status === BAD_REQUEST) throw new CertificateLookupError('NOT_FOUND');
   if (response.status === RATE_LIMITED) throw new CertificateLookupError('RATE_LIMITED', retryAfterOf(response));
-  if (!response.ok) throw new CertificateLookupError('FAILED');
+  if (!response.ok) throw new CertificateLookupError('SERVER');
   try {
     return await response.json();
   } catch {
-    throw new CertificateLookupError('FAILED');
+    throw new CertificateLookupError('SERVER');
   }
 }

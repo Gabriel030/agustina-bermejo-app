@@ -35,7 +35,7 @@ export function documentTitle(certificate) {
 const withDate = (prefix, value, suffix) => (value ? `${prefix} ${formatLongDay(value)}${suffix}` : '');
 
 export function verdictOf(certificate) {
-  if (certificate.status === 'REVOKED') {
+  if (certificate?.status === 'REVOKED') {
     return {
       icon: 'ban',
       tone: 'danger',
@@ -44,7 +44,7 @@ export function verdictOf(certificate) {
       message: certificate.revokedAt ? `No tiene validez desde el ${formatLongDay(certificate.revokedAt)}.` : 'No tiene validez.',
     };
   }
-  if (certificate.status === 'REPLACED') {
+  if (certificate?.status === 'REPLACED') {
     return {
       icon: 'alert',
       tone: 'warning',
@@ -53,7 +53,7 @@ export function verdictOf(certificate) {
       message: 'Pedí a la persona interesada la versión vigente.',
     };
   }
-  if (certificate.status === 'EXPIRED') {
+  if (certificate?.status === 'EXPIRED') {
     return {
       icon: 'alert',
       tone: 'warning',
@@ -62,20 +62,30 @@ export function verdictOf(certificate) {
       message: `${withDate('Venció el', certificate.expiresAt, '. ')}Pedí a la persona interesada una constancia nueva.`,
     };
   }
+  if (certificate?.status === 'VALID') {
+    return {
+      icon: 'ok',
+      tone: 'success',
+      badge: 'Auténtica y vigente',
+      title: 'Este documento fue emitido por el instituto',
+      message: 'Coincide con el registro oficial y sigue vigente.',
+    };
+  }
   return {
-    icon: 'ok',
-    tone: 'success',
-    badge: 'Auténtica y vigente',
-    title: 'Este documento fue emitido por el instituto',
-    message: 'Coincide con el registro oficial y sigue vigente.',
+    icon: 'unknown',
+    tone: 'neutral',
+    badge: 'Sin determinar',
+    title: 'No pudimos determinar el estado de este documento',
+    message: 'Probá de nuevo en unos minutos. Si el problema sigue, consultá en el instituto.',
+    undetermined: true,
   };
 }
 
 function validityOf(certificate) {
-  if (certificate.status === 'REVOKED') return withDate('Revocada el', certificate.revokedAt, '');
-  if (certificate.status === 'REPLACED') return withDate('Reemplazada el', certificate.replacedAt, '');
-  if (certificate.status === 'EXPIRED') return withDate('Venció el', certificate.expiresAt, '');
-  return certificate.expiresAt ? `Vigente hasta el ${formatLongDay(certificate.expiresAt)}` : 'Vigente';
+  if (certificate.status === 'REVOKED') return certificate.revokedAt ? `Revocada el ${formatDay(certificate.revokedAt)}` : '';
+  if (certificate.status === 'REPLACED') return certificate.replacedAt ? `Reemplazada el ${formatDay(certificate.replacedAt)}` : '';
+  if (certificate.status === 'EXPIRED') return certificate.expiresAt ? `Venció el ${formatDay(certificate.expiresAt)}` : '';
+  return certificate.expiresAt ? `Vigente hasta el ${formatDay(certificate.expiresAt)}` : 'Vigente';
 }
 
 export function detailRows(certificate) {

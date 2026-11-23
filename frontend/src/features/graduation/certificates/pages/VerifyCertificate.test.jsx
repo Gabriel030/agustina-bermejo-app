@@ -6,6 +6,7 @@ import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { axe } from '@/test/axe';
+import { takeContractDeviations } from '@/test/contract/withContract';
 import { server } from '@/test/mocks/server';
 import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
@@ -64,7 +65,7 @@ describe('VerifyCertificate', () => {
     expect(screen.getByText('**.***.088')).toBeInTheDocument();
     expect(screen.getByText('0004217/2026')).toBeInTheDocument();
     expect(screen.getByText('18 de noviembre de 2026')).toBeInTheDocument();
-    expect(screen.getByText('Vigente hasta el 18 de diciembre de 2026')).toBeInTheDocument();
+    expect(screen.getByText('Vigente hasta el 18/12/2026')).toBeInTheDocument();
     expect(screen.getByText(`verificar/${CERTIFICATE_CODE_PRINTED}`)).toBeInTheDocument();
     expect(screen.getByText(/esta página no muestra notas ni materias/)).toBeInTheDocument();
   });
@@ -101,7 +102,7 @@ describe('VerifyCertificate', () => {
     expect(
       screen.getByText('Venció el 18 de diciembre de 2026. Pedí a la persona interesada una constancia nueva.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Venció el 18 de diciembre de 2026')).toBeInTheDocument();
+    expect(screen.getByText('Venció el 18/12/2026')).toBeInTheDocument();
   });
 
   it('showsRevokedDocumentWithTheRevocationDate', async () => {
@@ -111,7 +112,7 @@ describe('VerifyCertificate', () => {
     expect(await verdictHeading('Este documento fue anulado por el instituto')).toBeInTheDocument();
     expect(screen.getByText('Revocada')).toBeInTheDocument();
     expect(screen.getByText('No tiene validez desde el 20 de noviembre de 2026.')).toBeInTheDocument();
-    expect(screen.getByText('Revocada el 20 de noviembre de 2026')).toBeInTheDocument();
+    expect(screen.getByText('Revocada el 20/11/2026')).toBeInTheDocument();
     expect(screen.queryByText(/motivo/i)).not.toBeInTheDocument();
   });
 
@@ -121,7 +122,7 @@ describe('VerifyCertificate', () => {
 
     expect(await verdictHeading('Este documento fue reemplazado por una versión nueva')).toBeInTheDocument();
     expect(screen.getByText('Pedí a la persona interesada la versión vigente.')).toBeInTheDocument();
-    expect(screen.getByText('Reemplazada el 20 de noviembre de 2026')).toBeInTheDocument();
+    expect(screen.getByText('Reemplazada el 20/11/2026')).toBeInTheDocument();
   });
 
   it('showsGenericNotFoundForAnUnknownCode', async () => {
@@ -203,6 +204,7 @@ describe('VerifyCertificate', () => {
     renderPage();
 
     expect(await verdictHeading('No pudimos consultar el documento')).toBeInTheDocument();
+    expect(screen.getByText('No hay conexión. Revisá tu internet y probá de nuevo.')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toBeInTheDocument();
     respondWith(publicDocumentVerification());
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
@@ -211,12 +213,61 @@ describe('VerifyCertificate', () => {
     fetchSpy.mockRestore();
   });
 
-  it('treatsServerErrorAsRetryableFailure', async () => {
-    server.use(http.get(ENDPOINT, () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 })));
+  it.each([
+    [422, 'DOCUMENT_OPERATION_PENDING'],
+    [409, 'CONFLICT'],
+    [500, 'INTERNAL_ERROR'],
+    [503, 'SERVICE_UNAVAILABLE'],
+  ])('showsServerFailureWithoutBlamingTheConnectionFor%i', async (status, code) => {
+    server.use(http.get(ENDPOINT, () => HttpResponse.json(errorBody(code), { status })));
     renderPage();
 
     expect(await verdictHeading('No pudimos consultar el documento')).toBeInTheDocument();
+    expect(screen.getByText('No pudimos consultar el documento ahora. Probá de nuevo en unos minutos.')).toBeInTheDocument();
+    expect(screen.queryByText(/conexión/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeEnabled();
+  });
+
+  it('treatsBadRequestAsTheGenericNotFound', async () => {
+    server.use(http.get(ENDPOINT, () => HttpResponse.json(errorBody('BAD_REQUEST'), { status: 400 })));
+    renderPage();
+
+    expect(await verdictHeading('No encontramos un documento con ese código')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['unknownStatus', { status: 'SUSPENDED' }],
+    ['missingStatus', { status: undefined }],
+  ])('neverShowsSuccessFor%s', async (_name, overrides) => {
+    server.use(http.get(ENDPOINT, () => HttpResponse.json({ ...publicDocumentVerification(), ...overrides })));
+    renderPage();
+
+    expect(await verdictHeading('No pudimos determinar el estado de este documento')).toBeInTheDocument();
+    expect(screen.queryByText(/Auténtica/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Ana Paz')).not.toBeInTheDocument();
+    expect(screen.getByRole('status').className).not.toMatch(/success/);
+    takeContractDeviations();
+  });
+
+  it('neverShowsSuccessForAnEmptyBody', async () => {
+    server.use(http.get(ENDPOINT, () => HttpResponse.json({})));
+    renderPage();
+
+    expect(await verdictHeading('No pudimos determinar el estado de este documento')).toBeInTheDocument();
+    expect(screen.queryByText(/Auténtica/)).not.toBeInTheDocument();
+    expect(screen.getByRole('status').className).not.toMatch(/success/);
+    takeContractDeviations();
+  });
+
+  it('movesFocusToTheVerdictHeadingAfterVerifyingAnotherCode', async () => {
+    respondWith(publicDocumentVerification());
+    renderPage(`/verificar/${UNKNOWN_CODE}`);
+    await verdictHeading('Este documento fue emitido por el instituto');
+
+    await userEvent.type(screen.getByLabelText('¿Tenés otro documento? Verificá otro código'), CERTIFICATE_CODE);
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar código' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveFocus());
   });
 
   it('showsAFriendlyRateLimitMessageWithTheDefaultWait', async () => {

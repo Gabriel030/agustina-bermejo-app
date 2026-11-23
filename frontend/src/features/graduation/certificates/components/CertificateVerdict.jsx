@@ -11,7 +11,7 @@ const SURFACES = {
   neutral: 'bg-neutral-bg text-neutral-ink',
 };
 
-export function CertificateVerdict({ icon, tone, badge, title, message, role = 'status', children }) {
+export function CertificateVerdict({ icon, tone, badge, title, message, role = 'status', headingRef, children }) {
   const Icon = ICONS[icon];
   return (
     <div role={role} className={cn('flex flex-col items-start gap-2.5 px-5 pt-5 pb-4 sm:px-[22px]', SURFACES[tone])}>
@@ -19,7 +19,7 @@ export function CertificateVerdict({ icon, tone, badge, title, message, role = '
         <Icon className="size-4" strokeWidth={2.4} aria-hidden="true" />
         {badge}
       </StatusPill>
-      <h1 className="font-heading text-size-22 font-bold text-balance text-ink">{title}</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="font-heading text-size-22 font-bold text-balance text-ink">{title}</h1>
       <p className="text-size-14 text-ink">{message}</p>
       {children}
     </div>

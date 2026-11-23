@@ -62,11 +62,18 @@ describe('certificateView', () => {
 
   it('describesValidityPerStatus', () => {
     const validity = (overrides) => detailRows({ ...regular, ...overrides }).find((row) => row.label === 'Vigencia').value;
-    expect(validity({})).toBe('Vigente hasta el 21 de diciembre de 2026');
+    expect(validity({})).toBe('Vigente hasta el 21/12/2026');
     expect(validity({ expiresAt: null })).toBe('Vigente');
-    expect(validity({ status: 'EXPIRED' })).toBe('Venció el 21 de diciembre de 2026');
-    expect(validity({ status: 'REVOKED', revokedAt: '2026-12-05T08:00:00' })).toBe('Revocada el 5 de diciembre de 2026');
-    expect(validity({ status: 'REPLACED', replacedAt: '2026-12-02T08:00:00' })).toBe('Reemplazada el 2 de diciembre de 2026');
+    expect(validity({ status: 'EXPIRED' })).toBe('Venció el 21/12/2026');
+    expect(validity({ status: 'REVOKED', revokedAt: '2026-12-05T08:00:00' })).toBe('Revocada el 05/12/2026');
+    expect(validity({ status: 'REPLACED', replacedAt: '2026-12-02T08:00:00' })).toBe('Reemplazada el 02/12/2026');
+  });
+
+  it('treatsOnlyValidAsSuccess', () => {
+    expect(verdictOf(regular).tone).toBe('success');
+    expect(verdictOf({ ...regular, status: 'OTHER' }).tone).toBe('neutral');
+    expect(verdictOf({ ...regular, status: undefined }).undetermined).toBe(true);
+    expect(verdictOf({}).tone).toBe('neutral');
   });
 
   it('toleratesMissingDatesInTheVerdict', () => {

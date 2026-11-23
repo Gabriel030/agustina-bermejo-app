@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
@@ -62,6 +62,7 @@ export function VerifyCertificate() {
   const limited = failure?.kind === 'RATE_LIMITED';
   const notFound = !wellFormed || failure?.kind === 'NOT_FOUND';
   const failed = !notFound && !limited && query.isError;
+  const offline = failed && failure?.kind === 'OFFLINE';
   const loading = wellFormed && query.isFetching && !query.data;
   const certificate = !notFound && !limited && !failed ? query.data : null;
   const verdict = certificate ? verdictOf(certificate) : null;
@@ -80,9 +81,20 @@ export function VerifyCertificate() {
   else if (verdict) title = verdict.badge;
   useDocumentTitle(title);
 
+  const headingRef = useRef(null);
+  const focusPending = useRef(false);
+
   function verifyOther(otherCode) {
+    focusPending.current = true;
     navigate(`/verificar/${otherCode}`);
   }
+
+  useEffect(() => {
+    if (focusPending.current && !loading && headingRef.current) {
+      focusPending.current = false;
+      headingRef.current.focus();
+    }
+  }, [loading, normalized, limited, failed, certificate]);
 
   const verifyAnother = (
     <GlassCard>
@@ -95,7 +107,7 @@ export function VerifyCertificate() {
       <div className="mx-auto flex max-w-[560px] flex-col gap-4">
         <InstitutionBrand layout="horizontal" titulo="Instituto Agustina Bermejo" className="justify-center" />
 
-        {certificate && (
+        {certificate && !verdict.undetermined && (
           <p className="text-center text-size-12 tabular-nums [overflow-wrap:anywhere] text-ink-faint">
             verificar/{formatCertificateCode(normalized)}
           </p>
@@ -105,7 +117,7 @@ export function VerifyCertificate() {
 
         {!loading && notFound && (
           <GlassCard className="overflow-hidden">
-            <CertificateVerdict {...NOT_FOUND_VERDICT} />
+            <CertificateVerdict {...NOT_FOUND_VERDICT} headingRef={headingRef} />
             <VerifyAnotherCode onSubmit={verifyOther} primary />
           </GlassCard>
         )}
@@ -114,6 +126,7 @@ export function VerifyCertificate() {
           <>
             <GlassCard className="overflow-hidden">
               <CertificateVerdict
+                headingRef={headingRef}
                 icon="wait"
                 tone="neutral"
                 badge="Demasiadas consultas"
@@ -136,9 +149,10 @@ export function VerifyCertificate() {
                 role="alert"
                 icon="offline"
                 tone="neutral"
+                headingRef={headingRef}
                 badge="No pudimos verificar"
                 title="No pudimos consultar el documento"
-                message="Es un problema de conexión. Probá de nuevo."
+                message={offline ? 'No hay conexión. Revisá tu internet y probá de nuevo.' : 'No pudimos consultar el documento ahora. Probá de nuevo en unos minutos.'}
               >
                 <Button type="button" variant="primary" className="mt-1 h-11 px-[18px]" onClick={() => query.refetch()}>
                   Reintentar
@@ -152,8 +166,8 @@ export function VerifyCertificate() {
         {!loading && certificate && (
           <>
             <GlassCard className="overflow-hidden">
-              <CertificateVerdict {...verdict} />
-              <CertificateDetails certificate={certificate} />
+              <CertificateVerdict {...verdict} headingRef={headingRef} />
+              {!verdict.undetermined && <CertificateDetails certificate={certificate} />}
             </GlassCard>
             {verifyAnother}
           </>
