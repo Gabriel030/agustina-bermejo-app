@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import baseline from './unhandled-baseline.json';
-import { grownEntries, inheritRenamedBaseline, renamedKeysFrom } from './unhandledBaselineGuard';
+import { grownEntries, inheritRenamedBaseline, renameDiffArgs, renamedKeysFrom } from './unhandledBaselineGuard';
 
 const readFromDevelop = (command, args) => {
   try {
@@ -26,9 +26,13 @@ describe('unhandled requests baseline', () => {
 
   it('baselineCanOnlyShrink', () => {
     const raw = readFromDevelop('git', ['show', 'origin/develop:frontend/src/test/unhandled-baseline.json']);
-    if (raw === null) return;
+    if (raw === null) {
+      if (globalThis.process.env.CI) console.warn('baseline guard skipped: origin/develop missing');
+      return;
+    }
     const base = JSON.parse(raw);
-    const nameStatus = readFromDevelop('git', ['diff', '--find-renames', '--name-status', 'origin/develop']) ?? '';
+    const mergeBase = readFromDevelop('git', ['merge-base', 'origin/develop', 'HEAD'])?.trim();
+    const nameStatus = mergeBase ? (readFromDevelop('git', renameDiffArgs(mergeBase)) ?? '') : '';
     const expectedBase = inheritRenamedBaseline(base, renamedKeysFrom(nameStatus));
     expect(grownEntries(baseline, expectedBase)).toEqual([]);
     expect(total(baseline)).toBeLessThanOrEqual(total(base));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { grownEntries, inheritRenamedBaseline, renamedKeysFrom } from './unhandledBaselineGuard';
+import { grownEntries, inheritRenamedBaseline, renameDiffArgs, renamedKeysFrom } from './unhandledBaselineGuard';
 
 const oldPath = 'src/pages/AdministrativoFacturacion.test.jsx';
 const newPath = 'src/features/billing/pages/AdministrativoFacturacion.test.jsx';
@@ -9,6 +9,10 @@ describe('unhandled baseline guard', () => {
   it('renamedKeysFromMapsNewPathToOldPathAndIgnoresOtherStatuses', () => {
     const diff = `${renamedDiff}M\tfrontend/src/test/unhandled-baseline.json\nA\tfrontend/src/new/Nuevo.test.jsx\n`;
     expect(renamedKeysFrom(diff)).toEqual({ [newPath]: oldPath });
+  });
+
+  it('renameDiffComparesAgainstTheMergeBaseGivenAsArgument', () => {
+    expect(renameDiffArgs('a1b2c3')).toEqual(['diff', '--find-renames', '--name-status', 'a1b2c3']);
   });
 
   it('renameWithSameCountsPassesInheritingOldCounts', () => {

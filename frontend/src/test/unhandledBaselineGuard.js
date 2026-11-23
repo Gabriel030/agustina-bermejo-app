@@ -1,3 +1,7 @@
+export function renameDiffArgs(mergeBase) {
+  return ['diff', '--find-renames', '--name-status', mergeBase];
+}
+
 const stripFrontendPrefix = (path) => path.replace(/^frontend\//, '');
 
 export function renamedKeysFrom(nameStatusOutput) {
