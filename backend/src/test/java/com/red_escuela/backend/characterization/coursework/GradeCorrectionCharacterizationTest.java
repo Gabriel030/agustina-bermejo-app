@@ -191,4 +191,51 @@ class GradeCorrectionCharacterizationTest extends CourseworkCharacterizationSupp
                 .andExpect(jsonPath("$[0].correction.reason").value("Segunda correccion"))
                 .andExpect(jsonPath("$[0].correction.correctedAt").exists());
     }
+
+    private long cellVersionOf(Classroom classroom, Person director) throws Exception {
+        return bodyOf(getAs(director, "/staff/program-sections/" + classroom.section().getId() + "/grade-grid"))
+                .get("students").get(0).get("grades").get(0).get("version").asLong();
+    }
+
+    @Test
+    void correctionWithTheCurrentExpectedVersionIsApplied() throws Exception {
+        Classroom classroom = publishedExam("cor9", "7800009", "5");
+        Person director = persistPerson("cor9.director", "78000097", "DIRECTOR");
+        long gradeItemId = gradeItemIdOf(classroom, director);
+        long version = cellVersionOf(classroom, director);
+
+        postJson(director, "/grade-items/" + gradeItemId + "/corrections",
+                Map.of("newScore", 8, "reason", "Version vigente", "expectedVersion", version))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.newScore").value(8.0));
+    }
+
+    @Test
+    void correctionWithAStaleExpectedVersionIsRejectedAndLeavesTheGradeUntouched() throws Exception {
+        Classroom classroom = publishedExam("cor10", "7800010", "5");
+        Person director = persistPerson("cor10.director", "78000107", "DIRECTOR");
+        long gradeItemId = gradeItemIdOf(classroom, director);
+        String path = "/grade-items/" + gradeItemId + "/corrections";
+        long staleVersion = cellVersionOf(classroom, director);
+        postJson(director, path, Map.of("newScore", 8, "reason", "Primera correccion", "expectedVersion", staleVersion))
+                .andExpect(status().isCreated());
+
+        postJson(director, path, Map.of("newScore", 9, "reason", "Con version vieja", "expectedVersion", staleVersion))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("STALE_EDIT"));
+
+        getAs(director, "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items")
+                .andExpect(jsonPath("$[0].score").value(8.0));
+        getAs(director, "/grade-items/" + gradeItemId + "/audit").andExpect(jsonPath("$", hasSize(1)));
+    }
+
+    @Test
+    void correctionWithoutExpectedVersionIsAppliedAsBefore() throws Exception {
+        Classroom classroom = publishedExam("cor11", "7800011", "5");
+        Person director = persistPerson("cor11.director", "78000117", "DIRECTOR");
+        long gradeItemId = gradeItemIdOf(classroom, director);
+
+        postJson(director, "/grade-items/" + gradeItemId + "/corrections", correction(8, "Sin version esperada"))
+                .andExpect(status().isCreated());
+    }
 }
