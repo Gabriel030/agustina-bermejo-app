@@ -2,19 +2,15 @@ package com.red_escuela.backend.identity;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.permission.PermissionSnapshotCache;
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.GatePermissionProbeConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.context.annotation.Profile;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -28,36 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles({"test", "gate-probe"})
-@Import(PermissionGridIT.ProbeConfig.class)
+@Import(GatePermissionProbeConfiguration.class)
 class PermissionGridIT extends AbstractIntegrationTest {
-
-    @RestController
-    @Profile("gate-probe")
-    static class GridProbeController {
-
-        @GetMapping("/grid-probe/create")
-        @RequiresPermission(code = "announcement.create", legacyRoles = "ROLE_ADMINISTRATIVO")
-        String create() {
-            return "ok";
-        }
-
-        @GetMapping("/grid-probe/docente-legacy")
-        @RequiresPermission(code = "announcement.create", legacyRoles = "ROLE_DOCENTE")
-        String docenteLegacy() {
-            return "ok";
-        }
-
-        @GetMapping("/grid-probe/fixed")
-        @RequiresPermission(code = "announcement.fixed_probe", legacyRoles = "ROLE_DIRECTOR,ROLE_DOCENTE")
-        String fixed() {
-            return "ok";
-        }
-    }
-
-    @TestConfiguration
-    @Import(GridProbeController.class)
-    static class ProbeConfig {
-    }
 
     @Autowired
     MockMvc mockMvc;
