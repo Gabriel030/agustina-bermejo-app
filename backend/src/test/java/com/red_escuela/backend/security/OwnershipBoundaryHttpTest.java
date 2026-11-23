@@ -197,6 +197,39 @@ class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
     }
 
     @Test
+    void studentOwnerAndSectionInstructorCannotUseStaffJustifyOnRealAttendance() throws Exception {
+        long attendanceId = ownership.resourceIdFor(OwnershipKind.ATTENDANCE_STUDENT);
+
+        int studentStatus = staffJustifyStatus(attendanceId, ownership.ownerTokenFor(OwnershipKind.ATTENDANCE_STUDENT));
+        int instructorStatus = staffJustifyStatus(attendanceId, ownership.ownerTokenFor(OwnershipKind.ATTENDANCE_SECTION_INSTRUCTOR));
+
+        assertThat(studentStatus).isEqualTo(403);
+        assertThat(instructorStatus).isEqualTo(403);
+    }
+
+    @Test
+    void strangerStudentGetsNotFoundOnSelfServiceJustifyOfAForeignAttendance() throws Exception {
+        long attendanceId = ownership.resourceIdFor(OwnershipKind.ATTENDANCE_STUDENT);
+
+        MockHttpServletResponse foreign = mockMvc.perform(post("/me/attendance/{id}/justify", attendanceId)
+                .header("Authorization", "Bearer " + ownership.strangerTokenFor(OwnershipKind.ATTENDANCE_STUDENT))
+                .contentType(MediaType.MULTIPART_FORM_DATA)).andReturn().getResponse();
+        MockHttpServletResponse missing = mockMvc.perform(post("/me/attendance/{id}/justify", MISSING_ID)
+                .header("Authorization", "Bearer " + ownership.strangerTokenFor(OwnershipKind.ATTENDANCE_STUDENT))
+                .contentType(MediaType.MULTIPART_FORM_DATA)).andReturn().getResponse();
+
+        assertThat(foreign.getStatus()).isEqualTo(missing.getStatus());
+    }
+
+    private int staffJustifyStatus(long attendanceId, String token) throws Exception {
+        return mockMvc.perform(post("/attendance/{id}/justify", attendanceId)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Motivo suficiente\"}"))
+                .andReturn().getResponse().getStatus();
+    }
+
+    @Test
     void multiRoleTeacherWithoutMembershipIsDeniedWhileTeacherDirectorIsNot() throws Exception {
         MockHttpServletResponse withStudentRole = call(Resource.CLOSURE_EXPORT, ownership.closureId(), ownership.teacherStudentToken());
         MockHttpServletResponse withDirectorRole = call(Resource.CLOSURE_EXPORT, ownership.closureId(), ownership.teacherDirectorToken());
