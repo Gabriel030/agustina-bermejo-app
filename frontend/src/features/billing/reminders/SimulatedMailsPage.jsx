@@ -54,9 +54,15 @@ function StatusCell({ mail }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" aria-label={`${DELIVERY_STATUS_LABELS[mail.status] ?? mail.status}: ver el motivo`} className="inline-flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <Button
+          type="button"
+          variant="subtle"
+          size="inline"
+          aria-label={`${DELIVERY_STATUS_LABELS[mail.status] ?? mail.status}: ver el motivo`}
+          className="rounded-full text-current transition-none hover:text-current focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
+        >
           {pill}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 bg-dialog-bg p-3 text-xs text-ink-soft text-pretty">{mail.statusReason}</PopoverContent>
     </Popover>
