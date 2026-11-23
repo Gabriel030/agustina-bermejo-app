@@ -52,10 +52,11 @@ public class AccountActivationTransaction {
         if (!token.getExpiresAt().isAfter(now)) {
             throw new ActivationTokenExpiredException();
         }
-        Person person = token.getPerson();
+        Person person = personRepository.findByIdForUpdate(token.getPerson().getId())
+                .orElseThrow(ActivationTokenInvalidException::new);
         if (person.getPassword() != null
                 || person.getStatus() != StatusType.ACTIVE
-                || !token.getEmail().equals(person.emailValue())
+                || !token.getEmail().equalsIgnoreCase(person.emailValue())
                 || publicPasswordResetBlockPolicy.blocks(person)) {
             throw new ActivationTokenInvalidException();
         }

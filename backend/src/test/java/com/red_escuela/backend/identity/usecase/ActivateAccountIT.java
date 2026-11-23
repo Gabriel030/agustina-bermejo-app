@@ -5,6 +5,7 @@ import com.red_escuela.backend.identity.api.ActivationTokenIssuer;
 import com.red_escuela.backend.identity.api.IssuedActivationToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
+import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.exception.PersonNotEligibleForActivationException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
@@ -277,13 +278,42 @@ class ActivateAccountIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void redeemingRevokesPreviousSessionsByBumpingTheTokenVersion() throws Exception {
+    void redeemingRevokesPreviousSessionsAndBumpsTheTokenVersion() throws Exception {
         IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
         Integer before = personRepository.findTokenVersionById(person.getId());
+        String sessionHash = UUID.randomUUID().toString();
+        transactions.executeWithoutResult(status -> {
+            RefreshToken session = new RefreshToken();
+            session.setPerson(entityManager.getReference(Person.class, person.getId()));
+            session.setTokenHash(sessionHash);
+            session.setExpiresAt(java.time.LocalDateTime.now().plusDays(1));
+            session.setCreatedAt(java.time.LocalDateTime.now());
+            entityManager.persist(session);
+        });
 
         activate(issued.token(), NEW_PASSWORD).andExpect(status().isNoContent());
 
         assertThat(personRepository.findTokenVersionById(person.getId())).isGreaterThan(before);
+        assertThat(jdbc.queryForObject("select revoked from refresh_token where token_hash = ?", Boolean.class, sessionHash)).isTrue();
+    }
+
+    @Test
+    void theEmailComparisonIgnoresCase() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        jdbc.update("update person set email = upper(email) where id = ?", person.getId());
+
+        activate(issued.token(), NEW_PASSWORD).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void changingTheEmailAndRestoringTheOriginalKeepsTheRedemptionWorking() throws Exception {
+        IssuedActivationToken issued = activationTokenIssuer.issueActivationToken(person.getId());
+        String original = jdbc.queryForObject("select email from person where id = ?", String.class, person.getId());
+        jdbc.update("update person set email = ? where id = ?", "temp." + UUID.randomUUID() + "@example.com", person.getId());
+        activate(issued.token(), NEW_PASSWORD).andExpect(status().isBadRequest());
+        jdbc.update("update person set email = ? where id = ?", original, person.getId());
+
+        activate(issued.token(), NEW_PASSWORD).andExpect(status().isNoContent());
     }
 
     @Test
