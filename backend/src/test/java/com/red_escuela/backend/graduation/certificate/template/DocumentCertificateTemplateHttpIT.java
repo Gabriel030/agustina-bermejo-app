@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -115,6 +116,11 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
         return DRAFT.replace("%SIG1%", String.valueOf(first)).replace("%SIG2%", String.valueOf(second));
     }
 
+    private String withBasedOn(String body, int versionNumber) {
+        String trimmed = body.trim();
+        return trimmed.substring(0, trimmed.length() - 1) + ",\"basedOnVersionNumber\":" + versionNumber + "}";
+    }
+
     private ResultActions saveDraft(String token, String body) throws Exception {
         return send(put(REGULAR + "/draft").contentType(MediaType.APPLICATION_JSON).content(body), token);
     }
@@ -136,6 +142,34 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
                     .andExpect(jsonPath("$.draft").doesNotExist())
                     .andExpect(jsonPath("$.hasUnpublishedChanges").value(false));
         }
+    }
+
+    @Test
+    void getReturnsAllowedMarkersOfEachDocumentType() throws Exception {
+        send(get(REGULAR), administrative)
+                .andExpect(jsonPath("$.allowedMarkers", containsInAnyOrder("holder", "documentType", "documentNumber", "issuedOn",
+                        "registryNumber", "titleName", "recipient")));
+        send(get("/certificate-templates/documents/APPROVED_SUBJECTS_CERTIFICATE"), administrative)
+                .andExpect(jsonPath("$.allowedMarkers", containsInAnyOrder("holder", "documentType", "documentNumber", "issuedOn",
+                        "registryNumber", "titleName", "average", "completionPercent")));
+        for (String type : new String[] {"EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE"}) {
+            send(get("/certificate-templates/documents/" + type), administrative)
+                    .andExpect(jsonPath("$.allowedMarkers", containsInAnyOrder("holder", "documentType", "documentNumber", "issuedOn",
+                            "registryNumber", "subjectName", "examDate", "recipient")));
+        }
+    }
+
+    @Test
+    void draftKeepsRequestedPublishedVersionAsBase() throws Exception {
+        saveDraft(director, withBasedOn(draftBody(firstSignatoryId, secondSignatoryId), 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.basedOnVersionNumber").value(1));
+    }
+
+    @Test
+    void draftBasedOnUnknownVersionIsRejected() throws Exception {
+        saveDraft(director, withBasedOn(draftBody(firstSignatoryId, secondSignatoryId), 99))
+                .andExpect(status().isNotFound());
     }
 
     @Test

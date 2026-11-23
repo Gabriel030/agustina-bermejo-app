@@ -8,6 +8,7 @@ import com.red_escuela.backend.graduation.certificate.template.dto.TemplateVersi
 import com.red_escuela.backend.graduation.certificate.signatory.dto.SignatoryDocumentType;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplate;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
+import com.red_escuela.backend.graduation.certificate.template.exception.TemplateVersionNotFoundException;
 import com.red_escuela.backend.graduation.certificate.template.repository.CertificateTemplateVersionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,20 +49,28 @@ public class CertificateTemplateDraftSaver {
     }
 
     @Transactional
-    public CertificateTemplateVersionResponse save(DocumentTemplateType type, CertificateTemplateContent requested) {
+    public CertificateTemplateVersionResponse save(DocumentTemplateType type, CertificateTemplateContent requested, Integer basedOnVersionNumber) {
         CertificateTemplateContent normalized = rules.normalize(requested);
         rules.requireKnownMarkers(normalized, markers.allowedFor(type));
         CertificateTemplate template = templateFinder.findForUpdate(type);
         imageReferences.requireExisting(template.getId(), normalized);
-        return persist(template, signatories.applyTo(template.getId(), normalized, SignatoryDocumentType.valueOf(type.name())));
+        return persist(template, signatories.applyTo(template.getId(), normalized, SignatoryDocumentType.valueOf(type.name())), basedOnVersionNumber);
     }
 
     private CertificateTemplateVersionResponse persist(CertificateTemplate template, CertificateTemplateContent content) {
+        return persist(template, content, null);
+    }
+
+    private CertificateTemplateVersionResponse persist(CertificateTemplate template, CertificateTemplateContent content, Integer requestedBasedOn) {
         LocalDateTime now = LocalDateTime.now(clock);
         CertificateTemplateVersion draft = versionRepository.findByTemplateIdAndStatus(template.getId(), TemplateVersionStatus.DRAFT)
                 .orElse(null);
         if (draft == null) {
-            Integer basedOn = versionRepository
+            Integer basedOn = requestedBasedOn != null
+                    ? versionRepository.findByTemplateIdAndVersionNumber(template.getId(), requestedBasedOn)
+                            .filter(version -> version.getStatus() == TemplateVersionStatus.PUBLISHED)
+                            .orElseThrow(TemplateVersionNotFoundException::new).getVersionNumber()
+                    : versionRepository
                     .findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
                     .map(CertificateTemplateVersion::getVersionNumber).orElse(null);
             draft = CertificateTemplateVersion.draftOf(template.getId(), basedOn, content, now);

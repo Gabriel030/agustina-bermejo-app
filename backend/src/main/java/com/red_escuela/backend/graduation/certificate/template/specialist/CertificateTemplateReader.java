@@ -27,9 +27,11 @@ public class CertificateTemplateReader {
     private final CertificateTemplateFinder templateFinder;
     private final CertificateTemplateVersionRepository versionRepository;
     private final CertificateTemplateImageRepository imageRepository;
+    private final DocumentTemplateMarkers markers;
 
     public CertificateTemplateReader(CertificateTemplateFinder templateFinder, CertificateTemplateVersionRepository versionRepository,
-                                     CertificateTemplateImageRepository imageRepository) {
+                                     CertificateTemplateImageRepository imageRepository, DocumentTemplateMarkers markers) {
+        this.markers = markers;
         this.templateFinder = templateFinder;
         this.versionRepository = versionRepository;
         this.imageRepository = imageRepository;
@@ -43,7 +45,7 @@ public class CertificateTemplateReader {
         CertificateTemplateVersionResponse draft = versionRepository
                 .findByTemplateIdAndStatus(template.getId(), TemplateVersionStatus.DRAFT)
                 .map(CertificateTemplateResponses::of).orElse(null);
-        return new DocumentTemplateResponse(type, draft, published, draft != null);
+        return new DocumentTemplateResponse(type, draft, published, draft != null, markers.allowedFor(type).stream().sorted().toList());
     }
 
     public CertificateTemplateImageContent readImage(DocumentTemplateType type, Long imageId) {

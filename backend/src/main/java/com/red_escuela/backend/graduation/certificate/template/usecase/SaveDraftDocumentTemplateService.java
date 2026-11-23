@@ -16,7 +16,7 @@ public class SaveDraftDocumentTemplateService implements SaveDraftDocumentTempla
     }
 
     @Override
-    public CertificateTemplateVersionResponse save(DocumentTemplateType type, CertificateTemplateContent content) {
-        return delegate.save(type, content);
+    public CertificateTemplateVersionResponse save(DocumentTemplateType type, CertificateTemplateContent content, Integer basedOnVersionNumber) {
+        return delegate.save(type, content, basedOnVersionNumber);
     }
 }
