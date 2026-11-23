@@ -155,10 +155,10 @@ function ReviewStep({ student, draft, uploaderName, state, onBack, onSend, onVie
         )}
       </GlassCard>
       <StickyActionBar>
-        <Button type="button" variant="ghost" className="min-h-11 md:min-h-8" onClick={onBack} disabled={state.sending}>
+        <Button type="button" variant="ghost" className="min-h-11" onClick={onBack} disabled={state.sending}>
           Volver a editar
         </Button>
-        <Button type="button" variant="primary" className="min-h-11 md:min-h-8" onClick={onSend} loading={state.sending}>
+        <Button type="button" variant="primary" className="min-h-11" onClick={onSend} loading={state.sending}>
           {state.sending ? 'Cargando…' : state.unconfirmed ? 'Reintentar' : 'Cargar comprobante'}
         </Button>
       </StickyActionBar>

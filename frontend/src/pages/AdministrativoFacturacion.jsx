@@ -213,10 +213,10 @@ function EnrollmentCard({ enrollment, billing, defaultExpanded = false }) {
         variant="ghost"
         aria-expanded={expanded}
         onClick={() => setExpanded((v) => !v)}
-        className="flex h-auto min-h-11 w-full justify-start gap-4 rounded-2xl border-0 p-4 text-left font-normal whitespace-normal hover:bg-transparent hover:text-inherit active:translate-y-0 aria-expanded:bg-transparent aria-expanded:text-inherit md:min-h-0"
+        className="flex h-auto min-h-11 w-full justify-start gap-4 rounded-2xl border-0 p-4 text-left font-normal whitespace-normal hover:bg-transparent dark:hover:bg-transparent hover:text-inherit active:not-aria-[haspopup]:translate-y-0 aria-expanded:bg-transparent aria-expanded:text-inherit md:min-h-0"
       >
         <div className="flex-1 min-w-0">
-          <p className="truncate font-semibold text-ink">{productLabel}</p>
+          <p className="truncate text-base font-semibold text-ink">{productLabel}</p>
           {enrollment.paymentStatusUpdatedAt && (
             <p className="text-xs text-ink-faint">
               Desde {formatDate(enrollment.paymentStatusUpdatedAt)}
@@ -420,7 +420,7 @@ function TabFacturacion() {
                     type="button"
                     variant="ghost"
                     onClick={() => handleSelect(a)}
-                    className="flex h-auto min-h-11 justify-between rounded-xl border-0 px-3 py-2.5 text-left font-normal whitespace-normal hover:bg-neutral-bg active:translate-y-0 md:min-h-0"
+                    className="flex h-auto min-h-11 justify-between rounded-xl border-0 px-3 py-2.5 text-left font-normal whitespace-normal hover:bg-neutral-bg dark:hover:bg-neutral-bg active:not-aria-[haspopup]:translate-y-0 md:min-h-0"
                   >
                     <span className="font-medium text-ink">
                       {a.apellido}, {a.nombre}
