@@ -721,6 +721,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `EXTERNAL_SERVICE_UNAVAILABLE` | sí | `BulkheadFullException` | shared |
 | `EXTERNAL_SERVICE_UNAVAILABLE` | sí | `CalendarProviderUnavailableException` | academicrecord |
 | `EXTERNAL_SERVICE_UNAVAILABLE` | sí | `CircuitOpenException` | shared |
 
