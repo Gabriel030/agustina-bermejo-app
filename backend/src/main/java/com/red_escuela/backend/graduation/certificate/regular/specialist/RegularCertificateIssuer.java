@@ -29,6 +29,8 @@ import com.red_escuela.backend.graduation.certificate.regular.specialist.Regular
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularStandingGate.StandingResolution;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
+import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.events.RegularCertificateIssuedEvent;
 import com.red_escuela.backend.graduation.events.RegularCertificateRequestFulfilledEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
@@ -67,6 +69,7 @@ public class RegularCertificateIssuer {
     private final Clock clock;
     private final RegularCertificateSettingsFinder settingsFinder;
     private final CertificateExceptionConsumer exceptionConsumer;
+    private final VerifiableDocumentRegistry verifiableDocumentRegistry;
     private final SecureRandom random = new SecureRandom();
 
     public RegularCertificateIssuer(RegularStudentCertificateRepository certificateRepository,
@@ -78,7 +81,8 @@ public class RegularCertificateIssuer {
                                     CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher,
                                     MeterRegistry meterRegistry, Clock clock,
                                     RegularCertificateSettingsFinder settingsFinder,
-                                    CertificateExceptionConsumer exceptionConsumer) {
+                                    CertificateExceptionConsumer exceptionConsumer,
+                                    VerifiableDocumentRegistry verifiableDocumentRegistry) {
         this.certificateRepository = certificateRepository;
         this.requestRepository = requestRepository;
         this.regularityEvaluator = regularityEvaluator;
@@ -95,6 +99,7 @@ public class RegularCertificateIssuer {
         this.clock = clock;
         this.settingsFinder = settingsFinder;
         this.exceptionConsumer = exceptionConsumer;
+        this.verifiableDocumentRegistry = verifiableDocumentRegistry;
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
@@ -243,6 +248,7 @@ public class RegularCertificateIssuer {
                     .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .pdfPath(path)
                     .build());
+            verifiableDocumentRegistry.register(CertificateDocumentType.REGULAR_STUDENT_CERTIFICATE, saved.getId(), code);
             consumeExceptionIfPresent(command, saved, studentId, actorId, path);
             request.linkCertificate(saved.getId());
             pending.ifPresent(open -> open.resolveAsIssued(saved.getId()));

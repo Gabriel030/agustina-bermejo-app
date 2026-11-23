@@ -268,6 +268,7 @@ begin
       ('subject_section_instructor', 'role', array['ASSISTANT', 'GUEST', 'LAB', 'LEAD', 'PRACTICAL']),
       ('term', 'enrollment_override', array['CLOSED', 'OPEN']),
       ('term', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
+      ('verifiable_document', 'document_type', array['APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'GRADUATION_CERTIFICATE', 'REGULAR_STUDENT_CERTIFICATE']),
       ('whatsapp_template_mapping', 'status', array['APPROVED', 'PENDING', 'REJECTED'])
     ) as t(tbl, col, allowed)
   loop
