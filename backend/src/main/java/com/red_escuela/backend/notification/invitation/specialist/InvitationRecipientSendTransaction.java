@@ -14,6 +14,7 @@ import com.red_escuela.backend.notification.invitation.domain.InvitationRecipien
 import com.red_escuela.backend.notification.invitation.domain.InvitationSendResult;
 import com.red_escuela.backend.notification.invitation.domain.InvitationWaveStatus;
 import com.red_escuela.backend.notification.invitation.entity.InvitationWave;
+import com.red_escuela.backend.notification.invitation.exception.InvitationSendDeferredException;
 import com.red_escuela.backend.notification.invitation.entity.InvitationWaveRecipient;
 import com.red_escuela.backend.notification.invitation.repository.InvitationWaveRecipientRepository;
 import com.red_escuela.backend.notification.invitation.repository.InvitationWaveRepository;
@@ -27,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -143,9 +143,8 @@ public class InvitationRecipientSendTransaction {
         try {
             receipt = mailSender.sendInvitationEmail(email);
         } catch (CircuitOpenException open) {
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             log.warn("Canal de mail cerrado, la invitacion queda diferida waveId={} recipientId={}", recipient.getWaveId(), recipient.getId());
-            return InvitationSendResult.DEFERRED;
+            throw new InvitationSendDeferredException(recipient.getId());
         } catch (TransactionalEmailRejectedException rejection) {
             log.warn("El proveedor rechazo la invitacion waveId={} recipientId={} status={}", recipient.getWaveId(), recipient.getId(), rejection.statusCode());
             delivery.failForGood(DeliveryStatusReason.PROVIDER_REJECTED, "HTTP_" + rejection.statusCode());

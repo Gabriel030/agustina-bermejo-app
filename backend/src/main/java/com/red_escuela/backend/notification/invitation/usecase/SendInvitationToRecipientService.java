@@ -1,6 +1,7 @@
 package com.red_escuela.backend.notification.invitation.usecase;
 
 import com.red_escuela.backend.notification.invitation.domain.InvitationSendResult;
+import com.red_escuela.backend.notification.invitation.exception.InvitationSendDeferredException;
 import com.red_escuela.backend.notification.invitation.specialist.InvitationRecipientSendTransaction;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -15,6 +16,10 @@ public class SendInvitationToRecipientService implements SendInvitationToRecipie
 
     @Override
     public InvitationSendResult sendInvitationToRecipient(Long recipientId) {
-        return sendTransaction.sendInvitationToRecipient(recipientId);
+        try {
+            return sendTransaction.sendInvitationToRecipient(recipientId);
+        } catch (InvitationSendDeferredException deferred) {
+            return InvitationSendResult.DEFERRED;
+        }
     }
 }
