@@ -40,4 +40,11 @@ describe('KpiFilterChip', () => {
 
     expect(screen.getByRole('button', { name: '4 Cerradas' })).toHaveClass('bg-accent-soft', 'border-primary');
   });
+
+  it('paintsTheCountWithTheDangerTokenOnlyWhenTheToneAsksForIt', () => {
+    const { rerender } = render(<KpiFilterChip label="Fallidos" count={6} pressed={false} tone="danger" onClick={() => {}} />);
+    expect(screen.getByText('6')).toHaveClass('text-danger');
+    rerender(<KpiFilterChip label="Fallidos" count={6} pressed={false} onClick={() => {}} />);
+    expect(screen.getByText('6')).not.toHaveClass('text-danger');
+  });
 });

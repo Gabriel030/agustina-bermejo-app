@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 
 const TONES = {
   neutral: 'bg-neutral-bg text-ink-soft',
+  accent: 'bg-accent-soft text-ink',
   warning: 'bg-warning-bg text-ink',
   success: 'bg-success-bg text-ink',
   danger: 'bg-danger-bg text-ink',
