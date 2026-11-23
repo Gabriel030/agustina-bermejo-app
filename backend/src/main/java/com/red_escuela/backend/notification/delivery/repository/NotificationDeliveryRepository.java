@@ -70,5 +70,13 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
     long countSentBetween(@Param("channel") DeliveryChannel channel, @Param("category") DeliveryCategory category,
                           @Param("statuses") List<DeliveryStatus> statuses, @Param("from") Instant from, @Param("until") Instant until);
 
+    @Query("""
+            select count(d) from NotificationDelivery d
+            where d.channel = :channel and d.category = :category and d.relatedEntityType = :relatedEntityType
+              and d.relatedEntityId = :relatedEntityId and d.status in :statuses and d.sentAt >= :from and d.sentAt < :until""")
+    long countSentForRelatedEntityBetween(@Param("channel") DeliveryChannel channel, @Param("category") DeliveryCategory category,
+                                          @Param("relatedEntityType") String relatedEntityType, @Param("relatedEntityId") Long relatedEntityId,
+                                          @Param("statuses") List<DeliveryStatus> statuses, @Param("from") Instant from, @Param("until") Instant until);
+
     Page<NotificationDelivery> findByChannel(DeliveryChannel channel, Pageable pageable);
 }
