@@ -666,6 +666,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `DUPLICATE_PERMISSION_MODE_CHANGE` | no | `DuplicatePermissionModeChangeException` | identity |
 | `EXAM_CERTIFICATE_BOARD_NOT_HELD` | no | `ExamCertificateBoardNotHeldException` | graduation |
 | `EXAM_CERTIFICATE_REGISTRATION_NOT_ELIGIBLE` | no | `ExamCertificateRegistrationNotEligibleException` | graduation |
+| `FIXED_TO_DIRECTOR_PERMISSION_NOT_EDITABLE` | no | `FixedToDirectorPermissionNotEditableException` | identity |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
 | `PROCEDURE_NOT_ELIGIBLE` | no | `ProcedureNotEligibleException` | graduation |
 | `SENSITIVE_PERMISSION_CONFIRMATION_REQUIRED` | no | `SensitivePermissionConfirmationRequiredException` | identity |
