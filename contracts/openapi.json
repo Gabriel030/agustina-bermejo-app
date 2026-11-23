@@ -157,10 +157,9 @@
       "ActivationTokenStatusRequest" : {
         "properties" : {
           "token" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "token" ],
         "type" : "object"
       },
       "ActivationTokenStatusResponse" : {
@@ -56333,9 +56332,8 @@
         "responses" : {
           "200" : {
             "content" : {
-              "application/json" : {
+              "text/csv" : {
                 "schema" : {
-                  "format" : "byte",
                   "type" : "string"
                 }
               }
