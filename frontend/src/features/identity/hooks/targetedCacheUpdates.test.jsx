@@ -22,7 +22,7 @@ function mount(hook, seeds) {
 
 const GRID_KEY = ['teacher-grade-grid', 'PROGRAM', '5'];
 const grid = () => ({
-  students: [{ enrollmentId: 1, grades: [{ type: 'PARTIAL', sequenceNumber: 1, score: 4, published: true, corrected: false, gradeItemId: 9, date: null, comments: null }] }],
+  students: [{ enrollmentId: 1, grades: [{ type: 'PARTIAL', sequenceNumber: 1, score: 4, published: true, corrected: false, gradeItemId: 9, date: null, comments: null, version: 0 }] }],
   columns: [],
 });
 
