@@ -43,7 +43,7 @@ const draftVersion = () =>
 const PROCEDURE_TYPES = ['REGULAR_STUDENT_CERTIFICATE', 'APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'EXAM_CERTIFICATE', 'GRADUATION_CERTIFICATE', 'SECTION_CHANGE'];
 const DOCUMENT_TYPES = ['REGULAR_STUDENT_CERTIFICATE', 'APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'EXAM_CERTIFICATE'];
 
-const OWN_TYPES = ['REGULAR_STUDENT_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'EXAM_CERTIFICATE'];
+const OWN_TYPES = ['REGULAR_STUDENT_CERTIFICATE', 'APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'EXAM_CERTIFICATE'];
 
 const TEMPLATES = `${API}/certificate-templates/documents/:documentType`;
 
@@ -72,6 +72,7 @@ export const constanciasHandlers = [
   ),
   http.get(`${API}/exam-boards/:id/exam-certificates/candidates`, () => HttpResponse.json(examCertificateCandidates())),
   http.post(`${API}/exam-boards/:id/exam-certificates/batch`, () => HttpResponse.json(examCertificateBatch())),
+  http.get(`${API}/exam-certificates/:id/pdf`, () => pdfResponse()),
   http.post(`${API}/exam-certificates/:id/revoke`, ({ params }) =>
     HttpResponse.json(examCertificate({ id: Number(params.id), status: 'REVOKED' })),
   ),

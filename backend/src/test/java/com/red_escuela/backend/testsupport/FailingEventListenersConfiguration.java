@@ -3,6 +3,10 @@ package com.red_escuela.backend.testsupport;
 import com.red_escuela.backend.announcement.events.AnnouncementDeletedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementPublishedEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceChangeRequestApprovedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceChangeRequestRejectedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceJustificationApprovedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionRevokedEvent;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigApprovedEvent;
@@ -28,6 +32,49 @@ public class FailingEventListenersConfiguration {
     @Bean
     FailingAnnouncementListener failingAnnouncementListener() {
         return new FailingAnnouncementListener();
+    }
+
+    @Bean
+    FailingAttendanceListener failingAttendanceListener() {
+        return new FailingAttendanceListener();
+    }
+
+    public static class FailingAttendanceListener {
+        private volatile Class<?> failingOn;
+
+        public void failOn(Class<?> eventType) {
+            this.failingOn = eventType;
+        }
+
+        public void stopFailing() {
+            this.failingOn = null;
+        }
+
+        @EventListener
+        public void onStatusChanged(AttendanceStatusChangedEvent event) {
+            failIfArmedFor(AttendanceStatusChangedEvent.class);
+        }
+
+        @EventListener
+        public void onChangeRequestApproved(AttendanceChangeRequestApprovedEvent event) {
+            failIfArmedFor(AttendanceChangeRequestApprovedEvent.class);
+        }
+
+        @EventListener
+        public void onChangeRequestRejected(AttendanceChangeRequestRejectedEvent event) {
+            failIfArmedFor(AttendanceChangeRequestRejectedEvent.class);
+        }
+
+        @EventListener
+        public void onJustificationApproved(AttendanceJustificationApprovedEvent event) {
+            failIfArmedFor(AttendanceJustificationApprovedEvent.class);
+        }
+
+        private void failIfArmedFor(Class<?> eventType) {
+            if (eventType.equals(failingOn)) {
+                throw new IllegalStateException("listener failed on " + eventType.getSimpleName());
+            }
+        }
     }
 
     public static class FailingExemptionRevocationListener {
