@@ -240,6 +240,7 @@ public class RegularCertificateIssuer {
                     .snapshot(snapshot)
                     .templateRef(snapshot.templateRef())
                     .pdfSha256(digest.sha256(pdf))
+                    .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .pdfPath(path)
                     .build());
             consumeExceptionIfPresent(command, saved, studentId, actorId, path);
