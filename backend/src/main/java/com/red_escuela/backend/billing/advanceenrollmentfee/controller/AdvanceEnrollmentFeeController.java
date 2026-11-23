@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.advanceenrollmentfee.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import com.red_escuela.backend.billing.advanceenrollmentfee.dto.AdvanceEnrollmentFeeResponse;
 import com.red_escuela.backend.billing.advanceenrollmentfee.usecase.RequestAdvanceEnrollmentFeeUseCase;
 import com.red_escuela.backend.shared.module.BillingMode;
@@ -27,7 +28,7 @@ public class AdvanceEnrollmentFeeController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/program-enrollments/{id}/advance-enrollment-fee")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @RequiresPermission(code = "billing.request_advance_enrollment_fee", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AdvanceEnrollmentFeeResponse requestForStudent(@PathVariable Long id) {
         return AdvanceEnrollmentFeeResponse.from(requestUseCase.requestForStudentAtCounter(id));
     }

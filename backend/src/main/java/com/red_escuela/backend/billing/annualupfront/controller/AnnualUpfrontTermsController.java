@@ -49,6 +49,7 @@ public class AnnualUpfrontTermsController {
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/annual-upfront-terms/versions")
     @ResponseStatus(HttpStatus.CREATED)
+    @RequiresPermission(code = "billing.publish_annual_upfront_terms", legacyRoles = "ROLE_DIRECTOR")
     public AuditedAnnualUpfrontTermsResponse publishNewTermsVersion(@Valid @RequestBody PublishAnnualUpfrontTermsRequest request) {
         return AuditedAnnualUpfrontTermsResponse.from(publishUseCase.publishNewAnnualUpfrontTermsVersion(request.text()));
     }

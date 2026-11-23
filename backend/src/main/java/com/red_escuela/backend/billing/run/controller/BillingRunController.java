@@ -12,7 +12,6 @@ import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,7 +43,7 @@ public class BillingRunController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/executions")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.run_billing", legacyRoles = "ROLE_DIRECTOR")
     public ResponseEntity<NightlyBillingExecutionResponse> executeTodaysNightlyRun() {
         NightlyBillingExecutionResponse execution = executionUseCase.executeTodaysNightlyBillingRunUnlessItExists();
         return ResponseEntity.status(execution.started() ? HttpStatus.CREATED : HttpStatus.OK).body(execution);

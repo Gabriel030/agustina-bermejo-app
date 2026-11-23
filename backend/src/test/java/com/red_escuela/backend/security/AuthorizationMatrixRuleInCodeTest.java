@@ -16,7 +16,6 @@ class AuthorizationMatrixRuleInCodeTest extends AuthorizationMatrixSupport {
 
     private static final Set<String> RESTRICTED_WITHOUT_HANDLER_ANNOTATION = Set.of(
             "GET /annual-upfront-terms/current",
-            "POST /annual-upfront-terms/versions",
             "GET /annual-upfront-terms/versions/{versionNumber}",
             "GET /me/annual-upfront-requests",
             "GET /me/annual-upfront-requests/{id}",

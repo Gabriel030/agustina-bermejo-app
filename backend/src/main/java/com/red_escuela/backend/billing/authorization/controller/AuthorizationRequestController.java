@@ -66,21 +66,21 @@ public class AuthorizationRequestController {
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.decide_authorization_request", legacyRoles = "ROLE_DIRECTOR")
     @PostMapping("/authorization-requests/{id}/approve")
     public AuthorizationRequestResponse approve(@PathVariable Long id, @Valid @RequestBody(required = false) AuthorizationRequestDecisionRequest request) {
         return AuthorizationRequestResponse.from(approveUseCase.approve(id, reasonOf(request)));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.decide_authorization_request", legacyRoles = "ROLE_DIRECTOR")
     @PostMapping("/authorization-requests/{id}/reject")
     public AuthorizationRequestResponse reject(@PathVariable Long id, @Valid @RequestBody(required = false) AuthorizationRequestDecisionRequest request) {
         return AuthorizationRequestResponse.from(rejectUseCase.reject(id, reasonOf(request)));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.withdraw_authorization_request", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @PostMapping("/authorization-requests/{id}/withdraw")
     public AuthorizationRequestResponse withdraw(@PathVariable Long id) {
         return AuthorizationRequestResponse.from(withdrawUseCase.withdraw(id));

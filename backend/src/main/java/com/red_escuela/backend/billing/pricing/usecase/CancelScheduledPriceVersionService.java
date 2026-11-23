@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.pricing.domain.PriceVersion;
 import com.red_escuela.backend.billing.pricing.policy.CancelPriceVersionCommand;
 import com.red_escuela.backend.billing.pricing.service.CancelPriceVersionOperation;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @UseCase
 public class CancelScheduledPriceVersionService implements CancelScheduledPriceVersionUseCase {
@@ -22,7 +21,6 @@ public class CancelScheduledPriceVersionService implements CancelScheduledPriceV
     }
 
     @Override
-    @PreAuthorize("hasRole('DIRECTOR')")
     public PriceVersion cancelScheduledVersion(Long priceVersionId, String reason) {
         return pipeline.runOperation(operation, new CancelPriceVersionCommand(priceVersionId, reason, actorResolver.currentPersonId()))
                 .resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);

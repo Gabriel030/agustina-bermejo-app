@@ -77,7 +77,7 @@ public class PriceController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/prices/{priceId}/versions")
-    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    @RequiresPermission(code = "billing.propose_price_change", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = PriceVersionResponse.class))),
             @ApiResponse(responseCode = "202", description = "Accepted", content = @Content(schema = @Schema(implementation = PriceChangePendingAuthorizationResponse.class)))})
@@ -100,7 +100,7 @@ public class PriceController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/price-versions/{priceVersionId}/cancellation")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.cancel_price_version", legacyRoles = "ROLE_DIRECTOR")
     public PriceVersionResponse cancelScheduledPriceVersion(@PathVariable Long priceVersionId, @Valid @RequestBody CancelPriceVersionRequest request) {
         return PriceVersionResponse.from(cancelScheduledPriceVersionUseCase.cancelScheduledVersion(priceVersionId, request.reason()));
     }

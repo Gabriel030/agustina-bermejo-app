@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.controller;
 
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 
 import com.red_escuela.backend.billing.dto.PaymentGatewayConfigResponse;
@@ -14,7 +15,6 @@ import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.storage.FileStorageService;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -58,14 +58,14 @@ public class PaymentGatewayConfigController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PutMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_payment_gateway", legacyRoles = "ROLE_DIRECTOR")
     public PaymentGatewayConfigResponse updateConfig(@Valid @RequestBody UpdatePaymentGatewayConfigRequest request) {
         return updateConfigUseCase.update(request, currentPersonService.resolveCurrentPerson());
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/qr")
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @RequiresPermission(code = "billing.manage_payment_gateway", legacyRoles = "ROLE_DIRECTOR")
     public PaymentGatewayConfigResponse uploadQr(@RequestPart MultipartFile qr) {
         return uploadQrImageUseCase.upload(qr, currentPersonService.resolveCurrentPerson());
     }
