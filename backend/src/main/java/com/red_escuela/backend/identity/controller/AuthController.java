@@ -20,6 +20,9 @@ import com.red_escuela.backend.identity.infrastructure.RefreshCookieSession;
 import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.identity.usecase.auth.ActivateAccountCommand;
 import com.red_escuela.backend.identity.usecase.auth.ActivateAccountUseCase;
+import com.red_escuela.backend.identity.dto.ActivationTokenStatusRequest;
+import com.red_escuela.backend.identity.dto.ActivationTokenStatusResponse;
+import com.red_escuela.backend.identity.usecase.auth.CheckActivationTokenStatusUseCase;
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
 import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
 import com.red_escuela.backend.identity.usecase.auth.LoginWithGoogleUseCase;
@@ -57,6 +60,7 @@ public class AuthController {
     private final VerifyResetCodeUseCase verifyResetCodeUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
     private final ActivateAccountUseCase activateAccountUseCase;
+    private final CheckActivationTokenStatusUseCase checkActivationTokenStatusUseCase;
     private final LoginRateLimiter rateLimiter;
     private final RefreshCookieSession refreshCookieSession;
 
@@ -65,6 +69,7 @@ public class AuthController {
                            RefreshTokenUseCase refreshTokenUseCase, LogoutUseCase logoutUseCase,
                            RequestPasswordResetUseCase requestPasswordResetUseCase, VerifyResetCodeUseCase verifyResetCodeUseCase,
                            ResetPasswordUseCase resetPasswordUseCase, ActivateAccountUseCase activateAccountUseCase,
+                           CheckActivationTokenStatusUseCase checkActivationTokenStatusUseCase,
                            LoginRateLimiter rateLimiter,
                            RefreshCookieSession refreshCookieSession) {
         this.registerUseCase = registerUseCase;
@@ -77,6 +82,7 @@ public class AuthController {
         this.verifyResetCodeUseCase = verifyResetCodeUseCase;
         this.resetPasswordUseCase = resetPasswordUseCase;
         this.activateAccountUseCase = activateAccountUseCase;
+        this.checkActivationTokenStatusUseCase = checkActivationTokenStatusUseCase;
         this.rateLimiter = rateLimiter;
         this.refreshCookieSession = refreshCookieSession;
     }
@@ -170,6 +176,11 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void activateAccount(@Valid @RequestBody ActivateAccountRequest request) {
         activateAccountUseCase.activate(new ActivateAccountCommand(request.token(), request.newPassword()));
+    }
+
+    @PostMapping("/activation-token/status")
+    public ActivationTokenStatusResponse checkActivationTokenStatus(@Valid @RequestBody(required = false) ActivationTokenStatusRequest request) {
+        return checkActivationTokenStatusUseCase.checkActivationTokenStatus(request == null ? null : request.token());
     }
 
     private ResponseEntity<AuthResponse> withRefreshCookie(HttpStatus status, AuthTokens tokens) {

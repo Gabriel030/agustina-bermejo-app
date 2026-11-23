@@ -1,5 +1,7 @@
 package com.red_escuela.backend.notification.invitation.specialist;
 
+import com.red_escuela.backend.identity.api.PersonContactFinder;
+import com.red_escuela.backend.identity.api.PersonContactSummary;
 import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientStatus;
 import com.red_escuela.backend.notification.invitation.dto.InvitationWaveRecipientEntry;
 import com.red_escuela.backend.notification.invitation.dto.InvitationWaveResponse;
@@ -15,16 +17,25 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 @Component
 public class InvitationWaveReader {
 
     private final InvitationWaveRepository waveRepository;
     private final InvitationWaveRecipientRepository recipientRepository;
     private final InvitationWaveResponseFactory responseFactory;
+    private final PersonContactFinder personContactFinder;
 
     public InvitationWaveReader(InvitationWaveRepository waveRepository,
                                 InvitationWaveRecipientRepository recipientRepository,
-                                InvitationWaveResponseFactory responseFactory) {
+                                InvitationWaveResponseFactory responseFactory,
+                                PersonContactFinder personContactFinder) {
+        this.personContactFinder = personContactFinder;
         this.waveRepository = waveRepository;
         this.recipientRepository = recipientRepository;
         this.responseFactory = responseFactory;
@@ -47,7 +58,8 @@ public class InvitationWaveReader {
     @Transactional(readOnly = true)
     public PageResponse<InvitationWaveRecipientEntry> readInvitationWaveRecipients(Long waveId,
                                                                                    InvitationRecipientStatus status,
-                                                                                   int page, int size) {
+                                                                                   int page, int size,
+                                                                                   boolean includePersonalData) {
         if (!waveRepository.existsById(waveId)) {
             throw new InvitationWaveNotFoundException(waveId);
         }
@@ -55,8 +67,27 @@ public class InvitationWaveReader {
         Page<InvitationWaveRecipient> result = status == null
                 ? recipientRepository.findByWaveId(waveId, pageRequest)
                 : recipientRepository.findByWaveIdAndStatus(waveId, status, pageRequest);
-        return new PageResponse<>(result.map(responseFactory::createRecipientEntry).getContent(),
+        List<InvitationWaveRecipient> recipients = result.getContent();
+        Map<Long, Instant> deliveryCreations = findDeliveryCreations(recipients);
+        Map<Long, PersonContactSummary> contacts = includePersonalData
+                ? personContactFinder.findContactSummariesByPersonIdIn(recipients.stream().map(InvitationWaveRecipient::getPersonId).toList())
+                : Map.of();
+        List<InvitationWaveRecipientEntry> entries = recipients.stream()
+                .map(recipient -> responseFactory.createRecipientEntry(recipient, recipient.getDeliveryId() == null ? null : deliveryCreations.get(recipient.getDeliveryId()),
+                        contacts.get(recipient.getPersonId())))
+                .toList();
+        return new PageResponse<>(entries,
                 result.getNumber(), result.getSize(), result.getTotalElements());
+    }
+
+    private Map<Long, Instant> findDeliveryCreations(List<InvitationWaveRecipient> recipients) {
+        List<Long> deliveryIds = recipients.stream().map(InvitationWaveRecipient::getDeliveryId).filter(Objects::nonNull).toList();
+        if (deliveryIds.isEmpty()) {
+            return Map.of();
+        }
+        return recipientRepository.findDeliveryCreations(deliveryIds).stream()
+                .collect(Collectors.toMap(InvitationWaveRecipientRepository.DeliveryCreation::getDeliveryId,
+                        InvitationWaveRecipientRepository.DeliveryCreation::getCreatedAt));
     }
 
     private PageRequest pageRequest(int page, int size, String primary, String secondary, Sort.Direction direction) {

@@ -115,6 +115,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/public/calendar/*.ics").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/unsubscribe/*").permitAll()
                 .requestMatchers(HttpMethod.POST, "/public/unsubscribe/*").permitAll()
+                .requestMatchers(HttpMethod.POST, "/public/monitoring/tunnel").permitAll()
                 .requestMatchers("/platform/**").hasRole(PLATFORM_ADMIN_ROLE)
                 .requestMatchers("/me/modules").authenticated()
                 .requestMatchers(HttpMethod.GET, "/backups/status").authenticated()
