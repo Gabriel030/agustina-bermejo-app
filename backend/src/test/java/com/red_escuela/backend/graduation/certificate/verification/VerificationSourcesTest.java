@@ -33,7 +33,7 @@ class VerificationSourcesTest {
 
     private final CertificateSnapshot snapshot = new CertificateSnapshot("PÉREZ, ANA", "DNI", "30123456", "la carrera",
             "Tecnicatura en Enfermería", "UNDERGRADUATE", 1860, LocalDate.of(2026, 7, 15), LocalDate.of(2026, 11, 5), "Instituto",
-            List.of(new SignatorySnapshot("Dirección", "Dirección académica")), "BUILT_IN_V1");
+            List.of(new SignatorySnapshot("Dirección", "Dirección académica")), "BUILT_IN_V1", null);
 
     private RegularVerificationSource regularSourceWith(RegularCertificateStatus status) {
         RegularStudentCertificateRepository repository = mock(RegularStudentCertificateRepository.class);

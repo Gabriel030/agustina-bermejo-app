@@ -71,6 +71,6 @@ public class CertificateTemplatePreviewer {
                 today,
                 DEFAULT_INSTITUTION,
                 List.of(),
-                BuiltInCertificateTemplate.BUILT_IN_V1);
+                BuiltInCertificateTemplate.BUILT_IN_V1, null);
     }
 }
