@@ -20,12 +20,12 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.IdentityBoundarySpyBeans;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -37,6 +37,7 @@ import static org.mockito.Mockito.reset;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@IdentityBoundarySpyBeans
 class AuthTransactionBoundaryIT extends AbstractIntegrationTest {
 
     private static final String USERNAME = "tx.boundary";
@@ -64,7 +65,7 @@ class AuthTransactionBoundaryIT extends AbstractIntegrationTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    @MockitoSpyBean
+    @Autowired
     private SessionRevoker sessionRevoker;
 
     @AfterEach

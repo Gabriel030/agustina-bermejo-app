@@ -3,7 +3,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/StatusPill';
 import { cn } from '@/lib/utils';
-import { describeBlockReason, describeSeats, describeSlot, splitCandidates } from '@/features/identity/lib/enrollmentChanges';
+import { describeBlockReason, describeSeats, describeSlot, splitCandidates } from '@/lib/enrollmentChanges';
 
 function CandidateBody({ candidate }) {
   return (

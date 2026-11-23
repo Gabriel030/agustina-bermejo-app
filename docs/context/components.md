@@ -67,6 +67,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `Checkbox` [ui] | Casilla (la usa `ColumnFilter`); en el archivo generado por la CLI se corrigió el import de `cn` y el estado `data-[state=checked]` | `checked`, `onCheckedChange` |
 | `Buscador` | Campo de búsqueda de listados (catálogo, grilla de permisos) | `value`, `onChange`, `placeholder`, `ariaLabel`, `className` |
 | Formularios con validación / wizards | React Hook Form + Zod (patrón: `NuevoAlumno.jsx`) | — |
+| `ChangeSectionSheet` + `SectionTargetPicker` [shared] | Sheet de cambio de comisión (personal desde Académico del legajo; alumno desde Trámites). Con `rows` (y sin `row`) arranca eligiendo la materia; `own` consulta `/me/...`; `showReason={false}` oculta el motivo y no lo envía; `confirmNotice` agrega un aviso en la confirmación; `canChooseAnother={false}` oculta «Elegir otra comisión» en errores definitivos. Hook de candidatas: `useChangeSectionCandidates(id, enabled, { own })`; textos y reglas en `lib/enrollmentChanges` | `row`, `rows`, `own`, `showReason`, `confirmNotice`, `onClose`, `onSubmit`, `pending`, `serverError`, `canChooseAnother`, `onChooseAnother` |
 
 ## 4b. Acciones
 | Componente | Uso | API relevante |
