@@ -7,7 +7,7 @@
  *
  * <p><b>Ejemplo</b>: un listener de {@code specialist} recibe un evento de billing, publica una {@code XxxNotification} del {@code domain} y {@code NotificationDispatcher} la entrega por cada canal. Decisión de fondo: ADR 0002 y ADR 0007.
  */
-@ApplicationModule(displayName = "Notification", allowedDependencies = {"shared", "identity :: *", "academicstructure :: *", "enrollment :: *", "attendance :: *", "evaluation :: *", "billing :: *", "graduation :: *", "announcement :: *", "platform :: api"})
+@ApplicationModule(displayName = "Notification", allowedDependencies = {"shared", "identity :: *", "academicstructure :: *", "enrollment :: *", "attendance :: *", "evaluation :: *", "billing :: *", "graduation :: *", "announcement :: *", "platform :: api", "dataimport :: api"})
 package com.red_escuela.backend.notification;
 
 import org.springframework.modulith.ApplicationModule;
