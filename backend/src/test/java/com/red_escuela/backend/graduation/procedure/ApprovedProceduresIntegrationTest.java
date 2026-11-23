@@ -297,4 +297,22 @@ class ApprovedProceduresIntegrationTest extends AbstractIntegrationTest {
         assertThat(approvedSources.forType(CertificateDocumentType.REGULAR_STUDENT_CERTIFICATE)).isPresent();
         assertThat(approvedSources.forType(CertificateDocumentType.GRADUATION_CERTIFICATE)).isPresent();
     }
+
+    @Test
+    void replacedDocumentMarkedAsExpiredByARenewalCannotBeRedownloaded() throws Exception {
+        long oldId = issueRegularCertificate();
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 12, 31, 10, 0));
+        mockMvc.perform(post("/me/regular-certificates").header("Authorization", bearer(studentToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"kind\":\"PROGRAM\",\"enrollmentId\":" + enrollmentId + "}")).andExpect(status().isCreated());
+        assertThat(certificateRepository.findById(oldId).orElseThrow().getStatus().name()).isEqualTo("EXPIRED");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 10, 10, 0));
+        long auditsBefore = downloadAudits(oldId);
+
+        mockMvc.perform(get("/me/procedures/approved/REGULAR_STUDENT_CERTIFICATE/" + oldId + "/pdf")
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CERTIFICATE_EXPIRED"));
+
+        assertThat(downloadAudits(oldId)).isEqualTo(auditsBefore);
+    }
 }

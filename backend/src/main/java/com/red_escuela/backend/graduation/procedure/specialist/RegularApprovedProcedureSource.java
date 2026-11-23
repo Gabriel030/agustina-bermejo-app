@@ -7,6 +7,7 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertifi
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateChannel;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
+import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExpiredException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.StudentRegularCertificateDownloader;
 import com.red_escuela.backend.graduation.procedure.dto.ApprovedProcedureResponse;
@@ -49,6 +50,9 @@ public class RegularApprovedProcedureSource implements ApprovedProcedureSource {
 
     @Override
     public ProcedureDocumentPdf pdfOf(Long id, Long studentId) {
+        if (repository.findByIdAndStudentId(id, studentId).filter(found -> found.getStatus() == RegularCertificateStatus.EXPIRED).isPresent()) {
+            throw new CertificateExpiredException();
+        }
         RegularCertificatePdf pdf = downloader.pdfOf(id, studentId);
         return new ProcedureDocumentPdf(pdf.code(), pdf.content());
     }
