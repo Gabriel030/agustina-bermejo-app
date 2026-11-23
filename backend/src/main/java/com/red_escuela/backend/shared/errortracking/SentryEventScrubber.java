@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.postgresql.util.PSQLException;
-import org.postgresql.util.ServerErrorMessage;
+import org.hibernate.JDBCException;
+import org.hibernate.exception.ConstraintViolationException;
 
 public class SentryEventScrubber implements SentryOptions.BeforeSendCallback {
 
@@ -95,14 +95,17 @@ public class SentryEventScrubber implements SentryOptions.BeforeSendCallback {
 
     private static String safeValue(Throwable throwable) {
         StringBuilder value = new StringBuilder("code=").append(ErrorCodeResponse.codeOf(throwable.getClass()));
-        if (throwable instanceof SQLException sqlException && sqlException.getSQLState() != null) {
-            value.append(" sqlState=").append(sqlException.getSQLState());
+        String sqlState = null;
+        if (throwable instanceof SQLException sqlException) {
+            sqlState = sqlException.getSQLState();
+        } else if (throwable instanceof JDBCException jdbcException) {
+            sqlState = jdbcException.getSQLState();
         }
-        if (throwable instanceof PSQLException postgresException) {
-            ServerErrorMessage serverError = postgresException.getServerErrorMessage();
-            if (serverError != null && serverError.getConstraint() != null) {
-                value.append(" constraint=").append(serverError.getConstraint());
-            }
+        if (sqlState != null) {
+            value.append(" sqlState=").append(sqlState);
+        }
+        if (throwable instanceof ConstraintViolationException violation && violation.getConstraintName() != null) {
+            value.append(" constraint=").append(violation.getConstraintName());
         }
         return maskText(value.toString());
     }

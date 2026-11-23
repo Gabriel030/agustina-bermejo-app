@@ -11,13 +11,15 @@ import io.sentry.protocol.Request;
 import io.sentry.protocol.SentryException;
 import io.sentry.protocol.User;
 import java.io.StringWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.postgresql.util.PSQLException;
-import org.postgresql.util.ServerErrorMessage;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.jpa.JpaSystemException;
 
@@ -48,12 +50,12 @@ class SentryEventScrubberTest {
 
     private static SentryEvent eventFor(Throwable throwable) {
         SentryEvent event = new SentryEvent(throwable);
-        List<SentryException> exceptions = new java.util.ArrayList<>();
-        java.util.List<Throwable> chain = new java.util.ArrayList<>();
+        List<SentryException> exceptions = new ArrayList<>();
+        List<Throwable> chain = new ArrayList<>();
         for (Throwable current = throwable; current != null; current = current.getCause()) {
             chain.add(current);
         }
-        java.util.Collections.reverse(chain);
+        Collections.reverse(chain);
         for (Throwable current : chain) {
             SentryException exception = new SentryException();
             exception.setType(current.getClass().getSimpleName());
@@ -64,9 +66,9 @@ class SentryEventScrubberTest {
         return event;
     }
 
-    private static PSQLException postgresViolation() {
-        String serverError = "SERROR\0C23502\0Mnull value in column\0DFailing row contains (17, María, Pérez, 2013-05-02).\0nperson_first_name_nn\0";
-        return new PSQLException(new ServerErrorMessage(serverError));
+    private static ConstraintViolationException constraintViolation() {
+        SQLException driverError = new SQLException("Detail: Failing row contains (17, María, Pérez, 2013-05-02).", "23502");
+        return new ConstraintViolationException("could not execute statement Juan", driverError, "person_first_name_nn");
     }
 
     @Test
@@ -121,7 +123,7 @@ class SentryEventScrubberTest {
     void personalDataInPersistenceAndExternalExceptionsNeverReachTheSerializedEvent() throws Exception {
         DataIntegrityViolationException integrity = new DataIntegrityViolationException(
                 "could not execute statement; Detail: Key (first_name)=(Juan Pérez) already exists. CUIL 20-12345678-9");
-        JpaSystemException jpa = new JpaSystemException(new RuntimeException("Failing row contains (17, María, Pérez, 2013-05-02)", postgresViolation()));
+        JpaSystemException jpa = new JpaSystemException(new RuntimeException("Failing row contains (17, María, Pérez, 2013-05-02)", constraintViolation()));
         PayerGatewayException gateway = new PayerGatewayException(
                 "payer Carlos Gómez CUIL 20-12345678-9 rejected", new IllegalStateException("payer Carlos Gómez", integrity));
 
@@ -134,11 +136,11 @@ class SentryEventScrubberTest {
 
     @Test
     void persistenceExceptionKeepsOnlySqlStateAndConstraint() throws Exception {
-        JpaSystemException jpa = new JpaSystemException(new RuntimeException("Failing row contains (17, María)", postgresViolation()));
+        JpaSystemException jpa = new JpaSystemException(new RuntimeException("Failing row contains (17, María)", constraintViolation()));
 
         String json = serialize(scrub(eventFor(jpa)));
 
-        assertThat(json).contains("code=JPA_SYSTEM", "sqlState=23502", "constraint=person_first_name_nn");
+        assertThat(json).contains("code=JPA_SYSTEM", "code=CONSTRAINT_VIOLATION", "sqlState=23502", "constraint=person_first_name_nn");
     }
 
     @Test

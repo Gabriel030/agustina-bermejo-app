@@ -2,7 +2,12 @@ package com.red_escuela.backend.shared.exception;
 
 import com.red_escuela.backend.shared.errortracking.SentryEventScrubber;
 import com.red_escuela.backend.shared.errortracking.SentryServerErrorReporter;
+import io.sentry.JsonSerializer;
 import io.sentry.Sentry;
+import io.sentry.SentryOptions;
+import io.sentry.protocol.User;
+import java.io.IOException;
+import java.io.StringWriter;
 import io.sentry.SentryEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +82,8 @@ class GlobalExceptionHandlerSentryTest {
 
     private final List<SentryEvent> sent = new CopyOnWriteArrayList<>();
 
+    private final List<String> sentJson = new CopyOnWriteArrayList<>();
+
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -85,10 +92,23 @@ class GlobalExceptionHandlerSentryTest {
         Sentry.init(options -> {
             options.setDsn("https://publickey@localhost.invalid/1");
             options.setBeforeSend((event, hint) -> {
-                sent.add(scrubber.execute(event, hint));
+                SentryEvent scrubbed = scrubber.execute(event, hint);
+                sent.add(scrubbed);
+                StringWriter writer = new StringWriter();
+                try {
+                    new JsonSerializer(new SentryOptions()).serialize(scrubbed, writer);
+                } catch (IOException exception) {
+                    throw new IllegalStateException(exception);
+                }
+                sentJson.add(writer.toString());
                 return null;
             });
         });
+        User user = new User();
+        user.setEmail("ana@example.com");
+        user.setUsername("ana.perez");
+        Sentry.setUser(user);
+        Sentry.setExtra("student", "Juan Pérez");
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
         handler.setServerErrorReporter(new SentryServerErrorReporter());
         mockMvc = MockMvcBuilders.standaloneSetup(new ThrowingController()).setControllerAdvice(handler).build();
@@ -109,6 +129,19 @@ class GlobalExceptionHandlerSentryTest {
         SentryEvent event = sent.get(0);
         assertThat(event.getTag("requestId")).isEqualTo(REQUEST_ID);
         assertThat(event.getExceptions().get(0).getValue()).doesNotContain("ana@example.com");
+    }
+
+    @Test
+    void theSerializedEventCarriesNoContextsUserRequestOrSensitiveData() throws Exception {
+        mockMvc.perform(get("/unexpected").header("Authorization", "Bearer secret-token-value").queryParam("token", "abc"))
+                .andExpect(status().isInternalServerError());
+
+        assertThat(sent).hasSize(1);
+        assertThat(sent.get(0).getContexts().isEmpty()).isTrue();
+        assertThat(sentJson).hasSize(1);
+        assertThat(sentJson.get(0))
+                .doesNotContain("\"contexts\":{\"", "\"os\"", "\"runtime\"", "\"device\"", "\"user\"", "\"request\"", "\"extra\"", "\"breadcrumbs\"")
+                .doesNotContain("ana@example.com", "ana.perez", "Juan", "Pérez", "secret-token-value");
     }
 
     @Test
