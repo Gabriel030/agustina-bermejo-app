@@ -36,9 +36,11 @@ export function InvitationWaveCreatePage() {
 
   if (!canCreate) {
     return (
-      <PageContainer title={TITLE}>
+      <PageContainer>
         <BackLink to={basePath} />
-        <NoAccessState permission={MANAGE_PERMISSION} />
+        <PageContainer title={TITLE}>
+          <NoAccessState permission={MANAGE_PERMISSION} />
+        </PageContainer>
       </PageContainer>
     );
   }
@@ -88,9 +90,11 @@ export function InvitationWaveCreatePage() {
   }
 
   return (
-    <PageContainer title={TITLE} description={DESCRIPTION}>
+    <PageContainer>
       <BackLink to={basePath} />
-      {content}
+      <PageContainer title={TITLE} description={DESCRIPTION}>
+        {content}
+      </PageContainer>
     </PageContainer>
   );
 }

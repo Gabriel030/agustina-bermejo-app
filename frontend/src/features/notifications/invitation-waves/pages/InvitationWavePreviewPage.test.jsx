@@ -118,6 +118,26 @@ describe('InvitationWavePreviewPage', () => {
 
     expect(await screen.findByText('No encontramos esa oleada de invitaciones.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Volver a Invitaciones' })).toHaveAttribute('href', '/director/invitaciones');
+    expect(screen.getByTestId('wave-not-found-icon')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).not.toHaveTextContent('⚠️');
+  });
+
+  it('keepsTheRecipientTabsAsTouchTargetsOnMobile', async () => {
+    renderPreview();
+    await screen.findByText(/Creamos el borrador/);
+
+    for (const tab of screen.getAllByRole('tab')) {
+      expect(tab).toHaveClass('min-h-11');
+      expect(tab).toHaveClass('md:min-h-0');
+    }
+  });
+
+  it('placesTheBackLinkAboveTheTitle', async () => {
+    renderPreview();
+    const title = await screen.findByRole('heading', { level: 1, name: 'Vista previa de la oleada' });
+    const back = screen.getByRole('link', { name: 'Volver a Invitaciones' });
+
+    expect(back.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('hidesThePreviewWithoutReadPermission', async () => {

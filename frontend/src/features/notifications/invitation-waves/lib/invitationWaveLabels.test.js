@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lacksPersonalData } from './invitationWaveLabels';
+import { lacksPersonalData, recipientDetail } from './invitationWaveLabels';
 import { buildRecipient, withoutPersonalData } from '../test/fixtures';
 
 const hidden = (personId, overrides) => withoutPersonalData(buildRecipient(personId, overrides));
@@ -29,5 +29,11 @@ describe('lacksPersonalData', () => {
 
   it('isFalseWhenAnyNonExcludedRowHasAName', () => {
     expect(lacksPersonalData([hidden(1), hidden(2), buildRecipient(3)])).toBe(false);
+  });
+});
+
+describe('recipientDetail', () => {
+  it('saysTheSentRecipientIsWaitingForAccountActivation', () => {
+    expect(recipientDetail(buildRecipient(1, { status: 'SENT' }))).toBe('Esperando que active su cuenta');
   });
 });

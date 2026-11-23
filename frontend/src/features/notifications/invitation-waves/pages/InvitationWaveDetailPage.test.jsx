@@ -132,7 +132,7 @@ describe('InvitationWaveDetailPage recipients', () => {
 
     const row = (id) => screen.getByText(`Apellido${id}, Nombre${id}`).closest('tr');
     expect(within(row(4002)).getByText('Sale en la próxima tanda')).toBeInTheDocument();
-    expect(within(row(4003)).getByText('Esperando que active')).toBeInTheDocument();
+    expect(within(row(4003)).getByText('Esperando que active su cuenta')).toBeInTheDocument();
     expect(within(row(4004)).getByText('El proveedor de mail rechazó el envío (2 intentos)')).toBeInTheDocument();
     expect(within(row(4005)).getByText('Activó su cuenta')).toBeInTheDocument();
     expect(within(row(4006)).getAllByText('Sin email')).toHaveLength(2);

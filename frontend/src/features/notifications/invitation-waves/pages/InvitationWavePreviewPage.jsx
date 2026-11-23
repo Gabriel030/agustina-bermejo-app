@@ -97,93 +97,94 @@ export function InvitationWavePreviewPage() {
   const goToList = () => navigate(basePath);
 
   return (
-    <PageContainer
-      title="Vista previa de la oleada"
-      description="Revisá a quién se invita antes de iniciarla."
-      action={
-        <div className="hidden gap-2 md:flex">
-          <Button type="button" variant="outline" className="md:min-h-8" onClick={goToList}>
-            Volver a la lista
-          </Button>
-          <Button type="button" variant="primary" className="md:min-h-8" onClick={goToWave}>
-            Ir a la oleada
-          </Button>
-        </div>
-      }
-    >
+    <PageContainer>
       <Button asChild variant="text" className="min-h-11 w-fit px-0 md:min-h-8">
         <Link to={basePath}>
           <ArrowLeft aria-hidden="true" />
           Volver a Invitaciones
         </Link>
       </Button>
-
-      <Notice tone="success" role="status">
-        <span className="flex items-start gap-2">
-          <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span>
-            Creamos el borrador <b>«{wave.name}»</b>. Todavía no se envió ningún mail: se envía recién cuando la inicies.
+      <PageContainer
+        title="Vista previa de la oleada"
+        description="Revisá a quién se invita antes de iniciarla."
+        action={
+          <div className="hidden gap-2 md:flex">
+            <Button type="button" variant="outline" className="md:min-h-8" onClick={goToList}>
+              Volver a la lista
+            </Button>
+            <Button type="button" variant="primary" className="md:min-h-8" onClick={goToWave}>
+              Ir a la oleada
+            </Button>
+          </div>
+        }
+      >
+        <Notice tone="success" role="status">
+          <span className="flex items-start gap-2">
+            <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <span>
+              Creamos el borrador <b>«{wave.name}»</b>. Todavía no se envió ningún mail: se envía recién cuando la inicies.
+            </span>
           </span>
-        </span>
-      </Notice>
+        </Notice>
 
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Elegibles">
-          <span className="font-heading text-3xl font-bold text-ink" data-testid="eligible-total">{formatDecimal(eligible)}</span>
-        </StatCard>
-        <StatCard label="Excluidos">
-          <span className="font-heading text-3xl font-bold text-ink" data-testid="excluded-total">{formatDecimal(excluded)}</span>
-        </StatCard>
-      </div>
-
-      {wave.invitableCount > 0 ? (
-        <p className="rounded-xl bg-neutral-bg px-3 py-2.5 text-size-13 text-ink">
-          Estimado: {formatDecimal(estimate.batches)} {estimate.batches === 1 ? 'tanda' : 'tandas'} de hasta {formatDecimal(wave.batchSize)} cada {formatDecimal(wave.intervalMinutes)} minutos, con tope de{' '}
-          {formatDecimal(wave.dailyCap)} por día. Termina en {formatDecimal(estimate.days)} {estimate.days === 1 ? 'día' : 'días'}.
-        </p>
-      ) : (
-        <Notice tone="warning">No hay personas para invitar en esta oleada. Podés volver a la lista y armar otra con un lote distinto.</Notice>
-      )}
-
-      <GlassCard className="flex flex-col gap-3 p-3 sm:p-4">
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList variant="segmented" className="group-data-horizontal/tabs:h-11 md:group-data-horizontal/tabs:h-8">
-            <TabsTrigger value="eligible">Elegibles · {formatDecimal(eligible)}</TabsTrigger>
-            <TabsTrigger value="excluded">Excluidos · {formatDecimal(excluded)}</TabsTrigger>
-          </TabsList>
-          {['eligible', 'excluded'].map((value) => (
-            <TabsContent key={value} value={value} className="mt-3 flex flex-col gap-3">
-              {value === 'excluded' && <ExcludedSummary byReason={wave.excludedByReason} />}
-              {lacksPersonalData(rows) && <PersonalDataNotice />}
-              <RecipientsTable
-                rows={rows}
-                variant={value}
-                zone={settings.data?.sendWindow?.zone}
-                isLoading={recipients.isLoading}
-                isError={recipients.isError}
-                onRetry={recipients.refetch}
-                emptyState={<EmptyState title={value === 'eligible' ? 'No hay personas elegibles para invitar.' : 'No hay personas excluidas.'} />}
-              />
-            </TabsContent>
-          ))}
-        </Tabs>
-        <Paginador
-          page={pages[tab]}
-          totalPages={totalPagesOf(recipients.data)}
-          onChange={(next) => setPages((current) => ({ ...current, [tab]: next }))}
-        />
-      </GlassCard>
-
-      <StickyActionBar className="md:hidden" role="region" aria-label="Acciones de la pantalla" summary={`${formatDecimal(eligible)} elegibles · ${formatDecimal(excluded)} excluidos`}>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" className="min-h-11 flex-1" onClick={goToList}>
-            Volver a la lista
-          </Button>
-          <Button type="button" variant="primary" className="min-h-11 flex-[1.7]" onClick={goToWave}>
-            Ir a la oleada
-          </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="Elegibles">
+            <span className="font-heading text-3xl font-bold text-ink" data-testid="eligible-total">{formatDecimal(eligible)}</span>
+          </StatCard>
+          <StatCard label="Excluidos">
+            <span className="font-heading text-3xl font-bold text-ink" data-testid="excluded-total">{formatDecimal(excluded)}</span>
+          </StatCard>
         </div>
-      </StickyActionBar>
+
+        {wave.invitableCount > 0 ? (
+          <p className="rounded-xl bg-neutral-bg px-3 py-2.5 text-size-13 text-ink">
+            Estimado: {formatDecimal(estimate.batches)} {estimate.batches === 1 ? 'tanda' : 'tandas'} de hasta {formatDecimal(wave.batchSize)} cada {formatDecimal(wave.intervalMinutes)} minutos, con tope de{' '}
+            {formatDecimal(wave.dailyCap)} por día. Termina en {formatDecimal(estimate.days)} {estimate.days === 1 ? 'día' : 'días'}.
+          </p>
+        ) : (
+          <Notice tone="warning">No hay personas para invitar en esta oleada. Podés volver a la lista y armar otra con un lote distinto.</Notice>
+        )}
+
+        <GlassCard className="flex flex-col gap-3 p-3 sm:p-4">
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList variant="segmented" className="group-data-horizontal/tabs:h-11 md:group-data-horizontal/tabs:h-8">
+              <TabsTrigger value="eligible" className="min-h-11 md:min-h-0">Elegibles · {formatDecimal(eligible)}</TabsTrigger>
+              <TabsTrigger value="excluded" className="min-h-11 md:min-h-0">Excluidos · {formatDecimal(excluded)}</TabsTrigger>
+            </TabsList>
+            {['eligible', 'excluded'].map((value) => (
+              <TabsContent key={value} value={value} className="mt-3 flex flex-col gap-3">
+                {value === 'excluded' && <ExcludedSummary byReason={wave.excludedByReason} />}
+                {lacksPersonalData(rows) && <PersonalDataNotice />}
+                <RecipientsTable
+                  rows={rows}
+                  variant={value}
+                  zone={settings.data?.sendWindow?.zone}
+                  isLoading={recipients.isLoading}
+                  isError={recipients.isError}
+                  onRetry={recipients.refetch}
+                  emptyState={<EmptyState title={value === 'eligible' ? 'No hay personas elegibles para invitar.' : 'No hay personas excluidas.'} />}
+                />
+              </TabsContent>
+            ))}
+          </Tabs>
+          <Paginador
+            page={pages[tab]}
+            totalPages={totalPagesOf(recipients.data)}
+            onChange={(next) => setPages((current) => ({ ...current, [tab]: next }))}
+          />
+        </GlassCard>
+
+        <StickyActionBar className="md:hidden" role="region" aria-label="Acciones de la pantalla" summary={`${formatDecimal(eligible)} elegibles · ${formatDecimal(excluded)} excluidos`}>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" className="min-h-11 flex-1" onClick={goToList}>
+              Volver a la lista
+            </Button>
+            <Button type="button" variant="primary" className="min-h-11 flex-[1.7]" onClick={goToWave}>
+              Ir a la oleada
+            </Button>
+          </div>
+        </StickyActionBar>
+      </PageContainer>
     </PageContainer>
   );
 }

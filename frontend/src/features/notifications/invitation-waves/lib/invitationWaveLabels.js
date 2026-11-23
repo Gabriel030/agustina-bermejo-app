@@ -44,7 +44,7 @@ export function recipientDetail(recipient) {
   }
   if (recipient.status === 'QUEUED') return 'Sale en la próxima tanda';
   if (recipient.status === 'ACTIVATED') return 'Activó su cuenta';
-  if (recipient.status === 'SENT') return 'Esperando que active';
+  if (recipient.status === 'SENT') return 'Esperando que active su cuenta';
   return '—';
 }
 

@@ -48,6 +48,14 @@ describe('InvitationWaveCreatePage', () => {
     expect(screen.getByText(/Se enviarán hasta 30 mails cada 60 minutos, con un máximo de 120 por día\. Los mails salen entre las 09:00 y las 20:00\./)).toBeInTheDocument();
   });
 
+  it('placesTheBackLinkAboveTheTitle', async () => {
+    renderCreate();
+    const title = await screen.findByRole('heading', { level: 1, name: 'Nueva oleada' });
+    const back = screen.getByRole('link', { name: 'Volver a Invitaciones' });
+
+    expect(back.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('listsTheImportBatchesWithTheirPendingPeople', async () => {
     renderCreate();
 
