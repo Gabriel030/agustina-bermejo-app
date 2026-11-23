@@ -56,7 +56,7 @@ export function ChangeMySectionFlow({ carreraId, onClose }) {
       own
       showReason={false}
       rows={rows}
-      rowsLoading={enrollments.isLoading}
+      rowsLoading={enrollments.isLoading || enrollments.isRefetching}
       rowsError={enrollments.isError}
       onRetryRows={() => enrollments.refetch()}
       staleTarget={serverError?.code === 'SECTION_FULL'}

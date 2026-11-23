@@ -579,6 +579,8 @@ describe('StudentProceduresSection', () => {
     fail = false;
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
 
+    expect(await screen.findByLabelText('Cargando materias')).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos cargar tus materias')).not.toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Bases de Datos/ })).toBeInTheDocument();
   });
 
