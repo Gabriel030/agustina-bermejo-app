@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Decide que partes del CI corren y si el arbol de un push a develop ya fue verificado por un PR verde.
+# Decide que partes del CI corren y si el arbol de un push a develop (merge commit o squash) ya fue verificado por un PR verde.
 # Entradas (env): GITHUB_EVENT_NAME, GITHUB_REF, GITHUB_OUTPUT, GITHUB_REPOSITORY, GH_TOKEN,
 #   PR_BASE_SHA (pull_request), PR_BASE_REF (pull_request), PR_NUMBER (pull_request), TESTED_TREE_DIR (salida para PR)
 # Salidas: relevant, frontend, lockfile, run_migration, run_demo_seed, run_docs, deploy, deploy_ops, extra_groups,
@@ -42,6 +42,11 @@ deploy_scope='^(backend/Dockerfile|backend/\.dockerignore|frontend/Dockerfile|fr
 backend_scope='^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)'
 migration_scope='^(backend/src/main/resources/db/migration/|backend/src/test/.*Migrat[^/]*\.java$|backend/pom\.xml$|scripts/|\.github/workflows/|\.github/scripts/)'
 
+run_everything_scope='(^|/)(pom\.xml|mvnw|mvnw\.cmd|package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$|^backend/\.mvn/'
+classified_scope='^(backend/|frontend/|perf/|docs/|\.claude/|\.gitignore$|diagrama_entidades\.puml$)|^[^.].*\.md$'
+docs_backend_scope='^(docs/|perf/seed-large\.sql$)|^[^.].*\.md$'
+frontend_read_scope='^(docs/(api/error-catalog|context/testing)\.md|backend/src/main/java/.*/shared/audit/AuditAction\.java)$'
+
 demo_seed_scope='^(backend/src/main/java/.*/(config|demo)/[^/]*Demo[^/]*\.java$|backend/src/main/java/.*/demo/|backend/src/main/java/.*Seed[^/]*\.java$|backend/src/test/java/.*Demo[^/]*SeedIT\.java$|backend/src/main/resources/application-demo\.properties$|backend/src/main/resources/db/migration/)'
 
 base=""
@@ -59,7 +64,7 @@ elif [ "$develop_push" = true ]; then
 fi
 
 if [ -n "$base" ]; then
-  if changed=$(git -c core.quotePath=false diff --name-only "$base" HEAD 2>/dev/null); then
+  if changed=$(git -c core.quotePath=false diff --no-renames --name-only "$base" HEAD 2>/dev/null); then
     if ! grep -qE '^(backend/|contracts/|scripts/|\.github/workflows/|\.github/scripts/)' <<< "$changed"; then
       relevant=false
     fi
@@ -83,6 +88,20 @@ if [ -n "$base" ]; then
         run_migration=false
       fi
     fi
+    if [ "$event" = pull_request ] && [ -n "$changed" ]; then
+      if grep -qE "$run_everything_scope" <<< "$changed" || grep -qvE "$classified_scope" <<< "$changed"; then
+        relevant=true
+        frontend=true
+        run_migration=true
+        echo "pull request touches shared or unclassified paths: backend and frontend run"
+      fi
+      if grep -qE "$docs_backend_scope" <<< "$changed"; then
+        relevant=true
+      fi
+      if grep -qE "$frontend_read_scope" <<< "$changed"; then
+        frontend=true
+      fi
+    fi
   fi
 fi
 
@@ -92,8 +111,21 @@ if [ "$event" = pull_request ] && [ -n "${TESTED_TREE_DIR:-}" ]; then
     "$(git rev-parse 'HEAD^{tree}')" "${PR_NUMBER:-}" "$relevant" "$frontend" "$run_migration" > "$TESTED_TREE_DIR/tested-tree.json"
 fi
 
-if [ "$develop_push" = true ] && git rev-parse -q --verify 'HEAD^2' > /dev/null 2>&1; then
-  pr_head=$(git rev-parse 'HEAD^2')
+pr_head=""
+if [ "$develop_push" = true ]; then
+  if git rev-parse -q --verify 'HEAD^2' > /dev/null 2>&1; then
+    pr_head=$(git rev-parse 'HEAD^2')
+  else
+    head_sha=$(git rev-parse HEAD)
+    pr_head=$(gh api "repos/$repo/commits/$head_sha/pulls" --jq "[.[] | select(.base.ref == \"develop\" and .merged_at != null and .merge_commit_sha == \"$head_sha\")] | if length == 1 then .[0].head.sha else empty end" 2>/dev/null || true)
+    if [[ ! "$pr_head" =~ ^[0-9a-f]{40}$ ]]; then
+      pr_head=""
+      echo "no single merged pull request maps to $head_sha: everything runs"
+    fi
+  fi
+fi
+
+if [ -n "$pr_head" ]; then
   tree=$(git rev-parse 'HEAD^{tree}')
   run=$(gh run list --repo "$repo" --workflow ci.yml --event pull_request --commit "$pr_head" --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty' 2>/dev/null || true)
   if [ -n "$run" ]; then
@@ -102,7 +134,17 @@ if [ "$develop_push" = true ] && git rev-parse -q --verify 'HEAD^2' > /dev/null 
     if gh run download "$run" --repo "$repo" -n tested-tree -D "$download" > /dev/null 2>&1 && [ -f "$download/tested-tree.json" ]; then
       recorded=$(jq -r '.tree // empty' "$download/tested-tree.json")
       pr_number=$(jq -r '.pr // empty' "$download/tested-tree.json")
-      if [ -n "$recorded" ] && [ "$recorded" = "$tree" ] && [[ "$run" =~ ^[0-9]+$ ]] && [[ "$pr_number" =~ ^[0-9]+$ ]]; then
+      checks_green=false
+      if bad=$(gh api --paginate "repos/$repo/commits/$pr_head/check-runs?filter=latest&per_page=100" --jq '.check_runs[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | .name' 2>/dev/null); then
+        if [ -z "$bad" ]; then
+          checks_green=true
+        else
+          echo "checks of $pr_head are not all green ($(tr '\n' ',' <<< "$bad")): everything runs"
+        fi
+      else
+        echo "could not read the check runs of $pr_head: everything runs"
+      fi
+      if [ "$checks_green" = true ] && [ -n "$recorded" ] && [ "$recorded" = "$tree" ] && [[ "$run" =~ ^[0-9]+$ ]] && [[ "$pr_number" =~ ^[0-9]+$ ]]; then
         reuse_run="$run"
         reuse_pr="$pr_number"
         [ "$(jq -r '.backend' "$download/tested-tree.json")" = true ] && reuse_backend=true
