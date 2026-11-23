@@ -7,6 +7,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { axe } from '@/test/axe';
 import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
+import { takeContractDeviations } from '@/test/contract/withContract';
 import { server } from '@/test/mocks/server';
 import { activationTokenStatus } from '@/test/fixtures/invitationWaves';
 import { ActivateAccount } from '@/features/identity/pages/ActivateAccount';
@@ -143,6 +144,59 @@ describe('ActivateAccount status', () => {
     expect(screen.getByText('El enlace de activación no es válido o ya fue usado.')).toBeInTheDocument();
     expect(screen.queryByText(/tu usuario para ingresar es/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir a iniciar sesión' })).toHaveAttribute('href', '/login');
+  });
+
+  it.each([
+    ['anUnknownStatus', { status: 'ACTIVE', username: 'ana.perez', institution: INSTITUTION }],
+    ['aMissingStatus', { username: 'ana.perez' }],
+    ['aLowercaseStatus', { status: 'valid', username: 'ana.perez' }],
+    ['anEmptyObject', {}],
+    ['aNullBody', null],
+  ])('failsClosedToTheInvalidScreenWithoutPasswordFieldsFor_%s', async (_label, body) => {
+    statusReturns(body);
+    renderPage();
+
+    await expectFocusedHeading('Enlace no válido');
+    takeContractDeviations();
+    expect(screen.queryByLabelText('Nueva contraseña')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Repetir contraseña')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Activar cuenta' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/tu usuario para ingresar es/i)).not.toBeInTheDocument();
+  });
+
+  it('failsClosedWhenTheStatusEndpointReturnsAnEmptyBody', async () => {
+    server.use(http.post(`${API}/auth/activation-token/status`, () => new HttpResponse(null, { status: 200 })));
+    renderPage();
+
+    await expectFocusedHeading('Enlace no válido');
+    expect(screen.queryByLabelText('Nueva contraseña')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['aQueryInjection', 'a@b.com?cc=x&body=y'],
+    ['aNewline', 'a@b.com\nbcc=x@y.com'],
+    ['aJavascriptUrl', 'javascript:alert(1)'],
+    ['aComma', 'a@b.com,c@d.com'],
+    ['aSpace', 'a b@c.com'],
+  ])('rendersAHostileInstitutionEmailAsPlainTextWithoutLinkFor_%s', async (_label, email) => {
+    statusReturns(activationTokenStatus('EXPIRED', { institution: { ...INSTITUTION, email } }));
+    const { container } = renderPage();
+
+    await expectFocusedHeading('El enlace venció');
+    expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
+    expect(container.querySelector('a[href^="javascript:"]')).toBeNull();
+    expect(container.textContent).toContain(email.replace(/\s+/g, ' ').trim().split(' ')[0]);
+  });
+
+  it('keepsTheMailtoLinkForAWellFormedInstitutionEmail', async () => {
+    statusReturns(activationTokenStatus('EXPIRED', { institution: { ...INSTITUTION, email: 'secretaria+info@instituto.edu.ar' } }));
+    renderPage();
+
+    await expectFocusedHeading('El enlace venció');
+    expect(screen.getByRole('link', { name: 'secretaria+info@instituto.edu.ar' })).toHaveAttribute(
+      'href',
+      'mailto:secretaria%2Binfo@instituto.edu.ar',
+    );
   });
 
   it('showsTheSameInvalidScreenWhenThereIsNoTokenAndDoesNotCallTheBackend', async () => {

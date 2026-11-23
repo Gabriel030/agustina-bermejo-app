@@ -10,6 +10,14 @@ export function isPlausibleActivationToken(token) {
   return typeof token === 'string' && token.length > 0 && token.length <= MAX_ACTIVATION_TOKEN_LENGTH;
 }
 
+const SAFE_EMAIL = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
+const MAX_EMAIL_LENGTH = 254;
+
+export function buildMailtoHref(email) {
+  if (typeof email !== 'string' || email.length > MAX_EMAIL_LENGTH || !SAFE_EMAIL.test(email)) return null;
+  return `mailto:${encodeURIComponent(email).replace('%40', '@')}`;
+}
+
 export function validateNewPassword(password) {
   if (password.length < PASSWORD_MIN_LENGTH) return `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
   if (!UPPERCASE_AND_DIGIT.test(password)) return 'La contraseña debe tener al menos una mayúscula y un número.';

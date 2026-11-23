@@ -12,6 +12,7 @@ import { ActivationPasswordField } from '@/features/identity/components/Activati
 import {
   ACTIVATION_STATUS,
   activateAccount,
+  buildMailtoHref,
   fetchActivationStatus,
   isPlausibleActivationToken,
   validateNewPassword,
@@ -55,15 +56,17 @@ function LoginLink({ variant = 'outline' }) {
 function InstitutionContact({ institution }) {
   if (!institution) return null;
   const { name, email, phoneNumber } = institution;
+  const mailtoHref = buildMailtoHref(email);
   if (!name && !email && !phoneNumber) return null;
   return (
     <div className="flex flex-col gap-1 rounded-xl bg-neutral-bg px-3 py-2.5 text-size-13">
       {name && <b className="font-bold text-ink">{name}</b>}
-      {email && (
-        <a href={`mailto:${email}`} className="flex min-h-11 items-center font-semibold text-brand">
+      {email && mailtoHref && (
+        <a href={mailtoHref} className="flex min-h-11 items-center font-semibold text-brand">
           {email}
         </a>
       )}
+      {email && !mailtoHref && <span className="break-all font-semibold text-ink">{email}</span>}
       {phoneNumber && (
         <a href={`tel:${phoneNumber.replace(/[^\d+]/g, '')}`} className="flex min-h-11 items-center font-semibold text-brand">
           {phoneNumber}
