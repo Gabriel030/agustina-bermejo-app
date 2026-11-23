@@ -70,6 +70,7 @@ Identificadores y tests en inglés; cero comentarios/javadoc; naming descriptivo
 
 ## Git
 Rama propia desde `origin/develop` en tu worktree; commits en castellano con trailer `Co-Authored-By: Claude <noreply@anthropic.com>`; PR `--base develop` con cuerpo terminado en `🤖 Generated with [Claude Code](https://claude.com/claude-code)`. Aprobación del usuario antes de commit y push si trabajás desde su sesión.
+Regla 6 de `docs/context/cell.md` (23-nov): los workers commitean y pushean su propia rama sin OK por commit; para ponerse al día con develop, `git merge origin/develop` y push normal, nunca rebase de ramas pusheadas ni `--force`/`--force-with-lease`.
 
 ## Formato de reporte al usuario
 Al pedido del usuario y en cada hito (merge, bloqueo, decisión), con la tabla fija `| Puesto | Subtarea | PR | Estado | Avance | Tokens | Bloqueo |` y debajo "Necesito de vos" (preguntas agrupadas, con opciones y recomendación). Corto. El avance por épica lo reporta el coordinador; vos reportás la célula (puestos, PRs, tokens).

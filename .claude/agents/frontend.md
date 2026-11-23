@@ -62,6 +62,7 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 
 ## Git y PR
 - Rama propia en tu worktree: `git fetch origin && git switch -c feature/<slug> origin/develop`. Nunca commit ni push a `develop`/`master`.
+- Commit y push de tu propia rama sin pedir OK por cada uno (autorizado por Gabriel el 23-nov para toda la célula, regla 6 de `docs/context/cell.md`). Ponerte al día con develop: `git merge origin/develop` y push normal; nunca rebase de una rama ya pusheada, `--force` ni `--force-with-lease`.
 - Commits en castellano, el "por qué"; terminan con:
   `Co-Authored-By: Claude <noreply@anthropic.com>`
 - `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:frontend-1`. Título `feat(front): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", capturas/cómo probar, tests, desvíos, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket); termina con:

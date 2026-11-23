@@ -64,6 +64,7 @@ El contrato es del líder y ya está mergeado (`cell-contract`): implementalo ta
 - `gh pr create --base develop --draft` explícito, en BORRADOR desde el primer commit chico (ver Reportes); al terminar `gh pr ready`. Etiquetas `cell:<issue>` y `role:<tu puesto>`. Título `tipo(módulo): descripción (<ticket>)`. Cuerpo: qué hace, "después de este PR X puede hacer Y", tests y sabotajes, decisiones/D-xxx, desvíos, migraciones (número), si toca plata/contrato/seguridad, `Refs #<issue>` (`Closes #<issue>` solo el último PR del ticket), y termina con:
   `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 - Labels: `contract-break-approved` solo si el líder lo autoriza (diff enum-value-added o ruptura declarada; cerrar y reabrir el PR para que corra el chequeo). Nunca `--admin` ni `--force`. Mergeás solo tu PR y solo tras el `APROBADO #N` del líder con CI verde (`docs/context/cell.md`, regla 4 de "Reglas de comportamiento").
+- Commit y push de tu propia rama sin pedir OK por cada uno (autorizado por Gabriel el 23-nov para toda la célula, regla 6 de `docs/context/cell.md`). Ponerte al día con develop: `git merge origin/develop` y push normal; nunca rebase de una rama ya pusheada, `--force` ni `--force-with-lease`.
 - Si un commit o push es denegado, no lo rodees: avisá.
 
 ## Presupuesto
