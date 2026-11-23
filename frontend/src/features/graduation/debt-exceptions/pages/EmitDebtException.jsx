@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Info } from 'lucide-react';
 import { apiFetchBlob } from '@/api/client';
@@ -120,6 +120,8 @@ export function EmitDebtException() {
   const [issued, setIssued] = useState(null);
   const [denied, setDenied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+  const submitting = useRef(false);
   const issue = useIssueDebtException();
 
   const patch = (changes) => setForm((current) => ({ ...current, ...changes }));
@@ -127,12 +129,15 @@ export function EmitDebtException() {
 
   async function submit(event) {
     event.preventDefault();
-    if (!ready) return;
+    if (!ready || issue.isPending || submitting.current) return;
+    submitting.current = true;
     try {
       setIssued(await issue.mutateAsync(buildRequest(form)));
     } catch (error) {
       if (error?.status === 403) setDenied(true);
       else toast.error(describeError(error).message);
+    } finally {
+      submitting.current = false;
     }
   }
 
@@ -141,6 +146,7 @@ export function EmitDebtException() {
     try {
       const { blob, filename } = await apiFetchBlob(`/document-debt-exceptions/${issued.id}/pdf`);
       saveBlob(blob, filename);
+      setDownloaded(true);
     } catch (error) {
       if (error?.status === 403) setDenied(true);
       else toast.error(describeError(error).message);
@@ -152,6 +158,7 @@ export function EmitDebtException() {
   function issueAnother() {
     issue.reset();
     setIssued(null);
+    setDownloaded(false);
     setForm(initialForm());
   }
 
@@ -164,7 +171,7 @@ export function EmitDebtException() {
         {denied ? (
           <DeniedNotice />
         ) : issued ? (
-          <IssuedDebtException exception={issued} downloading={downloading} onDownload={download} onIssueAnother={issueAnother} />
+          <IssuedDebtException exception={issued} downloading={downloading} downloaded={downloaded} onDownload={download} onIssueAnother={issueAnother} />
         ) : (
           <form className="flex flex-col gap-5" onSubmit={submit} noValidate>
             <StudentPicker student={form.student} onChange={(student) => patch({ student })} disabled={issue.isPending} />

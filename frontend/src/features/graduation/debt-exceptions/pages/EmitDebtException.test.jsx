@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { toast } from 'sonner';
@@ -184,6 +184,8 @@ describe('EmitDebtException', () => {
     expect(saveBlob.mock.calls[0][0].type).toBe('application/pdf');
     expect(saveBlob.mock.calls[0][1]).toBe('constancia-ABC.pdf');
     expect(pdfRequested).toBe(true);
+    expect(screen.getByRole('button', { name: 'Descargada' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Emitir otra' })).toBeEnabled();
   });
 
   it('startsAgainWithEmitirOtra', async () => {
@@ -256,6 +258,84 @@ describe('EmitDebtException', () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message));
     expect(saveBlob).not.toHaveBeenCalled();
+  });
+
+  it('sendsASingleRequestWhenSubmittedTwiceInTheSameTick', async () => {
+    let posts = 0;
+    server.use(
+      http.post(`${API}/document-debt-exceptions`, async () => {
+        posts += 1;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return HttpResponse.json(debtException(), { status: 201 });
+      }),
+    );
+    renderScreen();
+    await pickStudent();
+    await fillReason(REASON_OK);
+
+    const form = submitButton().closest('form');
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+
+    await screen.findByText('Constancia emitida por excepción.');
+    expect(posts).toBe(1);
+  });
+
+  it('movesFocusToTheIssuedNoticeAnnouncedAsStatus', async () => {
+    mockIssue();
+    renderScreen();
+    await pickStudent();
+    await fillReason(REASON_OK);
+    await userEvent.click(submitButton());
+
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent('Constancia emitida por excepción.');
+    expect(status.parentElement).toHaveFocus();
+  });
+
+  it('showsTheNoPermissionStateWhenTheDownloadIsForbidden', async () => {
+    mockIssue();
+    server.use(http.get(`${API}/document-debt-exceptions/:id/pdf`, () => HttpResponse.json(errorBody('FORBIDDEN'), { status: 403 })));
+    renderScreen();
+    await pickStudent();
+    await fillReason(REASON_OK);
+    await userEvent.click(submitButton());
+    await screen.findByText('Constancia emitida por excepción.');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Descargar para entregar' }));
+
+    expect(await screen.findByText('No tenés permiso para emitir por excepción.')).toBeInTheDocument();
+  });
+
+  it('turnsPastedLineBreaksIntoSpaces', async () => {
+    renderScreen();
+
+    await userEvent.click(screen.getByLabelText(/Motivo/));
+    await userEvent.paste('primera línea\nsegunda línea\r\ntercera');
+
+    expect(screen.getByLabelText(/Motivo/)).toHaveValue('primera línea segunda línea tercera');
+  });
+
+  it('hasNoAccessibilityViolationsWhenIssued', async () => {
+    mockIssue();
+    const { container } = renderScreen();
+    await pickStudent();
+    await fillReason(REASON_OK);
+    await userEvent.click(submitButton());
+    await screen.findByText('Constancia emitida por excepción.');
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('hasNoAccessibilityViolationsWithoutPermission', async () => {
+    mockIssue(() => HttpResponse.json(errorBody('FORBIDDEN'), { status: 403 }));
+    const { container } = renderScreen();
+    await pickStudent();
+    await fillReason(REASON_OK);
+    await userEvent.click(submitButton());
+    await screen.findByText('No tenés permiso para emitir por excepción.');
+
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('hasNoAccessibilityViolationsInTheForm', async () => {
