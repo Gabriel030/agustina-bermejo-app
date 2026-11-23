@@ -151,15 +151,16 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
             />
             <div className="flex flex-col divide-y divide-neutral-bg">
               {filtered.slice(0, 20).map((s) => (
-                <button
+                <Button
                   key={s.id}
                   type="button"
+                  variant="ghost"
                   onClick={() => setSelectedSubjectId(s.id)}
-                  className="flex flex-col gap-0.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-neutral-bg/60"
+                  className="h-auto min-h-11 flex-col items-stretch justify-start gap-0.5 rounded-xl border-0 px-3 py-2 text-left font-normal whitespace-normal hover:bg-neutral-bg/60 active:translate-y-0 md:min-h-0"
                 >
                   <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{s.code}</span>
                   <span className="text-size-13-5 font-medium text-ink">{s.name}</span>
-                </button>
+                </Button>
               ))}
               {filtered.length === 0 && (
                 <p className="py-4 text-center text-size-13 text-ink-faint">Sin resultados</p>

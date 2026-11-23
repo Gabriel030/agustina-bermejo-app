@@ -208,11 +208,12 @@ function EnrollmentCard({ enrollment, billing, defaultExpanded = false }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface">
-      <button
+      <Button
         type="button"
+        variant="ghost"
         aria-expanded={expanded}
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-4 p-4 text-left"
+        className="flex h-auto min-h-11 w-full justify-start gap-4 rounded-2xl border-0 p-4 text-left font-normal whitespace-normal hover:bg-transparent hover:text-inherit active:translate-y-0 aria-expanded:bg-transparent aria-expanded:text-inherit md:min-h-0"
       >
         <div className="flex-1 min-w-0">
           <p className="truncate font-semibold text-ink">{productLabel}</p>
@@ -224,7 +225,7 @@ function EnrollmentCard({ enrollment, billing, defaultExpanded = false }) {
         </div>
         <StatusPill tone={standingInfo.tone}>{standingInfo.label}</StatusPill>
         {expanded ? <ChevronUp size={16} className="shrink-0 text-ink-faint" /> : <ChevronDown size={16} className="shrink-0 text-ink-faint" />}
-      </button>
+      </Button>
 
       {expanded && (
         <div className="flex flex-col gap-3 border-t border-border px-4 pb-4 pt-3">
@@ -414,17 +415,18 @@ function TabFacturacion() {
               )}
               {!loadingAlumnos &&
                 alumnos?.map((a) => (
-                  <button
+                  <Button
                     key={a.id}
                     type="button"
+                    variant="ghost"
                     onClick={() => handleSelect(a)}
-                    className="flex items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm hover:bg-neutral-bg"
+                    className="flex h-auto min-h-11 justify-between rounded-xl border-0 px-3 py-2.5 text-left font-normal whitespace-normal hover:bg-neutral-bg active:translate-y-0 md:min-h-0"
                   >
                     <span className="font-medium text-ink">
                       {a.apellido}, {a.nombre}
                     </span>
                     <span className="text-ink-faint">DNI {a.dni}</span>
-                  </button>
+                  </Button>
                 ))}
             </div>
           )}

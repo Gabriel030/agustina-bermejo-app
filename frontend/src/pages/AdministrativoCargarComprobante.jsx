@@ -63,13 +63,15 @@ function StudentHeader({ student }) {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
                 type="button"
+                variant="subtle"
+                size="icon-xs"
                 aria-label="Qué significa carga por secretaría"
-                className="inline-flex size-6 items-center justify-center rounded-full text-ink-faint hover:text-ink"
+                className="min-h-11 min-w-11 rounded-full md:min-h-6 md:min-w-6"
               >
                 <Info className="size-4" aria-hidden="true" />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent>Lo cargás en nombre del alumno. Queda registrado quién lo carga y quién lo aprueba.</TooltipContent>
           </Tooltip>
@@ -153,10 +155,10 @@ function ReviewStep({ student, draft, uploaderName, state, onBack, onSend, onVie
         )}
       </GlassCard>
       <StickyActionBar>
-        <Button type="button" variant="ghost" className="min-h-11" onClick={onBack} disabled={state.sending}>
+        <Button type="button" variant="ghost" className="min-h-11 md:min-h-8" onClick={onBack} disabled={state.sending}>
           Volver a editar
         </Button>
-        <Button type="button" variant="primary" className="min-h-11" onClick={onSend} loading={state.sending}>
+        <Button type="button" variant="primary" className="min-h-11 md:min-h-8" onClick={onSend} loading={state.sending}>
           {state.sending ? 'Cargando…' : state.unconfirmed ? 'Reintentar' : 'Cargar comprobante'}
         </Button>
       </StickyActionBar>
