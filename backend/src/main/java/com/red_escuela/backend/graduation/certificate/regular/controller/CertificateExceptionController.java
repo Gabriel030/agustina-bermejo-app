@@ -82,7 +82,7 @@ public class CertificateExceptionController {
     }
 
     @GetMapping("/summary")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.exceptions_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public CertificateExceptionSummaryResponse summary(Authentication authentication) {
         return summaryUseCase.summary(isDirector(authentication));
     }
