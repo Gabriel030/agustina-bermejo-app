@@ -100,6 +100,7 @@ class PaymentGatewayTransactionBoundaryIT extends AbstractIntegrationTest {
     @Test
     void configUpdateWithoutFailuresPersistsTheConfigAndTheChangeRecord() {
         long changesBefore = count("payment_gateway_config_change");
+        Map<String, Object> configBefore = firstConfigRow();
 
         updateConfig.update(new UpdatePaymentGatewayConfigRequest("alias.ok", "1234567890123456789012", "Titular Ok", true), actor);
 
@@ -107,6 +108,12 @@ class PaymentGatewayTransactionBoundaryIT extends AbstractIntegrationTest {
         assertThat(config.get("bank_alias")).isEqualTo("alias.ok");
         assertThat(config.get("bank_cbu")).isEqualTo("1234567890123456789012");
         assertThat(count("payment_gateway_config_change")).isEqualTo(changesBefore + 1);
+        Map<String, Object> change = lastChangeRow();
+        assertThat(change.get("changed_by_id")).isEqualTo(actor.getId());
+        assertThat(change.get("bank_alias_before")).isEqualTo(configBefore.get("bank_alias"));
+        assertThat(change.get("bank_alias_after")).isEqualTo("alias.ok");
+        assertThat(change.get("bank_cbu_before")).isEqualTo(configBefore.get("bank_cbu"));
+        assertThat(change.get("bank_cbu_after")).isEqualTo("1234567890123456789012");
     }
 
     @Test
@@ -131,6 +138,7 @@ class PaymentGatewayTransactionBoundaryIT extends AbstractIntegrationTest {
     @Test
     void qrUploadWithoutFailuresStoresTheFileAndPointsTheConfigAtIt() throws IOException {
         long changesBefore = count("payment_gateway_config_change");
+        Object pathBefore = firstConfigRow().get("qr_image_path");
 
         uploadQrImage.upload(new MockMultipartFile("qr", "qr.png", "image/png", PNG), actor);
 
@@ -139,6 +147,52 @@ class PaymentGatewayTransactionBoundaryIT extends AbstractIntegrationTest {
         assertThat(Path.of(uploadsDirectory).resolve(path)).exists();
         assertThat(storedQrFiles()).contains(Path.of(path).getFileName().toString());
         assertThat(count("payment_gateway_config_change")).isEqualTo(changesBefore + 1);
+        Map<String, Object> change = lastChangeRow();
+        assertThat(change.get("changed_by_id")).isEqualTo(actor.getId());
+        assertThat(change.get("qr_image_path_before")).isEqualTo(pathBefore);
+        assertThat(change.get("qr_image_path_after")).isEqualTo(path);
+    }
+
+    @Test
+    void qrReplacementFailingWhileRecordingTheChangeKeepsThePreviousFileAndLeavesNoOrphan() throws IOException {
+        uploadQrImage.upload(new MockMultipartFile("qr", "qr.png", "image/png", PNG), actor);
+        String previousPath = (String) firstConfigRow().get("qr_image_path");
+        Map<String, Object> configBefore = firstConfigRow();
+        List<String> filesBefore = storedQrFiles();
+        AtomicityTestSupport support = AtomicityTestSupport.observing(jdbcTemplate,
+                "payment_gateway_config", "payment_gateway_config_change");
+
+        support.assertNothingPersistedWhenFailingAtStep(1, steps -> {
+            Mockito.doAnswer(invocation -> {
+                steps.run(() -> { });
+                return null;
+            }).when(changeRecordingPort).recordChangeIfDifferent(any(), any(), any(), any());
+            uploadQrImage.upload(new MockMultipartFile("qr", "qr2.png", "image/png", PNG), actor);
+        });
+
+        assertThat(firstConfigRow()).isEqualTo(configBefore);
+        assertThat(Path.of(uploadsDirectory).resolve(previousPath)).exists();
+        assertThat(storedQrFiles()).isEqualTo(filesBefore);
+    }
+
+    @Test
+    void qrReplacementWithoutFailuresDeletesThePreviousFileAfterCommit() throws IOException {
+        uploadQrImage.upload(new MockMultipartFile("qr", "qr.png", "image/png", PNG), actor);
+        String previousPath = (String) firstConfigRow().get("qr_image_path");
+
+        uploadQrImage.upload(new MockMultipartFile("qr", "qr2.png", "image/png", PNG), actor);
+
+        String newPath = (String) firstConfigRow().get("qr_image_path");
+        assertThat(newPath).isNotEqualTo(previousPath);
+        assertThat(Path.of(uploadsDirectory).resolve(previousPath)).doesNotExist();
+        assertThat(Path.of(uploadsDirectory).resolve(newPath)).exists();
+        Map<String, Object> change = lastChangeRow();
+        assertThat(change.get("qr_image_path_before")).isEqualTo(previousPath);
+        assertThat(change.get("qr_image_path_after")).isEqualTo(newPath);
+    }
+
+    private Map<String, Object> lastChangeRow() {
+        return jdbcTemplate.queryForMap("select * from payment_gateway_config_change order by id desc limit 1");
     }
 
     private Map<String, Object> firstConfigRow() {
