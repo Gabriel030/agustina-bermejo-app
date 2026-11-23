@@ -18,7 +18,4 @@ com.red_escuela.backend.billing.usecase.paymentgateway.UpdatePaymentGatewayConfi
 com.red_escuela.backend.billing.usecase.paymentgateway.UploadQrImageService.upload(org.springframework.web.multipart.MultipartFile, com.red_escuela.backend.identity.entity.Person) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
-com.red_escuela.backend.graduation.usecase.request.ApproveGraduationRequestService.approve(java.lang.Long) declares @Transactional
-com.red_escuela.backend.graduation.usecase.request.RejectGraduationRequestService.reject(com.red_escuela.backend.graduation.usecase.request.RejectGraduationRequestCommand) declares @Transactional
-com.red_escuela.backend.graduation.usecase.request.VerifyGraduationRequestDebtService.verify(java.lang.Long) declares @Transactional
 com.red_escuela.backend.shared.event.ProcessedEffectGuard.runEffectOnce(com.red_escuela.backend.shared.event.DeduplicableDomainEvent, java.lang.String, java.lang.Runnable) declares @Transactional

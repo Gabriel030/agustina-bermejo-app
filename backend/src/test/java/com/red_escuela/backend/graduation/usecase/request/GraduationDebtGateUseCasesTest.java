@@ -67,11 +67,11 @@ class GraduationDebtGateUseCasesTest {
     }
 
     private VerifyGraduationRequestDebtService verifyService() {
-        return new VerifyGraduationRequestDebtService(finder, debtChecker(), decisionRecorder, eventPublisher);
+        return new VerifyGraduationRequestDebtService(new com.red_escuela.backend.graduation.specialist.VerifyGraduationRequestDebtTransaction(finder, debtChecker(), decisionRecorder, eventPublisher));
     }
 
     private ApproveGraduationRequestService approveService() {
-        return new ApproveGraduationRequestService(finder, approver, debtChecker(), decisionRecorder, eventPublisher);
+        return new ApproveGraduationRequestService(new com.red_escuela.backend.graduation.specialist.ApproveGraduationRequestTransaction(finder, approver, debtChecker(), decisionRecorder, eventPublisher));
     }
 
     @Test
