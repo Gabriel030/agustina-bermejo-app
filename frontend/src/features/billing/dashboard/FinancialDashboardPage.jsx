@@ -15,8 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useCourses } from '@/features/academic-structure/hooks/useCourses';
-import { usePrograms } from '@/features/academic-structure/hooks/usePrograms';
+import { useCourses, usePrograms } from '@/features/academic-structure';
 import { Paginador } from '@/components/Paginador';
 import { DEBTORS_PAGE_SIZE, useDebtors, useFinancialDashboard, useFirstBillingMonth } from '@/features/billing/hooks/useFinancialDashboard';
 import { FEE_TYPE_LABELS } from '@/lib/billing';
