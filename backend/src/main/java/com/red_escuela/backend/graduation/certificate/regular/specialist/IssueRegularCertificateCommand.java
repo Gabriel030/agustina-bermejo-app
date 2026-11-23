@@ -5,9 +5,4 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityK
 
 public record IssueRegularCertificateCommand(RegularityKind kind, Long enrollmentId, boolean standingConfirmed,
                                              String standingEvidence, RegularCertificateChannel channel, Long exceptionId, String recipientLabel) {
-
-    public IssueRegularCertificateCommand(RegularityKind kind, Long enrollmentId, boolean standingConfirmed,
-                                          String standingEvidence, RegularCertificateChannel channel, Long exceptionId) {
-        this(kind, enrollmentId, standingConfirmed, standingEvidence, channel, exceptionId, null);
-    }
 }
