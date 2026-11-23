@@ -258,11 +258,11 @@ class PermissionGateCoverageTest {
             "PaymentPlanSelectionController#selectForCourse",
             "PaymentPlanSelectionController#selectForProgram",
             "ProgramYearBillingTemplateController#listCohorts",
+            "AnnualUpfrontTermsController#viewCurrentTerms",
+            "AnnualUpfrontTermsController#viewTermsOfVersion",
             "PaymentGatewayConfigController#getConfig",
             "PaymentGatewayConfigController#getQrImage",
-            "ProgramYearBillingTemplateController#listProgramCohorts",
-            "AnnualUpfrontTermsController#viewCurrentTerms",
-            "AnnualUpfrontTermsController#viewTermsOfVersion");
+            "ProgramYearBillingTemplateController#listProgramCohorts");
 
     private static final Set<String> CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS = Set.of(
             ROOT + ".graduation.certificate.exam.controller.ExamCertificateController",
