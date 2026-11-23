@@ -9,14 +9,13 @@ import { useAuth } from '@/context/AuthContext';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { useTheme } from '@/context/ThemeContext';
-import { isDesignB } from '@/theme/design';
 
 // Mismo tratamiento del ítem activo que Sidebar.jsx (degradé + blanco, no el
 // pill pálido de antes) — ver comentario ahí.
 const NAV_ITEM_ACTIVO =
-  "bg-(image:--nav-indicator-bg) text-(--nav-active-fg) shadow-sm design-b:bg-none design-b:bg-(color:--nav-indicator-bg) design-b:relative design-b:font-bold design-b:shadow-none design-b:before:absolute design-b:before:inset-y-2 design-b:before:left-0 design-b:before:w-[3px] design-b:before:rounded-r-[3px] design-b:before:bg-(color:--accent) design-b:before:content-['']";
+  "bg-(color:--nav-indicator-bg) text-(--nav-active-fg) relative font-bold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-(color:--accent) before:content-['']";
 const NAV_ITEM_BASE =
-  'flex shrink-0 items-center gap-2.5 rounded-control px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-bg hover:text-ink design-b:min-h-11 design-b:py-0 design-b:hover:bg-(--row-hover)';
+  'flex min-h-11 shrink-0 items-center gap-2.5 rounded-control px-3 py-0 text-sm font-medium text-ink-soft transition-colors hover:bg-(--row-hover) hover:text-ink';
 
 // Entrada escalonada (index * 40ms) al abrir el drawer, en vez de que todos
 // los ítems aparezcan juntos — animate-in/fade-in/slide-in-from-left son de
@@ -74,11 +73,8 @@ export function MobileMenu({ titulo, items, groups }) {
   const { tema, alternarTema } = useTheme();
   const { pathname } = useLocation();
   const { canSwitch } = useActiveRole();
-  const designB = isDesignB();
 
   const principales = items.filter((item) => item.label !== 'Opciones');
-  const opciones = designB ? undefined : items.find((item) => item.label === 'Opciones');
-  const grouped = designB && groups;
   const dark = tema === 'dark';
 
   return (
@@ -111,7 +107,7 @@ export function MobileMenu({ titulo, items, groups }) {
               </div>
             </DialogPrimitive.Title>
             <DialogPrimitive.Close asChild>
-              <button type="button" aria-label="Cerrar menú" className="rounded-control p-1.5 text-ink-faint hover:text-ink design-b:flex design-b:h-11 design-b:w-11 design-b:items-center design-b:justify-center design-b:p-0">
+              <button type="button" aria-label="Cerrar menú" className="flex h-11 w-11 items-center justify-center rounded-control p-0 text-ink-faint hover:text-ink">
                 <X className="h-5 w-5" />
               </button>
             </DialogPrimitive.Close>
@@ -120,7 +116,7 @@ export function MobileMenu({ titulo, items, groups }) {
           <RoleSwitcher variant="inline" onNavigate={() => setOpen(false)} />
 
           <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-            {grouped ? (
+            {groups ? (
               <NavGroups
                 groups={groups}
                 collapsible
@@ -135,20 +131,17 @@ export function MobileMenu({ titulo, items, groups }) {
           </nav>
 
           <div className="shrink-0 border-t border-border pt-3">
-            {opciones && <ItemNav {...opciones} onNavigate={() => setOpen(false)} />}
-            {designB && (
-              <button type="button" onClick={alternarTema} className={cn(NAV_ITEM_BASE, 'w-full text-left')}>
-                {dark ? <Sun aria-hidden="true" className="h-4 w-4 shrink-0" /> : <Moon aria-hidden="true" className="h-4 w-4 shrink-0" />}
-                {dark ? 'Tema claro' : 'Tema oscuro'}
-              </button>
-            )}
+                <button type="button" onClick={alternarTema} className={cn(NAV_ITEM_BASE, 'w-full text-left')}>
+              {dark ? <Sun aria-hidden="true" className="h-4 w-4 shrink-0" /> : <Moon aria-hidden="true" className="h-4 w-4 shrink-0" />}
+              {dark ? 'Tema claro' : 'Tema oscuro'}
+            </button>
             <button
               type="button"
               onClick={() => {
                 setOpen(false);
                 logout();
               }}
-              className="mt-1 flex w-full shrink-0 items-center gap-2.5 rounded-control px-3 py-2.5 text-left text-sm font-medium text-ink-faint transition-colors hover:text-danger design-b:min-h-11 design-b:py-0"
+              className="mt-1 flex min-h-11 w-full shrink-0 items-center gap-2.5 rounded-control px-3 py-0 text-left text-sm font-medium text-ink-faint transition-colors hover:text-danger"
             >
               Cerrar sesión
             </button>
