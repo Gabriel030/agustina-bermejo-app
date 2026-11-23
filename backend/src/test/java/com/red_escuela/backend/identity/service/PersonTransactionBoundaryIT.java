@@ -20,6 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
+import com.red_escuela.backend.testsupport.IdentityBoundarySpyBeans;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,7 +28,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -44,6 +44,7 @@ import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@IdentityBoundarySpyBeans
 class PersonTransactionBoundaryIT extends AbstractIntegrationTest {
 
     private static final String USERNAME = "tx.person.boundary";
@@ -70,16 +71,16 @@ class PersonTransactionBoundaryIT extends AbstractIntegrationTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    @MockitoSpyBean
+    @Autowired
     private SessionRevoker sessionRevoker;
 
-    @MockitoSpyBean
+    @Autowired
     private OwnDocumentChanger ownDocumentChanger;
 
-    @MockitoSpyBean
+    @Autowired
     private FileStorageService fileStorageService;
 
-    @MockitoSpyBean
+    @Autowired
     private PersonRepository personRepository;
 
     @AfterEach

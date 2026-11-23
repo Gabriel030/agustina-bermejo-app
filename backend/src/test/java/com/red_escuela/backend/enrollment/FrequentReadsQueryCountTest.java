@@ -28,11 +28,13 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.pagination.PageResponse;
+import com.red_escuela.backend.shared.permission.PermissionSnapshotCache;
 import com.red_escuela.backend.shared.persistence.QueryCountAssertions;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -78,7 +80,15 @@ class FrequentReadsQueryCountTest extends AbstractIntegrationTest {
     @Autowired
     private ListMyNotificationsUseCase listMyNotificationsUseCase;
 
+    @Autowired
+    private PermissionSnapshotCache permissionSnapshotCache;
+
     private int sequence = 71000000;
+
+    @BeforeEach
+    void warmPermissionSnapshot() {
+        permissionSnapshotCache.current();
+    }
 
     @AfterEach
     void clearSecurityContext() {
