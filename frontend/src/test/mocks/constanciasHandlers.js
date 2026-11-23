@@ -8,6 +8,8 @@ import {
   PUBLIC_DOCUMENT_VERIFICATION_BY_TYPE,
   approvedProcedureList,
   approvedSubjectsCertificate,
+  certificateException,
+  certificateExceptionSummary,
   changeSectionCandidateList,
   debtException,
   debtExceptionList,
@@ -46,6 +48,8 @@ const OWN_TYPES = ['REGULAR_STUDENT_CERTIFICATE', 'APPROVED_SUBJECTS_CERTIFICATE
 const TEMPLATES = `${API}/certificate-templates/documents/:documentType`;
 
 export const constanciasHandlers = [
+  http.get(`${API}/certificate-exceptions/summary`, () => HttpResponse.json(certificateExceptionSummary())),
+  http.get(`${API}/certificate-exceptions/:id`, ({ params }) => HttpResponse.json(certificateException({ id: Number(params.id) }))),
   http.get(`${API}/public/documents/:code`, ({ params }) => {
     const byType = Object.values(PUBLIC_DOCUMENT_VERIFICATION_BY_TYPE);
     const index = Math.abs([...String(params.code)].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % byType.length;
