@@ -29,7 +29,13 @@ class CertificateExceptionStateMachineTest {
     static List<TransitionExpectation> expectedTransitions() {
         List<TransitionExpectation> expectations = new ArrayList<>();
         for (CertificateExceptionEvent event : CertificateExceptionEvent.values()) {
-            expectations.add(event == REQUEST ? TransitionExpectation.allows(null, event, PENDING) : TransitionExpectation.rejects(null, event, ILLEGAL));
+            if (event == REQUEST) {
+                expectations.add(TransitionExpectation.allows(null, event, PENDING));
+            } else if (event == DIRECT_APPROVE) {
+                expectations.add(TransitionExpectation.allows(null, event, APPROVED));
+            } else {
+                expectations.add(TransitionExpectation.rejects(null, event, ILLEGAL));
+            }
         }
         for (CertificateExceptionStatus from : CertificateExceptionStatus.values()) {
             for (CertificateExceptionEvent event : CertificateExceptionEvent.values()) {
@@ -57,7 +63,7 @@ class CertificateExceptionStateMachineTest {
     }
 
     @Test
-    void theTableListsOnlyTheSixAllowedTransitions() {
-        assertThat(CertificateExceptionStateMachine.TRANSITIONS.listAllowedTransitions()).hasSize(6);
+    void theTableListsOnlyTheSevenAllowedTransitions() {
+        assertThat(CertificateExceptionStateMachine.TRANSITIONS.listAllowedTransitions()).hasSize(7);
     }
 }

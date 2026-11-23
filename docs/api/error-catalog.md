@@ -615,6 +615,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SIGNATORY_INACTIVE` | no | `SignatoryInactiveException` | graduation |
 | `SIGNATORY_NOT_ALLOWED_FOR_DOCUMENT_TYPE` | no | `SignatoryNotAllowedForDocumentTypeException` | graduation |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
+| `STALE_EDIT` | no | `StaleEditException` | evaluation |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
 | `STUDENT_DISCOUNT_OVERLAP` | no | `StudentDiscountOverlapException` | billing |
@@ -791,6 +792,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/broadcasts/{id}/confirm` | `BroadcastLifecycleController#confirmBroadcast` |
 | POST | `/cancel-email-change` | `CancelEmailChangeController#cancelEmailChange` |
 | POST | `/certificate-exceptions` | `CertificateExceptionController#request` |
+| POST | `/certificate-exceptions/direct` | `CertificateExceptionController#createDirect` |
 | POST | `/certificate-exceptions/{id}/approve` | `CertificateExceptionController#approve` |
 | POST | `/certificate-exceptions/{id}/reject` | `CertificateExceptionController#reject` |
 | POST | `/certificate-exceptions/{id}/withdraw` | `CertificateExceptionController#withdraw` |

@@ -6,8 +6,13 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.Certificate
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.exception.CertificateExceptionAlreadyOpenException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
+import com.red_escuela.backend.graduation.events.CertificateExceptionCreatedByDirectorEvent;
 import com.red_escuela.backend.graduation.events.CertificateExceptionRequestedEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,15 +35,20 @@ public class CertificateExceptionRequester {
     private final RegularStandingGate standingGate;
     private final CurrentActorFinder currentActorFinder;
     private final ApplicationEventPublisher eventPublisher;
+    private final RegularCertificateSettingsFinder settingsFinder;
+    private final AuditTrail auditTrail;
     private final Clock clock;
 
     public CertificateExceptionRequester(CertificateExceptionApprovalRepository repository, RegularEnrollmentFactsFinder factsFinder,
-                                         RegularStandingGate standingGate, CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher, Clock clock) {
+                                         RegularStandingGate standingGate, CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher,
+                                         RegularCertificateSettingsFinder settingsFinder, AuditTrail auditTrail, Clock clock) {
         this.repository = repository;
         this.factsFinder = factsFinder;
         this.standingGate = standingGate;
         this.currentActorFinder = currentActorFinder;
         this.eventPublisher = eventPublisher;
+        this.settingsFinder = settingsFinder;
+        this.auditTrail = auditTrail;
         this.clock = clock;
     }
 
@@ -52,17 +62,37 @@ public class CertificateExceptionRequester {
         CertificateExceptionApproval approval = CertificateExceptionApproval.request(command.kind(), command.enrollmentId(),
                 facts.student().getId(), command.organismKind(), command.organismReference(), command.reason(),
                 currentActorFinder.currentPersonId(), LocalDateTime.now(clock));
-        CertificateExceptionApproval saved;
+        CertificateExceptionApproval saved = saveRejectingSecondOpenException(approval);
+        eventPublisher.publishEvent(CertificateExceptionRequestedEvent.of(saved.getId(), saved.getStudentId(), saved.getRequestedById()));
+        return CertificateExceptionResponses.of(saved);
+    }
+
+    @Transactional
+    public CertificateExceptionResponse createApprovedByDirector(RequestCertificateExceptionCommand command) {
+        RegularEnrollmentFacts facts = factsFinder.find(command.kind(), command.enrollmentId());
+        standingGate.requireDebtToExcept(facts.student().getId(), command.kind(), command.enrollmentId());
+        if (hasOpenException(command)) {
+            throw new CertificateExceptionAlreadyOpenException();
+        }
+        CertificateExceptionApproval approval = CertificateExceptionApproval.createApprovedByDirector(command.kind(), command.enrollmentId(),
+                facts.student().getId(), command.organismKind(), command.organismReference(), command.reason(),
+                currentActorFinder.currentPersonId(), settingsFinder.current().exceptionValidityDays(), LocalDateTime.now(clock));
+        CertificateExceptionApproval saved = saveRejectingSecondOpenException(approval);
+        auditTrail.record(new AuditRecord(AuditAction.CERTIFICATE_EXCEPTION_DIRECT_CREATED, AuditEntityType.CERTIFICATE_EXCEPTION, saved.getId(),
+                null, "APPROVED hasta " + saved.getValidUntil(), saved.getOrganismKind() + " " + saved.getOrganismReference()));
+        eventPublisher.publishEvent(CertificateExceptionCreatedByDirectorEvent.of(saved.getId(), saved.getStudentId(), saved.getRequestedById()));
+        return CertificateExceptionResponses.of(saved);
+    }
+
+    private CertificateExceptionApproval saveRejectingSecondOpenException(CertificateExceptionApproval approval) {
         try {
-            saved = repository.saveAndFlush(approval);
+            return repository.saveAndFlush(approval);
         } catch (DataIntegrityViolationException failure) {
             if (isOpenExceptionViolation(failure)) {
                 throw new CertificateExceptionAlreadyOpenException();
             }
             throw failure;
         }
-        eventPublisher.publishEvent(CertificateExceptionRequestedEvent.of(saved.getId(), saved.getStudentId(), saved.getRequestedById()));
-        return CertificateExceptionResponses.of(saved);
     }
 
     private boolean isOpenExceptionViolation(DataIntegrityViolationException failure) {

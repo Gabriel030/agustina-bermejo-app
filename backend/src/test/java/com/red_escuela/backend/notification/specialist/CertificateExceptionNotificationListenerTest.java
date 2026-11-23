@@ -1,11 +1,13 @@
 package com.red_escuela.backend.notification.specialist;
 
+import com.red_escuela.backend.graduation.events.CertificateExceptionCreatedByDirectorEvent;
 import com.red_escuela.backend.graduation.events.CertificateExceptionDecidedEvent;
 import com.red_escuela.backend.graduation.events.CertificateExceptionRequestedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.ClosureNotification;
 import com.red_escuela.backend.notification.domain.NotificationTopic;
 import com.red_escuela.backend.notification.domain.PersonRecipient;
+import com.red_escuela.backend.notification.domain.RoleRecipient;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
@@ -66,6 +68,16 @@ class CertificateExceptionNotificationListenerTest {
         listener.notifyExceptionDecided(CertificateExceptionDecidedEvent.of(21L, 3L, 7L, false, "Sin respaldo suficiente"));
 
         assertThat(publishedNotification().message()).contains("rechazado").contains("Sin respaldo suficiente");
+    }
+
+    @Test
+    void administrativeStaffIsToldTheDirectorCreatedAnApprovedException() {
+        listener.notifyExceptionCreatedByDirector(CertificateExceptionCreatedByDirectorEvent.of(21L, 3L, 4L));
+
+        ClosureNotification notification = publishedNotification();
+        assertThat(notification.type()).isEqualTo(NotificationType.CERTIFICATE_EXCEPTION_DIRECT_CREATED);
+        assertThat(notification.recipients()).containsExactly(new RoleRecipient("ADMINISTRATIVO"));
+        assertThat(notification.relatedEntityId()).isEqualTo(21L);
     }
 
     private Person requesterPerson() {
