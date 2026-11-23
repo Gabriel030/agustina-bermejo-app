@@ -56,14 +56,19 @@ public class ExamRegistrationCertificatePdfProvider {
         ExamRegistrationCertificate certificate = repository.findByIdAndStudentId(id, studentId)
                 .filter(found -> found.isValidAt(LocalDateTime.now(clock)))
                 .orElseThrow(ExamRegistrationCertificateNotFoundException::new);
-        Optional<byte[]> stored = fileStore.load(certificate.getPdfPath())
-                .filter(content -> digest.sha256(content).equals(certificate.getPdfSha256()));
-        if (stored.isPresent()) {
+        Optional<byte[]> loaded = fileStore.load(certificate.getPdfPath());
+        if (loaded.isPresent() && digest.sha256(loaded.get()).equals(certificate.getPdfSha256())) {
             recordDownload(certificate);
-            return new ProcedureDocumentPdf(certificate.getCode(), stored.get());
+            return new ProcedureDocumentPdf(certificate.getCode(), loaded.get());
         }
-        log.warn("El PDF de la constancia de inscripción {} falta o no coincide con su hash; se regenera desde el snapshot",
-                certificate.getId());
+        if (loaded.isPresent()) {
+            log.error("El PDF almacenado de la constancia de inscripción {} no coincide con su hash; se regenera desde el snapshot",
+                    certificate.getId());
+            auditRecorder.hashMismatch(DOCUMENT_TYPE, certificate.getId(), certificate.getPdfSha256(),
+                    digest.sha256(loaded.get()), certificate.getRenderEngineVersion());
+        } else {
+            log.warn("El PDF de la constancia de inscripción {} falta; se regenera desde el snapshot", certificate.getId());
+        }
         CertificateCode code = certificate.certificateCode();
         byte[] regenerated = renderer.render(template.definitionFor(certificate.getSnapshot(), certificate.getRecipientType(),
                 certificate.getRecipientText()), certificate.getSnapshot(), code, verificationUrl.of(code));

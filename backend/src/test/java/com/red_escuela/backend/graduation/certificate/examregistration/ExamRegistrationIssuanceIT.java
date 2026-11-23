@@ -48,6 +48,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.beans.factory.annotation.Value;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -218,6 +223,8 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         });
     }
 
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
     @Value("${app.certificates.directory}")
     private String certificatesDirectory;
 
@@ -442,7 +449,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         Files.write(Path.of(certificatesDirectory).toAbsolutePath().normalize().resolve(path), new byte[]{1, 2, 3});
 
         download(studentToken, id).andExpect(status().isConflict());
-        assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'CERTIFICATE_DOCUMENT' and action = 'DOCUMENT_PDF_HASH_MISMATCH' and entity_id in (select id from exam_registration_certificate)", Long.class)).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'CERTIFICATE_DOCUMENT' and action = 'DOCUMENT_PDF_HASH_MISMATCH' and entity_id in (select id from exam_registration_certificate)", Long.class)).isEqualTo(2L);
     }
 
     @Test
@@ -458,5 +465,135 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 21, 8, 0));
 
         download(studentToken, id).andExpect(status().isNotFound());
+    }
+
+    private void deleteStoredFile() throws Exception {
+        String path = jdbc.queryForObject("select pdf_path from exam_registration_certificate", String.class);
+        Files.delete(Path.of(certificatesDirectory).toAbsolutePath().normalize().resolve(path));
+    }
+
+    @Test
+    void recipientOnlyWithSpacesIsRejected() throws Exception {
+        generate(studentToken, "{\"recipientType\":\"OTHER\",\"recipientText\":\"   \"}").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EXAM_REGISTRATION_RECIPIENT"));
+        assertThat(certificateCount()).isZero();
+    }
+
+    @Test
+    void invalidRecipientReportsItsDomainErrorCode() throws Exception {
+        generate(studentToken, "{\"recipientType\":\"OTHER\",\"recipientText\":\"{holder}\"}").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_EXAM_REGISTRATION_RECIPIENT"));
+    }
+
+    @Test
+    void alteredStoredFileIsAuditedAndRegeneratedWithTheRecordedHash() throws Exception {
+        Long id = issuedId(studentToken);
+        String sha = jdbc.queryForObject("select pdf_sha256 from exam_registration_certificate", String.class);
+        String path = jdbc.queryForObject("select pdf_path from exam_registration_certificate", String.class);
+        Files.write(Path.of(certificatesDirectory).toAbsolutePath().normalize().resolve(path), new byte[]{9, 9, 9});
+
+        MvcResult result = download(studentToken, id).andExpect(status().isOk()).andReturn();
+
+        assertThat(sha256(result.getResponse().getContentAsByteArray())).isEqualTo(sha);
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'CERTIFICATE_DOCUMENT' and action = 'DOCUMENT_PDF_HASH_MISMATCH' and entity_id in (select id from exam_registration_certificate)", Long.class)).isEqualTo(1L);
+    }
+
+    @Test
+    void issuedSnapshotDoesNotChangeWhenTheSourceDataChangesAfterwards() throws Exception {
+        Long id = issuedId(studentToken);
+        String sha = jdbc.queryForObject("select pdf_sha256 from exam_registration_certificate", String.class);
+        jdbc.update("update person set name = 'Otro', last_name = 'Cambiado' where id = (select person_id from student where id = (select student_id from exam_registration_certificate))");
+        jdbc.update("update subject set name = 'Materia renombrada' where id = ?", subjectId);
+        jdbc.update("update exam_board set exam_date = ? where id = ?", java.sql.Timestamp.valueOf("2026-12-15 09:00:00"), boardId);
+        jdbc.update("update institution set name = 'Otra institucion' where id = (select institution_id from student where id = (select student_id from exam_registration_certificate))");
+        deleteStoredFile();
+
+        MvcResult result = download(studentToken, id).andExpect(status().isOk()).andReturn();
+
+        assertThat(sha256(result.getResponse().getContentAsByteArray())).isEqualTo(sha);
+        assertThat(jdbc.queryForObject("select pdf_sha256 from exam_registration_certificate", String.class)).isEqualTo(sha);
+    }
+
+    @Test
+    void verificationUrlIsBuiltFromTheConfiguredFrontendBaseUrl() throws Exception {
+        issuedId(studentToken);
+        String code = jdbc.queryForObject("select code from exam_registration_certificate", String.class);
+        String base = frontendBaseUrl.endsWith("/") ? frontendBaseUrl.substring(0, frontendBaseUrl.length() - 1) : frontendBaseUrl;
+
+        generate(studentToken, "{}").andExpect(jsonPath("$.verificationUrl").value(base + "/verificar/" + code));
+    }
+
+    @Test
+    void approvedListShowsValidExpiredAndRevokedDocumentsWithTheirVerifiableFlag() throws Exception {
+        issuedId(studentToken);
+        jdbc.update("insert into exam_registration_certificate (code, student_id, registration_id, exam_board_id, status, issued_at, expires_at,"
+                + " issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path, render_engine_version, revoked_at, revoked_by_id)"
+                + " select upper(substr(md5(random()::text), 1, 26)), student_id, registration_id, exam_board_id, 'REVOKED', issued_at, expires_at,"
+                + " issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path, render_engine_version, issued_at, issued_by_id"
+                + " from exam_registration_certificate where status = 'VALID'");
+        jdbc.update("insert into exam_registration_certificate (code, student_id, registration_id, exam_board_id, status, issued_at, expires_at,"
+                + " issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path, render_engine_version)"
+                + " select upper(substr(md5(random()::text), 1, 26)), student_id, registration_id, exam_board_id, 'EXPIRED', issued_at, expires_at,"
+                + " issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path, render_engine_version"
+                + " from exam_registration_certificate where status = 'VALID'");
+
+        mockMvc.perform(get("/me/procedures/approved").header("Authorization", "Bearer " + studentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE' && @.status == 'VALID')].verifiable").value(true))
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE' && @.status == 'REVOKED')].verifiable").value(false))
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE' && @.status == 'EXPIRED')].verifiable").value(false));
+    }
+
+    @Test
+    void validDocumentIsListedAsExpiredOnceTheExamDayHasPassed() throws Exception {
+        issuedId(studentToken);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 21, 8, 0));
+
+        mockMvc.perform(get("/me/procedures/approved").header("Authorization", "Bearer " + studentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE')].status").value("EXPIRED"))
+                .andExpect(jsonPath("$[?(@.documentType == 'EXAM_REGISTRATION_CERTIFICATE')].verifiable").value(false));
+    }
+
+    @Test
+    void sameRequestWithADifferentRecipientReturnsTheCurrentDocumentUnchanged() throws Exception {
+        Long first = ((Number) com.jayway.jsonpath.JsonPath.read(generate(studentToken,
+                "{\"recipientType\":\"EMPLOYER\",\"recipientText\":\"Empresa A\"}").andExpect(status().isCreated()).andReturn()
+                .getResponse().getContentAsString(), "$.id")).longValue();
+
+        Long second = ((Number) com.jayway.jsonpath.JsonPath.read(generate(studentToken,
+                "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}").andReturn()
+                .getResponse().getContentAsString(), "$.id")).longValue();
+
+        assertThat(second).isEqualTo(first);
+        Map<String, Object> row = jdbc.queryForMap("select recipient_type, recipient_text from exam_registration_certificate");
+        assertThat(row.get("recipient_type")).isEqualTo("EMPLOYER");
+        assertThat(row.get("recipient_text")).isEqualTo("Empresa A");
+        assertThat(certificateCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void concurrentRequestsForTwoRegistrationsLetOnlyOnePassTheDailyLimit() throws Exception {
+        Long other = secondRegistrationOn(LocalDateTime.of(2026, 11, 25, 9, 0));
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch go = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<Integer>> results = List.of(registrationId, other).stream().map(target -> executor.submit(() -> {
+                ready.countDown();
+                go.await();
+                return generate(studentToken, "{\"registrationId\":" + target + "}").andReturn().getResponse().getStatus();
+            })).toList();
+            ready.await();
+            go.countDown();
+            List<Integer> statuses = new java.util.ArrayList<>();
+            for (Future<Integer> result : results) {
+                statuses.add(result.get());
+            }
+            assertThat(statuses).containsExactlyInAnyOrder(201, 429);
+            assertThat(certificateCount()).isEqualTo(1L);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }

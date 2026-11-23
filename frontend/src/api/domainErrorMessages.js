@@ -395,6 +395,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   APPROVED_SUBJECTS_CERTIFICATE_NOT_FOUND: 'No encontramos la constancia de materias aprobadas.',
   APPROVED_SUBJECTS_CERTIFICATE_NOT_AVAILABLE: 'La constancia de materias aprobadas ya no está vigente.',
   EXAM_CERTIFICATE_NOT_FOUND: 'No encontramos la constancia de examen.',
+  EXAM_REGISTRATION_CERTIFICATE_NOT_FOUND: 'No encontramos la constancia de inscripción a examen.',
+  INVALID_EXAM_REGISTRATION_RECIPIENT: 'El destinatario no es válido: indicá un texto de hasta 80 caracteres, sin saltos de línea ni llaves.',
   EXAM_CERTIFICATE_ALREADY_ISSUED: 'Ya existe una constancia vigente para esta mesa.',
   EXAM_CERTIFICATE_BOARD_NOT_HELD: 'La mesa todavía no se rindió.',
   EXAM_CERTIFICATE_REGISTRATION_NOT_ELIGIBLE: 'La inscripción no corresponde a un alumno presente en la mesa.',

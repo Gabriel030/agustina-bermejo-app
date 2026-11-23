@@ -138,8 +138,8 @@ public class ExamRegistrationCertificateIssuer {
         if (recipientText == null) {
             return;
         }
-        if (recipientText.isEmpty() || recipientText.length() > RECIPIENT_MAX_LENGTH) {
-            throw new InvalidExamRegistrationRecipientException("El destinatario debe tener entre 1 y 80 caracteres");
+        if (recipientText.isBlank() || recipientText.length() > RECIPIENT_MAX_LENGTH) {
+            throw new InvalidExamRegistrationRecipientException("El destinatario debe tener entre 1 y 80 caracteres y no puede ser solo espacios");
         }
         if (recipientText.indexOf('{') >= 0 || recipientText.indexOf('}') >= 0) {
             throw new InvalidExamRegistrationRecipientException("El destinatario no puede contener llaves");
