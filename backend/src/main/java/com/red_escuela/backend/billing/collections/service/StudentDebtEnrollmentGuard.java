@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.invoice.exception.OutstandingDebtBlocksReenrollmentException;
@@ -8,6 +7,7 @@ import com.red_escuela.backend.billing.collections.exception.OverdueDebtBlocksNe
 import com.red_escuela.backend.billing.collections.policy.NewEnrollmentDebtCheck;
 import com.red_escuela.backend.billing.invoice.policy.OutstandingDebtFacts;
 import com.red_escuela.backend.billing.invoice.service.WithdrawnEnrollmentDebtFactsLoader;
+import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.module.CurrentBillingModePort;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 
 @Service
-public class StudentDebtEnrollmentGuard implements EnrollmentDebtGuard {
+public class StudentDebtEnrollmentGuard implements EnrollmentDebtGuardPort {
 
     private final WithdrawnEnrollmentDebtFactsLoader withdrawnDebtFacts;
     private final StudentOverdueDebtFinder overdueDebtFinder;

@@ -4,9 +4,11 @@ import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
+import com.red_escuela.backend.graduation.specialist.ApproveGraduationRequestTransaction;
 import com.red_escuela.backend.graduation.specialist.GraduationDebtGate;
 import com.red_escuela.backend.graduation.specialist.GraduationRequestApprover;
 import com.red_escuela.backend.graduation.specialist.GraduationRequestFinder;
+import com.red_escuela.backend.graduation.specialist.VerifyGraduationRequestDebtTransaction;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.graduation.specialist.GraduationDecisionRecorder;
@@ -67,11 +69,11 @@ class GraduationDebtGateUseCasesTest {
     }
 
     private VerifyGraduationRequestDebtService verifyService() {
-        return new VerifyGraduationRequestDebtService(finder, debtChecker(), decisionRecorder, eventPublisher);
+        return new VerifyGraduationRequestDebtService(new VerifyGraduationRequestDebtTransaction(finder, debtChecker(), decisionRecorder, eventPublisher));
     }
 
     private ApproveGraduationRequestService approveService() {
-        return new ApproveGraduationRequestService(finder, approver, debtChecker(), decisionRecorder, eventPublisher);
+        return new ApproveGraduationRequestService(new ApproveGraduationRequestTransaction(finder, approver, debtChecker(), decisionRecorder, eventPublisher));
     }
 
     @Test

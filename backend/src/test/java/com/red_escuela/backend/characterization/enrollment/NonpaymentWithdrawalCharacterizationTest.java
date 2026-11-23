@@ -1,6 +1,6 @@
 package com.red_escuela.backend.characterization.enrollment;
 
-import com.red_escuela.backend.billing.api.CourseEnrollmentNonpaymentWithdrawalPort;
+import com.red_escuela.backend.shared.module.CourseEnrollmentNonpaymentWithdrawalPort;
 import com.red_escuela.backend.billing.events.EnrollmentWithdrawnForBillingEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;

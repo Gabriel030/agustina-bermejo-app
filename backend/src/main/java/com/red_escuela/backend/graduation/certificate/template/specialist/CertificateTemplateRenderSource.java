@@ -64,7 +64,7 @@ public class CertificateTemplateRenderSource {
                 snapshot.titleKind(), snapshot.titleName(), snapshot.programLevel(), snapshot.hours(), snapshot.graduationDate(),
                 snapshot.issuedOn(),
                 content.instituteName() == null ? snapshot.institutionName() : content.instituteName(),
-                List.of(signatoryOf(content.firstSigner()), signatoryOf(content.secondSigner())), templateRef);
+                List.of(signatoryOf(content.firstSigner()), signatoryOf(content.secondSigner())), templateRef, null);
     }
 
     public CertificateAssets assetsOf(CertificateTemplateVersion version, String registryNumber) {

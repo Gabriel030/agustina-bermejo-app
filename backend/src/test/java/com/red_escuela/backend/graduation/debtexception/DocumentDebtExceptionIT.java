@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.debtexception.repository.DocumentDebtExceptionRepository;
+import com.red_escuela.backend.shared.permission.PermissionSnapshotCache;
 import com.red_escuela.backend.graduation.debtexception.specialist.DebtExceptionExpirer;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -117,6 +118,9 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     @Autowired
     private DocumentDebtExceptionRepository repository;
 
+    @Autowired
+    private PermissionSnapshotCache permissionSnapshotCache;
+
     private Long studentId;
     private Long otherStudentId;
     private Person administrative;
@@ -143,6 +147,8 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     @AfterEach
     void cleanUp() {
         SecurityContextHolder.clearContext();
+        jdbc.update("delete from role_permission where role = 'SUBDIRECTOR' and permission_id = (select id from permission where code = 'document.debt-exception.issue')");
+        permissionSnapshotCache.invalidate();
         jdbc.update("delete from document_debt_exception");
     }
 
@@ -171,6 +177,21 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
         issue(subdirectorToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isForbidden());
         mockMvc.perform(get("/document-debt-exceptions").header("Authorization", "Bearer " + subdirectorToken))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void subdirectorIsAllowedOnlyWhileTheDelegationExists() throws Exception {
+        issue(subdirectorToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isForbidden());
+
+        jdbc.update("insert into role_permission (role, permission_id) select 'SUBDIRECTOR', id from permission where code = 'document.debt-exception.issue'");
+        permissionSnapshotCache.invalidate();
+        issue(subdirectorToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        mockMvc.perform(get("/document-debt-exceptions").header("Authorization", "Bearer " + subdirectorToken))
+                .andExpect(status().isOk());
+
+        jdbc.update("delete from role_permission where role = 'SUBDIRECTOR' and permission_id = (select id from permission where code = 'document.debt-exception.issue')");
+        permissionSnapshotCache.invalidate();
+        issue(subdirectorToken, studentId, "REGULAR_STUDENT_CERTIFICATE", REASON, 5).andExpect(status().isForbidden());
     }
 
     @Test

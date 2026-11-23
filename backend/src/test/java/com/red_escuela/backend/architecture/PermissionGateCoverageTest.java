@@ -1,6 +1,7 @@
 package com.red_escuela.backend.architecture;
 
 import com.red_escuela.backend.shared.permission.RequiresPermission;
+import com.red_escuela.backend.shared.permission.RequiresPermissionWithoutInheritance;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -23,6 +24,7 @@ class PermissionGateCoverageTest {
 
     private static final String ROOT = "com.red_escuela.backend";
     private static final String GATE_EXPRESSION = "@permissionGate.allows(";
+    private static final String GATE_WITHOUT_INHERITANCE_EXPRESSION = "@permissionGate.allowsWithoutInheritance(";
 
     private static final String LEGAL_DOCUMENT_CONTROLLER = ROOT + ".identity.controller.LegalDocumentController";
 
@@ -645,9 +647,12 @@ class PermissionGateCoverageTest {
                 String endpoint = controller.getSimpleName() + "#" + method.getName();
                 if (controller.getSimpleName().equals("DocumentDebtExceptionController") && AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class) != null) {
                     found.add(endpoint);
-                    PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
-                    if (preAuthorize == null || !preAuthorize.value().contains("!hasRole('SUBDIRECTOR')") || usesGate(method, controller)) {
-                        violations.add(endpoint + " must keep its conditional role rule");
+                    RequiresPermissionWithoutInheritance delegable = AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermissionWithoutInheritance.class);
+                    boolean delegableRule = delegable != null && usesGate(method, controller)
+                            && delegable.code().equals("document.debt-exception.issue")
+                            && !delegable.legacyRoles().contains("SUBDIRECTOR");
+                    if (!delegableRule) {
+                        violations.add(endpoint + " must use the delegable debt-exception permission without inheritance");
                     }
                 }
                 if (!CONSTANCIAS_B_MIGRATED_ENDPOINTS.contains(endpoint) || !moduleOf(controller).equals("graduation")) {
@@ -700,7 +705,7 @@ class PermissionGateCoverageTest {
     private static boolean usesGate(Method method, Class<?> controller) {
         PreAuthorize onMethod = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
         PreAuthorize effective = onMethod != null ? onMethod : AnnotatedElementUtils.findMergedAnnotation(controller, PreAuthorize.class);
-        return effective != null && effective.value().contains(GATE_EXPRESSION);
+        return effective != null && (effective.value().contains(GATE_EXPRESSION) || effective.value().contains(GATE_WITHOUT_INHERITANCE_EXPRESSION));
     }
 
     private static String moduleOf(Class<?> type) {
