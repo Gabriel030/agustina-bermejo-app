@@ -68,6 +68,7 @@ export const constanciasHandlers = [
   ),
   http.get(`${API}/exam-boards/:id/exam-certificates/candidates`, () => HttpResponse.json(examCertificateCandidates())),
   http.post(`${API}/exam-boards/:id/exam-certificates/batch`, () => HttpResponse.json(examCertificateBatch())),
+  http.get(`${API}/exam-certificates/:id/pdf`, () => pdfResponse()),
   http.post(`${API}/exam-certificates/:id/revoke`, ({ params }) =>
     HttpResponse.json(examCertificate({ id: Number(params.id), status: 'REVOKED' })),
   ),

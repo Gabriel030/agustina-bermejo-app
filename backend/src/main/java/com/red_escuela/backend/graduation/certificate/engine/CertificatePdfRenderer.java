@@ -28,6 +28,8 @@ import java.util.List;
 public class CertificatePdfRenderer {
 
     private static final String FONT_RESOURCE = "/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf";
+    public static final String ENGINE_VERSION = "1";
+
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final float QUIET_ZONE_MODULES = 2;
 
