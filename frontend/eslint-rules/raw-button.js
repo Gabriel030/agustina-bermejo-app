@@ -10,7 +10,7 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/components/Sidebar.jsx',
   'src/components/Stepper.jsx',
   'src/components/ThemeToggle.jsx',
-  'src/components/alumno/SortableColumnHeader.jsx',
+  'src/features/evaluation/components/SortableColumnHeader.jsx',
   'src/components/billing/InvoiceCoverageList.jsx',
   'src/components/charts/InfoTip.jsx',
   'src/components/table/ColumnFilter.jsx',

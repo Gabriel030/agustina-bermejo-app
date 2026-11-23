@@ -296,7 +296,7 @@ de `src/theme/tokens.css`, gana el código y se corrige la doc.
 | Entrada escalonada de listas/grillas de cards | `<Stagger>` envolviendo los hijos (`delayStep` en ms) |
 | KPI / métrica | `StatCard` (dentro de `Stagger` en grillas) |
 | Tablas | `components/ui/table.jsx` (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableCell`), dentro de un `GlassCard` — la tabla no trae borde propio. Header sticky, mayúsculas, hover `accent-soft`. Excepción: grillas con rowSpan/colSpan/sticky propias (ej. tomar asistencia) |
-| Encabezado ordenable | `alumno/SortableColumnHeader.jsx` (ya con el estilo del header de tabla) |
+| Encabezado ordenable | `features/evaluation/components/SortableColumnHeader.jsx` (ya con el estilo del header de tabla) |
 | Pestañas | `Tabs` con `variant="segmented"` |
 | Stepper / wizard | `components/Stepper.jsx` único (completados en verde con tilde, activo con gradiente y pulso; pasos visitados clickeables). No hay otro Stepper |
 | Notificaciones/feedback de acciones | `toast` de `sonner` (`toast.error/success`), con `<Toaster />` ya montado en `App.jsx`. No mostrar errores de mutaciones como párrafos inline |

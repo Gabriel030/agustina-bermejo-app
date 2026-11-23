@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
-import { useOrdenamiento } from '@/hooks/useOrdenamiento';
+import { useOrdenamiento } from '@/features/evaluation/hooks/useOrdenamiento';
 import { aniosDisponibles, ORDEN_ESTADO } from '@/lib/notas';
-import { construirComparador } from '@/lib/ordenamiento';
+import { construirComparador } from '@/features/evaluation/lib/ordenamiento';
 
 const ESTADO_A_FILTRO = { aprobadas: 'aprobada', 'en-curso': 'en-curso', regulares: 'regular', desaprobadas: 'desaprobada', bloqueadas: 'bloqueada' };
 const POR_PAGINA = 10;
