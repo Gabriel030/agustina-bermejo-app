@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.mail;
 
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.mail.Session;
@@ -26,11 +27,14 @@ class BrevoEmailServiceOwnerApprovalTest {
         when(mailSender.createMimeMessage()).thenAnswer(call -> new MimeMessage(Session.getInstance(new Properties())));
         MockEnvironment environment = new MockEnvironment()
                 .withProperty("resilience.default.enabled", "true")
+                .withProperty("resilience.default.max-concurrent", "4")
+                .withProperty("resilience.default.max-wait", "0ms")
                 .withProperty("resilience.default.window", "2")
                 .withProperty("resilience.default.failure-threshold", "2")
                 .withProperty("resilience.default.wait-open", "30s");
         CircuitBreakerFactory factory = new CircuitBreakerFactory(environment, Clock.systemUTC(), new SimpleMeterRegistry());
-        BrevoEmailService service = new BrevoEmailService(new CircuitBreakingMailSender(mailSender, factory.breakerNamed(MailCircuit.NAME)),
+        BrevoEmailService service = new BrevoEmailService(new CircuitBreakingMailSender(mailSender, factory.breakerNamed(MailCircuit.NAME),
+                new BulkheadFactory(environment, new SimpleMeterRegistry()).bulkheadNamed(MailCircuit.NAME)),
                 "from@example.com");
 
         service.sendEmailChangeOwnerApproval("<b>Ana</b>", "actual@example.com", "nuevo<x>@example.com",
