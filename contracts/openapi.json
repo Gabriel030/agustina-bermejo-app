@@ -5921,6 +5921,10 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "currentEnrollmentId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "curricularTerm" : {
             "enum" : [ "FIRST", "SECOND", "ANNUAL", null ],
             "type" : [ "string", "null" ]
@@ -5935,6 +5939,12 @@
           },
           "finalScore" : {
             "type" : [ "number", "null" ]
+          },
+          "prerequisites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumBlockingPrerequisiteResponse"
+            },
+            "type" : "array"
           },
           "programSubjectId" : {
             "format" : "int64",
@@ -5955,7 +5965,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attempts", "blockedBy", "category", "corequisites", "credits", "curricularTerm", "curricularYear", "electiveGroupId", "finalScore", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
+        "required" : [ "attempts", "blockedBy", "category", "corequisites", "credits", "currentEnrollmentId", "curricularTerm", "curricularYear", "electiveGroupId", "finalScore", "prerequisites", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
         "type" : "object"
       },
       "CurriculumSummaryResponse" : {
@@ -14158,7 +14168,7 @@
             "type" : "string"
           },
           "standingBasis" : {
-            "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED" ],
+            "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED", "BILLING_NOT_ENFORCED" ],
             "type" : "string"
           },
           "status" : {

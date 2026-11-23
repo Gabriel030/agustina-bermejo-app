@@ -30,7 +30,7 @@ class CertificatePdfDeterminismTest {
     private CertificateSnapshot snapshotOf(String holder) {
         return new CertificateSnapshot(holder, "DNI", "30123456", "la carrera", "Tecnicatura en Enfermería", "UNDERGRADUATE",
                 1800, LocalDate.of(2026, 7, 15), LocalDate.of(2026, 11, 5), "Instituto de prueba",
-                List.of(new SignatorySnapshot("Dirección", "Dirección académica")), BuiltInCertificateTemplate.BUILT_IN_V1);
+                List.of(new SignatorySnapshot("Dirección", "Dirección académica")), BuiltInCertificateTemplate.BUILT_IN_V1, null);
     }
 
     @Test
