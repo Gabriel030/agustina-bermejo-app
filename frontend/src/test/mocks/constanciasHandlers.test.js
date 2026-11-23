@@ -73,6 +73,14 @@ describe('constancias default handlers', () => {
     expect(body.map((candidate) => candidate.blockReason)).toEqual(['CURRENT_SECTION', null, 'SECTION_FULL', 'SCHEDULE_OVERLAP']);
   });
 
+  it('certificateExceptionEndpointsExposeTheDebtAndTheCounters', async () => {
+    const summary = (await call('GET', '/certificate-exceptions/summary')).body;
+    expect(Object.keys(summary).sort()).toEqual(['approved', 'consumed', 'expired', 'pending', 'rejected', 'withdrawn']);
+    const detail = (await call('GET', '/certificate-exceptions/9')).body;
+    expect(detail.debtTotalAtRequest).toEqual({ amount: '45000.00', currency: 'ARS' });
+    expect(detail.overdueInstallmentsAtRequest).toBe(2);
+  });
+
   it('documentTemplatesEndpointsAnswerAgainstTheContract', async () => {
     const base = '/certificate-templates/documents/EXAM_CERTIFICATE';
     expect((await call('GET', base)).body.documentType).toBe('EXAM_CERTIFICATE');
@@ -138,5 +146,27 @@ describe('constancias state handlers', () => {
     server.use(states.examCertificateCandidatesOnlyIssuedHandler);
     const { body } = await call('GET', '/exam-boards/1/exam-certificates/candidates');
     expect(body.every((candidate) => candidate.availability === 'ALREADY_ISSUED')).toBe(true);
+  });
+
+  it('regularRequestsWithDebtDataHandlerCoversDebtNoDebtBillingOffAndOpenExceptions', async () => {
+    server.use(states.regularRequestsWithDebtDataHandler);
+    const { body } = await call('GET', '/regular-certificate-requests');
+    expect(body[0]).toMatchObject({ hasDebt: true, overdueInstallments: 2, exceptionId: null });
+    expect(body[1]).toMatchObject({ hasDebt: false, overdueInstallments: 0 });
+    expect(body[2]).toMatchObject({ hasDebt: null, totalDue: null, overdueInstallments: null });
+    expect(body[3]).toMatchObject({ exceptionStatus: 'PENDING', exceptionValidUntil: null });
+    expect(body[4]).toMatchObject({ exceptionStatus: 'APPROVED', exceptionValidUntil: '2026-11-30T10:00:00' });
+  });
+
+  it('regularRequestsBillingOffHandlerReturnsNullDebt', async () => {
+    server.use(states.regularRequestsBillingOffHandler);
+    const { body } = await call('GET', '/regular-certificate-requests');
+    expect(body[0]).toMatchObject({ totalDue: null, overdueInstallments: null, hasDebt: null });
+  });
+
+  it('certificateExceptionSummaryEmptyHandlerReturnsZeroCounters', async () => {
+    server.use(states.certificateExceptionSummaryEmptyHandler);
+    const { body } = await call('GET', '/certificate-exceptions/summary');
+    expect(Object.values(body).every((count) => count === 0)).toBe(true);
   });
 });
