@@ -274,7 +274,8 @@ describe('StudentProceduresSection', () => {
     await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[0]);
     await user.click(screen.getByRole('button', { name: 'Generar y descargar' }));
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Generar y descargar' })).toBeEnabled());
+    expect(await screen.findByText(/Tuvimos un problema de nuestro lado/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Generar y descargar' })).toBeEnabled();
     expect(screen.queryByText('Tu constancia está lista.')).not.toBeInTheDocument();
   });
 
