@@ -264,17 +264,9 @@ class PermissionGateCoverageTest {
             "PaymentGatewayConfigController#getQrImage",
             "ProgramYearBillingTemplateController#listProgramCohorts");
 
-    private static final Set<String> CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS = Set.of(
-            ROOT + ".graduation.certificate.exam.controller.ExamCertificateController",
-            ROOT + ".graduation.certificate.exam.controller.ExamBoardCertificateController",
-            ROOT + ".graduation.certificate.approvedsubjects.controller.ApprovedSubjectsCertificateController",
-            ROOT + ".graduation.certificate.regular.controller.RegularCertificateController",
-            ROOT + ".graduation.certificate.regular.controller.RegularCertificateRequestController",
-            ROOT + ".graduation.certificate.regular.controller.CertificateExceptionController",
-            ROOT + ".graduation.debtexception.controller.DocumentDebtExceptionController");
-
     private static final Set<String> ENDPOINTS_FIXED_BY_CONDITIONAL_ROLE_RULE = Set.of(
-            "CertificateTemplateController#preview", "DocumentCertificateTemplateController#preview");
+            "CertificateTemplateController#preview", "DocumentCertificateTemplateController#preview",
+            "DocumentDebtExceptionController#issue", "DocumentDebtExceptionController#list", "DocumentDebtExceptionController#pdf");
 
 
     private static final Set<String> LEGAL_DOCUMENT_ENDPOINTS_WITHOUT_ROLE_RULE = Set.of(
@@ -285,7 +277,7 @@ class PermissionGateCoverageTest {
     void everyProtectedEndpointUsesTheGateOrIsExempt() throws Exception {
         List<String> uncovered = new ArrayList<>();
         for (Class<?> controller : controllers()) {
-            if (CONTROLLERS_FIXED_BY_ROLE.contains(controller.getName()) || CONTROLLERS_WITHOUT_ROLE_RULE.contains(controller.getName()) || CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS.contains(controller.getName())) {
+            if (CONTROLLERS_FIXED_BY_ROLE.contains(controller.getName()) || CONTROLLERS_WITHOUT_ROLE_RULE.contains(controller.getName())) {
                 continue;
             }
             for (Method method : controller.getDeclaredMethods()) {
@@ -634,9 +626,47 @@ class PermissionGateCoverageTest {
         assertThat(violations).isEmpty();
     }
 
+    private static final Set<String> CONSTANCIAS_B_MIGRATED_ENDPOINTS = Set.of(
+            "CertificateExceptionController#request", "CertificateExceptionController#createDirect", "CertificateExceptionController#list",
+            "CertificateExceptionController#get", "CertificateExceptionController#approve", "CertificateExceptionController#reject",
+            "CertificateExceptionController#withdraw",
+            "RegularCertificateController#eligibility", "RegularCertificateController#issue", "RegularCertificateController#list",
+            "RegularCertificateController#get", "RegularCertificateController#revoke", "RegularCertificateController#pdf",
+            "RegularCertificateRequestController#reject", "RegularCertificateRequestController#list",
+            "ExamBoardCertificateController#candidates", "ExamBoardCertificateController#issueBatch",
+            "ExamCertificateController#revoke", "ApprovedSubjectsCertificateController#revoke");
+
+    @Test
+    void constanciasIssuanceEndpointsUseTheCertificateGridGateAndTheDebtExceptionsKeepTheirConditionalRule() throws Exception {
+        List<String> violations = new ArrayList<>();
+        Set<String> found = new HashSet<>();
+        for (Class<?> controller : controllers()) {
+            for (Method method : controller.getDeclaredMethods()) {
+                String endpoint = controller.getSimpleName() + "#" + method.getName();
+                if (controller.getSimpleName().equals("DocumentDebtExceptionController") && AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class) != null) {
+                    found.add(endpoint);
+                    PreAuthorize preAuthorize = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
+                    if (preAuthorize == null || !preAuthorize.value().contains("!hasRole('SUBDIRECTOR')") || usesGate(method, controller)) {
+                        violations.add(endpoint + " must keep its conditional role rule");
+                    }
+                }
+                if (!CONSTANCIAS_B_MIGRATED_ENDPOINTS.contains(endpoint) || !moduleOf(controller).equals("graduation")) {
+                    continue;
+                }
+                found.add(endpoint);
+                RequiresPermission requiresPermission = AnnotatedElementUtils.findMergedAnnotation(method, RequiresPermission.class);
+                if (requiresPermission == null || !requiresPermission.code().startsWith("certificate.") || !usesGate(method, controller)) {
+                    violations.add(endpoint + " must be guarded by a certificate permission");
+                }
+            }
+        }
+        assertThat(found).hasSize(CONSTANCIAS_B_MIGRATED_ENDPOINTS.size() + 3).containsAll(CONSTANCIAS_B_MIGRATED_ENDPOINTS);
+        assertThat(violations).isEmpty();
+    }
+
     @Test
     void exemptListsOnlyNameExistingControllers() throws Exception {
-        for (String controllerName : Stream.of(CONTROLLERS_FIXED_BY_ROLE, CONTROLLERS_WITHOUT_ROLE_RULE, CONTROLLERS_PENDING_DOCUMENT_CONSTANCIAS).flatMap(Set::stream).toList()) {
+        for (String controllerName : Stream.of(CONTROLLERS_FIXED_BY_ROLE, CONTROLLERS_WITHOUT_ROLE_RULE).flatMap(Set::stream).toList()) {
             assertThat(Class.forName(controllerName)).isNotNull();
         }
     }

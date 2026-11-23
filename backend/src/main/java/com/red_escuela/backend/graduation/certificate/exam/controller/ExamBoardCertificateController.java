@@ -5,9 +5,9 @@ import com.red_escuela.backend.graduation.certificate.exam.dto.ExamCertificateCa
 import com.red_escuela.backend.graduation.certificate.exam.dto.IssueExamCertificateBatchRequest;
 import com.red_escuela.backend.graduation.certificate.exam.usecase.IssueExamCertificateBatchUseCase;
 import com.red_escuela.backend.graduation.certificate.exam.usecase.ListExamCertificateCandidatesUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import java.util.List;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,13 +30,13 @@ public class ExamBoardCertificateController {
     }
 
     @GetMapping("/exam-certificates/candidates")
-    @PreAuthorize("hasAnyRole('DOCENTE','ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.exam_candidates_view", legacyRoles = "ROLE_DOCENTE,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<ExamCertificateCandidateResponse> candidates(@PathVariable Long id) {
         return candidatesUseCase.candidates(id);
     }
 
     @PostMapping("/exam-certificates/batch")
-    @PreAuthorize("hasAnyRole('DOCENTE','ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.exam_issue_batch", legacyRoles = "ROLE_DOCENTE,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ExamCertificateBatchResponse issueBatch(@PathVariable Long id, @Valid @RequestBody IssueExamCertificateBatchRequest request) {
         return issueBatchUseCase.issueBatch(id, request);
     }
