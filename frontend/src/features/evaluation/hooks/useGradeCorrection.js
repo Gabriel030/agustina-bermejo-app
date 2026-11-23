@@ -16,10 +16,10 @@ export function useGradeItemAudit(gradeItemId) {
 export function useCorrectGradeItem(sectionId, kind) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ gradeItemId, newScore, reason }) =>
+    mutationFn: ({ gradeItemId, newScore, reason, expectedVersion }) =>
       apiFetch(`/grade-items/${gradeItemId}/corrections`, {
         method: 'POST',
-        body: JSON.stringify({ newScore, reason }),
+        body: JSON.stringify({ newScore, reason, expectedVersion }),
       }),
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['staff-grade-grid', kind, String(sectionId)] });
