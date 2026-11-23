@@ -130,6 +130,8 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("discount_definition.created_by_id", AUDIT_ACTOR);
         accepted.put("discount_definition.program_cohort_id", REACHED_BY_JOIN_NOT_EVALUATED);
         accepted.put("discount_definition_status_change.actor_person_id", AUDIT_ACTOR);
+        accepted.put("document_debt_exception.issued_by_id", AUDIT_ACTOR);
+        accepted.put("document_debt_exception.used_by_id", AUDIT_ACTOR);
         accepted.put("enrollment_fee_exemption.granted_by_id", AUDIT_ACTOR);
         accepted.put("enrollment_fee_exemption.revoked_by_id", AUDIT_ACTOR);
         accepted.put("enrollment_fee_exemption.template_id", LEADING_COLUMN_SERVED);
