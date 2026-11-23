@@ -9,6 +9,9 @@ public interface GraduationSource {
 
     void requireEligible(Long enrollmentId);
 
+    default void lockForIssuance(Long enrollmentId) {
+    }
+
     CertificateSnapshot snapshotOf(Long enrollmentId);
 
     Long studentIdOf(Long enrollmentId);

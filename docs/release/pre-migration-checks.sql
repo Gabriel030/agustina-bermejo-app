@@ -250,6 +250,9 @@ begin
       ('regular_certificate_request', 'channel', array['STAFF', 'STUDENT_PORTAL']),
       ('regular_certificate_request', 'kind', array['COURSE', 'PROGRAM']),
       ('regular_certificate_request', 'outcome', array['ALREADY_ISSUED', 'ISSUED', 'NOT_REGULAR', 'PENDING_STAFF', 'REJECTED']),
+      ('exam_certificate', 'status', array['VALID', 'EXPIRED', 'REVOKED', 'REPLACED']),
+      ('exam_certificate', 'origin', array['SELF_SERVICE', 'ISSUED_BY_TEACHER', 'ISSUED_BY_STAFF']),
+      ('exam_certificate', 'recipient_type', array['HEALTH_INSURANCE', 'EMPLOYER', 'STUDENT_TRANSPORT', 'OTHER']),
       ('regular_student_certificate', 'issue_channel', array['STAFF', 'STUDENT_PORTAL']),
       ('regular_student_certificate', 'kind', array['COURSE', 'PROGRAM']),
       ('regular_student_certificate', 'standing_basis', array['BILLING_NOT_ENFORCED', 'BILLING_VERIFIED', 'EXCEPTION_APPROVED', 'MANUALLY_CONFIRMED']),
@@ -275,6 +278,7 @@ begin
       ('subject_section_instructor', 'role', array['ASSISTANT', 'GUEST', 'LAB', 'LEAD', 'PRACTICAL']),
       ('term', 'enrollment_override', array['CLOSED', 'OPEN']),
       ('term', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
+      ('verifiable_document', 'document_type', array['APPROVED_SUBJECTS_CERTIFICATE', 'EXAM_CERTIFICATE', 'EXAM_REGISTRATION_CERTIFICATE', 'GRADUATION_CERTIFICATE', 'REGULAR_STUDENT_CERTIFICATE']),
       ('whatsapp_template_mapping', 'status', array['APPROVED', 'PENDING', 'REJECTED'])
     ) as t(tbl, col, allowed)
   loop
