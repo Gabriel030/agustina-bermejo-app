@@ -90,7 +90,7 @@ describe('DirectorExceptionsCard', () => {
 
     await user.click((await screen.findAllByRole('button', { name: /^Aprobar excepción de/ }))[0]);
     const dialog = await screen.findByRole('dialog', { name: 'Aprobar excepción' });
-    expect(dialog).toHaveTextContent(/va a poder pedir su constancia aunque tenga deuda\. Vale 7 días, hasta el \d{2}\/\d{2}\/\d{4}, y se usa una sola vez\./);
+    expect(dialog).toHaveTextContent(/va a poder pedir su constancia aunque tenga deuda\. Vale 7 días y se usa una sola vez\./);
     const submit = within(dialog).getByRole('button', { name: 'Aprobar excepción' });
     await user.type(within(dialog).getByLabelText('Motivo'), 'corto');
     expect(submit).toBeDisabled();
@@ -145,8 +145,12 @@ describe('DirectorExceptionsCard', () => {
     expect(options.map((option) => option.textContent)).toEqual(['Elegí un alumno', expect.stringMatching(/^Lucía Fernández · .*45\.000,00/)]);
     const submit = within(dialog).getByRole('button', { name: 'Crear y aprobar' });
     expect(submit).toBeDisabled();
+    expect(within(dialog).getByLabelText('Alumno con deuda')).toBeRequired();
+    await user.click(within(dialog).getByLabelText('Alumno con deuda'));
+    await user.tab();
+    expect(within(dialog).getByText('Elegí el alumno.')).toBeInTheDocument();
 
-    await user.selectOptions(within(dialog).getByLabelText('Alumno con deuda'), '77');
+    await user.selectOptions(within(dialog).getByLabelText('Alumno con deuda'), '77:PROGRAM');
     await user.selectOptions(within(dialog).getByLabelText('Tipo de organismo'), 'COURT');
     await user.type(within(dialog).getByLabelText('Expediente o referencia'), 'Causa 77/2026');
     await user.type(within(dialog).getByLabelText('Motivo'), 'Reclamo judicial presentado por el alumno');

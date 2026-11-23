@@ -9,7 +9,7 @@ import {
   useApproveCertificateException,
   useRejectCertificateException,
 } from '@/features/graduation/certificate-exceptions/hooks/useCertificateExceptions';
-import { reasonError, validityEndDate } from '@/features/graduation/certificate-exceptions/lib/certificateExceptions';
+import { reasonError } from '@/features/graduation/certificate-exceptions/lib/certificateExceptions';
 
 const COPY = {
   approve: {
@@ -30,7 +30,7 @@ const COPY = {
 
 function descriptionOf(mode, exception) {
   if (mode === 'approve') {
-    return `${exception.studentName} va a poder pedir su constancia aunque tenga deuda. Vale 7 días, hasta el ${validityEndDate()}, y se usa una sola vez.`;
+    return `${exception.studentName} va a poder pedir su constancia aunque tenga deuda. Vale 7 días y se usa una sola vez.`;
   }
   return `${exception.requesterName} va a ver este motivo en la campanita.`;
 }

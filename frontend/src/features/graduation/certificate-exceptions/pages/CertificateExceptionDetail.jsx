@@ -153,9 +153,8 @@ export function CertificateExceptionDetail() {
                 <span className="tabular-nums text-ink-soft"> · {overdueLabel(exception.overdueInstallmentsAtRequest)}</span>
               )}
             </Fact>
-            <Fact label="Asistencia">Cumple</Fact>
           </dl>
-          <p className="text-size-12 text-ink-faint">La excepción no la reemplaza.</p>
+          <p className="text-size-12 text-ink-faint">La excepción no reemplaza la asistencia.</p>
         </SectionCard>
         {isDirector && isPending && (
           <SectionCard title="Tu decisión">

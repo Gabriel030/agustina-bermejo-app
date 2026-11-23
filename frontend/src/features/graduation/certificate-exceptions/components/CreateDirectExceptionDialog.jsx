@@ -10,7 +10,7 @@ import { ResponsiveFormDialog } from '@/features/graduation/certificate-exceptio
 import { OrganismFields, StudentDebtContext } from '@/features/graduation/certificate-exceptions/components/ExceptionFormFields';
 import { useExceptionForm } from '@/features/graduation/certificate-exceptions/hooks/useExceptionForm';
 import { useCreateDirectCertificateException } from '@/features/graduation/certificate-exceptions/hooks/useCertificateExceptions';
-import { indebtedCandidates, validityEndDate } from '@/features/graduation/certificate-exceptions/lib/certificateExceptions';
+import { candidateKey, indebtedCandidates } from '@/features/graduation/certificate-exceptions/lib/certificateExceptions';
 
 const ALREADY_OPEN_MESSAGE = 'Ya hay una excepción abierta para este alumno. Revisá la bandeja antes de crear otra.';
 
@@ -19,8 +19,9 @@ export function CreateDirectExceptionDialog({ requests, onClose }) {
   const form = useExceptionForm();
   const create = useCreateDirectCertificateException();
   const [enrollmentId, setEnrollmentId] = useState('');
+  const [studentTouched, setStudentTouched] = useState(false);
   const [serverError, setServerError] = useState('');
-  const selected = candidates.find((candidate) => String(candidate.enrollmentId) === enrollmentId);
+  const selected = candidates.find((candidate) => candidateKey(candidate) === enrollmentId);
 
   async function submit(event) {
     event.preventDefault();
@@ -37,14 +38,14 @@ export function CreateDirectExceptionDialog({ requests, onClose }) {
       toast.success('Excepción creada y aprobada');
       onClose();
     } catch (error) {
-      setServerError(error?.status === 409 ? ALREADY_OPEN_MESSAGE : describeError(error).message);
+      setServerError(error?.code === 'CERTIFICATE_EXCEPTION_ALREADY_OPEN' ? ALREADY_OPEN_MESSAGE : describeError(error).message);
     }
   }
 
   return (
     <ResponsiveFormDialog
       title="Crear excepción"
-      description={`Nace aprobada, sin pedir autorización. Vale 7 días, hasta el ${validityEndDate()}, y se usa una sola vez.`}
+      description={`Nace aprobada, sin pedir autorización. Vale 7 días y se usa una sola vez.`}
       pending={create.isPending}
       onClose={onClose}
     >
@@ -55,15 +56,28 @@ export function CreateDirectExceptionDialog({ requests, onClose }) {
             id="direct-exception-student"
             className="[&_select]:h-11 md:[&_select]:h-8"
             value={enrollmentId}
-            onChange={(event) => setEnrollmentId(event.target.value)}
+            required
+            aria-required="true"
+            aria-invalid={studentTouched && !selected}
+            aria-describedby={studentTouched && !selected ? 'direct-exception-student-error' : undefined}
+            onChange={(event) => {
+              setEnrollmentId(event.target.value);
+              setStudentTouched(true);
+            }}
+            onBlur={() => setStudentTouched(true)}
           >
             <NativeSelectOption value="">Elegí un alumno</NativeSelectOption>
             {candidates.map((candidate) => (
-              <NativeSelectOption key={candidate.enrollmentId} value={String(candidate.enrollmentId)}>
+              <NativeSelectOption key={candidateKey(candidate)} value={candidateKey(candidate)}>
                 {`${candidate.studentName} · ${formatMoney(candidate.totalDue)}`}
               </NativeSelectOption>
             ))}
           </NativeSelect>
+          {studentTouched && !selected && (
+            <p id="direct-exception-student-error" className="text-size-12 font-semibold text-danger">
+              Elegí el alumno.
+            </p>
+          )}
         </div>
         {selected && (
           <StudentDebtContext

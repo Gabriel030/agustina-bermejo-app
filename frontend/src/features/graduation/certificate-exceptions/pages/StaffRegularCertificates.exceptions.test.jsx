@@ -9,10 +9,14 @@ import { certificateException, regularCertificateRequest, regularCertificateRequ
 import { StaffRegularCertificates } from '@/features/graduation/certificates/pages/StaffRegularCertificates';
 
 const API = 'http://localhost:8080';
-const auth = vi.hoisted(() => ({ roles: ['ADMINISTRATIVO'] }));
+const auth = vi.hoisted(() => ({ roles: ['ADMINISTRATIVO'], compact: false }));
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { id: 5, roles: auth.roles } }),
+}));
+
+vi.mock('@/hooks/useMediaQuery', () => ({
+  useMediaQuery: () => auth.compact,
 }));
 
 function mockRequests(requests = regularCertificateRequestList()) {
@@ -196,5 +200,81 @@ describe('StaffRegularCertificates exceptions', () => {
     expect(screen.queryByRole('tab', { name: /Excepciones/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Pedir excepción/ })).not.toBeInTheDocument();
     auth.roles = ['ADMINISTRATIVO'];
+  });
+
+  it('rendersTheRequestDialogAsABottomSheetOnMobileAndStillSends', async () => {
+    const user = userEvent.setup({ delay: null });
+    auth.compact = true;
+    mockRequests([regularCertificateRequest({ studentName: 'Lucía Fernández' })]);
+    let sent;
+    server.use(
+      http.post(`${API}/certificate-exceptions`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json(certificateException({ id: 40 }), { status: 201 });
+      }),
+    );
+    renderScreen();
+
+    await user.click(await screen.findByRole('button', { name: /Pedir excepción para Lucía/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Pedir excepción' });
+    expect(dialog).toHaveAttribute('data-slot', 'sheet-content');
+    await user.selectOptions(within(dialog).getByLabelText('Tipo de organismo'), 'COURT');
+    await user.type(within(dialog).getByLabelText('Expediente o referencia'), 'Causa 77/2026');
+    await user.type(within(dialog).getByLabelText('Motivo'), 'El alumno presentó un reclamo formal');
+    await user.click(within(dialog).getByRole('button', { name: 'Enviar al Director' }));
+
+    await waitFor(() => expect(sent).toMatchObject({ organismKind: 'COURT', enrollmentId: 77 }));
+    auth.compact = false;
+  });
+
+  it('keepsConfirmAndEmitWhenBillingIsOffOrTheStudentIsUpToDate', async () => {
+    mockRequests([
+      regularCertificateRequest({ id: 1, studentName: 'Billing apagado', enrollmentId: 1, hasDebt: null, totalDue: null, overdueInstallments: null }),
+      regularCertificateRequest({ id: 2, studentName: 'Alumno al día', enrollmentId: 2, hasDebt: false }),
+    ]);
+    renderScreen();
+
+    expect(await screen.findByRole('button', { name: /Confirmar y emitir la constancia de Billing apagado/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Confirmar y emitir la constancia de Alumno al día/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Pedir excepción/ })).not.toBeInTheDocument();
+  });
+
+  it('hidesEverythingAndSkipsTheQueryForTheSubdirector', async () => {
+    auth.roles = ['SUBDIRECTOR'];
+    mockRequests([regularCertificateRequest({ studentName: 'Lucía Fernández' })]);
+    const listCalls = vi.fn();
+    server.use(
+      http.get(`${API}/certificate-exceptions`, () => {
+        listCalls();
+        return HttpResponse.json([]);
+      }),
+    );
+    renderScreen();
+
+    expect(await screen.findByText('Lucía Fernández')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Excepciones/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Pedir excepción/ })).not.toBeInTheDocument();
+    expect(listCalls).not.toHaveBeenCalled();
+    auth.roles = ['ADMINISTRATIVO'];
+  });
+
+  it('showsTheGenericMessageForAConflictThatIsNotAnOpenException', async () => {
+    const user = userEvent.setup({ delay: null });
+    mockRequests([regularCertificateRequest({ studentName: 'Lucía Fernández' })]);
+    server.use(
+      http.post(`${API}/certificate-exceptions`, () => HttpResponse.json(errorBody('EXCEPTION_NOT_APPROVED'), { status: 409 })),
+    );
+    renderScreen();
+
+    await user.click(await screen.findByRole('button', { name: /Pedir excepción para Lucía/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Pedir excepción' });
+    await user.selectOptions(within(dialog).getByLabelText('Tipo de organismo'), 'COURT');
+    await user.type(within(dialog).getByLabelText('Expediente o referencia'), 'Causa 77/2026');
+    await user.type(within(dialog).getByLabelText('Motivo'), 'El alumno presentó un reclamo formal');
+    await user.click(within(dialog).getByRole('button', { name: 'Enviar al Director' }));
+
+    const alert = await within(dialog).findByRole('alert');
+    expect(alert).toHaveTextContent('La excepción no está aprobada o ya venció.');
+    expect(alert).not.toHaveTextContent('Ya hay un pedido abierto');
   });
 });

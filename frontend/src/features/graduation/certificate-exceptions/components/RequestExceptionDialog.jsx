@@ -30,7 +30,7 @@ export function RequestExceptionDialog({ row, onClose }) {
       toast.success('Pedido enviado al Director');
       onClose();
     } catch (error) {
-      setServerError(error?.status === 409 ? ALREADY_OPEN_MESSAGE : describeError(error).message);
+      setServerError(error?.code === 'CERTIFICATE_EXCEPTION_ALREADY_OPEN' ? ALREADY_OPEN_MESSAGE : describeError(error).message);
     }
   }
 

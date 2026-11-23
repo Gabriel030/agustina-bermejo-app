@@ -24,7 +24,7 @@ export const routes = {
     { roles: ['director'], path: 'aprobaciones/excepciones-por-reclamo', element: <DirectorCertificateExceptions /> },
     { roles: ['director'], path: 'aprobaciones/excepciones-por-reclamo/:id', element: <CertificateExceptionDetail /> },
     { roles: ['administrativo', 'director'], path: 'constancias', element: <StaffRegularCertificates /> },
-    { roles: ['administrativo'], path: 'constancias/excepciones/:id', element: <CertificateExceptionDetail /> },
+    { roles: ['administrativo'], path: 'constancias/excepciones/:id', excludeSubdirector: true, element: <CertificateExceptionDetail /> },
     { roles: ['administrativo', 'director'], path: 'constancias-por-excepcion', excludeSubdirector: true, element: <EmitDebtException /> },
     { roles: ['administrativo', 'director'], path: 'egresos', element: <StaffGraduationCertificates /> },
     { roles: ['administrativo', 'director'], path: 'plantilla-de-certificados', element: <CertificateTemplateEditor /> },

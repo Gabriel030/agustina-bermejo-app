@@ -43,8 +43,8 @@ describe('CertificateExceptionDetail', () => {
     expect(screen.getByText('Pendiente')).toBeInTheDocument();
     expect(screen.getByText(/45\.000,00/)).toBeInTheDocument();
     expect(screen.getByText(/2 cuotas vencidas/)).toBeInTheDocument();
-    expect(screen.getByText('Cumple')).toBeInTheDocument();
-    expect(screen.getByText('La excepción no la reemplaza.')).toBeInTheDocument();
+    expect(screen.queryByText('Cumple')).not.toBeInTheDocument();
+    expect(screen.getByText('La excepción no reemplaza la asistencia.')).toBeInTheDocument();
     expect(screen.getByText('Pedida por Administración')).toBeInTheDocument();
     const decision = screen.getByRole('heading', { name: 'Tu decisión' }).closest('div');
     expect(within(decision).getByRole('button', { name: 'Aprobar' })).toBeInTheDocument();

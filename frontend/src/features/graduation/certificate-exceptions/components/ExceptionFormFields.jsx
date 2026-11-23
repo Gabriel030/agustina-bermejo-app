@@ -43,6 +43,8 @@ export function OrganismFields({ values, errors, onChange, onBlur }) {
           id="exception-organism-kind"
           className="[&_select]:h-11 md:[&_select]:h-8"
           value={values.organismKind}
+          required
+          aria-required="true"
           aria-invalid={Boolean(errors.organismKind)}
           aria-describedby={errors.organismKind ? 'exception-organism-kind-error' : undefined}
           onChange={(event) => onChange('organismKind', event.target.value)}

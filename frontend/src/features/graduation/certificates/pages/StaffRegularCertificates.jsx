@@ -302,7 +302,7 @@ export function StaffRegularCertificates() {
   const { usuario } = useAuth();
   const roles = usuario?.roles ?? [];
   const isDirector = roles.includes('DIRECTOR');
-  const canRequestException = !isDirector;
+  const canRequestException = roles.includes('ADMINISTRATIVO');
   const role = isDirector ? 'director' : 'administrativo';
 
   const pending = usePendingRegularRequests();

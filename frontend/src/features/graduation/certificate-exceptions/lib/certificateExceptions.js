@@ -2,7 +2,6 @@ import { parsearFecha } from '@/lib/comisiones';
 
 export const REASON_MIN_LENGTH = 20;
 export const REASON_MAX_LENGTH = 500;
-export const VALIDITY_DAYS = 7;
 
 export const ORGANISM_OPTIONS = [
   { value: 'CONSUMER_DEFENSE', label: 'Defensa del Consumidor' },
@@ -44,12 +43,6 @@ export function formatDateTime(iso) {
   return `${formatFullDate(iso)} ${time}`;
 }
 
-export function validityEndDate(now = new Date()) {
-  const end = new Date(now);
-  end.setDate(end.getDate() + VALIDITY_DAYS);
-  return end.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
 export function overdueLabel(count) {
   if (count == null) return null;
   return count === 1 ? '1 cuota vencida' : `${count} cuotas vencidas`;
@@ -89,13 +82,14 @@ export function requesterLabelOf(exception, currentUserId) {
 export function indexByEnrollment(requests) {
   const index = new Map();
   for (const request of requests ?? []) {
-    if (!index.has(request.enrollmentId)) index.set(request.enrollmentId, request);
+    const key = `${request.enrollmentId}:${request.kind}`;
+    if (!index.has(key)) index.set(key, request);
   }
   return index;
 }
 
 export function describeExceptionRow(exception, directory) {
-  const known = directory.get(exception.enrollmentId);
+  const known = directory.get(`${exception.enrollmentId}:${exception.kind}`);
   return {
     ...exception,
     requesterName: exception.createdByDirector ? 'El Director' : 'Administración',
@@ -104,12 +98,16 @@ export function describeExceptionRow(exception, directory) {
   };
 }
 
+export function candidateKey(request) {
+  return `${request.enrollmentId}:${request.kind}`;
+}
+
 export function indebtedCandidates(requests) {
   const seen = new Set();
   const candidates = [];
   for (const request of requests ?? []) {
-    if (!request.hasDebt || isOpenExceptionStatus(request.exceptionStatus) || seen.has(request.enrollmentId)) continue;
-    seen.add(request.enrollmentId);
+    if (!request.hasDebt || isOpenExceptionStatus(request.exceptionStatus) || seen.has(candidateKey(request))) continue;
+    seen.add(candidateKey(request));
     candidates.push(request);
   }
   return candidates;
