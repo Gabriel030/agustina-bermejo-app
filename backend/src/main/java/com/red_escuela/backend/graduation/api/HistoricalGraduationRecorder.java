@@ -2,6 +2,8 @@ package com.red_escuela.backend.graduation.api;
 
 import com.red_escuela.backend.enrollment.api.HistoricalEnrollmentRecorder;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateStatus;
+import com.red_escuela.backend.graduation.certificate.repository.GraduationCertificateRepository;
 import com.red_escuela.backend.graduation.entity.CertificateReviewStatus;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
@@ -19,9 +21,12 @@ public class HistoricalGraduationRecorder {
     private final GraduationRequestRepository graduationRequestRepository;
     private final HistoricalEnrollmentRecorder enrollmentRecorder;
     private final EntityManager entityManager;
+    private final GraduationCertificateRepository graduationCertificateRepository;
 
     public HistoricalGraduationRecorder(GraduationRequestRepository graduationRequestRepository,
-            HistoricalEnrollmentRecorder enrollmentRecorder, EntityManager entityManager) {
+            HistoricalEnrollmentRecorder enrollmentRecorder, EntityManager entityManager,
+            GraduationCertificateRepository graduationCertificateRepository) {
+        this.graduationCertificateRepository = graduationCertificateRepository;
         this.graduationRequestRepository = graduationRequestRepository;
         this.enrollmentRecorder = enrollmentRecorder;
         this.entityManager = entityManager;
@@ -46,8 +51,14 @@ public class HistoricalGraduationRecorder {
         request.setDecidedAt(historical.graduationDate().atTime(HISTORICAL_TIME));
         request.setRegistryNumber(historical.registryNumber());
         request.setLegacyTitleNumber(historical.legacyTitleNumber());
-        request.setCertificateReviewStatus(CertificateReviewStatus.PENDING_REVIEW);
+        request.setCertificateReviewStatus(hasIssuedCertificate(enrollmentId)
+                ? CertificateReviewStatus.ENABLED : CertificateReviewStatus.PENDING_REVIEW);
         return graduationRequestRepository.save(request).getId();
+    }
+
+    private boolean hasIssuedCertificate(Long enrollmentId) {
+        return graduationCertificateRepository.existsByProgramEnrollmentIdAndStatus(enrollmentId, GraduationCertificateStatus.VALID)
+                || graduationCertificateRepository.existsByProgramEnrollmentIdAndStatus(enrollmentId, GraduationCertificateStatus.REVOKED);
     }
 
     @Transactional

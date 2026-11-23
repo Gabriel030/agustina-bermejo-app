@@ -199,11 +199,14 @@ class GraduationCertificateReviewHttpIT extends GraduationCertificateOperationsS
     void nonDirectorRolesCannotListOrDecide() throws Exception {
         GraduationRequest request = approvedRequest(completedEnrollment(), CertificateReviewStatus.PENDING_REVIEW);
 
-        send(get(REVIEWS), administrative).andExpect(status().isForbidden());
-        postJson(REVIEWS + "/" + request.getId() + "/enable", administrative, "").andExpect(status().isForbidden());
-        postJson(REVIEWS + "/" + request.getId() + "/disable", administrative, DISABLE_BODY).andExpect(status().isForbidden());
-        postJson(REVIEWS + "/batch", administrative,
-                "{\"graduationRequestIds\":[" + request.getId() + "],\"decision\":\"ENABLE\"}").andExpect(status().isForbidden());
+        String[] tokens = {administrative, tokenFor("SUBDIRECTOR", 3), tokenFor("DOCENTE", 4), tokenFor("ALUMNO", 5)};
+        for (String token : tokens) {
+            send(get(REVIEWS), token).andExpect(status().isForbidden());
+            postJson(REVIEWS + "/" + request.getId() + "/enable", token, "").andExpect(status().isForbidden());
+            postJson(REVIEWS + "/" + request.getId() + "/disable", token, DISABLE_BODY).andExpect(status().isForbidden());
+            postJson(REVIEWS + "/batch", token,
+                    "{\"graduationRequestIds\":[" + request.getId() + "],\"decision\":\"ENABLE\"}").andExpect(status().isForbidden());
+        }
         assertThat(reviewStatusOf(request.getId())).isEqualTo(CertificateReviewStatus.PENDING_REVIEW);
     }
 
@@ -292,5 +295,68 @@ class GraduationCertificateReviewHttpIT extends GraduationCertificateOperationsS
         postJson(BASE, director, issueBody(enrollment))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GRADUATION_CERTIFICATE_REVIEW_REQUIRED"));
+    }
+
+    @Test
+    void unknownGraduationRequestIsNotFoundInEnableDisableAndBatch() throws Exception {
+        postJson(REVIEWS + "/999999999/enable", director, "")
+                .andExpect(status().isNotFound());
+        postJson(REVIEWS + "/999999999/disable", director, DISABLE_BODY).andExpect(status().isNotFound());
+        postJson(REVIEWS + "/batch", director, "{\"graduationRequestIds\":[999999999],\"decision\":\"ENABLE\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.results[0].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[0].review").doesNotExist())
+                .andExpect(jsonPath("$.results[0].errorCode").value("GRADUATION_REQUEST_NOT_FOUND"));
+    }
+
+    @Test
+    void repeatingTheCurrentDecisionIsAConflictWithoutNoisyAudit() throws Exception {
+        GraduationRequest enabled = approvedRequest(completedEnrollment(), CertificateReviewStatus.ENABLED);
+        GraduationRequest disabled = approvedRequest(completedEnrollment(), CertificateReviewStatus.DISABLED);
+
+        postJson(REVIEWS + "/" + enabled.getId() + "/enable", director, "")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVALID_GRADUATION_CERTIFICATE_REVIEW_DECISION"));
+        postJson(REVIEWS + "/" + disabled.getId() + "/disable", director, DISABLE_BODY).andExpect(status().isConflict());
+        postJson(REVIEWS + "/batch", director, "{\"graduationRequestIds\":[" + enabled.getId() + "],\"decision\":\"ENABLE\"}")
+                .andExpect(jsonPath("$.results[0].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[0].errorCode").value("INVALID_GRADUATION_CERTIFICATE_REVIEW_DECISION"));
+        assertThat(auditOf(enabled.getId())).isEmpty();
+        assertThat(auditOf(disabled.getId())).isEmpty();
+    }
+
+    @Test
+    void batchWithRepeatedIdsDecidesEachOnceAndEnableIgnoresReason() throws Exception {
+        GraduationRequest request = approvedRequest(completedEnrollment(), CertificateReviewStatus.PENDING_REVIEW);
+
+        postJson(REVIEWS + "/batch", director, "{\"graduationRequestIds\":[" + request.getId() + "," + request.getId()
+                + "],\"decision\":\"ENABLE\",\"reason\":\"motivo que se ignora en habilitar\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requested").value(1))
+                .andExpect(jsonPath("$.decided").value(1))
+                .andExpect(jsonPath("$.failed").value(0));
+        assertThat(auditOf(request.getId())).hasSize(1);
+        assertThat(auditOf(request.getId()).get(0).getReason()).isNull();
+    }
+
+    @Test
+    void blankReasonOnDisableReportsRequiredField() throws Exception {
+        GraduationRequest request = approvedRequest(completedEnrollment(), CertificateReviewStatus.PENDING_REVIEW);
+
+        postJson(REVIEWS + "/" + request.getId() + "/disable", director, "{\"reason\":\"          \"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("REQUEST_FIELD_REQUIRED"));
+    }
+
+    @Test
+    void importedGraduationWithAnIssuedCertificateIsRecordedEnabled() throws Exception {
+        ProgramEnrollment enrollment = completedEnrollment();
+        issueCertificate(enrollment);
+
+        Long id = historicalGraduationRecorder.recordGraduation(new HistoricalGraduation(DocumentType.DNI,
+                enrollment.getStudent().getPerson().getDni(), enrollment.getProgram().getName(),
+                enrollment.getCompletionDate().toLocalDate(), "REG-2", null));
+
+        assertThat(reviewStatusOf(id)).isEqualTo(CertificateReviewStatus.ENABLED);
     }
 }

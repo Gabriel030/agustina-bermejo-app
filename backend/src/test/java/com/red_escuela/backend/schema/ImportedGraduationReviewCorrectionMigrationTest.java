@@ -28,6 +28,7 @@ class ImportedGraduationReviewCorrectionMigrationTest {
     private static final long REQUESTED_WITHOUT_DECIDER = 308;
     private static final long IMPORTED_WITH_CERTIFICATE_OF_ANOTHER_ENROLLMENT = 309;
     private static final long CERTIFICATE_OF_ANOTHER_ENROLLMENT = 310;
+    private static final long IMPORTED_ALREADY_DISABLED = 311;
 
     @Test
     void correctionMovesOnlyImportedRowsStillNotRequired() {
@@ -44,21 +45,14 @@ class ImportedGraduationReviewCorrectionMigrationTest {
             insertGraduationRequest(jdbc, REJECTED_WITHOUT_DECIDER, "REJECTED", null, "NOT_REQUIRED");
             insertGraduationRequest(jdbc, REQUESTED_WITHOUT_DECIDER, "REQUESTED", null, "NOT_REQUIRED");
             insertGraduationRequest(jdbc, IMPORTED_WITH_CERTIFICATE_OF_ANOTHER_ENROLLMENT, "APPROVED", null, "NOT_REQUIRED");
+            insertGraduationRequest(jdbc, IMPORTED_ALREADY_DISABLED, "APPROVED", null, "DISABLED");
             insertCertificate(jdbc, "0123456789ABCDEFGHJKMNP011", IMPORTED_NOT_REQUIRED_WITH_VALID_CERTIFICATE, "VALID");
             insertCertificate(jdbc, "0123456789ABCDEFGHJKMNP012", IMPORTED_NOT_REQUIRED_WITH_REVOKED_CERTIFICATE, "REVOKED");
             insertCertificate(jdbc, "0123456789ABCDEFGHJKMNP013", CERTIFICATE_OF_ANOTHER_ENROLLMENT, "VALID");
 
             Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
 
-            Map<Long, String> reviewStatusByEnrollment = jdbc.query(
-                    "select program_enrollment_id, certificate_review_status from graduation_request",
-                    rs -> {
-                        Map<Long, String> result = new HashMap<>();
-                        while (rs.next()) {
-                            result.put(rs.getLong(1), rs.getString(2));
-                        }
-                        return result;
-                    });
+            Map<Long, String> reviewStatusByEnrollment = reviewStatusByEnrollment(jdbc);
             assertThat(reviewStatusByEnrollment).containsOnly(
                     Map.entry(IMPORTED_NOT_REQUIRED_WITHOUT_CERTIFICATE, "PENDING_REVIEW"),
                     Map.entry(IMPORTED_NOT_REQUIRED_WITH_VALID_CERTIFICATE, "ENABLED"),
@@ -68,7 +62,37 @@ class ImportedGraduationReviewCorrectionMigrationTest {
                     Map.entry(APPROVED_BY_DIRECTOR, "NOT_REQUIRED"),
                     Map.entry(REJECTED_WITHOUT_DECIDER, "NOT_REQUIRED"),
                     Map.entry(REQUESTED_WITHOUT_DECIDER, "NOT_REQUIRED"),
-                    Map.entry(IMPORTED_WITH_CERTIFICATE_OF_ANOTHER_ENROLLMENT, "PENDING_REVIEW"));
+                    Map.entry(IMPORTED_WITH_CERTIFICATE_OF_ANOTHER_ENROLLMENT, "PENDING_REVIEW"),
+                    Map.entry(IMPORTED_ALREADY_DISABLED, "DISABLED"));
+
+            jdbc.execute(correctionSql());
+
+            assertThat(reviewStatusByEnrollment(jdbc)).isEqualTo(reviewStatusByEnrollment);
+        }
+    }
+
+    private static Map<Long, String> reviewStatusByEnrollment(JdbcTemplate jdbc) {
+        return jdbc.query(
+                "select program_enrollment_id, certificate_review_status from graduation_request",
+                rs -> {
+                    Map<Long, String> result = new HashMap<>();
+                    while (rs.next()) {
+                        result.put(rs.getLong(1), rs.getString(2));
+                    }
+                    return result;
+                });
+    }
+
+    private static String correctionSql() {
+        try {
+            org.springframework.core.io.Resource[] found = new org.springframework.core.io.support.PathMatchingResourcePatternResolver()
+                    .getResources("classpath:db/migration/V*__graduation_imported_pending_review_fix.sql");
+            assertThat(found).hasSize(1);
+            try (java.io.InputStream in = found[0].getInputStream()) {
+                return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
         }
     }
 

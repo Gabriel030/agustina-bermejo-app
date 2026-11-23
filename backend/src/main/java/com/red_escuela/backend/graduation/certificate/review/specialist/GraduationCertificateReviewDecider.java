@@ -53,12 +53,12 @@ public class GraduationCertificateReviewDecider {
     @Transactional
     public Long decide(Long graduationRequestId, CertificateReviewDecision decision, String rawReason) {
         String reason = decision == CertificateReviewDecision.DISABLE ? normalizedDisableReason(rawReason) : null;
-        GraduationRequest request = graduationRequestRepository.findById(graduationRequestId)
+        GraduationRequest request = graduationRequestRepository.findByIdForUpdate(graduationRequestId)
                 .orElseThrow(() -> new GraduationRequestNotFoundException(graduationRequestId));
-        requireDecidable(request);
         CertificateReviewStatus before = request.getCertificateReviewStatus();
         CertificateReviewStatus after = decision == CertificateReviewDecision.ENABLE
                 ? CertificateReviewStatus.ENABLED : CertificateReviewStatus.DISABLED;
+        requireDecidable(request, after);
         request.setCertificateReviewStatus(after);
         request.setCertificateReviewedBy(currentActorFinder.currentPerson());
         request.setCertificateReviewedAt(LocalDateTime.now(clock));
@@ -70,9 +70,10 @@ public class GraduationCertificateReviewDecider {
         return request.getId();
     }
 
-    private void requireDecidable(GraduationRequest request) {
+    private void requireDecidable(GraduationRequest request, CertificateReviewStatus target) {
         boolean reviewable = request.getStatus() == GraduationRequestStatus.APPROVED
-                && request.getCertificateReviewStatus() != CertificateReviewStatus.NOT_REQUIRED;
+                && request.getCertificateReviewStatus() != CertificateReviewStatus.NOT_REQUIRED
+                && request.getCertificateReviewStatus() != target;
         if (!reviewable || hasIssuedCertificate(request)) {
             throw new InvalidGraduationCertificateReviewDecisionException(request.getId());
         }

@@ -160,4 +160,13 @@ class GraduationSourceTest {
         when(debtCheck.hasDebt(7L)).thenReturn(true);
         assertThatThrownBy(() -> programSource.requireEligible(1L)).isInstanceOf(GraduationCertificateNotEligibleException.class);
     }
+
+    @Test
+    void completedEnrollmentWithoutAnyGraduationRequestKeepsBeingEligible() {
+        program(ProgramEnrollmentStatus.COMPLETED);
+        when(graduationRequestRepository.findFirstByProgramEnrollmentIdAndStatusOrderByIdDesc(1L, GraduationRequestStatus.APPROVED))
+                .thenReturn(Optional.empty());
+
+        assertThatCode(() -> programSource.requireEligible(1L)).doesNotThrowAnyException();
+    }
 }

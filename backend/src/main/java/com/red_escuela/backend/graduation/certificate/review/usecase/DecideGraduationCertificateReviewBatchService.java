@@ -14,6 +14,7 @@ import com.red_escuela.backend.shared.exception.ReportsErrorCode;
 import com.red_escuela.backend.shared.exception.UnprocessableEntityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,16 +49,19 @@ public class DecideGraduationCertificateReviewBatchService implements DecideGrad
                                                                      DecideGraduationCertificateReviewBatchRequest request) {
         try {
             decider.decide(graduationRequestId, request.decision(), request.reason());
-            return new GraduationCertificateReviewBatchItemResponse(graduationRequestId, CertificateReviewBatchOutcome.DECIDED,
-                    reader.get(graduationRequestId), null);
         } catch (RuntimeException e) {
             log.warn("Falló la revisión en lote del trámite de egreso {}: {}", graduationRequestId, e.getMessage());
             return new GraduationCertificateReviewBatchItemResponse(graduationRequestId, CertificateReviewBatchOutcome.FAILED, null,
                     errorCodeOf(e));
         }
+        return new GraduationCertificateReviewBatchItemResponse(graduationRequestId, CertificateReviewBatchOutcome.DECIDED,
+                reader.get(graduationRequestId), null);
     }
 
     private String errorCodeOf(RuntimeException e) {
+        if (e instanceof ObjectOptimisticLockingFailureException) {
+            return ErrorCodeResponse.CONCURRENT_MODIFICATION_CODE;
+        }
         boolean domainError = e instanceof ConflictException || e instanceof NotFoundException
                 || e instanceof UnprocessableEntityException || e instanceof ReportsErrorCode;
         return domainError ? ErrorCodeResponse.codeOf(e.getClass()) : UNEXPECTED_ERROR_CODE;

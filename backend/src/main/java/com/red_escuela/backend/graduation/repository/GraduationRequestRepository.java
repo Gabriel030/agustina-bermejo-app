@@ -3,9 +3,11 @@ package com.red_escuela.backend.graduation.repository;
 import com.red_escuela.backend.graduation.entity.CertificateReviewStatus;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -27,6 +29,19 @@ public interface GraduationRequestRepository extends JpaRepository<GraduationReq
     boolean existsByProgramEnrollmentIdAndStatus(Long programEnrollmentId, GraduationRequestStatus status);
 
     boolean existsByProgramEnrollmentIdAndStatusNot(Long programEnrollmentId, GraduationRequestStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select gr from GraduationRequest gr where gr.id = :id")
+    Optional<GraduationRequest> findByIdForUpdate(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select gr from GraduationRequest gr
+            where gr.programEnrollment.id = :programEnrollmentId
+              and gr.status = com.red_escuela.backend.graduation.entity.GraduationRequestStatus.APPROVED
+            order by gr.id
+            """)
+    List<GraduationRequest> lockApprovedByProgramEnrollmentId(@Param("programEnrollmentId") Long programEnrollmentId);
 
     Optional<GraduationRequest> findFirstByProgramEnrollmentIdAndStatusOrderByIdDesc(Long programEnrollmentId,
             GraduationRequestStatus status);

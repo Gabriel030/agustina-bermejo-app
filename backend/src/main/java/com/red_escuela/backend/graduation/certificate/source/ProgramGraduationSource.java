@@ -35,6 +35,11 @@ public class ProgramGraduationSource implements GraduationSource {
     }
 
     @Override
+    public void lockForIssuance(Long enrollmentId) {
+        graduationRequestRepository.lockApprovedByProgramEnrollmentId(enrollmentId);
+    }
+
+    @Override
     public void requireEligible(Long enrollmentId) {
         ProgramEnrollment enrollment = programEnrollmentFinder.requireById(enrollmentId);
         if (enrollment.getStatus() != ProgramEnrollmentStatus.COMPLETED || enrollment.getCompletionDate() == null) {
