@@ -19,6 +19,6 @@ public class IssueRegularCertificateService implements IssueRegularCertificateUs
     @Override
     public RegularCertificateResponse issue(IssueRegularCertificateRequest request) {
         return issuer.issue(new IssueRegularCertificateCommand(request.kind(), request.enrollmentId(),
-                request.standingConfirmed(), request.standingEvidence(), RegularCertificateChannel.STAFF, request.exceptionId()));
+                request.standingConfirmed(), request.standingEvidence(), RegularCertificateChannel.STAFF, request.exceptionId(), null));
     }
 }

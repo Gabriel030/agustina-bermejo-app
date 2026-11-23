@@ -38,7 +38,8 @@ describe('constancias default handlers', () => {
       expect(generated.status).toBe(201);
       expect(generated.body.documentType).toBe(type);
     }
-    expect((await call('GET', '/exam-boards/9/exam-certificates/candidates')).body).toHaveLength(3);
+    expect((await call('GET', '/exam-boards/9/exam-certificates/candidates')).body).toHaveLength(5);
+    expect((await call('GET', '/exam-certificates/12/pdf')).status).toBe(200);
     expect((await call('POST', '/exam-boards/9/exam-certificates/batch', { registrationIds: [55] })).body.issuedCount).toBe(1);
     expect((await call('POST', '/exam-certificates/12/revoke', { reason: 'Motivo suficiente' })).body.status).toBe('REVOKED');
   });
@@ -70,6 +71,14 @@ describe('constancias default handlers', () => {
   it('changeSectionCandidatesIncludeASelectableSectionWithoutBlockFields', async () => {
     const { body } = await call('GET', '/me/section-enrollments/3/change-section-candidates');
     expect(body.map((candidate) => candidate.blockReason)).toEqual(['CURRENT_SECTION', null, 'SECTION_FULL', 'SCHEDULE_OVERLAP']);
+  });
+
+  it('certificateExceptionEndpointsExposeTheDebtAndTheCounters', async () => {
+    const summary = (await call('GET', '/certificate-exceptions/summary')).body;
+    expect(Object.keys(summary).sort()).toEqual(['approved', 'consumed', 'expired', 'pending', 'rejected', 'withdrawn']);
+    const detail = (await call('GET', '/certificate-exceptions/9')).body;
+    expect(detail.debtTotalAtRequest).toEqual({ amount: '45000.00', currency: 'ARS' });
+    expect(detail.overdueInstallmentsAtRequest).toBe(2);
   });
 
   it('documentTemplatesEndpointsAnswerAgainstTheContract', async () => {
@@ -113,6 +122,7 @@ describe('constancias state handlers', () => {
     ['changeSectionHasRecordsHandler', 'POST', '/me/section-enrollments/1/change-section', 409, 'code', 'SECTION_HAS_RECORDS', { newSectionId: 2 }],
     ['documentTemplateForbiddenHandler', 'PUT', '/certificate-templates/documents/EXAM_CERTIFICATE/draft', 403, 'code', 'FORBIDDEN', { content: certificateTemplateContent() }],
     ['documentTemplatePublishIncompleteHandler', 'POST', '/certificate-templates/documents/EXAM_CERTIFICATE/publish', 422, 'code', 'TEMPLATE_INCOMPLETE'],
+    ['documentTemplatePublishSignatureMissingHandler', 'POST', '/certificate-templates/documents/EXAM_CERTIFICATE/publish', 422, 'code', 'TEMPLATE_SIGNATURE_MISSING'],
   ];
 
   it.each(cases)('%s', async (name, method, path, status, field, value, body) => {
@@ -136,5 +146,27 @@ describe('constancias state handlers', () => {
     server.use(states.examCertificateCandidatesOnlyIssuedHandler);
     const { body } = await call('GET', '/exam-boards/1/exam-certificates/candidates');
     expect(body.every((candidate) => candidate.availability === 'ALREADY_ISSUED')).toBe(true);
+  });
+
+  it('regularRequestsWithDebtDataHandlerCoversDebtNoDebtBillingOffAndOpenExceptions', async () => {
+    server.use(states.regularRequestsWithDebtDataHandler);
+    const { body } = await call('GET', '/regular-certificate-requests');
+    expect(body[0]).toMatchObject({ hasDebt: true, overdueInstallments: 2, exceptionId: null });
+    expect(body[1]).toMatchObject({ hasDebt: false, overdueInstallments: 0 });
+    expect(body[2]).toMatchObject({ hasDebt: null, totalDue: null, overdueInstallments: null });
+    expect(body[3]).toMatchObject({ exceptionStatus: 'PENDING', exceptionValidUntil: null });
+    expect(body[4]).toMatchObject({ exceptionStatus: 'APPROVED', exceptionValidUntil: '2026-11-30T10:00:00' });
+  });
+
+  it('regularRequestsBillingOffHandlerReturnsNullDebt', async () => {
+    server.use(states.regularRequestsBillingOffHandler);
+    const { body } = await call('GET', '/regular-certificate-requests');
+    expect(body[0]).toMatchObject({ totalDue: null, overdueInstallments: null, hasDebt: null });
+  });
+
+  it('certificateExceptionSummaryEmptyHandlerReturnsZeroCounters', async () => {
+    server.use(states.certificateExceptionSummaryEmptyHandler);
+    const { body } = await call('GET', '/certificate-exceptions/summary');
+    expect(Object.values(body).every((count) => count === 0)).toBe(true);
   });
 });

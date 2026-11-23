@@ -2,19 +2,15 @@ package com.red_escuela.backend.identity;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.permission.PermissionSnapshotCache;
-import com.red_escuela.backend.shared.permission.RequiresPermission;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.GatePermissionProbeConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.context.annotation.Profile;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -28,36 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles({"test", "gate-probe"})
-@Import(PermissionGridIT.ProbeConfig.class)
+@Import(GatePermissionProbeConfiguration.class)
 class PermissionGridIT extends AbstractIntegrationTest {
-
-    @RestController
-    @Profile("gate-probe")
-    static class GridProbeController {
-
-        @GetMapping("/grid-probe/create")
-        @RequiresPermission(code = "announcement.create", legacyRoles = "ROLE_ADMINISTRATIVO")
-        String create() {
-            return "ok";
-        }
-
-        @GetMapping("/grid-probe/docente-legacy")
-        @RequiresPermission(code = "announcement.create", legacyRoles = "ROLE_DOCENTE")
-        String docenteLegacy() {
-            return "ok";
-        }
-
-        @GetMapping("/grid-probe/fixed")
-        @RequiresPermission(code = "announcement.fixed_probe", legacyRoles = "ROLE_DIRECTOR,ROLE_DOCENTE")
-        String fixed() {
-            return "ok";
-        }
-    }
-
-    @TestConfiguration
-    @Import(GridProbeController.class)
-    static class ProbeConfig {
-    }
 
     @Autowired
     MockMvc mockMvc;
@@ -230,7 +198,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
 
     @Test
     void theSeededSensitivePermissionsAreExactlyTheCriticalOnesOfEachMigratedModule() throws Exception {
-        assertThat(jdbcTemplate.queryForList("select code from permission where sensitive", String.class)).containsExactlyInAnyOrder("attendance.cancel_class_session", "attendance.justify", "attendance.review_change_request", "attendance.review_justification", "audit.read", "dataimport.commit", "dataimport.rollback", "dataimport.seal", "identity.create_staff", "identity.update_staff", "identity.withdraw_staff", "identity.reactivate_staff", "identity.reset_staff_password", "identity.withdraw_student", "identity.reactivate_student", "identity.reset_student_password", "platform.change_payment_methods", "platform.change_whatsapp_settings", "notification.confirm_broadcast", "notification.cancel_broadcast", "notification.send_invitation_wave", "notification.create_message_template", "notification.update_message_template", "notification.deactivate_message_template", "notification.create_whatsapp_template", "notification.update_whatsapp_template", "graduation.approve_request", "graduation.reject_request", "graduation.reissue_certificate", "certificate.revoke", "certificate.issue", "certificate.templates_manage", "enrollment.change_subject_section", "enrollment.withdraw_subject", "enrollment.withdraw_enrollment", "enrollment.advance_billing_year", "enrollment.create_ad_hoc_invoice", "enrollment.grant_enrollment_fee_exemption", "enrollment.revoke_enrollment_fee_exemption", "enrollment.manage_waitlist", "enrollment.review_program_application", "evaluation.review_section_evaluation_config", "evaluation.publish_grades", "evaluation.record_exam_recovery", "evaluation.correct_published_grade", "evaluation.close_exam_board", "evaluation.record_exam_board_final_grades", "evaluation.confirm_commission_closure", "evaluation.approve_commission_closure", "evaluation.reopen_commission_closure", "evaluation.manage_closure_exceptions", "evaluation.cancel_exam_board", "academicstructure.review_offering_cycle", "academicstructure.review_section_modification", "academicstructure.change_program_status", "academicstructure.change_course_status", "academicstructure.change_catalog_visibility", "academicstructure.delete_holiday", "academicstructure.review_subject", "academicstructure.change_subject_status", "academicstructure.change_section_status", "academicstructure.remove_section_instructor", "academicstructure.change_term_status", "academicstructure.manage_term_enrollment_window", "billing.register_cash_payment", "billing.register_annual_upfront_cash_payment", "billing.submit_bank_transfer_receipt", "billing.review_bank_transfer_receipt", "billing.revoke_payment_approval", "billing.register_chargeback", "billing.reverse_chargeback", "billing.request_refund", "billing.complete_refund", "billing.fail_refund", "billing.issue_credit_note", "billing.cancel_invoice", "billing.allocate_account_credit", "billing.run_billing", "billing.issue_monthly_invoices_manually", "billing.retry_draft_invoice_items", "billing.approve_draft_invoices", "billing.discard_draft_invoices", "billing.manage_discount_definition", "billing.grant_student_discount", "billing.revoke_student_discount", "billing.manage_promotion", "billing.propose_price_change", "billing.cancel_price_version", "billing.manage_payment_plan_options", "billing.manage_year_billing_template", "billing.manage_year_billing_cohorts", "billing.set_late_payment_settings", "billing.manage_payment_gateway", "billing.decide_authorization_request", "billing.withdraw_authorization_request", "billing.request_advance_enrollment_fee", "billing.publish_annual_upfront_terms");
+        assertThat(jdbcTemplate.queryForList("select code from permission where sensitive", String.class)).containsExactlyInAnyOrder("attendance.cancel_class_session", "attendance.justify", "attendance.review_change_request", "attendance.review_justification", "audit.read", "dataimport.commit", "dataimport.rollback", "dataimport.seal", "identity.create_staff", "identity.update_staff", "identity.withdraw_staff", "identity.reactivate_staff", "identity.reset_staff_password", "identity.withdraw_student", "identity.reactivate_student", "identity.reset_student_password", "platform.change_payment_methods", "platform.change_whatsapp_settings", "notification.confirm_broadcast", "notification.cancel_broadcast", "notification.send_invitation_wave", "document.debt-exception.issue", "notification.create_message_template", "notification.update_message_template", "notification.deactivate_message_template", "notification.create_whatsapp_template", "notification.update_whatsapp_template", "graduation.approve_request", "graduation.reject_request", "graduation.reissue_certificate", "graduation.review_imported_certificate", "certificate.revoke", "certificate.issue", "certificate.templates_manage", "certificate.signers_manage", "certificate.document_settings_manage", "certificate.regular_settings_manage", "certificate.exceptions_create_direct", "certificate.exceptions_approve", "certificate.exceptions_reject", "certificate.exam_issue_batch", "enrollment.change_subject_section", "enrollment.withdraw_subject", "enrollment.withdraw_enrollment", "enrollment.advance_billing_year", "enrollment.create_ad_hoc_invoice", "enrollment.grant_enrollment_fee_exemption", "enrollment.revoke_enrollment_fee_exemption", "enrollment.manage_waitlist", "enrollment.review_program_application", "enrollment.record_subject_equivalence", "enrollment.void_subject_equivalence", "evaluation.review_section_evaluation_config", "evaluation.publish_grades", "evaluation.record_exam_recovery", "evaluation.correct_published_grade", "evaluation.close_exam_board", "evaluation.record_exam_board_final_grades", "evaluation.confirm_commission_closure", "evaluation.approve_commission_closure", "evaluation.reopen_commission_closure", "evaluation.manage_closure_exceptions", "evaluation.cancel_exam_board", "academicstructure.review_offering_cycle", "academicstructure.review_section_modification", "academicstructure.change_program_status", "academicstructure.change_course_status", "academicstructure.change_catalog_visibility", "academicstructure.delete_holiday", "academicstructure.review_subject", "academicstructure.change_subject_status", "academicstructure.change_section_status", "academicstructure.remove_section_instructor", "academicstructure.change_term_status", "academicstructure.manage_term_enrollment_window", "billing.register_cash_payment", "billing.register_annual_upfront_cash_payment", "billing.submit_bank_transfer_receipt", "billing.review_bank_transfer_receipt", "billing.revoke_payment_approval", "billing.register_chargeback", "billing.reverse_chargeback", "billing.request_refund", "billing.complete_refund", "billing.fail_refund", "billing.issue_credit_note", "billing.cancel_invoice", "billing.allocate_account_credit", "billing.run_billing", "billing.issue_monthly_invoices_manually", "billing.retry_draft_invoice_items", "billing.approve_draft_invoices", "billing.discard_draft_invoices", "billing.manage_discount_definition", "billing.grant_student_discount", "billing.revoke_student_discount", "billing.manage_promotion", "billing.propose_price_change", "billing.cancel_price_version", "billing.manage_payment_plan_options", "billing.manage_year_billing_template", "billing.manage_year_billing_cohorts", "billing.set_late_payment_settings", "billing.manage_payment_gateway", "billing.decide_authorization_request", "billing.withdraw_authorization_request", "billing.request_advance_enrollment_fee", "billing.publish_annual_upfront_terms");
         mockMvc.perform(get("/permissions/catalog").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.modules[?(@.module=='audit')].permissions[0].sensitive").value(org.hamcrest.Matchers.hasItem(true)))
@@ -281,7 +249,7 @@ class PermissionGridIT extends AbstractIntegrationTest {
     void gridAndCatalogExposeTheSeedGroupedByModuleWithDirectorHoldingEverything() throws Exception {
         mockMvc.perform(get("/permissions/catalog").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.modules[?(@.module=='certificate')].permissions.length()").value(org.hamcrest.Matchers.contains(8)))
+                .andExpect(jsonPath("$.modules[?(@.module=='certificate')].permissions.length()").value(org.hamcrest.Matchers.contains(25)))
                 .andExpect(jsonPath("$.modules[?(@.module=='audit')].permissions[0].code").value(org.hamcrest.Matchers.contains("audit.read")));
         mockMvc.perform(get("/permissions/grid").with(user("director-it").roles("DIRECTOR")))
                 .andExpect(status().isOk())

@@ -12,6 +12,7 @@ enum OwnershipKind {
     ANNUAL_UPFRONT_REQUEST("annual-upfront-request", MatrixRole.ALUMNO, 404),
     STAFF_RECORD("staff-record", MatrixRole.DOCENTE, 404),
     EXAM_BOARD_TRIBUNAL("exam-board-tribunal", MatrixRole.DOCENTE, 404),
+    EXAM_CERTIFICATE_TRIBUNAL("exam-certificate-tribunal", MatrixRole.DOCENTE, 404),
     INVOICE("invoice", MatrixRole.ALUMNO, 404),
     NOTIFICATION("notification", MatrixRole.ALUMNO, 404),
     SESSION("session", MatrixRole.ALUMNO, 404),
@@ -21,6 +22,7 @@ enum OwnershipKind {
     AUTHORIZATION_REQUEST("authorization-request", MatrixRole.ADMINISTRATIVO, 404),
     ATTENDANCE_STUDENT("attendance-student", MatrixRole.ALUMNO, 404),
     ANNOUNCEMENT_INSTRUCTOR("announcement-instructor", MatrixRole.DOCENTE, 404),
+    ANNOUNCEMENT_DELETE_INSTRUCTOR("announcement-delete-instructor", MatrixRole.DOCENTE, 404),
     CERTIFICATE_EXCEPTION("certificate-exception", MatrixRole.ADMINISTRATIVO, 404);
 
     private final String label;

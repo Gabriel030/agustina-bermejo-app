@@ -4,6 +4,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.permission.PermissionSnapshotCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.GatePermissionProbeConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -25,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles({"test", "gate-probe"})
-@Import(PermissionGridIT.ProbeConfig.class)
+@Import(GatePermissionProbeConfiguration.class)
 class PermissionModesIT extends AbstractIntegrationTest {
 
     @Autowired
@@ -152,7 +153,7 @@ class PermissionModesIT extends AbstractIntegrationTest {
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("DIRECTOR_PERMISSIONS_NOT_EDITABLE"));
         putModes(modes("Válido y luego inválido", change("PRECEPTOR", "announcement", "SHADOW"), change("NOPE", "announcement", "SHADOW")))
                 .andExpect(status().isUnprocessableEntity());
-        assertThat(jdbcTemplate.queryForObject("select count(*) from permission_module_mode", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from permission_module_mode where not (role = 'SUBDIRECTOR' and module = 'document')", Integer.class)).isZero();
     }
 
     @Test

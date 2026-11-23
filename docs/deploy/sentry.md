@@ -1,0 +1,50 @@
+# Sentry (errores 5xx del backend)
+
+Apagado por defecto. Con `SENTRY_DSN` vacío el SDK no se inicializa y no abre ninguna conexión.
+
+**No activar el DSN en ningún entorno real hasta que Gabriel resuelva tres cosas**: SaaS de Sentry o GlitchTip autoalojado, tunnel o ajuste de CSP para el front, y privacidad con datos de menores de edad.
+
+## Activar (cuando esté resuelto lo anterior)
+
+1. Crear un proyecto Java en Sentry (o GlitchTip) y copiar el DSN.
+2. Definir `SENTRY_DSN` en `deploy/.env`. `APP_ENV` (entorno) y `APP_VERSION` (release) se reutilizan.
+3. Reiniciar el backend. Probar con un 5xx controlado en staging y revisar en Sentry que el evento llegó depurado.
+
+## Qué se reporta
+
+Solo los errores que el handler global responde como 5xx: el catch-all (`INTERNAL_ERROR`), `DataIntegrityBrokenException` y `ExternalServiceException`. Los 4xx y los 409 no se reportan.
+
+La captura automática (MVC, logback, handler de excepciones no capturadas, sesiones, hilos, client reports) está desactivada. Tracing en 0, sin breadcrumbs, `sendDefaultPii=false`, sin cuerpo de request y sin configuración externa del SDK.
+
+## Qué se conserva (allowlist)
+
+El `SentryEventScrubber` (`beforeSend`) deja el evento solo con:
+
+- Clase de cada excepción y de cada causa, y sus stack frames (clase, método, archivo, línea; sin variables, sin código fuente ni rutas absolutas).
+- Como valor de cada excepción y causa (reemplaza al mensaje): `code=<código de error>`; si es una `SQLException`, además `sqlState=<SQLSTATE>`; si es un `PSQLException`, además `constraint=<nombre del constraint>`. Nunca el `Detail` ni el `Failing row contains`.
+- El tag `requestId`, solo si tiene formato UUID.
+- `environment` y `release`.
+
+Hoy `ExternalServiceException` no expone el status HTTP del tercero, así que solo se conserva su código.
+
+## Qué se descarta
+
+Mensaje del evento y parámetros, request completo (headers, cookies, body, query, URL), usuario, breadcrumbs, extras, contexts, threads, fingerprint, transaction, módulos, debug_meta, nombre del servidor y cualquier otro tag. El mensaje completo sigue en el log local con el mismo `requestId`.
+
+Sobre lo que se conserva se aplica además un enmascarado por patrones (`[redacted]`): JWT, emails, CUIL/CUIT, teléfonos, tokens URL-safe de 32 caracteres o más y DNI (con puntos, espacios o comas), con el texto truncado a 2000 caracteres antes de enmascarar.
+
+## Advertencia de privacidad
+
+La allowlist evita que los mensajes de dominio y de base de datos (que pueden traer nombres de alumnos o familias, incluidos menores) salgan del backend. Aun así, los nombres de clase y de constraint son parte del evento. Antes de activar en producción: confirmar el contrato con el proveedor (región, retención, DPA) y no ampliar lo que se envía sin revisión de seguridad.
+
+## Túnel del front (`POST /public/monitoring/tunnel`)
+
+El front puede enviar sus eventos al backend en lugar de hablar directo con GlitchTip/Sentry (opción `tunnel` del SDK, parámetro `tunnel` de `startClientErrorMonitoring`). Así la CSP del front no necesita abrir `connect-src` al host del proveedor.
+
+- Inerte con `SENTRY_DSN` vacío: responde 404 y no abre ninguna conexión.
+- El host destino sale solo del `SENTRY_DSN` del backend (`https://<host>/api/<proyecto>/envelope/`); nunca del cuerpo ni de un header. El `dsn` del encabezado del envelope debe ser idéntico al configurado, si no responde 400.
+- Tope de tamaño: `SENTRY_TUNNEL_MAX_BYTES` (204800 por defecto), 413 si se pasa. No sigue redirecciones; timeouts de 2 s (conexión) y 3 s (lectura); 502 si el upstream no responde.
+- Solo acepta items `event`, `transaction` y `session`; cualquier otro tipo responde 400. Si el proveedor responde 3xx/4xx/5xx, el túnel responde 502.
+- Rate limit por IP con instancia propia (no comparte bucket con refresh) y la misma capacidad que `RATE_LIMIT_REFRESH_PER_MINUTE`; 429 con `Retry-After`. Seguimiento: un tope global del túnel, hoy solo hay tope por IP.
+- Al cablear `main.jsx`, el DSN del front (`VITE_SENTRY_DSN`) debe ser idéntico al `SENTRY_DSN` del backend, o el túnel responde 400.
+- Pendiente (fuera de este PR): cablear `tunnel` en `main.jsx` con su variable de build y ajustar la CSP/Caddy.

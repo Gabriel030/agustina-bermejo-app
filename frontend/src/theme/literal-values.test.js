@@ -5,7 +5,6 @@ const sources = import.meta.glob('/src/**/*.{js,jsx}', { query: '?raw', import: 
 const EXEMPT_PATHS = [/^\/src\/theme\//, /^\/src\/components\/ui\//, /^\/src\/test\//, /\.test\.jsx?$/];
 
 const ALLOWED = {
-  '/src/features/graduation/certificates/components/CertificateVerdict.jsx': ['arbitrary pixel font size'],
   '/src/features/evaluation/components/CalendarioConfiguracion.jsx': ['arbitrary pixel font size'],
 };
 

@@ -1,7 +1,5 @@
 package com.red_escuela.backend.enrollment.api;
 
-import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
-import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -16,11 +14,11 @@ import java.util.Optional;
 public class BillingEnrollmentFactsFinder {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final EnrollmentPaymentStandingQuery standingQuery;
+    private final EnrollmentBillingStandingPort standingPort;
 
     public BillingEnrollmentFactsFinder(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                                              EnrollmentPaymentStandingQuery standingQuery) {
-        this.standingQuery = standingQuery;
+                                              EnrollmentBillingStandingPort standingPort) {
+        this.standingPort = standingPort;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
@@ -31,7 +29,7 @@ public class BillingEnrollmentFactsFinder {
         return programEnrollmentRepository.findById(programEnrollmentId)
                 .map(enrollment -> new BillingEnrollmentFacts(enrollment.getStudent().getId(), enrollment.getProgram().getCurrency(), enrollment.getProgram().getId(),
                         ref.map(ProgramEnrollmentRepository.BillingTemplateRef::getTemplateId).orElse(null), null, null, programEnrollmentRepository.existsByIdAndStatus(programEnrollmentId, ProgramEnrollmentStatus.ENROLLED)
-                                && !standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).map(EnrollmentPaymentStandingView::stopsBilling).orElse(false)));
+                                && !standingPort.isBillingStoppedForProgramEnrollment(programEnrollmentId)));
     }
 
     @Transactional(readOnly = true)

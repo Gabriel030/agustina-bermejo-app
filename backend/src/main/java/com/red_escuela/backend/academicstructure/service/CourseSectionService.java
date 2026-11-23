@@ -44,6 +44,7 @@ public class CourseSectionService {
     private final SectionEvaluationSetupPort evaluationSetupPort;
     private final SectionIdentityAssigner identityAssigner;
     private final SectionConflictChecker conflictChecker;
+    private final SectionReactivationAvailabilityChecker reactivationChecker;
     private final SectionScheduleSlotRepository slotRepository;
     private final SectionEnrollmentActivityPort enrollmentActivityPort;
     private final CapacityChangeEvents capacityChangeEvents;
@@ -58,6 +59,7 @@ public class CourseSectionService {
             SectionEvaluationSetupPort evaluationSetupPort,
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
+            SectionReactivationAvailabilityChecker reactivationChecker,
             SectionScheduleSlotRepository slotRepository,
             SectionEnrollmentActivityPort enrollmentActivityPort,
             CapacityChangeEvents capacityChangeEvents) {
@@ -72,6 +74,7 @@ public class CourseSectionService {
         this.evaluationSetupPort = evaluationSetupPort;
         this.identityAssigner = identityAssigner;
         this.conflictChecker = conflictChecker;
+        this.reactivationChecker = reactivationChecker;
         this.slotRepository = slotRepository;
     }
 
@@ -152,6 +155,7 @@ public class CourseSectionService {
     @Transactional
     public void reactivate(Long id) {
         CourseSubjectSection section = findOrThrow(id);
+        reactivationChecker.checkCourseSectionCanBeReactivated(section);
         section.setStatus(StatusType.ACTIVE);
         sectionRepository.save(section);
     }

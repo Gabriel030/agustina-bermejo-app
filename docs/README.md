@@ -34,9 +34,14 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [plans/955.md](cell/plans/955.md) | Cierre de 24-B: el dueño aprueba el cambio de email pedido por el personal | vigente |
 | [plans/956.md](cell/plans/956.md) | Cierre de 24-D: límites de tamaño de subidas probados con servidor real | vigente |
 | [plans/1196.md](cell/plans/1196.md) | E29-D11: invitaciones por oleadas a alumnos importados | vigente |
+| [plans/e22-11-12.md](cell/plans/e22-11-12.md) | E22 22.11 y 22.12: eventos síncronos entre módulos (síncronos a propósito, probados; billing con compuerta) | vigente |
 | [reports/e18-violaciones.md](cell/reports/e18-violaciones.md) | E18 M0: violaciones de Modulith medidas, ciclos, dependencias hacia arriba y procesos a cortar | vigente |
+| [reports/e25-b2-invariantes.md](cell/reports/e25-b2-invariantes.md) | E25 B2 S1: invariantes que solo protege el código, candidatas a único parcial o CHECK, con queries de verificación | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
+| [progress/e2-2-4a.md](cell/progress/e2-2-4a.md) | Estado de E2 2.4a (mapa curricular del alumno: correlativas completas e inscripción vigente) | vigente |
+| [progress/22-9d2.md](cell/progress/22-9d2.md) | Estado de T22.9d-2 (attendance: cargar asistencia y cancelar clase al compositor) | vigente |
+| [progress/22-9d1.md](cell/progress/22-9d1.md) | Estado de la subtarea T22.9d-1 (attendance: pedidos de cambio y justificaciones al compositor) | vigente |
 
 ## Release (`docs/release/`)
 
@@ -53,6 +58,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [legal/derechos-de-las-personas.md](legal/derechos-de-las-personas.md) | Procedimiento para pedidos de acceso, rectificación y supresión de datos personales (Épica 29, C5): inventario de datos, qué no se puede borrar, plantillas y paquetes futuros; pendiente de abogado | borrador |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
 | [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
+| [deploy/sentry.md](deploy/sentry.md) | Reporte de errores 5xx del backend a Sentry: cómo activarlo, qué se depura y advertencia de privacidad | vigente |
 | [deploy/backup-status.schema.json](deploy/backup-status.schema.json) | JSON Schema (draft 2020-12, `schemaVersion` 1) del archivo de estado que escriben los scripts de backup y lee `GET /backups/status` | vigente |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
 | [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |

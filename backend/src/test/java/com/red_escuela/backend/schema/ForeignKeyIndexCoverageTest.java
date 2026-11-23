@@ -130,6 +130,8 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("discount_definition.created_by_id", AUDIT_ACTOR);
         accepted.put("discount_definition.program_cohort_id", REACHED_BY_JOIN_NOT_EVALUATED);
         accepted.put("discount_definition_status_change.actor_person_id", AUDIT_ACTOR);
+        accepted.put("document_debt_exception.issued_by_id", AUDIT_ACTOR);
+        accepted.put("document_debt_exception.used_by_id", AUDIT_ACTOR);
         accepted.put("enrollment_fee_exemption.granted_by_id", AUDIT_ACTOR);
         accepted.put("enrollment_fee_exemption.revoked_by_id", AUDIT_ACTOR);
         accepted.put("enrollment_fee_exemption.template_id", LEADING_COLUMN_SERVED);
@@ -149,6 +151,10 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("import_batch_event.actor_person_id", AUDIT_ACTOR);
         accepted.put("institute_setting.updated_by_id", AUDIT_ACTOR);
         accepted.put("institute_setting_change_log.actor_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.cancelled_by_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.paused_by_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.resumed_by_person_id", AUDIT_ACTOR);
+        accepted.put("invitation_wave.started_by_person_id", AUDIT_ACTOR);
         accepted.put("invoice.monthly_invoice_run_id", SERVED_BY_EQUIVALENT_PARTIAL);
         accepted.put("invoice.origin_invoice_id,student_current_account_id", COMPOSITE_CONSISTENCY);
         accepted.put("invoice.student_current_account_id,currency", COMPOSITE_CONSISTENCY);
@@ -209,6 +215,8 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("regular_certificate_request.certificate_id", PENDING_USAGE_REVIEW);
         accepted.put("regular_certificate_request.requested_by_id", AUDIT_ACTOR);
         accepted.put("regular_certificate_request.resolved_by_id", AUDIT_ACTOR);
+        accepted.put("exam_certificate.issued_by_id", AUDIT_ACTOR);
+        accepted.put("exam_certificate.revoked_by_id", AUDIT_ACTOR);
         accepted.put("regular_student_certificate.issued_by_id", AUDIT_ACTOR);
         accepted.put("regular_student_certificate.request_id", PENDING_USAGE_REVIEW);
         accepted.put("regular_student_certificate.revoked_by_id", AUDIT_ACTOR);
@@ -222,6 +230,8 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("student_discount.revoked_by_id", AUDIT_ACTOR);
         accepted.put("student_discount_status_change.actor_person_id", AUDIT_ACTOR);
         accepted.put("student_status_change.actor_person_id", AUDIT_ACTOR);
+        accepted.put("subject_equivalence.recorded_by_id", AUDIT_ACTOR);
+        accepted.put("subject_equivalence.voided_by_id", AUDIT_ACTOR);
         return accepted;
     }
 

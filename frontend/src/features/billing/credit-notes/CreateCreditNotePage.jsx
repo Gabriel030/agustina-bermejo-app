@@ -333,11 +333,12 @@ export function CreateCreditNotePage() {
       )}
 
       <StickyActionBar
+        aria-label="Acciones de la nota de crédito"
         summary={formatMoney(total)}
         hint={
           <>
             Total de la nota
-            {step === 'amounts' && draft.blockReason && <span className="block text-ink-soft">{draft.blockReason}</span>}
+            {step === 'amounts' && draft.blockReason && <span className="block text-ink-soft max-md:inline max-md:before:content-['_·_']">{draft.blockReason}</span>}
           </>
         }
       >

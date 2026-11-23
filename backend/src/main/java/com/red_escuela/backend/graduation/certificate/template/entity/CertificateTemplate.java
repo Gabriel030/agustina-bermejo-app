@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.template.entity;
 
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,6 +28,10 @@ public class CertificateTemplate {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "kind", nullable = false, length = 20, updatable = false)
+    @Column(name = "kind", length = 20, updatable = false)
     private GraduationCertificateKind kind;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "document_type", length = 40, updatable = false)
+    private DocumentTemplateType documentType;
 }

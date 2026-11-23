@@ -28,6 +28,8 @@ import java.util.List;
 public class CertificatePdfRenderer {
 
     private static final String FONT_RESOURCE = "/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf";
+    public static final String ENGINE_VERSION = "1";
+
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final float QUIET_ZONE_MODULES = 2;
 
@@ -120,6 +122,12 @@ public class CertificatePdfRenderer {
         for (String line : wrap(font, fontSize, rect.width(), expand(definition.bodyTemplate(), snapshot))) {
             text(content, font, fontSize, rect.x(), y, line);
             y -= leading;
+        }
+        if (snapshot.recipientLabel() != null) {
+            for (String line : wrap(font, fontSize, rect.width(), snapshot.recipientLabel())) {
+                y -= leading;
+                text(content, font, fontSize, rect.x(), y, line);
+            }
         }
         text(content, font, 11, rect.x(), y - 20, "Emitido el " + snapshot.issuedOn().format(DATE_FORMAT));
     }

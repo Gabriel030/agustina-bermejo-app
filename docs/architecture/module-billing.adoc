@@ -12,7 +12,7 @@
 * `c.r.b.b.api.CollectionReminderApplicabilityQuery` (via `c.r.b.b.collections.service.StoredCollectionReminderApplicabilityQuery`)
 * `c.r.b.b.api.CollectionReminderEmailsQuery` (via `c.r.b.b.collections.service.StoredCollectionReminderEmailsQuery`)
 * `c.r.b.b.api.CollectionReminderEmailSettingsQuery` (via `c.r.b.b.configuration.service.StoredCollectionReminderEmailSettingsQuery`)
-* `c.r.b.b.api.EnrollmentDebtGuard` (via `c.r.b.b.invoice.service.InvoiceDebtEnrollmentGuard`)
+* `c.r.b.e.api.EnrollmentDebtGuardPort` (via `c.r.b.b.collections.service.StudentDebtEnrollmentGuard`)
 |Bean references
 |* `c.r.b.i.service.CurrentPersonService` (in Identity)
 * `c.r.b.s.domain.policy.PolicySet` (in Shared)

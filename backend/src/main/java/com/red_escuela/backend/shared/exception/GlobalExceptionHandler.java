@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.exception;
 
+import com.red_escuela.backend.shared.errortracking.ServerErrorReporter;
 import com.red_escuela.backend.shared.logging.LogSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,19 @@ public class GlobalExceptionHandler {
     @Autowired(required = false)
     void setApiErrorCounter(ApiErrorCounter apiErrorCounter) {
         this.apiErrorCounter = apiErrorCounter;
+    }
+
+    private ServerErrorReporter serverErrorReporter;
+
+    @Autowired(required = false)
+    void setServerErrorReporter(ServerErrorReporter serverErrorReporter) {
+        this.serverErrorReporter = serverErrorReporter;
+    }
+
+    private void reportServerError(Throwable throwable) {
+        if (serverErrorReporter != null) {
+            serverErrorReporter.reportServerError(throwable);
+        }
     }
 
     private void count(HttpStatus status, String code) {
@@ -161,6 +175,7 @@ public class GlobalExceptionHandler {
         log.error("Falla de servicio externo {} [{}]: {}", ErrorCodeResponse.codeOf(exception.getClass()), correlation(),
                 LogSanitizer.sanitize(exception.getMessage()), exception);
         count(HttpStatus.BAD_GATEWAY, ErrorCodeResponse.codeOf(exception.getClass()));
+        reportServerError(exception);
         return ErrorCodeResponse.of(exception);
     }
 
@@ -170,6 +185,7 @@ public class GlobalExceptionHandler {
         log.error("Integridad de datos rota {} [{}]: {}", ErrorCodeResponse.codeOf(exception.getClass()), correlation(),
                 LogSanitizer.sanitize(exception.getMessage()), exception);
         count(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodeResponse.INTERNAL_ERROR_CODE);
+        reportServerError(exception);
         return new ErrorCodeResponse(ErrorCodeResponse.INTERNAL_ERROR_CODE);
     }
 
@@ -230,6 +246,7 @@ public class GlobalExceptionHandler {
         }
         log.error("Error inesperado [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMessage()), exception);
         count(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodeResponse.INTERNAL_ERROR_CODE);
+        reportServerError(exception);
         return new ErrorCodeResponse(ErrorCodeResponse.INTERNAL_ERROR_CODE);
     }
 
