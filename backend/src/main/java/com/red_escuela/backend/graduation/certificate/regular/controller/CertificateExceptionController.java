@@ -1,11 +1,13 @@
 package com.red_escuela.backend.graduation.certificate.regular.controller;
 
 import com.red_escuela.backend.graduation.certificate.regular.dto.CertificateExceptionResponse;
+import com.red_escuela.backend.graduation.certificate.regular.dto.CertificateExceptionSummaryResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.DecideCertificateExceptionRequest;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RequestCertificateExceptionRequest;
 import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionStatus;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ApproveCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.CreateDirectCertificateExceptionUseCase;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.GetCertificateExceptionSummaryUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.GetCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListCertificateExceptionsUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RejectCertificateExceptionUseCase;
@@ -39,13 +41,15 @@ public class CertificateExceptionController {
     private final ListCertificateExceptionsUseCase listUseCase;
     private final GetCertificateExceptionUseCase getUseCase;
     private final CreateDirectCertificateExceptionUseCase createDirectUseCase;
+    private final GetCertificateExceptionSummaryUseCase summaryUseCase;
 
     public CertificateExceptionController(RequestCertificateExceptionUseCase requestUseCase,
                                           ApproveCertificateExceptionUseCase approveUseCase,
                                           RejectCertificateExceptionUseCase rejectUseCase,
                                           WithdrawCertificateExceptionUseCase withdrawUseCase,
                                           ListCertificateExceptionsUseCase listUseCase, GetCertificateExceptionUseCase getUseCase,
-                                          CreateDirectCertificateExceptionUseCase createDirectUseCase) {
+                                          CreateDirectCertificateExceptionUseCase createDirectUseCase,
+                                          GetCertificateExceptionSummaryUseCase summaryUseCase) {
         this.requestUseCase = requestUseCase;
         this.approveUseCase = approveUseCase;
         this.rejectUseCase = rejectUseCase;
@@ -53,6 +57,7 @@ public class CertificateExceptionController {
         this.listUseCase = listUseCase;
         this.getUseCase = getUseCase;
         this.createDirectUseCase = createDirectUseCase;
+        this.summaryUseCase = summaryUseCase;
     }
 
     @PostMapping
@@ -74,6 +79,12 @@ public class CertificateExceptionController {
     public List<CertificateExceptionResponse> list(Authentication authentication, @RequestParam(required = false) Long studentId,
                                                    @RequestParam(required = false) CertificateExceptionStatus status) {
         return listUseCase.list(isDirector(authentication), studentId, status);
+    }
+
+    @GetMapping("/summary")
+    @RequiresPermission(code = "certificate.exceptions_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
+    public CertificateExceptionSummaryResponse summary(Authentication authentication) {
+        return summaryUseCase.summary(isDirector(authentication));
     }
 
     @GetMapping("/{id}")

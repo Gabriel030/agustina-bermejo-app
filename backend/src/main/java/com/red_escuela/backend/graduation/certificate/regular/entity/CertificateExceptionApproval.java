@@ -9,9 +9,12 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Exceptio
 import com.red_escuela.backend.graduation.certificate.regular.exception.OrganismKindRequiredException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OrganismReferenceInvalidException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.OwnExceptionDecisionException;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
+import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -101,6 +104,14 @@ public class CertificateExceptionApproval {
     @Column(name = "created_by_director", nullable = false, updatable = false)
     private boolean createdByDirector;
 
+    @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "debt_total_at_request", precision = 12, scale = 2, updatable = false))
+    @AttributeOverride(name = "currency", column = @Column(name = "debt_currency_at_request", length = 3, updatable = false))
+    private Money debtAtRequest;
+
+    @Column(name = "overdue_installments_at_request", updatable = false)
+    private Integer overdueInstallmentsAtRequest;
+
     @Column(name = "consumed_at")
     private LocalDateTime consumedAt;
 
@@ -164,6 +175,12 @@ public class CertificateExceptionApproval {
         approval.decisionReason = DIRECTOR_CREATION_REASON;
         approval.validUntil = now.plusDays(validity.value());
         return approval;
+    }
+
+    public void recordDebtAtRequest(Money totalDue, int overdueInstallments) {
+        Objects.requireNonNull(totalDue);
+        this.debtAtRequest = totalDue;
+        this.overdueInstallmentsAtRequest = overdueInstallments;
     }
 
     public void approve(Long deciderId, String rawDecisionReason, ValidityDays validity, LocalDateTime now) {

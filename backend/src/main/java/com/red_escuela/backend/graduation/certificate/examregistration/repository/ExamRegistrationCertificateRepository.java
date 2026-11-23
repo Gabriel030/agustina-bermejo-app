@@ -5,9 +5,12 @@ import com.red_escuela.backend.graduation.certificate.examregistration.entity.Ex
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface ExamRegistrationCertificateRepository extends JpaRepository<ExamRegistrationCertificate, Long> {
+
+    List<ExamRegistrationCertificate> findByStudentIdOrderByIssuedAtDesc(Long studentId);
 
     boolean existsByCode(String code);
 

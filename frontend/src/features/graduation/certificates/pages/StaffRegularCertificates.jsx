@@ -23,6 +23,11 @@ import {
   useRejectRegularRequest,
   useRevokeRegularCertificate,
 } from '@/features/graduation/certificates/hooks/useStaffRegularCertificates';
+import { RequestDebtCell, RequestExceptionCell } from '@/features/graduation/certificate-exceptions/components/RequestDebtCell';
+import { RequestExceptionDialog } from '@/features/graduation/certificate-exceptions/components/RequestExceptionDialog';
+import { RejectionReasonDialog } from '@/features/graduation/certificate-exceptions/components/RejectionReasonDialog';
+import { OwnExceptionsTab } from '@/features/graduation/certificate-exceptions/components/OwnExceptionsTab';
+import { useCertificateExceptions } from '@/features/graduation/certificate-exceptions/hooks/useCertificateExceptions';
 import {
   REASON_MIN_LENGTH,
   certificateStatusOf,
@@ -36,6 +41,12 @@ const dialogCopy = {
     titulo: 'Confirmar y emitir',
     placeholder: 'Por ejemplo: comprobante de pago de octubre revisado',
     confirmarLabel: 'Confirmar y emitir',
+    confirmarVariant: 'primary',
+  },
+  emitException: {
+    titulo: 'Emitir con excepción',
+    placeholder: 'Por ejemplo: excepción aprobada por el Director, expediente verificado',
+    confirmarLabel: 'Emitir con excepción',
     confirmarVariant: 'primary',
   },
   reject: {
@@ -53,6 +64,7 @@ const dialogCopy = {
 };
 
 function dialogDescription(kind, name) {
+  if (kind === 'emitException') return `Se emite la constancia de ${name} usando la excepción aprobada. La excepción se usa una sola vez.`;
   if (kind === 'emit') return `Confirmás que ${name} está al día con sus pagos. Queda registrado a tu nombre. La nota es opcional.`;
   if (kind === 'reject') return `${name} va a ver este motivo en su pantalla.`;
   return `La constancia de ${name} pasa a Revocada y su código deja de verificar. No se puede deshacer.`;
@@ -76,7 +88,7 @@ function SummaryLinks({ row, role }) {
   );
 }
 
-function pendingColumns({ onAction }) {
+function pendingColumns({ onAction, canRequest }) {
   return [
     {
       id: 'student',
@@ -103,11 +115,27 @@ function pendingColumns({ onAction }) {
       cell: ({ row }) => <span className="text-size-13 text-ink">{formatearFecha(row.original.requestedAt) ?? DASH}</span>,
     },
     {
-      id: 'pending',
-      header: 'Pendiente',
-      accessorFn: () => 'Confirmar pagos',
+      id: 'debt',
+      header: 'Deuda',
+      accessorFn: (row) => (row.hasDebt ? 'Con deuda' : ''),
       enableSorting: false,
-      cell: () => <span className="text-size-13 text-ink">Confirmar pagos</span>,
+      cell: ({ row }) => <RequestDebtCell row={row.original} />,
+    },
+    {
+      id: 'exception',
+      header: 'Excepción',
+      accessorFn: (row) => row.exceptionStatus ?? '',
+      enableSorting: false,
+      meta: { hideInCard: false },
+      cell: ({ row }) => (
+        <RequestExceptionCell
+          row={row.original}
+          canRequest={canRequest}
+          onRequest={(target) => onAction('request', target)}
+          onEmit={(target) => onAction('emitException', target)}
+          onShowReason={(target) => onAction('reason', target)}
+        />
+      ),
     },
     {
       id: 'actions',
@@ -117,9 +145,11 @@ function pendingColumns({ onAction }) {
         const name = row.original.studentName ?? 'el alumno';
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button size="sm" variant="primary" aria-label={`Confirmar y emitir la constancia de ${name}`} onClick={() => onAction('emit', row.original)}>
-              Confirmar y emitir
-            </Button>
+            {!row.original.hasDebt && (
+              <Button size="sm" variant="primary" aria-label={`Confirmar y emitir la constancia de ${name}`} onClick={() => onAction('emit', row.original)}>
+                Confirmar y emitir
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="icon" aria-label={`Más acciones de ${name}`}>
@@ -212,8 +242,8 @@ function issuedColumns({ isDirector, onAction, onDownload, onCopyLink }) {
   ];
 }
 
-function PendingTab({ rows, query, role, onAction }) {
-  const columns = useMemo(() => pendingColumns({ onAction }), [onAction]);
+function PendingTab({ rows, query, role, canRequest, onAction }) {
+  const columns = useMemo(() => pendingColumns({ onAction, canRequest }), [onAction, canRequest]);
   return (
     <div className="flex flex-col gap-3">
       <DataTable
@@ -272,6 +302,7 @@ export function StaffRegularCertificates() {
   const { usuario } = useAuth();
   const roles = usuario?.roles ?? [];
   const isDirector = roles.includes('DIRECTOR');
+  const canRequestException = roles.includes('ADMINISTRATIVO');
   const role = isDirector ? 'director' : 'administrativo';
 
   const pending = usePendingRegularRequests();
@@ -279,6 +310,11 @@ export function StaffRegularCertificates() {
   const issue = useIssueRegularCertificate();
   const reject = useRejectRegularRequest();
   const revoke = useRevokeRegularCertificate();
+
+  const ownExceptions = useCertificateExceptions({ enabled: canRequestException });
+  const ownPendingCount = (ownExceptions.data ?? []).filter(
+    (exception) => exception.requestedById === usuario?.id && exception.status === 'PENDING',
+  ).length;
 
   const [tab, setTab] = useState('pedidos');
   const [dialog, setDialog] = useState(null);
@@ -312,6 +348,9 @@ export function StaffRegularCertificates() {
       if (kind === 'emit') {
         await issue.mutateAsync({ kind: row.kind, enrollmentId: row.enrollmentId, standingEvidence: text });
         toast.success('Constancia emitida');
+      } else if (kind === 'emitException') {
+        await issue.mutateAsync({ kind: row.kind, enrollmentId: row.enrollmentId, standingEvidence: text, exceptionId: row.exceptionId });
+        toast.success('Constancia emitida con excepción');
       } else if (kind === 'reject') {
         await reject.mutateAsync({ requestId: row.id, reason: text });
         toast.success('Pedido rechazado');
@@ -327,7 +366,10 @@ export function StaffRegularCertificates() {
     return true;
   }
 
-  const copy = dialog ? dialogCopy[dialog.kind] : null;
+  const requestDialog = dialog?.kind === 'request' ? dialog : null;
+  const rejectionDialog = dialog?.kind === 'reason' ? dialog : null;
+  const reasonDialog = dialog && dialogCopy[dialog.kind] ? dialog : null;
+  const copy = reasonDialog ? dialogCopy[reasonDialog.kind] : null;
   const holderName = dialog?.row.studentName ?? 'el alumno';
 
   return (
@@ -339,10 +381,16 @@ export function StaffRegularCertificates() {
             <TabCount count={pending.data?.length} />
           </TabsTrigger>
           <TabsTrigger value="emitidas">Emitidas</TabsTrigger>
+          {canRequestException && (
+            <TabsTrigger value="excepciones">
+              Excepciones
+              <TabCount count={ownPendingCount} />
+            </TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="pedidos" className="mt-0">
           <GlassCard className="p-3 md:p-4">
-            <PendingTab rows={pendingRows} query={pending} role={role} onAction={onAction} />
+            <PendingTab rows={pendingRows} query={pending} role={role} canRequest={canRequestException} onAction={onAction} />
           </GlassCard>
         </TabsContent>
         <TabsContent value="emitidas" className="mt-0">
@@ -357,20 +405,31 @@ export function StaffRegularCertificates() {
             />
           </GlassCard>
         </TabsContent>
+        {canRequestException && (
+          <TabsContent value="excepciones" className="mt-0">
+            <GlassCard className="p-3 md:p-4">
+              <OwnExceptionsTab onGoToRequests={() => setTab('pedidos')} />
+            </GlassCard>
+          </TabsContent>
+        )}
       </Tabs>
-      {dialog && (
+      {requestDialog && <RequestExceptionDialog row={requestDialog.row} onClose={() => setDialog(null)} />}
+      {rejectionDialog && (
+        <RejectionReasonDialog exceptionId={rejectionDialog.row.exceptionId} studentName={rejectionDialog.row.studentName} onClose={() => setDialog(null)} />
+      )}
+      {reasonDialog && (
         <ModalMotivo
-          key={`${dialog.kind}-${dialog.row.id}`}
+          key={`${reasonDialog.kind}-${reasonDialog.row.id}`}
           open
           onClose={() => setDialog(null)}
           onConfirmar={confirm}
           confirmando={issue.isPending || reject.isPending || revoke.isPending}
-          requerido={dialog.kind !== 'emit'}
-          minLength={dialog.kind === 'emit' ? 0 : REASON_MIN_LENGTH}
+          requerido={reasonDialog.kind !== 'emit' && reasonDialog.kind !== 'emitException'}
+          minLength={reasonDialog.kind === 'emit' || reasonDialog.kind === 'emitException' ? 0 : REASON_MIN_LENGTH}
           showCounter
           disableUntilMinLength
           titulo={copy.titulo}
-          descripcion={dialogDescription(dialog.kind, holderName)}
+          descripcion={dialogDescription(reasonDialog.kind, holderName)}
           placeholder={copy.placeholder}
           confirmarLabel={copy.confirmarLabel}
           confirmarVariant={copy.confirmarVariant}
