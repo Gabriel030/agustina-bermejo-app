@@ -80,7 +80,8 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
                 "/email-change-preview", new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
                 "/approve-email-change", new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
                 "/cancel-email-change", new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
-                UNSUBSCRIBE_LIMITER_KEY, new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock));
+                UNSUBSCRIBE_LIMITER_KEY, new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
+                "/public/monitoring/tunnel", new KeyedRateLimiter(refreshCapacity, refreshRefill, maxTrackedKeys, IDLE_WINDOW, clock));
         this.staffProspectsLimiter = new KeyedRateLimiter(staffProspectsCapacity, staffProspectsRefill, maxTrackedKeys, IDLE_WINDOW, clock);
         this.userReadLimiter = new KeyedRateLimiter(userReadCapacity, userReadRefill, maxTrackedKeys, IDLE_WINDOW, clock);
         this.userWriteLimiter = new KeyedRateLimiter(userWriteCapacity, userWriteRefill, maxTrackedKeys, IDLE_WINDOW, clock);

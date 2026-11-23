@@ -90970,6 +90970,102 @@
         "tags" : [ "modules-controller" ]
       }
     },
+    "/public/monitoring/tunnel" : {
+      "post" : {
+        "operationId" : "SentryTunnel_forwardEnvelope",
+        "responses" : {
+          "204" : {
+            "description" : "Envelope reenviado"
+          },
+          "400" : {
+            "content" : { },
+            "description" : "Envelope inválido, de otro DSN o con items no permitidos"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : { },
+            "description" : "Túnel inactivo (SENTRY_DSN vacío)"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "413" : {
+            "description" : "Envelope mayor al tope"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Demasiados envíos desde la misma IP"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : { },
+            "description" : "El proveedor no respondió o rechazó el envelope"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "sentry-tunnel-controller" ]
+      }
+    },
     "/public/unsubscribe/{token}" : {
       "get" : {
         "operationId" : "PublicUnsubscribe_describeUnsubscribeLink",

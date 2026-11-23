@@ -43,6 +43,7 @@ final class MatrixKnownResponses {
             Map.entry("GET /me/section-evaluation-configs", NO_PROFILE),
             Map.entry("GET /me/student-discounts", NO_PROFILE),
             Map.entry("GET /me/teaching-sections", NO_PROFILE),
+            Map.entry("POST /public/monitoring/tunnel", "el túnel de Sentry responde 404 mientras SENTRY_DSN esté vacío"),
             Map.entry("POST /courses", REFERENCED_ENTITY),
             Map.entry("POST /prospects", REFERENCED_ENTITY),
             Map.entry("POST /prospects/by-staff", REFERENCED_ENTITY),
