@@ -53,7 +53,7 @@ public class SubjectEquivalence {
     @Column(name = "resolution_number", nullable = false, length = 100)
     private String resolutionNumber;
 
-    @Column(name = "reason", length = 1000)
+    @Column(name = "reason", nullable = false, length = 500)
     private String reason;
 
     @Enumerated(EnumType.STRING)
@@ -73,6 +73,6 @@ public class SubjectEquivalence {
     @Column(name = "voided_at")
     private LocalDateTime voidedAt;
 
-    @Column(name = "void_reason", length = 1000)
+    @Column(name = "void_reason", length = 500)
     private String voidReason;
 }

@@ -9,15 +9,15 @@ create table subject_equivalence (
     origin_score numeric(4, 2),
     recognized_on date not null,
     resolution_number varchar(100) not null,
-    reason varchar(1000),
+    reason varchar(500) not null,
     status varchar(20) not null,
     recorded_by_id bigint not null references person (id),
     recorded_at timestamp(6) not null,
     voided_by_id bigint references person (id),
     voided_at timestamp(6),
-    void_reason varchar(1000),
+    void_reason varchar(500),
     constraint subject_equivalence_status_enum check (status in ('ACTIVE', 'VOIDED')),
-    constraint ck_subject_equivalence_origin_score check (origin_score is null or origin_score between 0 and 10),
+    constraint ck_subject_equivalence_origin_score check (origin_score is null or origin_score between 1 and 10),
     constraint ck_subject_equivalence_resolution_number check (length(trim(resolution_number)) > 0),
     constraint ck_subject_equivalence_void_consistency check (
         (status = 'ACTIVE' and voided_by_id is null and voided_at is null and void_reason is null)
@@ -48,8 +48,6 @@ begin
     execute 'alter table audit_log add constraint ck_audit_log_entity_type check (entity_type in (' || entity_type_literals
         || ', ''SUBJECT_EQUIVALENCE'')) not valid';
 end $$;
-alter table audit_log validate constraint ck_audit_log_action;
-alter table audit_log validate constraint ck_audit_log_entity_type;
 
 insert into permission (code, module, description, fixed_to_director, sensitive) values
     ('enrollment.read_subject_equivalences', 'enrollment', 'Ver las equivalencias de materias reconocidas a un alumno en su inscripción a una carrera', false, false),

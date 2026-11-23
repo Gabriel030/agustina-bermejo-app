@@ -12,6 +12,8 @@ import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.domain.Grade;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +39,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SubjectEquivalenceSchemaIT extends AbstractIntegrationTest {
 
     private static final String INSERT = "insert into subject_equivalence (program_enrollment_id, subject_id, origin_institution, origin_subject_name, "
-            + "origin_score, recognized_on, resolution_number, status, recorded_by_id, recorded_at, voided_by_id, voided_at, void_reason) "
-            + "values (?, ?, 'Universidad de origen', 'Materia de origen', ?, current_date, ?, ?, ?, now(), ?, ?, ?)";
+            + "origin_score, recognized_on, resolution_number, reason, status, recorded_by_id, recorded_at, voided_by_id, voided_at, void_reason) "
+            + "values (?, ?, 'Universidad de origen', 'Materia de origen', ?, current_date, ?, 'Estudios previos', ?, ?, now(), ?, ?, ?)";
 
     @Autowired
     private EntityManager entityManager;
@@ -100,14 +102,28 @@ class SubjectEquivalenceSchemaIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void originScoreBelowZeroIsRejected() {
-        assertThatThrownBy(() -> insert(enrollment, subject, "-0.01", "RES-1", "ACTIVE", false))
+    void originScoreBelowOneIsRejected() {
+        assertThatThrownBy(() -> insert(enrollment, subject, "0.99", "RES-1", "ACTIVE", false))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void originScoreZeroIsRejected() {
+        assertThatThrownBy(() -> insert(enrollment, subject, "0.00", "RES-1", "ACTIVE", false))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void missingReasonIsRejected() {
+        assertThatThrownBy(() -> jdbc.update("insert into subject_equivalence (program_enrollment_id, subject_id, origin_institution, origin_subject_name, "
+                + "recognized_on, resolution_number, status, recorded_by_id, recorded_at) values (?, ?, 'U', 'M', current_date, 'R', 'ACTIVE', ?, now())",
+                enrollment.getId(), subject.getId(), actor.getId()))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
     void originScoreBoundariesAreAccepted() {
-        insert(enrollment, subject, "0.00", "RES-1", "ACTIVE", false);
+        insert(enrollment, subject, "1.00", "RES-1", "ACTIVE", false);
         insert(enrollment, otherSubject, "10.00", "RES-2", "ACTIVE", false);
 
         assertThat(jdbc.queryForObject("select count(*) from subject_equivalence", Integer.class)).isEqualTo(2);
@@ -150,6 +166,47 @@ class SubjectEquivalenceSchemaIT extends AbstractIntegrationTest {
         jdbc.update("insert into audit_log (occurred_at, action, entity_type, entity_id) values (now(), 'SUBJECT_EQUIVALENCE_VOIDED', 'SUBJECT_EQUIVALENCE', 1)");
 
         assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'SUBJECT_EQUIVALENCE'", Integer.class)).isEqualTo(2);
+    }
+
+    @Test
+    void auditLogStillAcceptsEveryPreviousActionAndEntityType() {
+        for (AuditAction action : AuditAction.values()) {
+            jdbc.update("insert into audit_log (occurred_at, action, entity_type, entity_id) values (now(), ?, 'PERSON', 1)", action.name());
+        }
+        for (AuditEntityType entityType : AuditEntityType.values()) {
+            jdbc.update("insert into audit_log (occurred_at, action, entity_type, entity_id) values (now(), 'STAFF_WITHDRAWN', ?, 1)", entityType.name());
+        }
+
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where action = 'DOCUMENT_DEBT_EXC_ISSUED'", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'DOCUMENT_DEBT_EXCEPTION'", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    void repositoryRoundTripKeepsBoundaryScores() {
+        SubjectEquivalence lowest = equivalence(enrollment, subject, "RES-1");
+        lowest.setOriginScore(Grade.of(new BigDecimal("1.00")));
+        SubjectEquivalence highest = equivalence(enrollment, otherSubject, "RES-2");
+        highest.setOriginScore(Grade.of(new BigDecimal("10.00")));
+        repository.saveAndFlush(lowest);
+        repository.saveAndFlush(highest);
+        entityManager.clear();
+
+        assertThat(repository.findById(lowest.getId()).orElseThrow().getOriginScore()).isEqualTo(Grade.of(new BigDecimal("1.00")));
+        assertThat(repository.findById(highest.getId()).orElseThrow().getOriginScore()).isEqualTo(Grade.of(new BigDecimal("10.00")));
+    }
+
+    @Test
+    void versionIncrementsWhenTheEquivalenceIsUpdated() {
+        SubjectEquivalence saved = repository.saveAndFlush(equivalence(enrollment, subject, "RES-1"));
+        Long initialVersion = saved.getVersion();
+
+        saved.setStatus(SubjectEquivalenceStatus.VOIDED);
+        saved.setVoidedById(actor.getId());
+        saved.setVoidedAt(LocalDateTime.now());
+        saved.setVoidReason("error de carga");
+        repository.saveAndFlush(saved);
+
+        assertThat(saved.getVersion()).isGreaterThan(initialVersion);
     }
 
     @Test
@@ -243,6 +300,7 @@ class SubjectEquivalenceSchemaIT extends AbstractIntegrationTest {
                 .originScore(Grade.of(new BigDecimal("7.50")))
                 .recognizedOn(LocalDate.now())
                 .resolutionNumber(resolution)
+                .reason("Estudios previos")
                 .recordedById(actor.getId())
                 .recordedAt(LocalDateTime.now())
                 .build();
