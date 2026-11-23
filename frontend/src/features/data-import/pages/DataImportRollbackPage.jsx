@@ -126,7 +126,7 @@ export function DataImportRollbackPage() {
         summary={canRollback ? 'Se puede deshacer' : 'No hay nada para deshacer'}
         hint={canRollback ? 'Se pide una confirmación escrita antes de borrar.' : undefined}
       >
-        <Button className="min-h-11" type="button" variant="destructive" disabled={!canRollback} onClick={() => setConfirmOpen(true)}>
+        <Button className="min-h-11 md:min-h-8" type="button" variant="destructive" disabled={!canRollback} onClick={() => setConfirmOpen(true)}>
           Deshacer la importación
         </Button>
       </StickyActionBar>

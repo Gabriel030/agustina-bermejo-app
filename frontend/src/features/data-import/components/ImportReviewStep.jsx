@@ -165,10 +165,10 @@ export function ImportReviewStep({ batch, onBackToFiles, onCommitting }) {
         summary={blocked ? 'Importar está bloqueado' : 'Todo listo para importar'}
         hint={blocked ? `Hay ${errorCount.toLocaleString('es-AR')} filas para corregir en los archivos.` : summaryText(batch)}
       >
-        <Button className="min-h-11" type="button" variant="outline" onClick={onBackToFiles}>
+        <Button className="min-h-11 md:min-h-8" type="button" variant="outline" onClick={onBackToFiles}>
           Volver a los archivos
         </Button>
-        <Button className="min-h-11" type="button" disabled={blocked} loading={commit.isPending} onClick={() => setConfirmOpen(true)}>
+        <Button className="min-h-11 md:min-h-8" type="button" disabled={blocked} loading={commit.isPending} onClick={() => setConfirmOpen(true)}>
           Importar
         </Button>
       </StickyActionBar>

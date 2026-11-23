@@ -136,7 +136,7 @@ export function AuditLogPage({ endpoint, deniedAudience }) {
         icon="🔎"
         title="Ningún evento coincide"
         description="Probá con otros filtros o quitá alguno para ver más resultados."
-        action={<Button className="min-h-11" type="button" variant="outline" onClick={clearFilters}>Limpiar filtros</Button>}
+        action={<Button className="min-h-11 md:min-h-8" type="button" variant="outline" onClick={clearFilters}>Limpiar filtros</Button>}
       />
     ) : (
       <EmptyState

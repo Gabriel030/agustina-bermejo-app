@@ -41,10 +41,10 @@ export function DataImportNewPage() {
             <Input id="import-name" value={name} maxLength={MAX_NAME_LENGTH} autoFocus onChange={(event) => setName(event.target.value)} />
           </div>
           <div className="flex flex-wrap justify-end gap-2">
-            <Button type="button" variant="outline" asChild>
+            <Button type="button" variant="outline" className="min-h-11 md:min-h-8" asChild>
               <Link to={LIST_PATH}>Cancelar</Link>
             </Button>
-            <Button className="min-h-11" type="submit" disabled={!trimmed} loading={create.isPending}>
+            <Button className="min-h-11 md:min-h-8" type="submit" disabled={!trimmed} loading={create.isPending}>
               Crear importación
             </Button>
           </div>

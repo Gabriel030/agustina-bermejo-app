@@ -216,7 +216,7 @@ function PermissionsGrid({ catalog, grid }) {
                 title="No hay permisos que coincidan"
                 description="Probá con otra palabra o quitá los filtros de módulo y rol."
                 action={
-                  <Button className="min-h-11" type="button" variant="outline" onClick={clearFilters}>
+                  <Button className="min-h-11 md:min-h-8" type="button" variant="outline" onClick={clearFilters}>
                     Limpiar filtros
                   </Button>
                 }
