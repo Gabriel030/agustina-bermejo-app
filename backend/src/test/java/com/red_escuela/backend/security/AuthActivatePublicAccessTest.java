@@ -27,7 +27,7 @@ class AuthActivatePublicAccessTest extends AuthorizationMatrixSupport {
     }
 
     @Test
-    void anonymousCallerWithUnknownTokenGetsInvalidTokenBadRequestNotAuthenticationFailure() throws Exception {
+    void anonymousCallerWithUnknownTokenGetsBadRequestNotAuthenticationFailure() throws Exception {
         MockHttpServletResponse response = activate(null);
 
         assertThat(response.getStatus()).isEqualTo(400);
@@ -35,7 +35,7 @@ class AuthActivatePublicAccessTest extends AuthorizationMatrixSupport {
     }
 
     @Test
-    void everyRoleGetsTheSameAnswerAsAnonymousForAnUnknownToken() throws Exception {
+    void everyRoleGetsTheSameAnswerAsAnonymousWhenTheTokenIsUnknown() throws Exception {
         String anonymousBody = normalized(activate(null));
 
         for (MatrixRole role : MatrixRole.values()) {
