@@ -8,10 +8,12 @@ import {
   eligibleGraduate,
   graduationCertificateBatch,
   graduationCertificateDetail,
+  graduationCertificateReview,
   graduationCertificateSummary,
   ownGraduationCertificate,
   springPage,
 } from '@/test/fixtures/certificates';
+import { sectionEnrollment } from '@/test/fixtures/studentHome';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 
@@ -70,6 +72,8 @@ const curriculumProgress = (programEnrollmentId) => ({
       finalScore: 8,
       attempts: 1,
       blockedBy: [],
+      prerequisites: [],
+      currentEnrollmentId: null,
       corequisites: [],
     },
     {
@@ -88,6 +92,10 @@ const curriculumProgress = (programEnrollmentId) => ({
       blockedBy: [
         { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
       ],
+      prerequisites: [
+        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
+      ],
+      currentEnrollmentId: null,
       corequisites: [],
     },
   ],
@@ -159,6 +167,28 @@ export const handlers = [
         revocationReason: 'Error en los datos del alumno',
       }),
     ),
+  ),
+  http.get(`${API}/graduation-certificate-reviews`, () => HttpResponse.json(springPage([graduationCertificateReview()]))),
+  http.post(`${API}/graduation-certificate-reviews/batch`, async ({ request }) => {
+    const { graduationRequestIds = [31], decision = 'ENABLE' } = await request.json().catch(() => ({}));
+    const reviewStatus = decision === 'ENABLE' ? 'ENABLED' : 'DISABLED';
+    return HttpResponse.json({
+      requested: graduationRequestIds.length,
+      decided: graduationRequestIds.length,
+      failed: 0,
+      results: graduationRequestIds.map((graduationRequestId) => ({
+        graduationRequestId,
+        outcome: 'DECIDED',
+        review: graduationCertificateReview({ graduationRequestId, reviewStatus }),
+        errorCode: null,
+      })),
+    });
+  }),
+  http.post(`${API}/graduation-certificate-reviews/:graduationRequestId/enable`, ({ params }) =>
+    HttpResponse.json(graduationCertificateReview({ graduationRequestId: Number(params.graduationRequestId), reviewStatus: 'ENABLED' })),
+  ),
+  http.post(`${API}/graduation-certificate-reviews/:graduationRequestId/disable`, ({ params }) =>
+    HttpResponse.json(graduationCertificateReview({ graduationRequestId: Number(params.graduationRequestId), reviewStatus: 'DISABLED' })),
   ),
   http.post(`${API}/graduation-certificates/:id/reissue`, ({ params }) =>
     HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) + 1, replacesCertificateId: Number(params.id) })),
@@ -569,6 +599,10 @@ export const handlers = [
   http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-enrollments`, () => HttpResponse.json([])),
+  http.post(`${API}/me/section-enrollments/:id/change-section`, async ({ params, request }) => {
+    const { newSectionId } = await request.json().catch(() => ({}));
+    return HttpResponse.json(sectionEnrollment({ id: Number(params.id), sectionId: newSectionId ?? 1 }));
+  }),
   http.get(`${API}/billing/configuration-alerts`, () => HttpResponse.json([])),
   http.get(`${API}/announcements/:id/recipients`, () => HttpResponse.json([])),
   http.post(`${API}/me/notifications/:id/read`, () => new HttpResponse(null, { status: 200 })),

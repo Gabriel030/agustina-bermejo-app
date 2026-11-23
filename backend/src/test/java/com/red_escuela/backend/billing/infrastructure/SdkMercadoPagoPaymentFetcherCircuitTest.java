@@ -7,6 +7,9 @@ import com.mercadopago.net.MPResponse;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.billing.payment.gateway.mercadopago.MercadoPagoCircuit;
 import com.red_escuela.backend.shared.exception.CircuitOpenException;
+import com.red_escuela.backend.shared.resilience.Bulkhead;
+import com.red_escuela.backend.shared.resilience.BulkheadFactory;
+import com.red_escuela.backend.shared.resilience.BulkheadSaturator;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.resilience.CircuitBreakerState;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -26,12 +29,14 @@ class SdkMercadoPagoPaymentFetcherCircuitTest {
     private static SdkMercadoPagoPaymentFetcher fetcherWithCircuit(CircuitBreakerFactory[] holder) {
         MockEnvironment environment = new MockEnvironment()
                 .withProperty("resilience.default.enabled", "true")
+                .withProperty("resilience.default.max-concurrent", "4")
+                .withProperty("resilience.default.max-wait", "0ms")
                 .withProperty("resilience.default.window", "2")
                 .withProperty("resilience.default.failure-threshold", "2")
                 .withProperty("resilience.default.wait-open", "30s");
         CircuitBreakerFactory factory = new CircuitBreakerFactory(environment, Clock.systemUTC(), new SimpleMeterRegistry());
         holder[0] = factory;
-        return new SdkMercadoPagoPaymentFetcher("token", factory);
+        return new SdkMercadoPagoPaymentFetcher("token", factory, new BulkheadFactory(environment, new SimpleMeterRegistry()));
     }
 
     @Test
@@ -46,6 +51,30 @@ class SdkMercadoPagoPaymentFetcherCircuitTest {
             assertThatThrownBy(() -> fetcher.fetchApproved("1")).isInstanceOf(CircuitOpenException.class);
             assertThat(constructed.constructed()).hasSize(2);
         }
+    }
+
+    @Test
+    void aFullBulkheadRejectsFetchesWithCircuitOpenWithoutCallingTheClientOrOpeningTheCircuit() {
+        MockEnvironment tight = new MockEnvironment()
+                .withProperty("resilience.default.enabled", "true")
+                .withProperty("resilience.default.max-concurrent", "1")
+                .withProperty("resilience.default.max-wait", "20ms")
+                .withProperty("resilience.default.window", "2")
+                .withProperty("resilience.default.failure-threshold", "2")
+                .withProperty("resilience.default.wait-open", "30s");
+        CircuitBreakerFactory breakers = new CircuitBreakerFactory(tight, Clock.systemUTC(), new SimpleMeterRegistry());
+        BulkheadFactory bulkheads = new BulkheadFactory(tight, new SimpleMeterRegistry());
+        SdkMercadoPagoPaymentFetcher fetcher = new SdkMercadoPagoPaymentFetcher("token", breakers, bulkheads);
+        Bulkhead bulkhead = bulkheads.bulkheadNamed(MercadoPagoCircuit.NAME);
+        try (MockedConstruction<PaymentClient> constructed = Mockito.mockConstruction(PaymentClient.class);
+             BulkheadSaturator saturated = BulkheadSaturator.occupying(bulkhead, 1)) {
+            for (int i = 0; i < 3; i++) {
+                assertThatThrownBy(() -> fetcher.fetchApproved("1")).isInstanceOf(CircuitOpenException.class);
+            }
+            assertThat(constructed.constructed()).isEmpty();
+            assertThat(breakers.breakerNamed(MercadoPagoCircuit.NAME).state()).isEqualTo(CircuitBreakerState.CLOSED);
+        }
+        assertThat(bulkhead.availablePermits()).isEqualTo(1);
     }
 
     @Test

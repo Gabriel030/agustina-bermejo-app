@@ -28,7 +28,8 @@ public record CurriculumProgressView(
             Long programSubjectId, Long subjectId, String subjectCode, String subjectName, int credits,
             Integer curricularYear, CurricularTerm curricularTerm, ProgramSubjectCategory category,
             Long electiveGroupId, CurriculumSubjectState state, Grade finalScore, int attempts,
-            List<BlockingPrerequisite> blockedBy, List<Corequisite> corequisites) {
+            List<BlockingPrerequisite> blockedBy, List<Corequisite> corequisites,
+            List<BlockingPrerequisite> prerequisites, Long currentEnrollmentId) {
     }
 
     public record BlockingPrerequisite(

@@ -5,8 +5,8 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.RejectRegularC
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequestOutcome;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListRegularCertificateRequestsUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RejectRegularCertificateRequestUseCase;
+import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,13 +31,13 @@ public class RegularCertificateRequestController {
     }
 
     @PostMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.regular_requests_reject", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public RegularCertificateRequestResponse reject(@PathVariable Long id, @Valid @RequestBody RejectRegularCertificateRequest request) {
         return rejectUseCase.reject(id, request.reason());
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO','DIRECTOR')")
+    @RequiresPermission(code = "certificate.regular_requests_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<RegularCertificateRequestResponse> list(@RequestParam(required = false) Long studentId,
                                                         @RequestParam(required = false) RegularRequestOutcome outcome) {
         return listUseCase.list(studentId, outcome);

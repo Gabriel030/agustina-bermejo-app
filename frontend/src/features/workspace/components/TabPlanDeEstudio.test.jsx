@@ -23,6 +23,8 @@ function subject(overrides) {
     finalScore: 8,
     attempts: 1,
     blockedBy: [],
+    prerequisites: [],
+    currentEnrollmentId: null,
     corequisites: [],
     ...overrides,
   };

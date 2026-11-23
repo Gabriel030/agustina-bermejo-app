@@ -13,6 +13,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `PageContainer` [shared] | Envoltorio de toda pantalla de contenido (ancho máximo, gap); con `title`/`action` dibuja la cabecera (h1 + acción principal a la derecha) | `className`, `title`, `action` |
 | `GlassCard` [shared] | Superficie de vidrio; base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
+| `StickyActionBar` [shared] | Barra de acciones pegada abajo. En móvil (<768px) va a ancho completo, sin sombra ni blur y respeta la safe-area; es una región con `aria-label` (por defecto "Acciones de la página") y anuncia "Guardando…" | `summary`, `hint`, `children` (modo `row` por defecto: botones en fila y el estado en una línea; para pasos de flujo como Volver o Cancelar), `compact="menu"` con `primary` (props de `Button`, `loading`, `loadingLabel`) y `secondary` (`[{ key, label, icon, onSelect, disabled, destructive }]`): en móvil las secundarias van al menú «Más acciones» (para Descartar); en escritorio quedan como botones. `compactSummary`/`compactHint` (textos cortos visuales; el lector de pantalla sigue leyendo los completos), `busy`, `aria-label` |
 | `InstitutionBrand` [shared] | Marca de la institución en pantallas públicas | — |
 | `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `ROLE_CONFIG` (`routes/roleConfig.js`) | — |
 
@@ -66,6 +67,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `Checkbox` [ui] | Casilla (la usa `ColumnFilter`); en el archivo generado por la CLI se corrigió el import de `cn` y el estado `data-[state=checked]` | `checked`, `onCheckedChange` |
 | `Buscador` | Campo de búsqueda de listados (catálogo, grilla de permisos) | `value`, `onChange`, `placeholder`, `ariaLabel`, `className` |
 | Formularios con validación / wizards | React Hook Form + Zod (patrón: `NuevoAlumno.jsx`) | — |
+| `ChangeSectionSheet` + `SectionTargetPicker` [shared] | Sheet de cambio de comisión (personal desde Académico del legajo; alumno desde Trámites). Con `rows` (y sin `row`) arranca eligiendo la materia; `own` consulta `/me/...`; `showReason={false}` oculta el motivo y no lo envía; `confirmNotice` agrega un aviso en la confirmación; `canChooseAnother={false}` oculta «Elegir otra comisión» en errores definitivos. Hook de candidatas: `useChangeSectionCandidates(id, enabled, { own })`; textos y reglas en `lib/enrollmentChanges` | `row`, `rows`, `own`, `showReason`, `confirmNotice`, `onClose`, `onSubmit`, `pending`, `serverError`, `canChooseAnother`, `onChooseAnother` |
 
 ## 4b. Acciones
 | Componente | Uso | API relevante |

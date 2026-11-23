@@ -5878,6 +5878,10 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "currentEnrollmentId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "curricularTerm" : {
             "enum" : [ "FIRST", "SECOND", "ANNUAL", null ],
             "type" : [ "string", "null" ]
@@ -5892,6 +5896,12 @@
           },
           "finalScore" : {
             "type" : [ "number", "null" ]
+          },
+          "prerequisites" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumBlockingPrerequisiteResponse"
+            },
+            "type" : "array"
           },
           "programSubjectId" : {
             "format" : "int64",
@@ -5912,7 +5922,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attempts", "blockedBy", "category", "corequisites", "credits", "curricularTerm", "curricularYear", "electiveGroupId", "finalScore", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
+        "required" : [ "attempts", "blockedBy", "category", "corequisites", "credits", "currentEnrollmentId", "curricularTerm", "curricularYear", "electiveGroupId", "finalScore", "prerequisites", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
         "type" : "object"
       },
       "CurriculumSummaryResponse" : {
@@ -6179,6 +6189,30 @@
         "required" : [ "notas" ],
         "type" : "object"
       },
+      "DecideGraduationCertificateReviewBatchRequest" : {
+        "properties" : {
+          "decision" : {
+            "enum" : [ "ENABLE", "DISABLE" ],
+            "type" : "string"
+          },
+          "graduationRequestIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "maxItems" : 50,
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 10,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "decision", "graduationRequestIds" ],
+        "type" : "object"
+      },
       "DescriptionLine" : {
         "properties" : {
           "label" : {
@@ -6258,6 +6292,17 @@
           }
         },
         "required" : [ "decidedAt", "decisionNotes", "id", "justification", "programEnrollmentId", "programName", "requestedAt", "status", "studentName", "subjectId", "subjectName", "type" ],
+        "type" : "object"
+      },
+      "DisableGraduationCertificateRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 10,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "DiscardDraftInvoicesRequest" : {
@@ -6798,7 +6843,7 @@
             "type" : "string"
           },
           "status" : {
-            "enum" : [ "PENDING", "BLOCKED_BY_DEBT" ],
+            "enum" : [ "PENDING", "BLOCKED_BY_DEBT", "PENDING_REVIEW", "DISABLED" ],
             "type" : "string"
           },
           "studentFullName" : {
@@ -7386,7 +7431,7 @@
             "type" : [ "integer", "null" ]
           },
           "outcome" : {
-            "enum" : [ "ISSUED", "ALREADY_ISSUED", "ABSENT", "NOT_REGISTERED" ],
+            "enum" : [ "ISSUED", "ALREADY_ISSUED", "ABSENT", "NOT_REGISTERED", "DEBT" ],
             "type" : "string"
           },
           "registrationId" : {
@@ -7423,12 +7468,16 @@
       "ExamCertificateCandidateResponse" : {
         "properties" : {
           "availability" : {
-            "enum" : [ "AVAILABLE", "ALREADY_ISSUED", "ABSENT" ],
+            "enum" : [ "AVAILABLE", "ALREADY_ISSUED", "ABSENT", "NOT_ELIGIBLE_DEBT", "REVOKED" ],
             "type" : "string"
           },
           "certificateId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "issuedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
           },
           "maskedDocument" : {
             "type" : "string"
@@ -7436,6 +7485,13 @@
           "registrationId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "revokedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "revokedReason" : {
+            "type" : [ "string", "null" ]
           },
           "studentId" : {
             "format" : "int64",
@@ -8187,6 +8243,102 @@
           }
         },
         "required" : [ "code", "graduationDate", "holderFullName", "id", "issuedAt", "kind", "status", "titleName", "verificationUrl" ],
+        "type" : "object"
+      },
+      "GraduationCertificateReviewBatchItemResponse" : {
+        "properties" : {
+          "errorCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "graduationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "outcome" : {
+            "enum" : [ "DECIDED", "FAILED" ],
+            "type" : "string"
+          },
+          "review" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GraduationCertificateReviewResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "graduationRequestId", "outcome" ],
+        "type" : "object"
+      },
+      "GraduationCertificateReviewBatchResponse" : {
+        "properties" : {
+          "decided" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "requested" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "results" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GraduationCertificateReviewBatchItemResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "decided", "failed", "requested", "results" ],
+        "type" : "object"
+      },
+      "GraduationCertificateReviewResponse" : {
+        "properties" : {
+          "documentNumber" : {
+            "type" : "string"
+          },
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "graduationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "legacyTitleNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "registryNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "reviewStatus" : {
+            "enum" : [ "NOT_REQUIRED", "PENDING_REVIEW", "ENABLED", "DISABLED" ],
+            "type" : "string"
+          },
+          "reviewedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "reviewedById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "reviewedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "studentFullName" : {
+            "type" : "string"
+          },
+          "studentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "titleName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentNumber", "enrollmentId", "graduationRequestId", "reviewStatus", "studentFullName", "studentId", "titleName" ],
         "type" : "object"
       },
       "GraduationCertificateSummaryResponse" : {
@@ -11018,6 +11170,52 @@
           "content" : {
             "items" : {
               "$ref" : "#/components/schemas/FeatureChangeResponse"
+            },
+            "type" : "array"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numberOfElements" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PageGraduationCertificateReviewResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GraduationCertificateReviewResponse"
             },
             "type" : "array"
           },
@@ -14075,7 +14273,7 @@
             "type" : "string"
           },
           "standingBasis" : {
-            "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED" ],
+            "enum" : [ "BILLING_VERIFIED", "MANUALLY_CONFIRMED", "EXCEPTION_APPROVED", "BILLING_NOT_ENFORCED" ],
             "type" : "string"
           },
           "status" : {
@@ -21729,7 +21927,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED", "CALENDAR_FEED_TOKEN_ROTATED", "CALENDAR_FEED_TOKEN_REVOKED", "GRADUATION_CERTIFICATE_DOWNLOADED", "GRADUATION_CERTIFICATE_PDF_MISMATCH", "PERMISSION_SENSITIVE_CHANGED", "DOCUMENT_PDF_DOWNLOADED", "DOCUMENT_PDF_HASH_MISMATCH", "DOCUMENT_TEMPLATE_PUBLISHED", "REGULAR_CERTIFICATE_ISSUED", "REGULAR_CERTIFICATE_REVOKED", "APPROVED_SUBJECTS_CERT_ISSUED", "APPROVED_SUBJECTS_CERT_REVOKED", "EXAM_CERTIFICATE_ISSUED", "EXAM_CERTIFICATE_BATCH_ISSUED", "EXAM_CERTIFICATE_REVOKED", "DOCUMENT_GENERATED_BY_STUDENT", "DOCUMENT_SETTINGS_CHANGED", "DOCUMENT_DEBT_EXC_ISSUED", "DOCUMENT_DEBT_EXC_USED", "DOCUMENT_DEBT_EXC_EXPIRED", "DOCUMENT_DEBT_EXC_DOWNLOADED" ],
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED", "CALENDAR_FEED_TOKEN_ROTATED", "CALENDAR_FEED_TOKEN_REVOKED", "GRADUATION_CERTIFICATE_DOWNLOADED", "GRADUATION_CERTIFICATE_PDF_MISMATCH", "PERMISSION_SENSITIVE_CHANGED", "DOCUMENT_PDF_DOWNLOADED", "DOCUMENT_PDF_HASH_MISMATCH", "DOCUMENT_TEMPLATE_PUBLISHED", "REGULAR_CERTIFICATE_ISSUED", "REGULAR_CERTIFICATE_REVOKED", "APPROVED_SUBJECTS_CERT_ISSUED", "APPROVED_SUBJECTS_CERT_REVOKED", "EXAM_CERTIFICATE_ISSUED", "EXAM_CERTIFICATE_BATCH_ISSUED", "EXAM_CERTIFICATE_REVOKED", "DOCUMENT_GENERATED_BY_STUDENT", "DOCUMENT_SETTINGS_CHANGED", "DOCUMENT_DEBT_EXC_ISSUED", "DOCUMENT_DEBT_EXC_USED", "DOCUMENT_DEBT_EXC_EXPIRED", "DOCUMENT_DEBT_EXC_DOWNLOADED", "GRADUATION_CERTIFICATE_REVIEW_ENABLED", "GRADUATION_CERTIFICATE_REVIEW_DISABLED" ],
               "type" : "string"
             },
             "type" : "array"
@@ -21739,7 +21937,7 @@
           "name" : "entityType",
           "required" : false,
           "schema" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION", "GRADUATION_CERTIFICATE", "CERTIFICATE_DOCUMENT", "CERTIFICATE_TEMPLATE", "EXAM_CERTIFICATE", "DOCUMENT_DEBT_EXCEPTION" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION", "GRADUATION_CERTIFICATE", "CERTIFICATE_DOCUMENT", "CERTIFICATE_TEMPLATE", "EXAM_CERTIFICATE", "DOCUMENT_DEBT_EXCEPTION", "GRADUATION_REQUEST" ],
             "type" : "string"
           }
         }, {
@@ -48784,6 +48982,7 @@
     },
     "/exam-boards/{id}/exam-certificates/batch" : {
       "post" : {
+        "description" : "Emisión en lote: omite con outcome DEBT a quien no esté al día con los pagos o pase a deber entre candidatos y emisión (sin montos); reemite las REVOKED; skippedCount cuenta los omitidos. Misma condición de mesa rendida y mismos roles que candidates.",
         "operationId" : "ExamBoardCertificate_issueBatch",
         "parameters" : [ {
           "in" : "path",
@@ -48921,6 +49120,7 @@
     },
     "/exam-boards/{id}/exam-certificates/candidates" : {
       "get" : {
+        "description" : "Elegibles: alumnos presentes con la mesa rendida (ExamBoardStatus CLOSED, acta cerrada; si no, EXAM_CERTIFICATE_BOARD_NOT_HELD). NOT_ELIGIBLE_DEBT no es seleccionable y no informa montos, excepción ni link. REVOKED es seleccionable y el lote lo reemite. issuedAt informa ALREADY_ISSUED y REVOKED. Docente de la mesa (404 si es ajena), Administrativo y Director; el Preceptor no tiene acceso.",
         "operationId" : "ExamBoardCertificate_candidates",
         "parameters" : [ {
           "in" : "path",
@@ -49716,6 +49916,135 @@
           }
         },
         "tags" : [ "exam-board-controller" ]
+      }
+    },
+    "/exam-certificates/{id}/pdf" : {
+      "get" : {
+        "description" : "Descarga individual. Docente de la mesa (404 si es ajena), Administrativo y Director. Audita DOCUMENT_PDF_DOWNLOADED.",
+        "operationId" : "ExamCertificate_pdf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "exam-certificate-controller" ]
       }
     },
     "/exam-certificates/{id}/revoke" : {
@@ -50522,6 +50851,539 @@
         "tags" : [ "exam-recovery-controller" ]
       }
     },
+    "/graduation-certificate-reviews" : {
+      "get" : {
+        "operationId" : "GraduationCertificateReview_list",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "NOT_REQUIRED", "PENDING_REVIEW", "ENABLED", "DISABLED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageGraduationCertificateReviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "graduation-certificate-review-controller" ]
+      }
+    },
+    "/graduation-certificate-reviews/batch" : {
+      "post" : {
+        "operationId" : "GraduationCertificateReview_decideBatch",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DecideGraduationCertificateReviewBatchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GraduationCertificateReviewBatchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "graduation-certificate-review-controller" ]
+      }
+    },
+    "/graduation-certificate-reviews/{graduationRequestId}/disable" : {
+      "post" : {
+        "operationId" : "GraduationCertificateReview_disable",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "graduationRequestId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DisableGraduationCertificateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GraduationCertificateReviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "graduation-certificate-review-controller" ]
+      }
+    },
+    "/graduation-certificate-reviews/{graduationRequestId}/enable" : {
+      "post" : {
+        "operationId" : "GraduationCertificateReview_enable",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "graduationRequestId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GraduationCertificateReviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "graduation-certificate-review-controller" ]
+      }
+    },
     "/graduation-certificates" : {
       "get" : {
         "operationId" : "GraduationCertificate_list",
@@ -50957,7 +51819,7 @@
           "name" : "status",
           "required" : false,
           "schema" : {
-            "enum" : [ "PENDING", "BLOCKED_BY_DEBT" ],
+            "enum" : [ "PENDING", "BLOCKED_BY_DEBT", "PENDING_REVIEW", "DISABLED" ],
             "type" : "string"
           }
         }, {
@@ -60557,7 +61419,7 @@
           "name" : "type",
           "required" : true,
           "schema" : {
-            "enum" : [ "REGULAR_STUDENT_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE" ],
+            "enum" : [ "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE" ],
             "type" : "string"
           }
         } ],
@@ -73521,7 +74383,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED", "CALENDAR_FEED_TOKEN_ROTATED", "CALENDAR_FEED_TOKEN_REVOKED", "GRADUATION_CERTIFICATE_DOWNLOADED", "GRADUATION_CERTIFICATE_PDF_MISMATCH", "PERMISSION_SENSITIVE_CHANGED", "DOCUMENT_PDF_DOWNLOADED", "DOCUMENT_PDF_HASH_MISMATCH", "DOCUMENT_TEMPLATE_PUBLISHED", "REGULAR_CERTIFICATE_ISSUED", "REGULAR_CERTIFICATE_REVOKED", "APPROVED_SUBJECTS_CERT_ISSUED", "APPROVED_SUBJECTS_CERT_REVOKED", "EXAM_CERTIFICATE_ISSUED", "EXAM_CERTIFICATE_BATCH_ISSUED", "EXAM_CERTIFICATE_REVOKED", "DOCUMENT_GENERATED_BY_STUDENT", "DOCUMENT_SETTINGS_CHANGED", "DOCUMENT_DEBT_EXC_ISSUED", "DOCUMENT_DEBT_EXC_USED", "DOCUMENT_DEBT_EXC_EXPIRED", "DOCUMENT_DEBT_EXC_DOWNLOADED" ],
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED", "CALENDAR_FEED_TOKEN_ROTATED", "CALENDAR_FEED_TOKEN_REVOKED", "GRADUATION_CERTIFICATE_DOWNLOADED", "GRADUATION_CERTIFICATE_PDF_MISMATCH", "PERMISSION_SENSITIVE_CHANGED", "DOCUMENT_PDF_DOWNLOADED", "DOCUMENT_PDF_HASH_MISMATCH", "DOCUMENT_TEMPLATE_PUBLISHED", "REGULAR_CERTIFICATE_ISSUED", "REGULAR_CERTIFICATE_REVOKED", "APPROVED_SUBJECTS_CERT_ISSUED", "APPROVED_SUBJECTS_CERT_REVOKED", "EXAM_CERTIFICATE_ISSUED", "EXAM_CERTIFICATE_BATCH_ISSUED", "EXAM_CERTIFICATE_REVOKED", "DOCUMENT_GENERATED_BY_STUDENT", "DOCUMENT_SETTINGS_CHANGED", "DOCUMENT_DEBT_EXC_ISSUED", "DOCUMENT_DEBT_EXC_USED", "DOCUMENT_DEBT_EXC_EXPIRED", "DOCUMENT_DEBT_EXC_DOWNLOADED", "GRADUATION_CERTIFICATE_REVIEW_ENABLED", "GRADUATION_CERTIFICATE_REVIEW_DISABLED" ],
               "type" : "string"
             },
             "type" : "array"
@@ -73531,7 +74393,7 @@
           "name" : "entityType",
           "required" : false,
           "schema" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION", "GRADUATION_CERTIFICATE", "CERTIFICATE_DOCUMENT", "CERTIFICATE_TEMPLATE", "EXAM_CERTIFICATE", "DOCUMENT_DEBT_EXCEPTION" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION", "GRADUATION_CERTIFICATE", "CERTIFICATE_DOCUMENT", "CERTIFICATE_TEMPLATE", "EXAM_CERTIFICATE", "DOCUMENT_DEBT_EXCEPTION", "GRADUATION_REQUEST" ],
             "type" : "string"
           }
         }, {

@@ -38,6 +38,12 @@ class GateProbeController {
         return "meta-ok";
     }
 
+    @GetMapping("/probe/no-inheritance")
+    @RequiresPermissionWithoutInheritance(code = "probe.noinherit", legacyRoles = "DIRECTOR,ADMINISTRATIVO")
+    String withoutInheritance() {
+        return "no-inheritance-ok";
+    }
+
     @GetMapping("/probe/legacy")
     @PreAuthorize("hasAnyRole('DOCENTE', 'DIRECTOR')")
     String legacyRule() {

@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentEndView;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
-import com.red_escuela.backend.billing.api.CourseEnrollmentNonpaymentWithdrawalPort;
+import com.red_escuela.backend.shared.module.CourseEnrollmentNonpaymentWithdrawalPort;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.exception.ReportsPolicyViolations;
 import org.slf4j.Logger;
