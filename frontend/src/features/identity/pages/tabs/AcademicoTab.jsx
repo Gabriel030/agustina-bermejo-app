@@ -13,9 +13,9 @@ import { FaltasDeMateria } from '@/features/attendance';
 import { EnrollmentPicker } from '@/features/identity/components/EnrollmentPicker';
 import { EnrollmentActionsMenu } from '@/features/identity/components/EnrollmentActionsMenu';
 import { WithdrawEnrollmentDialog } from '@/features/identity/components/WithdrawEnrollmentDialog';
-import { ChangeSectionSheet } from '@/features/identity/components/ChangeSectionSheet';
+import { ChangeSectionSheet } from '@/components/ChangeSectionSheet';
 import { useEnrollmentChangeFlow } from '@/features/identity/hooks/useEnrollmentChangeFlow';
-import { hasAnyAction, isEnrollmentActionable, isSectionActionable, permissionsFor, sectionActionsOf } from '@/features/identity/lib/enrollmentChanges';
+import { hasAnyAction, isEnrollmentActionable, isSectionActionable, permissionsFor, sectionActionsOf } from '@/lib/enrollmentChanges';
 import { useStudentRegularity } from '@/features/identity/hooks/useStudentRegularity';
 import { describeRegularity } from '@/features/identity/lib/regularity';
 import {
