@@ -135,6 +135,16 @@ class DebtExceptionDownloaderTest {
         verify(auditRecorder).downloaded(ID, "EXAM_CERTIFICATE", 3L, "documentId=5");
     }
 
+    @Test
+    void failedRenderDoesNotAuditTheDownload() {
+        exception(DebtExceptionStatus.ACTIVE, NOW.plusDays(1));
+        when(repository.markUsedIfActive(ID, NOW, 9L)).thenReturn(1);
+        when(issuer.render(any())).thenThrow(new IllegalStateException("render failed"));
+
+        assertThatThrownBy(() -> downloader.download(ID)).isInstanceOf(IllegalStateException.class);
+        verify(auditRecorder, never()).downloaded(anyLong(), any(), anyLong(), any());
+    }
+
     private DocumentDebtException exception(DebtExceptionStatus status, LocalDateTime expiresAt) {
         DocumentDebtException exception = mock(DocumentDebtException.class);
         when(exception.getId()).thenReturn(ID);
