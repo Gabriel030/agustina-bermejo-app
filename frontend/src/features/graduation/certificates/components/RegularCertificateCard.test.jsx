@@ -60,6 +60,12 @@ const pendingRequestBody = {
   requestedAt: '2026-11-13T09:00:00',
   certificateId: null,
   rejectionReason: null,
+  totalDue: null,
+  overdueInstallments: null,
+  hasDebt: null,
+  exceptionId: null,
+  exceptionStatus: null,
+  exceptionValidUntil: null,
 };
 
 function mockState(body) {
