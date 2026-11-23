@@ -4,5 +4,6 @@ public enum ExamCertificateBatchOutcome {
     ISSUED,
     ALREADY_ISSUED,
     ABSENT,
-    NOT_REGISTERED
+    NOT_REGISTERED,
+    PENDING_PAYMENTS
 }

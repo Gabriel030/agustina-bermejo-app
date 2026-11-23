@@ -7386,7 +7386,7 @@
             "type" : [ "integer", "null" ]
           },
           "outcome" : {
-            "enum" : [ "ISSUED", "ALREADY_ISSUED", "ABSENT", "NOT_REGISTERED" ],
+            "enum" : [ "ISSUED", "ALREADY_ISSUED", "ABSENT", "NOT_REGISTERED", "PENDING_PAYMENTS" ],
             "type" : "string"
           },
           "registrationId" : {
@@ -7423,12 +7423,16 @@
       "ExamCertificateCandidateResponse" : {
         "properties" : {
           "availability" : {
-            "enum" : [ "AVAILABLE", "ALREADY_ISSUED", "ABSENT" ],
+            "enum" : [ "AVAILABLE", "ALREADY_ISSUED", "ABSENT", "PENDING_PAYMENTS" ],
             "type" : "string"
           },
           "certificateId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "issuedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
           },
           "maskedDocument" : {
             "type" : "string"
@@ -7436,6 +7440,13 @@
           "registrationId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "revokedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "revokedReason" : {
+            "type" : [ "string", "null" ]
           },
           "studentId" : {
             "format" : "int64",
@@ -49716,6 +49727,134 @@
           }
         },
         "tags" : [ "exam-board-controller" ]
+      }
+    },
+    "/exam-certificates/{id}/pdf" : {
+      "get" : {
+        "operationId" : "ExamCertificate_pdf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "exam-certificate-controller" ]
       }
     },
     "/exam-certificates/{id}/revoke" : {
