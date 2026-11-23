@@ -16,7 +16,7 @@ public class ListInvitationWaveRecipientsService implements ListInvitationWaveRe
     }
 
     @Override
-    public PageResponse<InvitationWaveRecipientEntry> listInvitationWaveRecipients(Long waveId, InvitationRecipientStatus status, int page, int size) {
-        return reader.readInvitationWaveRecipients(waveId, status, page, size);
+    public PageResponse<InvitationWaveRecipientEntry> listInvitationWaveRecipients(Long waveId, InvitationRecipientStatus status, int page, int size, boolean includePersonalData) {
+        return reader.readInvitationWaveRecipients(waveId, status, page, size, includePersonalData);
     }
 }

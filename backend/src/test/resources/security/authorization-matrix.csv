@@ -646,3 +646,15 @@ PUT,/certificate-settings/documents,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{
 POST,/document-debt-exceptions,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,"{""studentId"":1,""documentType"":""REGULAR_STUDENT_CERTIFICATE"",""reason"":""Motivo suficiente de al menos veinte caracteres"",""validityDays"":7}"
 GET,/document-debt-exceptions,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,
 GET,/document-debt-exceptions/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,DENY,ALLOW,DENY,,
+POST,/auth/activation-token/status,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
+POST,/invitation-waves,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""name"":""Oleada"",""batchSize"":10,""intervalMinutes"":15,""dailyCap"":100}"
+GET,/invitation-waves,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/settings,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/import-batches,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/{id}/recipients,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/invitation-waves/{id}/report.csv,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/invitation-waves/{id}/start,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/invitation-waves/{id}/pause,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/invitation-waves/{id}/resume,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/invitation-waves/{id}/cancel,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
