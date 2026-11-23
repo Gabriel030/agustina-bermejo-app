@@ -34,7 +34,11 @@ public class PublicDocumentLookup {
 
     public PublicDocumentLookup(List<DocumentVerificationSource> sources, VerifiableDocumentRegistry registry,
                                 PublicVerificationRateLimiter rateLimiter, MeterRegistry meterRegistry, Clock clock) {
-        sources.forEach(source -> this.sources.put(source.type(), source));
+        sources.forEach(source -> {
+            if (this.sources.putIfAbsent(source.type(), source) != null) {
+                throw new IllegalStateException("Más de una fuente de verificación para el tipo " + source.type());
+            }
+        });
         this.registry = registry;
         this.rateLimiter = rateLimiter;
         this.meterRegistry = meterRegistry;

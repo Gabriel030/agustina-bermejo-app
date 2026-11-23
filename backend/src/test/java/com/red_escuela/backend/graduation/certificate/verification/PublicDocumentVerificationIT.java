@@ -213,6 +213,31 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void registeredDocumentOfATypeWithoutSourceAnswersTheSameGeneric404() throws Exception {
+        String code = CertificateCode.generate(new SecureRandom()).value();
+        jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'EXAM_CERTIFICATE', 1, now())", code);
+        try {
+            MvcResult withoutSource = verify(code);
+            MvcResult unknown = verify(CertificateCode.generate(new SecureRandom()).value());
+
+            assertThat(withoutSource.getResponse().getStatus()).isEqualTo(404);
+            assertThat(withoutRequestId(withoutSource.getResponse().getContentAsString()))
+                    .isEqualTo(withoutRequestId(unknown.getResponse().getContentAsString()));
+        } finally {
+            jdbc.update("delete from verifiable_document where code = ?", code);
+        }
+    }
+
+    @Test
+    void regularCertificateIsStillValidAtTheExactInstantOfExpiry() throws Exception {
+        String code = insertRegular("VALID", LocalDateTime.of(2026, 12, 5, 10, 0));
+
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 12, 5, 10, 0));
+
+        assertThat(verify(code).getResponse().getContentAsString()).contains("\"status\":\"VALID\"");
+    }
+
+    @Test
     void repeatedMissesFromOneClientAreRateLimited() throws Exception {
         String client = freshClient();
         String unknown = CertificateCode.generate(new SecureRandom()).value();
