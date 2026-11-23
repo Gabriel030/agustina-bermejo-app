@@ -95,7 +95,10 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     private String insertGraduation(String status, Long replacesId, boolean registered) {
-        String code = CertificateCode.generate(new SecureRandom()).value();
+        return insertGraduationWithCode(CertificateCode.generate(new SecureRandom()).value(), status, replacesId, registered);
+    }
+
+    private String insertGraduationWithCode(String code, String status, Long replacesId, boolean registered) {
         long[] id = new long[1];
         transactions.executeWithoutResult(tx -> {
             jdbc.execute("SET LOCAL session_replication_role = replica");
@@ -334,14 +337,15 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void unicodeLookalikeCodesAreNotFound() throws Exception {
-        String code = insertGraduation("VALID", null);
-        String fullWidth = "\uFF21" + code.substring(1);
-        String turkishDotted = code.replace('I', '\u0130').replace('K', '\u212A') + "\u0130";
+    void unicodeCharactersThatUppercaseToAValidLetterAreNotFound() throws Exception {
+        String code = "S" + CertificateCode.generate(new SecureRandom()).value().substring(1);
+        insertGraduationWithCode(code, "VALID", null, true);
+        String longS = "\u017F" + code.substring(1);
+        String fullWidth = "\uFF33" + code.substring(1);
 
+        assertThat(verify(code).getResponse().getStatus()).isEqualTo(200);
+        assertThat(verify(longS).getResponse().getStatus()).isEqualTo(404);
         assertThat(verify(fullWidth).getResponse().getStatus()).isEqualTo(404);
-        assertThat(verify(turkishDotted).getResponse().getStatus()).isEqualTo(404);
-        assertThat(verify(code.substring(0, 25) + "\u00D1").getResponse().getStatus()).isEqualTo(404);
     }
 
     @Test
