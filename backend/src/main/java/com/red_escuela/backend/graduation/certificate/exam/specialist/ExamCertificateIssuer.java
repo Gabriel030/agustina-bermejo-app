@@ -1,6 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.exam.specialist;
 
-import com.red_escuela.backend.graduation.api.DocumentIssuanceSettings;
+import com.red_escuela.backend.graduation.documentsettings.specialist.DocumentIssuanceSettingsFinder;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentOrigin;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
@@ -39,7 +39,7 @@ public class ExamCertificateIssuer {
     private final CertificateDigest digest;
     private final StudentFinder studentFinder;
     private final CurrentActorFinder currentActorFinder;
-    private final DocumentIssuanceSettings settings;
+    private final DocumentIssuanceSettingsFinder settings;
     private final AuditTrail auditTrail;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
@@ -48,7 +48,7 @@ public class ExamCertificateIssuer {
                                  CertificatePdfRenderer renderer, CertificateFileStore fileStore,
                                  CertificateVerificationUrl verificationUrl, CertificateDigest digest,
                                  StudentFinder studentFinder, CurrentActorFinder currentActorFinder,
-                                 DocumentIssuanceSettings settings, AuditTrail auditTrail, Clock clock) {
+                                 DocumentIssuanceSettingsFinder settings, AuditTrail auditTrail, Clock clock) {
         this.repository = repository;
         this.template = template;
         this.renderer = renderer;
