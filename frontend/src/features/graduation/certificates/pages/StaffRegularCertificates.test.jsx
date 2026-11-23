@@ -28,6 +28,12 @@ function request(overrides = {}) {
     requestedAt: '2026-11-12T10:00:00',
     certificateId: 0,
     rejectionReason: '',
+    totalDue: null,
+    overdueInstallments: null,
+    hasDebt: null,
+    exceptionId: null,
+    exceptionStatus: null,
+    exceptionValidUntil: null,
     ...overrides,
   };
 }

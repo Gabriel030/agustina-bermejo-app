@@ -23,6 +23,12 @@ public class CertificateDocumentAuditRecorder {
                 null, sha256, describe(documentType, engineVersion)));
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void generatedByStudent(String documentType, Long documentId, String sha256, String engineVersion) {
+        auditTrail.record(new AuditRecord(AuditAction.DOCUMENT_GENERATED_BY_STUDENT, AuditEntityType.CERTIFICATE_DOCUMENT, documentId,
+                null, sha256, describe(documentType, engineVersion)));
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void hashMismatch(String documentType, Long documentId, String expectedSha256, String regeneratedSha256, String engineVersion) {
         auditTrail.record(new AuditRecord(AuditAction.DOCUMENT_PDF_HASH_MISMATCH, AuditEntityType.CERTIFICATE_DOCUMENT, documentId,

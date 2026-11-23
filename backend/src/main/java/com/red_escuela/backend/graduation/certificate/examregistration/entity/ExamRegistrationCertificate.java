@@ -2,6 +2,7 @@ package com.red_escuela.backend.graduation.certificate.examregistration.entity;
 
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -95,6 +96,18 @@ public class ExamRegistrationCertificate {
 
     @Column(name = "revocation_reason", length = 500)
     private String revocationReason;
+
+    public CertificateCode certificateCode() {
+        return new CertificateCode(code);
+    }
+
+    public void markReplaced() {
+        this.status = DocumentValidityStatus.REPLACED;
+    }
+
+    public void replacePdfPath(String newPath) {
+        this.pdfPath = newPath;
+    }
 
     public boolean isValidAt(LocalDateTime moment) {
         return status == DocumentValidityStatus.VALID && moment.isBefore(expiresAt);
