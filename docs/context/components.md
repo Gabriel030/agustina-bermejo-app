@@ -41,8 +41,8 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `DataTable` [shared: `components/table/`] | Tabla con `@tanstack/react-table` v8: orden por encabezado, filtro estilo Excel, filas expandibles, estados cargando/vacío/error y cards bajo 768px. Las columnas son definiciones de TanStack; `meta`: `filterable`, `filterTitle`, `filterLabel(valor)`, `align: 'right'`, `hideInCard`, `cardTitle` (encabezado de la tarjeta, sin etiqueta), `cardBlock` (etiqueta arriba y valor a la izquierda) | `columns`, `data`, `getRowId`, `isLoading`, `isError`, `onRetry`, `errorMessage`, `emptyState`, `renderExpanded(row)`, `expandLabel`, `onRowClick(item)` (clic en la fila fuera de enlaces/botones; el acceso por teclado va con un enlace en la celda), `initialSorting`, `minWidth`, `mobileLayout` (`'cards'` por defecto; `'scroll'` mantiene la tabla con scroll horizontal bajo 768px ; en cards hay barra "Ordenar por" y filtros, y las columnas con header vacío van al pie de la tarjeta) |
 | `ColumnFilter` [shared: `components/table/`] | Filtro multi-selección (Popover + `Checkbox`) con los valores presentes en los datos; lo usa `DataTable` cuando la columna tiene `meta.filterable` | `label`, `options` (`{ value, label, count }`), `selected`, `onChange` |
 | `RefundsSection` [domain: billing] | Reembolsos de un alumno (pedidos agrupados, partes expandibles, "Marcar como hecho" / "No se pudo"); vive en el Financiero de la ficha del alumno | `studentId` |
-| `SortableColumnHeader` [domain: alumno] | Encabezado ordenable (hook `useOrdenamiento`) | — |
-| `AnioColumnFilter` `EstadoColumnFilter` [domain: alumno] | Filtro tipo Excel en el encabezado de columna (checkboxes + seleccionar todo) | — |
+| `SortableColumnHeader` [domain: evaluation] | Encabezado ordenable (hook `useOrdenamiento`) | — |
+| `AnioColumnFilter` `EstadoColumnFilter` [domain: evaluation] | Filtro tipo Excel en el encabezado de columna (checkboxes + seleccionar todo) | — |
 | `AnioGroupHeaderRow` [domain: alumno] | Fila de agrupación por año | — |
 | `AmountBreakdown` [domain: alumno] | Desglose de una cuota: importe base + recargo, beca, promoción o descuento con signo | `baseAmount`, `lines` (`{ label, amount }` con signo) |
 | `InvoiceSummary` [domain: alumno] | Resumen de la cuota que se está pagando (concepto, desglose y total) arriba de los pasos de pago | `breakdown` (respuesta de `/me/invoices/{id}/price-breakdown`) |
@@ -95,7 +95,6 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|
 | `Stagger` [shared] | Entrada escalonada de hijos de listas/grillas de cards (`delayStep`) |
 | `useSlidingIndicator` (hook) | Fondo deslizante sobre el ítem activo (Sidebar, MobileMenu, Tabs) — reusar, no reimplementar |
-| `BannerCarousel` [shared] | Carrusel de banners (autoplay con pausa) |
 | Clases de `index.css` | `skeleton-shimmer`, `scroll-fade-y`, keyframes `stagger-in` `tab-in` `pop-in` `pulse-ring` `badge-pulse` |
 | Clases de `index.css` (no-motion) | `card-avisos`, `tabla-avisos`, `nota-fila` — composición opaca de la columna fija de la tabla de avisos (`features/avisos`). No se puede expresar con utilidades: apila `--surface` sobre `--bg1` y mete el tinte de fila como una capa aparte vía `--capa-fila`, porque el shorthand `background` destruiría esa composición |
 
@@ -118,7 +117,7 @@ Si un segundo dominio necesita uno de estos, se sube a `components/` (regla de `
 ## 8. Contextos y hooks transversales
 - `AuthContext` (`useAuth`) y `ThemeContext` (`useTheme` → `{ tema, alternarTema }`).
 - Hooks de UI: `useSlidingIndicator`, `useOrdenamiento`, `useBreadcrumb`, `useMediaQuery(query)`.
-- Hooks de datos (React Query), uno por recurso: en `hooks/` (`useAlumno`, `useBilling`, `useCatalogo`, `useDirector`, `useDocente`, `useDocenteAsistencia`, `useGrillaDeMaterias`, `useMateriasDelPlan`, `useMesasDeExamen`, `useNotifications`, `useSolicitudesAsistencia`) y por feature en `features/*/hooks/`.
+- Hooks de datos (React Query), uno por recurso: en `hooks/` (`useAlumno`, `useBilling`, `useCatalogo`, `useDirector`, `useDocente`, `useDocenteAsistencia`, `useMateriasDelPlan`, `useMesasDeExamen`, `useNotifications`, `useSolicitudesAsistencia`) y por feature en `features/*/hooks/`.
 
 ## Cómo usar este catálogo en una spec (criterios de aceptación)
 La spec técnica de una pantalla incluye una sección **"Componentes a usar"** con, por cada bloque de la pantalla, el componente de este catálogo (o la marca "componente nuevo: X, porque ninguno cubre Y"). Cada criterio de aceptación visual referencia esos componentes ("la lista de pagos es una `Table` dentro de `GlassCard`, con `EmptyState` si no hay filas"). `ux-advisor` valida esa lista antes de aprobar el diseño.

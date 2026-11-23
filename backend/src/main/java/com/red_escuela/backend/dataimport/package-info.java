@@ -3,7 +3,7 @@
  * filas en preparación, validación en ensayo (sin escribir en las tablas de negocio) y carga por tandas.
  * Está en la capa de {@code academicrecord}: puede usar la {@code api} de los demás módulos.
  *
- * <p><b>Expone</b>: nada: no tiene {@code api} ni {@code events}.
+ * <p><b>Expone</b>: en su {@code api}, {@code ImportedAccountsQuery}: las cuentas creadas por importación que todavía no se activaron, por tandas. No tiene {@code events}.
  *
  * <p><b>No hacer</b>: acceder a repositorios o entidades de otro módulo; llamar a casos de uso vivos de otro módulo
  * ni publicar eventos al cargar historia (cada módulo expone un especialista {@code Historical*Recorder} en su

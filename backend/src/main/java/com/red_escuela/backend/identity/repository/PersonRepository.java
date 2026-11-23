@@ -5,6 +5,8 @@ import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,8 +37,20 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
 
     Optional<Person> findByUsername(String username);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Person p where p.id = :id")
+    Optional<Person> findByIdForUpdate(@Param("id") Long id);
+
     @Query("select count(p) from Person p where p.id in :ids and (p.grantSystemAccess = true or p.password is not null)")
     long countWithSystemAccessByIdIn(@Param("ids") Collection<Long> ids);
+
+    @Query("""
+            select distinct p from Person p join p.roles r
+            where p.id in :ids and r.name = 'ALUMNO' and p.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE and p.password is null
+              and (p.grantSystemAccess is null or p.grantSystemAccess = false)
+            order by p.id
+            """)
+    List<Person> findStudentsPendingActivationByIdIn(@Param("ids") Collection<Long> ids);
 
     @Query("select p.address.id from Person p where p.id in :ids and p.address is not null")
     List<Long> findAddressIdsByIdIn(@Param("ids") Collection<Long> ids);

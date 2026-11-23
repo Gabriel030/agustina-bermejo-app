@@ -60,6 +60,15 @@ public class CircuitBreaker {
         }
     }
 
+    public boolean isRejectingCalls() {
+        if (!settings.enabled()) {
+            return false;
+        }
+        synchronized (lock) {
+            return state == CircuitBreakerState.OPEN && !remainingOpenTime().isZero();
+        }
+    }
+
     public <T> T execute(Supplier<T> call) {
         return execute(call, failure -> true);
     }

@@ -80,4 +80,28 @@ class AnnouncementEmailDispatchJobTest {
         assertThat(attempted).isEqualTo(AnnouncementEmailDispatchJob.MAX_DISPATCHES_PER_RUN);
         verify(channel, never()).dispatchDelivery(9_999L);
     }
+
+    @Test
+    void openCircuitCutsTheBatchWithoutTouchingAnyDelivery() {
+        idsScheduledFor(SATURDAY.minusDays(1), List.of(4L));
+        idsScheduledFor(SATURDAY, List.of(5L, 6L));
+        when(channel.isMailCircuitOpen()).thenReturn(true);
+
+        int attempted = job.dispatchPendingAnnouncementEmails();
+
+        assertThat(attempted).isZero();
+        verify(channel, never()).dispatchDelivery(anyLong());
+    }
+
+    @Test
+    void circuitOpeningMidBatchStopsTheRemainingDeliveries() {
+        idsScheduledFor(SATURDAY, List.of(5L, 6L));
+        when(channel.isMailCircuitOpen()).thenReturn(false, true);
+
+        int attempted = job.dispatchPendingAnnouncementEmails();
+
+        assertThat(attempted).isEqualTo(1);
+        verify(channel).dispatchDelivery(5L);
+        verify(channel, never()).dispatchDelivery(6L);
+    }
 }

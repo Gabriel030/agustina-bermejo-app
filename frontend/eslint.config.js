@@ -19,6 +19,14 @@ const FEATURES = [
   'announcements',
   'notifications',
   'workspace',
+  'audit',
+  'backups',
+  'broadcasts',
+  'data-import',
+  'institution',
+  'permissions',
+  'platform',
+  'schedule',
 ]
 
 const boundaryMessage = 'Una feature solo puede importar de otra a través de su index.js.'
@@ -139,8 +147,8 @@ export default defineConfig([
     rules: { 'guard/no-raw-button': 'error' },
   },
   {
-    files: ['src/components/**/*.{js,jsx}', 'src/lib/**/*.{js,jsx}', 'src/layouts/**/*.{js,jsx}'],
-    ignores: ['**/*.test.{js,jsx}'],
+    files: ['src/components/**/*.{js,jsx}', 'src/lib/**/*.{js,jsx}'],
+    ignores: ['**/*.test.{js,jsx}', 'src/components/TopHeader.jsx'],
     rules: {
       'no-restricted-imports': [
         'warn',
@@ -148,7 +156,24 @@ export default defineConfig([
           patterns: [
             {
               group: ['@/features/**'],
-              message: 'components, lib y layouts no pueden importar de features.',
+              message: 'components y lib no pueden importar de features.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/layouts/**/*.{js,jsx}', 'src/components/TopHeader.jsx'],
+    ignores: ['**/*.test.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@/features/**', '!@/features/*', '!@/features/*/index', '!@/features/*/index.js'],
+              message: 'layouts y la cabecera solo pueden importar de features a través de su index.js.',
             },
           ],
         },
