@@ -70,7 +70,8 @@ public class ProgramProgressReader {
         List<Grade> finalGrades = Stream.concat(
                         subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                                 .map(SubjectSectionEnrollment::getFinalScore),
-                        standings.values().stream().filter(SubjectStanding::isApprovedByEquivalence)
+                        standings.values().stream()
+                                .filter(standing -> standing.isApprovedByEquivalence() && !standing.isApprovedByCoursework())
                                 .map(standing -> standing.equivalence().originScore()))
                 .filter(Objects::nonNull)
                 .toList();

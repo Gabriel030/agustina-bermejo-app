@@ -251,4 +251,23 @@ class SubjectApprovalPortTest {
         assertThat(lookup.findStandings(List.of(ENROLLMENT_ID), List.<Long>of(), List.of(EnrollmentStatus.APPROVED))).isEmpty();
         verify(sectionRepository, times(0)).findPrerequisiteStatusRows(any(), any(), any());
     }
+
+    @Test
+    void averageDoesNotCountTheEquivalenceScoreOfASubjectAlsoApprovedByCoursework() {
+        ProgramProgressReader reader = new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder, lookup);
+        ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
+        Program program = mock(Program.class);
+        when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
+        when(enrollment.getId()).thenReturn(ENROLLMENT_ID);
+        when(enrollment.getProgram()).thenReturn(program);
+        when(program.getId()).thenReturn(PROGRAM_ID);
+        when(program.getTotalCreditsRequired()).thenReturn(4);
+        when(curriculumFinder.findProgramSubjects(PROGRAM_ID)).thenReturn(List.of(
+                new ProgramSubjectView(11L, 1L, "Algebra", 4, 1, null, null)));
+        when(curriculumFinder.findElectiveGroupRequirements(PROGRAM_ID)).thenReturn(List.of());
+        coursework(ENROLLMENT_ID, 1L, EnrollmentStatus.APPROVED);
+        recognized(ENROLLMENT_ID, 1L, "2.00");
+
+        assertThat(reader.calculateProgress(ENROLLMENT_ID).overallAverage()).isNull();
+    }
 }

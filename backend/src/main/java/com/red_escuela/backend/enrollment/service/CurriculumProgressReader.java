@@ -1,12 +1,11 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
+import com.red_escuela.backend.enrollment.api.ApprovalSource;
 import com.red_escuela.backend.enrollment.api.CurriculumProgressView;
 import com.red_escuela.backend.enrollment.api.ElectiveGroupProgressView;
 import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
 import com.red_escuela.backend.enrollment.api.SubjectStanding;
-import com.red_escuela.backend.enrollment.api.ApprovalSource;
-import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.academicstructure.api.ProgramCorequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumEntryView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
@@ -18,6 +17,7 @@ import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundExc
 import com.red_escuela.backend.enrollment.policy.CurriculumSubjectState;
 import com.red_escuela.backend.enrollment.policy.CurriculumSubjectStatePolicy;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteRequirementPolicy;
+import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.shared.domain.Grade;

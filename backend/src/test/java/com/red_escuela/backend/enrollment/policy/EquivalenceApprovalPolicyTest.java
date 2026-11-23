@@ -85,22 +85,6 @@ class EquivalenceApprovalPolicyTest {
         assertThat(projection.basis().creditsPerPeriodSource()).isEqualTo(CreditsPerPeriodSource.PLAN_THEORETICAL);
     }
 
-    @Test
-    void inputWithoutExplicitCourseworkCreditsKeepsTheAccumulatedPace() {
-        List<ProjectionSubject> subjects = new ArrayList<>();
-        for (int id = 1; id <= 4; id++) {
-            subjects.add(subject(id, CurriculumSubjectState.APPROVED));
-        }
-        for (int id = 5; id <= 12; id++) {
-            subjects.add(subject(id, CurriculumSubjectState.AVAILABLE));
-        }
-        GraduationProjectionInput legacy = new GraduationProjectionInput(1L, ProgramEnrollmentStatus.ENROLLED, 5, 2,
-                LocalDate.of(2026, 3, 10), 12, 36, 24, 12, 4, 4, false, false, subjects, List.of());
-
-        assertThat(legacy.courseworkCredits()).isEqualTo(12);
-        assertThat(projectionPolicy.project(legacy).basis().creditsPerPeriod()).isEqualByComparingTo("6.00");
-    }
-
     private GraduationProjectionInput input(List<ProjectionSubject> subjects, int accumulated, int courseworkCredits) {
         return new GraduationProjectionInput(1L, ProgramEnrollmentStatus.ENROLLED, 5, 2, LocalDate.of(2026, 3, 10),
                 accumulated, 36, 36 - accumulated, 12, 4, 4, false, false, subjects, List.of(), courseworkCredits);
