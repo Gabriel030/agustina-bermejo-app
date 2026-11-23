@@ -9,6 +9,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,19 +18,24 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -84,6 +91,10 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     private String insertGraduation(String status, Long replacesId) {
+        return insertGraduation(status, replacesId, true);
+    }
+
+    private String insertGraduation(String status, Long replacesId, boolean registered) {
         String code = CertificateCode.generate(new SecureRandom()).value();
         long[] id = new long[1];
         transactions.executeWithoutResult(tx -> {
@@ -96,8 +107,10 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
                     String.format("%07d/2026", ThreadLocalRandom.current().nextInt(1_000_000, 9_999_999)),
                     "REVOKED".equals(status) ? Timestamp.valueOf("2026-11-09 08:00:00") : null,
                     "REVOKED".equals(status) ? 1L : null, "REVOKED".equals(status) ? "motivo interno" : null, replacesId);
-            jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'GRADUATION_CERTIFICATE', ?, now())",
-                    code, id[0]);
+            if (registered) {
+                jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'GRADUATION_CERTIFICATE', ?, now())",
+                        code, id[0]);
+            }
         });
         graduationIds.add(id[0]);
         return code;
@@ -108,6 +121,10 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     private String insertRegular(String status, LocalDateTime expiresAt) {
+        return insertRegular(status, expiresAt, true);
+    }
+
+    private String insertRegular(String status, LocalDateTime expiresAt, boolean registered) {
         String code = CertificateCode.generate(new SecureRandom()).value();
         long[] id = new long[1];
         transactions.executeWithoutResult(tx -> {
@@ -121,8 +138,10 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
                     ThreadLocalRandom.current().nextLong(1_000_000, 9_000_000), status, Timestamp.valueOf(expiresAt), SNAPSHOT,
                     "REVOKED".equals(status) ? Timestamp.valueOf("2026-11-09 08:00:00") : null,
                     "REVOKED".equals(status) ? "motivo interno" : null);
-            jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'REGULAR_STUDENT_CERTIFICATE', ?, now())",
-                    code, id[0]);
+            if (registered) {
+                jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'REGULAR_STUDENT_CERTIFICATE', ?, now())",
+                        code, id[0]);
+            }
         });
         regularIds.add(id[0]);
         return code;
@@ -265,12 +284,75 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void migrationBackfillCoversEveryAlreadyIssuedDocument() {
-        Integer missing = jdbc.queryForObject("select (select count(*) from graduation_certificate g where not exists "
-                + "(select 1 from verifiable_document v where v.code = g.code)) + (select count(*) from regular_student_certificate r "
-                + "where not exists (select 1 from verifiable_document v where v.code = r.code))", Integer.class);
+    void migrationBackfillRegistersAlreadyIssuedDocumentsThatWereNotRegistered() throws Exception {
+        String graduation = insertGraduation("VALID", null, false);
+        String regular = insertRegular("VALID", LocalDateTime.of(2027, 1, 5, 10, 0), false);
+        assertThat(verify(graduation).getResponse().getStatus()).isEqualTo(404);
+        assertThat(verify(regular).getResponse().getStatus()).isEqualTo(404);
 
-        assertThat(missing).isZero();
+        List<String> backfills = backfillStatements();
+        assertThat(backfills).hasSize(2);
+        backfills.forEach(statement -> {
+            jdbc.update(statement.replace("from graduation_certificate", "from graduation_certificate where code = '" + graduation + "'")
+                    .replace("from regular_student_certificate", "from regular_student_certificate where code = '" + regular + "'"));
+        });
+
+        assertThat(verify(graduation).getResponse().getStatus()).isEqualTo(200);
+        assertThat(verify(regular).getResponse().getStatus()).isEqualTo(200);
+    }
+
+    private static List<String> backfillStatements() throws Exception {
+        Resource[] files = new PathMatchingResourcePatternResolver()
+                .getResources("classpath:db/migration/V*__verifiable_document_registry.sql");
+        assertThat(files).hasSize(1);
+        String sql = new String(files[0].getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        return Arrays.stream(sql.split(";"))
+                .map(String::trim)
+                .filter(statement -> statement.startsWith("insert into verifiable_document"))
+                .toList();
+    }
+
+    @Test
+    void responsesAreNeverCachedForFoundAndNotFound() throws Exception {
+        String code = insertGraduation("VALID", null);
+
+        mockMvc.perform(get("/public/documents/{code}", code).with(from(freshClient())))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-store")));
+        mockMvc.perform(get("/public/documents/{code}", CertificateCode.generate(new SecureRandom()).value()).with(from(freshClient())))
+                .andExpect(status().isNotFound())
+                .andExpect(header().string("Cache-Control", containsString("no-store")));
+    }
+
+    @Test
+    void lowercaseHyphenatedAndSpacedCodesResolveTheSameDocument() throws Exception {
+        String code = insertGraduation("VALID", null);
+        String formatted = new CertificateCode(code).formatted().toLowerCase(Locale.ROOT);
+
+        assertThat(verify(formatted).getResponse().getStatus()).isEqualTo(200);
+        assertThat(verify(formatted.replace("-", " ")).getResponse().getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void unicodeLookalikeCodesAreNotFound() throws Exception {
+        String code = insertGraduation("VALID", null);
+        String fullWidth = "\uFF21" + code.substring(1);
+        String turkishDotted = code.replace('I', '\u0130').replace('K', '\u212A') + "\u0130";
+
+        assertThat(verify(fullWidth).getResponse().getStatus()).isEqualTo(404);
+        assertThat(verify(turkishDotted).getResponse().getStatus()).isEqualTo(404);
+        assertThat(verify(code.substring(0, 25) + "\u00D1").getResponse().getStatus()).isEqualTo(404);
+    }
+
+    @Test
+    void rawCodeLengthLimitIsExactlySixtyFour() throws Exception {
+        String code = insertGraduation("VALID", null);
+        String atLimit = code + "-".repeat(38);
+        String overLimit = code + "-".repeat(39);
+
+        assertThat(atLimit).hasSize(64);
+        assertThat(verify(atLimit).getResponse().getStatus()).isEqualTo(200);
+        assertThat(verify(overLimit).getResponse().getStatus()).isEqualTo(404);
     }
 
     @Test
