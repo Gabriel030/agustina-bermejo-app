@@ -8,6 +8,7 @@ import { axe } from '@/test/axe';
 import { errorBody } from '@/test/fixtures/errors';
 import { saveBlob } from '@/features/graduation/certificates/lib/saveBlob';
 import { examCertificate, examCertificateBatch, examCertificateCandidates } from '@/test/fixtures/constancias';
+import { takeContractDeviations } from '@/test/contract/withContract';
 import { ExamCertificatesSection } from './ExamCertificatesSection';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), warning: vi.fn(), error: vi.fn() }));
@@ -71,6 +72,42 @@ describe('ExamCertificatesSection', () => {
 
     expect(await screen.findByText('Revocada')).toBeInTheDocument();
     expect(screen.queryByText(/Motivo/)).not.toBeInTheDocument();
+  });
+
+  it('shows the revoked student with the reason and the issue date and no PDF or revoke button', async () => {
+    renderSection('director');
+
+    await screen.findByRole('checkbox', { name: 'Seleccionar a Carla Ibarra' });
+
+    expect(screen.getByText('Revocada')).toBeInTheDocument();
+    expect(screen.getByText('Emitida el 18/11/2026')).toBeInTheDocument();
+    expect(screen.getByText(/Emitida con datos incorrectos\. Revocada el 20\/11\/2026/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Descargar PDF de Carla Ibarra' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Revocar constancia de Carla Ibarra' })).not.toBeInTheDocument();
+  });
+
+  it('does not show an issue date for a revoked student without issuedAt', async () => {
+    server.use(http.get(CANDIDATES_URL, () => HttpResponse.json([candidate({ availability: 'REVOKED', certificateId: 14, issuedAt: null, revokedAt: '2026-11-20T10:00:00', revokedReason: 'Motivo' })])));
+    renderSection();
+
+    expect(await screen.findByText('Revocada')).toBeInTheDocument();
+    expect(screen.queryByText(/Emitida el/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Descargar PDF/ })).not.toBeInTheDocument();
+  });
+
+  it('treats an unknown availability as not selectable with the unavailable pill', async () => {
+    server.use(
+      http.get(CANDIDATES_URL, () =>
+        HttpResponse.json([candidate({ availability: 'FOO' }), candidate({ registrationId: 61, studentName: 'Sofía Luna' })]),
+      ),
+    );
+    renderSection();
+
+    expect(await screen.findByText('No disponible')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Seleccionar a Juan Pérez' })).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Seleccionar a Sofía Luna' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Seleccionar todos los elegibles (1)' })).toBeInTheDocument();
+    takeContractDeviations();
   });
 
   it('reissues a revoked student through the batch', async () => {
@@ -150,6 +187,19 @@ describe('ExamCertificatesSection', () => {
     await waitFor(() => expect(saveBlob).toHaveBeenCalledTimes(1));
     expect(saveBlob.mock.calls[0][1]).toBe('constancia-ce-45.pdf');
     expect(saveBlob.mock.calls[0][0].type).toBe('application/pdf');
+  });
+
+  it('falls back to a default file name when the PDF has no Content-Disposition', async () => {
+    server.use(
+      http.get(`${API}/exam-certificates/12/pdf`, () => new HttpResponse(new Uint8Array([0x25]), { headers: { 'Content-Type': 'application/pdf' } })),
+    );
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(await screen.findByRole('button', { name: 'Descargar PDF de Luis Gómez' }));
+
+    await waitFor(() => expect(saveBlob).toHaveBeenCalledTimes(1));
+    expect(saveBlob.mock.calls[0][1]).toBe('constancia-de-examen.pdf');
   });
 
   it('disables the PDF button while downloading', async () => {

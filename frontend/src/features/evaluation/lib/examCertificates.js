@@ -45,7 +45,7 @@ export function revocationDetail(candidate) {
 }
 
 export function issuedAtOf(candidate) {
-  if (candidate.availability !== 'ALREADY_ISSUED') return null;
+  if (candidate.availability !== 'ALREADY_ISSUED' && candidate.availability !== 'REVOKED') return null;
   return candidate.issuedAt ?? null;
 }
 
