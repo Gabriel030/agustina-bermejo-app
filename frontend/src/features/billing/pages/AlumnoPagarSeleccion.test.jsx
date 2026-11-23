@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { AlumnoPagarSeleccion } from '@/pages/AlumnoPagarSeleccion';
+import { AlumnoPagarSeleccion } from '@/features/billing/pages/AlumnoPagarSeleccion';
 
 const API = 'http://localhost:8080';
 

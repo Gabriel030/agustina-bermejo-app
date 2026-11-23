@@ -7,7 +7,7 @@ import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
+import { AdministrativoFacturacion } from '@/features/billing/pages/AdministrativoFacturacion';
 import { invoiceFixture, money } from '@/test/fixtures/invoices';
 import { receiptFixture, receiptInstallmentFixture } from '@/test/fixtures/receipts';
 import { axe } from '@/test/axe';

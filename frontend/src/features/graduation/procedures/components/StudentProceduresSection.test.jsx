@@ -74,6 +74,11 @@ function renderSection() {
   );
 }
 
+async function generateButtonOf(title) {
+  const row = (await screen.findByText(title)).closest('li');
+  return within(row).findByRole('button', { name: 'Generar' });
+}
+
 beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:procedure');
   URL.revokeObjectURL = vi.fn();
@@ -108,7 +113,7 @@ describe('StudentProceduresSection', () => {
 
     expect(await screen.findByText('Tenés pagos pendientes')).toBeInTheDocument();
     expect(screen.getByText('Todavía no sos alumno regular')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Generar' })).toHaveLength(3);
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Generar' })).toHaveLength(3));
   });
 
   it('links to the exam tables when the student is not registered for an exam', async () => {
@@ -164,7 +169,7 @@ describe('StudentProceduresSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[0]);
+    await user.click(await generateButtonOf('Constancia de alumno regular'));
     expect(screen.getByText('La constancia va a incluir')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Obra social' }));
     await user.type(screen.getByLabelText(/Nombre de la obra social/), 'OSDE');
@@ -194,7 +199,7 @@ describe('StudentProceduresSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[3]);
+    await user.click(await generateButtonOf('Constancia de materias aprobadas'));
     expect(screen.queryByText(/¿Para quién es\?/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Generar y descargar' }));
 
@@ -213,7 +218,7 @@ describe('StudentProceduresSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[2]);
+    await user.click(await generateButtonOf('Constancia de examen'));
     expect(await screen.findByText('Anatomía II')).toBeInTheDocument();
     expect(screen.queryByText('Química')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Generar y descargar' })).toBeDisabled();
@@ -228,7 +233,7 @@ describe('StudentProceduresSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[0]);
+    await user.click(await generateButtonOf('Constancia de alumno regular'));
     await user.click(screen.getByRole('button', { name: 'Otro' }));
     await user.click(screen.getByLabelText(/¿Para quién es\?/, { selector: 'input' }));
     await user.paste('a'.repeat(95));
@@ -243,7 +248,7 @@ describe('StudentProceduresSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[0]);
+    await user.click(await generateButtonOf('Constancia de alumno regular'));
     await user.click(screen.getByRole('button', { name: 'Generar y descargar' }));
 
     expect(await screen.findByText(/Ya generaste hoy esta constancia/)).toBeInTheDocument();
@@ -259,7 +264,7 @@ describe('StudentProceduresSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[0]);
+    await user.click(await generateButtonOf('Constancia de alumno regular'));
     await user.click(screen.getByRole('button', { name: 'Generar y descargar' }));
 
     expect(await screen.findByText(/Comunicate con Administración/)).toBeInTheDocument();
@@ -271,7 +276,7 @@ describe('StudentProceduresSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[0]);
+    await user.click(await generateButtonOf('Constancia de alumno regular'));
     await user.click(screen.getByRole('button', { name: 'Generar y descargar' }));
 
     expect(await screen.findByText(/Tuvimos un problema de nuestro lado/)).toBeInTheDocument();
@@ -322,7 +327,7 @@ describe('StudentProceduresSection', () => {
     await user.click(retry);
 
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument());
-    expect(screen.getAllByRole('button', { name: 'Generar' })).toHaveLength(4);
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Generar' })).toHaveLength(4));
   });
 
   it('keeps the form and shows an error when the service is unavailable', async () => {
@@ -332,7 +337,7 @@ describe('StudentProceduresSection', () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.click((await screen.findAllByRole('button', { name: 'Generar' }))[0]);
+    await user.click(await generateButtonOf('Constancia de alumno regular'));
     await user.click(screen.getByRole('button', { name: 'Generar y descargar' }));
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Generar y descargar' })).toBeEnabled());

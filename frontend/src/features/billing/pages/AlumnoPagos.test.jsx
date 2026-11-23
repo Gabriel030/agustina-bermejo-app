@@ -6,7 +6,7 @@ import { Routes, Route } from 'react-router-dom';
 import { createDeferred } from '@/test/deferred';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { AlumnoPagos } from '@/pages/AlumnoPagos';
+import { AlumnoPagos } from '@/features/billing/pages/AlumnoPagos';
 
 const API = 'http://localhost:8080';
 
