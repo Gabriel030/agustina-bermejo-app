@@ -87,6 +87,16 @@ Claude puede abrir PRs contra `master`. Cadencia obligatoria de releases: con 15
 
 `ci.yml` corre en PRs y en push a `develop`/`master` y cancela corridas viejas del mismo PR. Los PRs corren siempre (sin filtro de paths) porque la protección de rama exige los checks `backend` y `frontend`: si el cambio es solo `.md` o `docs/`, `detect-changes.sh` marca todo como no relevante y esos dos checks dan verde en segundos sin correr tests. Los push a `develop`/`master` siguen sin correr con cambios solo de `.md` o `docs/`.
 
+### Reutilización del resultado del PR en el push a `develop` (REUSE)
+
+`detect-changes.sh` compara árboles (no SHAs) para no repetir ~6 min de CI en cada merge:
+
+- **Merge commit:** el PR es el segundo padre (`HEAD^2`). **Squash:** se busca con `gh api repos/{repo}/commits/{sha}/pulls` el único PR mergeado a `develop` cuyo `merge_commit_sha` es el commit pusheado, y se toma su `head.sha`.
+- Se reutiliza **solo si** se cumplen todas: (1) existe un run `pull_request` de `ci.yml` verde para ese head; (2) todos los check-runs del head (`commits/{head}/check-runs?filter=latest`) terminaron en `success`, `skipped` o `neutral`; (3) el artifact `tested-tree` de ese run registra un árbol (el de `refs/pull/N/merge`, o sea PR + `develop` al momento del run) **idéntico** a `git rev-parse HEAD^{tree}` del push. Cualquier fallo de la API, artifact vencido o dato malformado implica correr todo (nunca se reutiliza por defecto).
+- **Cuándo NO reutiliza:** si `develop` avanzó entre el último CI del PR y el merge, el árbol del commit en `develop` difiere del probado y corre el CI completo. Lo mismo con pushes directos, commits sin PR asociado o checks rojos/pendientes en el PR.
+- Permisos del job `changes`: `contents: read`, `actions: read`, `pull-requests: read` (listar PRs del commit) y `checks: read` (check-runs).
+- Riesgo residual: un check requerido que no sea check-run del head (ej. status externo) no se evalúa; hoy todos los requeridos son de `ci.yml`.
+
 ### Seguridad de dependencias y secretos
 
 - `.github/dependabot.yml` abre PRs semanales contra `develop` para Maven, npm y GitHub Actions (máx. 5 abiertos por ecosistema).
