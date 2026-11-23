@@ -196,6 +196,17 @@ export function changeSectionCandidate(overrides = {}) {
 export function changeSectionCandidateList() {
   return [
     changeSectionCandidate(),
+    changeSectionCandidate({
+      sectionId: 21,
+      name: 'Comisión B',
+      capacity: 30,
+      occupiedSeats: 28,
+      availableSeats: 2,
+      selectable: true,
+      blockReason: null,
+      blockDetail: null,
+      conflictingSubject: null,
+    }),
     changeSectionCandidate({ sectionId: 22, name: 'Comisión C', blockReason: 'SECTION_FULL', blockDetail: 'No quedan lugares' }),
     changeSectionCandidate({ sectionId: 23, name: 'Comisión D', blockReason: 'SCHEDULE_OVERLAP', blockDetail: 'Se superpone con otra materia', conflictingSubject: 'Fisiología I' }),
   ];

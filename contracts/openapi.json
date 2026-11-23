@@ -2763,7 +2763,7 @@
           },
           "allowedDocumentTypes" : {
             "items" : {
-              "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_CERTIFICATE" ],
+              "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE" ],
               "type" : "string"
             },
             "type" : "array"
@@ -2810,7 +2810,7 @@
           },
           "allowedDocumentTypes" : {
             "items" : {
-              "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_CERTIFICATE" ],
+              "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE" ],
               "type" : "string"
             },
             "type" : "array"
@@ -3178,18 +3178,18 @@
             "type" : "integer"
           },
           "blockDetail" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "blockReason" : {
-            "enum" : [ "CURRENT_SECTION", "SECTION_NOT_OPEN", "OTHER_TERM", "SECTION_FULL", "SCHEDULE_OVERLAP" ],
-            "type" : "string"
+            "enum" : [ "CURRENT_SECTION", "SECTION_NOT_OPEN", "OTHER_TERM", "SECTION_FULL", "SCHEDULE_OVERLAP", null ],
+            "type" : [ "string", "null" ]
           },
           "capacity" : {
             "format" : "int32",
             "type" : "integer"
           },
           "conflictingSubject" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "name" : {
             "type" : "string"
@@ -3212,7 +3212,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "availableSeats", "blockDetail", "blockReason", "capacity", "conflictingSubject", "name", "occupiedSeats", "sectionId", "selectable", "slots" ],
+        "required" : [ "availableSeats", "capacity", "name", "occupiedSeats", "sectionId", "selectable", "slots" ],
         "type" : "object"
       },
       "ChangeSectionRequest" : {
@@ -14812,7 +14812,7 @@
         "properties" : {
           "allowedDocumentTypes" : {
             "items" : {
-              "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_CERTIFICATE" ],
+              "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE" ],
               "type" : "string"
             },
             "type" : "array"
@@ -15467,7 +15467,7 @@
       "SignatoryTemplateUsageResponse" : {
         "properties" : {
           "documentType" : {
-            "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_CERTIFICATE" ],
+            "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE" ],
             "type" : "string"
           },
           "status" : {
@@ -29802,7 +29802,7 @@
           "name" : "documentType",
           "required" : false,
           "schema" : {
-            "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_CERTIFICATE" ],
+            "enum" : [ "GRADUATION_APPROVAL", "REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE", "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE" ],
             "type" : "string"
           }
         }, {
