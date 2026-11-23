@@ -6,7 +6,7 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.attendance.api.AttendanceStanding;
 import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
-import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
+import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
@@ -92,7 +92,7 @@ class ProgramEnrollmentRulesTest {
     @Mock
     private AttendanceStandingReader attendanceRiskUseCase;
     @Mock
-    private EnrollmentDebtGuard enrollmentDebtGuard;
+    private EnrollmentDebtGuardPort enrollmentDebtGuard;
 
     @Mock
     private ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard;
