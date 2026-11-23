@@ -276,6 +276,7 @@ begin
       ('student_status_change', 'change_type', array['REACTIVATED', 'WITHDRAWN']),
       ('subject', 'grade_mode', array['NUMERIC', 'PASS_FAIL']),
       ('subject', 'status', array['ACTIVE', 'DRAFT', 'INACTIVE', 'PENDING_APPROVAL', 'REJECTED']),
+      ('subject_equivalence', 'status', array['ACTIVE', 'VOIDED']),
       ('subject_section', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
       ('subject_section_enrollment', 'status', array['APPROVED', 'ENROLLED', 'FAILED', 'IN_PROGRESS', 'REGULAR', 'WAITLISTED', 'WAITLIST_EXPIRED', 'WITHDRAWN']),
       ('subject_section_instructor', 'role', array['ASSISTANT', 'GUEST', 'LAB', 'LEAD', 'PRACTICAL']),
