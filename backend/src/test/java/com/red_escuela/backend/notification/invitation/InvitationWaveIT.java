@@ -209,7 +209,7 @@ class InvitationWaveIT extends AbstractIntegrationTest {
         assertThat(response.intervalMinutes()).isEqualTo(15);
         assertThat(response.dailyCap()).isEqualTo(100);
         assertThat(response.startedAt()).isNull();
-        PageResponse<InvitationWaveRecipientEntry> all = listInvitationWaveRecipients.listInvitationWaveRecipients(response.id(), null, 0, 50);
+        PageResponse<InvitationWaveRecipientEntry> all = listInvitationWaveRecipients.listInvitationWaveRecipients(response.id(), null, 0, 50, false);
         assertThat(all.items()).extracting(InvitationWaveRecipientEntry::personId).containsExactlyInAnyOrder(eligible, withoutEmail);
         InvitationWaveRecipientEntry pending = all.items().stream().filter(e -> e.personId() == eligible).findFirst().orElseThrow();
         InvitationWaveRecipientEntry excluded = all.items().stream().filter(e -> e.personId() == withoutEmail).findFirst().orElseThrow();
@@ -227,7 +227,7 @@ class InvitationWaveIT extends AbstractIntegrationTest {
 
         long waveId = draftWave();
 
-        PageResponse<InvitationWaveRecipientEntry> all = listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, null, 0, 50);
+        PageResponse<InvitationWaveRecipientEntry> all = listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, null, 0, 50, false);
         assertThat(all.items()).extracting(InvitationWaveRecipientEntry::personId).containsExactly(stays);
     }
 
@@ -239,9 +239,9 @@ class InvitationWaveIT extends AbstractIntegrationTest {
         importedStudent(false, null);
         long waveId = draftWave();
 
-        PageResponse<InvitationWaveRecipientEntry> eligibleFirst = listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, InvitationRecipientStatus.PENDING, 0, 2);
-        PageResponse<InvitationWaveRecipientEntry> eligibleSecond = listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, InvitationRecipientStatus.PENDING, 1, 2);
-        PageResponse<InvitationWaveRecipientEntry> excluded = listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, InvitationRecipientStatus.EXCLUDED, 0, 10);
+        PageResponse<InvitationWaveRecipientEntry> eligibleFirst = listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, InvitationRecipientStatus.PENDING, 0, 2, false);
+        PageResponse<InvitationWaveRecipientEntry> eligibleSecond = listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, InvitationRecipientStatus.PENDING, 1, 2, false);
+        PageResponse<InvitationWaveRecipientEntry> excluded = listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, InvitationRecipientStatus.EXCLUDED, 0, 10, false);
 
         assertThat(eligibleFirst.totalElements()).isEqualTo(3);
         assertThat(eligibleFirst.items()).hasSize(2);
@@ -330,7 +330,7 @@ class InvitationWaveIT extends AbstractIntegrationTest {
     void unknownWaveIsReportedAsNotFound() {
         assertThatThrownBy(() -> startInvitationWave.startInvitationWave(-1L, directorId)).isInstanceOf(InvitationWaveNotFoundException.class);
         assertThatThrownBy(() -> getInvitationWave.getInvitationWave(-1L)).isInstanceOf(InvitationWaveNotFoundException.class);
-        assertThatThrownBy(() -> listInvitationWaveRecipients.listInvitationWaveRecipients(-1L, null, 0, 10)).isInstanceOf(InvitationWaveNotFoundException.class);
+        assertThatThrownBy(() -> listInvitationWaveRecipients.listInvitationWaveRecipients(-1L, null, 0, 10, false)).isInstanceOf(InvitationWaveNotFoundException.class);
     }
 
     @Test
@@ -386,7 +386,7 @@ class InvitationWaveIT extends AbstractIntegrationTest {
 
         long second = draftWave();
 
-        InvitationWaveRecipientEntry entry = listInvitationWaveRecipients.listInvitationWaveRecipients(second, null, 0, 10).items().get(0);
+        InvitationWaveRecipientEntry entry = listInvitationWaveRecipients.listInvitationWaveRecipients(second, null, 0, 10, false).items().get(0);
         assertThat(entry.personId()).isEqualTo(personId);
         assertThat(entry.status()).isEqualTo(InvitationRecipientStatus.EXCLUDED);
         assertThat(entry.exclusionReason()).isEqualTo(InvitationExclusionReason.IN_OTHER_WAVE);
@@ -406,7 +406,7 @@ class InvitationWaveIT extends AbstractIntegrationTest {
 
         long second = draftWave();
 
-        List<InvitationWaveRecipientEntry> entries = listInvitationWaveRecipients.listInvitationWaveRecipients(second, null, 0, 10).items();
+        List<InvitationWaveRecipientEntry> entries = listInvitationWaveRecipients.listInvitationWaveRecipients(second, null, 0, 10, false).items();
         assertThat(entries).filteredOn(entry -> entry.personId() == failedPerson)
                 .singleElement().satisfies(entry -> assertThat(entry.exclusionReason()).isEqualTo(InvitationExclusionReason.IN_OTHER_WAVE));
         assertThat(entries).filteredOn(entry -> entry.personId() == sentPerson || entry.personId() == activatedPerson)

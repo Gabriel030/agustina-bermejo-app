@@ -61,6 +61,11 @@ class RequestRateLimitFilterTest {
     }
 
     @Test
+    void activationTokenStatusIsLimitedPerIp() throws Exception {
+        assertLimited("POST", "/auth/activation-token/status");
+    }
+
+    @Test
     void emailChangeTokenEndpointsAreLimitedPerIp() throws Exception {
         assertLimited("POST", "/email-change-preview");
         assertLimited("POST", "/approve-email-change");

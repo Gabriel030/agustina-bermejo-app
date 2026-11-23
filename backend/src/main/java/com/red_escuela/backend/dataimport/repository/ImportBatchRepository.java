@@ -19,6 +19,8 @@ public interface ImportBatchRepository extends JpaRepository<ImportBatch, Long> 
 
     List<ImportBatch> findAllByOrderByIdDesc();
 
+    List<ImportBatch> findByStatusNotInOrderByIdDesc(Collection<ImportBatchStatus> statuses);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select b from ImportBatch b where b.id = :id")
     Optional<ImportBatch> findByIdForUpdate(@Param("id") Long id);
