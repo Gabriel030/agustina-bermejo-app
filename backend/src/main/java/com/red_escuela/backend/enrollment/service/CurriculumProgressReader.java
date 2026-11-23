@@ -3,12 +3,15 @@ package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.enrollment.api.CurriculumProgressView;
 import com.red_escuela.backend.enrollment.api.ElectiveGroupProgressView;
+import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
+import com.red_escuela.backend.enrollment.api.SubjectStanding;
+import com.red_escuela.backend.enrollment.api.ApprovalSource;
+import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.academicstructure.api.ProgramCorequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumEntryView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
@@ -17,8 +20,6 @@ import com.red_escuela.backend.enrollment.policy.CurriculumSubjectStatePolicy;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteRequirementPolicy;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository.CurriculumProgressRow;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,16 +41,15 @@ public class CurriculumProgressReader {
     private final CurriculumSubjectStatePolicy statePolicy = new CurriculumSubjectStatePolicy();
     private final PrerequisiteRequirementPolicy requirementPolicy = new PrerequisiteRequirementPolicy();
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
+    private final SubjectApprovalLookup subjectApprovalLookup;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final ProgramCurriculumFinder programCurriculumFinder;
 
     public CurriculumProgressReader(ProgramEnrollmentRepository programEnrollmentRepository,
-            SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
-            ProgramCurriculumFinder programCurriculumFinder) {
+            ProgramCurriculumFinder programCurriculumFinder, SubjectApprovalLookup subjectApprovalLookup) {
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
+        this.subjectApprovalLookup = subjectApprovalLookup;
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.programCurriculumFinder = programCurriculumFinder;
     }
@@ -78,9 +79,7 @@ public class CurriculumProgressReader {
         List<ProgramCurriculumEntryView> entries = programCurriculumFinder.findActiveCurriculumEntries(programId);
         Map<Long, List<PrerequisiteView>> prerequisites = programCurriculumFinder.findProgramPrerequisites(programId);
         Map<Long, List<ProgramCorequisiteView>> corequisites = programCurriculumFinder.findProgramCorequisites(programId);
-        Map<Long, List<CurriculumProgressRow>> rowsBySubject = subjectSectionEnrollmentRepository
-                .findCurriculumProgressRows(programEnrollmentId).stream()
-                .collect(Collectors.groupingBy(CurriculumProgressRow::getSubjectId));
+        Map<Long, SubjectStanding> standings = subjectApprovalLookup.findHistory(programEnrollmentId);
         Set<Long> waivedSubjectIds = new HashSet<>(directorApprovalRequestRepository.findSubjectIdsWithRequest(
                 programEnrollmentId, ExceptionType.PREREQUISITE_WAIVER, DirectorApprovalRequestStatus.APPROVED));
 
@@ -89,29 +88,33 @@ public class CurriculumProgressReader {
         for (ProgramCurriculumEntryView entry : entries) {
             boolean waived = waivedSubjectIds.contains(entry.subjectId());
             List<CurriculumProgressView.BlockingPrerequisite> unmet = waived ? List.of()
-                    : unmetPrerequisites(prerequisites.getOrDefault(entry.programSubjectId(), List.of()), rowsBySubject);
+                    : unmetPrerequisites(prerequisites.getOrDefault(entry.programSubjectId(), List.of()), standings);
             unmetByProgramSubject.put(entry.programSubjectId(), unmet);
-            stateByProgramSubject.put(entry.programSubjectId(),
-                    statePolicy.stateOf(statusesOf(rowsBySubject.get(entry.subjectId())), unmet.isEmpty()));
+            SubjectStanding standing = standings.getOrDefault(entry.subjectId(), SubjectStanding.NONE);
+            stateByProgramSubject.put(entry.programSubjectId(), statePolicy.stateOf(
+                    standing.courseworkStatuses(), standing.isApprovedByEquivalence(), unmet.isEmpty()));
         }
 
         List<CurriculumProgressView.SubjectView> subjects = new ArrayList<>();
         for (ProgramCurriculumEntryView entry : entries) {
             CurriculumSubjectState state = stateByProgramSubject.get(entry.programSubjectId());
-            List<CurriculumProgressRow> rows = rowsBySubject.getOrDefault(entry.subjectId(), List.of());
+            SubjectStanding standing = standings.getOrDefault(entry.subjectId(), SubjectStanding.NONE);
             boolean showsBlockers = state == CurriculumSubjectState.BLOCKED || state == CurriculumSubjectState.FAILED;
             subjects.add(new CurriculumProgressView.SubjectView(
                     entry.programSubjectId(), entry.subjectId(), entry.subjectCode(), entry.subjectName(),
                     entry.credits(), entry.curricularYear(), entry.curricularTerm(), entry.category(),
-                    entry.electiveGroupId(), state, approvedScoreOf(rows),
-                    (int) rows.stream().filter(row -> statePolicy.countsAsAttempt(row.getStatus())).count(),
+                    entry.electiveGroupId(), state, standing.approvedScore(),
+                    (int) standing.coursework().stream().filter(row -> statePolicy.countsAsAttempt(row.status())).count(),
                     showsBlockers ? unmetByProgramSubject.get(entry.programSubjectId()) : List.of(),
-                    corequisitesOf(corequisites.getOrDefault(entry.programSubjectId(), List.of()), stateByProgramSubject)));
+                    corequisitesOf(corequisites.getOrDefault(entry.programSubjectId(), List.of()), stateByProgramSubject),
+                    standing.approvalSource(),
+                    standing.approvalSource() == ApprovalSource.EQUIVALENCE ? standing.equivalence() : null,
+                    waivedSubjectIds.contains(entry.subjectId())));
         }
 
         return new CurriculumProgressView(enrollment.getId(), program.getName(),
                 summaryOf(program.getTotalCreditsRequired(), entries, subjects, programId),
-                subjects, warningsOf(program.getTotalCreditsRequired(), entries, rowsBySubject));
+                subjects, warningsOf(program.getTotalCreditsRequired(), entries, standings));
     }
 
     private CurriculumProgressView.Summary summaryOf(int requiredCredits, List<ProgramCurriculumEntryView> entries,
@@ -131,9 +134,15 @@ public class CurriculumProgressReader {
                 .toList();
         long mandatoryTotal = entries.stream().filter(entry -> !entry.isElective()).count();
         long mandatoryApproved = approved.stream().filter(subject -> subject.electiveGroupId() == null).count();
+        List<CurriculumProgressView.SubjectView> approvedByEquivalence = approved.stream()
+                .filter(subject -> subject.approvalSource() == ApprovalSource.EQUIVALENCE).toList();
+        int creditsByEquivalence = approvedByEquivalence.stream().mapToInt(CurriculumProgressView.SubjectView::credits).sum();
+        Grade averageScore = Grade.average(approved.stream().map(CurriculumProgressView.SubjectView::finalScore)
+                .filter(Objects::nonNull).toList()).orElse(null);
         return new CurriculumProgressView.Summary(completion, accumulatedCredits, requiredCredits,
                 Math.max(0, requiredCredits - accumulatedCredits), (int) mandatoryTotal, (int) mandatoryApproved,
-                countsOf(subjects), groups);
+                countsOf(subjects), groups, approvedByEquivalence.size(), creditsByEquivalence, averageScore,
+                accumulatedCredits - creditsByEquivalence);
     }
 
     private CurriculumProgressView.StateCounts countsOf(List<CurriculumProgressView.SubjectView> subjects) {
@@ -150,14 +159,18 @@ public class CurriculumProgressReader {
     }
 
     private List<CurriculumProgressView.BlockingPrerequisite> unmetPrerequisites(
-            List<PrerequisiteView> prerequisites, Map<Long, List<CurriculumProgressRow>> rowsBySubject) {
+            List<PrerequisiteView> prerequisites, Map<Long, SubjectStanding> standings) {
         return prerequisites.stream()
                 .map(prerequisite -> new CurriculumProgressView.BlockingPrerequisite(
                         prerequisite.prerequisiteSubjectId(), prerequisite.prerequisiteSubjectCode(),
                         prerequisite.prerequisiteSubjectName(), prerequisite.requirementType(),
-                        requirementPolicy.standingOf(statusesOf(rowsBySubject.get(prerequisite.prerequisiteSubjectId())))))
+                        standingOf(standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE))))
                 .filter(blocking -> !requirementPolicy.isMet(blocking.requirementType(), blocking.standing()))
                 .toList();
+    }
+
+    private PrerequisiteStanding standingOf(SubjectStanding standing) {
+        return requirementPolicy.standingOf(standing.courseworkStatuses(), standing.isApprovedByEquivalence());
     }
 
     private List<CurriculumProgressView.Corequisite> corequisitesOf(List<ProgramCorequisiteView> corequisites,
@@ -172,7 +185,7 @@ public class CurriculumProgressReader {
     }
 
     private List<CurriculumProgressView.Warning> warningsOf(int requiredCredits, List<ProgramCurriculumEntryView> entries,
-            Map<Long, List<CurriculumProgressRow>> rowsBySubject) {
+            Map<Long, SubjectStanding> standings) {
         List<CurriculumProgressView.Warning> warnings = new ArrayList<>();
         if (requiredCredits == 0) {
             warnings.add(new CurriculumProgressView.Warning("PLAN_WITHOUT_CREDITS",
@@ -180,22 +193,13 @@ public class CurriculumProgressReader {
         }
         Set<Long> planSubjectIds = entries.stream().map(ProgramCurriculumEntryView::subjectId)
                 .collect(Collectors.toSet());
-        boolean approvedOutsidePlan = rowsBySubject.entrySet().stream()
-                .filter(subjectRows -> !planSubjectIds.contains(subjectRows.getKey()))
-                .anyMatch(subjectRows -> statusesOf(subjectRows.getValue()).contains(EnrollmentStatus.APPROVED));
+        boolean approvedOutsidePlan = standings.entrySet().stream()
+                .filter(subjectStanding -> !planSubjectIds.contains(subjectStanding.getKey()))
+                .anyMatch(subjectStanding -> subjectStanding.getValue().isApproved());
         if (approvedOutsidePlan) {
             warnings.add(new CurriculumProgressView.Warning("PLAN_CHANGED_AFTER_ENROLLMENT",
                     "El plan de estudios cambió desde la inscripción: hay materias aprobadas que ya no forman parte del plan y no suman créditos."));
         }
         return warnings;
-    }
-
-    private Grade approvedScoreOf(List<CurriculumProgressRow> rows) {
-        return rows.stream().filter(row -> row.getStatus() == EnrollmentStatus.APPROVED)
-                .map(CurriculumProgressRow::getFinalScore).filter(java.util.Objects::nonNull).findFirst().orElse(null);
-    }
-
-    private List<EnrollmentStatus> statusesOf(List<CurriculumProgressRow> rows) {
-        return rows == null ? List.of() : rows.stream().map(CurriculumProgressRow::getStatus).toList();
     }
 }

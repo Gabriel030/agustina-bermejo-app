@@ -72,7 +72,8 @@ public class GraduationProjectionReader {
                 progress.subjects().stream().anyMatch(subject -> !subject.corequisites().isEmpty()),
                 progress.subjects().stream().map(this::projectionSubjectOf).toList(),
                 summary.electiveGroups().stream().map(group -> new ProjectionElectiveGroup(group.electiveGroupId(),
-                        group.minRequired(), group.maxAllowed(), group.fulfilled())).toList()));
+                        group.minRequired(), group.maxAllowed(), group.fulfilled())).toList(),
+                summary.accumulatedCreditsByCoursework()));
     }
 
     private ProjectionSubject projectionSubjectOf(CurriculumProgressView.SubjectView subject) {

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.enrollment.repository.SubjectEquivalenceRepository;
+import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
 import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.enrollment.api.CurriculumProgressView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumEntryView;
@@ -44,7 +46,8 @@ class CurriculumProgressReaderTest {
     private final DirectorApprovalRequestRepository approvalRepository = mock(DirectorApprovalRequestRepository.class);
     private final ProgramCurriculumFinder curriculumFinder = mock(ProgramCurriculumFinder.class);
     private final CurriculumProgressReader reader = new CurriculumProgressReader(
-            enrollmentRepository, sectionRepository, approvalRepository, curriculumFinder);
+            enrollmentRepository, approvalRepository, curriculumFinder,
+            new SubjectApprovalLookup(sectionRepository, mock(SubjectEquivalenceRepository.class)));
     private final Program program = mock(Program.class);
     private final ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
     private final List<CurriculumProgressRow> rows = new ArrayList<>();

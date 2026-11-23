@@ -10,7 +10,18 @@ public record GraduationProjectionInput(
         Long programEnrollmentId, ProgramEnrollmentStatus enrollmentStatus, Integer programTotalYears,
         int closedPeriods, LocalDate today, int accumulatedCredits, int requiredCredits, int remainingCredits,
         int mandatoryTotal, int mandatoryApproved, int approvedSubjects, boolean planChangedAfterEnrollment,
-        boolean hasCorequisites, List<ProjectionSubject> subjects, List<ProjectionElectiveGroup> electiveGroups) {
+        boolean hasCorequisites, List<ProjectionSubject> subjects, List<ProjectionElectiveGroup> electiveGroups,
+        int courseworkCredits) {
+
+    public GraduationProjectionInput(
+            Long programEnrollmentId, ProgramEnrollmentStatus enrollmentStatus, Integer programTotalYears,
+            int closedPeriods, LocalDate today, int accumulatedCredits, int requiredCredits, int remainingCredits,
+            int mandatoryTotal, int mandatoryApproved, int approvedSubjects, boolean planChangedAfterEnrollment,
+            boolean hasCorequisites, List<ProjectionSubject> subjects, List<ProjectionElectiveGroup> electiveGroups) {
+        this(programEnrollmentId, enrollmentStatus, programTotalYears, closedPeriods, today, accumulatedCredits,
+                requiredCredits, remainingCredits, mandatoryTotal, mandatoryApproved, approvedSubjects,
+                planChangedAfterEnrollment, hasCorequisites, subjects, electiveGroups, accumulatedCredits);
+    }
 
     public record ProjectionSubject(
             Long subjectId, int credits, Integer curricularYear, CurricularTerm curricularTerm, Long electiveGroupId,

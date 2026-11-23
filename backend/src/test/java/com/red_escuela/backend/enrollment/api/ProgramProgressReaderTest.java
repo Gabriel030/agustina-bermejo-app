@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.api;
 
+import com.red_escuela.backend.enrollment.repository.SubjectEquivalenceRepository;
+import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
 import com.red_escuela.backend.academicstructure.api.ElectiveGroupRequirementView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
@@ -37,7 +39,8 @@ class ProgramProgressReaderTest {
     private final SubjectSectionEnrollmentRepository sectionRepository = mock(SubjectSectionEnrollmentRepository.class);
     private final ProgramCurriculumFinder curriculumFinder = mock(ProgramCurriculumFinder.class);
     private final ProgramProgressReader reader =
-            new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder);
+            new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder,
+                    new SubjectApprovalLookup(sectionRepository, mock(SubjectEquivalenceRepository.class)));
     private final Program program = mock(Program.class);
     private final ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
 
@@ -71,6 +74,8 @@ class ProgramProgressReaderTest {
     private void markAs(ProgramSubjectView subject, EnrollmentStatus... statuses) {
         SubjectSectionEnrollmentRepository.PrerequisiteStatusRow row = mock(SubjectSectionEnrollmentRepository.PrerequisiteStatusRow.class);
         when(row.getSubjectId()).thenReturn(subject.subjectId());
+        when(row.getProgramEnrollmentId()).thenReturn(ENROLLMENT_ID);
+        when(row.getStatus()).thenReturn(statuses[0]);
         List<EnrollmentStatus> statusList = List.of(statuses);
         List<SubjectSectionEnrollmentRepository.PrerequisiteStatusRow> rows = marked.computeIfAbsent(statusList, key -> new ArrayList<>());
         rows.add(row);

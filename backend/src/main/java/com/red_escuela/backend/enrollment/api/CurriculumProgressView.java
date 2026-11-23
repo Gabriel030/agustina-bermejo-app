@@ -17,7 +17,8 @@ public record CurriculumProgressView(
     public record Summary(
             Percentage completionPercent, int accumulatedCredits, int requiredCredits, int remainingCredits,
             int mandatoryTotal, int mandatoryApproved, StateCounts counts,
-            List<ElectiveGroupProgressView> electiveGroups) {
+            List<ElectiveGroupProgressView> electiveGroups, int approvedByEquivalence, int creditsByEquivalence,
+            Grade averageScore, int accumulatedCreditsByCoursework) {
     }
 
     public record StateCounts(int approved, int inProgress, int regularPendingFinal, int failed, int available,
@@ -28,7 +29,8 @@ public record CurriculumProgressView(
             Long programSubjectId, Long subjectId, String subjectCode, String subjectName, int credits,
             Integer curricularYear, CurricularTerm curricularTerm, ProgramSubjectCategory category,
             Long electiveGroupId, CurriculumSubjectState state, Grade finalScore, int attempts,
-            List<BlockingPrerequisite> blockedBy, List<Corequisite> corequisites) {
+            List<BlockingPrerequisite> blockedBy, List<Corequisite> corequisites, ApprovalSource approvalSource,
+            RecognizedEquivalence equivalence, boolean prerequisitesWaived) {
     }
 
     public record BlockingPrerequisite(

@@ -7,7 +7,6 @@ import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import com.red_escuela.backend.graduation.entity.CertificateType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.graduation.repository.CertificateIssuanceRepository;
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -27,6 +26,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
+import com.red_escuela.backend.enrollment.api.ApprovalSource;
+import com.red_escuela.backend.enrollment.api.ApprovedSubjectView;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
 
 @Service
@@ -59,7 +60,7 @@ public class ProgramCertificateIssuer {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementScope.CERTIFICATE);
         Person person = enrollment.getStudent().getPerson();
-        List<ProgramSubjectView> aprobadas = programProgressReader.listApprovedSubjects(programEnrollmentId);
+        List<ApprovedSubjectView> aprobadas = programProgressReader.listApprovedSubjectsWithSource(programEnrollmentId);
 
         StringBuilder texto = new StringBuilder(
                 "Se deja constancia de que " + person.getName() + " " + person.getLastname()
@@ -68,8 +69,11 @@ public class ProgramCertificateIssuer {
         if (aprobadas.isEmpty()) {
             texto.append(" ninguna materia aprobada todavía.");
         } else {
-            for (ProgramSubjectView entrada : aprobadas) {
-                texto.append("\n- ").append(entrada.subjectName());
+            for (ApprovedSubjectView entrada : aprobadas) {
+                texto.append("\n- ").append(entrada.subject().subjectName());
+                if (entrada.approvalSource() == ApprovalSource.EQUIVALENCE) {
+                    texto.append(" (Equivalencia)");
+                }
             }
         }
         byte[] pdf = generatePdf("Constancia de materias aprobadas", texto.toString());
