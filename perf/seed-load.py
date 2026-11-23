@@ -1,4 +1,4 @@
-import json, os, subprocess, sys, time, urllib.request, urllib.error
+import json, os, subprocess, sys, time, urllib.parse, urllib.request, urllib.error
 from datetime import date, datetime, timedelta
 
 BASE = os.environ.get("PERF_BASE", "http://localhost:8461")
@@ -16,6 +16,7 @@ PARAMS = {
     "program_id": int(os.environ.get("LOAD_PROGRAM_ID", "1")),
     "exam_boards": int(os.environ.get("LOAD_EXAM_BOARDS", "8")),
 }
+HTTP_TIMEOUT_SECONDS = 60
 SCHEME_NAME = "Esquema carga perf: 2 parciales y final"
 
 
@@ -38,7 +39,7 @@ def send(method, path, token, body, tolerate):
         headers["Authorization"] = "Bearer " + token
     request = urllib.request.Request(BASE + path, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
             raw = response.read()
             return json.loads(raw) if raw else None
     except urllib.error.HTTPError as error:
@@ -57,7 +58,7 @@ def psql(sql, variables=None):
     command = ["docker", "exec", "-i", CONTAINER, "psql", "-U", "postgres", "-d", "perf", "-tA", "-v", "ON_ERROR_STOP=1"]
     for key, value in (variables or {}).items():
         command += ["-v", f"{key}={value}"]
-    result = subprocess.run(command, input=sql, capture_output=True, text=True)
+    result = subprocess.run(command, input=sql, capture_output=True, text=True, timeout=1800)
     if result.returncode != 0:
         sys.exit(result.stderr)
     return result.stdout.strip()
@@ -120,7 +121,29 @@ def ensure_exam_boards(token, term_id, wanted):
             sys.exit("sin fecha de mesa valida")
 
 
+def validate_parameters():
+    problems = []
+    host = urllib.parse.urlparse(BASE).hostname
+    if host not in ("localhost", "127.0.0.1") and os.environ.get("LOAD_CONFIRM") != "1":
+        problems.append(f"PERF_BASE={BASE} no es local; definir LOAD_CONFIRM=1 para sembrar contra otro host")
+    if PARAMS["students"] < 1 or PARAMS["graded_students"] < 1:
+        problems.append("LOAD_STUDENTS y LOAD_GRADED_STUDENTS deben ser >= 1")
+    if PARAMS["students"] + PARAMS["graded_students"] > 9999:
+        problems.append("LOAD_STUDENTS + LOAD_GRADED_STUDENTS debe ser <= 9999")
+    if PARAMS["grade_sections"] < 3:
+        problems.append("LOAD_GRADE_SECTIONS debe ser >= 3")
+    if PARAMS["enroll_sections"] < 1:
+        problems.append("LOAD_ENROLL_SECTIONS debe ser >= 1")
+    if not 1 <= PARAMS["teachers"] <= 999:
+        problems.append("LOAD_TEACHERS debe estar entre 1 y 999")
+    if PARAMS["enroll_sections"] + PARAMS["grade_sections"] > 99999:
+        problems.append("la suma de comisiones debe ser <= 99999")
+    if problems:
+        sys.exit("parametros invalidos:\n" + "\n".join(problems))
+
+
 def main():
+    validate_parameters()
     director = login("director.demo")
     term_id = PARAMS["term_id"]
     scheme_id = ensure_evaluation_scheme(director)

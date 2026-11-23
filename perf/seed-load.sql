@@ -1,13 +1,51 @@
 \set ON_ERROR_STOP on
 BEGIN;
 SET LOCAL session_replication_role = replica;
-DELETE FROM exam_board_registration WHERE program_section_enrollment_id >= 2000000;
-DELETE FROM subject_section_enrollment WHERE id >= 2000000;
+CREATE TEMP TABLE load_enrollment ON COMMIT DROP AS
+SELECT id FROM subject_section_enrollment WHERE student_id BETWEEN 400001 AND 499999 OR program_section_id BETWEEN 1400000 AND 1499999 OR id BETWEEN 2000000 AND 2999999;
+CREATE TEMP TABLE load_invoice ON COMMIT DROP AS
+SELECT id FROM invoice WHERE student_current_account_id BETWEEN 400001 AND 499999;
+CREATE TEMP TABLE load_payment ON COMMIT DROP AS
+SELECT id FROM payment WHERE student_current_account_id BETWEEN 400001 AND 499999;
+CREATE TEMP TABLE load_credit_note ON COMMIT DROP AS
+SELECT id FROM credit_note WHERE student_current_account_id BETWEEN 400001 AND 499999;
+CREATE TEMP TABLE load_attendance ON COMMIT DROP AS
+SELECT id FROM attendance WHERE program_section_enrollment_id IN (SELECT id FROM load_enrollment);
+CREATE TEMP TABLE load_grade_item ON COMMIT DROP AS
+SELECT id FROM grade_item WHERE program_section_enrollment_id IN (SELECT id FROM load_enrollment);
+DELETE FROM attendance_correction WHERE attendance_id IN (SELECT id FROM load_attendance);
+DELETE FROM attendance_change_request WHERE attendance_id IN (SELECT id FROM load_attendance);
+DELETE FROM attendance WHERE id IN (SELECT id FROM load_attendance);
+DELETE FROM grade_item_audit WHERE grade_item_id IN (SELECT id FROM load_grade_item) OR enrollment_id IN (SELECT id FROM load_enrollment);
+DELETE FROM grade_item WHERE id IN (SELECT id FROM load_grade_item);
+DELETE FROM exam_board_registration WHERE program_section_enrollment_id IN (SELECT id FROM load_enrollment);
+DELETE FROM late_fee_charge_correction WHERE student_current_account_id BETWEEN 400001 AND 499999;
+DELETE FROM late_fee_charge WHERE student_current_account_id BETWEEN 400001 AND 499999;
+DELETE FROM payment_allocation WHERE student_current_account_id BETWEEN 400001 AND 499999;
+DELETE FROM current_account_entry WHERE student_current_account_id BETWEEN 400001 AND 499999;
+DELETE FROM payment_checkout_item WHERE student_current_account_id BETWEEN 400001 AND 499999;
+DELETE FROM payment_status_change WHERE payment_id IN (SELECT id FROM load_payment);
+DELETE FROM bank_transfer_receipt WHERE invoice_id IN (SELECT id FROM load_invoice) OR payment_id IN (SELECT id FROM load_payment);
+DELETE FROM refund WHERE student_current_account_id BETWEEN 400001 AND 499999;
+DELETE FROM chargeback WHERE student_current_account_id BETWEEN 400001 AND 499999;
+DELETE FROM payment WHERE id IN (SELECT id FROM load_payment);
+DELETE FROM gateway_checkout WHERE invoice_id IN (SELECT id FROM load_invoice);
+DELETE FROM invoice_status_change WHERE invoice_id IN (SELECT id FROM load_invoice);
+DELETE FROM credit_note WHERE id IN (SELECT id FROM load_credit_note);
+DELETE FROM invoice_discount WHERE invoice_line_id IN (SELECT id FROM invoice_line WHERE invoice_id IN (SELECT id FROM load_invoice));
+DELETE FROM invoice_line WHERE invoice_id IN (SELECT id FROM load_invoice) OR program_enrollment_id BETWEEN 400001 AND 499999;
+DELETE FROM invoice WHERE id IN (SELECT id FROM load_invoice);
+DELETE FROM enrollment_payment_standing WHERE program_enrollment_id BETWEEN 400001 AND 499999 OR student_id BETWEEN 400001 AND 499999;
+DELETE FROM collection_reminder WHERE student_id BETWEEN 400001 AND 499999;
+DELETE FROM student_status_change WHERE student_id BETWEEN 400001 AND 499999;
+DELETE FROM notification WHERE recipient_id BETWEEN 400001 AND 499999 OR recipient_id BETWEEN 410001 AND 410999;
+DELETE FROM subject_section_enrollment WHERE id IN (SELECT id FROM load_enrollment);
 DELETE FROM payment_plan_selection WHERE program_enrollment_id BETWEEN 400001 AND 499999;
 DELETE FROM student_current_account WHERE id BETWEEN 400001 AND 499999;
 DELETE FROM program_enrollment WHERE id BETWEEN 400001 AND 499999;
-DELETE FROM subject_section_instructor WHERE id >= 1500000;
-DELETE FROM subject_section WHERE id >= 1400000;
+DELETE FROM class_session WHERE program_section_id BETWEEN 1400000 AND 1499999;
+DELETE FROM subject_section_instructor WHERE id BETWEEN 1500000 AND 1999999 OR program_section_id BETWEEN 1400000 AND 1499999;
+DELETE FROM subject_section WHERE id BETWEEN 1400000 AND 1499999;
 DELETE FROM person_role WHERE person_id BETWEEN 400001 AND 499999 OR person_id BETWEEN 410001 AND 410999;
 DELETE FROM student WHERE id BETWEEN 400001 AND 499999;
 DELETE FROM instructor WHERE id BETWEEN 410001 AND 410999;
@@ -46,4 +84,17 @@ SELECT 0, b.id, e.id, 'REGISTERED', now()
 FROM exam_board b JOIN subject_section ss ON ss.subject_id = b.subject_id AND ss.id >= 1400000
 JOIN subject_section_enrollment e ON e.program_section_id = ss.id AND e.id >= 2000000
 WHERE b.classroom LIKE 'LOAD-%' AND b.status = 'SCHEDULED';
+DO $$
+DECLARE
+    target text;
+    sequence_name text;
+    current_max bigint;
+BEGIN
+    FOREACH target IN ARRAY ARRAY['address','person','student','instructor','program_enrollment','student_current_account','subject_section','subject_section_instructor','subject_section_enrollment','payment_plan_selection','exam_board_registration']
+    LOOP
+        sequence_name := pg_get_serial_sequence(target, 'id');
+        EXECUTE format('SELECT coalesce(max(id), 1) FROM %I', target) INTO current_max;
+        EXECUTE format('SELECT setval(%L, greatest(%s, (SELECT last_value FROM %s)))', sequence_name, current_max, sequence_name);
+    END LOOP;
+END $$;
 COMMIT;
