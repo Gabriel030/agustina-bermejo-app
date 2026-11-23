@@ -151,6 +151,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_EVALUATION_DATE` | no | `InvalidEvaluationDateException` | evaluation |
 | `INVALID_EVALUATION_SCHEME` | no | `InvalidEvaluationSchemeException` | evaluation |
 | `INVALID_EXAM_BOARD_FINAL_GRADE_ENTRY` | no | `InvalidExamBoardFinalGradeEntryException` | evaluation |
+| `INVALID_EXAM_REGISTRATION_RECIPIENT` | no | `InvalidExamRegistrationRecipientException` | graduation |
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
 | `INVALID_GRADE_CORRECTION_REASON` | no | `InvalidGradeCorrectionReasonException` | evaluation |
 | `INVALID_GRADE_ITEM_WEIGHT` | no | `InvalidGradeItemWeightException` | evaluation |
@@ -307,6 +308,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_NOT_FOUND` | no | `ExamBoardNotFoundException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_NOT_FOUND` | no | `ExamBoardRegistrationNotFoundException` | evaluation |
 | `EXAM_CERTIFICATE_NOT_FOUND` | no | `ExamCertificateNotFoundException` | graduation |
+| `EXAM_REGISTRATION_CERTIFICATE_NOT_FOUND` | no | `ExamRegistrationCertificateNotFoundException` | graduation |
 | `GOOGLE_ACCOUNT_NOT_LINKED` | no | `GoogleAccountNotLinkedException` | identity |
 | `GRADE_ITEM_NOT_FOUND` | no | `GradeItemNotFoundException` | evaluation |
 | `GRADUATION_CERTIFICATE_NOT_FOUND` | no | `GraduationCertificateNotFoundException` | graduation |

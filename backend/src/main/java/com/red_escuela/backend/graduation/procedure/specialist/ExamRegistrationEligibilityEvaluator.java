@@ -65,6 +65,13 @@ public class ExamRegistrationEligibilityEvaluator implements ProcedureEligibilit
     }
 
     public ProcedureEligibilityResponse evaluate(Long registrationId) {
+        return select(registrationId).eligibility();
+    }
+
+    public record ExamRegistrationSelection(OwnExamRegistrationView registration, ProcedureEligibilityResponse eligibility) {
+    }
+
+    public ExamRegistrationSelection select(Long registrationId) {
         Long studentId = currentActorFinder.currentStudentId();
         LocalDateTime now = LocalDateTime.now(clock);
         DocumentIssuanceValues values = issuanceSettings.current();
@@ -73,15 +80,15 @@ public class ExamRegistrationEligibilityEvaluator implements ProcedureEligibilit
                 ? requireOwned(registrations, registrationId)
                 : pickDefault(registrations, now.toLocalDate(), values.examRegistrationAdvanceDays());
         if (selected == null) {
-            return ineligible(null, reason(ProcedureIneligibilityCode.NOT_REGISTERED_FOR_EXAM,
+            return new ExamRegistrationSelection(null, ineligible(null, reason(ProcedureIneligibilityCode.NOT_REGISTERED_FOR_EXAM,
                     "No estás inscripto/a a una mesa de examen", ProcedureNextStepKind.REGISTER_FOR_EXAM,
-                    "Inscribite a una mesa"));
+                    "Inscribite a una mesa")));
         }
         ProcedureIneligibilityReason blocker = firstBlocker(selected, studentId, now, values);
         String summary = selected.subjectName() + " - " + selected.examDateTime().toLocalDate().format(DATE_FORMAT);
-        return blocker == null
+        return new ExamRegistrationSelection(selected, blocker == null
                 ? new ProcedureEligibilityResponse(StudentProcedureType.EXAM_REGISTRATION_CERTIFICATE, true, null, summary, List.of())
-                : new ProcedureEligibilityResponse(StudentProcedureType.EXAM_REGISTRATION_CERTIFICATE, false, null, summary, List.of(blocker));
+                : new ProcedureEligibilityResponse(StudentProcedureType.EXAM_REGISTRATION_CERTIFICATE, false, null, summary, List.of(blocker)));
     }
 
     private OwnExamRegistrationView requireOwned(List<OwnExamRegistrationView> registrations, Long registrationId) {
