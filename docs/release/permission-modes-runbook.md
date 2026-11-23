@@ -66,7 +66,9 @@ Endpoint que hoy deniega al Director y pasaría a permitirlo en Activo:
 
 - POST /graduation-requests/{id}/verify-debt (graduation.verify_debt)
 
-Los permisos certificate.* usados por los certificados de egreso y sus plantillas pertenecen al módulo certificate: su modo se configura aparte del de graduation, pero conviene prender graduation y certificate juntos en Activo, porque el egreso y sus certificados se usan en un mismo circuito. Las constancias de #1103, las rutas de alumno y las públicas no usan la grilla. Los permisos certificate.revoke, certificate.issue y certificate.templates_manage pasan a ser sensibles.
+Los permisos certificate.* usados por los certificados de egreso y sus plantillas pertenecen al módulo certificate: su modo se configura aparte del de graduation, pero conviene prender graduation y certificate juntos en Activo, porque el egreso y sus certificados se usan en un mismo circuito. Las rutas de alumno y las públicas no usan la grilla. Los permisos certificate.revoke, certificate.issue y certificate.templates_manage pasan a ser sensibles.
+
+Constancias, tanda A (configuración y plantillas, módulo certificate): plantillas de constancias de examen y de materias aprobadas (certificate.templates_view y certificate.templates_manage), firmantes y sus firmas (certificate.signers_view y certificate.signers_manage), configuración de emisión de esas constancias (certificate.document_settings_view y certificate.document_settings_manage) y configuración de la constancia de alumno regular (certificate.regular_settings_view y certificate.regular_settings_manage). Las reglas vigentes eran Administrativo y Director para leer, y solo Director para escribir, así que el Director conserva el acceso y Activo no le cambia nada. Los cuatro permisos de gestión (más signers_manage, que ya existía) son sensibles y no se siembran a ningún rol: se delegan desde la grilla. La previsualización de plantillas (POST .../preview) queda con su regla condicional y fuera de la grilla, igual que la de las plantillas de egreso.
 
 ### Identity
 
