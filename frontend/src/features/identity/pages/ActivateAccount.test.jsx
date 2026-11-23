@@ -108,7 +108,8 @@ describe('ActivateAccount status', () => {
     renderPage();
 
     const username = await screen.findByText('lucia.acosta.muy.larga@ejemplo.edu.ar');
-    expect(username).toHaveClass('break-all');
+    expect(username).toHaveClass('[overflow-wrap:anywhere]');
+    expect(username).not.toHaveClass('break-all');
     expect(screen.getByText(/tu usuario para ingresar es/i)).toBeInTheDocument();
   });
 
@@ -188,6 +189,17 @@ describe('ActivateAccount status', () => {
     expect(container.textContent).toContain(email.replace(/\s+/g, ' ').trim().split(' ')[0]);
   });
 
+  it('wrapsAVeryLongInstitutionEmailAndPhoneInsteadOfOverflowing', async () => {
+    const email = `${'secretaria.administrativa.de.alumnos'.repeat(2)}@instituto-agustina-bermejo.edu.ar`;
+    statusReturns(activationTokenStatus('EXPIRED', { institution: { ...INSTITUTION, email } }));
+    renderPage();
+
+    await expectFocusedHeading('El enlace venció');
+    const link = screen.getByRole('link', { name: email });
+    expect(link).toHaveClass('min-w-0', '[overflow-wrap:anywhere]');
+    expect(screen.getByRole('link', { name: INSTITUTION.phoneNumber })).toHaveClass('min-w-0', '[overflow-wrap:anywhere]');
+  });
+
   it('keepsTheMailtoLinkForAWellFormedInstitutionEmail', async () => {
     statusReturns(activationTokenStatus('EXPIRED', { institution: { ...INSTITUTION, email: 'secretaria+info@instituto.edu.ar' } }));
     renderPage();
@@ -250,7 +262,7 @@ describe('ActivateAccount status', () => {
 
     expect(await screen.findByRole('heading', { name: 'Demasiados intentos' })).toBeInTheDocument();
     const button = screen.getByRole('button', { name: 'Reintentar en 2 s' });
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(await screen.findByRole('button', { name: 'Reintentar' }, { timeout: 3500 })).toBeEnabled();
   });
 
@@ -441,7 +453,7 @@ describe('ActivateAccount form', () => {
     await fillAndSubmit(user);
 
     expect(await screen.findByText('Demasiados intentos. Esperá para volver a probar.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Reintentar en 2 s' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Reintentar en 2 s' })).toHaveAttribute('aria-disabled', 'true');
     const retry = await screen.findByRole('button', { name: 'Reintentar' }, { timeout: 3500 });
     await user.click(retry);
 
@@ -457,7 +469,83 @@ describe('ActivateAccount form', () => {
 
     await fillAndSubmit(user);
 
-    expect(await screen.findByRole('button', { name: /^Reintentar en \d+ s$/ })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: /^Reintentar en \d+ s$/ })).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('keepsTheCountdownButtonLegibleAndDoesNotResendWhenClicked', async () => {
+    statusReturns(validStatus);
+    let attempts = 0;
+    server.use(
+      http.post(`${API}/auth/activate`, () => {
+        attempts += 1;
+        return new HttpResponse(null, { status: 429, headers: { 'Retry-After': '30' } });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await fillAndSubmit(user);
+    const button = await screen.findByRole('button', { name: /^Reintentar en \d+ s$/ });
+    await user.click(button);
+    await user.click(button);
+
+    expect(attempts).toBe(1);
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).not.toBeDisabled();
+    expect(button.className).not.toMatch(/(^|\s)opacity-/);
+    expect(button.className).toContain('aria-disabled:text-ink-soft');
+  });
+
+  it('returnsFocusToThePasswordFieldWhenThePolicyIsRejected', async () => {
+    statusReturns(validStatus);
+    server.use(
+      http.post(`${API}/auth/activate`, () => HttpResponse.json(errorBody('INVALID_PASSWORD_POLICY'), { status: 400 })),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await fillAndSubmit(user);
+
+    await screen.findByText('La contraseña no cumple los requisitos de seguridad.');
+    await waitFor(() => expect(screen.getByLabelText('Nueva contraseña')).toHaveFocus());
+    expect(document.body).not.toHaveFocus();
+  });
+
+  it('returnsFocusToTheSubmitButtonAfterARateLimit', async () => {
+    statusReturns(validStatus);
+    server.use(http.post(`${API}/auth/activate`, () => new HttpResponse(null, { status: 429, headers: { 'Retry-After': '30' } })));
+    const user = userEvent.setup();
+    renderPage();
+
+    await fillAndSubmit(user);
+
+    const button = await screen.findByRole('button', { name: /^Reintentar en \d+ s$/ });
+    await waitFor(() => expect(button).toHaveFocus());
+  });
+
+  it('returnsFocusToTheRetryButtonAfterANetworkFailure', async () => {
+    statusReturns(validStatus);
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByLabelText('Nueva contraseña');
+    failNetworkFor('/auth/activate');
+    await fillAndSubmit(user);
+
+    const button = await screen.findByRole('button', { name: 'Reintentar' });
+    await waitFor(() => expect(button).toHaveFocus());
+  });
+
+  it('prefixesInlineErrorsWithAnAriaHiddenIcon', async () => {
+    statusReturns(validStatus);
+    const user = userEvent.setup();
+    const { container } = renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Activar cuenta' }));
+
+    const alert = await screen.findByText('La contraseña debe tener al menos 8 caracteres.');
+    expect(alert.closest('p').querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(container.querySelectorAll('p[role="alert"] svg[aria-hidden="true"]').length).toBeGreaterThan(0);
   });
 
   it('showsANetworkErrorWithRetryAndKeepsWhatWasTyped', async () => {

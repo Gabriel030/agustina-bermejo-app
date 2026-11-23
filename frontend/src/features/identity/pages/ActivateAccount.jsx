@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, CheckCircle2, Clock, RefreshCw, WifiOff, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, CircleAlert, Clock, RefreshCw, WifiOff, XCircle } from 'lucide-react';
 import { CircuitOpenError, NetworkError, RateLimitedError } from '@/api/client';
 import { ERROR_MESSAGES, describeError } from '@/api/describeError';
 import { GlassCard } from '@/components/GlassCard';
@@ -23,6 +23,11 @@ import { useCooldown } from '@/features/identity/lib/useCooldown';
 
 const ACTIVATION_PATH = '/activar';
 const INSTITUTION_TITLE = 'Instituto Agustina Bermejo';
+const FOCUS_OUTLINE =
+  'focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-(--focus-ring)';
+const COUNTDOWN_STYLE =
+  'aria-disabled:cursor-not-allowed aria-disabled:border-border aria-disabled:bg-none aria-disabled:bg-neutral-bg aria-disabled:text-ink-soft aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:bg-none aria-disabled:hover:shadow-none';
+const WRAP = 'min-w-0 [overflow-wrap:anywhere]';
 
 function isConnectionFailure(error) {
   return error instanceof NetworkError || error instanceof CircuitOpenError;
@@ -47,7 +52,7 @@ function StateIcon({ tone, children }) {
 
 function LoginLink({ variant = 'outline' }) {
   return (
-    <Button asChild variant={variant} className="h-11 w-full">
+    <Button asChild variant={variant} className={`h-11 w-full ${FOCUS_OUTLINE}`}>
       <Link to="/login">Ir a iniciar sesión</Link>
     </Button>
   );
@@ -62,13 +67,13 @@ function InstitutionContact({ institution }) {
     <div className="flex flex-col gap-1 rounded-xl bg-neutral-bg px-3 py-2.5 text-size-13">
       {name && <b className="font-bold text-ink">{name}</b>}
       {email && mailtoHref && (
-        <a href={mailtoHref} className="flex min-h-11 items-center font-semibold text-brand">
+        <a href={mailtoHref} className={`flex min-h-11 items-center font-semibold text-brand ${WRAP}`}>
           {email}
         </a>
       )}
-      {email && !mailtoHref && <span className="break-all font-semibold text-ink">{email}</span>}
+      {email && !mailtoHref && <span className={`font-semibold text-ink ${WRAP}`}>{email}</span>}
       {phoneNumber && (
-        <a href={`tel:${phoneNumber.replace(/[^\d+]/g, '')}`} className="flex min-h-11 items-center font-semibold text-brand">
+        <a href={`tel:${phoneNumber.replace(/[^\d+]/g, '')}`} className={`flex min-h-11 items-center font-semibold text-brand ${WRAP}`}>
           {phoneNumber}
         </a>
       )}
@@ -126,7 +131,15 @@ function StatusFailureCard({ headingRef, rateLimited, secondsLeft, onRetry }) {
       <p role="alert" className="text-ink-soft">
         {rateLimited ? 'Esperá un momento para volver a probar.' : NETWORK_MESSAGE}
       </p>
-      <Button type="button" variant="primary" className="h-11 w-full" disabled={waiting} onClick={onRetry}>
+      <Button
+        type="button"
+        variant="primary"
+        className={`h-11 w-full ${FOCUS_OUTLINE} ${COUNTDOWN_STYLE}`}
+        aria-disabled={waiting || undefined}
+        onClick={() => {
+          if (!waiting) onRetry();
+        }}
+      >
         <RefreshCw aria-hidden="true" />
         {waiting ? `Reintentar en ${secondsLeft} s` : 'Reintentar'}
       </Button>
@@ -144,7 +157,7 @@ function SuccessCard({ headingRef, username }) {
       <p className="text-ink-soft">Ya podés iniciar sesión con tu usuario y la contraseña que elegiste.</p>
       {username && (
         <p className="text-ink-soft">
-          Tu usuario para ingresar es <b className="break-all font-bold text-ink">{username}</b>
+          Tu usuario para ingresar es <b className={`font-bold text-ink ${WRAP}`}>{username}</b>
         </p>
       )}
       <LoginLink variant="primary" />
@@ -163,6 +176,9 @@ function ActivationForm({ headingRef, token, username, onTokenRejected, onActiva
   const cooldown = useCooldown();
   const mountedRef = useRef(true);
   const formRef = useRef(null);
+  const passwordRef = useRef(null);
+  const submitRef = useRef(null);
+  const pendingFocusRef = useRef(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -170,6 +186,13 @@ function ActivationForm({ headingRef, token, username, onTokenRejected, onActiva
       mountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (submitting || !pendingFocusRef.current) return;
+    const target = pendingFocusRef.current === 'password' ? passwordRef : submitRef;
+    pendingFocusRef.current = null;
+    target.current?.focus();
+  }, [submitting]);
 
   const passwordError = (touched.password && validateNewPassword(password)) || serverPasswordError;
   const confirmationError = touched.confirmation ? validatePasswordConfirmation(password, confirmation) : null;
@@ -198,10 +221,12 @@ function ActivationForm({ headingRef, token, username, onTokenRejected, onActiva
   }
 
   function handleSubmitError(error) {
+    pendingFocusRef.current = 'submit';
     if (error?.code === 'ACTIVATION_TOKEN_INVALID') return onTokenRejected(ACTIVATION_STATUS.INVALID);
     if (error?.code === 'ACTIVATION_TOKEN_EXPIRED') return onTokenRejected(ACTIVATION_STATUS.EXPIRED);
     if (error?.code === 'INVALID_PASSWORD_POLICY') {
       setServerPasswordError(describeError(error).message);
+      pendingFocusRef.current = 'password';
       return;
     }
     if (error instanceof RateLimitedError) {
@@ -228,12 +253,13 @@ function ActivationForm({ headingRef, token, username, onTokenRejected, onActiva
         <p className="text-ink-soft">Elegí una contraseña para entrar al sistema del instituto.</p>
         {username && (
           <p className="text-ink-soft">
-            Tu usuario para ingresar es <b className="break-all font-bold text-ink">{username}</b>
+            Tu usuario para ingresar es <b className={`font-bold text-ink ${WRAP}`}>{username}</b>
           </p>
         )}
         {notice && (
-          <Notice tone="danger" role="alert">
-            {notice.message}
+          <Notice tone="danger" role="alert" className="flex items-start gap-2">
+            <CircleAlert size={16} className="mt-px shrink-0 text-danger" aria-hidden="true" />
+            <span>{notice.message}</span>
           </Notice>
         )}
         <ActivationPasswordField
@@ -250,6 +276,7 @@ function ActivationForm({ headingRef, token, username, onTokenRejected, onActiva
           disabled={submitting}
           visible={visible}
           onToggleVisible={() => setVisible((current) => !current)}
+          inputRef={passwordRef}
         />
         <ActivationPasswordField
           id="activation-password-confirmation"
@@ -262,7 +289,14 @@ function ActivationForm({ headingRef, token, username, onTokenRejected, onActiva
           visible={visible}
           onToggleVisible={() => setVisible((current) => !current)}
         />
-        <Button type="submit" variant="primary" className="h-11 w-full" loading={submitting} disabled={cooldown.active}>
+        <Button
+          ref={submitRef}
+          type="submit"
+          variant="primary"
+          className={`h-11 w-full ${FOCUS_OUTLINE} ${COUNTDOWN_STYLE}`}
+          loading={submitting}
+          aria-disabled={cooldown.active || undefined}
+        >
           {!submitting && notice?.retry && !cooldown.active && <RefreshCw aria-hidden="true" />}
           {submitLabel}
         </Button>
