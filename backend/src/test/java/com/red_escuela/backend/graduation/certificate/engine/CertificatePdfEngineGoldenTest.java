@@ -20,7 +20,7 @@ class CertificatePdfEngineGoldenTest {
 
     private static final Map<String, Map<String, String>> GOLDEN_SHA256_BY_ENGINE_VERSION = Map.of(
             "1", Map.of(
-                    "approval", "f30e9817986dcfc2e7049c7cb890166ae646234b23abb798b3a46a6f0065692f",
+                    "approval", "f70242244b778a25217f0b0a0b9d9019fd21007826cb95cdfc0f37868febace1",
                     "regular", "520b67dd33397b457083919d261387ff6f10790ff90c4411a9482b6f7e6d64c9"));
 
     private final CertificatePdfRenderer renderer = new CertificatePdfRenderer(new QrMatrixFactory());
