@@ -18,15 +18,18 @@ zap_uid="${ZAP_RUN_UID:-20001}"
 image="ghcr.io/zaproxy/zaproxy@$digest"
 export ZAP_LOCAL_PORT="$port"
 
+sudo rm -rf "$output"
 mkdir -p "$output"
 chmod 0755 "$output"
-rm -f "$output"/*.json "$output"/*.html
 sudo chown "$zap_uid:$zap_uid" "$output"
 
 scope_regex="^(?!http://(localhost|127\\.0\\.0\\.1):${port}(/|\$)).*\$"
 zap_options="-silent -config globalexcludeurl.url_list.url(0).regex=true -config globalexcludeurl.url_list.url(0).pattern=${scope_regex} -config globalexcludeurl.url_list.url(0).enabled=true"
 
 block_rule=(OUTPUT -m owner --uid-owner "$zap_uid" ! -d 127.0.0.0/8 -j REJECT)
+while sudo iptables -C "${block_rule[@]}" 2> /dev/null; do
+  sudo iptables -D "${block_rule[@]}"
+done
 sudo iptables -I "${block_rule[@]}"
 trap 'sudo iptables -D "${block_rule[@]}" || true' EXIT
 
