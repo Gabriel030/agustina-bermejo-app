@@ -18,7 +18,7 @@ export function TermRowMenu({ term, onEdit, onAction }) {
           <MoreHorizontal aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60 bg-dialog-bg backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)">
+      <DropdownMenuContent align="end" className="w-60 bg-dialog-bg">
         <DropdownMenuItem onSelect={() => onEdit(term)}>Editar período</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onAction(term, 'toggle')}>{TERM_ACTIONS.toggle.title(term)}</DropdownMenuItem>
         {isActive && (

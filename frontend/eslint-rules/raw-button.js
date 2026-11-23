@@ -19,7 +19,6 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/features/academic-structure/components/ClassroomModuleSelector.jsx',
   'src/features/academic-structure/components/HolidayList.jsx',
   'src/features/academic-structure/components/HolidayPanelContent.jsx',
-  'src/features/academic-structure/pages/PanelAgregarMateria.jsx',
   'src/features/academic-structure/pages/PanelCorrelativas.jsx',
   'src/features/academic-structure/pages/PreceptorNuevoCiclo.jsx',
   'src/features/announcements/components/EnvioYCaducidad.jsx',
@@ -40,8 +39,6 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/features/identity/pages/MiPerfil.jsx',
   'src/features/notifications/components/NotificationBell.jsx',
   'src/features/workspace/pages/AlumnoInicio.jsx',
-  'src/pages/AdministrativoCargarComprobante.jsx',
-  'src/pages/AdministrativoFacturacion.jsx',
 ]
 
 export const noRawButtonRule = {
