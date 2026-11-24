@@ -24,6 +24,7 @@ function batch(overrides = {}) {
     sealedAt: STAMP,
     files: [PERSONS_FILE],
     counters: [{ entityType: 'PERSONS', rowsByStatus: { COMMITTED: 120 } }],
+    graduationsPendingReview: 0,
     ...overrides,
   };
 }
@@ -119,6 +120,21 @@ describe('DataImport seal and retry', () => {
     renderDetail();
     await userEvent.click(within(await screen.findByTestId('block-PERSONS')).getByRole('button', { name: 'Plantilla' }));
     await waitFor(() => expect(requested).toBe(true));
+  });
+});
+
+describe('DataImport graduations pending review', () => {
+  it('tells how many imported graduations await the Director review', async () => {
+    serveBatch(batch({ graduationsPendingReview: 3 }));
+    renderDetail();
+    expect(await screen.findByText(/3 egresos quedaron pendientes de revisión del Director/)).toBeInTheDocument();
+  });
+
+  it('shows nothing when no graduation is pending', async () => {
+    serveBatch(batch({ graduationsPendingReview: 0 }));
+    renderDetail();
+    await screen.findByLabelText('Resultado por bloque');
+    expect(screen.queryByText(/pendientes? de revisión del Director/)).not.toBeInTheDocument();
   });
 });
 

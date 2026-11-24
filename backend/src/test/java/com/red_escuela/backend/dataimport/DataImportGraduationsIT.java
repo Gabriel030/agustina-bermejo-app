@@ -1,6 +1,7 @@
 package com.red_escuela.backend.dataimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -109,7 +110,14 @@ class DataImportGraduationsIT extends AbstractIntegrationTest {
 
         validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED"));
         assertThat(count("graduation_request")).isEqualTo(graduationsBefore);
-        commit(batchId).andExpect(jsonPath("$.status").value("COMMITTED"));
+        commit(batchId).andExpect(jsonPath("$.status").value("COMMITTED"))
+                .andExpect(jsonPath("$.graduationsPendingReview").value(1));
+        mockMvc.perform(get("/data-imports/" + batchId).header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.graduationsPendingReview").value(1));
+        jdbc.update("update graduation_request set certificate_review_status = 'ENABLED', certificate_reviewed_at = now(), certificate_reviewed_by_id = (select id from person limit 1) where registry_number = 'REG-2024-0317'");
+        mockMvc.perform(get("/data-imports/" + batchId).header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.graduationsPendingReview").value(0));
+        jdbc.update("update graduation_request set certificate_review_status = 'PENDING_REVIEW', certificate_reviewed_at = null, certificate_reviewed_by_id = null where registry_number = 'REG-2024-0317'");
 
         Map<String, Object> graduation = graduationOf(studentDni);
         assertThat(graduation.get("status")).isEqualTo("APPROVED");
