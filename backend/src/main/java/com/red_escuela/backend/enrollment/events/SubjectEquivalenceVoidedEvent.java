@@ -6,9 +6,9 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 
 import java.time.Instant;
 
-public record SubjectEquivalenceVoidedEvent(String correlationId, Instant occurredAt, Long subjectEquivalenceId, Long programEnrollmentId, Long subjectId, Long studentPersonId) implements DomainEvent {
+public record SubjectEquivalenceVoidedEvent(String correlationId, Instant occurredAt, Long subjectEquivalenceId, Long programEnrollmentId, Long subjectId, Long studentPersonId, String subjectName) implements DomainEvent {
 
-    public static SubjectEquivalenceVoidedEvent voidedFor(Long subjectEquivalenceId, Long programEnrollmentId, Long subjectId, Long studentPersonId) {
-        return new SubjectEquivalenceVoidedEvent(CorrelationIds.current(), ApplicationTime.instant(), subjectEquivalenceId, programEnrollmentId, subjectId, studentPersonId);
+    public static SubjectEquivalenceVoidedEvent voidedFor(Long subjectEquivalenceId, Long programEnrollmentId, Long subjectId, Long studentPersonId, String subjectName) {
+        return new SubjectEquivalenceVoidedEvent(CorrelationIds.current(), ApplicationTime.instant(), subjectEquivalenceId, programEnrollmentId, subjectId, studentPersonId, subjectName);
     }
 }
