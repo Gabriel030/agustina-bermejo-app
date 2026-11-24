@@ -22,6 +22,7 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Exceptio
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionConsumer;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionReader;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionDueExpirer;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RequestCertificateExceptionRequest;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ApproveCertificateExceptionUseCase;
@@ -38,6 +39,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,6 +93,10 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     private CertificateExceptionDueExpirer dueExpirer;
     @Autowired
     private RequestCertificateExceptionUseCase requestUseCase;
+    @Autowired
+    private CertificateExceptionReader reader;
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
     @Autowired
     private ApproveCertificateExceptionUseCase approveUseCase;
     @Autowired
@@ -204,6 +210,66 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
             code.append(alphabet.charAt(random.nextInt(alphabet.length())));
         }
         return code.toString();
+    }
+
+    private String fullNameOf(Long personId) {
+        return jdbc.queryForObject("select name || ' ' || lastname from person where id = ?", String.class, personId);
+    }
+
+    @Test
+    void getResolvesStudentProgramRequesterAndDeciderNames() {
+        Long id = persistApproved(NOW);
+
+        CertificateExceptionResponse response = reader.get(id, true);
+
+        assertThat(response.studentName()).isEqualTo(jdbc.queryForObject(
+                "select p.name || ' ' || p.lastname from student s join person p on p.id = s.person_id where s.id = ?", String.class, studentId));
+        assertThat(response.programName()).isEqualTo(jdbc.queryForObject(
+                "select pr.name from program_enrollment pe join program pr on pr.id = pe.program_id where pe.id = ?", String.class, enrollmentId));
+        assertThat(response.requestedByName()).isEqualTo(fullNameOf(requesterId));
+        assertThat(response.decidedByName()).isEqualTo(fullNameOf(directorId));
+    }
+
+    @Test
+    void pendingExceptionHasNoDeciderName() {
+        actAs(requesterId);
+        Long id = requestUseCase.request(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM, enrollmentId, OrganismKind.COURT,
+                "Causa 1/2026", REASON)).id();
+
+        CertificateExceptionResponse response = reader.get(id, true);
+
+        assertThat(response.decidedById()).isNull();
+        assertThat(response.decidedByName()).isNull();
+        assertThat(response.requestedByName()).isEqualTo(fullNameOf(requesterId));
+    }
+
+    @Test
+    void listResolvesNamesInTheSameNumberOfQueriesRegardlessOfSize() {
+        persistApproved(NOW);
+        Long firstCount = queryCountOfListing();
+        persistApproved(NOW, newTarget());
+        persistApproved(NOW, newTarget());
+        persistApproved(NOW, newTarget());
+
+        Long largerCount = queryCountOfListing();
+
+        assertThat(largerCount).isEqualTo(firstCount);
+    }
+
+    private Long queryCountOfListing() {
+        org.hibernate.stat.Statistics statistics = entityManagerFactory.unwrap(org.hibernate.SessionFactory.class).getStatistics();
+        statistics.setStatisticsEnabled(true);
+        statistics.clear();
+        List<CertificateExceptionResponse> listed = reader.list(true, null, null);
+        long count = statistics.getPrepareStatementCount();
+        statistics.setStatisticsEnabled(false);
+        assertThat(listed).allSatisfy(response -> {
+            assertThat(response.studentName()).isNotBlank();
+            assertThat(response.programName()).isNotBlank();
+            assertThat(response.requestedByName()).isNotBlank();
+            assertThat(response.decidedById() == null ? response.decidedByName() == null : !response.decidedByName().isBlank()).isTrue();
+        });
+        return count;
     }
 
     @Test

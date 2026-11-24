@@ -39,11 +39,12 @@ public class CertificateExceptionRequester {
     private final AuditTrail auditTrail;
     private final Clock clock;
     private final RegularDebtFactsReader debtFactsReader;
+    private final CertificateExceptionResponses responses;
 
     public CertificateExceptionRequester(CertificateExceptionApprovalRepository repository, RegularEnrollmentFactsFinder factsFinder,
                                          RegularStandingGate standingGate, CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher,
                                          RegularCertificateSettingsFinder settingsFinder, AuditTrail auditTrail, Clock clock,
-                                         RegularDebtFactsReader debtFactsReader) {
+                                         RegularDebtFactsReader debtFactsReader, CertificateExceptionResponses responses) {
         this.repository = repository;
         this.factsFinder = factsFinder;
         this.standingGate = standingGate;
@@ -53,6 +54,7 @@ public class CertificateExceptionRequester {
         this.auditTrail = auditTrail;
         this.clock = clock;
         this.debtFactsReader = debtFactsReader;
+        this.responses = responses;
     }
 
     @Transactional
@@ -68,7 +70,7 @@ public class CertificateExceptionRequester {
         recordDebt(approval);
         CertificateExceptionApproval saved = saveRejectingSecondOpenException(approval);
         eventPublisher.publishEvent(CertificateExceptionRequestedEvent.of(saved.getId(), saved.getStudentId(), saved.getRequestedById()));
-        return CertificateExceptionResponses.of(saved);
+        return responses.of(saved);
     }
 
     @Transactional
@@ -86,7 +88,7 @@ public class CertificateExceptionRequester {
         auditTrail.record(new AuditRecord(AuditAction.CERTIFICATE_EXCEPTION_DIRECT_CREATED, AuditEntityType.CERTIFICATE_EXCEPTION, saved.getId(),
                 null, "APPROVED hasta " + saved.getValidUntil(), saved.getOrganismKind() + " " + saved.getOrganismReference()));
         eventPublisher.publishEvent(CertificateExceptionCreatedByDirectorEvent.of(saved.getId(), saved.getStudentId(), saved.getRequestedById()));
-        return CertificateExceptionResponses.of(saved);
+        return responses.of(saved);
     }
 
     private void recordDebt(CertificateExceptionApproval approval) {
