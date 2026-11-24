@@ -5,6 +5,7 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.QrMatrixFactory;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.graduation.certificate.engine.SignatorySnapshot;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSName;
@@ -49,12 +50,15 @@ public class ApprovedSubjectsPdfRenderer {
     private static final float NAME_WIDTH = 300;
 
     private final QrMatrixFactory qrMatrixFactory;
+    private final CertificateVerificationUrl certificateVerificationUrl;
 
-    public ApprovedSubjectsPdfRenderer(QrMatrixFactory qrMatrixFactory) {
+    public ApprovedSubjectsPdfRenderer(QrMatrixFactory qrMatrixFactory, CertificateVerificationUrl certificateVerificationUrl) {
         this.qrMatrixFactory = qrMatrixFactory;
+        this.certificateVerificationUrl = certificateVerificationUrl;
     }
 
-    public byte[] render(ApprovedSubjectsSnapshot snapshot, CertificateCode code, String verificationUrl) {
+    public byte[] render(ApprovedSubjectsSnapshot snapshot, CertificateCode code) {
+        String verificationUrl = certificateVerificationUrl.of(code);
         try (PDDocument document = new PDDocument(); InputStream fontStream = ApprovedSubjectsPdfRenderer.class.getResourceAsStream(FONT_RESOURCE)) {
             PDFont font = PDType0Font.load(document, fontStream, true);
             PDRectangle size = PDRectangle.A4;
@@ -272,18 +276,34 @@ public class ApprovedSubjectsPdfRenderer {
         List<String> lines = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         for (String word : encodable(font, value).split(" ")) {
-            String candidate = current.isEmpty() ? word : current + " " + word;
-            if (!current.isEmpty() && font.getStringWidth(candidate) / 1000 * fontSize > maxWidth) {
-                lines.add(current.toString());
-                current = new StringBuilder(word);
-            } else {
-                current = new StringBuilder(candidate);
+            for (String piece : splitToWidth(font, fontSize, maxWidth, word)) {
+                String candidate = current.isEmpty() ? piece : current + " " + piece;
+                if (!current.isEmpty() && font.getStringWidth(candidate) / 1000 * fontSize > maxWidth) {
+                    lines.add(current.toString());
+                    current = new StringBuilder(piece);
+                } else {
+                    current = new StringBuilder(candidate);
+                }
             }
         }
         if (!current.isEmpty()) {
             lines.add(current.toString());
         }
         return lines;
+    }
+
+    private List<String> splitToWidth(PDFont font, float fontSize, float maxWidth, String word) throws IOException {
+        List<String> pieces = new ArrayList<>();
+        StringBuilder piece = new StringBuilder();
+        for (int index = 0; index < word.length(); index++) {
+            if (!piece.isEmpty() && font.getStringWidth(piece.toString() + word.charAt(index)) / 1000 * fontSize > maxWidth) {
+                pieces.add(piece.toString());
+                piece = new StringBuilder();
+            }
+            piece.append(word.charAt(index));
+        }
+        pieces.add(piece.toString());
+        return pieces;
     }
 
     private String encodable(PDFont font, String value) {

@@ -19,7 +19,7 @@ class ApprovedSubjectsCertificateTest {
         ApprovedSubjectsSnapshot snapshot = new ApprovedSubjectsSnapshotFactory().create(
                 new ApprovedSubjectsSnapshotFactory.Input("PÉREZ, ANA", "DNI", "30123456", "Carrera", "Instituto", List.of(), 1,
                         null, LocalDate.of(2026, 11, 5), List.of()));
-        return ApprovedSubjectsCertificate.issue(1L, 2L, new CertificateCode("7QK3M9XH2VBN4T8R5W6YZ0A1B2"), snapshot,
+        return ApprovedSubjectsCertificate.createValid(1L, 2L, new CertificateCode("7QK3M9XH2VBN4T8R5W6YZ0A1B2"), snapshot,
                 "a".repeat(64), "1", "REG-1", issuedAt, 30, 3L);
     }
 

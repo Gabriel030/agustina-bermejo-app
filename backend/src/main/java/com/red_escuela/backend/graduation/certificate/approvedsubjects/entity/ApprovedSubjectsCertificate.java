@@ -93,10 +93,10 @@ public class ApprovedSubjectsCertificate {
     @Column(name = "revocation_reason", length = 500)
     private String revocationReason;
 
-    public static ApprovedSubjectsCertificate issue(Long programEnrollmentId, Long studentId, CertificateCode code,
-                                                    ApprovedSubjectsSnapshot snapshot, String pdfSha256,
-                                                    String renderEngineVersion, String registryNumber,
-                                                    LocalDateTime issuedAt, int validityDays, Long issuedById) {
+    public static ApprovedSubjectsCertificate createValid(Long programEnrollmentId, Long studentId, CertificateCode code,
+                                                       ApprovedSubjectsSnapshot snapshot, String pdfSha256,
+                                                       String renderEngineVersion, String registryNumber,
+                                                       LocalDateTime issuedAt, int validityDays, Long issuedById) {
         return ApprovedSubjectsCertificate.builder()
                 .code(code.value())
                 .programEnrollmentId(programEnrollmentId)

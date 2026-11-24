@@ -83,4 +83,18 @@ class ApprovedSubjectsCertificateMigrationTest {
             assertThatThrownBy(() -> insert(jdbc, "CODE-A", "VALID", null, null)).isInstanceOf(DataIntegrityViolationException.class);
         }
     }
+
+    @Test
+    void registryNumberIsUniqueWhenPresentAndRepeatableWhenNull() {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+            JdbcTemplate jdbc = migratedJdbc(dataSource);
+
+            insert(jdbc, "CODE-A", "VALID", null, null);
+            insert(jdbc, "CODE-B", "VALID", null, null);
+            jdbc.update("update approved_subjects_certificate set registry_number = 'REG-1' where code = 'CODE-A'");
+
+            assertThatThrownBy(() -> jdbc.update("update approved_subjects_certificate set registry_number = 'REG-1' where code = 'CODE-B'"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+        }
+    }
 }

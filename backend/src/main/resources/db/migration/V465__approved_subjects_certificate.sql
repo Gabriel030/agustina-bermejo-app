@@ -28,3 +28,4 @@ create table approved_subjects_certificate (
 create index ix_approved_subjects_cert_student on approved_subjects_certificate (student_id);
 create index ix_approved_subjects_cert_enrollment on approved_subjects_certificate (program_enrollment_id, issued_at);
 create index ix_approved_subjects_cert_issued_by on approved_subjects_certificate (issued_by_id);
+create unique index uq_approved_subjects_cert_registry_number on approved_subjects_certificate (registry_number) where registry_number is not null;

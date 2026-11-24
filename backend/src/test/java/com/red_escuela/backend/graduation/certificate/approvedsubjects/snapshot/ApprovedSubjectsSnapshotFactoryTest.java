@@ -2,6 +2,7 @@ package com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot
 
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
 import com.red_escuela.backend.graduation.certificate.engine.SignatorySnapshot;
+import com.red_escuela.backend.shared.domain.InvalidGradeException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -103,5 +104,40 @@ class ApprovedSubjectsSnapshotFactoryTest {
     void rejectsRecipientWithoutTypeOrText() {
         assertThatThrownBy(() -> new ApprovedSubjectsRecipient(null, "x")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new ApprovedSubjectsRecipient(RecipientType.OTHER, null)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void subjectsWithoutYearGoLastAndEqualNamesKeepInputOrder() {
+        ApprovedSubjectLine first = new ApprovedSubjectLine("Ética", 1, new BigDecimal("7"), LocalDate.of(2026, 7, 1));
+        ApprovedSubjectLine second = new ApprovedSubjectLine("Ética", 1, new BigDecimal("9"), LocalDate.of(2026, 8, 1));
+        ApprovedSubjectLine withoutYear = new ApprovedSubjectLine("Anatomía", null, new BigDecimal("8"), LocalDate.of(2026, 6, 1));
+
+        ApprovedSubjectsSnapshot snapshot = factory.create(input(List.of(withoutYear, first, second), 3, null));
+
+        assertThat(snapshot.subjects()).containsExactly(first, second, withoutYear);
+    }
+
+    @Test
+    void borderGradesAndFullProgressAreAccepted() {
+        ApprovedSubjectsSnapshot snapshot = factory.create(input(List.of(line("Anatomía", 1, "1"), line("Ética", 1, "10")), 2, null));
+
+        assertThat(snapshot.averageGrade()).isEqualByComparingTo("5.50");
+        assertThat(snapshot.progressPercentage()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void zeroTotalSubjectsYieldsZeroProgress() {
+        ApprovedSubjectsSnapshot snapshot = factory.create(input(List.of(), 0, null));
+
+        assertThat(snapshot.progressPercentage()).isEqualByComparingTo("0.00");
+        assertThat(snapshot.averageGrade()).isNull();
+    }
+
+    @Test
+    void gradesOutsideTheValidRangeAreRejected() {
+        assertThatThrownBy(() -> factory.create(input(List.of(line("Anatomía", 1, "0.5")), 1, null)))
+                .isInstanceOf(InvalidGradeException.class);
+        assertThatThrownBy(() -> factory.create(input(List.of(line("Anatomía", 1, "10.01")), 1, null)))
+                .isInstanceOf(InvalidGradeException.class);
     }
 }
