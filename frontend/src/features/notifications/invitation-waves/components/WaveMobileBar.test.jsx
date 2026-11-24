@@ -7,18 +7,23 @@ import { buildWave } from '../test/fixtures';
 import { lifecycleHandlers, sampleRecipients } from '../test/handlers';
 import { setRetryFailedAvailableForTests } from '../lib/invitationWaveActions';
 import { renderInvitationScreen } from '../test/render';
+import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast: toastMock }));
 
 
 beforeEach(() => {
+  useCompactViewport();
   setRetryFailedAvailableForTests(true);
   toastMock.success.mockClear();
   toastMock.error.mockClear();
 });
 
-afterEach(() => setRetryFailedAvailableForTests(false));
+afterEach(() => {
+  setRetryFailedAvailableForTests(false);
+  restoreViewport();
+});
 
 function renderBar(wave, access) {
   const lifecycle = lifecycleHandlers(wave, { recipients: sampleRecipients() });

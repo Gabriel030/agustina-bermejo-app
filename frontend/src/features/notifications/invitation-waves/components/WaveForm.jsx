@@ -196,14 +196,12 @@ export function WaveForm({ settings, batches, pending, onSubmit, onCancel }) {
       </GlassCard>
 
       <StickyActionBar className="md:hidden" role="region" aria-label="Acciones de la pantalla" summary={barSummary}>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" className="min-h-11 flex-1" disabled={pending} onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button type="submit" form={FORM_ID} variant="primary" className="min-h-11 flex-[1.7]" loading={pending}>
-            Crear borrador
-          </Button>
-        </div>
+        <Button type="button" variant="outline" className="min-h-11" disabled={pending} onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button type="submit" form={FORM_ID} variant="primary" className="min-h-11" loading={pending}>
+          Crear borrador
+        </Button>
       </StickyActionBar>
     </>
   );

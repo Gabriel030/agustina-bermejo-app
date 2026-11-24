@@ -175,14 +175,12 @@ export function InvitationWavePreviewPage() {
         </GlassCard>
 
         <StickyActionBar className="md:hidden" role="region" aria-label="Acciones de la pantalla" summary={`${formatDecimal(eligible)} elegibles · ${formatDecimal(excluded)} excluidos`}>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" className="min-h-11 flex-1" onClick={goToList}>
-              Volver a la lista
-            </Button>
-            <Button type="button" variant="primary" className="min-h-11 flex-[1.7]" onClick={goToWave}>
-              Ir a la oleada
-            </Button>
-          </div>
+          <Button type="button" variant="outline" className="min-h-11" onClick={goToList}>
+            Volver a la lista
+          </Button>
+          <Button type="button" variant="primary" className="min-h-11" onClick={goToWave}>
+            Ir a la oleada
+          </Button>
         </StickyActionBar>
       </PageContainer>
     </PageContainer>
