@@ -344,14 +344,14 @@ where r.payment_id is not null
 order by r.id;
 
 \echo
-\echo [V465] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V465 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
+\echo [V468] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V468 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 select a.id as slot_id, b.id as overlapping_slot_id, a.classroom_id, a.day_of_week, a.start_time, a.end_time
 from section_schedule_slot a
 join section_schedule_slot b on a.id < b.id and a.classroom_id = b.classroom_id and a.time_span && b.time_span and a.term_period && b.term_period
 where a.active and b.active
 order by a.classroom_id, a.id;
 
-\echo [V465] Franjas de docente solapadas (mismo docente asignado a dos comisiones ACTIVE con franjas que se pisan); V465 ABORTA al poblar la proyeccion si hay filas:
+\echo [V468] Franjas de docente solapadas (mismo docente asignado a dos comisiones ACTIVE con franjas que se pisan); V468 ABORTA al poblar la proyeccion si hay filas:
 with links as (
     select program_section_id as subject_section_id, null::bigint as course_section_id, instructor_id from subject_section_instructor
     union

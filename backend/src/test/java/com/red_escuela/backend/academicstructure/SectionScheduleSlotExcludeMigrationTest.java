@@ -17,7 +17,7 @@ class SectionScheduleSlotExcludeMigrationTest {
 
     @Test
     void overlappingClassroomSlotsOfOccupyingSectionsAreRejected() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("468")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Fixture f = Fixture.create(jdbc);
             insertSlot(jdbc, f.sectionA, f.classroom, "MONDAY", "08:00", "10:00");
@@ -30,7 +30,7 @@ class SectionScheduleSlotExcludeMigrationTest {
 
     @Test
     void adjacentOrDifferentDayOrInactiveClassroomSlotsAreAccepted() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("468")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Fixture f = Fixture.create(jdbc);
             insertSlot(jdbc, f.sectionA, f.classroom, "MONDAY", "08:00", "10:00");
@@ -45,7 +45,7 @@ class SectionScheduleSlotExcludeMigrationTest {
 
     @Test
     void overlappingInstructorSlotsInDifferentClassroomsAreRejected() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("468")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Fixture f = Fixture.create(jdbc);
             Long instructor = insertInstructor(jdbc);
@@ -60,7 +60,7 @@ class SectionScheduleSlotExcludeMigrationTest {
 
     @Test
     void assigningInstructorToSectionWithOverlappingSlotIsRejected() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("468")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Fixture f = Fixture.create(jdbc);
             Long instructor = insertInstructor(jdbc);
@@ -75,7 +75,7 @@ class SectionScheduleSlotExcludeMigrationTest {
 
     @Test
     void nonOverlappingOrInactiveInstructorSlotsAreAcceptedAndRemovingLinkFreesTheInstructor() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("468")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Fixture f = Fixture.create(jdbc);
             Long instructor = insertInstructor(jdbc);
@@ -96,7 +96,7 @@ class SectionScheduleSlotExcludeMigrationTest {
 
     @Test
     void promotingASectionWithOverlappingSlotToActiveIsRejectedForClassroomAndInstructor() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("468")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Fixture f = Fixture.create(jdbc);
             insertSlot(jdbc, f.sectionA, f.classroom, "MONDAY", "08:00", "10:00");
@@ -117,7 +117,7 @@ class SectionScheduleSlotExcludeMigrationTest {
 
     @Test
     void overlappingDraftSlotsAgainstActiveOrAgainstEachOtherAreAccepted() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("468")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Fixture f = Fixture.create(jdbc);
             Long otherDraft = Fixture.section(jdbc, jdbc.queryForObject("select max(id) from subject", Long.class),
