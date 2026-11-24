@@ -127,7 +127,7 @@ export function TabPlanDeEstudio({ carreraId }) {
   return (
     <div className="flex flex-1 flex-col gap-5">
       {view === 'mapa' && progress && (
-        <CurriculumSummaryBar summary={progress.summary} statusFilter={statusFilter} onStatusFilterChange={changeStatusFilter} />
+        <CurriculumSummaryBar summary={progress.summary} />
       )}
       <GraduationProjectionCard carreraId={carreraId} collapsible={view === 'mapa'} />
       {progress && <PlanWarnings warnings={progress.warnings} />}
