@@ -24,10 +24,6 @@
             : window.matchMedia('(prefers-color-scheme: dark)').matches
               ? 'dark'
               : 'light';
-        try {
-          localStorage.removeItem('design');
-        } catch {}
-        document.documentElement.dataset.design = 'b';
         document.documentElement.dataset.theme = tema;
       })();
     </script>

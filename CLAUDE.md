@@ -53,7 +53,7 @@ y `~/.claude/instructions/workflow-git.md`):
   para que develop y master no se alejen. Un push a `master` que no venga de `release/*`
   dispara un PR automático "Backport" (rama `backport/*`, cherry-pick) hacia `develop`, salvo que venga de una rama `release/*`. No existe un PR
   automático develop → master.
-- **Mockups: siempre como Artifact** (skill `vidrio-liquido-mockup`), nunca un `.html` suelto.
+- **Mockups: siempre como Artifact** (skill `mockup-direccion-b`), nunca un `.html` suelto.
 
 ## Qué leer según la tarea
 

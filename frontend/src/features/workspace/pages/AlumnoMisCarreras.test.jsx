@@ -305,6 +305,10 @@ describe('AlumnoMisCarreras — regularity', () => {
           mandatoryApproved: approved,
           counts: { approved, inProgress: 0, regularPendingFinal: 0, failed: 0, available: 0, blocked: 0 },
           electiveGroups: [],
+          approvedByEquivalence: 0,
+          creditsByEquivalence: 0,
+          averageScore: null,
+          accumulatedCreditsByCoursework: accumulatedCredits,
         },
       };
     }

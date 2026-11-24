@@ -128,7 +128,7 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
             >
               {aviso.status === 'SCHEDULED' && (
                 <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
-                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-2" aria-hidden="true" />
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" aria-hidden="true" />
                   <span>
                     Todavía no se envió. El grupo de destinatarios se calcula en el momento del envío, así que puede no
                     coincidir con el de hoy.

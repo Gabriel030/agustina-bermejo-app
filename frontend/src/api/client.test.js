@@ -19,7 +19,7 @@ describe('apiFetch', () => {
     return http.post(`${API}/auth/refresh`, async () => {
       counter.calls += 1;
       if (gate) await gate.promise;
-      return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+      return HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 });
     });
   }
 
@@ -62,7 +62,7 @@ describe('apiFetch', () => {
           body: await request.text(),
           requestedWith: request.headers.get('x-requested-with'),
         };
-        return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+        return HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 });
       }),
     );
 
@@ -110,7 +110,7 @@ describe('apiFetch', () => {
       ),
       http.post(`${API}/auth/refresh`, async ({ request }) => {
         sentBody = await request.json();
-        return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+        return HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 });
       }),
     );
 
@@ -258,7 +258,7 @@ describe('apiFetch', () => {
       http.post(`${API}/auth/login`, () => new HttpResponse(null, { status: 401 })),
       http.post(`${API}/auth/refresh`, () => {
         refreshLlamado = true;
-        return HttpResponse.json({ accessToken: 'x', refreshToken: 'y', expiresIn: 1 });
+        return HttpResponse.json({ accessToken: 'x', expiresIn: 1 });
       }),
     );
 

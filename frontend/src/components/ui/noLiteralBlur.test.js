@@ -5,8 +5,7 @@ import { describe, expect, it } from 'vitest';
 const SRC_DIR = join(import.meta.dirname, '..', '..');
 const SELF_FILE = join(import.meta.dirname, 'noLiteralBlur.test.js');
 const SOURCE_FILE_PATTERN = /\.(jsx?|tsx?)$/;
-const LITERAL_BLUR_PATTERN = /backdrop-(blur|saturate)-\[/;
-const ALLOWED_LITERAL_BLUR_FILES = [];
+const BLUR_PATTERN = /backdrop-(blur|saturate|filter)|(surface|overlay)-blur|surface-saturate/;
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -18,30 +17,22 @@ function sourceFiles(directory) {
   });
 }
 
-function literalBlurUsagesIn(path) {
+function blurUsagesIn(path) {
   return readFileSync(path, 'utf8')
     .split('\n')
     .map((line, index) => ({ line, lineNumber: index + 1 }))
-    .filter(({ line }) => LITERAL_BLUR_PATTERN.test(line))
+    .filter(({ line }) => BLUR_PATTERN.test(line))
     .map(({ lineNumber }) => `${relative(SRC_DIR, path).split('\\').join('/')}:${lineNumber}`);
 }
 
-function literalBlurUsages() {
+function blurUsages() {
   return sourceFiles(SRC_DIR)
     .filter((path) => path !== SELF_FILE)
-    .filter((path) => !ALLOWED_LITERAL_BLUR_FILES.includes(relative(SRC_DIR, path).split('\\').join('/')))
-    .flatMap(literalBlurUsagesIn);
+    .flatMap(blurUsagesIn);
 }
 
-describe('literal backdrop blur and saturate', () => {
-  it('no source file uses a literal value for backdrop-blur or backdrop-saturate', () => {
-    expect(literalBlurUsages()).toEqual([]);
-  });
-
-  it('every allowed literal exception still uses a literal value', () => {
-    const exceptionsWithoutLiteral = ALLOWED_LITERAL_BLUR_FILES.filter(
-      (file) => literalBlurUsagesIn(join(SRC_DIR, file)).length === 0,
-    );
-    expect(exceptionsWithoutLiteral).toEqual([]);
+describe('backdrop blur and saturate', () => {
+  it('no source file uses backdrop-blur, backdrop-saturate, backdrop-filter or their tokens', () => {
+    expect(blurUsages()).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const DESIGNS = ['vl', 'b'];
+const DESIGNS = ['b'];
 const THEMES = ['light', 'dark'];
 const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 900 },
@@ -28,7 +28,11 @@ async function stubApi(page, roles) {
       });
     }
     if (pathname === '/me/modules') return route.fulfill({ json: { billing: { mode: 'ON' } } });
-    if (pathname === '/me/notifications') return route.fulfill({ json: NOTIFICATIONS });
+    if (pathname === '/me/notifications') {
+      return route.fulfill({ json: { items: NOTIFICATIONS, page: 0, size: 10, totalElements: NOTIFICATIONS.length } });
+    }
+    if (pathname === '/me/notifications/unread-count') return route.fulfill({ json: { count: 2 } });
+    if (pathname === '/me/legal-acceptances/pending') return route.fulfill({ json: { documents: [] } });
     return route.fulfill({ json: [] });
   });
 }
@@ -42,12 +46,11 @@ for (const design of DESIGNS) {
 
         test.beforeEach(async ({ page }) => {
           await page.addInitScript(
-            ([d, t]) => {
-              localStorage.setItem('design', d);
+            ([t]) => {
               localStorage.setItem('tema', t);
               localStorage.setItem('refreshToken', 'stub-refresh');
             },
-            [design, theme],
+            [theme],
           );
         });
 

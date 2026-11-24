@@ -42,7 +42,7 @@ function LegalDocumentPage({ type }) {
           </div>
           <Link
             to={usuario ? '/perfil' : '/registrarse'}
-            className="mt-6 inline-block text-size-13 font-semibold text-brand hover:text-accent-2"
+            className="mt-6 inline-block text-size-13 font-semibold text-brand"
           >
             {usuario ? 'Volver a Mi perfil' : 'Volver al registro'}
           </Link>

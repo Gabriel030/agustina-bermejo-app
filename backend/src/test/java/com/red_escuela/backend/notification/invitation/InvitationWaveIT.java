@@ -132,6 +132,7 @@ class InvitationWaveIT extends AbstractIntegrationTest {
     private void cleanTables() {
         jdbc.update("delete from invitation_wave_recipient");
         jdbc.update("delete from invitation_wave");
+        jdbc.update("delete from student where guardian_email like '%@example.com' and person_id in (select entity_id from import_created_entity where entity_type = 'PERSONS')");
         jdbc.update("delete from import_created_entity where batch_id in (select id from import_batch where name like 'Lote %')");
         jdbc.update("delete from import_batch where name like 'Lote %'");
     }
@@ -392,6 +393,61 @@ class InvitationWaveIT extends AbstractIntegrationTest {
         assertThat(entry.exclusionReason()).isEqualTo(InvitationExclusionReason.IN_OTHER_WAVE);
         assertThat(getInvitationWave.getInvitationWave(first).eligibleCount()).isEqualTo(1);
         assertThat(getInvitationWave.getInvitationWave(second).excludedTotal()).isEqualTo(1);
+    }
+
+    @Test
+    void anAccountWhoseEmailEqualsItsOwnStudentGuardianEmailIsExcludedAsSharedEmail() {
+        long personId = importedStudent(true, null);
+        long otherPersonId = importedStudent(true, null);
+        setStudentGuardianEmail(personId, "  " + emailOf(personId).toUpperCase() + " ");
+
+        long waveId = draftWave();
+
+        assertThat(recipientEntry(waveId, personId).exclusionReason()).isEqualTo(InvitationExclusionReason.SHARED_EMAIL);
+        assertThat(recipientEntry(waveId, personId).status()).isEqualTo(InvitationRecipientStatus.EXCLUDED);
+        assertThat(recipientEntry(waveId, otherPersonId).status()).isEqualTo(InvitationRecipientStatus.PENDING);
+        InvitationWaveResponse wave = getInvitationWave.getInvitationWave(waveId);
+        assertThat(wave.eligibleCount()).isEqualTo(1);
+        assertThat(wave.excludedByReason().get(InvitationExclusionReason.SHARED_EMAIL)).isEqualTo(1L);
+    }
+
+    @Test
+    void anAccountWhoseEmailEqualsAnotherStudentGuardianEmailIsExcludedAsSharedEmail() {
+        long personId = importedStudent(true, null);
+        long otherPersonId = importedStudent(true, null);
+        setStudentGuardianEmail(otherPersonId, emailOf(personId));
+
+        long waveId = draftWave();
+
+        assertThat(recipientEntry(waveId, personId).exclusionReason()).isEqualTo(InvitationExclusionReason.SHARED_EMAIL);
+        assertThat(recipientEntry(waveId, otherPersonId).status()).isEqualTo(InvitationRecipientStatus.PENDING);
+    }
+
+    @Test
+    void accountsWithDifferentOrMissingGuardianEmailStayPending() {
+        long withGuardian = importedStudent(true, null);
+        long withoutGuardian = importedStudent(true, null);
+        setStudentGuardianEmail(withGuardian, "tutor." + suffix + "@example.com");
+        jdbc.update("insert into student (institution_id, person_id, onboarding_status) select min(id), ?, 'CONFIRMADO' from institution", withoutGuardian);
+
+        long waveId = draftWave();
+
+        assertThat(recipientEntry(waveId, withGuardian).status()).isEqualTo(InvitationRecipientStatus.PENDING);
+        assertThat(recipientEntry(waveId, withoutGuardian).status()).isEqualTo(InvitationRecipientStatus.PENDING);
+        assertThat(getInvitationWave.getInvitationWave(waveId).excludedByReason().get(InvitationExclusionReason.SHARED_EMAIL)).isZero();
+    }
+
+    private void setStudentGuardianEmail(long personId, String guardianEmail) {
+        jdbc.update("insert into student (institution_id, person_id, onboarding_status, guardian_email) select min(id), ?, 'CONFIRMADO', ? from institution", personId, guardianEmail);
+    }
+
+    private String emailOf(long personId) {
+        return jdbc.queryForObject("select email from person where id = ?", String.class, personId);
+    }
+
+    private InvitationWaveRecipientEntry recipientEntry(long waveId, long personId) {
+        return listInvitationWaveRecipients.listInvitationWaveRecipients(waveId, null, 0, 50, false).items().stream()
+                .filter(entry -> entry.personId() == personId).findFirst().orElseThrow();
     }
 
     @Test

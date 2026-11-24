@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useReturnFocus } from '@/features/graduation/certificates/hooks/useReturnFocus';
-import { TemplateEditActions, TemplateStatusHint } from '@/features/graduation/certificates/components/TemplateActionsBar';
+import { TemplateStatusHint } from '@/features/graduation/certificates/components/TemplateActionsBar';
 import { TemplateHistorySheet } from '@/features/graduation/certificates/components/TemplateHistorySheet';
 import { TemplateLogoField } from '@/features/graduation/certificates/components/TemplateLogoField';
 import { TemplatePreviewDialog, TemplatePreviewPanel } from '@/features/graduation/certificates/components/TemplatePreview';
@@ -238,23 +238,21 @@ export function TemplatePanel({ templateKey, readOnly, edit, onEdit, onSettled }
           <TemplateStatusHint
             status={status}
             hint={hint}
-            actions={
-              <TemplateEditActions
-                canDiscard={Boolean(data.draft) && !dirty}
-                canSave={dirty && !hasErrors}
-                canPublish={publishable}
-                saving={save.isPending}
-                onDiscard={(event) => {
-                  discardFocus.remember(event);
-                  setConfirmDiscard(true);
-                }}
-                onSave={saveDraft}
-                onPublish={(event) => {
-                  publishFocus.remember(event);
-                  setConfirmPublish(true);
-                }}
-              />
-            }
+            edit={{
+              canDiscard: Boolean(data.draft) && !dirty,
+              canSave: dirty && !hasErrors,
+              canPublish: publishable,
+              saving: save.isPending,
+              onDiscard: (event) => {
+                discardFocus.remember(event);
+                setConfirmDiscard(true);
+              },
+              onSave: saveDraft,
+              onPublish: (event) => {
+                publishFocus.remember(event);
+                setConfirmPublish(true);
+              },
+            }}
           />
         )}
       </div>

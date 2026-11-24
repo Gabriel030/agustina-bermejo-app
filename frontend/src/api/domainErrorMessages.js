@@ -187,6 +187,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   STUDENT_NOT_REGULAR: 'El alumno no tiene la cursada regular.',
   SUBJECT_ALREADY_APPROVED: 'La materia ya está aprobada y no se puede volver a cursar.',
   SUBJECT_ALREADY_REGULAR: 'La materia ya está regularizada y no se puede volver a cursar.',
+  SUBJECT_APPROVED_BY_EQUIVALENCE: 'La materia ya está aprobada por equivalencia.',
   SUBJECT_NOT_IN_PROGRAM_PLAN: 'La materia no pertenece al plan de la carrera.',
   SUBMISSION_WINDOW_CLOSED: 'El plazo de entrega está cerrado.',
   TERM_DATES_REQUIRED: 'Faltan las fechas del cuatrimestre.',

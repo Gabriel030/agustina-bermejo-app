@@ -3,21 +3,21 @@ package com.red_escuela.backend.enrollment.api;
 import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteRequirementPolicy;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @Transactional(readOnly = true)
@@ -25,16 +25,16 @@ public class ProgramPrerequisiteEvaluator {
 
     private final PrerequisiteRequirementPolicy requirementPolicy = new PrerequisiteRequirementPolicy();
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
+    private final SubjectApprovalLookup subjectApprovalLookup;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final ProgramCurriculumFinder programCurriculumFinder;
 
     public ProgramPrerequisiteEvaluator(ProgramEnrollmentRepository programEnrollmentRepository,
-            SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
+            SubjectApprovalLookup subjectApprovalLookup,
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
             ProgramCurriculumFinder programCurriculumFinder) {
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
+        this.subjectApprovalLookup = subjectApprovalLookup;
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.programCurriculumFinder = programCurriculumFinder;
     }
@@ -77,22 +77,23 @@ public class ProgramPrerequisiteEvaluator {
             Long programEnrollmentId, Long subjectId, ProgramSubjectView programSubject) {
         boolean waived = directorApprovalRequestRepository.hasApproved(
                 programEnrollmentId, subjectId, ExceptionType.PREREQUISITE_WAIVER);
-        return programCurriculumFinder.findPrerequisites(programSubject.id()).stream()
+        List<PrerequisiteView> prerequisites = programCurriculumFinder.findPrerequisites(programSubject.id());
+        Map<Long, SubjectStanding> standings = waived ? Map.of() : standingsOf(programEnrollmentId, prerequisites);
+        return prerequisites.stream()
                 .map(prerequisite -> waived
                         ? assessment(prerequisite, PrerequisiteStanding.WAIVED)
-                        : assessment(prerequisite, standingOf(programEnrollmentId, prerequisite)))
+                        : assessment(prerequisite, requirementPolicy.standingOf(
+                                standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE).courseworkStatuses(),
+                                standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE).isApprovedByEquivalence())))
                 .toList();
     }
 
-    private PrerequisiteStanding standingOf(Long programEnrollmentId, PrerequisiteView prerequisite) {
-        List<EnrollmentStatus> statuses = subjectSectionEnrollmentRepository
-                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                        programEnrollmentId, prerequisite.prerequisiteSubjectId(),
+    private Map<Long, SubjectStanding> standingsOf(Long programEnrollmentId, List<PrerequisiteView> prerequisites) {
+        Set<Long> prerequisiteSubjectIds = prerequisites.stream().map(PrerequisiteView::prerequisiteSubjectId)
+                .collect(Collectors.toSet());
+        return subjectApprovalLookup.findStandings(List.of(programEnrollmentId), prerequisiteSubjectIds,
                         requirementPolicy.relevantStatuses())
-                .stream()
-                .map(SubjectSectionEnrollment::getStatus)
-                .toList();
-        return requirementPolicy.standingOf(statuses);
+                .getOrDefault(programEnrollmentId, Map.of());
     }
 
     private PrerequisiteAssessment assessment(PrerequisiteView prerequisite, PrerequisiteStanding standing) {

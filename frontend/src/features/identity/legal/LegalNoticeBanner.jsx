@@ -35,13 +35,13 @@ export function LegalNoticeBanner() {
           {data.documents.map((document, index) => (
             <span key={document.type}>
               {index > 0 && ' y '}
-              <Link to={document.path} target="_blank" rel="noopener" className="font-semibold text-brand hover:text-accent-2">
+              <Link to={document.path} target="_blank" rel="noopener" className="font-semibold text-brand">
                 {LEGAL_DOCUMENT_LABEL[document.type]}
               </Link>
             </span>
           ))}
           . {deadlineText} Los tenés siempre en{' '}
-          <Link to="/perfil" className="font-semibold text-brand hover:text-accent-2">
+          <Link to="/perfil" className="font-semibold text-brand">
             Mi perfil
           </Link>
           .

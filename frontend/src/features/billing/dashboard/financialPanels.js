@@ -42,10 +42,10 @@ const AGE_BUCKET_COLORS = {
   FROM_1_TO_30: 'var(--accent)',
   FROM_31_TO_60: 'var(--warning)',
   FROM_61_TO_90: 'var(--danger)',
-  OVER_90: 'var(--accent-2)',
+  OVER_90: 'var(--accent)',
 };
 
-const COLORS = ['var(--accent)', 'var(--accent-2)', 'var(--success)', 'var(--warning)', 'var(--danger)', 'var(--ink-soft)'];
+const COLORS = ['var(--accent)', 'var(--accent)', 'var(--success)', 'var(--warning)', 'var(--danger)', 'var(--ink-soft)'];
 
 function describe(metric, key, label, extra = {}) {
   return { key, label, unit: unitOf(seriesOf(metric, key)?.unit), ...extra };

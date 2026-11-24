@@ -203,7 +203,7 @@ begin
       ('institute_setting', 'code', array['BILLING_NOTIFICATIONS', 'PAYMENT_METHOD_BANK_TRANSFER', 'PAYMENT_METHOD_CASH', 'PAYMENT_METHOD_GATEWAY', 'WHATSAPP_API']),
       ('institute_setting_change_log', 'code', array['BILLING_NOTIFICATIONS', 'PAYMENT_METHOD_BANK_TRANSFER', 'PAYMENT_METHOD_CASH', 'PAYMENT_METHOD_GATEWAY', 'WHATSAPP_API']),
       ('invitation_wave', 'status', array['CANCELLED', 'COMPLETED', 'DRAFT', 'PAUSED', 'RUNNING']),
-      ('invitation_wave_recipient', 'exclusion_reason', array['ALREADY_ACTIVE', 'IN_OTHER_WAVE', 'NOT_ELIGIBLE', 'NO_EMAIL', 'WAVE_CANCELLED']),
+      ('invitation_wave_recipient', 'exclusion_reason', array['ALREADY_ACTIVE', 'IN_OTHER_WAVE', 'NOT_ELIGIBLE', 'NO_EMAIL', 'SHARED_EMAIL', 'WAVE_CANCELLED']),
       ('invitation_wave_recipient', 'last_error_code', array['BULKHEAD_FULL', 'CIRCUIT_OPEN', 'PROVIDER_REJECTED', 'PROVIDER_UNAVAILABLE', 'TOKEN_ISSUE_FAILED', 'UNKNOWN']),
       ('invitation_wave_recipient', 'status', array['ACTIVATED', 'EXCLUDED', 'FAILED', 'PENDING', 'QUEUED', 'SENT']),
       ('invoice', 'credited_amount_currency', array['ARS', 'USD']),

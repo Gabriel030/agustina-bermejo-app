@@ -535,6 +535,18 @@ class ArchitectureTest {
     }
 
     @Test
+    void approvedSubjectsAreReadOnlyThroughTheApprovalLookup() {
+        ArchitectureRules.approvedSubjectsAreReadOnlyThroughTheApprovalLookup().check(MAIN_CLASSES);
+    }
+
+    @Test
+    void approvalLookupRuleDetectsAReaderThatBypassesThePort() {
+        assertThatThrownBy(() -> ArchitectureRules.approvedSubjectsAreReadOnlyThroughTheApprovalLookup().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("ApprovedSubjectsBypassFixture");
+    }
+
+    @Test
     @Tag("D-375")
     void lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation() {
         ArchitectureRules.lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation().check(MAIN_CLASSES);

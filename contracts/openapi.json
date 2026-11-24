@@ -1659,12 +1659,9 @@
           "expiresIn" : {
             "format" : "int64",
             "type" : "integer"
-          },
-          "refreshToken" : {
-            "type" : "string"
           }
         },
-        "required" : [ "accessToken", "expiresIn", "refreshToken" ],
+        "required" : [ "accessToken", "expiresIn" ],
         "type" : "object"
       },
       "AuthorizationRequestDecisionRequest" : {
@@ -5904,6 +5901,32 @@
         "required" : [ "approvedCount", "electiveGroupId", "fulfilled", "maxAllowed", "minRequired", "name" ],
         "type" : "object"
       },
+      "CurriculumEquivalenceResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "originInstitution" : {
+            "type" : "string"
+          },
+          "originScore" : {
+            "type" : [ "number", "null" ]
+          },
+          "originSubjectName" : {
+            "type" : "string"
+          },
+          "recognizedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "resolutionNumber" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "originInstitution", "originScore", "originSubjectName", "recognizedOn", "resolutionNumber" ],
+        "type" : "object"
+      },
       "CurriculumProgressResponse" : {
         "properties" : {
           "programEnrollmentId" : {
@@ -5964,6 +5987,10 @@
       },
       "CurriculumSubjectResponse" : {
         "properties" : {
+          "approvalSource" : {
+            "enum" : [ "COURSEWORK", "EQUIVALENCE", null ],
+            "type" : [ "string", "null" ]
+          },
           "attempts" : {
             "format" : "int32",
             "type" : "integer"
@@ -6004,6 +6031,13 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
+          "equivalence" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CurriculumEquivalenceResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "finalScore" : {
             "type" : [ "number", "null" ]
           },
@@ -6012,6 +6046,9 @@
               "$ref" : "#/components/schemas/CurriculumBlockingPrerequisiteResponse"
             },
             "type" : "array"
+          },
+          "prerequisitesWaived" : {
+            "type" : "boolean"
           },
           "programSubjectId" : {
             "format" : "int64",
@@ -6032,7 +6069,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attempts", "blockedBy", "category", "corequisites", "credits", "currentEnrollmentId", "curricularTerm", "curricularYear", "electiveGroupId", "finalScore", "prerequisites", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
+        "required" : [ "approvalSource", "attempts", "blockedBy", "category", "corequisites", "credits", "currentEnrollmentId", "curricularTerm", "curricularYear", "electiveGroupId", "equivalence", "finalScore", "prerequisites", "prerequisitesWaived", "programSubjectId", "state", "subjectCode", "subjectId", "subjectName" ],
         "type" : "object"
       },
       "CurriculumSummaryResponse" : {
@@ -6040,6 +6077,17 @@
           "accumulatedCredits" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "accumulatedCreditsByCoursework" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "approvedByEquivalence" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "averageScore" : {
+            "type" : [ "number", "null" ]
           },
           "completionPercent" : {
             "oneOf" : [ {
@@ -6053,6 +6101,10 @@
           },
           "counts" : {
             "$ref" : "#/components/schemas/CurriculumStateCountsResponse"
+          },
+          "creditsByEquivalence" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "electiveGroups" : {
             "items" : {
@@ -6077,7 +6129,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "accumulatedCredits", "completionPercent", "counts", "electiveGroups", "mandatoryApproved", "mandatoryTotal", "remainingCredits", "requiredCredits" ],
+        "required" : [ "accumulatedCredits", "accumulatedCreditsByCoursework", "approvedByEquivalence", "averageScore", "completionPercent", "counts", "creditsByEquivalence", "electiveGroups", "mandatoryApproved", "mandatoryTotal", "remainingCredits", "requiredCredits" ],
         "type" : "object"
       },
       "CurriculumWarningResponse" : {
@@ -9149,7 +9201,7 @@
             "type" : [ "string", "null" ]
           },
           "exclusionReason" : {
-            "enum" : [ "NO_EMAIL", "ALREADY_ACTIVE", "NOT_ELIGIBLE", "IN_OTHER_WAVE", "WAVE_CANCELLED", null ],
+            "enum" : [ "NO_EMAIL", "ALREADY_ACTIVE", "NOT_ELIGIBLE", "IN_OTHER_WAVE", "WAVE_CANCELLED", "SHARED_EMAIL", null ],
             "type" : [ "string", "null" ]
           },
           "lastAttemptAt" : {

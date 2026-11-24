@@ -58,7 +58,7 @@ export const invitationWaveHandlers = [
         cancelledAt: '2026-11-23T15:00:00Z',
         cancelledByPersonId: 1,
         invitableCount: 0,
-        excludedByReason: { NO_EMAIL: 6, ALREADY_ACTIVE: 0, NOT_ELIGIBLE: 1, IN_OTHER_WAVE: 2, WAVE_CANCELLED: 118 },
+        excludedByReason: { NO_EMAIL: 6, ALREADY_ACTIVE: 0, NOT_ELIGIBLE: 1, IN_OTHER_WAVE: 2, WAVE_CANCELLED: 118, SHARED_EMAIL: 0 },
       }),
     ),
   ),
