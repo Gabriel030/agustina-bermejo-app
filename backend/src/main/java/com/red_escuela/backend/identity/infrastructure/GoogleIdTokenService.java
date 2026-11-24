@@ -47,7 +47,7 @@ public class GoogleIdTokenService {
                 return verifier.verify(idTokenString);
             } catch (IOException e) {
                 throw new GoogleServiceUnavailableException(e);
-            } catch (GeneralSecurityException | IllegalArgumentException e) {
+            } catch (GeneralSecurityException | RuntimeException e) {
                 throw new InvalidGoogleTokenException();
             }
         }, failure -> failure instanceof GoogleServiceUnavailableException);

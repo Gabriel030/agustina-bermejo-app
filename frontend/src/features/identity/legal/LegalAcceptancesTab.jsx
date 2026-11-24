@@ -37,7 +37,7 @@ function DocumentsSection() {
             className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-4 py-2.5"
           >
             <div>
-              <Link to={document.path} className="text-size-13 font-semibold text-brand hover:text-accent-2">
+              <Link to={document.path} className="text-size-13 font-semibold text-brand">
                 {LEGAL_DOCUMENT_LABEL[document.type]}
               </Link>
               <div className="text-size-11 text-ink-faint">Versión {document.version}</div>

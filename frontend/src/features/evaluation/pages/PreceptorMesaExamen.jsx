@@ -19,6 +19,8 @@ import { ReprogramarMesaDialog } from '@/features/evaluation/components/Reprogra
 import { CancelarMesaDialog } from '@/features/evaluation/components/CancelarMesaDialog';
 import { boardRoleCaps } from '@/features/evaluation/lib/examBoardGrades';
 import { ExamBoardGradesSection } from '@/features/evaluation/components/ExamBoardGradesSection';
+import { ExamCertificatesSection } from '@/features/evaluation/components/ExamCertificatesSection';
+import { certificateCaps } from '@/features/evaluation/lib/examCertificates';
 import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion, useReprogramarMesa, useCancelarMesa } from '@/features/evaluation/hooks/useMesasDeExamen';
 
 const ESTADO_MESA = {
@@ -112,7 +114,7 @@ function ModalAsignarTribunal({ open, onClose, onAsignar, asignando }) {
   );
 }
 
-function DetalleMesa({ mesaId, role }) {
+function DetalleMesa({ mesaId, role, onBack }) {
   const mesaQuery = useMesa(mesaId);
   const anotadosQuery = useAnotados(mesaId);
   const { data: mesa, isLoading: cargandoMesa } = mesaQuery;
@@ -261,6 +263,8 @@ function DetalleMesa({ mesaId, role }) {
         />
       </GlassCard>
 
+      {certificateCaps(role).issues && mesa.status === 'CLOSED' && <ExamCertificatesSection mesaId={mesaId} role={role} onBack={onBack} />}
+
       {reprogramando && (
         <ReprogramarMesaDialog open onClose={() => setReprogramando(false)} mesa={mesa} enviando={reprogramar.isPending} onConfirmar={enviarReprogramacion} />
       )}
@@ -381,7 +385,7 @@ export function PreceptorMesaExamen({ role = 'preceptor' }) {
           <EmptyState title="Elegí una mesa" description="Buscá arriba la mesa de examen sobre la que querés trabajar." />
         </GlassCard>
       ) : (
-        <DetalleMesa key={mesaId} mesaId={mesaId} role={role} />
+        <DetalleMesa key={mesaId} mesaId={mesaId} role={role} onBack={() => setMesaId(null)} />
       )}
     </PageContainer>
   );

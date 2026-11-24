@@ -90,7 +90,7 @@ function TabsList({
       {variant === "segmented" && rect && (
         <div
           aria-hidden="true"
-          className="absolute inset-y-[3px] left-0 z-0 rounded-(--r-seg-indicator) bg-(image:--seg-indicator-bg) shadow-(--seg-indicator-shadow) transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="absolute inset-y-[3px] left-0 z-0 rounded-(--r-seg-indicator) bg-(--seg-indicator-bg) shadow-(--seg-indicator-shadow) transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{ transform: `translateX(${rect.left}px)`, width: rect.width }}
         />
       )}

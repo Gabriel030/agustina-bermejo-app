@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from '@/test/axe';
 import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
@@ -12,6 +12,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { creditBalanceFixture, creditNoteFixture, invoiceFixture, money } from '@/test/fixtures/invoices';
 import { CreateCreditNotePage } from './CreateCreditNotePage';
 import { studentFixture } from '@/test/fixtures/students';
+import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
 const API = 'http://localhost:8080';
 
@@ -92,6 +93,25 @@ beforeEach(() => {
   balance = creditBalanceFixture('0.00');
   balanceFails = false;
   balanceDelay = null;
+});
+
+describe('Nota de crédito — barra en viewport compacto', () => {
+  afterEach(restoreViewport);
+
+  it('keeps the flow steps as visible buttons in a labelled region instead of a menu', async () => {
+    useCompactViewport();
+    mockServer();
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('button', { name: 'Revisar la nota' });
+    const bar = screen.getByRole('region', { name: 'Acciones de la nota de crédito' });
+    expect(within(bar).getByRole('link', { name: 'Cancelar' })).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: 'Más acciones' })).not.toBeInTheDocument();
+
+    await fillValidNote(user);
+    await user.click(within(bar).getByRole('button', { name: 'Revisar la nota' }));
+    expect(await within(bar).findByRole('button', { name: 'Volver a editar' })).toBeInTheDocument();
+  });
 });
 
 describe('Nota de crédito — paso 1 (importes)', () => {

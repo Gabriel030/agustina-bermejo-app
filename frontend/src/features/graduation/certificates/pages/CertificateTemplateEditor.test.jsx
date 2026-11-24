@@ -61,7 +61,7 @@ describe('CertificateTemplateEditor', () => {
     renderPage();
 
     expect(await findTitleField()).toHaveValue('Certificado de aprobación');
-    expect(screen.getByText('Publicada v3 · sin cambios')).toBeInTheDocument();
+    expect(screen.getByText('Publicada v3')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled();
   });
 
@@ -169,7 +169,7 @@ describe('CertificateTemplateEditor', () => {
     expect(screen.getByText('La imagen debe ser un PNG de hasta 2 MB.')).toBeInTheDocument();
 
     expect(uploads).not.toHaveBeenCalled();
-    expect(screen.getByText('Publicada v3 · sin cambios')).toBeInTheDocument();
+    expect(screen.getByText('Publicada v3')).toBeInTheDocument();
   });
 
   it('shows the server message when the logo upload is refused', async () => {
@@ -229,18 +229,18 @@ describe('CertificateTemplateEditor', () => {
     server.events.on('request:start', ({ request }) => requests.push(request.url));
     renderPage();
 
-    const first = await screen.findByLabelText('Firmante', { selector: '#template-signatory-1' });
+    const first = await screen.findByLabelText('Primer firmante');
     const names = within(first).getAllByRole('option').map((option) => option.textContent);
 
     expect(names).toEqual([
-      'Elegí un firmante…',
+      'Elegir firmante',
       'Dra. Lucía Fernández · Secretaria Legal',
       'Lic. Marcos Ledesma · Director Académico',
     ]);
     expect(requests.some((url) => url.includes('documentType=GRADUATION_APPROVAL') && url.includes('active=true'))).toBe(true);
   });
 
-  it('shows name and role of the chosen signatory', async () => {
+  it('shows whether the chosen signatory has a signature loaded', async () => {
     const user = userEvent.setup({ delay: null });
     server.use(
       http.get(`${API}/certificate-templates/:kind`, () =>
@@ -249,19 +249,51 @@ describe('CertificateTemplateEditor', () => {
     );
     renderPage();
 
-    const first = await screen.findByLabelText('Firmante', { selector: '#template-signatory-1' });
-    expect(screen.getAllByText('Falta elegir este firmante.')).toHaveLength(2);
+    const first = await screen.findByLabelText('Primer firmante');
+    expect(screen.queryByText('Firma cargada')).not.toBeInTheDocument();
     await user.selectOptions(first, '2');
 
-    expect(screen.getByText('Lic. Marcos Ledesma', { selector: 'b' })).toBeInTheDocument();
-    expect(screen.getByText('Director Académico', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('Firma cargada')).toBeInTheDocument();
+  });
+
+  it('keeps the second signatory optional and saves it as null', async () => {
+    const user = userEvent.setup({ delay: null });
+    const saved = captureDraftSave();
+    renderPage();
+
+    await user.selectOptions(await screen.findByLabelText('Segundo firmante (opcional)'), '');
+    await user.click(screen.getByRole('button', { name: 'Guardar borrador' }));
+
+    await waitFor(() => expect(saved.bodies).toHaveLength(1));
+    expect(saved.bodies[0].body.content).toMatchObject({ signatory1Id: 1, signatory2Id: null });
+  });
+
+  it('requires the first signatory to save', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderPage();
+
+    await user.selectOptions(await screen.findByLabelText('Primer firmante'), '');
+
+    expect(screen.getByText('Elegí al menos un firmante.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled();
+  });
+
+  it('requires institute name, title and main text to save', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderPage();
+
+    const institute = await screen.findByLabelText('Nombre del instituto');
+    await user.clear(institute);
+
+    expect(screen.getByText('Obligatorio.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled();
   });
 
   it('blocks choosing the same signatory twice', async () => {
     renderPage();
 
-    const second = await screen.findByLabelText('Firmante', { selector: '#template-signatory-2' });
-    const first = screen.getByLabelText('Firmante', { selector: '#template-signatory-1' });
+    const second = await screen.findByLabelText('Segundo firmante (opcional)');
+    const first = screen.getByLabelText('Primer firmante');
 
     expect(within(second).getByRole('option', { name: /Dra. Lucía Fernández/ })).toBeDisabled();
     expect(within(first).getByRole('option', { name: /Lic. Marcos Ledesma/ })).toBeDisabled();
@@ -284,7 +316,7 @@ describe('CertificateTemplateEditor', () => {
     );
     renderPage();
 
-    expect(await screen.findByText('El firmante 1 y el firmante 2 deben ser personas distintas.')).toBeInTheDocument();
+    expect(await screen.findByText('El primer y el segundo firmante deben ser personas distintas.')).toBeInTheDocument();
     await user.type(await findTitleField(), '!');
     expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled();
   });
@@ -304,7 +336,7 @@ describe('CertificateTemplateEditor', () => {
     server.use(http.get(`${API}/certificate-signatories`, () => HttpResponse.json({ content: [] })));
     renderPage();
 
-    expect(await screen.findByText('Ningún firmante tiene permiso para este documento.')).toBeInTheDocument();
+    expect(await screen.findByText('Nadie puede firmar este documento')).toBeInTheDocument();
   });
 
   it('keeps the edits of a tab when switching to the other one and back', async () => {
@@ -313,9 +345,9 @@ describe('CertificateTemplateEditor', () => {
 
     const title = await findTitleField();
     await user.type(title, ' X');
-    await user.click(screen.getByRole('tab', { name: 'Curso' }));
+    await user.click(screen.getByRole('tab', { name: 'Egreso curso' }));
     expect(await screen.findByLabelText('Título del certificado')).toHaveValue('Certificado de aprobación');
-    await user.click(screen.getByRole('tab', { name: 'Carrera' }));
+    await user.click(screen.getByRole('tab', { name: 'Egreso carrera' }));
 
     expect(await findTitleField()).toHaveValue('Certificado de aprobación X');
   });
@@ -332,7 +364,7 @@ describe('CertificateTemplateEditor', () => {
     renderPage();
 
     await findTitleField();
-    await user.click(screen.getByRole('tab', { name: 'Curso' }));
+    await user.click(screen.getByRole('tab', { name: 'Egreso curso' }));
 
     await waitFor(() => expect(kinds).toEqual(['PROGRAM', 'COURSE']));
   });
@@ -343,7 +375,7 @@ describe('CertificateTemplateEditor', () => {
     renderPage();
 
     await findTitleField();
-    await user.click(screen.getByRole('tab', { name: 'Curso' }));
+    await user.click(screen.getByRole('tab', { name: 'Egreso curso' }));
     const title = await screen.findByLabelText('Título del certificado');
     await user.clear(title);
     await user.type(title, 'Certificado de curso');
@@ -361,7 +393,7 @@ describe('CertificateTemplateEditor', () => {
     renderPage();
 
     expect(await screen.findByText('Todavía no hay plantilla')).toBeInTheDocument();
-    expect(screen.getByText('Sin versión publicada')).toBeInTheDocument();
+    expect(screen.getByText('Sin plantilla')).toBeInTheDocument();
   });
 
   it('shows the loading state while the template is pending', () => {
@@ -436,7 +468,7 @@ describe('CertificateTemplateEditor', () => {
     );
     renderPage();
 
-    expect(await screen.findByText('Borrador v4 guardado')).toBeInTheDocument();
+    expect(await screen.findByText('Borrador sobre v3')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Descartar borrador' }));
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Descartar borrador' }));
 
@@ -482,8 +514,8 @@ describe('CertificateTemplateEditor', () => {
 
       const title = await findTitleField();
       expect(title).toHaveAttribute('readonly');
-      expect(screen.getByLabelText('Firmante', { selector: '#template-signatory-1' })).toBeDisabled();
-      expect(screen.getByLabelText('Firmante', { selector: '#template-signatory-2' })).toBeDisabled();
+      expect(screen.getByLabelText('Primer firmante')).toBeDisabled();
+      expect(screen.getByLabelText('Segundo firmante (opcional)')).toBeDisabled();
       expect(screen.getByText('Solo lectura.')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Guardar borrador' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Descartar borrador' })).not.toBeInTheDocument();
@@ -500,7 +532,7 @@ describe('CertificateTemplateEditor', () => {
       await user.type(title, 'xyz');
 
       expect(title).toHaveValue('Certificado de aprobación');
-      expect(screen.getByText('Publicada v3 · sin cambios')).toBeInTheDocument();
+      expect(screen.getByText('Publicada v3')).toBeInTheDocument();
     });
   });
 
@@ -508,7 +540,7 @@ describe('CertificateTemplateEditor', () => {
     const { container } = renderPage();
 
     await findTitleField();
-    await screen.findByLabelText('Firmante', { selector: '#template-signatory-1' });
+    await screen.findByLabelText('Primer firmante');
 
     expect(await axe(container)).toHaveNoViolations();
   });

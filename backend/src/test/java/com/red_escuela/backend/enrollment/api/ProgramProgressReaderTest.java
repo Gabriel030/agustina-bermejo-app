@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.api;
 
+import com.red_escuela.backend.enrollment.repository.SubjectEquivalenceRepository;
+import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
 import com.red_escuela.backend.academicstructure.api.ElectiveGroupRequirementView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
@@ -37,7 +39,8 @@ class ProgramProgressReaderTest {
     private final SubjectSectionEnrollmentRepository sectionRepository = mock(SubjectSectionEnrollmentRepository.class);
     private final ProgramCurriculumFinder curriculumFinder = mock(ProgramCurriculumFinder.class);
     private final ProgramProgressReader reader =
-            new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder);
+            new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder,
+                    new SubjectApprovalLookup(sectionRepository, mock(SubjectEquivalenceRepository.class)));
     private final Program program = mock(Program.class);
     private final ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
 
@@ -69,8 +72,14 @@ class ProgramProgressReaderTest {
     }
 
     private void markAs(ProgramSubjectView subject, EnrollmentStatus... statuses) {
+        markRowAs(subject, statuses[0], statuses);
+    }
+
+    private void markRowAs(ProgramSubjectView subject, EnrollmentStatus rowStatus, EnrollmentStatus... statuses) {
         SubjectSectionEnrollmentRepository.PrerequisiteStatusRow row = mock(SubjectSectionEnrollmentRepository.PrerequisiteStatusRow.class);
         when(row.getSubjectId()).thenReturn(subject.subjectId());
+        when(row.getProgramEnrollmentId()).thenReturn(ENROLLMENT_ID);
+        when(row.getStatus()).thenReturn(rowStatus);
         List<EnrollmentStatus> statusList = List.of(statuses);
         List<SubjectSectionEnrollmentRepository.PrerequisiteStatusRow> rows = marked.computeIfAbsent(statusList, key -> new ArrayList<>());
         rows.add(row);
@@ -78,8 +87,9 @@ class ProgramProgressReaderTest {
     }
 
     private void markAsCoursed(ProgramSubjectView... subjects) {
-        for (ProgramSubjectView subject : subjects) {
-            markAs(subject, EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR);
+        for (int index = 0; index < subjects.length; index++) {
+            markRowAs(subjects[index], index == 0 ? EnrollmentStatus.APPROVED : EnrollmentStatus.REGULAR,
+                    EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR);
         }
     }
 
@@ -182,6 +192,14 @@ class ProgramProgressReaderTest {
         markAsCoursed(mandatoryOne, mandatoryTwo, electiveOne);
 
         assertThat(reader.hasOnlyFinalExamsLeft(ENROLLMENT_ID)).isTrue();
+    }
+
+    @Test
+    void aRowThatIsNeitherRegularNorApprovedDoesNotCountAsCoursed() {
+        markAsCoursed(mandatoryOne, mandatoryTwo);
+        markRowAs(electiveOne, EnrollmentStatus.FAILED, EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR);
+
+        assertThat(reader.hasOnlyFinalExamsLeft(ENROLLMENT_ID)).isFalse();
     }
 
     @Test

@@ -4,13 +4,11 @@ import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteRequirementPolicy;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,16 +27,16 @@ public class ProgramPrerequisiteBatchEvaluator {
 
     private final PrerequisiteRequirementPolicy requirementPolicy = new PrerequisiteRequirementPolicy();
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
+    private final SubjectApprovalLookup subjectApprovalLookup;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final ProgramCurriculumFinder programCurriculumFinder;
 
     public ProgramPrerequisiteBatchEvaluator(ProgramEnrollmentRepository programEnrollmentRepository,
-            SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
+            SubjectApprovalLookup subjectApprovalLookup,
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
             ProgramCurriculumFinder programCurriculumFinder) {
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
+        this.subjectApprovalLookup = subjectApprovalLookup;
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.programCurriculumFinder = programCurriculumFinder;
     }
@@ -65,23 +63,22 @@ public class ProgramPrerequisiteBatchEvaluator {
             prerequisitesByPlanEntry.getOrDefault(programIdByEnrollment.get(query.programEnrollmentId()) + ":" + query.subjectId(), List.of())
                     .forEach(prerequisite -> prerequisiteSubjectIds.add(prerequisite.prerequisiteSubjectId()));
         }
-        Map<String, List<EnrollmentStatus>> statusesByStudentSubject = statusesOf(programEnrollmentIds, prerequisiteSubjectIds);
+        Map<Long, Map<Long, SubjectStanding>> standingsByEnrollment = standingsOf(programEnrollmentIds, prerequisiteSubjectIds);
         Map<Long, PrerequisiteBatchResult> results = new HashMap<>();
         for (PrerequisiteBatchQuery query : queries) {
             String key = programIdByEnrollment.get(query.programEnrollmentId()) + ":" + query.subjectId();
             boolean waived = waivedBySubject.getOrDefault(query.subjectId(), Set.of()).contains(query.programEnrollmentId());
             List<PrerequisiteView> prerequisites = prerequisitesByPlanEntry.getOrDefault(key, List.of());
-            results.put(query.sectionEnrollmentId(), resultOf(query, prerequisites, waived, statusesByStudentSubject));
+            results.put(query.sectionEnrollmentId(), resultOf(query, prerequisites, waived, standingsByEnrollment));
         }
         return results;
     }
 
     private PrerequisiteBatchResult resultOf(PrerequisiteBatchQuery query, List<PrerequisiteView> prerequisites,
-            boolean waived, Map<String, List<EnrollmentStatus>> statusesByStudentSubject) {
+            boolean waived, Map<Long, Map<Long, SubjectStanding>> standingsByEnrollment) {
         List<PrerequisiteDetail> details = prerequisites.stream()
                 .map(prerequisite -> detailOf(prerequisite, waived ? PrerequisiteStanding.WAIVED
-                        : requirementPolicy.standingOf(statusesByStudentSubject.getOrDefault(
-                                query.programEnrollmentId() + ":" + prerequisite.prerequisiteSubjectId(), List.of()))))
+                        : standingOf(standingsByEnrollment, query.programEnrollmentId(), prerequisite)))
                 .toList();
         if (waived && !details.isEmpty()) {
             return new PrerequisiteBatchResult(PrerequisiteOutcome.WAIVED, details);
@@ -105,13 +102,18 @@ public class ProgramPrerequisiteBatchEvaluator {
                         DirectorApprovalRequestStatus.APPROVED))));
     }
 
-    private Map<String, List<EnrollmentStatus>> statusesOf(Set<Long> programEnrollmentIds, Set<Long> prerequisiteSubjectIds) {
+    private PrerequisiteStanding standingOf(Map<Long, Map<Long, SubjectStanding>> standingsByEnrollment,
+            Long programEnrollmentId, PrerequisiteView prerequisite) {
+        SubjectStanding standing = standingsByEnrollment.getOrDefault(programEnrollmentId, Map.of())
+                .getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE);
+        return requirementPolicy.standingOf(standing.courseworkStatuses(), standing.isApprovedByEquivalence());
+    }
+
+    private Map<Long, Map<Long, SubjectStanding>> standingsOf(Set<Long> programEnrollmentIds, Set<Long> prerequisiteSubjectIds) {
         if (prerequisiteSubjectIds.isEmpty()) {
             return Map.of();
         }
-        return subjectSectionEnrollmentRepository.findPrerequisiteStatusRows(
-                        programEnrollmentIds, prerequisiteSubjectIds, requirementPolicy.relevantStatuses()).stream()
-                .collect(Collectors.groupingBy(row -> row.getProgramEnrollmentId() + ":" + row.getSubjectId(),
-                        Collectors.mapping(row -> row.getStatus(), Collectors.toList())));
+        return subjectApprovalLookup.findStandings(programEnrollmentIds, prerequisiteSubjectIds,
+                requirementPolicy.relevantStatuses());
     }
 }

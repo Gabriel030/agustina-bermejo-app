@@ -51,7 +51,7 @@ function DocumentoRow({ label, subido, isUploading, onChange }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isUploading}
-        className="gap-1.5 text-size-12 font-medium text-brand hover:text-accent-2 disabled:opacity-50">
+        className="gap-1.5 text-size-12 font-medium text-brand disabled:opacity-50">
         <Upload size={13} />
         {subido ? 'Reemplazar' : 'Subir'}
       </Button>

@@ -47,6 +47,8 @@ const ACTIONS = {
   CALENDAR_FEED_TOKEN_REVOKED: ['Enlace de calendario revocado', 'warning'],
   GRADUATION_CERTIFICATE_DOWNLOADED: ['Certificado de egreso descargado', 'accent'],
   GRADUATION_CERTIFICATE_PDF_MISMATCH: ['PDF de certificado de egreso con hash distinto', 'warning'],
+  GRADUATION_CERTIFICATE_REVIEW_ENABLED: ['Certificado de egreso importado habilitado', 'success'],
+  GRADUATION_CERTIFICATE_REVIEW_DISABLED: ['Certificado de egreso importado deshabilitado', 'warning'],
   PERMISSION_SENSITIVE_CHANGED: ['Permiso sensible modificado', 'warning'],
   DOCUMENT_PDF_DOWNLOADED: ['Documento descargado', 'neutral'],
   DOCUMENT_PDF_HASH_MISMATCH: ['Documento regenerado con huella distinta', 'danger'],
@@ -63,6 +65,8 @@ const ACTIONS = {
   DOCUMENT_DEBT_EXC_USED: ['Excepción de deuda utilizada', 'accent'],
   DOCUMENT_DEBT_EXC_EXPIRED: ['Excepción de deuda vencida', 'neutral'],
   DOCUMENT_DEBT_EXC_DOWNLOADED: ['Documento por excepción descargado por Administración', 'warning'],
+  SUBJECT_EQUIVALENCE_RECORDED: ['Equivalencia de materia registrada', 'accent'],
+  SUBJECT_EQUIVALENCE_VOIDED: ['Equivalencia de materia anulada', 'warning'],
   DOCUMENT_SETTINGS_CHANGED: ['Configuración de emisión de documentos modificada', 'accent'],
 };
 
@@ -82,10 +86,12 @@ const ENTITIES = {
   CERTIFICATE_EXCEPTION: 'Excepción de constancia',
   PERMISSION: 'Permiso',
   GRADUATION_CERTIFICATE: 'Certificado de egreso',
+  GRADUATION_REQUEST: 'Trámite de egreso',
   CERTIFICATE_DOCUMENT: 'Documento verificable',
   CERTIFICATE_TEMPLATE: 'Plantilla de documento',
   EXAM_CERTIFICATE: 'Constancia de examen',
   DOCUMENT_DEBT_EXCEPTION: 'Excepción de deuda de documento',
+  SUBJECT_EQUIVALENCE: 'Equivalencia de materia',
 };
 
 const ROLES = {

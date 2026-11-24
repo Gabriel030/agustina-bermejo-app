@@ -269,22 +269,21 @@ export function AuthorizationRequestDetailPage() {
       </div>
 
       {canDecide && (
-        <ActionBar
-          title={request.amount ? formatMoney(request.amount) : request.operationLabel}
-          subtitle={confirming ? 'Se ejecuta ahora y no se puede deshacer.' : (request.studentName ?? request.summary)}
-        >
-          <Button type="button" variant="outline" className="min-h-11 text-danger" onClick={() => setRejectOpen(true)}>
-            Rechazar
-          </Button>
-          {confirming && (
-            <Button type="button" variant="ghost" className="min-h-11" onClick={() => setConfirming(false)}>
-              Volver
-            </Button>
-          )}
-          <Button type="button" variant="primary" className="min-h-11" loading={approve.isPending} onClick={handleApprove}>
-            {confirming ? 'Confirmar aprobación' : approveLabel}
-          </Button>
-        </ActionBar>
+        <StickyActionBar
+          compact="menu"
+          summary={request.amount ? formatMoney(request.amount) : request.operationLabel}
+          hint={confirming ? 'Se ejecuta ahora y no se puede deshacer.' : (request.studentName ?? request.summary)}
+          primary={{
+            label: confirming ? 'Confirmar aprobación' : approveLabel,
+            loading: approve.isPending,
+            loadingLabel: confirming ? 'Confirmar aprobación' : approveLabel,
+            onClick: handleApprove,
+          }}
+          secondary={[
+            ...(confirming ? [{ key: 'back', label: 'Volver', variant: 'ghost', onSelect: () => setConfirming(false) }] : []),
+            { key: 'reject', label: 'Rechazar', className: 'text-danger', destructive: true, onSelect: () => setRejectOpen(true) },
+          ]}
+        />
       )}
 
       {pending && own && (

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.enrollment.repository.SubjectEquivalenceRepository;
+import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
 import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.enrollment.api.CurriculumProgressView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumEntryView;
@@ -44,7 +46,8 @@ class CurriculumProgressReaderTest {
     private final DirectorApprovalRequestRepository approvalRepository = mock(DirectorApprovalRequestRepository.class);
     private final ProgramCurriculumFinder curriculumFinder = mock(ProgramCurriculumFinder.class);
     private final CurriculumProgressReader reader = new CurriculumProgressReader(
-            enrollmentRepository, sectionRepository, approvalRepository, curriculumFinder);
+            enrollmentRepository, approvalRepository, curriculumFinder,
+            new SubjectApprovalLookup(sectionRepository, mock(SubjectEquivalenceRepository.class)));
     private final Program program = mock(Program.class);
     private final ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
     private final List<CurriculumProgressRow> rows = new ArrayList<>();
@@ -82,7 +85,12 @@ class CurriculumProgressReaderTest {
     }
 
     private void mark(Long subjectId, EnrollmentStatus status, Grade score) {
+        mark(null, subjectId, status, score);
+    }
+
+    private void mark(Long enrollmentId, Long subjectId, EnrollmentStatus status, Grade score) {
         CurriculumProgressRow row = mock(CurriculumProgressRow.class);
+        when(row.getEnrollmentId()).thenReturn(enrollmentId);
         when(row.getSubjectId()).thenReturn(subjectId);
         when(row.getStatus()).thenReturn(status);
         when(row.getFinalScore()).thenReturn(score);
@@ -285,6 +293,99 @@ class CurriculumProgressReaderTest {
         assertThat(view.summary().accumulatedCredits()).isZero();
         assertThat(view.warnings()).extracting(CurriculumProgressView.Warning::code)
                 .containsExactly("PLAN_CHANGED_AFTER_ENROLLMENT");
+    }
+
+    @Test
+    void prerequisitesListsMetAndUnmetOnesWhileBlockedByKeepsOnlyUnmet() {
+        plan = List.of(entry(1L, 3), entry(2L, 3), entry(3L, 3));
+        prerequisites = Map.of(3L, List.of(requires(1L, RequirementType.APPROVED), requires(2L, RequirementType.APPROVED)));
+        mark(1L, EnrollmentStatus.APPROVED, null);
+
+        CurriculumProgressView.SubjectView blocked = subjectOf(read(), 3L);
+
+        assertThat(blocked.prerequisites()).extracting(CurriculumProgressView.BlockingPrerequisite::subjectId, CurriculumProgressView.BlockingPrerequisite::standing)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(1L, PrerequisiteStanding.APPROVED),
+                        org.assertj.core.groups.Tuple.tuple(2L, PrerequisiteStanding.NOT_TAKEN));
+        assertThat(blocked.blockedBy()).extracting(CurriculumProgressView.BlockingPrerequisite::subjectId).containsExactly(2L);
+    }
+
+    @Test
+    void prerequisitesAreListedEvenWhenTheSubjectIsAvailable() {
+        plan = List.of(entry(1L, 3), entry(2L, 3));
+        prerequisites = Map.of(2L, List.of(requires(1L, RequirementType.PASSED_COURSEWORK)));
+        mark(1L, EnrollmentStatus.REGULAR, null);
+
+        CurriculumProgressView.SubjectView available = subjectOf(read(), 2L);
+
+        assertThat(available.blockedBy()).isEmpty();
+        assertThat(available.prerequisites()).singleElement().satisfies(item -> {
+            assertThat(item.standing()).isEqualTo(PrerequisiteStanding.REGULAR);
+            assertThat(item.requirementType()).isEqualTo(RequirementType.PASSED_COURSEWORK);
+        });
+    }
+
+    @Test
+    void waivedSubjectListsUnmetPrerequisitesAsWaivedAndKeepsMetOnesAsTheyAre() {
+        plan = List.of(entry(1L, 3), entry(2L, 3), entry(3L, 3));
+        prerequisites = Map.of(3L, List.of(requires(1L, RequirementType.APPROVED), requires(2L, RequirementType.APPROVED)));
+        when(approvalRepository.findSubjectIdsWithRequest(any(), any(), any())).thenReturn(List.of(3L));
+        mark(1L, EnrollmentStatus.APPROVED, null);
+
+        CurriculumProgressView.SubjectView waived = subjectOf(read(), 3L);
+
+        assertThat(waived.blockedBy()).isEmpty();
+        assertThat(waived.prerequisites()).extracting(CurriculumProgressView.BlockingPrerequisite::standing)
+                .containsExactly(PrerequisiteStanding.APPROVED, PrerequisiteStanding.WAIVED);
+    }
+
+    @Test
+    void subjectWithoutPrerequisitesHasEmptyNonNullPrerequisites() {
+        plan = List.of(entry(1L, 3));
+
+        assertThat(subjectOf(read(), 1L).prerequisites()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void currentEnrollmentIdIsTheEnrolledOrInProgressEnrollment() {
+        plan = List.of(entry(1L, 3), entry(2L, 3));
+        mark(701L, 1L, EnrollmentStatus.IN_PROGRESS, null);
+        mark(702L, 2L, EnrollmentStatus.ENROLLED, null);
+
+        CurriculumProgressView view = read();
+
+        assertThat(subjectOf(view, 1L).currentEnrollmentId()).isEqualTo(701L);
+        assertThat(subjectOf(view, 2L).currentEnrollmentId()).isEqualTo(702L);
+    }
+
+    @Test
+    void currentEnrollmentIdIgnoresFinishedAttemptsAndIsNullWithoutOne() {
+        plan = List.of(entry(1L, 3), entry(2L, 3));
+        mark(801L, 1L, EnrollmentStatus.FAILED, null);
+        mark(802L, 1L, EnrollmentStatus.REGULAR, null);
+
+        CurriculumProgressView view = read();
+
+        assertThat(subjectOf(view, 1L).currentEnrollmentId()).isNull();
+        assertThat(subjectOf(view, 2L).currentEnrollmentId()).isNull();
+    }
+
+    @Test
+    void currentEnrollmentIdIsReadOnlyFromTheRequestedProgramEnrollment() {
+        plan = List.of(entry(1L, 3));
+
+        read();
+
+        verify(sectionRepository).findCurriculumProgressRows(ENROLLMENT_ID);
+        verify(sectionRepository, org.mockito.Mockito.never()).findCurriculumProgressRows(org.mockito.ArgumentMatchers.longThat(id -> !ENROLLMENT_ID.equals(id)));
+    }
+
+    @Test
+    void ownProgressOfAnotherStudentIsNotFound() {
+        com.red_escuela.backend.identity.entity.Student owner = mock(com.red_escuela.backend.identity.entity.Student.class);
+        when(owner.getId()).thenReturn(10L);
+        when(enrollment.getStudent()).thenReturn(owner);
+
+        assertThatThrownBy(() -> reader.readOwnProgress(11L, ENROLLMENT_ID)).isInstanceOf(ProgramEnrollmentNotFoundException.class);
     }
 
     @Test

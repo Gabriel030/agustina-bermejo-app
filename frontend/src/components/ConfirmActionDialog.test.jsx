@@ -60,4 +60,10 @@ describe('ConfirmActionDialog', () => {
     renderDialog();
     expect(await axe(document.body)).toHaveNoViolations();
   });
+
+  it('lets the dismiss button carry its own label', () => {
+    renderDialog({ cancelLabel: 'Volver' });
+    expect(screen.getByRole('button', { name: 'Volver' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument();
+  });
 });
