@@ -90,7 +90,7 @@ public class ProgramPrerequisiteBatchEvaluator {
     private PrerequisiteDetail detailOf(PrerequisiteView prerequisite, PrerequisiteStanding standing) {
         return new PrerequisiteDetail(prerequisite.prerequisiteSubjectId(), prerequisite.prerequisiteSubjectCode(),
                 prerequisite.prerequisiteSubjectName(), prerequisite.requirementType(), standing,
-                requirementPolicy.isMetForApproval(standing));
+                requirementPolicy.isMetForApproval(standing), null, null);
     }
 
     private Map<Long, Set<Long>> waivedProgramEnrollmentsBySubject(
