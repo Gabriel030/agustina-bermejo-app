@@ -66,7 +66,7 @@ class EnrollmentEventsNotificationListenerTest {
 
         DomainNotificationEvent notification = published();
         assertThat(notification.message()).isEqualTo("No conseguiste lugar en Jazz I"
-                + " antes del cierre de la lista de espera — tu inscripción se canceló y el pago se reembolsará.");
+                + " antes del cierre de la lista de espera — tu inscripción se canceló. La institución te contactará por tu pago.");
         assertThat(notification.recipients()).containsExactly(recipientOf(student));
         assertThat(notification.relatedEntityType()).isEqualTo("CourseEnrollment");
         assertThat(notification.relatedEntityId()).isEqualTo(3L);
