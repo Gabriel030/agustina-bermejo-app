@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption } from '@/components/ui/table';
 import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
+import { CurriculumSummaryBar } from '@/features/workspace/components/CurriculumSummaryBar';
 import { CurriculumMap } from '@/features/workspace/components/CurriculumMap';
 import { PlanViewSwitch } from '@/features/workspace/components/PlanViewSwitch';
 import { PlanStatusFilter } from '@/features/workspace/components/PlanStatusFilter';
@@ -125,7 +126,10 @@ export function TabPlanDeEstudio({ carreraId }) {
 
   return (
     <div className="flex flex-1 flex-col gap-5">
-      <GraduationProjectionCard carreraId={carreraId} />
+      {view === 'mapa' && progress && (
+        <CurriculumSummaryBar summary={progress.summary} statusFilter={statusFilter} onStatusFilterChange={changeStatusFilter} />
+      )}
+      <GraduationProjectionCard carreraId={carreraId} collapsible={view === 'mapa'} />
       {progress && <PlanWarnings warnings={progress.warnings} />}
       <PlanViewSwitch value={view} onChange={changeView} />
       {view === 'lista' && (
