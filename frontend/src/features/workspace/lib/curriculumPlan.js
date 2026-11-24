@@ -111,6 +111,7 @@ export const PROJECTION_REASON_MESSAGE = {
   ENROLLMENT_PAUSED: 'Tu matrícula está pausada.',
   PLAN_WITHOUT_DURATION: 'Todavía no hay historial ni duración del plan para estimar.',
   CREDITS_UNREACHABLE: 'Con las materias disponibles no se llega a los créditos que pide el plan.',
+  PROJECTION_HORIZON_EXCEEDED: 'A tu ritmo actual la estimación supera los 20 años (40 cuatrimestres), así que no la mostramos. Consultá con Administración o con tu plan de estudios.',
   PREREQUISITE_CYCLE: 'Hay un error en las correlativas del plan. Consultá con Administración.',
   REQUIRED_SUBJECT_INACTIVE: 'Una materia obligatoria ya no está activa en el plan.',
 };
