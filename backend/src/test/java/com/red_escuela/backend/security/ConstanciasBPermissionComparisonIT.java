@@ -74,7 +74,7 @@ class ConstanciasBPermissionComparisonIT extends AuthorizationMatrixSupport {
     private void assertDecisionsMatchLegacy(String mode) throws Exception {
         List<AuthorizationMatrixRow> rows = constanciasRows();
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
-        assertThat(rows).hasSize(20);
+        assertThat(rows).hasSize(21);
         List<String> mismatches = new ArrayList<>();
         for (AuthorizationMatrixRow row : rows) {
             assertThat(endpoints.get(row.key())).as(row.key()).isNotNull();

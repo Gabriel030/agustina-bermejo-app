@@ -4,6 +4,8 @@ const DirectorEgresoDetalle = lazyPage(() => import('@/features/graduation/pages
 const AdministrativoEgresosPorVerificar = lazyPage(() => import('@/features/graduation/pages/AdministrativoEgresosPorVerificar'), 'AdministrativoEgresosPorVerificar');
 const AdministrativoEgresoDetalle = lazyPage(() => import('@/features/graduation/pages/AdministrativoEgresoDetalle'), 'AdministrativoEgresoDetalle');
 
+const DirectorCertificateExceptions = lazyPage(() => import('@/features/graduation/certificate-exceptions/pages/DirectorCertificateExceptions'), 'DirectorCertificateExceptions');
+const CertificateExceptionDetail = lazyPage(() => import('@/features/graduation/certificate-exceptions/pages/CertificateExceptionDetail'), 'CertificateExceptionDetail');
 const StaffRegularCertificates = lazyPage(() => import('@/features/graduation/certificates/pages/StaffRegularCertificates'), 'StaffRegularCertificates');
 const StaffGraduationCertificates = lazyPage(() => import('@/features/graduation/certificates/pages/StaffGraduationCertificates'), 'StaffGraduationCertificates');
 const CertificateTemplateEditor = lazyPage(() => import('@/features/graduation/certificates/pages/CertificateTemplateEditor'), 'CertificateTemplateEditor');
@@ -19,7 +21,10 @@ export const routes = {
     { roles: ['alumno'], path: 'mis-certificados', element: <MyCertificates /> },
     { roles: ['director'], path: 'aprobaciones/egresos', element: <DirectorAprobacionesEgresos /> },
     { roles: ['director'], path: 'aprobaciones/egresos/:id', element: <DirectorEgresoDetalle /> },
+    { roles: ['director'], path: 'aprobaciones/excepciones-por-reclamo', element: <DirectorCertificateExceptions /> },
+    { roles: ['director'], path: 'aprobaciones/excepciones-por-reclamo/:id', element: <CertificateExceptionDetail /> },
     { roles: ['administrativo', 'director'], path: 'constancias', element: <StaffRegularCertificates /> },
+    { roles: ['administrativo'], path: 'constancias/excepciones/:id', excludeSubdirector: true, element: <CertificateExceptionDetail /> },
     { roles: ['administrativo', 'director'], path: 'constancias-por-excepcion', excludeSubdirector: true, element: <EmitDebtException /> },
     { roles: ['administrativo', 'director'], path: 'egresos', element: <StaffGraduationCertificates /> },
     { roles: ['administrativo', 'director'], path: 'plantilla-de-certificados', element: <CertificateTemplateEditor /> },

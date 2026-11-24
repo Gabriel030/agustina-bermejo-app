@@ -4,7 +4,7 @@ import {
   isWellFormedCertificateCode,
   normalizeCertificateCode,
 } from '@/features/graduation/certificates/lib/certificateCode';
-import { detailRows, verdictOf } from '@/features/graduation/certificates/lib/certificateView';
+import { detailRows, formatLongDay, verdictOf } from '@/features/graduation/certificates/lib/certificateView';
 
 describe('certificateCode', () => {
   it('stripsSeparatorsAndUppercases', () => {
@@ -34,47 +34,52 @@ describe('certificateCode', () => {
 });
 
 describe('certificateView', () => {
-  const graduation = {
-    documentKind: 'GRADUATION',
+  const regular = {
+    documentType: 'REGULAR_STUDENT_CERTIFICATE',
     status: 'VALID',
-    maskedDocument: '*****678',
-    titleName: 'Tecnicatura',
-    graduationDate: '2026-07-15',
-    issuedAt: '2026-07-20T10:00:00',
-    expiresAt: null,
+    holderFullName: 'A*** P**',
+    maskedDocument: '***.***.222',
+    issuedAt: '2026-11-21T10:00:00',
+    expiresAt: '2026-12-21T10:00:00',
     revokedAt: null,
-    registryNumber: '1284',
-    hours: 1860,
+    replacedAt: null,
+    registryNumber: null,
   };
 
-  it('buildsGraduationRowsWithoutRevocationWhenFieldsAreNull', () => {
-    expect(detailRows(graduation).map((row) => row.label)).toEqual([
-      'Documento',
-      'Título',
-      'Fecha de egreso',
-      'Registro',
-    ]);
+  it('formatsLongSpanishDatesWithoutTimezoneShift', () => {
+    expect(formatLongDay('2026-12-05T23:59:59')).toBe('5 de diciembre de 2026');
+    expect(formatLongDay(null)).toBe('');
   });
 
-  it('omitsHoursWhenTheyAreMissing', () => {
-    const rows = detailRows({ ...graduation, hours: null });
-    expect(rows.find((row) => row.label === 'Registro').value).toBe('N.º 1284');
+  it('buildsRowsWithoutRegistryWhenItIsMissing', () => {
+    expect(detailRows(regular).map((row) => row.label)).toEqual(['Documento', 'A nombre de', 'DNI', 'Emitido el', 'Vigencia']);
   });
 
-  it('describesExpiredGraduationWithoutExpirationDate', () => {
-    expect(verdictOf({ ...graduation, status: 'EXPIRED' }).message).toBe('Ya no acredita el título.');
+  it('addsRegistryRowWhenPresent', () => {
+    const rows = detailRows({ ...regular, registryNumber: '0004217/2026' });
+    expect(rows.find((row) => row.label === 'Registro').value).toBe('0004217/2026');
   });
 
-  it('hidesValidityRowForRevokedRegularCertificate', () => {
-    const rows = detailRows({
-      documentKind: 'REGULAR',
-      status: 'REVOKED',
-      maskedDocument: '**1',
-      titleName: 'Carrera',
-      issuedAt: '2026-11-06T09:15:00',
-      expiresAt: '2026-12-06T23:59:59',
-      revokedAt: '2026-11-07T08:00:00',
-    });
-    expect(rows.map((row) => row.label)).toEqual(['Documento', 'Carrera', 'Emitida', 'Revocado el']);
+  it('describesValidityPerStatus', () => {
+    const validity = (overrides) => detailRows({ ...regular, ...overrides }).find((row) => row.label === 'Vigencia').value;
+    expect(validity({})).toBe('Vigente hasta el 21/12/2026');
+    expect(validity({ expiresAt: null })).toBe('Vigente');
+    expect(validity({ status: 'EXPIRED' })).toBe('Venció el 21/12/2026');
+    expect(validity({ status: 'REVOKED', revokedAt: '2026-12-05T08:00:00' })).toBe('Revocada el 05/12/2026');
+    expect(validity({ status: 'REPLACED', replacedAt: '2026-12-02T08:00:00' })).toBe('Reemplazada el 02/12/2026');
+  });
+
+  it('treatsOnlyValidAsSuccess', () => {
+    expect(verdictOf(regular).tone).toBe('success');
+    expect(verdictOf({ ...regular, status: 'OTHER' }).tone).toBe('neutral');
+    expect(verdictOf({ ...regular, status: undefined }).undetermined).toBe(true);
+    expect(verdictOf({}).tone).toBe('neutral');
+  });
+
+  it('toleratesMissingDatesInTheVerdict', () => {
+    expect(verdictOf({ ...regular, status: 'REVOKED' }).message).toBe('No tiene validez.');
+    expect(verdictOf({ ...regular, status: 'EXPIRED', expiresAt: null }).message).toBe(
+      'Pedí a la persona interesada una constancia nueva.',
+    );
   });
 });

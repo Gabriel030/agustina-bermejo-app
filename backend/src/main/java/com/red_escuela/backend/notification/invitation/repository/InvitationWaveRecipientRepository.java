@@ -11,7 +11,10 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.Collection;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import java.util.List;
+import java.util.Optional;
 
 public interface InvitationWaveRecipientRepository extends JpaRepository<InvitationWaveRecipient, Long> {
 
@@ -30,6 +33,15 @@ public interface InvitationWaveRecipientRepository extends JpaRepository<Invitat
         Long getDeliveryId();
         Instant getCreatedAt();
     }
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from InvitationWaveRecipient r where r.id = :id")
+    Optional<InvitationWaveRecipient> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("select r.waveId from InvitationWaveRecipient r where r.id = :id")
+    Optional<Long> findWaveIdById(@Param("id") Long id);
+
+    List<InvitationWaveRecipient> findByWaveIdAndStatusAndAttemptsLessThanOrderByIdAsc(Long waveId, InvitationRecipientStatus status,
+                                                                                       int attempts, Pageable pageable);
 
     Page<InvitationWaveRecipient> findByWaveId(Long waveId, Pageable pageable);
 
@@ -53,4 +65,10 @@ public interface InvitationWaveRecipientRepository extends JpaRepository<Invitat
     @Query("select distinct r.personId from InvitationWaveRecipient r where r.personId in :personIds and r.status in :openStatuses")
     List<Long> findPersonIdsWithOpenInvitation(@Param("personIds") Collection<Long> personIds,
                                                @Param("openStatuses") Collection<InvitationRecipientStatus> openStatuses);
+
+    @Query("select r.id from InvitationWaveRecipient r where r.waveId = :waveId and r.status in :statuses order by r.id asc")
+    List<Long> findIdsByWaveIdAndStatusIn(@Param("waveId") Long waveId, @Param("statuses") Collection<InvitationRecipientStatus> statuses, Pageable pageable);
+
+    @Query("select max(r.sentAt) from InvitationWaveRecipient r where r.waveId = :waveId")
+    Optional<Instant> findLastSentAt(@Param("waveId") Long waveId);
 }

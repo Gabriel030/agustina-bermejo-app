@@ -114,6 +114,60 @@ describe('PreceptorMesaExamen', () => {
     expect(screen.queryByRole('button', { name: /Dar de baja a/ })).not.toBeInTheDocument();
   });
 
+  it('shows the exam certificates section to the teacher once the board is closed', async () => {
+    const closed = mesa({ examDate: '2020-01-10T18:00:00', status: 'CLOSED' });
+    server.use(
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([closed])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(closed)),
+      http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([anotado(1, 'REGISTERED')])),
+      http.get(`${API}/exam-boards/6/exam-certificates/candidates`, () => HttpResponse.json([])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PreceptorMesaExamen role="docente" />);
+
+    await abrirMesa(user, 'Cerradas');
+
+    expect(await screen.findByRole('heading', { name: 'Constancias de examen' })).toBeInTheDocument();
+    expect(await screen.findByText('Todavía no hay presentes')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['when the exam date passed but the record is still open', 'docente', { examDate: '2020-01-10T18:00:00' }, undefined],
+    ['before the exam', 'docente', { examDate: '2099-11-20T18:00:00' }, undefined],
+    ['to the preceptor even when closed', 'preceptor', { examDate: '2020-01-10T18:00:00', status: 'CLOSED' }, 'Cerradas'],
+    ['when the board is canceled', 'docente', { examDate: '2020-01-10T18:00:00', status: 'CANCELED', cancelReason: 'Sin quórum' }, 'Canceladas'],
+  ])('does not show the exam certificates section %s', async (_label, role, extra, tab) => {
+    const board = mesa(extra);
+    server.use(
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([board])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(board)),
+      http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PreceptorMesaExamen role={role} />);
+
+    await abrirMesa(user, tab);
+
+    await screen.findByText('Alumnos anotados');
+    expect(screen.queryByRole('heading', { name: 'Constancias de examen' })).not.toBeInTheDocument();
+  });
+
+  it.each(['administrativo', 'director'])('shows the exam certificates section to the %s once the board is closed', async (role) => {
+    const closed = mesa({ examDate: '2020-01-10T18:00:00', status: 'CLOSED' });
+    server.use(
+      http.get(`${API}/exam-boards`, () => HttpResponse.json([closed])),
+      http.get(`${API}/exam-boards/6`, () => HttpResponse.json(closed)),
+      http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([])),
+      http.get(`${API}/exam-boards/6/exam-certificates/candidates`, () => HttpResponse.json([])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PreceptorMesaExamen role={role} />);
+
+    await abrirMesa(user, 'Cerradas');
+
+    expect(await screen.findByRole('heading', { name: 'Constancias de examen' })).toBeInTheDocument();
+  });
+
   it('shows the preceptor the sheet read only and keeps the management buttons', async () => {
     const pasada = mesa({ examDate: '2020-01-10T18:00:00' });
     server.use(

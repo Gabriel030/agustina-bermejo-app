@@ -62,6 +62,7 @@ export const invitationWaveHandlers = [
       }),
     ),
   ),
+  http.post(`${API}/invitation-waves/:id/retry-failed`, () => HttpResponse.json({ requeued: 3 })),
   http.post(`${API}/auth/activation-token/status`, () => HttpResponse.json(activationTokenStatus('VALID'))),
 ];
 
@@ -84,7 +85,12 @@ export const invitationWaveErrorHandlers = [
   http.post(`${API}/invitation-waves/:id/pause`, () => errorResponse(409, 'INVITATION_WAVE_INVALID_TRANSITION')),
   http.post(`${API}/invitation-waves/:id/resume`, () => errorResponse(409, 'INVITATION_WAVE_INVALID_TRANSITION')),
   http.post(`${API}/invitation-waves/:id/cancel`, () => errorResponse(409, 'INVITATION_WAVE_INVALID_TRANSITION')),
+  http.post(`${API}/invitation-waves/:id/retry-failed`, () => errorResponse(409, 'INVITATION_WAVE_NOT_RUNNING')),
   http.get(`${API}/invitation-waves`, () => errorResponse(403, 'FORBIDDEN')),
+];
+
+export const invitationWaveNotFoundRetryHandlers = [
+  http.post(`${API}/invitation-waves/:id/retry-failed`, () => errorResponse(404, 'INVITATION_WAVE_NOT_FOUND')),
 ];
 
 export const activationTokenStatusHandlers = {

@@ -42,7 +42,7 @@ export const runningInvitationWave = (overrides = {}) =>
     sentTotal: 38,
     failedTotal: 2,
     activatedTotal: 5,
-    nextRunAt: '2026-11-23T14:30:00Z',
+    nextRunAt: null,
     ...overrides,
   });
 

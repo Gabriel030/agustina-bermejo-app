@@ -125,8 +125,9 @@ describe('CertificateSignatories', () => {
     expect(usage.parentElement).toHaveTextContent('Certificado de egreso de carrera · versión 3 (Publicada)');
     expect(usage.parentElement).toHaveTextContent('Certificado de egreso de carrera · versión 4 (Borrador)');
     const permissions = screen.getByRole('group', { name: 'Permisos por tipo de documento' });
-    expect(within(permissions).getAllByRole('checkbox')).toHaveLength(4);
+    expect(within(permissions).getAllByRole('checkbox')).toHaveLength(5);
     within(permissions).getAllByRole('checkbox').forEach((box) => expect(box).toBeChecked());
+    expect(within(permissions).getByRole('checkbox', { name: 'Constancia de inscripción a examen' })).toBeChecked();
   });
 
   it('shows no template usage message for a signatory that is not used', async () => {

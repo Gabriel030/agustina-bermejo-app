@@ -1,0 +1,1 @@
+alter table notification_delivery validate constraint notification_delivery_category_check;

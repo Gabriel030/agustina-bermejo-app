@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -6,6 +6,7 @@ import { errorBody } from '@/test/fixtures/errors';
 import { permissionCatalog, permissionGrid } from '@/test/fixtures/permissions';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 import { PermissionsPage } from './PermissionsPage';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
@@ -101,6 +102,29 @@ describe('PermissionsPage', () => {
     await user.click(within(bar).getByRole('button', { name: 'Descartar' }));
     expect(checkbox).toHaveAttribute('aria-checked', 'false');
     expect(screen.queryByRole('region', { name: 'Cambios sin guardar' })).not.toBeInTheDocument();
+  });
+
+  describe('on a compact viewport', () => {
+    afterEach(restoreViewport);
+
+    it('discards the pending change from the more menu', async () => {
+      useCompactViewport();
+      const user = userEvent.setup();
+      renderWithProviders(<PermissionsPage />);
+      await openModule(user);
+
+      const checkbox = screen.getByRole('checkbox', { name: 'Eliminar avisos — Preceptor' });
+      await user.click(checkbox);
+      const bar = screen.getByRole('region', { name: 'Cambios sin guardar' });
+      expect(within(bar).getByText('1 cambio')).toBeInTheDocument();
+      expect(within(bar).queryByRole('button', { name: 'Descartar' })).not.toBeInTheDocument();
+      expect(within(bar).getByRole('button', { name: 'Revisar y guardar' })).toBeInTheDocument();
+
+      await user.click(within(bar).getByRole('button', { name: 'Más acciones' }));
+      await user.click(await screen.findByRole('menuitem', { name: 'Descartar' }));
+      expect(checkbox).toHaveAttribute('aria-checked', 'false');
+      expect(screen.queryByRole('region', { name: 'Cambios sin guardar' })).not.toBeInTheDocument();
+    });
   });
 
   it('toggling back to the original value removes the pending change', async () => {

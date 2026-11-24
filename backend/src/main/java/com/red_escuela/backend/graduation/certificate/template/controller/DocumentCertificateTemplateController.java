@@ -106,7 +106,7 @@ public class DocumentCertificateTemplateController {
     @RequiresPermission(code = "certificate.templates_manage", legacyRoles = "ROLE_DIRECTOR")
     public CertificateTemplateVersionResponse saveDraft(@PathVariable DocumentTemplateType documentType,
                                                         @Valid @RequestBody SaveCertificateTemplateDraftRequest request) {
-        return saveDraftUseCase.save(documentType, request.content());
+        return saveDraftUseCase.save(documentType, request.content(), request.basedOnVersionNumber());
     }
 
     @DeleteMapping("/draft")

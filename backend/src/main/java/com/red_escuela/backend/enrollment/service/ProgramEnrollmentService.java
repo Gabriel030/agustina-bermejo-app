@@ -42,7 +42,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
+import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
 import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 
 @Service
@@ -56,7 +56,7 @@ public class ProgramEnrollmentService {
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
     private final AttendanceStandingReader attendanceStandingReader;
-    private final EnrollmentDebtGuard enrollmentDebtGuard;
+    private final EnrollmentDebtGuardPort enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard;
@@ -72,7 +72,7 @@ public class ProgramEnrollmentService {
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             AttendanceStandingReader attendanceStandingReader,
-            EnrollmentDebtGuard enrollmentDebtGuard,
+            EnrollmentDebtGuardPort enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard,

@@ -1,7 +1,6 @@
 import { AlertTriangle, Check, Undo2 } from 'lucide-react';
 import { StickyActionBar } from '@/components/StickyActionBar';
 import { StatusPill } from '@/components/StatusPill';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 function barSummary({ hasPendingChanges, changedCount, saved, canceled }) {
@@ -32,19 +31,40 @@ function barHint({ canceled, hasError, hasPendingChanges, unmarkedCount }) {
   return unmarkedCount > 0 ? `Quedan ${unmarkedCount} sin marcar.` : 'Marcá o corregí un alumno para habilitar Guardar.';
 }
 
+function compactSummaryOf({ hasPendingChanges, changedCount, saved, canceled, hasError }) {
+  if (hasError) return 'No se guardó';
+  if (hasPendingChanges) return changedCount === 0 ? 'Cambios sin guardar' : `${changedCount} ${changedCount === 1 ? 'cambio' : 'cambios'}`;
+  if (saved || canceled) return 'Todo guardado';
+  return 'Sin cambios';
+}
+
+function compactHintOf({ canceled, hasError, hasPendingChanges, unmarkedCount }) {
+  if (canceled) return 'Clase cancelada';
+  if (hasError) return 'Quedan acá';
+  if (unmarkedCount > 0) return `Quedan ${unmarkedCount} sin marcar`;
+  return hasPendingChanges ? 'Todos marcados' : 'Marcá un alumno';
+}
+
 export function AttendanceSaveBar({ hasPendingChanges, changedCount, saved, canceled, hasError, unmarkedCount, saving, onSave, onDiscard }) {
+  const state = { hasPendingChanges, changedCount, saved, canceled, hasError, unmarkedCount };
   return (
     <StickyActionBar
-      summary={barSummary({ hasPendingChanges, changedCount, saved, canceled })}
-      hint={<span className={cn(hasError && 'font-bold text-danger-ink')}>{barHint({ canceled, hasError, hasPendingChanges, unmarkedCount })}</span>}
-    >
-      <Button type="button" variant="outline" className="min-h-11" onClick={onDiscard} disabled={!hasPendingChanges || saving}>
-        <Undo2 aria-hidden="true" />
-        Descartar
-      </Button>
-      <Button type="button" variant="primary" className="min-h-11" onClick={onSave} disabled={!hasPendingChanges || saving || canceled}>
-        Guardar asistencia
-      </Button>
-    </StickyActionBar>
+      compact="menu"
+      aria-label="Guardado de asistencia"
+      summary={barSummary(state)}
+      hint={<span className={cn(hasError && 'font-bold text-danger-ink')}>{barHint(state)}</span>}
+      compactSummary={compactSummaryOf(state)}
+      compactHint={compactHintOf(state)}
+      busy={saving}
+      primary={{
+        label: 'Guardar asistencia',
+        onClick: onSave,
+        disabled: !hasPendingChanges || saving || canceled,
+        loading: saving,
+      }}
+      secondary={[
+        { key: 'discard', label: 'Descartar', icon: Undo2, destructive: true, onSelect: onDiscard, disabled: !hasPendingChanges || saving },
+      ]}
+    />
   );
 }

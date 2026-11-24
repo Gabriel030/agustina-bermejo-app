@@ -1,6 +1,7 @@
 package com.red_escuela.backend.graduation.certificate.template.repository;
 
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplate;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,12 @@ import java.util.Optional;
 public interface CertificateTemplateRepository extends JpaRepository<CertificateTemplate, Long> {
 
     Optional<CertificateTemplate> findByKind(GraduationCertificateKind kind);
+
+    Optional<CertificateTemplate> findByDocumentType(DocumentTemplateType documentType);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from CertificateTemplate t where t.documentType = :documentType")
+    Optional<CertificateTemplate> findByDocumentTypeForUpdate(@Param("documentType") DocumentTemplateType documentType);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from CertificateTemplate t where t.kind = :kind")

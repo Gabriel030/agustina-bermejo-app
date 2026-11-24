@@ -23,12 +23,21 @@ public class PermissionGate {
     }
 
     public boolean allows(Authentication authentication, String permission, String... legacyRoles) {
+        return decide(authentication, permission, false, legacyRoles);
+    }
+
+    public boolean allowsWithoutInheritance(Authentication authentication, String permission, String... legacyRoles) {
+        return decide(authentication, permission, true, legacyRoles);
+    }
+
+    private boolean decide(Authentication authentication, String permission, boolean ignoreInheritedRoles, String[] legacyRoles) {
         if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
             return false;
         }
         Set<String> legacy = Arrays.stream(legacyRoles).flatMap(entry -> Arrays.stream(entry.split(","))).map(String::trim).collect(Collectors.toUnmodifiableSet());
         String module = moduleOf(permission);
         PermissionSnapshot snapshot = cache.current();
+        Set<String> inherited = ignoreInheritedRoles ? inheritedRolesOf(authentication) : Set.of();
         boolean allowed = false;
         for (GrantedAuthority authority : authentication.getAuthorities()) {
             String name = authority.getAuthority();
@@ -36,6 +45,9 @@ public class PermissionGate {
                 continue;
             }
             String role = name.substring(ROLE_PREFIX.length());
+            if (inherited.contains(role)) {
+                continue;
+            }
             boolean legacyDecision = legacy.contains(name) || legacy.contains(role);
             PermissionMode mode = snapshot.modeOf(role, module);
             if (mode == PermissionMode.LEGACY) {
@@ -53,6 +65,14 @@ public class PermissionGate {
             }
         }
         return allowed;
+    }
+
+    private static Set<String> inheritedRolesOf(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(name -> name != null && name.startsWith(ROLE_PREFIX))
+                .flatMap(name -> RoleInheritance.inheritedBy(name.substring(ROLE_PREFIX.length())).stream())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private static String moduleOf(String permission) {

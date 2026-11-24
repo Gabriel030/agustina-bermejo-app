@@ -8,6 +8,7 @@ import com.red_escuela.backend.notification.invitation.dto.InvitationWaveRecipie
 import com.red_escuela.backend.notification.invitation.dto.InvitationWaveReportDownload;
 import com.red_escuela.backend.notification.invitation.dto.InvitationWaveResponse;
 import com.red_escuela.backend.notification.invitation.dto.InvitationWaveSettingsResponse;
+import com.red_escuela.backend.notification.invitation.dto.RetryFailedInvitationsResponse;
 import com.red_escuela.backend.notification.invitation.usecase.CancelInvitationWaveUseCase;
 import com.red_escuela.backend.notification.invitation.usecase.CreateInvitationWaveUseCase;
 import com.red_escuela.backend.notification.invitation.usecase.DownloadInvitationWaveReportUseCase;
@@ -17,11 +18,15 @@ import com.red_escuela.backend.notification.invitation.usecase.ListInvitationImp
 import com.red_escuela.backend.notification.invitation.usecase.ListInvitationWaveRecipientsUseCase;
 import com.red_escuela.backend.notification.invitation.usecase.ListInvitationWavesUseCase;
 import com.red_escuela.backend.notification.invitation.usecase.PauseInvitationWaveUseCase;
+import com.red_escuela.backend.notification.invitation.usecase.RetryFailedInvitationsUseCase;
 import com.red_escuela.backend.notification.invitation.usecase.ResumeInvitationWaveUseCase;
 import com.red_escuela.backend.notification.invitation.usecase.StartInvitationWaveUseCase;
 import com.red_escuela.backend.shared.pagination.PageResponse;
 import com.red_escuela.backend.shared.permission.PermissionGate;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -54,6 +59,7 @@ public class InvitationWaveController {
     private final PauseInvitationWaveUseCase pauseInvitationWave;
     private final ResumeInvitationWaveUseCase resumeInvitationWave;
     private final CancelInvitationWaveUseCase cancelInvitationWave;
+    private final RetryFailedInvitationsUseCase retryFailedInvitations;
     private final GetInvitationWaveUseCase getInvitationWave;
     private final ListInvitationWavesUseCase listInvitationWaves;
     private final ListInvitationWaveRecipientsUseCase listInvitationWaveRecipients;
@@ -68,6 +74,7 @@ public class InvitationWaveController {
                                     PauseInvitationWaveUseCase pauseInvitationWave,
                                     ResumeInvitationWaveUseCase resumeInvitationWave,
                                     CancelInvitationWaveUseCase cancelInvitationWave,
+                                    RetryFailedInvitationsUseCase retryFailedInvitations,
                                     GetInvitationWaveUseCase getInvitationWave,
                                     ListInvitationWavesUseCase listInvitationWaves,
                                     ListInvitationWaveRecipientsUseCase listInvitationWaveRecipients,
@@ -80,6 +87,7 @@ public class InvitationWaveController {
         this.pauseInvitationWave = pauseInvitationWave;
         this.resumeInvitationWave = resumeInvitationWave;
         this.cancelInvitationWave = cancelInvitationWave;
+        this.retryFailedInvitations = retryFailedInvitations;
         this.getInvitationWave = getInvitationWave;
         this.listInvitationWaves = listInvitationWaves;
         this.listInvitationWaveRecipients = listInvitationWaveRecipients;
@@ -135,6 +143,7 @@ public class InvitationWaveController {
     }
 
     @RequiresPermission(code = "notification.read_invitation_waves", legacyRoles = LEGACY_ROLES)
+    @ApiResponse(responseCode = "200", content = @Content(mediaType = "text/csv", schema = @Schema(type = "string")))
     @GetMapping("/{id}/report.csv")
     public ResponseEntity<byte[]> downloadInvitationWaveReport(@PathVariable Long id) {
         InvitationWaveReportDownload download = downloadInvitationWaveReport.downloadInvitationWaveReport(id);
@@ -167,5 +176,11 @@ public class InvitationWaveController {
     @PostMapping("/{id}/cancel")
     public InvitationWaveResponse cancelInvitationWave(@PathVariable Long id) {
         return cancelInvitationWave.cancelInvitationWave(id, currentActorFinder.currentPersonId());
+    }
+
+    @RequiresPermission(code = "notification.send_invitation_wave", legacyRoles = LEGACY_ROLES)
+    @PostMapping("/{id}/retry-failed")
+    public RetryFailedInvitationsResponse retryFailedInvitations(@PathVariable Long id) {
+        return new RetryFailedInvitationsResponse(retryFailedInvitations.retryFailedInvitations(id));
     }
 }

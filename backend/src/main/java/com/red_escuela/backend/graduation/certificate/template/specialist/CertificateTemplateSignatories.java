@@ -36,9 +36,14 @@ public class CertificateTemplateSignatories {
 
     @Transactional
     public CertificateTemplateContent applyTo(Long templateId, CertificateTemplateContent content) {
+        return applyTo(templateId, content, DOCUMENT_TYPE);
+    }
+
+    @Transactional
+    public CertificateTemplateContent applyTo(Long templateId, CertificateTemplateContent content, SignatoryDocumentType documentType) {
         resolver.requireDistinct(content.signatory1Id(), content.signatory2Id());
-        ResolvedSignatory first = resolver.selectFor(content.signatory1Id(), DOCUMENT_TYPE);
-        ResolvedSignatory second = resolver.selectFor(content.signatory2Id(), DOCUMENT_TYPE);
+        ResolvedSignatory first = resolver.selectFor(content.signatory1Id(), documentType);
+        ResolvedSignatory second = resolver.selectFor(content.signatory2Id(), documentType);
         return new CertificateTemplateContent(content.instituteName(), content.logoImageId(), content.title(), content.introText(),
                 content.approvalText(), content.dictationText(), content.qrLabel(), content.footerLegend(),
                 snapshotOf(templateId, first), snapshotOf(templateId, second), content.signatory1Id(), content.signatory2Id());
