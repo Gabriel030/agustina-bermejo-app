@@ -30,7 +30,7 @@ function PasswordInput({ className, disabled, ...props }) {
         aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
         aria-pressed={visible}
         onClick={() => setVisible((v) => !v)}
-        className="absolute inset-y-0 right-2 flex items-center text-ink-faint transition-colors hover:text-ink-soft disabled:pointer-events-none disabled:opacity-50"
+        className="absolute inset-y-0 right-2 flex items-center text-ink-faint transition-colors hover:text-ink-soft disabled:pointer-events-none disabled:text-(--disabled-fg)"
       >
         {visible ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>

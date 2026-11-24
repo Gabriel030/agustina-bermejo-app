@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitl
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Toggle } from '@/components/ui/toggle';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -191,6 +193,7 @@ export function DesignCatalog() {
             <TabsTrigger value="students">Alumnos</TabsTrigger>
             <TabsTrigger value="grades">Notas</TabsTrigger>
             <TabsTrigger value="payments">Pagos</TabsTrigger>
+            <TabsTrigger value="archive" disabled>Archivo</TabsTrigger>
           </TabsList>
         </Tabs>
       </Section>
@@ -205,6 +208,7 @@ export function DesignCatalog() {
           <PasswordInput defaultValue="secreto123" aria-label="Contraseña" />
         </div>
         <Textarea defaultValue="Observaciones de ejemplo para la comisión." aria-label="Observaciones" />
+        <Textarea defaultValue="Observaciones cerradas." disabled aria-label="Observaciones deshabilitadas" />
         <Row>
           <label className="flex items-center gap-2 text-sm text-ink">
             <Checkbox defaultChecked /> Marcado
@@ -218,6 +222,27 @@ export function DesignCatalog() {
           <label className="flex items-center gap-2 text-sm text-ink">
             <Switch /> Desactivado
           </label>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <Checkbox defaultChecked disabled /> Marcado no editable
+          </label>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <Checkbox disabled /> Sin marcar no editable
+          </label>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <Switch defaultChecked disabled /> Activado no editable
+          </label>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <Switch disabled /> Desactivado no editable
+          </label>
+          <RadioGroup defaultValue="on" className="flex w-auto gap-4">
+            <label className="flex items-center gap-2 text-sm text-ink">
+              <RadioGroupItem value="on" disabled /> Opción marcada
+            </label>
+            <label className="flex items-center gap-2 text-sm text-ink">
+              <RadioGroupItem value="off" disabled /> Opción libre
+            </label>
+          </RadioGroup>
+          <Toggle disabled aria-label="Negrita deshabilitada">Negrita</Toggle>
         </Row>
       </Section>
 
