@@ -296,7 +296,7 @@ describe('TabPlanDeEstudio map view', () => {
     expect(await screen.findByRole('region', { name: 'Mapa del plan por año' })).toHaveAttribute('tabindex', '0');
   });
 
-  it('toggles card selection with aria-pressed', async () => {
+  it('selects a card with aria-pressed and opens its detail', async () => {
     useProgress(threeYearPlan());
     const user = userEvent.setup();
     renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
@@ -305,9 +305,9 @@ describe('TabPlanDeEstudio map view', () => {
     expect(card).toHaveAttribute('aria-pressed', 'false');
     expect(card).toHaveAttribute('aria-haspopup', 'dialog');
     await user.click(card);
-    expect(card).toHaveAttribute('aria-pressed', 'true');
-    await user.click(card);
-    expect(card).toHaveAttribute('aria-pressed', 'false');
+    expect(await screen.findByRole('dialog', { name: 'Matemática I' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(await screen.findByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('shares the estado filter between map chips and the list select', async () => {
