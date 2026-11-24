@@ -1,0 +1,37 @@
+name: Epic board
+
+on:
+  pull_request_target:
+    types: [closed, labeled, unlabeled]
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+concurrency:
+  group: epic-board
+  cancel-in-progress: false
+
+jobs:
+  board:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Create epic labels
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: scripts/epic-board.sh labels
+      - name: Update epic board
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_ACTION: ${{ github.event.action }}
+        run: scripts/epic-board.sh publish
