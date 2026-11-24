@@ -345,26 +345,46 @@ order by r.id;
 
 \echo
 \echo [V468] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V468 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
+with active_slots as (
+    select s.id, s.classroom_id, s.day_of_week, s.start_time, s.end_time,
+           tsrange(t.start_date, t.end_date, '[]') as term_period
+    from section_schedule_slot s
+    left join subject_section ss on ss.id = s.subject_section_id
+    left join course_section cs on cs.id = s.course_section_id
+    join term t on t.id = coalesce(ss.term_id, cs.term_id)
+    where coalesce(ss.status, cs.status) = 'ACTIVE'
+      and t.start_date is not null and t.end_date is not null and t.end_date >= t.start_date
+)
 select a.id as slot_id, b.id as overlapping_slot_id, a.classroom_id, a.day_of_week, a.start_time, a.end_time
-from section_schedule_slot a
-join section_schedule_slot b on a.id < b.id and a.classroom_id = b.classroom_id and a.time_span && b.time_span and a.term_period && b.term_period
-where a.active and b.active
+from active_slots a
+join active_slots b on a.id < b.id and a.classroom_id = b.classroom_id and a.day_of_week = b.day_of_week
+    and floor(extract(epoch from a.start_time)) < floor(extract(epoch from b.end_time))
+    and floor(extract(epoch from b.start_time)) < floor(extract(epoch from a.end_time))
+    and a.term_period && b.term_period
 order by a.classroom_id, a.id;
 
 \echo [V468] Franjas de docente solapadas (mismo docente asignado a dos comisiones ACTIVE con franjas que se pisan); V468 ABORTA al poblar la proyeccion si hay filas:
-with links as (
-    select program_section_id as subject_section_id, null::bigint as course_section_id, instructor_id from subject_section_instructor
-    union
-    select null::bigint, course_section_id, instructor_id from course_section_instructor
-), occupied as (
-    select distinct s.id as slot_id, l.instructor_id, s.time_span, s.term_period
+with instructor_slots as (
+    select distinct s.id as slot_id, l.instructor_id, s.day_of_week, s.start_time, s.end_time,
+           tsrange(t.start_date, t.end_date, '[]') as term_period
     from section_schedule_slot s
-    join links l on (l.subject_section_id = s.subject_section_id or l.course_section_id = s.course_section_id)
-    where s.active
+    left join subject_section ss on ss.id = s.subject_section_id
+    left join course_section cs on cs.id = s.course_section_id
+    join term t on t.id = coalesce(ss.term_id, cs.term_id)
+    join (select program_section_id as subject_section_id, null::bigint as course_section_id, instructor_id from subject_section_instructor
+          union all
+          select null::bigint, course_section_id, instructor_id from course_section_instructor) l
+        on (l.subject_section_id is not null and l.subject_section_id = s.subject_section_id)
+        or (l.course_section_id is not null and l.course_section_id = s.course_section_id)
+    where coalesce(ss.status, cs.status) = 'ACTIVE'
+      and t.start_date is not null and t.end_date is not null and t.end_date >= t.start_date
 )
-select a.instructor_id, a.slot_id, b.slot_id as overlapping_slot_id
-from occupied a
-join occupied b on a.slot_id < b.slot_id and a.instructor_id = b.instructor_id and a.time_span && b.time_span and a.term_period && b.term_period
+select a.instructor_id, a.slot_id, b.slot_id as overlapping_slot_id, a.day_of_week, a.start_time, a.end_time
+from instructor_slots a
+join instructor_slots b on a.slot_id < b.slot_id and a.instructor_id = b.instructor_id and a.day_of_week = b.day_of_week
+    and floor(extract(epoch from a.start_time)) < floor(extract(epoch from b.end_time))
+    and floor(extract(epoch from b.start_time)) < floor(extract(epoch from a.end_time))
+    and a.term_period && b.term_period
 order by a.instructor_id, a.slot_id;
 
 rollback;
