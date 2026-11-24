@@ -261,7 +261,7 @@ describe('LegajoAlumno study plan tab', () => {
     expect(within(section).queryByRole('button', { name: /Cargar|Anular/ })).not.toBeInTheDocument();
   });
 
-  it.each(['ADMINISTRATIVO', 'DIRECTOR'])('shows the section without the read-only notice or actions for %s', async (role) => {
+  it.each(['ADMINISTRATIVO', 'DIRECTOR'])('shows the section with the record action and without the read-only notice for %s', async (role) => {
     auth.roles = [role];
     mockStudent();
     mockProgress(4, [subject()]);
@@ -271,7 +271,19 @@ describe('LegajoAlumno study plan tab', () => {
     const section = await screen.findByRole('region', { name: 'Equivalencias' });
     expect(await within(section).findByText('Lengua y Comunicación')).toBeInTheDocument();
     expect(within(section).queryByText('Solo lectura')).not.toBeInTheDocument();
-    expect(within(section).queryByRole('button', { name: /Cargar|Anular/ })).not.toBeInTheDocument();
+    expect(within(section).getByRole('button', { name: 'Cargar equivalencia' })).toBeEnabled();
+  });
+
+  it.each(['PRECEPTOR', 'SUBDIRECTOR'])('never shows the record action to %s', async (role) => {
+    auth.roles = [role];
+    mockStudent();
+    mockProgress(4, [subject()]);
+    server.use(http.get(`${API}/program-enrollments/4/equivalences`, () => HttpResponse.json(activeSubjectEquivalences())));
+    renderLegajo();
+
+    const section = await screen.findByRole('region', { name: 'Equivalencias' });
+    expect(await within(section).findByText('Lengua y Comunicación')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Cargar equivalencia|Anular equivalencia/ })).not.toBeInTheDocument();
   });
 
   it('jumps from the equivalence count in the summary to the section', async () => {

@@ -265,6 +265,7 @@ export function CurriculumMap({
         creditsDefined={creditsDefined}
         audience={audience}
         onViewEnrollment={onViewEnrollment}
+        getReturnFocusTarget={() => cardRefs.current.get(selectedId)}
         open={panelOpen && selectedSubject != null}
         onOpenChange={setPanelOpen}
         onCloseAutoFocus={(event) => {

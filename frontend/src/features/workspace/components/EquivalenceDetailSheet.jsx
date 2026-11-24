@@ -6,6 +6,7 @@ import { EquivalenceChip } from '@/features/workspace/components/EquivalenceChip
 import { EquivalenceStatusPill } from '@/features/workspace/components/EquivalenceStatusPill';
 import { equivalenceTitle } from '@/features/workspace/lib/subjectEquivalences';
 import { formatFinalScore } from '@/features/workspace/lib/curriculumPlan';
+import { useEquivalenceActions } from '@/features/workspace/hooks/EquivalenceActionsContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { formatDate, formatDateTime } from '@/lib/billing';
 
@@ -25,7 +26,8 @@ function DetailSection({ title, rows }) {
   );
 }
 
-function EquivalenceDetailContent({ equivalence }) {
+function EquivalenceDetailContent({ equivalence, onRequestVoid }) {
+  const actions = useEquivalenceActions();
   const voided = equivalence.status === 'VOIDED';
   const originRows = [
     ['Institución', equivalence.originInstitution],
@@ -55,11 +57,30 @@ function EquivalenceDetailContent({ equivalence }) {
       <DetailSection title="Origen" rows={originRows} />
       <DetailSection title="Carga" rows={recordedRows} />
       {voided && <DetailSection title="Anulación" rows={voidedRows} />}
+      {!voided && actions?.visible && (
+        <div className="flex flex-col items-start gap-1">
+          <Button
+            type="button"
+            variant="destructive"
+            className="min-h-11"
+            disabled={!actions.canVoid}
+            aria-describedby={actions.canVoid ? undefined : 'equivalence-void-denied'}
+            onClick={() => onRequestVoid(equivalence)}
+          >
+            Anular equivalencia
+          </Button>
+          {!actions.canVoid && (
+            <span id="equivalence-void-denied" className="text-size-12 text-ink-soft">
+              {actions.voidDeniedReason}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-export function EquivalenceDetailSheet({ equivalence, open, onOpenChange, onCloseAutoFocus }) {
+export function EquivalenceDetailSheet({ equivalence, open, onOpenChange, onCloseAutoFocus, onRequestVoid }) {
   const compact = useMediaQuery('(max-width: 767px)');
   if (!equivalence) return null;
   const facts = [equivalence.subjectCode, equivalence.credits != null ? `${equivalence.credits} cr.` : null].filter(Boolean);
@@ -82,7 +103,7 @@ export function EquivalenceDetailSheet({ equivalence, open, onOpenChange, onClos
             <span className="sr-only">Cerrar</span>
           </Button>
         </SheetClose>
-        <EquivalenceDetailContent equivalence={equivalence} />
+        <EquivalenceDetailContent equivalence={equivalence} onRequestVoid={onRequestVoid} />
       </SheetContent>
     </Sheet>
   );
