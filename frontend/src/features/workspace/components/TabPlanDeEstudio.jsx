@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption } from '@/components/ui/table';
 import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
+import { CurriculumMap } from '@/features/workspace/components/CurriculumMap';
+import { PlanViewSwitch } from '@/features/workspace/components/PlanViewSwitch';
 import { PlanStatusFilter } from '@/features/workspace/components/PlanStatusFilter';
 import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
 import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPills';
@@ -89,6 +91,7 @@ export function TabPlanDeEstudio({ carreraId }) {
   const compact = useMediaQuery('(max-width: 767px)');
   const [searchParams, setSearchParams] = useSearchParams();
   const statusFilter = normalizeStatusFilter(searchParams.get('estado'));
+  const view = searchParams.get('vista') === 'mapa' ? 'mapa' : 'lista';
   const { data: progress, isLoading, isError, error, refetch } = useCurriculumProgress(carreraId);
 
   const rows = useMemo(() => buildPlanRows(progress?.subjects, progress?.summary.requiredCredits > 0), [progress]);
@@ -97,6 +100,11 @@ export function TabPlanDeEstudio({ carreraId }) {
   function changeStatusFilter(next) {
     if (next === 'todas') searchParams.delete('estado');
     else searchParams.set('estado', next);
+    setSearchParams(searchParams, { replace: true });
+  }
+
+  function changeView(next) {
+    searchParams.set('vista', next);
     setSearchParams(searchParams, { replace: true });
   }
 
@@ -119,14 +127,36 @@ export function TabPlanDeEstudio({ carreraId }) {
     <div className="flex flex-1 flex-col gap-5">
       <GraduationProjectionCard carreraId={carreraId} />
       {progress && <PlanWarnings warnings={progress.warnings} />}
-      <ul aria-label="Referencia de estados" className="flex flex-wrap gap-1.5">
-        {Object.keys(PLAN_STATUS_PILL).map((status) => (
-          <li key={status}>
-            <PlanStatusPill status={status} />
-          </li>
-        ))}
-      </ul>
-      {compact ? (
+      <PlanViewSwitch value={view} onChange={changeView} />
+      {view === 'lista' && (
+        <ul aria-label="Referencia de estados" className="flex flex-wrap gap-1.5">
+          {Object.keys(PLAN_STATUS_PILL).map((status) => (
+            <li key={status}>
+              <PlanStatusPill status={status} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {view === 'mapa' ? (
+        isLoading ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
+          </div>
+        ) : isError ? (
+          <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare distinguishForbidden />
+        ) : rows.length === 0 ? (
+          <EmptyState title="El plan todavía no tiene materias" description="Cuando se carguen las vas a ver acá." />
+        ) : (
+          <CurriculumMap
+            subjects={progress.subjects}
+            statusFilter={statusFilter}
+            onStatusFilterChange={changeStatusFilter}
+            creditsDefined={progress.summary.requiredCredits > 0}
+          />
+        )
+      ) : compact ? (
         <div className="flex flex-col gap-2.5">
           <PlanStatusFilter value={statusFilter} onChange={changeStatusFilter} className="w-full" />
           {isLoading ? (
