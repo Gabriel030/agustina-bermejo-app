@@ -5,11 +5,11 @@ import { describeError } from '@/api/describeError';
 import { validateLogoFile } from '@/features/graduation/certificates/lib/certificateTemplate';
 import { useTemplateImageUrl, useUploadTemplateLogo } from '@/features/graduation/certificates/hooks/useCertificateTemplate';
 
-export function TemplateLogoField({ kind, logoImageId, readOnly, onChange }) {
+export function TemplateLogoField({ templateKey, logoImageId, readOnly, onChange }) {
   const inputRef = useRef(null);
   const [error, setError] = useState(null);
-  const upload = useUploadTemplateLogo(kind);
-  const imageUrl = useTemplateImageUrl(kind, logoImageId);
+  const upload = useUploadTemplateLogo(templateKey);
+  const imageUrl = useTemplateImageUrl(templateKey, logoImageId);
   const hasLogo = logoImageId != null;
 
   async function handleFile(event) {
@@ -56,11 +56,11 @@ export function TemplateLogoField({ kind, logoImageId, readOnly, onChange }) {
                 tabIndex={-1}
                 onChange={handleFile}
               />
-              <Button type="button" variant="outline" size="sm" loading={upload.isPending} onClick={() => inputRef.current?.click()}>
+              <Button type="button" variant="outline" size="sm" className="min-h-11 md:min-h-7" loading={upload.isPending} onClick={() => inputRef.current?.click()}>
                 {hasLogo ? 'Reemplazar logo' : 'Subir logo'}
               </Button>
               {hasLogo && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => {
+                <Button type="button" variant="ghost" size="sm" className="min-h-11 md:min-h-7" onClick={() => {
                     setError(null);
                     onChange(null);
                   }}>

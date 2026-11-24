@@ -13,6 +13,13 @@ describe('LoadErrorState', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it('makes the retry button a touch target on mobile without changing desktop', () => {
+    renderWithProviders(<LoadErrorState error={{ status: 500 }} onRetry={vi.fn()} />);
+    const retry = screen.getByRole('button', { name: 'Reintentar' });
+    expect(retry).toHaveClass('min-h-11');
+    expect(retry).toHaveClass('md:min-h-0');
+  });
+
   it('shows not found with a back link and no retry on 404', () => {
     renderWithProviders(
       <LoadErrorState error={{ status: 404 }} onRetry={vi.fn()} backTo="/volver" backLabel="la lista" />,

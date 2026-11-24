@@ -74,6 +74,10 @@ describe('Caddyfile security headers', () => {
     expect(cspDirective('style-src')).toContain("'unsafe-inline'");
   });
 
+  it('keepsConnectSrcWithoutAnyMonitoringProviderHostBecauseTheTunnelIsSameOrigin', () => {
+    expect(cspDirective('connect-src')).toEqual(["'self'", 'https://accounts.google.com/gsi/']);
+  });
+
   it('neverAllowsWildcardOrInsecureSources', () => {
     const policy = headerValue('Content-Security-Policy');
     expect(policy).not.toMatch(/(^|\s)\*(\s|;|$)/);

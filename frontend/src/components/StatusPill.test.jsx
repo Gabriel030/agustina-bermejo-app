@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { Check } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 import { StatusPill } from './StatusPill';
 
@@ -19,5 +20,18 @@ describe('StatusPill', () => {
       </StatusPill>,
     );
     expect(container.querySelectorAll('span span')).toHaveLength(1);
+  });
+
+  it('renders a decorative icon before the text only when given', () => {
+    const { container, rerender } = render(<StatusPill tone="success">Activo</StatusPill>);
+    expect(container.querySelector('svg')).toBeNull();
+    rerender(
+      <StatusPill tone="success" icon={Check}>
+        Activo
+      </StatusPill>,
+    );
+    const icon = container.querySelector('svg');
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('Activo')).toBeInTheDocument();
   });
 });

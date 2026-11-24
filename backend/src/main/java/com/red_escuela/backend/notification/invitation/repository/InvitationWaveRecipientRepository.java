@@ -65,4 +65,10 @@ public interface InvitationWaveRecipientRepository extends JpaRepository<Invitat
     @Query("select distinct r.personId from InvitationWaveRecipient r where r.personId in :personIds and r.status in :openStatuses")
     List<Long> findPersonIdsWithOpenInvitation(@Param("personIds") Collection<Long> personIds,
                                                @Param("openStatuses") Collection<InvitationRecipientStatus> openStatuses);
+
+    @Query("select r.id from InvitationWaveRecipient r where r.waveId = :waveId and r.status in :statuses order by r.id asc")
+    List<Long> findIdsByWaveIdAndStatusIn(@Param("waveId") Long waveId, @Param("statuses") Collection<InvitationRecipientStatus> statuses, Pageable pageable);
+
+    @Query("select max(r.sentAt) from InvitationWaveRecipient r where r.waveId = :waveId")
+    Optional<Instant> findLastSentAt(@Param("waveId") Long waveId);
 }

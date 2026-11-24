@@ -11,7 +11,7 @@ git fetch origin
 git checkout -b feature/<slug> origin/develop
 ```
 
-Prefijos: `feature/`, `fix/`, `refactor/`, `docs/` (siempre desde `origin/develop`), `release/<version>` (desde `develop`, PR contra `master`) y `hotfix/<slug>` (desde `origin/master`, PR contra `master`). Nunca trabajar parado en `develop`/`master`.
+Prefijos: `feature/`, `fix/`, `refactor/`, `docs/` (siempre desde `origin/develop`), `release/<n>-rc` (desde un SHA verde de `develop`, PR contra `master`; ver skill `cell-release`) y `hotfix/<slug>` (desde `origin/master`, PR contra `master`). Nunca trabajar parado en `develop`/`master`.
 
 **Sesiones concurrentes:** puede haber otras sesiones de Claude en worktrees (`.claude/worktrees/`). Antes de tocar una rama o commitear: `git worktree list`, `git status`, `git log origin/<rama>..`. Si otra sesión ya pusheó lo mismo, verificar y no rehacer. Nunca `git stash` sin etiqueta única (el stash es compartido).
 
@@ -52,7 +52,7 @@ Reglas:
 
 ## 4. Migraciones Flyway (fuente de colisiones)
 
-Ya chocaron dos veces (V59, V60) y una rompió el CI de todo `develop`. Antes de crear o renombrar una migración:
+Ya chocaron dos veces (V59, V60) y una rompió el CI de todo `develop`. Antes de crear o renombrar una migración, `scripts/next-migration.sh` imprime el próximo número libre y `scripts/next-migration.sh --check <n>` lo valida. Además:
 
 ```bash
 git fetch origin
@@ -72,7 +72,7 @@ Revisar también los PRs abiertos que agreguen migraciones (`gh pr list --state 
 ## 6. Releases, hotfixes y Backport
 
 Claude puede abrir PRs contra `master`. Cadencia obligatoria de releases: con 15 PRs mergeados a `develop` desde el último release, o al cierre de cada jornada si hay al menos 5, o antes de abrir una ventana de migraciones, se abre un PR `release/*` y se prioriza mergearlo para que `develop` y `master` no se acumulen (en el release de noviembre de 2026 la distancia llegó a 1.909 commits y 63 migraciones). Cada release corre antes el smoke de migración (`docs/release/migration-smoke.md`). Hay dos caminos:
-- **Release (develop → master):** rama `release/<version>` cortada desde `origin/develop`, PR contra `master`. No hay PR automático develop → master.
+- **Release (develop → master):** rama `release/<n>-rc` cortada en un SHA verde de `develop` con `git push origin <sha>:refs/heads/release/<n>-rc` (nunca con la herramienta de GitHub de crear rama, que corta desde la punta), PR contra `master`. Procedimiento completo en la skill `cell-release`. No hay PR automático develop → master.
 - **Hotfix (urgente, solo master):** rama `hotfix/<slug>` cortada desde `origin/master`, PR contra `master` (con CI local previo, como cualquier PR).
 
 **Backport automático master → develop:** `.github/workflows/backport.yml` se dispara en cada push a `master` y decide por el **nombre de la rama del PR mergeado** (los merges a `master` son squash, así que comparar historias no sirve):
