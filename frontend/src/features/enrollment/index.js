@@ -17,6 +17,7 @@ export {
   useCurriculumProgressFor,
   useGraduationProjectionFor,
 } from './hooks/useCurriculumProgress';
+export { useSubjectEquivalences } from './hooks/useSubjectEquivalences';
 export { useProgresoStaff } from './hooks/useProgramProgress';
 export { useExcepcionesPendientes } from './hooks/useExceptionApprovals';
 export { useMisSolicitudesCarrera } from './hooks/useCatalogo';

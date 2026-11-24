@@ -102,7 +102,7 @@ function PlanRowCells({ row }) {
   );
 }
 
-export function TabPlanDeEstudio({ carreraId, audience = 'student', onViewEnrollment }) {
+export function TabPlanDeEstudio({ carreraId, audience = 'student', onViewEnrollment, equivalencesAnchorId }) {
   const compact = useMediaQuery('(max-width: 767px)');
   const [searchParams, setSearchParams] = useSearchParams();
   const statusFilter = normalizeStatusFilter(searchParams.get('estado'));
@@ -142,7 +142,7 @@ export function TabPlanDeEstudio({ carreraId, audience = 'student', onViewEnroll
   return (
     <div className="flex flex-1 flex-col gap-5">
       {view === 'mapa' && progress && (
-        <CurriculumSummaryBar audience={audience} summary={progress.summary} />
+        <CurriculumSummaryBar audience={audience} summary={progress.summary} equivalencesAnchorId={equivalencesAnchorId} />
       )}
       <GraduationProjectionCard audience={audience} carreraId={carreraId} collapsible={view === 'mapa'} />
       {progress && <PlanWarnings warnings={progress.warnings} audience={audience} />}

@@ -26,7 +26,15 @@ function formatPercent(value) {
   return `${Math.round(Number(value) || 0)} %`;
 }
 
-export function CurriculumSummaryBar({ summary, audience = 'student' }) {
+function focusEquivalencesSection(event, anchorId) {
+  const section = document.getElementById(anchorId);
+  if (!section) return;
+  event.preventDefault();
+  section.scrollIntoView?.({ block: 'start' });
+  section.focus();
+}
+
+export function CurriculumSummaryBar({ summary, audience = 'student', equivalencesAnchorId }) {
   const { creditsDefined, mandatoryPercent, headlinePercent } = computeProgress(summary);
 
   return (
@@ -55,7 +63,20 @@ export function CurriculumSummaryBar({ summary, audience = 'student' }) {
         <div className="flex items-center gap-1.5 text-size-13 text-ink-soft">
           <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden="true" />
           <span>
+            {equivalencesAnchorId ? 'Incluye ' : ''}
             <span className="tabular-nums">{summary.approvedByEquivalence}</span> por equivalencia
+            {equivalencesAnchorId && (
+              <>
+                ,{' '}
+                <a
+                  href={`#${equivalencesAnchorId}`}
+                  onClick={(event) => focusEquivalencesSection(event, equivalencesAnchorId)}
+                  className="font-semibold text-brand underline underline-offset-2"
+                >
+                  ver
+                </a>
+              </>
+            )}
           </span>
         </div>
       )}
