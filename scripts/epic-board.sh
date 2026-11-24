@@ -66,7 +66,7 @@ render_epics() {
     "### 3. Épica desconocida",
     table(["PR", "Etiqueta", "Título"];
       [ $prs[] | . as $p | $p.epics[] | select(. as $id | $known | index($id) | not)
-        | ["[#\($p.number)](\($p.url))", "`epic:\(.)`", ($p.title | esc)] ];
+        | ["[#\($p.number)](\($p.url))", ("epic:" + . | esc), ($p.title | esc)] ];
       "_Ninguno._")
   '
 }
