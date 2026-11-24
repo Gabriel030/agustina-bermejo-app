@@ -346,7 +346,9 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 scenario.enrollment().getId(), new CreateSectionEnrollmentRequest(scenario.section().getId())))
-                .isInstanceOf(PrerequisiteNotMetException.class);
+                .isInstanceOf(PrerequisiteNotMetException.class)
+                .hasMessageContaining("CorrelativaNotaMinimaBajo")
+                .hasMessageContaining("(nota mínima 6, tu nota 5)");
     }
 
     @Test
