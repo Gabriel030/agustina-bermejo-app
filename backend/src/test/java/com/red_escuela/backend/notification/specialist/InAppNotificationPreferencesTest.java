@@ -31,7 +31,9 @@ class InAppNotificationPreferencesTest {
             NotificationType.EXAM_BOARD_RESCHEDULED, NotificationType.EXAM_BOARD_CANCELED,
             NotificationType.GRADES_PUBLISHED, NotificationType.GRADE_CORRECTED,
             NotificationType.COURSE_WAITLIST_EXPIRED, NotificationType.PROGRAM_APPLICATION_APPROVED,
-            NotificationType.COLLECTION_REMINDER, NotificationType.HOLIDAYS_MISSING_FOR_NEXT_YEAR);
+            NotificationType.COLLECTION_REMINDER, NotificationType.HOLIDAYS_MISSING_FOR_NEXT_YEAR,
+            NotificationType.WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP, NotificationType.WAITLIST_EXPIRING_SOON,
+            NotificationType.WAITLIST_REMOVED_BY_STAFF, NotificationType.WAITLIST_ENTRY_EXPIRED);
 
     private final NotificationRepository repository = mock(NotificationRepository.class);
     private final NotificationPreferenceFinder finder = mock(NotificationPreferenceFinder.class);
@@ -68,6 +70,10 @@ class InAppNotificationPreferencesTest {
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.EXAM_BOARD_CANCELED)).contains(NotificationEvent.EXAM_BOARD_REGISTERED);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.COURSE_WAITLIST_EXPIRED)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.PROGRAM_APPLICATION_APPROVED)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
+        assertThat(UserPreferenceEventResolver.resolve(NotificationType.WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
+        assertThat(UserPreferenceEventResolver.resolve(NotificationType.WAITLIST_EXPIRING_SOON)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
+        assertThat(UserPreferenceEventResolver.resolve(NotificationType.WAITLIST_REMOVED_BY_STAFF)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
+        assertThat(UserPreferenceEventResolver.resolve(NotificationType.WAITLIST_ENTRY_EXPIRED)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.COLLECTION_REMINDER)).contains(NotificationEvent.PAYMENT_DUE_SOON);
     }
 

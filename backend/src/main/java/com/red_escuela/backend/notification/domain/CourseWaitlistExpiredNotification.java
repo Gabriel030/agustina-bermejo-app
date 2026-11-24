@@ -14,7 +14,7 @@ public record CourseWaitlistExpiredNotification(Long enrollmentId, Person studen
     @Override
     public String message() {
         return "No conseguiste lugar en " + courseName
-                + " antes del cierre de la lista de espera — tu inscripción se canceló y el pago se reembolsará.";
+                + " antes del cierre de la lista de espera — tu inscripción se canceló. La institución te contactará por tu pago.";
     }
 
     @Override
