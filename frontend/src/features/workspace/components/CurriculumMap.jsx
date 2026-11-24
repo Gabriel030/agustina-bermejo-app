@@ -3,15 +3,18 @@ import { ListFilter } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { ChoiceChip } from '@/components/ChoiceChip';
 import { Button } from '@/components/ui/button';
+import { CurriculumYearAccordion } from '@/features/workspace/components/CurriculumYearAccordion';
 import { MapSubjectCard } from '@/features/workspace/components/MapSubjectCard';
 import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPills';
 import {
   ELECTIVES_SECTION_KEY,
   buildCurriculumSections,
+  getDefaultOpenYear,
   countSubjectsByStatus,
   filterSubjectsByStatus,
 } from '@/features/workspace/lib/curriculumMap';
 import { PLAN_STATUS_FILTER_OPTIONS, STATUS_FILTER_TO_PLAN_STATUS } from '@/features/workspace/lib/curriculumPlan';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 
 const SCROLLING_YEARS_THRESHOLD = 3;
@@ -42,14 +45,16 @@ function MapStatusChips({ subjects, value, onChange }) {
   );
 }
 
-function MapSection({ section, creditsDefined, selectedId, onSelect }) {
-  const headingId = `curriculum-map-${section.key}`;
+function MapSection({ section, creditsDefined, selectedId, onSelect, compact, open, onToggle }) {
   const title = section.key === ELECTIVES_SECTION_KEY ? 'Electivas' : `${section.year}° año`;
   return (
-    <section aria-labelledby={headingId} className="flex min-w-0 flex-col gap-2.5">
-      <h2 id={headingId} className="text-size-11 font-bold tracking-wide text-ink-faint uppercase">
-        {title}
-      </h2>
+    <CurriculumYearAccordion
+      sectionKey={section.key}
+      title={title}
+      compact={compact}
+      open={open}
+      onToggle={onToggle}
+    >
       <ul className="flex flex-col gap-2.5">
         {section.subjects.map((subject) => (
           <li key={subject.programSubjectId}>
@@ -62,7 +67,7 @@ function MapSection({ section, creditsDefined, selectedId, onSelect }) {
           </li>
         ))}
       </ul>
-    </section>
+    </CurriculumYearAccordion>
   );
 }
 
@@ -73,12 +78,23 @@ export function CurriculumMap({
   creditsDefined = true,
   audience = 'student',
 }) {
+  const compact = useMediaQuery('(max-width: 767px)');
   const [selectedId, setSelectedId] = useState(null);
+  const [openOverrides, setOpenOverrides] = useState({});
   const visibleSubjects = useMemo(() => filterSubjectsByStatus(subjects, statusFilter), [subjects, statusFilter]);
   const sections = useMemo(() => buildCurriculumSections(visibleSubjects), [visibleSubjects]);
   const yearSections = sections.filter((section) => section.key !== ELECTIVES_SECTION_KEY);
   const electivesSection = sections.find((section) => section.key === ELECTIVES_SECTION_KEY);
+  const defaultOpenYear = getDefaultOpenYear(sections);
   const scrolls = yearSections.length > SCROLLING_YEARS_THRESHOLD;
+
+  function isSectionOpen(section) {
+    return openOverrides[section.key] ?? section.year === defaultOpenYear;
+  }
+
+  function toggleSection(section) {
+    setOpenOverrides((current) => ({ ...current, [section.key]: !isSectionOpen(section) }));
+  }
 
   function toggleSelection(programSubjectId) {
     setSelectedId((current) => (current === programSubjectId ? null : programSubjectId));
@@ -123,6 +139,9 @@ export function CurriculumMap({
                     creditsDefined={creditsDefined}
                     selectedId={selectedId}
                     onSelect={toggleSelection}
+                    compact={compact}
+                    open={isSectionOpen(section)}
+                    onToggle={() => toggleSection(section)}
                   />
                 ))}
               </div>
@@ -135,6 +154,9 @@ export function CurriculumMap({
                 creditsDefined={creditsDefined}
                 selectedId={selectedId}
                 onSelect={toggleSelection}
+                compact={compact}
+                open={isSectionOpen(electivesSection)}
+                onToggle={() => toggleSection(electivesSection)}
               />
             </div>
           )}
