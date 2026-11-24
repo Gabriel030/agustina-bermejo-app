@@ -21,6 +21,7 @@ function batch(overrides = {}) {
     validatedAt: STAMP,
     committedAt: STAMP,
     sealedAt: STAMP,
+    graduationsPendingReview: 0,
     files: [],
     counters: [],
     ...overrides,

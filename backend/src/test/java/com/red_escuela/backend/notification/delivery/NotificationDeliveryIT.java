@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.delivery;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.platform.api.BillingNotificationsPolicy;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
@@ -519,7 +520,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
         assertThatThrownBy(() -> jdbc.update(insert, uniqueKey(), "EMAIL", student.getId(), "SENT", null, null))
                 .isInstanceOf(DataIntegrityViolationException.class);
-        assertThatThrownBy(() -> jdbc.update(insert, uniqueKey(), "IN_APP", student.getId(), "SENT_SIMULATED", null, java.sql.Timestamp.from(java.time.Instant.now())))
+        assertThatThrownBy(() -> jdbc.update(insert, uniqueKey(), "IN_APP", student.getId(), "SENT_SIMULATED", null, java.sql.Timestamp.from(java.time.Instant.now(MutableClock.INSTANCE))))
                 .isInstanceOf(DataIntegrityViolationException.class);
         assertThatCode(() -> jdbc.update(insert, uniqueKey(), "EMAIL", student.getId(), "SUPPRESSED", "OPTED_OUT", null)).doesNotThrowAnyException();
     }

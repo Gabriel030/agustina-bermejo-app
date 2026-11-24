@@ -18,6 +18,9 @@ public interface ImportCreatedEntityRepository extends JpaRepository<ImportCreat
 
     List<ImportCreatedEntity> findByBatchIdOrderByIdDesc(Long batchId);
 
+    @Query("select c.entityId from ImportCreatedEntity c where c.batchId = :batchId and c.entityType = :entityType order by c.entityId")
+    List<Long> findEntityIdsByBatchIdAndEntityType(@Param("batchId") Long batchId, @Param("entityType") ImportEntityType entityType);
+
     @Query("""
             select new com.red_escuela.backend.dataimport.repository.ImportCreatedCount(c.entityType, count(c))
             from ImportCreatedEntity c where c.batchId = :batchId and c.naturalKey not like '%|' group by c.entityType
