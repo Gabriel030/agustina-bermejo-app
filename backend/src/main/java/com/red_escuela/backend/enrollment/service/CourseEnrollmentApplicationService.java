@@ -6,7 +6,9 @@ import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
 import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
@@ -75,11 +77,7 @@ public class CourseEnrollmentApplicationService {
             throw new PendingCourseEnrollmentApplicationException(studentId, course.getId());
         }
 
-        Invoice invoice = switch (invoiceIssuingService.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createCourseAdmissionRequest(studentId, course, LocalDate.now(clock)))) {
-            case InvoiceIssuingResult.InvoiceIssued issued -> issued.invoice();
-            case InvoiceIssuingResult.InvoiceIssuingRejected rejected -> throw new ChargeRejectedException(rejected.evaluationResult());
-            case InvoiceIssuingResult.InvoiceAlreadyIssued duplicated -> throw new com.red_escuela.backend.billing.exception.DuplicateChargeException("course admission");
-        };
+        Invoice invoice = issueCourseAdmissionInvoice(studentId, course);
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(student);
         application.setCourse(course);
@@ -98,6 +96,32 @@ public class CourseEnrollmentApplicationService {
         courseEnrollmentApplicationRepository.linkPaymentReceipt(saved.getId(), receiptId);
         entityManager.refresh(saved);
         return saved;
+    }
+
+    @Transactional
+    public CourseEnrollment enrollByStaff(Long studentId, CreateCourseEnrollmentRequest request) {
+        CourseEnrollment enrollment = courseEnrollmentService.enroll(studentId, request);
+        if (enrollment.getStatus() != EnrollmentStatus.WAITLISTED) {
+            return enrollment;
+        }
+        Course course = enrollment.getCourse();
+        Long invoiceId = issueCourseAdmissionInvoice(studentId, course).getId();
+        CourseEnrollmentApplication application = new CourseEnrollmentApplication();
+        application.setStudent(enrollment.getStudent());
+        application.setCourse(course);
+        application.setSectionOverrides(serializeOverrides(request.sectionOverrides()));
+        application.setInvoiceId(invoiceId);
+        application.setCourseEnrollment(enrollment);
+        courseEnrollmentApplicationRepository.save(application);
+        return enrollment;
+    }
+
+    private Invoice issueCourseAdmissionInvoice(Long studentId, Course course) {
+        return switch (invoiceIssuingService.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createCourseAdmissionRequest(studentId, course, LocalDate.now(clock)))) {
+            case InvoiceIssuingResult.InvoiceIssued issued -> issued.invoice();
+            case InvoiceIssuingResult.InvoiceIssuingRejected rejected -> throw new ChargeRejectedException(rejected.evaluationResult());
+            case InvoiceIssuingResult.InvoiceAlreadyIssued duplicated -> throw new com.red_escuela.backend.billing.exception.DuplicateChargeException("course admission");
+        };
     }
 
     public List<CourseEnrollmentApplication> listMine(Long studentId) {
