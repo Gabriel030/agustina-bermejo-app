@@ -47,6 +47,29 @@ export default defineConfig(({ mode }) => ({
         return html.replace(/<script>[\s\S]*?<\/script>/, '<script src="/theme-init.js"></script>')
       },
     },
+    {
+      name: 'msw-contract-in-browser',
+      enforce: 'pre',
+      resolveId(source) {
+        if (loadEnv(mode, '.', 'VITE_').VITE_ENABLE_MSW !== 'true') return null
+        if (!/(^|\/)loadContract(\.js)?$/.test(source)) return null
+        return fileURLToPath(new URL('./src/mocks/loadContractInBrowser.js', import.meta.url))
+      },
+    },
+    {
+      name: 'msw-worker-script',
+      configureServer(server) {
+        if (loadEnv(mode, '.', 'VITE_').VITE_ENABLE_MSW !== 'true') return
+        server.middlewares.use('/mockServiceWorker.js', (_request, response) => {
+          response.setHeader('Content-Type', 'text/javascript')
+          response.end(readFileSync('node_modules/msw/lib/mockServiceWorker.js'))
+        })
+      },
+      generateBundle() {
+        if (loadEnv(mode, '.', 'VITE_').VITE_ENABLE_MSW !== 'true') return
+        this.emitFile({ type: 'asset', fileName: 'mockServiceWorker.js', source: readFileSync('node_modules/msw/lib/mockServiceWorker.js') })
+      },
+    },
     react(),
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),

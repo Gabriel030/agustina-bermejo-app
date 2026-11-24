@@ -26,12 +26,20 @@ captureInstallPrompt()
 
 preloadPageForPath(window.location.pathname)
 
-if (import.meta.env.PROD) {
+if (import.meta.env.PROD && import.meta.env.VITE_ENABLE_MSW !== 'true') {
   window.addEventListener('load', () => registerServiceWorker().catch((error) => reportClientError(error, { scope: 'service-worker' })))
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+async function bootstrap() {
+  if (import.meta.env.VITE_ENABLE_MSW === 'true') {
+    const { enableBrowserMocking } = await import('@/mocks/enableBrowserMocking')
+    await enableBrowserMocking()
+  }
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+}
+
+bootstrap()
