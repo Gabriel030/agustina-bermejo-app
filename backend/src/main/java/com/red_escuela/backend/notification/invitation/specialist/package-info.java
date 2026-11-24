@@ -1,7 +1,7 @@
 /**
  * <b>Qué es</b>: compositores transaccionales y colaboradores de la oleada: escaneo de candidatos, creación, ciclo de vida y lectura.
  *
- * <p><b>Expone</b>: {@code CreateInvitationWaveTransaction}, {@code InvitationWaveLifecycleTransaction}, {@code InvitationWaveReader}, {@code InvitationWaveCandidateScanner}, {@code InvitationWaveSettings}, {@code InvitationRecipientSendTransaction} (envío a un destinatario), {@code InvitationFailedRetryTransaction}.
+ * <p><b>Expone</b>: {@code CreateInvitationWaveTransaction}, {@code InvitationWaveLifecycleTransaction}, {@code InvitationWaveReader}, {@code InvitationWaveCandidateScanner}, {@code InvitationWaveSettings}, {@code InvitationRecipientSendTransaction} (envío a un destinatario), {@code InvitationFailedRetryTransaction}, {@code InvitationWaveDispatchJob} (job @Scheduled con lock que despacha las oleadas RUNNING).
  *
  * <p><b>No hacer</b>: depender de {@code usecase}; usar repositorios o entidades de otro módulo; guardar el token de activación en claro: solo vive en memoria durante el envío.
  *

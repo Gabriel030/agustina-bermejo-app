@@ -150,6 +150,15 @@ public final class ArchitectureRules {
                 .because("a cancellation reaches an invoice only through the CANCEL_INVOICE operation or the late fee correction issuer, which keeps the charge key");
     }
 
+    public static ArchRule approvedSubjectsAreReadOnlyThroughTheApprovalLookup() {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(ROOT + ".enrollment.api.SubjectApprovalLookup")
+                .should().callMethodWhere(target(owner(assignableTo(ROOT + ".enrollment.repository.SubjectSectionEnrollmentRepository")))
+                        .and(target(name("findCurriculumProgressRows")).or(target(name("findPrerequisiteStatusRows")))))
+                .allowEmptyShould(true)
+                .because("a subject counts as approved by coursework or by equivalence, and only SubjectApprovalLookup unifies both");
+    }
+
     public static ArchRule lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation() {
         return noClasses()
                 .that().doNotHaveFullyQualifiedName(ROOT + ".billing.collections.operation.LateFeeCorrectionCreditNoteOperation")

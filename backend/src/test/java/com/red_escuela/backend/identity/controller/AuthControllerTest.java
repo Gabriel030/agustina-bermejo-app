@@ -2,7 +2,6 @@ package com.red_escuela.backend.identity.controller;
 
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.identity.dto.AuthResponse;
 import com.red_escuela.backend.identity.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.identity.dto.LoginRequest;
 import com.red_escuela.backend.identity.dto.LogoutRequest;
@@ -70,7 +69,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(new LoginRequest("controller1", "correcta123"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(jsonPath("$.expiresIn").isNumber());
     }
 
@@ -99,26 +98,26 @@ class AuthControllerTest extends AbstractIntegrationTest {
         String loginBody = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("controller3", "correcta123"))))
-                .andReturn().getResponse().getContentAsString();
-        AuthResponse original = objectMapper.readValue(loginBody, AuthResponse.class);
+                .andReturn().getResponse().getHeader("Set-Cookie");
+        String original = loginBody.substring(loginBody.indexOf('=') + 1, loginBody.indexOf(';'));
 
         mockMvc.perform(post("/auth/refresh")
                         .header("User-Agent", "test-browser")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
+                        .content(objectMapper.writeValueAsString(new RefreshRequest(original))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.refreshToken").value(org.hamcrest.Matchers.not(original.refreshToken())));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
 
         mockMvc.perform(post("/auth/refresh")
                         .header("User-Agent", "test-browser")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
+                        .content(objectMapper.writeValueAsString(new RefreshRequest(original))))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/auth/refresh")
                         .header("User-Agent", "test-browser")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
+                        .content(objectMapper.writeValueAsString(new RefreshRequest(original))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -129,17 +128,17 @@ class AuthControllerTest extends AbstractIntegrationTest {
         String loginBody = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("controller4", "correcta123"))))
-                .andReturn().getResponse().getContentAsString();
-        AuthResponse tokens = objectMapper.readValue(loginBody, AuthResponse.class);
+                .andReturn().getResponse().getHeader("Set-Cookie");
+        String tokens = loginBody.substring(loginBody.indexOf('=') + 1, loginBody.indexOf(';'));
 
         mockMvc.perform(post("/auth/logout")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new LogoutRequest(tokens.refreshToken()))))
+                        .content(objectMapper.writeValueAsString(new LogoutRequest(tokens))))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(post("/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RefreshRequest(tokens.refreshToken()))))
+                        .content(objectMapper.writeValueAsString(new RefreshRequest(tokens))))
                 .andExpect(status().isUnauthorized());
     }
 

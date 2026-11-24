@@ -45,7 +45,7 @@ export function ConfirmarResponsable() {
               <p className="text-size-13 text-ink-soft">
                 Gracias. Ya registramos tu confirmación: la persona menor a tu cargo puede usar el sistema.
               </p>
-              <Link to="/login" className="text-size-13 font-semibold text-brand hover:text-accent-2">
+              <Link to="/login" className="text-size-13 font-semibold text-brand">
                 Ir a ingresar
               </Link>
             </>
@@ -59,7 +59,7 @@ export function ConfirmarResponsable() {
               <p role="alert" className="text-size-13 text-ink-soft">
                 {errorMessage}
               </p>
-              <Link to="/login" className="text-size-13 font-semibold text-brand hover:text-accent-2">
+              <Link to="/login" className="text-size-13 font-semibold text-brand">
                 Ir a ingresar
               </Link>
             </>

@@ -41,7 +41,7 @@ export function SeccionMensaje({ valores, onChange, mostrarHintPrivacidad, alcan
           onClick={() => onChange({ ...valores, urgent: !valores.urgent })}
           className={`rounded-xl border px-3.5 py-2 text-size-12-5 font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
             valores.urgent
-              ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-on-accent'
+              ? 'border-transparent bg-brand text-on-accent'
               : 'border-border text-ink-soft hover:border-brand hover:text-ink'
           }`}
         >
@@ -84,7 +84,7 @@ export function SeccionMensaje({ valores, onChange, mostrarHintPrivacidad, alcan
 
       {mostrarHintPrivacidad && (
         <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-2" aria-hidden="true" />
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" aria-hidden="true" />
           <span>{hintDePrivacidad({ alcanzados, programado })}</span>
         </div>
       )}

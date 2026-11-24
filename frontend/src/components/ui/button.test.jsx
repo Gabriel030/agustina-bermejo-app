@@ -6,7 +6,7 @@ describe('Button', () => {
   it('primary variant applies the CTA token classes', () => {
     render(<Button variant="primary">Guardar</Button>);
     expect(screen.getByRole('button', { name: 'Guardar' })).toHaveClass(
-      'bg-(image:--btn-primary-bg)',
+      'bg-(--btn-primary-bg)',
       'rounded-(--r-btn-primary)',
     );
   });
@@ -14,7 +14,7 @@ describe('Button', () => {
   it('retired gradient variant no longer applies the CTA token classes', () => {
     render(<Button variant="gradient">Guardar</Button>);
     const button = screen.getByRole('button', { name: 'Guardar' });
-    expect(button).not.toHaveClass('bg-(image:--btn-primary-bg)');
+    expect(button).not.toHaveClass('bg-(--btn-primary-bg)');
     expect(button).not.toHaveClass('rounded-(--r-btn-primary)');
   });
 

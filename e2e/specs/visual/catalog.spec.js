@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const DESIGNS = ['vl', 'b'];
+const DESIGNS = ['b'];
 const THEMES = ['light', 'dark'];
 const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 900 },
@@ -24,11 +24,10 @@ for (const design of DESIGNS) {
         test.beforeEach(async ({ page }) => {
           await page.route('http://localhost:8080/**', (route) => route.fulfill({ status: 401, json: {} }));
           await page.addInitScript(
-            ([d, t]) => {
-              localStorage.setItem('design', d);
+            ([t]) => {
               localStorage.setItem('tema', t);
             },
-            [design, theme],
+            [theme],
           );
         });
 

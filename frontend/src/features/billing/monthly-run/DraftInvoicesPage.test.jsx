@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -9,6 +9,7 @@ import { installFixedClock } from '@/test/fixedClock';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { DraftInvoicesPage } from './DraftInvoicesPage';
 import { MonthlyRunPage } from './MonthlyRunPage';
+import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
 const API = 'http://localhost:8080';
 const RUNS_URL = `${API}/monthly-invoice-runs`;
@@ -295,5 +296,26 @@ describe('review banner in the monthly run page', () => {
     expect(await screen.findByText('Los borradores de Noviembre 2026 esperan revisión')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Revisar borradores' })).toHaveAttribute('href', '/director/emision-mensual/7/borradores');
     expect(screen.getByText('En revisión')).toBeInTheDocument();
+  });
+});
+
+describe('DraftInvoicesPage on a compact viewport', () => {
+  afterEach(restoreViewport);
+
+  it('keeps one primary action and moves deselect and discard into the more-actions menu', async () => {
+    useCompactViewport();
+    mockDrafts([PROGRAM_GROUP, SEPARATE_GROUP]);
+    const user = userEvent.setup();
+    renderPage();
+
+    await selectGroups(user, 'Tecnicatura en Radiología');
+    const bar = screen.getByRole('region', { name: 'Acciones de la selección' });
+    expect(within(bar).getByRole('button', { name: /Aprobar y emitir 1/ })).toBeEnabled();
+    expect(within(bar).queryByRole('button', { name: 'Descartar seleccionadas' })).not.toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: 'Deseleccionar todo' })).not.toBeInTheDocument();
+
+    await user.click(within(bar).getByRole('button', { name: 'Más acciones' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Descartar seleccionadas' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 });

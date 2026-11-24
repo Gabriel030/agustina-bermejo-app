@@ -76,7 +76,7 @@ export function BajaComunicaciones() {
                   Podés volver a activarlo cuando quieras desde Mi perfil.
                 </p>
               </div>
-              <Link to="/perfil" className="text-size-13 font-semibold text-brand hover:text-accent-2">
+              <Link to="/perfil" className="text-size-13 font-semibold text-brand">
                 Ir a Mi perfil
               </Link>
             </>
@@ -93,7 +93,7 @@ export function BajaComunicaciones() {
                   Si querés cambiar tus preferencias de contacto, entrá a Mi perfil.
                 </p>
               </div>
-              <Link to="/perfil" className="text-size-13 font-semibold text-brand hover:text-accent-2">
+              <Link to="/perfil" className="text-size-13 font-semibold text-brand">
                 Ir a Mi perfil
               </Link>
             </>

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.api;
 
+import com.red_escuela.backend.enrollment.repository.SubjectEquivalenceRepository;
+import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
 import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
@@ -42,10 +44,14 @@ class ProgramPrerequisiteEvaluatorTest {
     private final DirectorApprovalRequestRepository approvalRepository = mock(DirectorApprovalRequestRepository.class);
     private final ProgramCurriculumFinder curriculumFinder = mock(ProgramCurriculumFinder.class);
     private final ProgramPrerequisiteEvaluator evaluator = new ProgramPrerequisiteEvaluator(
-            enrollmentRepository, sectionRepository, approvalRepository, curriculumFinder);
+            enrollmentRepository, new SubjectApprovalLookup(sectionRepository, mock(SubjectEquivalenceRepository.class)),
+            approvalRepository, curriculumFinder);
+
+    private final List<SubjectSectionEnrollmentRepository.PrerequisiteStatusRow> studentRows = new java.util.ArrayList<>();
 
     @BeforeEach
     void setUp() {
+        when(sectionRepository.findPrerequisiteStatusRows(any(), any(), any())).thenReturn(studentRows);
         ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
         Program program = mock(Program.class);
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
@@ -60,13 +66,13 @@ class ProgramPrerequisiteEvaluatorTest {
     }
 
     private void studentHas(Long prerequisiteSubjectId, EnrollmentStatus... statuses) {
-        List<SubjectSectionEnrollment> enrollments = java.util.Arrays.stream(statuses).map(status -> {
-            SubjectSectionEnrollment enrollment = mock(SubjectSectionEnrollment.class);
-            when(enrollment.getStatus()).thenReturn(status);
-            return enrollment;
-        }).toList();
-        when(sectionRepository.findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                eq(ENROLLMENT_ID), eq(prerequisiteSubjectId), any())).thenReturn(enrollments);
+        java.util.Arrays.stream(statuses).map(status -> {
+            SubjectSectionEnrollmentRepository.PrerequisiteStatusRow row = mock(SubjectSectionEnrollmentRepository.PrerequisiteStatusRow.class);
+            when(row.getProgramEnrollmentId()).thenReturn(ENROLLMENT_ID);
+            when(row.getSubjectId()).thenReturn(prerequisiteSubjectId);
+            when(row.getStatus()).thenReturn(status);
+            return row;
+        }).forEach(studentRows::add);
     }
 
     @Test
@@ -104,7 +110,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
         assertThat(evaluator.assess(ENROLLMENT_ID, SUBJECT_ID)).containsExactly(new PrerequisiteAssessment(
                 10L, "Algebra I", RequirementType.APPROVED, PrerequisiteStanding.WAIVED, true));
-        verify(sectionRepository, never()).findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(any(), any(), any());
+        verify(sectionRepository, never()).findPrerequisiteStatusRows(any(), any(), any());
     }
 
     @Test

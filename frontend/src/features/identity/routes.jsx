@@ -1,6 +1,7 @@
 import { Login } from '@/features/identity/pages/Login';
 import { Registrarse } from '@/features/identity/pages/Registrarse';
 import { ForgotPassword } from '@/features/identity/pages/ForgotPassword';
+import { ActivateAccount } from '@/features/identity/pages/ActivateAccount';
 import { VerificacionEmail } from '@/features/identity/pages/VerificacionEmail';
 import { ReviewEmailChangePage } from '@/features/identity/pages/ReviewEmailChangePage';
 import { BajaComunicaciones } from '@/features/identity/pages/BajaComunicaciones';
@@ -20,6 +21,7 @@ export const routes = {
     { path: '/login', element: <Login /> },
     { path: '/registrarse', element: <Registrarse /> },
     { path: '/olvide-mi-contrasena', element: <ForgotPassword /> },
+    { path: '/activar', element: <ActivateAccount /> },
     { path: '/verificar-email', element: <VerificacionEmail /> },
     { path: '/revisar-cambio-email', element: <ReviewEmailChangePage /> },
     { path: '/cancelar-cambio-email', element: <ReviewEmailChangePage mode="cancel" /> },

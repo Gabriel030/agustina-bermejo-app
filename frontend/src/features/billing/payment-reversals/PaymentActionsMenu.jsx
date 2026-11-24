@@ -31,7 +31,7 @@ export function PaymentActionsMenu({ payment, isDirector, onSelect }) {
           <MoreHorizontal aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72 bg-dialog-bg backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)">
+      <DropdownMenuContent align="end" className="w-72 bg-dialog-bg">
         {groups.map((group, index) => (
           <DropdownMenuGroup key={group}>
             {index > 0 && <DropdownMenuSeparator />}

@@ -208,7 +208,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
       )}
 
       <Dialog open={!!diaSeleccionado} onOpenChange={cerrarModal}>
-        <DialogContent className="max-w-sm rounded-xl border border-border bg-surface p-6 text-ink backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)">
+        <DialogContent className="max-w-sm rounded-xl border border-border bg-surface p-6 text-ink">
           <DialogHeader>
             <DialogTitle>{diaSeleccionado?.justificationRejectionReason ? 'Volver a justificar' : 'Justificar inasistencia'}</DialogTitle>
           </DialogHeader>

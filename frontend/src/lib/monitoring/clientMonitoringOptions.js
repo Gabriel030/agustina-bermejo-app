@@ -1,6 +1,6 @@
 import { scrubClientEvent } from './scrubClientEvent';
 
-export function buildClientMonitoringOptions({ dsn, environment, release }) {
+export function buildClientMonitoringOptions({ dsn, environment, release, tunnel }) {
   return {
     dsn,
     environment,
@@ -13,5 +13,6 @@ export function buildClientMonitoringOptions({ dsn, environment, release }) {
     maxBreadcrumbs: 0,
     beforeBreadcrumb: () => null,
     beforeSend: scrubClientEvent,
+    ...(tunnel ? { tunnel } : {}),
   };
 }

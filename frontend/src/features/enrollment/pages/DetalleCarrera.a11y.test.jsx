@@ -24,7 +24,7 @@ function signInAs(roles) {
   localStorage.setItem('refreshToken', 'refresh-1');
   server.use(
     http.post(`${API}/auth/refresh`, () =>
-      HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
+      HttpResponse.json({ accessToken: 'access-1', expiresIn: 900 }),
     ),
     http.get(`${API}/me`, () => HttpResponse.json(profileFixture({ roles }))),
   );

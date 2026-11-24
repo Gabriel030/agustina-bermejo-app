@@ -5,7 +5,7 @@ const MONTH_NAMES = [
 
 export const HOLIDAY_TYPES = [
   { value: 'NATIONAL', label: 'Nacional', chip: 'N', pillClass: 'border-brand bg-accent-soft text-brand', cellClass: 'bg-accent-soft text-brand' },
-  { value: 'PROVINCIAL', label: 'Provincial', chip: 'P', pillClass: 'border-accent-2 bg-accent-soft text-accent-2', cellClass: 'bg-accent-soft text-accent-2' },
+  { value: 'PROVINCIAL', label: 'Provincial', chip: 'P', pillClass: 'border-brand bg-accent-soft text-brand', cellClass: 'bg-accent-soft text-brand' },
   { value: 'MUNICIPAL', label: 'Municipal', chip: 'M', pillClass: 'border-ink-soft bg-accent-soft text-ink-soft', cellClass: 'bg-accent-soft text-ink-soft' },
   { value: 'NON_WORKING_DAY', label: 'Día no laborable', chip: 'A', pillClass: 'border-neutral-ink bg-neutral-bg text-neutral-ink', cellClass: 'bg-neutral-bg text-neutral-ink' },
   { value: 'BRIDGE', label: 'Puente', chip: 'Pu', pillClass: 'border-dashed border-ink-faint bg-transparent text-ink-soft', cellClass: 'border-dashed border-ink-faint bg-transparent text-ink-soft' },

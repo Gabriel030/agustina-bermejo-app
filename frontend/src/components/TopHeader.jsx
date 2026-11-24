@@ -5,7 +5,6 @@ import { NotificationBell } from '@/features/notifications';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
-import { isDesignB } from '@/theme/design';
 import { usePerfilPropio, useAvatar } from '@/features/identity';
 
 function iniciales(nombre, apellido) {
@@ -22,14 +21,13 @@ export function TopHeader({ titulo, items, groups }) {
   const { usuario } = useAuth();
   const { pathname } = useLocation();
   const { canSwitch } = useActiveRole();
-  const designB = isDesignB();
-  const mobileTitle = designB ? pageTitleFor(items, pathname, titulo) : titulo;
+  const mobileTitle = pageTitleFor(items, pathname, titulo);
   const { data: perfil } = usePerfilPropio();
   const { data: avatarUrl } = useAvatar(!!perfil && !!perfil.hasAvatar);
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] shrink-0 design-b:max-w-none">
-      <GlassCard className="design-b:rounded-none design-b:border-0 design-b:border-b px-3 py-3 sm:px-4 sm:design-b:px-8">
+    <div className="mx-auto w-full max-w-none shrink-0">
+      <GlassCard className="rounded-none border-0 border-b px-3 py-3 sm:px-8">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <MobileMenu titulo={titulo} items={items} groups={groups} />
@@ -39,11 +37,11 @@ export function TopHeader({ titulo, items, groups }) {
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             {usuario && (
               <Link to="/perfil" className="flex min-h-11 items-center gap-2.5 rounded-control transition-opacity hover:opacity-80">
-                <div className="h-9 w-9 overflow-hidden rounded-xl design-b:rounded-control">
+                <div className="h-9 w-9 overflow-hidden rounded-control">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-brand font-heading text-size-13 font-bold text-on-accent design-b:bg-none design-b:bg-(color:--accent-soft) design-b:text-(--accent)">
+                    <div className="flex h-full w-full items-center justify-center bg-accent-soft font-heading text-size-13 font-bold text-(--accent)">
                       {iniciales(usuario.nombre, usuario.apellido)}
                     </div>
                   )}
@@ -54,7 +52,7 @@ export function TopHeader({ titulo, items, groups }) {
                   </div>
                   {!canSwitch && <div className="truncate text-size-11 leading-tight text-ink-faint">{titulo}</div>}
                 </div>
-                {designB && <span className="sr-only">Mi cuenta</span>}
+                <span className="sr-only">Mi cuenta</span>
               </Link>
             )}
             <ThemeToggle />
