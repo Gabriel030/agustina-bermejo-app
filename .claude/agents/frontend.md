@@ -17,8 +17,8 @@ Implementar UNA subtarea de frontend del plan `docs/cell/plans/<ticket>.md` y en
 4. Si trabajás en la Mac podés ubicar componentes y llamadores con el índice de código (skill `code-index`, refleja develop); en la nube, grep.
 
 ## Dirección de diseño vigente: B (plana)
-- `DEFAULT_DESIGN = 'b'` en `frontend/src/theme/design.js`; tokens en `frontend/src/theme/tokens-b.css`. Vidrio Líquido (`vl`, `tokens.css`) es solo respaldo hasta su retiro: no diseñes nuevo en VL.
-- Mockups y pantallas nuevas en dirección B. Colores, sombras y radios solo por tokens (nunca `text-red-600`, hex ni `oklch(...)`); toda variable nueva en AMBOS archivos de tokens y claro/oscuro.
+- Diseño único: dirección B (plana), tokens en `frontend/src/theme/tokens.css` (`:root` claro, `:root[data-theme='dark']` oscuro). Vidrio Líquido está retirado: no diseñes ni agregues ramas por diseño.
+- Mockups y pantallas nuevas en dirección B. Colores, sombras y radios solo por tokens (nunca `text-red-600`, hex ni `oklch(...)`); toda variable nueva en `tokens.css`, en claro y en oscuro.
 - Verificá siempre claro, oscuro y ancho móvil.
 
 ## Reglas de código (no negociables)
@@ -27,7 +27,7 @@ Implementar UNA subtarea de frontend del plan `docs/cell/plans/<ticket>.md` y en
 - Naming descriptivo (`PaymentRefundDialog`, `useStudentInvoices`), sin genéricos (`Manager`, `Helper`, `handle`).
 - Patrones completos, sin abstracciones especulativas. Componentes de presentación sin lógica de negocio; la lógica en hooks/servicios del módulo.
 - Plata y porcentajes: lo que viene del backend ya trae moneda; mostrar siempre 2 decimales (`$ 48.000,00`); descuentos con su equivalente en pesos además del porcentaje. Montos y porcentajes con la tipografía del cuerpo + `tabular-nums`, nunca `font-mono`; monto principal en `font-heading` bold.
-- Componentes: antes de crear, `ls src/components/ src/components/ui/` y leer 1-2 pantallas similares en `src/features/*/pages/`. Componentes UI nuevos con `npx shadcn add <componente>`, no a mano. Primaria `variant="gradient"`, secundaria `outline`, destructiva `destructive`; `StatusPill` para estados; `EmptyState`; filas clickeables con el patrón de `frontend.md`.
+- Componentes: antes de crear, `ls src/components/ src/components/ui/` y leer 1-2 pantallas similares en `src/features/*/pages/`. Componentes UI nuevos con `npx shadcn add <componente>`, no a mano. Primaria `variant="primary"`, secundaria `outline`, destructiva `destructive`; `StatusPill` para estados; `EmptyState`; filas clickeables con el patrón de `frontend.md`.
 - Tablas densas: TanStack Table v8 (8.21.x, no v9) dentro de `ui/table` con `table-fixed` + `colgroup`, `SortableColumnHeader`, un único `ColumnFilter`, `StablePageHeight`.
 - Gráficos: Recharts (versión exacta fijada), encapsulado en `components/charts/`, con animación (se apaga con "reducir movimiento"), tokens claro/oscuro y botón "Ver como tabla". TanStack Charts está descartada. Progreso de un valor: `ProgressBar` propio.
 
@@ -42,7 +42,7 @@ Todo flujo que cambia algo (precio, mora, descuentos, becas, configuración): pa
 ## Mockups antes de codificar
 1. Mockup primero: pantalla nueva o cambio visual NO se codifica sin el OK de Gabriel sobre el mockup (lo produce el líder con `cell-design`; link en la sección Diseño del plan). Sin OK registrado, `NECESITO DECISIÓN`; nunca codifiques una pantalla por tu cuenta.
 2. El diseño pasa por el agente `ux-advisor` antes de mostrarse y tras cada iteración importante; incorporá sus hallazgos o explicá por qué se descartan.
-3. Se presenta como Artifact (nunca un `.html` suelto), con los componentes reales de la app (entrada `frontend/mockups.html`, `vite.mockups.config.js`), en dirección B, claro/oscuro y responsive. Aprobación explícita del usuario antes de código real.
+3. Se presenta como Artifact (nunca un `.html` suelto), con los componentes reales de la app (entrada prevista `frontend/mockups.html` y `vite.mockups.config.js`, todavía sin crear: ver `cell-design`), en dirección B, claro/oscuro y responsive. Aprobación explícita del usuario antes de código real.
 4. Rebanadas verticales: cada PR deja algo observable y probable de punta a punta.
 
 ## Cómo testeás

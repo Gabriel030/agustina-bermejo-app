@@ -16,6 +16,7 @@ import {
 import { sectionEnrollment } from '@/test/fixtures/studentHome';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
+import { subjectEquivalenceHandlers } from '@/test/mocks/subjectEquivalenceHandlers';
 import { invitationWaveHandlers } from '@/test/mocks/invitationWaveHandlers';
 
 import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
@@ -49,14 +50,18 @@ const curriculumProgress = (programEnrollmentId) => ({
   programEnrollmentId,
   programName: 'Tecnicatura de prueba',
   summary: {
-    completionPercent: 50,
-    accumulatedCredits: 3,
-    requiredCredits: 6,
+    completionPercent: 66.67,
+    accumulatedCredits: 6,
+    requiredCredits: 9,
     remainingCredits: 3,
-    mandatoryTotal: 2,
-    mandatoryApproved: 1,
-    counts: { approved: 1, inProgress: 0, regularPendingFinal: 0, failed: 0, available: 0, blocked: 1 },
+    mandatoryTotal: 3,
+    mandatoryApproved: 2,
+    counts: { approved: 2, inProgress: 0, regularPendingFinal: 0, failed: 0, available: 0, blocked: 1 },
     electiveGroups: [],
+    approvedByEquivalence: 1,
+    creditsByEquivalence: 3,
+    averageScore: 8,
+    accumulatedCreditsByCoursework: 3,
   },
   subjects: [
     {
@@ -76,6 +81,9 @@ const curriculumProgress = (programEnrollmentId) => ({
       prerequisites: [],
       currentEnrollmentId: null,
       corequisites: [],
+      approvalSource: 'COURSEWORK',
+      equivalence: null,
+      prerequisitesWaived: false,
     },
     {
       programSubjectId: 2,
@@ -98,6 +106,37 @@ const curriculumProgress = (programEnrollmentId) => ({
       ],
       currentEnrollmentId: null,
       corequisites: [],
+      approvalSource: null,
+      equivalence: null,
+      prerequisitesWaived: false,
+    },
+    {
+      programSubjectId: 3,
+      subjectId: 13,
+      subjectCode: 'FIS101',
+      subjectName: 'Física I',
+      credits: 3,
+      curricularYear: 2,
+      curricularTerm: 'FIRST',
+      category: 'MANDATORY',
+      electiveGroupId: null,
+      state: 'APPROVED',
+      finalScore: null,
+      attempts: 0,
+      blockedBy: [],
+      prerequisites: [],
+      currentEnrollmentId: null,
+      corequisites: [],
+      approvalSource: 'EQUIVALENCE',
+      equivalence: {
+        id: 7,
+        originInstitution: 'Universidad de origen',
+        originSubjectName: 'Física General',
+        originScore: null,
+        recognizedOn: '2026-03-01',
+        resolutionNumber: 'RES-2026-14',
+      },
+      prerequisitesWaived: true,
     },
   ],
   warnings: [],
@@ -287,10 +326,10 @@ export const handlers = [
   ),
   http.post(`${API}/approve-email-change`, () => new HttpResponse(null, { status: 200 })),
   http.post(`${API}/auth/login`, () =>
-    HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
+    HttpResponse.json({ accessToken: 'access-1', expiresIn: 900 }),
   ),
   http.post(`${API}/auth/refresh`, () =>
-    HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 }),
+    HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 }),
   ),
   http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
   http.post(`${API}/auth/forgot-password`, () => new HttpResponse(null, { status: 202 })),
@@ -384,7 +423,7 @@ export const handlers = [
   http.get(`${API}/me`, () => HttpResponse.json(personResponse({ dni: '' }))),
   http.put(`${API}/me`, () => HttpResponse.json(personResponse())),
   http.post(`${API}/auth/register`, () =>
-    HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }, { status: 201 }),
+    HttpResponse.json({ accessToken: 'access-1', expiresIn: 900 }, { status: 201 }),
   ),
   http.get(`${API}/legal/documents/current`, () =>
     HttpResponse.json({
@@ -624,5 +663,6 @@ export const handlers = [
     HttpResponse.json({ items: [permissionDiscrepancy()], page: 0, size: 50, totalElements: 1 }),
   ),
   ...constanciasHandlers,
+  ...subjectEquivalenceHandlers,
   ...invitationWaveHandlers,
 ];

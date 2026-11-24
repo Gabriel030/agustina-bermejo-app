@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.invitation;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -398,7 +399,7 @@ class InvitationWaveControllerIT extends AbstractIntegrationTest {
         long withEmail = importedStudent(batchId, true, null);
         long withoutEmail = importedStudent(batchId, false, null);
         long waveId = createWaveId();
-        String expectedName = "invitaciones-oleada-" + waveId + "-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        String expectedName = "invitaciones-oleada-" + waveId + "-" + LocalDate.now(MutableClock.INSTANCE).format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
 
         byte[] body = mockMvc.perform(asRole(get("/invitation-waves/" + waveId + "/report.csv"), "ADMINISTRATIVO"))
                 .andExpect(status().isOk())

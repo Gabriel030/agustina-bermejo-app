@@ -79,7 +79,7 @@ describe('msw contract validation', () => {
 
   it('requestBodyNotMatchingSchemaFailsContractValidation', async () => {
     const handler = http.post(`${API}/auth/login`, () =>
-      HttpResponse.json({ accessToken: 'a', refreshToken: 'r', expiresIn: 900 }),
+      HttpResponse.json({ accessToken: 'a', expiresIn: 900 }),
     );
     const deviations = await exchange(handler, {
       method: 'POST',
@@ -170,7 +170,7 @@ describe('local handlers', () => {
     server.use(
       http.post(`${API}/auth/login`, async ({ request }) => {
         await request.json();
-        return HttpResponse.json({ accessToken: 'a', refreshToken: 'r', expiresIn: 900 });
+        return HttpResponse.json({ accessToken: 'a', expiresIn: 900 });
       }),
     );
     await fetch(`${API}/auth/login`, {

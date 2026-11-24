@@ -286,6 +286,15 @@ sistema (`backend/src/test/.../testsupport/system/SystemTestApplication`, con
 (login y ruteo por rol, sesión) y `@flow` (flujos de dinero). Corre solo en local, nunca
 en Actions.
 
+### Modo MSW de navegador (desarrollo sin backend y capturas)
+
+`cd frontend && npm run dev:mock` (equivale a `VITE_ENABLE_MSW=true vite`) levanta la app con los handlers de `src/test/mocks/` corriendo en un Service Worker de MSW, sin backend. La sesión es simulada: `/auth/refresh` y `/me` responden según el rol elegido con `?role=director|administrativo|docente|alumno|platformadmin` (sin parámetro se reusa el último rol guardado en `localStorage.mockRole`; por defecto `director`). Ejemplo: `http://localhost:5173/?role=alumno`. Los GET sin handler devuelven `[]`.
+
+- Código en `frontend/src/mocks/` (`mockRoles.js` perfiles por rol, `browserHandlers.js`, `enableBrowserMocking.js`); `main.jsx` lo carga con import dinámico solo si `VITE_ENABLE_MSW === 'true'`, así que un `build` normal no incluye msw ni `mockServiceWorker.js` (verificar con `grep -ril mockServiceWorker dist`).
+- `mockServiceWorker.js` no está en `public/`: un plugin de `vite.config.js` lo sirve en dev y lo emite en `dist/` solo con el flag (sirve también `VITE_ENABLE_MSW=true npm run build && npm run preview`; con el flag no se registra el SW de la PWA).
+- Para capturas con Playwright: abrir la URL con `?role=...` y `localStorage.tema = 'light' | 'dark'`; esperar a que cargue el shell (la primera carga en frío de Vite tarda).
+- Nuevos fixtures para una pantalla: agregar el handler en `src/test/mocks/handlers.js` (lo comparten tests y modo navegador), no uno aparte.
+
 ### Matriz offline de la PWA
 
 Cada estado de la PWA tiene al menos un test e2e o unitario; la tabla es la fuente y `frontend/src/pwa/offlineMatrix.test.js` falla si una referencia deja de existir. Los e2e (`e2e/specs/offline/`, config `e2e/playwright.offline.config.js`) usan Chromium con service worker real contra el build de producción y la API mockeada con `page.route`: no necesitan backend ni Docker. Son lentos (build + varios segundos por caso), así que **no corren en cada PR**: corren en el job `pwa-offline-e2e` del workflow nocturno (`nightly-tests.yml`) y a mano con `cd e2e && npm run test:offline` (`E2E_CHROMIUM_PATH` apunta a un Chromium ya instalado si la versión de Playwright no coincide).

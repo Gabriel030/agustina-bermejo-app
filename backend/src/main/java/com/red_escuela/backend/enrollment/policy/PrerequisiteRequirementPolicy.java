@@ -13,7 +13,11 @@ public final class PrerequisiteRequirementPolicy {
     }
 
     public PrerequisiteStanding standingOf(Collection<EnrollmentStatus> studentStatuses) {
-        if (studentStatuses.contains(EnrollmentStatus.APPROVED)) {
+        return standingOf(studentStatuses, false);
+    }
+
+    public PrerequisiteStanding standingOf(Collection<EnrollmentStatus> studentStatuses, boolean approvedByEquivalence) {
+        if (approvedByEquivalence || studentStatuses.contains(EnrollmentStatus.APPROVED)) {
             return PrerequisiteStanding.APPROVED;
         }
         if (studentStatuses.contains(EnrollmentStatus.REGULAR)) {

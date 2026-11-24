@@ -68,7 +68,7 @@ export function Sidebar({ titulo, items, groups }) {
         {rect && (
           <div
             aria-hidden="true"
-            className="absolute left-0 z-0 rounded-control bg-(color:--nav-indicator-bg) transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            className="absolute left-0 z-0 rounded-control bg-(--nav-indicator-bg) transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
             style={{ transform: `translateY(${rect.top}px)`, width: rect.width, height: rect.height }}
           />
         )}

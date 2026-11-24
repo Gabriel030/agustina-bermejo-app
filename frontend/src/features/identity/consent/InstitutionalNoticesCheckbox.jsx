@@ -1,7 +1,7 @@
 import { Checkbox } from '@/components/ui/checkbox';
 import { LEGAL_DOCUMENT_LABEL, LEGAL_DOCUMENT_PATH } from '@/features/identity/lib/legalDocuments';
 
-const LINK_CLASS = 'font-semibold text-brand hover:text-accent-2';
+const LINK_CLASS = 'font-semibold text-brand';
 
 function LegalLink({ type }) {
   return (

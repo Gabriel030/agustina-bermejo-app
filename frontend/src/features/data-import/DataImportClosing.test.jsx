@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -7,6 +7,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { DataImportDetailPage } from './pages/DataImportDetailPage';
 import { DataImportRollbackPage } from './pages/DataImportRollbackPage';
+import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
 const API = 'http://localhost:8080';
 const STAMP = '2026-11-12T10:00:00';
@@ -23,6 +24,7 @@ function batch(overrides = {}) {
     sealedAt: STAMP,
     files: [PERSONS_FILE],
     counters: [{ entityType: 'PERSONS', rowsByStatus: { COMMITTED: 120 } }],
+    graduationsPendingReview: 0,
     ...overrides,
   };
 }
@@ -78,8 +80,8 @@ describe('DataImport seal and retry', () => {
     const sealButton = await screen.findByRole('button', { name: 'Cerrar la importación' });
     expect(sealButton).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Descargar reporte' }));
-    await waitFor(() => expect(sealButton).toBeEnabled());
-    await userEvent.click(sealButton);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Cerrar la importación' })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar la importación' }));
     const dialog = await screen.findByRole('alertdialog');
     const confirm = within(dialog).getByRole('button', { name: 'Cerrar la importación' });
     expect(confirm).toBeDisabled();
@@ -118,6 +120,21 @@ describe('DataImport seal and retry', () => {
     renderDetail();
     await userEvent.click(within(await screen.findByTestId('block-PERSONS')).getByRole('button', { name: 'Plantilla' }));
     await waitFor(() => expect(requested).toBe(true));
+  });
+});
+
+describe('DataImport graduations pending review', () => {
+  it('tells how many imported graduations await the Director review', async () => {
+    serveBatch(batch({ graduationsPendingReview: 3 }));
+    renderDetail();
+    expect(await screen.findByText(/3 egresos quedaron pendientes de revisión del Director/)).toBeInTheDocument();
+  });
+
+  it('shows nothing when no graduation is pending', async () => {
+    serveBatch(batch({ graduationsPendingReview: 0 }));
+    renderDetail();
+    await screen.findByLabelText('Resultado por bloque');
+    expect(screen.queryByText(/pendientes? de revisión del Director/)).not.toBeInTheDocument();
   });
 });
 
@@ -183,5 +200,25 @@ describe('DataImport rollback', () => {
     await userEvent.type(within(dialog).getByLabelText(/escribí DESHACER/), 'DESHACER');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Deshacer la importación' }));
     expect(await screen.findByRole('list', { name: 'Motivos' })).toHaveTextContent('Una persona cursó');
+  });
+});
+
+describe('DataImport report bar on a compact viewport', () => {
+  afterEach(restoreViewport);
+
+  it('offers the download as the main action and keeps the seal action in the menu until the report is downloaded', async () => {
+    useCompactViewport();
+    mockDownloads();
+    serveBatch(batch());
+    server.use(http.get(`${API}/data-imports/5/report.csv`, () => new HttpResponse('a,b', { headers: { 'Content-Type': 'text/csv' } })));
+    renderDetail();
+
+    const bar = await screen.findByRole('region', { name: 'Acciones del reporte' });
+    expect(within(bar).getByRole('button', { name: 'Descargar reporte' })).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: 'Cerrar la importación' })).not.toBeInTheDocument();
+
+    await userEvent.click(within(bar).getByRole('button', { name: 'Descargar reporte' }));
+    expect(await within(bar).findByRole('button', { name: 'Cerrar la importación' })).toBeEnabled();
+    expect(within(bar).queryByRole('button', { name: 'Descargar reporte' })).not.toBeInTheDocument();
   });
 });

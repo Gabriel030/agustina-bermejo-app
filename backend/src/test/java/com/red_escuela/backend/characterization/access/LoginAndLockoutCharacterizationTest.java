@@ -20,7 +20,7 @@ class LoginAndLockoutCharacterizationTest extends AccessCharacterizationSupport 
             login(identifier, PASSWORD)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                    .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                    .andExpect(jsonPath("$.refreshToken").doesNotExist())
                     .andExpect(jsonPath("$.expiresIn").isNumber());
         }
 

@@ -73,7 +73,7 @@ export function SeccionDestinatarios({ segmentos, cargandoSegmentos, spec, onCha
 
       {preview?.label && spec.key !== 'ALL' && (
         <div className="nota-fila flex items-start gap-2.5 py-0.5 pl-3 text-size-12-5 leading-relaxed text-ink-soft">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-2" aria-hidden="true" />
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" aria-hidden="true" />
           <span>
             Se le envía a quienes <span className="font-bold text-ink">{preview.label.toLowerCase()}</span>.
           </span>

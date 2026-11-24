@@ -149,7 +149,7 @@ describe('Login', () => {
     server.use(
       http.post(`${API}/auth/login`, async () => {
         await login.promise;
-        return HttpResponse.json({ accessToken: 'a', refreshToken: 'r', expiresIn: 900 });
+        return HttpResponse.json({ accessToken: 'a', expiresIn: 900 });
       }),
     );
     const user = userEvent.setup();

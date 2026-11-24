@@ -12,8 +12,8 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | Componente | Uso | API relevante |
 |---|---|---|
 | `PageContainer` [shared] | Envoltorio de toda pantalla de contenido (ancho máximo, gap); con `title`/`action` dibuja la cabecera (h1 + acción principal a la derecha) | `className`, `title`, `action` |
-| `GlassCard` [shared] | Superficie de vidrio; base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
-| `StickyActionBar` [shared] | Barra de acciones pegada abajo. En móvil (<768px) va a ancho completo, sin sombra ni blur y respeta la safe-area; es una región con `aria-label` (por defecto "Acciones de la página") y anuncia "Guardando…" | `summary`, `hint`, `children` (modo `row` por defecto: botones en fila y el estado en una línea; para pasos de flujo como Volver o Cancelar), `compact="menu"` con `primary` (props de `Button`, `loading`, `loadingLabel`) y `secondary` (`[{ key, label, icon, onSelect, disabled, destructive }]`): en móvil las secundarias van al menú «Más acciones» (para Descartar); en escritorio quedan como botones. `compactSummary`/`compactHint` (textos cortos visuales; el lector de pantalla sigue leyendo los completos), `busy`, `aria-label` |
+| `GlassCard` [shared] | Superficie base (fondo `surface`, borde y sombra de card); base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
+| `StickyActionBar` [shared] | Barra de acciones pegada abajo. En móvil (<768px) va a ancho completo, sin sombra y respeta la safe-area; es una región con `aria-label` (por defecto "Acciones de la página") y anuncia "Guardando…" | `summary`, `hint`, `children` (modo `row` por defecto: botones en fila y el estado en una línea; para pasos de flujo como Volver o Cancelar), `compact="menu"` con `primary` (props de `Button`, `loading`, `loadingLabel`) y `secondary` (`[{ key, label, icon, onSelect, disabled, destructive }]`): en móvil las secundarias van al menú «Más acciones» (para Descartar); en escritorio quedan como botones. `compactSummary`/`compactHint` (textos cortos visuales; el lector de pantalla sigue leyendo los completos), `busy`, `aria-label` |
 | `InstitutionBrand` [shared] | Marca de la institución en pantallas públicas | — |
 | `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `ROLE_CONFIG` (`routes/roleConfig.js`) | — |
 
@@ -64,7 +64,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `Select` [ui] | Lista cerrada de opciones | compound (`SelectTrigger`, `SelectContent`, `SelectItem`) |
 | `RadioGroup` [ui] | Elección exclusiva corta (Porcentaje / Monto fijo); en billing se usa envuelto por `RadioChoice` | compound |
 | `Command` + `Popover` [ui] | Combobox con búsqueda | compound |
-| `Switch` [ui] | Interruptor (CLI de shadcn, con tokens: gradiente al activarse, `neutral-bg` apagado); lo usa la matriz de notificaciones de Mi perfil y los filtros de recordatorios | `checked`, `onCheckedChange`, `disabled` |
+| `Switch` [ui] | Interruptor (CLI de shadcn, con tokens: color de marca al activarse, `neutral-bg` apagado); lo usa la matriz de notificaciones de Mi perfil y los filtros de recordatorios | `checked`, `onCheckedChange`, `disabled` |
 | `Checkbox` [ui] | Casilla (la usa `ColumnFilter`); en el archivo generado por la CLI se corrigió el import de `cn` y el estado `data-[state=checked]` | `checked`, `onCheckedChange` |
 | `Buscador` | Campo de búsqueda de listados (catálogo, grilla de permisos) | `value`, `onChange`, `placeholder`, `ariaLabel`, `className` |
 | Formularios con validación / wizards | React Hook Form + Zod (patrón: `NuevoAlumno.jsx`) | — |
@@ -74,7 +74,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | Componente | Uso | API relevante |
 |---|---|---|
 | `ChoiceChip` [shared] | Botón de selección tipo chip/segmento (`aria-pressed`): Actuales/Anteriores, Carrera/Curso, días, turnos. Antes se reescribía a mano en cada pantalla | `selected`, `onClick`, `shape` (`pill`/`rounded`), `size` (`xs`/`sm`/`md`/`lg`), `tone` (`soft`/`solid`/`text`), `strong` (peso medio también sin seleccionar), `className` |
-| `Button` [ui] | Toda acción | `variant`: `default` `outline` `secondary` `ghost` `destructive` `link` (subrayado al hover) `text` (texto de acento sin subrayado) `subtle` (volver / acción discreta) `ghost-destructive` (ícono que se vuelve rojo) `row` / `row-card` (fila clicable, con `size="row"`) `gradient` (CTA primario, 1 por vista); `size`: `default` `xs` `sm` `lg` `icon` `icon-xs` `icon-sm` `inline` (texto en línea, sin alto ni padding); `loading`; `asChild` (sin `loading`) |
+| `Button` [ui] | Toda acción | `variant`: `default` `outline` `secondary` `ghost` `destructive` `link` (subrayado al hover) `text` (texto de acento sin subrayado) `subtle` (volver / acción discreta) `ghost-destructive` (ícono que se vuelve rojo) `row` / `row-card` (fila clicable, con `size="row"`) `primary` (CTA primario, 1 por vista); `size`: `default` `xs` `sm` `lg` `icon` `icon-xs` `icon-sm` `inline` (texto en línea, sin alto ni padding); `loading`; `asChild` (sin `loading`) |
 | `ThemeToggle` [shared] | Switch claro/oscuro | — |
 
 ## 5. Feedback y estados
