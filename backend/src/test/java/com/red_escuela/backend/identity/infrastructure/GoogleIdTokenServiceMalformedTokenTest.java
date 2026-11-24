@@ -174,15 +174,13 @@ class GoogleIdTokenServiceMalformedTokenTest {
     }
 
     @Test
-    void anUnsignedTokenWithoutIssuedAtCurrentlyEscapesAsNullPointerInsteadOfInvalidToken() {
+    void anUnsignedTokenWithoutIssuedAtIsRejectedAsInvalidToken() {
         String unsigned = segment("{\"alg\":\"none\",\"typ\":\"JWT\"}") + "."
                 + segment("{\"iss\":\"https://accounts.google.com\",\"aud\":\"expected-client-id\",\"sub\":\"1\","
                 + "\"email\":\"victim@example.com\",\"email_verified\":true,\"exp\":4102444800}") + ".";
 
         assertThatThrownBy(() -> service.verify(unsigned))
-                .as("KNOWN GAP (pentest L4): the expected behaviour is InvalidGoogleTokenException; fix is to catch RuntimeException "
-                        + "from the verifier and map it to InvalidGoogleTokenException (remediation 24.7); today it escapes as NPE (HTTP 500)")
-                .isInstanceOf(NullPointerException.class);
+                .isInstanceOf(InvalidGoogleTokenException.class);
         assertThat(networkCalls).hasValue(0);
     }
 }
