@@ -76,6 +76,19 @@ class WaitlistCandidateEligibilityTest {
     }
 
     @Test
+    void conflictingSectionNameComesFromTheScheduleOverlap() {
+        when(scheduleOverlapGuard.findOverlapForProgramSection(1L, 2L, 3L, ENROLLMENT_ID))
+                .thenReturn(Optional.of(new SectionScheduleOverlapException("Historia II", "lunes", "08:00", "10:00")));
+
+        assertThat(eligibility.findConflictingSectionName(programCandidate())).contains("Historia II");
+    }
+
+    @Test
+    void thereIsNoConflictingSectionNameWithoutScheduleOverlap() {
+        assertThat(eligibility.findConflictingSectionName(programCandidate())).isEmpty();
+    }
+
+    @Test
     void scheduleOverlapIsSkipped() {
         when(scheduleOverlapGuard.findOverlapForProgramSection(1L, 2L, 3L, ENROLLMENT_ID))
                 .thenReturn(Optional.of(mock(SectionScheduleOverlapException.class)));

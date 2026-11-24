@@ -27,17 +27,45 @@ export function sectionLabelOf(request) {
   return `${request.subjectName} · ${request.sectionName}`;
 }
 
-export function reRequestHref(request, sections) {
-  const section = (sections ?? []).find(
-    (candidate) => candidate.subjectName === request.subjectName && candidate.sectionName === request.sectionName,
-  );
-  const params = new URLSearchParams({ tab: 'historial' });
-  if (section) params.set('seccion', `${section.type}-${section.id}`);
-  params.set('fecha', request.classDate);
-  params.set('pedido', String(request.id));
-  return `/docente/tomar-asistencia?${params.toString()}`;
+const ATTENDANCE_PATH = '/docente/tomar-asistencia';
+
+export function attendanceHref(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value != null) query.set(key, String(value));
+  });
+  const text = query.toString();
+  return text ? `${ATTENDANCE_PATH}?${text}` : ATTENDANCE_PATH;
 }
 
-export function requestHref(requestId) {
-  return `/docente/tomar-asistencia?tab=pedidos&pedido=${requestId}`;
+export function sectionParamOf(section) {
+  return section ? `${section.type}-${section.id}` : null;
+}
+
+export function sectionParamOfRequest(request, sections) {
+  if (!request) return null;
+  return sectionParamOf(
+    (sections ?? []).find((candidate) => candidate.subjectName === request.subjectName && candidate.sectionName === request.sectionName),
+  );
+}
+
+export function reRequestHref(request, sections) {
+  return attendanceHref({
+    tab: 'historial',
+    seccion: sectionParamOfRequest(request, sections),
+    fecha: request.classDate,
+    pedido: request.id,
+  });
+}
+
+export function requestHref(requestId, seccion) {
+  return attendanceHref({ tab: 'pedidos', seccion, pedido: requestId });
+}
+
+export function ordersHref(seccion) {
+  return attendanceHref({ tab: 'pedidos', seccion });
+}
+
+export function pendingRequestsLabel(count) {
+  return count === 1 ? '1 pendiente' : `${count} pendientes`;
 }

@@ -88,6 +88,13 @@ describe('BillingRunsPage', () => {
     expect(await within(row).findByText(/La cuenta del alumno no cierra/)).toHaveClass('text-danger');
   });
 
+  it('extends the touch area of the info icon to 44px on mobile', async () => {
+    useRuns([night()]);
+    renderWithProviders(<BillingRunsPage />);
+
+    expect(await screen.findByRole('button', { name: 'Cómo funciona el proceso nocturno' })).toHaveClass('max-md:after:-inset-3.5');
+  });
+
   it('switches the night from the selector without reloading the list', async () => {
     useRuns([night(), failingNight]);
     let listCalls = 0;

@@ -131,3 +131,15 @@ docker exec perf-a0-pg psql -U postgres -d perf -tc "select mode from platform_f
 ```
 
 Debe devolver `FULL`; si devuelve `OFF`, recrear la base o cambiar el modo por la API de plataforma.
+
+## Escenario k6: inscripcion masiva (E25 A5-S3)
+
+`perf/scenarios/mass-enrollment.js` mide el throughput de `POST /me/section-enrollments` con el seed de A5-S1: cada alumno `loads1..N` (id de inscripcion a carrera `400000+N`) inicia sesion y se inscribe en una comision de inscripcion, repartidas en ronda sobre las `LOAD_ENROLL_SECTIONS` (cupo 60, por eso `LOAD_STUDENTS <= LOAD_ENROLL_SECTIONS * LOAD_CAPACITY`). Es solo de throughput: corre con el perfil `perf`, que sube los limites de escritura por usuario, y NO mide el limite de 120 escrituras por minuto (eso se mide sin `perf`, contando 429).
+
+```
+python3 perf/seed-load.py
+k6 run perf/scenarios/mass-enrollment.js
+LOAD_STUDENTS=2000 LOAD_VUS=100 BASE_URL=http://localhost:8461 k6 run perf/scenarios/mass-enrollment.js
+```
+
+Variables: `BASE_URL`, `LOAD_STUDENTS`, `LOAD_ENROLL_SECTIONS` (iguales a las del seed), `LOAD_VUS` (50), `LOAD_MAX_DURATION` (10m), `LOAD_PASSWORD`. Umbrales: `THRESHOLD_ENROLL_P95_MS` (800), `THRESHOLD_ENROLL_P99_MS` (2000), `THRESHOLD_LOGIN_P95_MS` (1000), `THRESHOLD_ERROR_RATE` (0,01) y `THRESHOLD_MIN_ENROLLMENTS_PER_SECOND` (20). Los umbrales son provisorios: no hay medicion base todavia. Para repetir la corrida hay que volver a correr `seed-load.py` (limpia las inscripciones creadas).
