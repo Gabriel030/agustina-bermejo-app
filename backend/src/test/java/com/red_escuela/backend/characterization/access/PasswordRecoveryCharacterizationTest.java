@@ -1,6 +1,5 @@
 package com.red_escuela.backend.characterization.access;
 
-import com.red_escuela.backend.identity.dto.AuthResponse;
 import com.red_escuela.backend.identity.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.identity.dto.RefreshRequest;
 import com.red_escuela.backend.identity.dto.ResetPasswordRequest;
@@ -45,7 +44,7 @@ class PasswordRecoveryCharacterizationTest extends AccessCharacterizationSupport
     @Test
     void passwordRecoveryFlowRequestsCodeVerifiesItAndChangesThePassword() throws Exception {
         Person person = persistPerson("access.reset1", "70000011", "ALUMNO");
-        AuthResponse previousSession = loginSuccessfully("access.reset1", PASSWORD);
+        String previousRefreshToken = loginAndGetRefreshToken("access.reset1", PASSWORD);
 
         String code = requestCodeFor(person);
         assertThat(code).matches("\\d{6}");
@@ -57,7 +56,7 @@ class PasswordRecoveryCharacterizationTest extends AccessCharacterizationSupport
 
         login("access.reset1", PASSWORD).andExpect(status().isUnauthorized());
         login("access.reset1", NEW_PASSWORD).andExpect(status().isOk());
-        postJson("/auth/refresh", new RefreshRequest(previousSession.refreshToken()))
+        postJson("/auth/refresh", new RefreshRequest(previousRefreshToken))
                 .andExpect(status().isUnauthorized());
     }
 

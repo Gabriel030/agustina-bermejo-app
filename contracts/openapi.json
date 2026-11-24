@@ -1659,12 +1659,9 @@
           "expiresIn" : {
             "format" : "int64",
             "type" : "integer"
-          },
-          "refreshToken" : {
-            "type" : "string"
           }
         },
-        "required" : [ "accessToken", "expiresIn", "refreshToken" ],
+        "required" : [ "accessToken", "expiresIn" ],
         "type" : "object"
       },
       "AuthorizationRequestDecisionRequest" : {

@@ -287,10 +287,10 @@ export const handlers = [
   ),
   http.post(`${API}/approve-email-change`, () => new HttpResponse(null, { status: 200 })),
   http.post(`${API}/auth/login`, () =>
-    HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
+    HttpResponse.json({ accessToken: 'access-1', expiresIn: 900 }),
   ),
   http.post(`${API}/auth/refresh`, () =>
-    HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 }),
+    HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 }),
   ),
   http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
   http.post(`${API}/auth/forgot-password`, () => new HttpResponse(null, { status: 202 })),
@@ -384,7 +384,7 @@ export const handlers = [
   http.get(`${API}/me`, () => HttpResponse.json(personResponse({ dni: '' }))),
   http.put(`${API}/me`, () => HttpResponse.json(personResponse())),
   http.post(`${API}/auth/register`, () =>
-    HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }, { status: 201 }),
+    HttpResponse.json({ accessToken: 'access-1', expiresIn: 900 }, { status: 201 }),
   ),
   http.get(`${API}/legal/documents/current`, () =>
     HttpResponse.json({

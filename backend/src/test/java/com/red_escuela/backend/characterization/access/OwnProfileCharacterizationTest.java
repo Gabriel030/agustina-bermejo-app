@@ -1,6 +1,5 @@
 package com.red_escuela.backend.characterization.access;
 
-import com.red_escuela.backend.identity.dto.AuthResponse;
 import com.red_escuela.backend.identity.dto.ChangePasswordRequest;
 import com.red_escuela.backend.identity.dto.RefreshRequest;
 import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
@@ -52,13 +51,13 @@ class OwnProfileCharacterizationTest extends AccessCharacterizationSupport {
     @Test
     void changingThePasswordRevokesSessionsAndSwitchesTheAcceptedPassword() throws Exception {
         Person person = persistPerson("access.profile2", "70000042", "ALUMNO");
-        AuthResponse previousSession = loginSuccessfully("access.profile2", PASSWORD);
+        String previousRefreshToken = loginAndGetRefreshToken("access.profile2", PASSWORD);
 
         changePassword(person, PASSWORD, NEW_PASSWORD).andExpect(status().isNoContent());
 
         login("access.profile2", PASSWORD).andExpect(status().isUnauthorized());
         login("access.profile2", NEW_PASSWORD).andExpect(status().isOk());
-        postJson("/auth/refresh", new RefreshRequest(previousSession.refreshToken()))
+        postJson("/auth/refresh", new RefreshRequest(previousRefreshToken))
                 .andExpect(status().isUnauthorized());
     }
 
