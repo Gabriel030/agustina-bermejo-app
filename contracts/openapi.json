@@ -8946,6 +8946,10 @@
             },
             "type" : "array"
           },
+          "graduationsPendingReview" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
@@ -8966,7 +8970,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "committedAt", "counters", "createdAt", "files", "id", "name", "sealedAt", "status", "validatedAt" ],
+        "required" : [ "committedAt", "counters", "createdAt", "files", "graduationsPendingReview", "id", "name", "sealedAt", "status", "validatedAt" ],
         "type" : "object"
       },
       "ImportBlockCounters" : {
