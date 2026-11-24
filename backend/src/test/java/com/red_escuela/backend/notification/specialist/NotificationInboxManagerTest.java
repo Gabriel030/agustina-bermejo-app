@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.specialist;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.notification.dto.NotificationResponse;
@@ -52,7 +53,7 @@ class NotificationInboxManagerTest extends AbstractIntegrationTest {
         notification.setRecipient(recipient);
         notification.setType(NotificationType.SECTION_EVAL_CONFIG_APPROVED);
         notification.setMessage("Mensaje de prueba");
-        notification.setCreatedAt(LocalDateTime.now());
+        notification.setCreatedAt(LocalDateTime.now(MutableClock.INSTANCE));
         entityManager.persist(notification);
         return notification;
     }
@@ -112,7 +113,7 @@ class NotificationInboxManagerTest extends AbstractIntegrationTest {
     void countUnreadForPersonCountsOnlyUnreadOfThatPerson() {
         Person destinatario = persistPerson("91000006");
         Person otraPersona = persistPerson("91000007");
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(MutableClock.INSTANCE);
         persistNotificationAt(destinatario, now, false);
         persistNotificationAt(destinatario, now, false);
         persistNotificationAt(destinatario, now, true);

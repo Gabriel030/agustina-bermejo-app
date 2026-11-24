@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.lifecycle;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.notification.broadcast.draft.AudienceFreezeFixtures;
 import com.red_escuela.backend.identity.entity.Person;
@@ -105,7 +106,7 @@ class BroadcastLifecycleIT extends AbstractIntegrationTest {
     private Broadcast draft(Person creator) {
         return broadcastRepository.saveAndFlush(Broadcast.builder().name("Aviso").category(BroadcastCategory.INSTITUTIONAL)
                 .channel(ChannelType.EMAIL).status(BroadcastStatus.DRAFT).segmentSpec(SPEC).subjectSnapshot("Asunto")
-                .bodySnapshot("Cuerpo").createdByPersonId(creator.getId()).createdAt(Instant.now()).build());
+                .bodySnapshot("Cuerpo").createdByPersonId(creator.getId()).createdAt(Instant.now(MutableClock.INSTANCE)).build());
     }
 
     private long count(String sql, Object... args) {
@@ -156,7 +157,7 @@ class BroadcastLifecycleIT extends AbstractIntegrationTest {
         Broadcast broadcast = broadcastRepository.saveAndFlush(Broadcast.builder().name("Vacio").category(BroadcastCategory.INSTITUTIONAL)
                 .channel(ChannelType.EMAIL).status(BroadcastStatus.DRAFT)
                 .segmentSpec(SPEC.replace("PRECEPTOR", "ADMINISTRATIVO")).subjectSnapshot("Asunto").bodySnapshot("Cuerpo")
-                .createdByPersonId(director.getId()).createdAt(Instant.now()).build());
+                .createdByPersonId(director.getId()).createdAt(Instant.now(MutableClock.INSTANCE)).build());
 
         mockMvc.perform(post("/broadcasts/" + broadcast.getId() + "/confirm").header("Authorization", bearer(director)))
                 .andExpect(status().isConflict())

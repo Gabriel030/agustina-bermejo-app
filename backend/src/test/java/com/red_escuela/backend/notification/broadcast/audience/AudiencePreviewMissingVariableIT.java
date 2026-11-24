@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.audience;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -104,7 +105,7 @@ class AudiencePreviewMissingVariableIT extends AbstractIntegrationTest {
     void templateIdSuppliesTheContentWhenNoBodyIsSent() throws Exception {
         MessageTemplate template = MessageTemplate.builder().name("mv-template").category(BroadcastCategory.INSTITUTIONAL)
                 .channel(ChannelType.EMAIL).subject("Hola").bodyText("Hola {{nombre}}").createdByPersonId(director.getId())
-                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+                .createdAt(Instant.now(MutableClock.INSTANCE)).updatedAt(Instant.now(MutableClock.INSTANCE)).build();
         entityManager.persist(template);
         entityManager.flush();
 
@@ -141,7 +142,7 @@ class AudiencePreviewMissingVariableIT extends AbstractIntegrationTest {
     void blankBodyTextFallsBackToTheTemplate() throws Exception {
         MessageTemplate template = MessageTemplate.builder().name("mv-blank-body").category(BroadcastCategory.INSTITUTIONAL)
                 .channel(ChannelType.EMAIL).subject("Hola").bodyText("Hola {{nombre}}").createdByPersonId(director.getId())
-                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+                .createdAt(Instant.now(MutableClock.INSTANCE)).updatedAt(Instant.now(MutableClock.INSTANCE)).build();
         entityManager.persist(template);
         entityManager.flush();
 
