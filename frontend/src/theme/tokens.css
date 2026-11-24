@@ -27,7 +27,7 @@
   --shimmer-hi: oklch(100% 0 0 / 0.7);
   --sh-overlay: 0 8px 24px -8px oklch(23% 0.024 274 / 0.18);
   --sh-dialog: var(--sh-overlay);
-  --btn-primary-bg-hover: linear-gradient(color-mix(in oklch, var(--accent) 88%, black), color-mix(in oklch, var(--accent) 88%, black));
+  --btn-primary-bg-hover: color-mix(in oklch, var(--accent) 88%, black);
   --btn-primary-border: color-mix(in oklch, var(--accent) 78%, black);
   --row-hover: oklch(96.5% 0.006 258);
   --row-selected: var(--accent-soft);
@@ -51,18 +51,15 @@
   --r-btn-primary: 0.5rem;
   --r-seg: 0.5rem;
   --r-seg-indicator: 0.375rem;
-  --surface-blur: 0px;
-  --surface-saturate: 1;
-  --overlay-blur: 0px;
   --sh-card: none;
   --ring-surface: var(--border);
   --page-bg: var(--bg1);
-  --btn-primary-bg: linear-gradient(var(--accent), var(--accent));
+  --btn-primary-bg: var(--accent);
   --btn-primary-shadow: 0 0 0 0 transparent;
   --btn-primary-shadow-hover: 0 0 0 0 transparent;
   --btn-lift-y: 0px;
   --card-lift-y: 0px;
-  --seg-indicator-bg: linear-gradient(var(--accent), var(--accent));
+  --seg-indicator-bg: var(--accent);
   --seg-indicator-shadow: 0 0 0 0 transparent;
   --nav-indicator-bg: var(--accent-soft);
   --nav-active-fg: var(--accent);
@@ -109,7 +106,7 @@
   --shimmer-hi: oklch(50% 0.02 260 / 0.9);
   --sh-overlay: 0 8px 24px -8px rgb(0 0 0 / 0.5);
   --sh-dialog: var(--sh-overlay);
-  --btn-primary-bg-hover: linear-gradient(color-mix(in oklch, var(--accent) 90%, white), color-mix(in oklch, var(--accent) 90%, white));
+  --btn-primary-bg-hover: color-mix(in oklch, var(--accent) 90%, white);
   --btn-primary-border: color-mix(in oklch, var(--accent) 78%, white);
   --row-hover: oklch(26.0% 0.021 271);
   --row-selected: var(--accent-soft);

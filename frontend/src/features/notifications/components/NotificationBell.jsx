@@ -90,7 +90,7 @@ export function NotificationBell() {
         align="end"
         aria-label="Notificaciones"
         sideOffset={8}
-        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)"
+        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay"
       >
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-size-13 font-semibold text-ink">
           Notificaciones

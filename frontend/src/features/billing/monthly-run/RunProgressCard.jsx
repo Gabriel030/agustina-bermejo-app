@@ -13,7 +13,7 @@ export function RunProgressCard({ counters }) {
         <span className="text-sm text-ink-soft">inscripciones procesadas</span>
       </div>
       <div role="progressbar" aria-label="Avance de la corrida" className="mt-3 h-2 w-full overflow-hidden rounded-full bg-neutral-bg">
-        <div className="h-full w-1/3 rounded-full bg-gradient-to-r from-brand to-accent-2 motion-safe:animate-pulse" />
+        <div className="h-full w-1/3 rounded-full bg-brand motion-safe:animate-pulse" />
       </div>
       <div className="mt-1 text-xs text-ink-faint">Se actualiza sola. Hasta que termine no se puede emitir ni reintentar.</div>
     </StatCard>
