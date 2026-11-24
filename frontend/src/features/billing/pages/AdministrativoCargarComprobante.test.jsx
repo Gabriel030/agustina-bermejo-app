@@ -90,7 +90,7 @@ describe('AdministrativoCargarComprobante', () => {
     expect(await screen.findAllByText('Suárez, Valentina')).toHaveLength(2);
     expect(screen.getByText('DNI 41256903')).toBeInTheDocument();
     expect(screen.getByText('Carga por secretaría')).toBeInTheDocument();
-    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    const crumbs = screen.getByRole('navigation', { name: 'Ruta de navegación' });
     expect(within(crumbs).getByRole('link', { name: 'Facturación' })).toHaveAttribute('href', '/administrativo/facturacion');
     expect(within(crumbs).getByRole('link', { name: 'Suárez, Valentina' })).toHaveAttribute('href', '/administrativo/facturacion?alumno=2');
     expect(screen.getByRole('button', { name: /Datos del comprobante/ })).toHaveAttribute('aria-current', 'step');

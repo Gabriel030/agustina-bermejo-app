@@ -1,9 +1,10 @@
 package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
+import com.red_escuela.backend.shared.domain.Grade;
 import org.springframework.modulith.NamedInterface;
 
 @NamedInterface("api")
 public record PrerequisiteView(Long prerequisiteSubjectId, String prerequisiteSubjectName,
-                               RequirementType requirementType, String prerequisiteSubjectCode) {
+                               RequirementType requirementType, String prerequisiteSubjectCode, Grade minGrade) {
 }

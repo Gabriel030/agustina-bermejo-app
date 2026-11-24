@@ -11,6 +11,7 @@ import com.red_escuela.backend.enrollment.policy.PrerequisiteRequirementPolicy;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.shared.domain.Grade;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,11 +81,16 @@ public class ProgramPrerequisiteEvaluator {
         List<PrerequisiteView> prerequisites = programCurriculumFinder.findPrerequisites(programSubject.id());
         Map<Long, SubjectStanding> standings = waived ? Map.of() : standingsOf(programEnrollmentId, prerequisites);
         return prerequisites.stream()
-                .map(prerequisite -> waived
-                        ? assessment(prerequisite, PrerequisiteStanding.WAIVED)
-                        : assessment(prerequisite, requirementPolicy.standingOf(
-                                standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE).courseworkStatuses(),
-                                standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE).isApprovedByEquivalence())))
+                .map(prerequisite -> {
+                    if (waived) {
+                        return assessment(prerequisite, PrerequisiteStanding.WAIVED, null);
+                    }
+                    SubjectStanding subjectStanding = standings.getOrDefault(
+                            prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE);
+                    PrerequisiteStanding standing = requirementPolicy.standingOf(
+                            subjectStanding.courseworkStatuses(), subjectStanding.isApprovedByEquivalence());
+                    return assessment(prerequisite, standing, subjectStanding.scoreForPrerequisiteCheck());
+                })
                 .toList();
     }
 
@@ -96,8 +102,11 @@ public class ProgramPrerequisiteEvaluator {
                 .getOrDefault(programEnrollmentId, Map.of());
     }
 
-    private PrerequisiteAssessment assessment(PrerequisiteView prerequisite, PrerequisiteStanding standing) {
+    private PrerequisiteAssessment assessment(PrerequisiteView prerequisite, PrerequisiteStanding standing,
+            Grade approvedScore) {
         return new PrerequisiteAssessment(prerequisite.prerequisiteSubjectId(), prerequisite.prerequisiteSubjectName(),
-                prerequisite.requirementType(), standing, requirementPolicy.isMet(prerequisite.requirementType(), standing));
+                prerequisite.requirementType(), standing,
+                requirementPolicy.isMet(prerequisite.requirementType(), standing, prerequisite.minGrade(), approvedScore),
+                prerequisite.minGrade(), approvedScore);
     }
 }

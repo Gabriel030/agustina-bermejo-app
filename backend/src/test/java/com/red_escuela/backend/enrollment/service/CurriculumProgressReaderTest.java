@@ -81,7 +81,7 @@ class CurriculumProgressReaderTest {
     }
 
     private static PrerequisiteView requires(Long subjectId, RequirementType type) {
-        return new PrerequisiteView(subjectId, "Materia " + subjectId, type, "S" + subjectId);
+        return new PrerequisiteView(subjectId, "Materia " + subjectId, type, "S" + subjectId, null);
     }
 
     private void mark(Long subjectId, EnrollmentStatus status, Grade score) {
