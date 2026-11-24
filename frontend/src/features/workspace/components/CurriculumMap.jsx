@@ -50,7 +50,7 @@ function MapStatusChips({ subjects, value, onChange }) {
   );
 }
 
-function MapSection({ section, creditsDefined, selectedId, highlight, onSelect, registerCard, compact, open, onToggle }) {
+function MapSection({ section, audience, creditsDefined, selectedId, highlight, onSelect, registerCard, compact, open, onToggle }) {
   const title = section.key === ELECTIVES_SECTION_KEY ? 'Electivas' : `${section.year}° año`;
   return (
     <CurriculumYearAccordion
@@ -66,6 +66,7 @@ function MapSection({ section, creditsDefined, selectedId, highlight, onSelect, 
             <MapSubjectCard
               subject={subject}
               creditsDefined={creditsDefined}
+              audience={audience}
               selected={selectedId === subject.programSubjectId}
               relation={highlight.relations.get(subject.programSubjectId) ?? null}
               dimmed={selectedId != null && selectedId !== subject.programSubjectId && !highlight.relations.has(subject.programSubjectId)}
@@ -85,6 +86,7 @@ export function CurriculumMap({
   onStatusFilterChange,
   creditsDefined = true,
   audience = 'student',
+  onViewEnrollment,
 }) {
   const compact = useMediaQuery('(max-width: 767px)');
   const [openOverrides, setOpenOverrides] = useState({});
@@ -225,6 +227,7 @@ export function CurriculumMap({
                   <MapSection
                     key={section.key}
                     section={section}
+                    audience={audience}
                     creditsDefined={creditsDefined}
                     selectedId={selectedId}
                     highlight={highlight}
@@ -242,6 +245,7 @@ export function CurriculumMap({
             <div className="grid grid-cols-1 md:grid-cols-3">
               <MapSection
                 section={electivesSection}
+                audience={audience}
                 creditsDefined={creditsDefined}
                 selectedId={selectedId}
                 highlight={highlight}
@@ -259,6 +263,8 @@ export function CurriculumMap({
         subject={selectedSubject}
         relationIndex={relationIndex}
         creditsDefined={creditsDefined}
+        audience={audience}
+        onViewEnrollment={onViewEnrollment}
         open={panelOpen && selectedSubject != null}
         onOpenChange={setPanelOpen}
         onCloseAutoFocus={(event) => {
