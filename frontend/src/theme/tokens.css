@@ -74,6 +74,9 @@
   --shell-pad: 0px;
   --shell-gap: 0px;
   --focus-ring: var(--accent);
+  --disabled-fg: oklch(60% 0.02 270);
+  --disabled-bg: oklch(94.2% 0.007 261);
+  --popover-edge: oklch(66% 0.015 265);
 }
 
 :root[data-theme='dark'] {
@@ -110,4 +113,7 @@
   --row-selected: var(--accent-soft);
   --overlay-bg: oklch(0% 0 0 / 0.6);
   --table-head-border: var(--border);
+  --disabled-fg: oklch(66% 0.025 272);
+  --disabled-bg: oklch(28.6% 0.023 271);
+  --popover-edge: oklch(56% 0.025 270);
 }

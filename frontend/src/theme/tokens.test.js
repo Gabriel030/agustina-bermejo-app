@@ -109,6 +109,16 @@ const NON_TEXT_PAIRS = [
   ['--focus-ring', '--bg1'],
   ['--accent', '--surface'],
   ['--ink-faint', '--surface'],
+  ['--disabled-fg', '--disabled-bg'],
+  ['--disabled-fg', '--surface'],
+  ['--disabled-fg', '--control-bg'],
+  ['--popover-edge', '--surface'],
+  ['--popover-edge', '--dialog-bg'],
+];
+
+const DISTINCT_PAIRS = [
+  ['--disabled-bg', '--accent'],
+  ['--disabled-fg', '--on-accent'],
 ];
 
 describe('design tokens', () => {
@@ -138,6 +148,16 @@ describe('design tokens', () => {
         return { pair: `${fg}/${bg}`, ratio: Number(ratio.toFixed(2)) };
       }).filter(({ ratio }) => ratio < 3);
       expect(failures).toEqual([]);
+    });
+  }
+
+  for (const theme of ['light', 'dark']) {
+    it(`the disabled primary button differs from the enabled one in ${theme}`, () => {
+      const weak = DISTINCT_PAIRS.map(([disabled, enabled]) => {
+        const ratio = contrastRatio(resolveColor(themes[theme], disabled), resolveColor(themes[theme], enabled));
+        return { pair: `${disabled}/${enabled}`, ratio: Number(ratio.toFixed(2)) };
+      }).filter(({ ratio }) => ratio < 1.5);
+      expect(weak).toEqual([]);
     });
   }
 
