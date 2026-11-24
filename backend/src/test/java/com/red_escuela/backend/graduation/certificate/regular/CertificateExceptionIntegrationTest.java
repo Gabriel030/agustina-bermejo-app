@@ -213,7 +213,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     }
 
     private String fullNameOf(Long personId) {
-        return jdbc.queryForObject("select name || ' ' || lastname from person where id = ?", String.class, personId);
+        return jdbc.queryForObject("select name || ' ' || last_name from person where id = ?", String.class, personId);
     }
 
     @Test
@@ -223,7 +223,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
         CertificateExceptionResponse response = reader.get(id, true);
 
         assertThat(response.studentName()).isEqualTo(jdbc.queryForObject(
-                "select p.name || ' ' || p.lastname from student s join person p on p.id = s.person_id where s.id = ?", String.class, studentId));
+                "select p.name || ' ' || p.last_name from student s join person p on p.id = s.person_id where s.id = ?", String.class, studentId));
         assertThat(response.programName()).isEqualTo(jdbc.queryForObject(
                 "select pr.name from program_enrollment pe join program pr on pr.id = pe.program_id where pe.id = ?", String.class, enrollmentId));
         assertThat(response.requestedByName()).isEqualTo(fullNameOf(requesterId));
