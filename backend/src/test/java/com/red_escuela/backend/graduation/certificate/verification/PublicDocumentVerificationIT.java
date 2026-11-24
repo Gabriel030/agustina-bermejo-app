@@ -49,7 +49,6 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
             + "\"institutionName\":\"Instituto\",\"signatories\":[],\"templateRef\":\"BUILT_IN_V1\"}";
     private static final Set<CertificateDocumentType> TYPES_WITHOUT_ISSUER_YET = EnumSet.of(
             CertificateDocumentType.APPROVED_SUBJECTS_CERTIFICATE,
-            CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE,
             CertificateDocumentType.EXAM_CERTIFICATE);
     private static final AtomicInteger CLIENTS = new AtomicInteger(100);
 

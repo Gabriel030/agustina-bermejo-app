@@ -32,7 +32,7 @@ const KINDS = Object.keys(WAITLIST_KIND_LABEL);
 
 function formatDateTime(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function buildColumns(nextPosition, queue, canAct) {
@@ -252,9 +252,9 @@ export function ListaDeEsperaDetalle() {
         </Notice>
       )}
       <Tabs className="gap-4" value={tab} onValueChange={setTab}>
-        <TabsList variant="segmented">
-          <TabsTrigger value="queue">Cola</TabsTrigger>
-          <TabsTrigger value="history">Historial</TabsTrigger>
+        <TabsList variant="segmented" className="group-data-horizontal/tabs:h-12 p-0 md:group-data-horizontal/tabs:h-8 md:p-[3px]">
+          <TabsTrigger value="queue" className="h-full md:h-[calc(100%-1px)]">Cola</TabsTrigger>
+          <TabsTrigger value="history" className="h-full md:h-[calc(100%-1px)]">Historial</TabsTrigger>
         </TabsList>
         <TabsContent value="queue" className="mt-0">
           <QueueTab queue={data} canAct={!isReadOnly} />
