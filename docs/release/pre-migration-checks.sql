@@ -116,6 +116,8 @@ begin
       ('announcement', 'audience_quantifier', array['ALL', 'ANY']),
       ('announcement', 'category', array['ADMIN', 'EVALUATION', 'MATERIAL', 'REMINDER', 'SCHEDULING']),
       ('announcement', 'status', array['SCHEDULED', 'SENT']),
+      ('approved_subjects_certificate', 'recipient_type', array['EMPLOYER', 'HEALTH_INSURANCE', 'OTHER', 'STUDENT_TRANSPORT']),
+      ('approved_subjects_certificate', 'status', array['EXPIRED', 'REVOKED', 'VALID']),
       ('attendance', 'status', array['ABSENT', 'JUSTIFICATION_PENDING', 'JUSTIFIED', 'LATE', 'PRESENT']),
       ('attendance_change_request', 'previous_status', array['ABSENT', 'JUSTIFICATION_PENDING', 'JUSTIFIED', 'LATE', 'PRESENT']),
       ('attendance_change_request', 'requested_status', array['ABSENT', 'JUSTIFICATION_PENDING', 'JUSTIFIED', 'LATE', 'PRESENT']),
