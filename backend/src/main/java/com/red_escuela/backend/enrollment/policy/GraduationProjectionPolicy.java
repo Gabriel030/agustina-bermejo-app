@@ -57,12 +57,12 @@ public final class GraduationProjectionPolicy {
 
         BigDecimal planPace = planPaceOf(input.requiredCredits(), input.programTotalYears());
         boolean usesStudentPace = input.closedPeriods() >= MIN_CLOSED_PERIODS_FOR_STUDENT_PACE
-                && input.accumulatedCredits() > 0;
+                && input.courseworkCredits() > 0;
         if (!usesStudentPace && planPace == null) {
             return notProjectable(input, ProjectionBlockReason.PLAN_WITHOUT_DURATION);
         }
         BigDecimal pace = usesStudentPace
-                ? BigDecimal.valueOf(input.accumulatedCredits())
+                ? BigDecimal.valueOf(input.courseworkCredits())
                         .divide(BigDecimal.valueOf(input.closedPeriods()), 2, RoundingMode.HALF_UP)
                 : planPace;
 

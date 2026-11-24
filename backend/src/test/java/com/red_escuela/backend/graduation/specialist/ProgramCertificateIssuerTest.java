@@ -113,4 +113,35 @@ class ProgramCertificateIssuerTest extends AbstractIntegrationTest {
         byte[] pdf = certificateService.issueApprovedSubjectsCertificate(enrollment.getId());
         assertThat(pdf).isNotEmpty();
     }
+
+    @Test
+    void approvedSubjectsCertificateListsAnEquivalenceWithTheEquivalenceMark() throws Exception {
+        Student student = persistStudent("90000006");
+        Program program = persistProgram("CarreraConEquivalencia");
+        com.red_escuela.backend.academicstructure.entity.Subject subject = new com.red_escuela.backend.academicstructure.entity.Subject();
+        subject.setCode(com.red_escuela.backend.config.TestSubjectCodes.next());
+        subject.setName("Algebra Equivalente");
+        entityManager.persist(subject);
+        com.red_escuela.backend.academicstructure.entity.ProgramSubject programSubject = new com.red_escuela.backend.academicstructure.entity.ProgramSubject();
+        programSubject.setProgram(program);
+        programSubject.setSubject(subject);
+        programSubject.setCredits(4);
+        programSubject.setSortOrder(0);
+        entityManager.persist(programSubject);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        Person actor = persistPersonBase("90000007");
+        entityManager.persist(com.red_escuela.backend.enrollment.entity.SubjectEquivalence.builder().programEnrollment(enrollment)
+                .subjectId(subject.getId()).originInstitution("Universidad X").originSubjectName("Algebra")
+                .recognizedOn(java.time.LocalDate.of(2026, 3, 1)).resolutionNumber("RES-1").reason("Estudios previos")
+                .recordedById(actor.getId()).recordedAt(LocalDateTime.now()).build());
+        entityManager.flush();
+        authenticateAsPerson("ADMIN90000006");
+
+        byte[] pdf = certificateService.issueApprovedSubjectsCertificate(enrollment.getId());
+
+        try (org.apache.pdfbox.pdmodel.PDDocument document = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+            assertThat(new org.apache.pdfbox.text.PDFTextStripper().getText(document))
+                    .contains("Algebra Equivalente (Equivalencia)");
+        }
+    }
 }
