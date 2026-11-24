@@ -59,7 +59,7 @@ export function Stepper({
                 className={cn(
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-size-13 font-bold transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
                   state === 'valid' && 'bg-success text-on-accent',
-                  state === 'active' && 'bg-gradient-to-br from-brand to-accent-2 text-on-accent animate-[pulse-ring_1.8s_ease-in-out_infinite]',
+                  state === 'active' && 'bg-brand text-on-accent animate-[pulse-ring_1.8s_ease-in-out_infinite]',
                   state === 'invalid' && 'bg-danger text-on-accent',
                   state === 'visitedNeutral' && 'bg-neutral-bg text-ink',
                   (state === 'future' || state === 'locked') && 'bg-neutral-bg text-ink-faint',

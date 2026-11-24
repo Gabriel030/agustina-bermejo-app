@@ -468,7 +468,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                 onClick={() => setAlumnoFijado((prev) => (prev === fila.studentId ? null : fila.studentId))}
                 className="cursor-pointer"
               >
-                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-brand text-on-accent' : 'border-transparent bg-surface text-ink'}`}>
+                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-brand bg-brand text-on-accent' : 'border-transparent bg-surface text-ink'}`}>
                   {fila.studentName}
                 </td>
                 {historial.classDates.map((fecha) => {
@@ -484,7 +484,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                         e.stopPropagation();
                         setCeldaSeleccionada({ studentName: fila.studentName, fecha, ...celda });
                       }}
-                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.rowClass : ''} ${divisor(fecha)} ${resaltada ? 'border-accent-2' : 'border-transparent'} ${returnRequest && fila.studentName === returnRequest.studentName && fecha === returnRequest.classDate ? 'ring-2 ring-inset ring-brand' : ''} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
+                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.rowClass : ''} ${divisor(fecha)} ${resaltada ? 'border-brand' : 'border-transparent'} ${returnRequest && fila.studentName === returnRequest.studentName && fecha === returnRequest.classDate ? 'ring-2 ring-inset ring-brand' : ''} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
                       title={celda?.rejection ? rejectionText(celda.rejection) : (config?.label ?? 'Sin cargar')}
                       tabIndex={celda?.rejection ? 0 : undefined}
                       aria-label={celda?.rejection ? `${config.label}. ${rejectionText(celda.rejection)}` : undefined}
@@ -494,7 +494,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
                     </td>
                   );
                 })}
-                <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-accent-2 bg-brand text-on-accent' : 'border-transparent text-ink'}`}>
+                <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-brand bg-brand text-on-accent' : 'border-transparent text-ink'}`}>
                   {fila.attendancePercent == null ? '-' : `${Math.round(attendancePercentToPoints(fila.attendancePercent))}%`}
                 </td>
               </tr>

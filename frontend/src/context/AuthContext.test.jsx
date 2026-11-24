@@ -42,7 +42,7 @@ describe('restoreStoredSession', () => {
   it('sends a single refresh request when called twice concurrently', async () => {
     localStorage.setItem('refreshToken', 'old');
     apiFetch.mockImplementation(async (path) =>
-      path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'new' } : { id: 1 },
+      path === '/auth/refresh' ? { accessToken: 'a' } : { id: 1 },
     );
 
     const [first, second] = await Promise.all([restoreStoredSession(), restoreStoredSession()]);
@@ -71,7 +71,7 @@ describe('restoreStoredSession', () => {
   it('migrates a legacy stored token by sending it once in the body and then drops it', async () => {
     localStorage.setItem('refreshToken', 'legacy');
     apiFetch.mockImplementation(async (path) =>
-      path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'new' } : { id: 1 },
+      path === '/auth/refresh' ? { accessToken: 'a' } : { id: 1 },
     );
 
     await restoreStoredSession();
@@ -85,7 +85,7 @@ describe('restoreStoredSession', () => {
   it('refreshes without a body when only the session hint exists', async () => {
     localStorage.setItem('sessionHint', '1');
     apiFetch.mockImplementation(async (path) =>
-      path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'new' } : { id: 1 },
+      path === '/auth/refresh' ? { accessToken: 'a' } : { id: 1 },
     );
 
     await restoreStoredSession();
@@ -134,7 +134,7 @@ describe('offline cache lifecycle', () => {
     apiFetch.mockImplementation(async (path, options) => {
       if (path === '/auth/login') {
         lastLogin = JSON.parse(options.body).username;
-        return { accessToken: 'a', refreshToken: `r-${lastLogin}` };
+        return { accessToken: 'a' };
       }
       if (path === '/me') return { id: lastLogin === 'ana' ? 1 : 2, roles: [] };
       return {};
@@ -184,7 +184,7 @@ describe('offline cache lifecycle', () => {
     store.set(OFFLINE_OWNER_KEY, 1);
     store.set(OFFLINE_CACHE_KEY, 'cache-of-ana');
     localStorage.setItem('sessionHint', '1');
-    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [] }));
+    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a' } : { id: 2, roles: [] }));
 
     renderProvider();
 
@@ -197,7 +197,7 @@ describe('offline cache lifecycle', () => {
   it('restoredSessionOfAnotherOwnerNeverExposesPreviousUserQueries', async () => {
     store.set(OFFLINE_OWNER_KEY, 1);
     localStorage.setItem('sessionHint', '1');
-    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [] }));
+    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a' } : { id: 2, roles: [] }));
 
     renderProvider();
 
@@ -275,7 +275,7 @@ describe('offline cache lifecycle', () => {
   it('restoredSessionOfAnotherOwnerRefetchesBootstrapQueriesAfterThePurge', async () => {
     store.set(OFFLINE_OWNER_KEY, 1);
     localStorage.setItem('sessionHint', '1');
-    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a', refreshToken: 'r-beto' } : { id: 2, roles: [], path }));
+    apiFetch.mockImplementation(async (path) => (path === '/auth/refresh' ? { accessToken: 'a' } : { id: 2, roles: [], path }));
 
     renderProvider();
 
@@ -316,7 +316,7 @@ describe('session restore failures', () => {
     apiFetch.mockImplementation(async (path) => {
       if (path === '/auth/refresh') {
         if (failing) throw error;
-        return { accessToken: 'a', refreshToken: 'rotated' };
+        return { accessToken: 'a' };
       }
       return { id: 7, roles: [] };
     });
@@ -460,7 +460,7 @@ describe('session restore failures', () => {
 
   it('profileIsStoredWithOnlyNameAndRoles', async () => {
     apiFetch.mockImplementation(async (path) => {
-      if (path === '/auth/login') return { accessToken: 'a', refreshToken: 'r' };
+      if (path === '/auth/login') return { accessToken: 'a' };
       return { id: 7, nombre: 'Ana', apellido: 'Paz', email: 'ana@x.test', dni: '123', telefono: '555', roles: ['DIRECTOR'] };
     });
     renderProvider();
@@ -558,7 +558,7 @@ describe('session restore failures', () => {
     store.set(OFFLINE_OWNER_KEY, 1);
     await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
     apiFetch.mockImplementation(async (path) => {
-      if (path === '/auth/refresh') return { accessToken: 'a', refreshToken: 'r' };
+      if (path === '/auth/refresh') return { accessToken: 'a' };
       return { id: 2, nombre: 'Beto', apellido: 'Gil', roles: [] };
     });
 

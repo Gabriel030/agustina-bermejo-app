@@ -77,6 +77,27 @@ export function useBreadcrumb() {
     return [{ label: 'Aprobaciones', to: `/${rolBase}/aprobaciones` }, { label: requestLabel }];
   }
 
+  const exceptionDetail = /^\/(director|administrativo)\/(?:aprobaciones\/excepciones-por-reclamo|constancias\/excepciones)\/(\d+)$/.exec(location.pathname);
+  if (exceptionDetail) {
+    const label = `Pedido ${exceptionDetail[2]}`;
+    if (exceptionDetail[1] === 'director') {
+      return [
+        { label: 'Aprobaciones', to: '/director/aprobaciones' },
+        { label: 'Excepciones por reclamo', to: '/director/aprobaciones/excepciones-por-reclamo' },
+        { label },
+      ];
+    }
+    return [
+      { label: 'Constancias', to: '/administrativo/constancias' },
+      { label: 'Excepciones', to: '/administrativo/constancias' },
+      { label },
+    ];
+  }
+
+  if (location.pathname === '/director/aprobaciones/excepciones-por-reclamo') {
+    return [{ label: 'Aprobaciones', to: '/director/aprobaciones' }, { label: 'Excepciones por reclamo' }];
+  }
+
   if (location.pathname === '/director/aprobaciones/facturacion') {
     return [{ label: 'Aprobaciones', to: '/director/aprobaciones' }, { label: 'Operaciones de facturación' }];
   }

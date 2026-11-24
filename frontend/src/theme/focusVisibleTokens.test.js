@@ -2,8 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import indexCss from '../index.css?raw';
-import baseCss from './tokens.css?raw';
-import bCss from './tokens-b.css?raw';
+import tokensCss from './tokens.css?raw';
 
 const SRC_DIR = join(import.meta.dirname, '..');
 const SELF_FILE = join(import.meta.dirname, 'focusVisibleTokens.test.js');
@@ -43,13 +42,13 @@ function declarationValue(css, name) {
 
 describe('focus-visible outline variables', () => {
   it('every variable used by a :focus-visible rule is defined in the theme files', () => {
-    const declared = declaredVariables(indexCss, baseCss, bCss);
+    const declared = declaredVariables(indexCss, tokensCss);
     const undefinedVariables = focusVisibleVariables(indexCss).filter((name) => !declared.has(name));
     expect(undefinedVariables).toEqual([]);
   });
 
-  it('the focus ring token is declared in the shared root so both designs inherit it', () => {
-    expect(declaredVariables(baseCss.slice(0, baseCss.indexOf(':root[data-theme')))).toContain('--focus-ring');
+  it('the focus ring token is declared in the shared root so light and dark inherit it', () => {
+    expect(declaredVariables(tokensCss.slice(0, tokensCss.indexOf(':root[data-theme')))).toContain('--focus-ring');
     expect(focusVisibleVariables(indexCss)).toContain('--focus-ring');
   });
 
@@ -60,10 +59,10 @@ describe('focus-visible outline variables', () => {
     expect(translucent).toEqual([]);
   });
 
-  it('no shadow token used with a ring in source resolves to none in design B', () => {
+  it('no shadow token used with a ring in source resolves to none', () => {
     const usedTokens = new Set(sourceTexts().flatMap(({ text }) => [...text.matchAll(SHADOW_TOKEN_USAGE)].map(([, name]) => `--${name}`)));
     const noneTokens = [...usedTokens].filter((name) => {
-      const value = declarationValue(bCss, name) ?? declarationValue(baseCss, name);
+      const value = declarationValue(tokensCss, name);
       return value === 'none';
     });
     expect(noneTokens).toEqual([]);

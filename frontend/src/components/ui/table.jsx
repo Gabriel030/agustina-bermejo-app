@@ -1,13 +1,36 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { useScrollEdgeMask } from "@/hooks/useScrollEdgeMask"
+
+function fadeState({ start, end }) {
+  if (start && end) return "both"
+  if (start) return "start"
+  if (end) return "end"
+  return "none"
+}
 
 function Table({
   className,
   containerClassName,
+  containerLabel = "Tabla con desplazamiento horizontal",
   ...props
 }) {
+  const containerRef = React.useRef(null)
+  const fadeEnabled = !containerClassName?.includes("overflow-visible")
+  const { overflow, maskImage } = useScrollEdgeMask(containerRef, fadeEnabled)
+  const scrollable = fadeEnabled && (overflow.start || overflow.end)
   return (
-    <div data-slot="table-container" className={cn("relative w-full overflow-x-auto", containerClassName)}>
+    <div
+      ref={containerRef}
+      data-slot="table-container"
+      className={cn(
+        "relative w-full overflow-x-auto",
+        scrollable && "focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-(--focus-ring)",
+        containerClassName
+      )}
+      data-fade={fadeEnabled ? fadeState(overflow) : "none"}
+      style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
+      {...(scrollable ? { tabIndex: 0, role: "region", "aria-label": containerLabel } : {})}>
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}

@@ -15,14 +15,14 @@ const BORDE_TONO = {
   warning: 'border-l-warning',
   success: 'border-l-success',
   danger: 'border-l-danger',
-  accent2: 'border-l-accent-2',
+  accent: 'border-l-brand',
 };
 
 const TEXTO_TONO = {
   warning: 'text-warning',
   success: 'text-success',
   danger: 'text-danger',
-  accent2: 'text-accent-2',
+  accent: 'text-brand',
 };
 
 export function NotificationBell() {
@@ -78,7 +78,7 @@ export function NotificationBell() {
           {!badgeFailed && noLeidas > 0 && (
             <span
               aria-hidden="true"
-              className="absolute -right-1 -top-1 flex h-4 min-w-4 animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-on-accent motion-reduce:animate-none design-b:animate-none"
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-xs font-bold leading-none text-on-accent"
             >
               {noLeidas > 9 ? '9+' : noLeidas}
             </span>
@@ -90,7 +90,7 @@ export function NotificationBell() {
         align="end"
         aria-label="Notificaciones"
         sideOffset={8}
-        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate)"
+        className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-overlay"
       >
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-size-13 font-semibold text-ink">
           Notificaciones
@@ -115,7 +115,7 @@ export function NotificationBell() {
             <EmptyState title="Nada por ahora" className="py-6" />
           ) : (
             lista.map((n) => {
-              const tono = TONO_NOTIFICACION[n.type] ?? 'accent2';
+              const tono = TONO_NOTIFICACION[n.type] ?? 'accent';
               return (
                 <button
                   key={n.id}

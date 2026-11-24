@@ -21,7 +21,7 @@ const COLOR_DOT = {
   neutral: 'bg-neutral-ink',
 };
 
-export function StatusPill({ tone = 'neutral', dot = false, className, children }) {
+export function StatusPill({ tone = 'neutral', dot = false, icon: Icon, className, children }) {
   return (
     <span
       className={cn(
@@ -30,6 +30,7 @@ export function StatusPill({ tone = 'neutral', dot = false, className, children 
         className,
       )}
     >
+      {Icon && <Icon className="size-3.5 shrink-0" aria-hidden="true" />}
       {dot && <span className={cn('h-2 w-2 rounded-full', COLOR_DOT[tone])} />}
       {children}
     </span>

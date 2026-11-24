@@ -3,6 +3,7 @@ import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
+import { takeContractDeviations } from '@/test/contract/withContract';
 import { apiFetch, setAccessToken, setSessionExpiredHandler, RateLimitedError, AuthError } from '@/api/client';
 
 const API = 'http://localhost:8080';
@@ -18,7 +19,7 @@ describe('apiFetch', () => {
     return http.post(`${API}/auth/refresh`, async () => {
       counter.calls += 1;
       if (gate) await gate.promise;
-      return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+      return HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 });
     });
   }
 
@@ -61,7 +62,7 @@ describe('apiFetch', () => {
           body: await request.text(),
           requestedWith: request.headers.get('x-requested-with'),
         };
-        return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+        return HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 });
       }),
     );
 
@@ -77,6 +78,27 @@ describe('apiFetch', () => {
     expect(localStorage.getItem('sessionHint')).toBe('1');
   });
 
+  it.each([
+    ['with a refreshToken field', { accessToken: 'access-2', refreshToken: 'leaked-token', expiresIn: 900 }],
+    ['without a refreshToken field', { accessToken: 'access-2', expiresIn: 900 }],
+  ])('the session works and no token is stored when the refresh response comes %s', async (_label, payload) => {
+    localStorage.setItem('sessionHint', '1');
+    server.use(
+      http.get(`${API}/protegido`, ({ request }) =>
+        request.headers.get('authorization') === 'Bearer access-2'
+          ? HttpResponse.json({ ok: true })
+          : new HttpResponse(null, { status: 401 }),
+      ),
+      http.post(`${API}/auth/refresh`, () => HttpResponse.json(payload)),
+    );
+
+    await expect(apiFetch('/protegido')).resolves.toEqual({ ok: true });
+
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('sessionHint')).toBe('1');
+    takeContractDeviations();
+  });
+
   it('a legacy stored token is sent once in the body and removed after the refresh succeeds', async () => {
     localStorage.setItem('refreshToken', 'refresh-legacy');
     let sentBody;
@@ -88,7 +110,7 @@ describe('apiFetch', () => {
       ),
       http.post(`${API}/auth/refresh`, async ({ request }) => {
         sentBody = await request.json();
-        return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+        return HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 });
       }),
     );
 
@@ -236,7 +258,7 @@ describe('apiFetch', () => {
       http.post(`${API}/auth/login`, () => new HttpResponse(null, { status: 401 })),
       http.post(`${API}/auth/refresh`, () => {
         refreshLlamado = true;
-        return HttpResponse.json({ accessToken: 'x', refreshToken: 'y', expiresIn: 1 });
+        return HttpResponse.json({ accessToken: 'x', expiresIn: 1 });
       }),
     );
 

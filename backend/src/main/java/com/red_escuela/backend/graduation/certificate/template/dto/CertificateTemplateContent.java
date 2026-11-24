@@ -9,7 +9,7 @@ public record CertificateTemplateContent(
         @Nullable @Size(max = 120) String instituteName,
         @Nullable Long logoImageId,
         @Nullable @Size(max = 80) String title,
-        @Nullable @Size(max = 160) String introText,
+        @Nullable @Size(max = 240) String introText,
         @Nullable @Size(max = 160) String approvalText,
         @Nullable @Size(max = 160) String dictationText,
         @Nullable @Size(max = 160) String qrLabel,

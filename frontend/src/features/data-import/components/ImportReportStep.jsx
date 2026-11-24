@@ -25,6 +25,17 @@ function describeStatus(batch) {
   return null;
 }
 
+function buildReportActions({ actions, canSeal, downloaded, partial }) {
+  const available = [actions.download, ...(partial ? [actions.retry] : []), ...(canSeal ? [actions.seal] : [])];
+  const primary = canSeal && downloaded ? actions.seal : partial ? actions.retry : actions.download;
+  return {
+    primary: { label: primary.label, disabled: primary.disabled, loading: primary.loading, loadingLabel: primary.label, onClick: primary.run },
+    secondary: available
+      .filter((action) => action.key !== primary.key)
+      .map(({ key, label, icon, disabled, run }) => ({ key, label, icon, disabled, onSelect: run })),
+  };
+}
+
 export function ImportReportStep({ batch }) {
   const [downloaded, setDownloaded] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -68,6 +79,17 @@ export function ImportReportStep({ batch }) {
     }
   }
 
+  const reportActions = buildReportActions({
+    actions: {
+      download: { key: 'download', label: 'Descargar reporte', icon: Download, disabled: downloading, loading: downloading, run: handleDownload },
+      retry: { key: 'retry', label: 'Reintentar lo que falta', icon: RotateCcw, disabled: retry.isPending, loading: retry.isPending, run: handleRetry },
+      seal: { key: 'seal', label: 'Cerrar la importación', disabled: !downloaded, run: () => setSealOpen(true) },
+    },
+    canSeal,
+    downloaded,
+    partial: batch.status === 'PARTIAL',
+  });
+
   return (
     <>
       {statusText && <Notice>{statusText}</Notice>}
@@ -84,6 +106,14 @@ export function ImportReportStep({ batch }) {
           </StatCard>
         ))}
       </div>
+      {batch.graduationsPendingReview > 0 && (
+        <Notice tone="warning">
+          {batch.graduationsPendingReview === 1
+            ? '1 egreso quedó pendiente de revisión del Director'
+            : `${batch.graduationsPendingReview.toLocaleString('es-AR')} egresos quedaron pendientes de revisión del Director`}
+          . No habilitan certificado hasta que se revisen.
+        </Notice>
+      )}
       <GlassCard className="p-0">
         <ul className="divide-y divide-border" aria-label="Resultado por bloque">
           {batch.counters.map((block) => (
@@ -109,25 +139,15 @@ export function ImportReportStep({ batch }) {
         </GlassCard>
       )}
       <StickyActionBar
+        compact="menu"
+        aria-label="Acciones del reporte"
         summary="Reporte de la importación"
+        compactSummary="Reporte"
         hint={readOnly ? 'Solo lectura.' : canSeal && !downloaded ? 'Descargá el reporte para poder cerrar.' : undefined}
-      >
-        <Button className="min-h-11 md:min-h-8" type="button" variant="outline" loading={downloading} onClick={handleDownload}>
-          <Download className="size-4" aria-hidden="true" />
-          Descargar reporte
-        </Button>
-        {batch.status === 'PARTIAL' && (
-          <Button className="min-h-11 md:min-h-8" type="button" loading={retry.isPending} onClick={handleRetry}>
-            <RotateCcw className="size-4" aria-hidden="true" />
-            Reintentar lo que falta
-          </Button>
-        )}
-        {canSeal && (
-          <Button className="min-h-11 md:min-h-8" type="button" disabled={!downloaded} onClick={() => setSealOpen(true)}>
-            Cerrar la importación
-          </Button>
-        )}
-      </StickyActionBar>
+        compactHint={readOnly ? 'Solo lectura' : canSeal && !downloaded ? 'Descargá para cerrar' : undefined}
+        primary={reportActions.primary}
+        secondary={reportActions.secondary}
+      />
       <TypedConfirmDialog
         open={sealOpen}
         onOpenChange={setSealOpen}

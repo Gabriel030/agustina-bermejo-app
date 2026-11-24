@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 export const SERIES_COLORS = [
   'var(--accent)',
-  'var(--accent-2)',
+  'var(--accent)',
   'var(--success)',
   'var(--warning)',
   'var(--danger)',

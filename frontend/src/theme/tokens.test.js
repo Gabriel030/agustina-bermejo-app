@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import baseCss from './tokens.css?raw';
-import bCss from './tokens-b.css?raw';
+import tokensCss from './tokens.css?raw';
 import { contrastRatio, isInSrgbGamut, oklchToLinearRgb } from './contrast';
 
-const SHARED_WITH_BASE = ['--focus-ring'];
+const SAME_IN_BOTH_THEMES = ['--on-overlay'];
 
 const OKLCH = /^oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)\s*\)$/;
 const OKLCH_ANY = /oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*[\d.]+)?\s*\)/g;
@@ -24,10 +23,8 @@ function declarations(body) {
   return result;
 }
 
-const baseRoot = declarations(blockBody(baseCss, ':root'));
-const bLight = declarations(blockBody(bCss, ":root[data-design='b'][data-theme='light']"));
-const bDark = declarations(blockBody(bCss, ":root[data-design='b'][data-theme='dark']"));
-const bShared = declarations(blockBody(bCss, ":root[data-design='b']"));
+const lightTokens = declarations(blockBody(tokensCss, ':root'));
+const darkTokens = declarations(blockBody(tokensCss, ":root[data-theme='dark']"));
 
 function resolveColor(map, name, seen = new Set()) {
   if (seen.has(name)) throw new Error(`cycle on ${name}`);
@@ -42,8 +39,8 @@ function resolveColor(map, name, seen = new Set()) {
 }
 
 const themes = {
-  light: { ...baseRoot, ...bShared, ...bLight },
-  dark: { ...baseRoot, ...bShared, ...bDark },
+  light: lightTokens,
+  dark: { ...lightTokens, ...darkTokens },
 };
 
 const TEXT_PAIRS = [
@@ -112,33 +109,32 @@ const NON_TEXT_PAIRS = [
   ['--focus-ring', '--bg1'],
   ['--accent', '--surface'],
   ['--ink-faint', '--surface'],
+  ['--disabled-fg', '--disabled-bg'],
+  ['--disabled-fg', '--surface'],
+  ['--disabled-fg', '--control-bg'],
+  ['--popover-edge', '--surface'],
+  ['--popover-edge', '--dialog-bg'],
 ];
 
-describe('design B tokens', () => {
-  it('every variable declared by design B exists in the base root', () => {
-    const allB = [...Object.keys(bLight), ...Object.keys(bDark), ...Object.keys(bShared)];
-    const missing = allB.filter((name) => !(name in baseRoot));
-    expect(missing).toEqual([]);
-  });
+const DISTINCT_PAIRS = [
+  ['--disabled-bg', '--accent'],
+  ['--disabled-fg', '--on-accent'],
+];
 
-  it('every variable declared in the base root is redefined by design B or explicitly shared', () => {
-    const redefined = new Set([...Object.keys(bLight), ...Object.keys(bDark), ...Object.keys(bShared)]);
-    const untouched = Object.keys(baseRoot).filter((name) => !redefined.has(name));
-    expect(untouched.sort()).toEqual([...SHARED_WITH_BASE].sort());
-  });
-
-  it('light and dark blocks of design B redefine the same color variables', () => {
-    expect(Object.keys(bLight).sort()).toEqual(Object.keys(bDark).sort());
-  });
-
-  it('dark base block keeps parity with the light base root for new variables', () => {
-    const darkBase = declarations(blockBody(baseCss, ":root[data-theme='dark']"));
-    const misplaced = Object.keys(darkBase).filter((name) => !(name in baseRoot));
+describe('design tokens', () => {
+  it('every variable redefined in the dark block exists in the light root', () => {
+    const misplaced = Object.keys(darkTokens).filter((name) => !(name in lightTokens));
     expect(misplaced).toEqual([]);
   });
 
+  it('the dark block redefines every color variable of the light root that holds a color', () => {
+    const colorVariables = Object.keys(lightTokens).filter((name) => OKLCH.test(lightTokens[name]));
+    const missing = colorVariables.filter((name) => !(name in darkTokens));
+    expect(missing).toEqual(SAME_IN_BOTH_THEMES);
+  });
+
   for (const theme of ['light', 'dark']) {
-    it(`design B text pairs meet WCAG AA in ${theme}`, () => {
+    it(`text pairs meet WCAG AA in ${theme}`, () => {
       const failures = TEXT_PAIRS.map(([fg, bg]) => {
         const ratio = contrastRatio(resolveColor(themes[theme], fg), resolveColor(themes[theme], bg));
         return { pair: `${fg}/${bg}`, ratio: Number(ratio.toFixed(2)) };
@@ -146,7 +142,7 @@ describe('design B tokens', () => {
       expect(failures).toEqual([]);
     });
 
-    it(`design B non-text pairs meet 3:1 in ${theme}`, () => {
+    it(`non-text pairs meet 3:1 in ${theme}`, () => {
       const failures = NON_TEXT_PAIRS.map(([fg, bg]) => {
         const ratio = contrastRatio(resolveColor(themes[theme], fg), resolveColor(themes[theme], bg));
         return { pair: `${fg}/${bg}`, ratio: Number(ratio.toFixed(2)) };
@@ -155,16 +151,25 @@ describe('design B tokens', () => {
     });
   }
 
-  it('every oklch color of design B falls inside sRGB without clipping', () => {
-    const outOfGamut = [...bCss.matchAll(OKLCH_ANY)]
+  for (const theme of ['light', 'dark']) {
+    it(`the disabled primary button differs from the enabled one in ${theme}`, () => {
+      const weak = DISTINCT_PAIRS.map(([disabled, enabled]) => {
+        const ratio = contrastRatio(resolveColor(themes[theme], disabled), resolveColor(themes[theme], enabled));
+        return { pair: `${disabled}/${enabled}`, ratio: Number(ratio.toFixed(2)) };
+      }).filter(({ ratio }) => ratio < 1.5);
+      expect(weak).toEqual([]);
+    });
+  }
+
+  it('every oklch color falls inside sRGB without clipping', () => {
+    const outOfGamut = [...tokensCss.matchAll(OKLCH_ANY)]
       .filter(([, l, c, h]) => !isInSrgbGamut(Number(l) / 100, Number(c), Number(h)))
       .map(([whole]) => whole);
     expect(outOfGamut).toEqual([]);
   });
 
-  it('design B defines the dialog shadow variable', () => {
-    expect(bCss).toContain('--sh-dialog');
-    expect(baseRoot['--sh-dialog']).toBe('none');
+  it('the dialog shadow variable is declared', () => {
+    expect(lightTokens['--sh-dialog']).toBeDefined();
   });
 
   it('the contrast helper rejects a known failing pair', () => {

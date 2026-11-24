@@ -5,6 +5,7 @@ import { Tabs as TabsPrimitive } from "radix-ui"
 import { cn } from "@/lib/utils"
 import { smoothScrollBehavior } from "@/lib/scrollBehavior"
 import { useSlidingIndicator } from "@/hooks/useSlidingIndicator"
+import { useScrollEdgeMask } from "@/hooks/useScrollEdgeMask"
 
 function Tabs({
   className,
@@ -44,27 +45,11 @@ function TabsList({
   ...props
 }) {
   const { containerRef, rect } = useSlidingIndicator('[data-slot="tabs-trigger"][data-state="active"]');
-  const [overflow, setOverflow] = React.useState({ start: false, end: false });
   const segmented = variant === "segmented";
   const activeLeft = rect?.left;
   const activeWidth = rect?.width;
 
-  React.useEffect(() => {
-    const container = containerRef.current;
-    if (!segmented || !container) return undefined;
-    function measureOverflow() {
-      const start = container.scrollLeft > 1;
-      const end = container.scrollLeft + container.clientWidth < container.scrollWidth - 1;
-      setOverflow((previous) => (previous.start === start && previous.end === end ? previous : { start, end }));
-    }
-    measureOverflow();
-    container.addEventListener("scroll", measureOverflow, { passive: true });
-    window.addEventListener("resize", measureOverflow);
-    return () => {
-      container.removeEventListener("scroll", measureOverflow);
-      window.removeEventListener("resize", measureOverflow);
-    };
-  }, [segmented, containerRef, rect]);
+  const { maskImage } = useScrollEdgeMask(containerRef, segmented, rect);
 
   React.useEffect(() => {
     const container = containerRef.current;
@@ -72,11 +57,6 @@ function TabsList({
     const target = activeLeft - (container.clientWidth - activeWidth) / 2;
     container.scrollTo({ left: Math.max(0, target), behavior: smoothScrollBehavior() });
   }, [segmented, containerRef, activeLeft, activeWidth]);
-
-  const edge = 28;
-  const maskImage = segmented && (overflow.start || overflow.end)
-    ? `linear-gradient(to right, ${overflow.start ? `transparent, black ${edge}px` : "black, black"}, ${overflow.end ? `black calc(100% - ${edge}px), transparent` : "black, black"})`
-    : undefined;
 
   return (
     <TabsPrimitive.List
@@ -90,7 +70,7 @@ function TabsList({
       {variant === "segmented" && rect && (
         <div
           aria-hidden="true"
-          className="absolute inset-y-[3px] left-0 z-0 rounded-(--r-seg-indicator) bg-(image:--seg-indicator-bg) shadow-(--seg-indicator-shadow) transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="absolute inset-y-[3px] left-0 z-0 rounded-(--r-seg-indicator) bg-(--seg-indicator-bg) shadow-(--seg-indicator-shadow) transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{ transform: `translateX(${rect.left}px)`, width: rect.width }}
         />
       )}
@@ -107,7 +87,7 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 dark:text-muted-foreground dark:hover:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:text-(--disabled-fg) dark:disabled:text-(--disabled-fg) has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 dark:text-muted-foreground dark:hover:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
         "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
         "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",

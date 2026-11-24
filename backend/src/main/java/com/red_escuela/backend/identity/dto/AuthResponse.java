@@ -2,9 +2,9 @@ package com.red_escuela.backend.identity.dto;
 
 import com.red_escuela.backend.identity.dto.AuthTokens;
 
-public record AuthResponse(String accessToken, String refreshToken, long expiresIn) {
+public record AuthResponse(String accessToken, long expiresIn) {
 
     public static AuthResponse from(AuthTokens tokens) {
-        return new AuthResponse(tokens.accessToken(), tokens.refreshToken(), tokens.expiresIn());
+        return new AuthResponse(tokens.accessToken(), tokens.expiresIn());
     }
 }

@@ -266,7 +266,7 @@ class GraduationProjectionPolicyTest {
                 && subject.state() == CurriculumSubjectState.APPROVED).count();
         return policy.project(new GraduationProjectionInput(1L, status, totalYears, closedPeriods, today, accumulated,
                 requiredCredits, Math.max(0, requiredCredits - accumulated), mandatoryTotal, mandatoryApproved, approved,
-                false, false, subjects, groups));
+                false, false, subjects, groups, accumulated));
     }
 
     private List<ProjectionSubject> subjectsOf(int firstId, int count, CurriculumSubjectState state) {

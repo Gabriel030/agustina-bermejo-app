@@ -1,5 +1,7 @@
 package com.red_escuela.backend.perf;
 
+import com.red_escuela.backend.enrollment.repository.SubjectEquivalenceRepository;
+import com.red_escuela.backend.enrollment.api.SubjectApprovalLookup;
 import com.red_escuela.backend.academicstructure.api.BusinessDayCalendar;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
@@ -111,7 +113,8 @@ class AlgorithmicComplexityBenchmarkTest {
                     });
             Mockito.when(sectionRepository.findByProgramEnrollmentId(any())).thenReturn(List.of());
             Mockito.when(sectionRepository.existsByProgramEnrollmentIdAndStatusIn(any(), any())).thenReturn(false);
-            reader = new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder);
+            reader = new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder,
+                    new SubjectApprovalLookup(sectionRepository, Mockito.mock(SubjectEquivalenceRepository.class)));
         }
     }
 

@@ -53,7 +53,7 @@ export function VerificacionEmail() {
                   Tu email quedó confirmado. Desde ahora lo usás para ingresar.
                 </p>
               </div>
-              <Link to="/login" className="text-size-13 font-semibold text-brand hover:text-accent-2">
+              <Link to="/login" className="text-size-13 font-semibold text-brand">
                 Ir a ingresar
               </Link>
             </>
@@ -71,10 +71,10 @@ export function VerificacionEmail() {
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/perfil" className="text-size-13 font-semibold text-brand hover:text-accent-2">
+                <Link to="/perfil" className="text-size-13 font-semibold text-brand">
                   Ir a Mi perfil
                 </Link>
-                <Link to="/login" className="text-size-13 font-semibold text-brand hover:text-accent-2">
+                <Link to="/login" className="text-size-13 font-semibold text-brand">
                   Ir a ingresar
                 </Link>
               </div>

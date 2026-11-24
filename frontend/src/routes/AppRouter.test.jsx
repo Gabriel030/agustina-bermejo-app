@@ -245,7 +245,7 @@ describe('AppRouter', () => {
       }),
       http.post(`${API}/auth/refresh`, () => {
         refreshRequests += 1;
-        return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+        return HttpResponse.json({ accessToken: 'access-2', expiresIn: 900 });
       }),
     );
     renderApp('/login');

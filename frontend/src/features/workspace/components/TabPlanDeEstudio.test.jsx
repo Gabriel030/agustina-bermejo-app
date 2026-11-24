@@ -26,6 +26,9 @@ function subject(overrides) {
     prerequisites: [],
     currentEnrollmentId: null,
     corequisites: [],
+    approvalSource: 'COURSEWORK',
+    equivalence: null,
+    prerequisitesWaived: false,
     ...overrides,
   };
 }
@@ -44,6 +47,10 @@ function progress(subjects, overrides = {}) {
       mandatoryApproved: 1,
       counts: { approved: 1, inProgress: 0, regularPendingFinal: 0, failed: 0, available: 0, blocked: 1 },
       electiveGroups: [],
+      approvedByEquivalence: 0,
+      creditsByEquivalence: 0,
+      averageScore: null,
+      accumulatedCreditsByCoursework: 3,
     },
     warnings: [],
     ...overrides,
