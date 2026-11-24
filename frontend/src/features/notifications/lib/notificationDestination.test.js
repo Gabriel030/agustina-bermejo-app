@@ -43,6 +43,10 @@ describe('notificationDestination', () => {
 
   it.each([
     ['SUBJECT_WITHDRAWN', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
+    ['WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
+    ['WAITLIST_EXPIRING_SOON', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
+    ['WAITLIST_REMOVED_BY_STAFF', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
+    ['WAITLIST_ENTRY_EXPIRED', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
     ['REGULAR_CERTIFICATE_READY', 'ALUMNO', '/alumno/mis-carreras?tab=tramites'],
     ['ATTENDANCE_JUSTIFICATION_REJECTED', 'ALUMNO', '/alumno/mis-carreras?tab=asistencia'],
     ['SUBJECT_WITHDRAWN_TEACHER', 'DOCENTE', '/docente/mis-comisiones'],

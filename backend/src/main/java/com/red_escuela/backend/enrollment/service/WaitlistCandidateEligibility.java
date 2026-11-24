@@ -4,6 +4,7 @@ import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
 import com.red_escuela.backend.enrollment.dto.WaitlistKind;
 import com.red_escuela.backend.enrollment.dto.WaitlistVerdict;
 import com.red_escuela.backend.enrollment.dto.WaitlistVerdictReason;
+import com.red_escuela.backend.enrollment.exception.SectionScheduleOverlapException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,11 @@ public class WaitlistCandidateEligibility {
         return firstViolation(candidate)
                 .map(WaitlistVerdict::skippedBecause)
                 .orElseGet(WaitlistVerdict::passing);
+    }
+
+    public Optional<String> findConflictingSectionName(WaitlistCandidate candidate) {
+        return scheduleOverlapGuard.findOverlapForProgramSection(candidate.studentId(), candidate.sectionId(),
+                candidate.termId(), candidate.enrollmentId()).map(SectionScheduleOverlapException::conflictingSubjectName);
     }
 
     private Optional<WaitlistVerdictReason> firstViolation(WaitlistCandidate candidate) {
