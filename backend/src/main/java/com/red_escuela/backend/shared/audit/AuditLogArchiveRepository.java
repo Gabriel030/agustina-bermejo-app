@@ -8,7 +8,7 @@ import java.util.Collection;
 
 public interface AuditLogArchiveRepository extends JpaRepository<AuditLogArchiveEntry, Long> {
 
-    Page<AuditLogArchiveEntry> findByEntityTypeAndEntityIdInOrderByOccurredAtDescIdDesc(AuditEntityType entityType,
+    Page<AuditLogArchiveEntry> findByEntityTypeAndEntityIdInOrderByOccurredAtDescIdDesc(String entityType,
                                                                                         Collection<Long> entityIds,
                                                                                         Pageable pageable);
 }

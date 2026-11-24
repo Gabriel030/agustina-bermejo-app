@@ -93,7 +93,7 @@ public class WaitlistHistoryReader {
         }
 
         static HistoryRow fromArchive(AuditLogArchiveEntry entry) {
-            return new HistoryRow(entry.getId(), entry.getOccurredAt(), entry.getActorPersonId(), entry.getAction(),
+            return new HistoryRow(entry.getId(), entry.getOccurredAt(), entry.getActorPersonId(), AuditAction.valueOf(entry.getAction()),
                     entry.getEntityId(), entry.getReason());
         }
     }

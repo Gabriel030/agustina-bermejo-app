@@ -2,8 +2,6 @@ package com.red_escuela.backend.shared.audit;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -34,13 +32,11 @@ public class AuditLogArchiveEntry {
     @Column(name = "actor_role", length = 30)
     private String actorRole;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "action", nullable = false, length = 40)
-    private AuditAction action;
+    private String action;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "entity_type", nullable = false, length = 40)
-    private AuditEntityType entityType;
+    private String entityType;
 
     @Column(name = "entity_id", nullable = false)
     private Long entityId;

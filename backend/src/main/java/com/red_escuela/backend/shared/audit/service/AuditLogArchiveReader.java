@@ -21,7 +21,7 @@ public class AuditLogArchiveReader {
     }
 
     public Page<AuditLogArchiveEntry> findNewestFirst(AuditEntityType entityType, Collection<Long> entityIds, int limit) {
-        return auditLogArchiveRepository.findByEntityTypeAndEntityIdInOrderByOccurredAtDescIdDesc(entityType, entityIds,
+        return auditLogArchiveRepository.findByEntityTypeAndEntityIdInOrderByOccurredAtDescIdDesc(entityType.name(), entityIds,
                 PageRequest.of(0, limit));
     }
 }
