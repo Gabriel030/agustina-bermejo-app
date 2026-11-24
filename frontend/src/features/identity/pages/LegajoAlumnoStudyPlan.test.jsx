@@ -7,6 +7,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { LegajoAlumno } from './LegajoAlumno';
 import { studentFixture } from '@/test/fixtures/students';
+import { activeSubjectEquivalences } from '@/test/fixtures/subjectEquivalences';
 
 const auth = vi.hoisted(() => ({ roles: ['PRECEPTOR'] }));
 
@@ -91,6 +92,7 @@ function mockStudent({ programs = [PROGRAM_ENROLLMENT], courses = [] } = {}) {
     http.get(`${API}/students/9`, () => HttpResponse.json(studentFixture({ id: 9, nombre: 'Valentina', apellido: 'Suárez', status: 'ACTIVE' }))),
     http.get(`${API}/students/9/program-enrollments`, () => HttpResponse.json(programs)),
     http.get(`${API}/students/9/course-enrollments`, () => HttpResponse.json(courses)),
+    http.get(`${API}/program-enrollments/:id/equivalences`, () => HttpResponse.json([])),
     http.get(`${API}/program-enrollments/4/section-enrollments`, () => HttpResponse.json([])),
     http.get(`${API}/program-enrollments/4/progress`, () => HttpResponse.json({})),
   );
@@ -229,5 +231,62 @@ describe('LegajoAlumno study plan tab', () => {
     renderLegajo();
 
     expect(await screen.findByText('Los cursos no tienen plan de estudio')).toBeInTheDocument();
+  });
+
+  it('keeps the map working when equivalences are forbidden and shows no-access only inside their section', async () => {
+    mockStudent();
+    mockProgress(4, [subject(), AVAILABLE_SUBJECT]);
+    server.use(http.get(`${API}/program-enrollments/4/equivalences`, () => new HttpResponse(null, { status: 403 })));
+    renderLegajo('?view=plan-de-estudio&vista=mapa');
+
+    const section = await screen.findByRole('region', { name: 'Equivalencias' });
+    expect(await within(section).findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
+    expect(await screen.findAllByRole('button', { name: /Matemática I/ })).not.toHaveLength(0);
+    expect(screen.getByRole('heading', { name: 'Avance en el plan' })).toBeInTheDocument();
+  });
+
+  it('shows the equivalences section below the plan with the read-only notice for the preceptor', async () => {
+    mockStudent();
+    mockProgress(4, [subject()]);
+    server.use(
+      http.get(`${API}/program-enrollments/4/equivalences`, () =>
+        HttpResponse.json(activeSubjectEquivalences()),
+      ),
+    );
+    renderLegajo();
+
+    const section = await screen.findByRole('region', { name: 'Equivalencias' });
+    expect(await within(section).findByText('Lengua y Comunicación')).toBeInTheDocument();
+    expect(within(section).getByText('Solo lectura')).toBeInTheDocument();
+    expect(within(section).queryByRole('button', { name: /Cargar|Anular/ })).not.toBeInTheDocument();
+  });
+
+  it.each(['ADMINISTRATIVO', 'DIRECTOR'])('shows the section without the read-only notice or actions for %s', async (role) => {
+    auth.roles = [role];
+    mockStudent();
+    mockProgress(4, [subject()]);
+    server.use(http.get(`${API}/program-enrollments/4/equivalences`, () => HttpResponse.json(activeSubjectEquivalences())));
+    renderLegajo();
+
+    const section = await screen.findByRole('region', { name: 'Equivalencias' });
+    expect(await within(section).findByText('Lengua y Comunicación')).toBeInTheDocument();
+    expect(within(section).queryByText('Solo lectura')).not.toBeInTheDocument();
+    expect(within(section).queryByRole('button', { name: /Cargar|Anular/ })).not.toBeInTheDocument();
+  });
+
+  it('jumps from the equivalence count in the summary to the section', async () => {
+    mockStudent();
+    const withEquivalence = progress(4, [subject()]);
+    withEquivalence.summary.approvedByEquivalence = 2;
+    server.use(
+      http.get(`${API}/program-enrollments/4/progress/subjects`, () => HttpResponse.json(withEquivalence)),
+    );
+    const user = userEvent.setup();
+    renderLegajo('?view=plan-de-estudio&vista=mapa');
+
+    await user.click(await screen.findByRole('link', { name: 'ver' }));
+
+    expect(await screen.findByRole('region', { name: 'Equivalencias' })).toHaveFocus();
+    expect(screen.getByText(/Incluye/)).toBeInTheDocument();
   });
 });

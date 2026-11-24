@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { EnrollmentPicker } from '@/features/identity/components/EnrollmentPicker';
 import { useEnrollmentOptions } from '@/features/identity/hooks/useStudentAcademicRecord';
 import { parseEnrollmentKey } from '@/features/identity/lib/academicRecord';
-import { TabPlanDeEstudio } from '@/features/workspace';
+import { TabPlanDeEstudio, EquivalencesSection, EQUIVALENCES_SECTION_ID } from '@/features/workspace';
+import { useActiveRole } from '@/hooks/useActiveRole';
 
 export function PlanDeEstudioTab({ studentId, enrollmentKey, onEnrollmentChange, onViewGrades }) {
   const { options, isLoading, isError, refetch } = useEnrollmentOptions(studentId);
+  const { roleBase } = useActiveRole();
 
   if (isLoading) {
     return (
@@ -46,12 +48,16 @@ export function PlanDeEstudioTab({ studentId, enrollmentKey, onEnrollmentChange,
       {kind === 'course' ? (
         <EmptyState icon="📚" title="Los cursos no tienen plan de estudio" />
       ) : (
-        <TabPlanDeEstudio
-          key={selected.key}
-          carreraId={id}
-          audience="staff"
-          onViewEnrollment={(sectionEnrollmentId) => onViewGrades(selected.key, sectionEnrollmentId)}
-        />
+        <>
+          <TabPlanDeEstudio
+            key={selected.key}
+            carreraId={id}
+            audience="staff"
+            equivalencesAnchorId={EQUIVALENCES_SECTION_ID}
+            onViewEnrollment={(sectionEnrollmentId) => onViewGrades(selected.key, sectionEnrollmentId)}
+          />
+          <EquivalencesSection key={`equivalences-${selected.key}`} programEnrollmentId={id} readOnlyNotice={roleBase === 'preceptor'} />
+        </>
       )}
     </div>
   );
