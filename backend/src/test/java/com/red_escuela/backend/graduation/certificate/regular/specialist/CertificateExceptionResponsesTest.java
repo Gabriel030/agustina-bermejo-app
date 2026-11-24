@@ -51,7 +51,7 @@ class CertificateExceptionResponsesTest {
 
     @Test
     void pendingExceptionHasNullDeciderName() {
-        when(personNameFinder.findFullNamesByPersonId(anyCollection())).thenReturn(Map.of(9L, "Beto Admin"));
+        when(personNameFinder.findFullNamesByPersonId(anyCollection())).thenReturn(Map.of(9L, "Beto Admin", 4L, "Dora Directora"));
 
         CertificateExceptionResponse response = responses.of(pending(RegularityKind.PROGRAM, 17L, 5L, 9L));
 

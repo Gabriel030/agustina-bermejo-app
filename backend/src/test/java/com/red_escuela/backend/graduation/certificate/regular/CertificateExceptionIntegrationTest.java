@@ -22,10 +22,11 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.Exceptio
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionConsumer;
-import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionReader;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionDueExpirer;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.CertificateExceptionReader;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RequestCertificateExceptionRequest;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ApproveCertificateExceptionUseCase;
+import com.red_escuela.backend.graduation.certificate.regular.usecase.CreateDirectCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RejectCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.RequestCertificateExceptionUseCase;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.WithdrawCertificateExceptionUseCase;
@@ -40,6 +41,8 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,6 +96,8 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     private CertificateExceptionDueExpirer dueExpirer;
     @Autowired
     private RequestCertificateExceptionUseCase requestUseCase;
+    @Autowired
+    private CreateDirectCertificateExceptionUseCase createDirectUseCase;
     @Autowired
     private CertificateExceptionReader reader;
     @Autowired
@@ -244,6 +249,18 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void directExceptionCreatedByDirectorCarriesTheDirectorAsRequester() {
+        actAs(directorId);
+        CertificateExceptionResponse response = createDirectUseCase.create(new RequestCertificateExceptionRequest(RegularityKind.PROGRAM,
+                enrollmentId, OrganismKind.COURT, "Causa 2/2026", REASON));
+
+        assertThat(response.createdByDirector()).isTrue();
+        assertThat(response.requestedByName()).isEqualTo(fullNameOf(directorId));
+        assertThat(response.studentName()).isNotBlank();
+        assertThat(response.programName()).isNotBlank();
+    }
+
+    @Test
     void listResolvesNamesInTheSameNumberOfQueriesRegardlessOfSize() {
         persistApproved(NOW);
         Long firstCount = queryCountOfListing();
@@ -257,7 +274,7 @@ class CertificateExceptionIntegrationTest extends AbstractIntegrationTest {
     }
 
     private Long queryCountOfListing() {
-        org.hibernate.stat.Statistics statistics = entityManagerFactory.unwrap(org.hibernate.SessionFactory.class).getStatistics();
+        Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         statistics.setStatisticsEnabled(true);
         statistics.clear();
         List<CertificateExceptionResponse> listed = reader.list(true, null, null);
