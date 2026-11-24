@@ -12,7 +12,7 @@ describe('notificaciones', () => {
 
   it('etiqueta y da tono a la nota de credito emitida', () => {
     expect(TIPO_NOTIFICACION_LABEL.CREDIT_NOTE_ISSUED).toBe('Nota de crédito emitida');
-    expect(TONO_NOTIFICACION.CREDIT_NOTE_ISSUED).toBe('accent2');
+    expect(TONO_NOTIFICACION.CREDIT_NOTE_ISSUED).toBe('accent');
   });
 
   it('etiqueta y da tono al aviso de cobranza', () => {
@@ -60,7 +60,7 @@ describe('notificaciones', () => {
     expect(TIPO_NOTIFICACION_LABEL.GRADES_PUBLISHED).toBe('Notas publicadas');
     expect(TONO_NOTIFICACION.GRADES_PUBLISHED).toBe('success');
     expect(TIPO_NOTIFICACION_LABEL.GRADE_CORRECTED).toBe('Nota corregida');
-    expect(TONO_NOTIFICACION.GRADE_CORRECTED).toBe('accent2');
+    expect(TONO_NOTIFICACION.GRADE_CORRECTED).toBe('accent');
     expect(TIPO_NOTIFICACION_LABEL.SUBJECT_APPROVAL_REVERTED).toBe('Cursada otra vez regular');
     expect(TONO_NOTIFICACION.SUBJECT_APPROVAL_REVERTED).toBe('warning');
   expect(TIPO_NOTIFICACION_LABEL.CLOSURE_EXCEPTION_GRANTED_TEACHER).toBe('Planilla del cierre actualizada');
@@ -85,7 +85,7 @@ describe('notificaciones', () => {
     expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_OUTDATED).toBe('Egreso desactualizado');
     expect(TONO_NOTIFICACION.GRADUATION_REQUEST_OUTDATED).toBe('warning');
     expect(TONO_NOTIFICACION.GRADUATION_REQUEST_PENDING_REVIEW).toBe('warning');
-    expect(TONO_NOTIFICACION.GRADUATION_REQUEST_VERIFIED).toBe('accent2');
+    expect(TONO_NOTIFICACION.GRADUATION_REQUEST_VERIFIED).toBe('accent');
   });
 
   it('labels and tones the graduation request blocked by debt', () => {

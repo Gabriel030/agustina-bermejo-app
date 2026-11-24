@@ -128,7 +128,7 @@ export function ForgotPassword() {
             </m.div>
 
             <div className="mt-2 text-center text-xs text-ink-faint">
-              <Link to="/login" className="font-semibold text-brand hover:text-accent-2">
+              <Link to="/login" className="font-semibold text-brand">
                 ← Volver a ingresar
               </Link>
             </div>
@@ -172,12 +172,12 @@ export function ForgotPassword() {
               type="button"
               onClick={handleReenviarCodigo}
               disabled={segundosParaReenviar > 0 || enviando}
-              className="mt-1 text-center text-xs font-semibold text-brand hover:text-accent-2 disabled:cursor-not-allowed disabled:text-ink-faint disabled:hover:text-ink-faint">
+              className="mt-1 text-center text-xs font-semibold text-brand disabled:cursor-not-allowed disabled:text-ink-faint disabled:hover:text-ink-faint">
               {segundosParaReenviar > 0 ? `Reenviar código (${segundosParaReenviar}s)` : 'Reenviar código'}
             </Button>
 
             <div className="mt-1 text-center text-xs text-ink-faint">
-              <Link to="/login" className="font-semibold text-brand hover:text-accent-2">
+              <Link to="/login" className="font-semibold text-brand">
                 ← Volver a ingresar
               </Link>
             </div>

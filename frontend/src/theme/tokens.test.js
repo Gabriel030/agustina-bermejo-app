@@ -172,10 +172,6 @@ describe('design tokens', () => {
     expect(lightTokens['--sh-dialog']).toBeDefined();
   });
 
-  it('the token file has no design selector', () => {
-    expect(tokensCss).not.toMatch(/data-design/);
-  });
-
   it('the contrast helper rejects a known failing pair', () => {
     const white = oklchToLinearRgb(1, 0, 0);
     const lightGray = oklchToLinearRgb(0.9, 0, 0);

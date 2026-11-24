@@ -285,7 +285,7 @@ export function Registrarse() {
 
         <div className="mt-6 text-center text-xs text-ink-faint">
           ¿Ya tenés cuenta?{' '}
-          <Link to="/login" className="font-semibold text-brand hover:text-accent-2">
+          <Link to="/login" className="font-semibold text-brand">
             Ingresá
           </Link>
         </div>

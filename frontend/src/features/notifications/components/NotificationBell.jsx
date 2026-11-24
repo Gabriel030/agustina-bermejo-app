@@ -15,14 +15,14 @@ const BORDE_TONO = {
   warning: 'border-l-warning',
   success: 'border-l-success',
   danger: 'border-l-danger',
-  accent2: 'border-l-accent-2',
+  accent: 'border-l-brand',
 };
 
 const TEXTO_TONO = {
   warning: 'text-warning',
   success: 'text-success',
   danger: 'text-danger',
-  accent2: 'text-accent-2',
+  accent: 'text-brand',
 };
 
 export function NotificationBell() {
@@ -115,7 +115,7 @@ export function NotificationBell() {
             <EmptyState title="Nada por ahora" className="py-6" />
           ) : (
             lista.map((n) => {
-              const tono = TONO_NOTIFICACION[n.type] ?? 'accent2';
+              const tono = TONO_NOTIFICACION[n.type] ?? 'accent';
               return (
                 <button
                   key={n.id}

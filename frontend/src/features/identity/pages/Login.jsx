@@ -137,7 +137,7 @@ export function Login() {
           </div>
 
           <div className="-mt-1 flex justify-end">
-            <Link to="/olvide-mi-contrasena" className="text-xs font-semibold text-brand hover:text-accent-2">
+            <Link to="/olvide-mi-contrasena" className="text-xs font-semibold text-brand">
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
@@ -201,7 +201,7 @@ export function Login() {
 
         <div className="mt-6 text-center text-xs text-ink-faint">
           ¿No tenés cuenta?{' '}
-          <Link to="/registrarse" className="font-semibold text-brand hover:text-accent-2">
+          <Link to="/registrarse" className="font-semibold text-brand">
             Registrate
           </Link>
         </div>
