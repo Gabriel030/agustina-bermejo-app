@@ -10,9 +10,11 @@ import com.red_escuela.backend.dataimport.entity.ImportRowError;
 import com.red_escuela.backend.dataimport.entity.ImportRowStatus;
 import com.red_escuela.backend.dataimport.exception.ImportBatchNotFoundException;
 import com.red_escuela.backend.dataimport.repository.ImportBatchRepository;
+import com.red_escuela.backend.dataimport.repository.ImportCreatedEntityRepository;
 import com.red_escuela.backend.dataimport.repository.ImportFileRepository;
 import com.red_escuela.backend.dataimport.repository.ImportRowRepository;
 import com.red_escuela.backend.dataimport.repository.ImportRowStatusCount;
+import com.red_escuela.backend.graduation.api.ImportedGraduationReviewQuery;
 import com.red_escuela.backend.shared.pagination.PageResponse;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -31,9 +33,14 @@ public class ImportBatchReader {
     private final ImportBatchRepository batchRepository;
     private final ImportFileRepository fileRepository;
     private final ImportRowRepository rowRepository;
+    private final ImportCreatedEntityRepository createdEntityRepository;
+    private final ImportedGraduationReviewQuery graduationReviewQuery;
 
     public ImportBatchReader(ImportBatchRepository batchRepository, ImportFileRepository fileRepository,
-            ImportRowRepository rowRepository) {
+            ImportRowRepository rowRepository, ImportCreatedEntityRepository createdEntityRepository,
+            ImportedGraduationReviewQuery graduationReviewQuery) {
+        this.createdEntityRepository = createdEntityRepository;
+        this.graduationReviewQuery = graduationReviewQuery;
         this.batchRepository = batchRepository;
         this.fileRepository = fileRepository;
         this.rowRepository = rowRepository;
@@ -71,6 +78,15 @@ public class ImportBatchReader {
         }
         List<ImportBlockCounters> counters = grouped.entrySet().stream()
                 .map(entry -> new ImportBlockCounters(entry.getKey(), entry.getValue())).toList();
-        return ImportBatchResponse.from(batch, fileRepository.findByBatchIdOrderByEntityType(batch.getId()), counters);
+        return ImportBatchResponse.from(batch, fileRepository.findByBatchIdOrderByEntityType(batch.getId()), counters,
+                countGraduationsPendingReview(batch.getId(), grouped.containsKey(ImportEntityType.GRADUATIONS)));
+    }
+
+    private long countGraduationsPendingReview(Long batchId, boolean batchHasGraduations) {
+        if (!batchHasGraduations) {
+            return 0;
+        }
+        return graduationReviewQuery.countPendingReview(
+                createdEntityRepository.findEntityIdsByBatchIdAndEntityType(batchId, ImportEntityType.GRADUATIONS));
     }
 }

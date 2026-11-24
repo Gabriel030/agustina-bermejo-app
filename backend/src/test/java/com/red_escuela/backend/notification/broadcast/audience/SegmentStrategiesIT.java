@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.audience;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -114,7 +115,7 @@ class SegmentStrategiesIT extends AbstractIntegrationTest {
         programEnrollment.setStudent(student);
         programEnrollment.setProgram(program);
         programEnrollment.setStatus(status);
-        programEnrollment.setEnrollmentDate(LocalDateTime.now());
+        programEnrollment.setEnrollmentDate(LocalDateTime.now(MutableClock.INSTANCE));
         entityManager.persist(programEnrollment);
     }
 
@@ -126,7 +127,7 @@ class SegmentStrategiesIT extends AbstractIntegrationTest {
                 .setParameter("student", student).getSingleResult());
         enrollment.setSubjectSection(section);
         enrollment.setStatus(status);
-        enrollment.setEnrolledAt(LocalDateTime.now());
+        enrollment.setEnrolledAt(LocalDateTime.now(MutableClock.INSTANCE));
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
     }
