@@ -47,7 +47,7 @@ export function ColumnFilter({ label, options, selected, onChange, triggerLabel 
             type="button"
             aria-label={`Filtrar por ${label}`}
             className={cn(
-              'inline-flex size-6 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'relative inline-flex size-6 items-center max-md:after:absolute max-md:after:-inset-2.5 justify-center rounded-md text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               isFiltering && 'bg-accent-soft text-primary',
             )}
           >

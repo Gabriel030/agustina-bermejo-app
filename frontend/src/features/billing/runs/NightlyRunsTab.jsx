@@ -170,7 +170,7 @@ export function NightlyRunsTab() {
                 variant="subtle"
                 size="inline"
                 aria-label="Cómo funciona el proceso nocturno"
-                className="rounded-full transition-none focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
+                className="relative rounded-full transition-none max-md:after:absolute max-md:after:-inset-3.5 focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
               >
                 <Info className="size-4" />
               </Button>
