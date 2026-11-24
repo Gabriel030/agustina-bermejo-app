@@ -15,7 +15,6 @@ import com.red_escuela.backend.dataimport.repository.ImportBatchRepository;
 import com.red_escuela.backend.dataimport.repository.ImportFileRepository;
 import com.red_escuela.backend.dataimport.repository.ImportRowCommittedKey;
 import com.red_escuela.backend.dataimport.repository.ImportRowRepository;
-import com.red_escuela.backend.shared.persistence.InClauseChunks;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,10 +26,13 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.FlushModeType;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,16 +44,19 @@ public class ImportBatchValidator {
     private final ImportBatchEventRepository eventRepository;
     private final ImportDefinitionRegistry registry;
     private final EntityManager entityManager;
+    private final int chunkSize;
 
     public ImportBatchValidator(ImportBatchRepository batchRepository, ImportFileRepository fileRepository,
             ImportRowRepository rowRepository, ImportBatchEventRepository eventRepository,
-            ImportDefinitionRegistry registry, EntityManager entityManager) {
+            ImportDefinitionRegistry registry, EntityManager entityManager,
+            @Value("${app.dataimport.validation-chunk-size:1000}") int chunkSize) {
         this.batchRepository = batchRepository;
         this.fileRepository = fileRepository;
         this.rowRepository = rowRepository;
         this.eventRepository = eventRepository;
         this.registry = registry;
         this.entityManager = entityManager;
+        this.chunkSize = Math.max(1, chunkSize);
     }
 
     @Transactional
@@ -79,12 +84,25 @@ public class ImportBatchValidator {
         ImportEntityDefinition definition = registry.definitionFor(type);
         Map<String, Set<String>> seen = new HashMap<>();
         Map<ImportRowStatus, Integer> counts = new HashMap<>();
-        List<ImportRow> fileRows = rowRepository.findByBatchIdAndEntityTypeOrderByRowNumber(batchId, type);
-        Map<Integer, List<ImportRowError>> acrossRows = definition.validateAcrossRows(fileRows.stream().map(ImportRow::getPayload).toList());
-        ImportBatchKeys batchKeys = loadBatchKeys(batchId, definition, fileRows);
+        Set<ImportEntityType> keyTypes = new HashSet<>();
+        Set<ImportEntityType> aliasTypes = new HashSet<>();
+        List<Map<String, String>> acrossRowsPayloads = new ArrayList<>();
+        forEachChunk(batchId, type, chunk -> {
+            for (ImportRow row : chunk) {
+                for (ImportReference reference : definition.references(row.getPayload())) {
+                    (reference.alias() ? aliasTypes : keyTypes).add(reference.type());
+                }
+                if (definition.validatesAcrossRows()) {
+                    acrossRowsPayloads.add(row.getPayload());
+                }
+            }
+        });
+        Map<Integer, List<ImportRowError>> acrossRows = definition.validateAcrossRows(acrossRowsPayloads);
+        acrossRowsPayloads.clear();
+        ImportBatchKeys batchKeys = loadBatchKeys(batchId, keyTypes, aliasTypes);
         Map<String, Boolean> baseExistence = new HashMap<>();
-        int index = 0;
-        for (List<ImportRow> chunk : InClauseChunks.of(fileRows)) {
+        int[] index = {0};
+        forEachChunk(batchId, type, chunk -> {
             BaseLookups lookups = definition.preloadBase(chunk.stream().map(ImportRow::getPayload).toList());
             Set<ImportRowCommittedKey> committed = new HashSet<>(rowRepository.findCommittedKeys(type,
                     chunk.stream().map(ImportRow::getNaturalKey).collect(Collectors.toSet())));
@@ -105,33 +123,42 @@ public class ImportBatchValidator {
                         errors.add(new ImportRowError(reference.column(), reference.code(), "La referencia no existe en el lote ni en el sistema"));
                     }
                 });
-                errors.addAll(acrossRows.getOrDefault(index, List.of()));
+                errors.addAll(acrossRows.getOrDefault(index[0], List.of()));
                 ImportRowStatus status = classify(row, definition, errors, committed, lookups);
                 row.classify(status, errors);
                 counts.merge(status, 1, Integer::sum);
-                index++;
+                index[0]++;
             }
-            entityManager.flush();
-            chunk.forEach(entityManager::detach);
-        }
+        });
         return counts;
     }
 
-    private ImportBatchKeys loadBatchKeys(Long batchId, ImportEntityDefinition definition, List<ImportRow> fileRows) {
-        Set<ImportEntityType> keyTypes = new HashSet<>();
-        Set<ImportEntityType> aliasTypes = new HashSet<>();
-        for (ImportRow row : fileRows) {
-            for (ImportReference reference : definition.references(row.getPayload())) {
-                (reference.alias() ? aliasTypes : keyTypes).add(reference.type());
+    private void forEachChunk(Long batchId, ImportEntityType type, Consumer<List<ImportRow>> action) {
+        int afterRowNumber = 0;
+        while (true) {
+            List<ImportRow> chunk = rowRepository.findChunkAfterRowNumber(batchId, type, afterRowNumber, PageRequest.ofSize(chunkSize));
+            if (chunk.isEmpty()) {
+                return;
             }
+            action.accept(chunk);
+            entityManager.flush();
+            chunk.forEach(entityManager::detach);
+            if (chunk.size() < chunkSize) {
+                return;
+            }
+            afterRowNumber = chunk.get(chunk.size() - 1).getRowNumber();
         }
+    }
+
+    private ImportBatchKeys loadBatchKeys(Long batchId, Set<ImportEntityType> keyTypes, Set<ImportEntityType> aliasTypes) {
         Map<ImportEntityType, NavigableSet<String>> naturalKeys = new HashMap<>();
         keyTypes.forEach(type -> naturalKeys.put(type, new TreeSet<>(rowRepository.findNaturalKeysByBatchIdAndEntityType(batchId, type))));
         Map<ImportEntityType, Set<String>> aliasKeys = new HashMap<>();
         aliasTypes.forEach(type -> {
             ImportEntityDefinition target = registry.definitionFor(type);
-            aliasKeys.put(type, rowRepository.findByBatchIdAndEntityTypeOrderByRowNumber(batchId, type).stream()
-                    .flatMap(row -> target.aliasKeys(row.getPayload()).stream()).collect(Collectors.toSet()));
+            Set<String> keys = new HashSet<>();
+            forEachChunk(batchId, type, chunk -> chunk.forEach(row -> keys.addAll(target.aliasKeys(row.getPayload()))));
+            aliasKeys.put(type, keys);
         });
         return new ImportBatchKeys(naturalKeys, aliasKeys);
     }
