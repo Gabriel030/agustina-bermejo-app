@@ -142,7 +142,7 @@ export function TabPlanDeEstudio({ carreraId, audience = 'student', onViewEnroll
   return (
     <div className="flex flex-1 flex-col gap-5">
       {view === 'mapa' && progress && (
-        <CurriculumSummaryBar audience={audience} summary={progress.summary} statusFilter={statusFilter} onStatusFilterChange={changeStatusFilter} />
+        <CurriculumSummaryBar audience={audience} summary={progress.summary} />
       )}
       <GraduationProjectionCard audience={audience} carreraId={carreraId} collapsible={view === 'mapa'} />
       {progress && <PlanWarnings warnings={progress.warnings} audience={audience} />}

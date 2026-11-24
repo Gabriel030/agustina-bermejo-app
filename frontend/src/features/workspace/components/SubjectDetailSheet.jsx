@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import { StatusPill } from '@/components/StatusPill';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
 import { EquivalenceChip } from '@/features/workspace/components/EquivalenceChip';
 import {
@@ -113,6 +114,7 @@ export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = tr
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={compact ? 'bottom' : 'right'}
+        showCloseButton={false}
         onCloseAutoFocus={onCloseAutoFocus}
         className="data-[side=right]:w-96 data-[side=right]:max-w-full data-[side=bottom]:max-h-[85dvh] data-[side=bottom]:overflow-y-auto data-[side=right]:overflow-y-auto"
       >
@@ -120,6 +122,12 @@ export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = tr
           <SheetTitle>{subject.subjectName}</SheetTitle>
           <SheetDescription>{facts.join(' · ')}</SheetDescription>
         </SheetHeader>
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" className="absolute top-2 right-2 size-11">
+            <X aria-hidden="true" />
+            <span className="sr-only">Cerrar</span>
+          </Button>
+        </SheetClose>
         <SubjectDetailContent subject={subject} relationIndex={relationIndex} audience={audience} onViewEnrollment={onViewEnrollment} />
       </SheetContent>
     </Sheet>
