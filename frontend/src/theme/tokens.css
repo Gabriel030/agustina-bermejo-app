@@ -1,138 +1,118 @@
-/*
- * Tokens del sistema de diseño "Vidrio Líquido" (ver Obsidian:
- * Diseño UI - Vidrio Líquido/Diseño UI - Vidrio Líquido.md).
- * Única fuente de verdad para color — ningún componente declara
- * oklch(...) inline, todos consumen estas variables o las clases
- * Tailwind expuestas en index.css (@theme inline).
- */
 :root {
-  /* Fondo mesh — bajado ~8-10 puntos de luminosidad respecto de la primera
-     versión (96/92/94%): esa se sentía demasiado blanca/lavada y le restaba
-     contraste al texto. El vidrio (blur, borde, sombra doble) no cambia,
-     solo lo que hay debajo. */
-  --bg1: oklch(88% 0.02 240);
-  --bg2: oklch(83% 0.035 255);
-  --bg3: oklch(85% 0.035 200);
-
-  /* Superficie de vidrio */
-  --surface: oklch(96% 0.006 240 / 0.7);
-  --border: oklch(80% 0.02 240 / 0.65);
-
-  /* Tinta */
-  --ink: oklch(22% 0.035 260);
-  --ink-soft: oklch(40% 0.03 260);
-  --ink-faint: oklch(55% 0.025 260);
-
-  /* Acento de marca — lightness bajado de 62%/64% a 46%/48%: en 62% el
-     texto de los links (Login, Registrarse, Recuperar contraseña) quedaba
-     casi invisible sobre el fondo mesh claro (contraste real ~2:1, muy por
-     debajo del mínimo de WCAG AA de 4.5:1 para texto). Los botones con
-     gradiente y texto blanco no pierden legibilidad al oscurecer el
-     acento — al contrario, ganan más contraste. */
-  --accent: oklch(46% 0.16 225);
-  --accent-2: oklch(48% 0.15 292);
-  --accent-soft: oklch(87% 0.05 225);
-
-  /* Semántica de estado — independiente del acento, nunca se usa
-     el acento para comunicar éxito/advertencia/peligro. */
-  --success: oklch(58% 0.13 155);
-  --success-bg: oklch(88% 0.06 155);
-  --warning: oklch(66% 0.15 78);
-  --warning-bg: oklch(89% 0.07 78);
-  --warning-ink: oklch(40% 0.1 78);
-  --success-ink: oklch(36% 0.09 155);
-  --danger: oklch(56% 0.17 25);
-  --danger-bg: oklch(88% 0.07 25);
-  --danger-ink: oklch(38% 0.14 25);
-  --neutral-bg: oklch(87% 0.014 260);
-  --neutral-ink: oklch(40% 0.01 260);
-
-  /* Superficie sólida para dialogs (bg-popover = --surface con alpha → ilegible en dark) */
-  --dialog-bg: oklch(97% 0.004 245);
-
-  /* Barrido de brillo del Skeleton (shimmer) — ver components/Skeleton.jsx */
-  --shimmer-hi: oklch(99% 0.01 240 / 0.9);
-
-  --r-sm: 0.75rem;
-  --r-md: 1rem;
-  --r-lg: 1.375rem;
-  --r-xl: 1.75rem;
-  --r-2xl: 1rem;
-  --r-control: 1.375rem;
-  --r-card: 1.75rem;
-  --r-dialog: 1.75rem;
-  --r-btn-primary: 1.75rem;
-  --r-seg: 1.375rem;
-  --r-seg-indicator: 1rem;
-  --surface-blur: 28px;
-  --surface-saturate: 1.6;
-  --overlay-blur: 4px;
-  --sh-card: 0 1px 2px oklch(30% 0.03 260 / 0.04), 0 24px 60px -20px oklch(30% 0.08 260 / 0.28);
-  --sh-overlay: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  --sh-dialog: none;
-  --ring-surface: color-mix(in oklab, var(--ink) 10%, transparent);
-  --page-bg: linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg3));
-  --btn-primary-bg: linear-gradient(to bottom right in oklab, var(--accent), var(--accent-2));
-  --btn-primary-bg-hover: var(--btn-primary-bg);
-  --btn-primary-border: transparent;
-  --btn-primary-shadow: 0 10px 24px -8px color-mix(in oklch, var(--accent) 60%, transparent);
-  --btn-primary-shadow-hover: 0 16px 34px -8px color-mix(in oklch, var(--accent) 65%, transparent);
-  --btn-lift-y: -0.125rem;
-  --card-lift-y: -0.25rem;
-  --seg-indicator-bg: var(--btn-primary-bg);
-  --seg-indicator-shadow: 0 4px 16px -4px color-mix(in oklch, var(--accent) 65%, transparent);
-  --nav-indicator-bg: var(--btn-primary-bg);
-  --nav-active-fg: var(--on-accent);
-  --seg-active-fg: var(--on-accent);
-  --on-accent: oklch(99% 0 0);
-  --table-head: var(--neutral-bg);
-  --table-head-bg: var(--neutral-bg);
-  --table-head-size: 11px;
-  --table-head-border: var(--border);
-  --control-bg: transparent;
-  --pill-success-fg: var(--success);
-  --pill-warning-fg: var(--warning);
-  --pill-danger-fg: var(--danger);
-  --pill-neutral-fg: var(--ink-faint);
-  --row-hover: var(--accent-soft);
+  --bg1: oklch(97.3% 0.003 265);
+  --bg2: oklch(97.3% 0.003 265);
+  --bg3: oklch(97.3% 0.003 265);
+  --surface: oklch(100% 0 0);
+  --table-head: oklch(96.0% 0.005 258);
+  --border: oklch(92.1% 0.009 265);
+  --ink: oklch(23.3% 0.024 274);
+  --ink-soft: oklch(44.8% 0.034 270);
+  --ink-faint: oklch(51.5% 0.033 270);
+  --accent: oklch(50.2% 0.092 226);
+  --accent-2: var(--accent);
+  --accent-soft: oklch(94.8% 0.018 218);
+  --on-accent: oklch(100% 0 0);
+  --success: oklch(51.8% 0.110 158);
+  --success-bg: oklch(95.2% 0.022 160);
+  --success-ink: oklch(40.8% 0.082 160);
+  --warning: oklch(53.0% 0.112 65);
+  --warning-bg: oklch(95.8% 0.038 85);
+  --warning-ink: oklch(45.4% 0.100 68);
+  --danger: oklch(54.3% 0.174 30);
+  --danger-bg: oklch(93.9% 0.025 27);
+  --danger-ink: oklch(49.0% 0.160 30);
+  --neutral-bg: oklch(94.2% 0.007 261);
+  --neutral-ink: oklch(43.3% 0.032 271);
+  --dialog-bg: var(--surface);
+  --shimmer-hi: oklch(100% 0 0 / 0.7);
+  --sh-overlay: 0 8px 24px -8px oklch(23% 0.024 274 / 0.18);
+  --sh-dialog: var(--sh-overlay);
+  --btn-primary-bg-hover: linear-gradient(color-mix(in oklch, var(--accent) 88%, black), color-mix(in oklch, var(--accent) 88%, black));
+  --btn-primary-border: color-mix(in oklch, var(--accent) 78%, black);
+  --row-hover: oklch(96.5% 0.006 258);
   --row-selected: var(--accent-soft);
-  --row-h: 46px;
-  --overlay-bg: oklch(0% 0 0 / 0.4);
-  --overlay-bg-sheet: oklch(0% 0 0 / 0.1);
-  --overlay-bg-menu: oklch(0% 0 0 / 0.2);
+  --overlay-bg: oklch(23.3% 0.024 274 / 0.45);
+  --table-head-border: var(--border);
+  --overlay-bg-sheet: var(--overlay-bg);
+  --overlay-bg-menu: var(--overlay-bg);
   --on-overlay: oklch(99% 0 0);
-  --sh-popover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --sh-popover: var(--sh-overlay);
   --sh-sticky-left: 6px 0 8px -6px color-mix(in oklch, var(--ink) 25%, transparent);
   --sh-sticky-right: -6px 0 8px -6px color-mix(in oklch, var(--ink) 25%, transparent);
   --sh-highlight-row: inset 3px 0 0 var(--accent-2), inset -3px 0 0 var(--accent-2);
+  --r-sm: 0.375rem;
+  --r-md: 0.5rem;
+  --r-lg: 0.5rem;
+  --r-xl: 0.75rem;
+  --r-2xl: 0.5rem;
+  --r-control: 0.5rem;
+  --r-card: 0.75rem;
+  --r-dialog: 1rem;
+  --r-btn-primary: 0.5rem;
+  --r-seg: 0.5rem;
+  --r-seg-indicator: 0.375rem;
+  --surface-blur: 0px;
+  --surface-saturate: 1;
+  --overlay-blur: 0px;
+  --sh-card: none;
+  --ring-surface: var(--border);
+  --page-bg: var(--bg1);
+  --btn-primary-bg: linear-gradient(var(--accent), var(--accent));
+  --btn-primary-shadow: 0 0 0 0 transparent;
+  --btn-primary-shadow-hover: 0 0 0 0 transparent;
+  --btn-lift-y: 0px;
+  --card-lift-y: 0px;
+  --seg-indicator-bg: linear-gradient(var(--accent), var(--accent));
+  --seg-indicator-shadow: 0 0 0 0 transparent;
+  --nav-indicator-bg: var(--accent-soft);
+  --nav-active-fg: var(--accent);
+  --seg-active-fg: var(--on-accent);
+  --control-bg: var(--surface);
+  --table-head-bg: var(--table-head);
+  --table-head-size: 12px;
+  --pill-success-fg: var(--success-ink);
+  --pill-warning-fg: var(--warning-ink);
+  --pill-danger-fg: var(--danger-ink);
+  --pill-neutral-fg: var(--neutral-ink);
+  --row-h: 48px;
+  --shell-pad: 0px;
+  --shell-gap: 0px;
   --focus-ring: var(--accent);
-  --shell-pad: 1.25rem;
-  --shell-gap: 1.25rem;
 }
 
 :root[data-theme='dark'] {
-  --bg1: oklch(20% 0.025 260);
-  --bg2: oklch(16% 0.03 270);
-  --bg3: oklch(18% 0.03 245);
-  --surface: oklch(26% 0.02 260 / 0.55);
-  --border: oklch(38% 0.02 260 / 0.55);
-  --ink: oklch(95% 0.01 260);
-  --ink-soft: oklch(80% 0.015 260);
-  --ink-faint: oklch(60% 0.02 260);
-  --accent: oklch(74% 0.13 225);
-  --accent-2: oklch(76% 0.12 292);
-  --accent-soft: oklch(30% 0.06 225);
-  --success: oklch(70% 0.14 155);
-  --success-bg: oklch(28% 0.06 155);
-  --warning: oklch(76% 0.15 78);
-  --warning-bg: oklch(30% 0.07 78);
-  --warning-ink: oklch(82% 0.13 78);
-  --success-ink: oklch(80% 0.14 155);
-  --danger: oklch(70% 0.17 25);
-  --danger-bg: oklch(30% 0.08 25);
-  --danger-ink: oklch(84% 0.1 25);
-  --neutral-bg: oklch(30% 0.012 260);
-  --neutral-ink: oklch(78% 0.01 260);
+  --bg1: oklch(19.2% 0.015 272);
+  --bg2: oklch(19.2% 0.015 272);
+  --bg3: oklch(19.2% 0.015 272);
+  --surface: oklch(23.2% 0.020 272);
+  --table-head: oklch(27.0% 0.023 270);
+  --border: oklch(32.6% 0.026 270);
+  --ink: oklch(94.9% 0.008 271);
+  --ink-soft: oklch(78.7% 0.023 272);
+  --ink-faint: oklch(67.1% 0.029 272);
+  --accent: oklch(76.9% 0.104 218);
+  --accent-2: var(--accent);
+  --accent-soft: oklch(30.0% 0.037 222);
+  --on-accent: oklch(19.2% 0.015 272);
+  --success: oklch(76.1% 0.135 157);
+  --success-bg: oklch(28.3% 0.045 154);
+  --success-ink: var(--success);
+  --warning: oklch(79.4% 0.134 81);
+  --warning-bg: oklch(29.1% 0.041 85);
+  --warning-ink: var(--warning);
+  --danger: oklch(74.0% 0.126 28);
+  --danger-bg: oklch(27.0% 0.046 27);
+  --danger-ink: var(--danger);
+  --neutral-bg: oklch(28.6% 0.023 271);
+  --neutral-ink: oklch(78.7% 0.023 272);
+  --dialog-bg: oklch(26.0% 0.021 272);
   --shimmer-hi: oklch(50% 0.02 260 / 0.9);
-  --dialog-bg: oklch(24% 0.022 260);
+  --sh-overlay: 0 8px 24px -8px rgb(0 0 0 / 0.5);
+  --sh-dialog: var(--sh-overlay);
+  --btn-primary-bg-hover: linear-gradient(color-mix(in oklch, var(--accent) 90%, white), color-mix(in oklch, var(--accent) 90%, white));
+  --btn-primary-border: color-mix(in oklch, var(--accent) 78%, white);
+  --row-hover: oklch(26.0% 0.021 271);
+  --row-selected: var(--accent-soft);
+  --overlay-bg: oklch(0% 0 0 / 0.6);
+  --table-head-border: var(--border);
 }

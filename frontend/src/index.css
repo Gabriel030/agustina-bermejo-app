@@ -3,7 +3,6 @@
 @import "shadcn/tailwind.css";
 @import "./theme/fonts.css";
 @import "./theme/tokens.css";
-@import "./theme/tokens-b.css";
 
 /*
  * Mapeo de los tokens de Vidrio Líquido a las variables que usan las
@@ -105,8 +104,6 @@
   --shadow-popover: var(--sh-popover);
 }
 
-@custom-variant design-b (:root[data-design='b'] &);
-
 @keyframes tab-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -130,11 +127,6 @@
 @keyframes pulse-ring {
   0%, 100% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 25%, transparent); }
   50% { box-shadow: 0 0 0 8px color-mix(in oklch, var(--accent) 8%, transparent); }
-}
-
-@keyframes badge-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--danger) 45%, transparent); }
-  50% { box-shadow: 0 0 0 5px transparent; }
 }
 
 @media (prefers-reduced-motion: reduce) {
