@@ -127,6 +127,36 @@ describe('AlumnoMisCarreras', () => {
     expect(screen.queryByText('Hs. semanales')).not.toBeInTheDocument();
   });
 
+  it('hides the plan progress stat card only in the study plan map view', async () => {
+    mockEnrollment(true);
+    const { unmount } = renderWithProviders(<AlumnoMisCarreras />, { route: '/?tab=plan-de-estudio&vista=mapa' });
+    expect(await screen.findByRole('region', { name: 'Tu avance en el plan' })).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar', { name: 'Avance del plan' })).not.toBeInTheDocument();
+    expect(screen.getByText('Materias aprobadas')).toBeInTheDocument();
+    unmount();
+
+    const list = renderWithProviders(<AlumnoMisCarreras />, { route: '/?tab=plan-de-estudio' });
+    expect(await screen.findByRole('columnheader', { name: 'Créditos' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Avance del plan' })).toBeInTheDocument();
+    list.unmount();
+
+    renderWithProviders(<AlumnoMisCarreras />, { route: '/?tab=notas&vista=mapa' });
+    expect(await screen.findByRole('progressbar', { name: 'Avance del plan' })).toBeInTheDocument();
+  });
+
+  it('clears the selected subject from the url when switching tabs', async () => {
+    mockEnrollment(true);
+    const user = userEvent.setup();
+    renderWithProviders(<AlumnoMisCarreras />, { route: '/?tab=plan-de-estudio&vista=mapa&materia=1' });
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Resaltando correlativas de');
+    await user.click(screen.getByRole('tab', { name: 'Notas' }));
+    await user.click(await screen.findByRole('tab', { name: 'Plan de estudio' }));
+
+    expect(await screen.findByRole('region', { name: 'Mapa del plan por año' })).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it('shows the automatic procedures in Trámites and no legacy regular certificate request', async () => {
     mockEnrollment(false);
     server.use(

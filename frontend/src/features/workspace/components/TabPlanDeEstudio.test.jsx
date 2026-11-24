@@ -405,22 +405,26 @@ describe('TabPlanDeEstudio summary and mobile accordion', () => {
     window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
   }
 
-  it('shows the summary counts from the server and applies and clears the estado filter on tap', async () => {
+  it('shows the summary counts from the server as read-only text and filters only through the status chips', async () => {
     useProgress(plan());
     const user = userEvent.setup();
     renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
 
     const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
-    expect(within(summary).getByRole('button', { name: 'Ver aprobadas: 1' })).toBeInTheDocument();
-    expect(within(summary).getByRole('button', { name: 'Ver en curso: 1' })).toBeInTheDocument();
-    expect(within(summary).getByRole('button', { name: 'Ver bloqueadas: 0' })).toBeInTheDocument();
+    const counts = within(within(summary).getByRole('list', { name: 'Materias por estado' }));
+    expect(counts.getByText('Aprobadas').closest('li')).toHaveTextContent('1');
+    expect(counts.getByText('En curso').closest('li')).toHaveTextContent('1');
+    expect(counts.getByText('Bloqueadas').closest('li')).toHaveTextContent('0');
+    expect(within(summary).queryByRole('button')).not.toBeInTheDocument();
+    expect(summary.querySelector('[aria-pressed]')).toBeNull();
 
-    await user.click(within(summary).getByRole('button', { name: 'Ver en curso: 1' }));
-    expect(within(summary).getByRole('button', { name: 'Ver en curso: 1' })).toHaveAttribute('aria-pressed', 'true');
+    const chips = within(screen.getByRole('group', { name: 'Filtrar por estado' }));
+    await user.click(chips.getByRole('button', { name: /En curso/ }));
+    expect(chips.getByRole('button', { name: /En curso/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByRole('button', { name: /^Matemática I/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Análisis/ })).toBeInTheDocument();
 
-    await user.click(within(summary).getByRole('button', { name: 'Ver en curso: 1' }));
+    await user.click(chips.getByRole('button', { name: /Todas/ }));
     expect(await screen.findByRole('button', { name: /^Matemática I/ })).toBeInTheDocument();
   });
 
