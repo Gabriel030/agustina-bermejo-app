@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.draft;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -73,7 +74,7 @@ class RecipientFreezerIT extends AbstractIntegrationTest {
                 .subjectSnapshot("Asunto")
                 .bodySnapshot("Cuerpo")
                 .createdByPersonId(creatorId)
-                .createdAt(Instant.now())
+                .createdAt(Instant.now(MutableClock.INSTANCE))
                 .build());
     }
 

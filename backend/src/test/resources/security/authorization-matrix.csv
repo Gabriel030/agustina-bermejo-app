@@ -17,7 +17,7 @@ POST,/attendance/change-requests/{id}/approve,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,D
 POST,/attendance/change-requests/{id}/reject,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/attendance/justifications,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/{id}/approve-justification,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
-POST,/attendance/{id}/change-requests,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
+POST,/attendance/{id}/change-requests,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,attendance-section-instructor,
 GET,/attendance/{id}/justification-attachment,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/{id}/justification-proof,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,attendance-section-instructor,
 POST,/attendance/{id}/justify,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
@@ -359,7 +359,7 @@ PUT,/program-sections/{id},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/program-sections/{id}/activate,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/program-sections/{id}/attendance,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
 GET,/program-sections/{id}/attendance/absence-report,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-instructor,
-GET,/program-sections/{id}/attendance/export,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/program-sections/{id}/attendance/export,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-instructor,
 GET,/program-sections/{id}/attendance/history,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-instructor,
 GET,/program-sections/{id}/class-sessions/{date},DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,section-instructor,
 POST,/program-sections/{id}/class-sessions/{date}/cancel,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,section-instructor,

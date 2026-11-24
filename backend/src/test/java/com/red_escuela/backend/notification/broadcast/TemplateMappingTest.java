@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -63,7 +64,7 @@ class TemplateMappingTest extends AbstractIntegrationTest {
         jdbc.update("delete from whatsapp_template_mapping");
         directorToken = tokenOf("DIRECTOR");
         administrativeToken = tokenOf("ADMINISTRATIVO");
-        Instant now = Instant.now();
+        Instant now = Instant.now(MutableClock.INSTANCE);
         creatorId = jdbc.queryForObject("select id from person where username like ? order by id desc limit 1", Long.class, "tm-director-%");
         messageTemplateId = messageTemplateRepository.save(MessageTemplate.builder().name("tpl-" + System.nanoTime())
                 .category(BroadcastCategory.INSTITUTIONAL).channel(ChannelType.WHATSAPP_API).bodyText("Hola {{nombre}}").active(true)

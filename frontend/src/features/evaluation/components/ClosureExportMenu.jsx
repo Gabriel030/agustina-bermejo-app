@@ -11,9 +11,9 @@ export function ClosureExportMenu({ closed, pending, onExport }) {
           <Download className="size-4" aria-hidden="true" /> Exportar
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 bg-dialog-bg max-md:border max-md:border-ink-faint/40">
+      <DropdownMenuContent align="end" className="w-64 bg-dialog-bg">
         <DropdownMenuItem onSelect={() => onExport('xlsx')}>{EXPORT_FORMATS.xlsx.label}</DropdownMenuItem>
-        <DropdownMenuItem disabled={!closed} className="data-disabled:text-ink-soft data-disabled:opacity-100" onSelect={() => onExport('pdf')}>
+        <DropdownMenuItem disabled={!closed} onSelect={() => onExport('pdf')}>
           {EXPORT_FORMATS.pdf.label}
           {!closed && <span className="ml-1 text-xs text-ink-faint">(al cerrar)</span>}
         </DropdownMenuItem>
