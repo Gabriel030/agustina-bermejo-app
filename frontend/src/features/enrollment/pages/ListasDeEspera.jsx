@@ -128,7 +128,7 @@ export function ListasDeEspera() {
               setPage(1);
             }}
           >
-            <SelectTrigger aria-label="Filtrar por tipo" className="w-auto min-w-44">
+            <SelectTrigger aria-label="Filtrar por tipo" className="h-11 w-auto min-w-44 data-[size=default]:h-11 md:h-8 md:data-[size=default]:h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -142,6 +142,7 @@ export function ListasDeEspera() {
           <Button
             type="button"
             variant={expiringSoon ? 'default' : 'outline'}
+            className="h-11 md:h-8"
             aria-pressed={expiringSoon}
             onClick={() => {
               setExpiringSoon((current) => !current);
