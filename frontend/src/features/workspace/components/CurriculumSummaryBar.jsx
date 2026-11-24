@@ -26,14 +26,14 @@ function formatPercent(value) {
   return `${Math.round(Number(value) || 0)} %`;
 }
 
-export function CurriculumSummaryBar({ summary }) {
+export function CurriculumSummaryBar({ summary, audience = 'student' }) {
   const { creditsDefined, mandatoryPercent, headlinePercent } = computeProgress(summary);
 
   return (
     <GlassCard role="region" aria-labelledby="curriculum-summary-title" className="flex flex-col gap-3 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id="curriculum-summary-title" className="font-heading text-base font-bold text-ink">
-          Tu avance en el plan
+          {audience === 'staff' ? 'Avance en el plan' : 'Tu avance en el plan'}
         </h2>
         <span className="font-heading text-2xl font-bold tabular-nums text-ink">{formatPercent(headlinePercent)}</span>
       </div>
