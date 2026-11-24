@@ -16,3 +16,7 @@ Note: This will impact Vite dev & build performances.
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Modo sin backend (MSW)
+
+`npm run dev:mock` levanta la app con datos simulados y sesión por rol (`?role=director|administrativo|docente|alumno|platformadmin`). Detalle en `docs/context/testing.md`, sección "Modo MSW de navegador".

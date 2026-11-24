@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -38,7 +39,7 @@ class ContactConsentRepositoryIT extends AbstractIntegrationTest {
 
     private ContactConsent consent(Long personId, ChannelType channel, BroadcastCategory category) {
         return ContactConsent.builder().personId(personId).channel(channel).category(category)
-                .status(ConsentStatus.GRANTED).source(ConsentSource.PROFILE).recordedAt(Instant.now()).build();
+                .status(ConsentStatus.GRANTED).source(ConsentSource.PROFILE).recordedAt(Instant.now(MutableClock.INSTANCE)).build();
     }
 
     @Test

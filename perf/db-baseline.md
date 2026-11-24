@@ -85,6 +85,8 @@ python3 perf/capture-origin.py
 
 > Nota (33.3b, #1042): `GET /financial-dashboard/debtors` se retiró; las filas que lo mencionan son la medición histórica del baseline. El listado vigente es `/financial-dashboard/debtors/page`.
 
+> Nota (E29-F4, #1197): el grade-grid del docente hace hoy 7 consultas y el de staff 6, constantes con 3 o 25 alumnos (`GradeGridQueryCountTest`); el N+1 se resolvio en #958 y las filas de grade-grid de esta medicion son historicas.
+
 El resto de los endpoints de `measure.py` (dashboard financiero, morosos, listados, notificaciones, `/me/*`) están en `perf/out/latest.json` al correrlo. Resumen de la corrida base: `/financial-dashboard/debtors` p50 424 ms con 612 KB de respuesta (el peor); `/financial-dashboard` 19 ms; `/students` 22 ms; `/waitlists` 37 ms; `attendance-summary` 4 consultas por request (una corrida previa llegó a contar 508 por ruido de jobs de fondo durante la ventana de conteo); el resto por debajo de 25 ms.
 
 ## Carga concurrente (`load.py`, ms)
