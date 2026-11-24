@@ -38,7 +38,7 @@ export function EquivalenceErrorSummary({ errors, fieldLabels, fieldOrder }) {
           <li key={name}>
             <a
               href={`#${equivalenceFieldId(name)}`}
-              className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2"
+              className="inline-flex min-h-11 items-center font-semibold md:min-h-0 underline underline-offset-2"
               onClick={(event) => {
                 event.preventDefault();
                 document.getElementById(equivalenceFieldId(name))?.focus();

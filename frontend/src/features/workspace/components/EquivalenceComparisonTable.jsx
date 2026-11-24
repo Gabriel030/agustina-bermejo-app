@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
+import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPills';
 import { formatCredits } from '@/features/workspace/lib/curriculumPlan';
 import { formatDecimal, formatPercent } from '@/lib/formatNumber';
 
@@ -17,9 +17,9 @@ function buildRows(effect) {
     {
       key: 'status',
       label: 'Estado de la materia',
-      before: <PlanStatusPill status={effect.statusBefore} />,
-      after: <PlanStatusPill status="aprobada" />,
-      delta: 'Aprobada por equivalencia',
+      before: PLAN_STATUS_PILL[effect.statusBefore].label,
+      after: PLAN_STATUS_PILL.aprobada.label,
+      delta: 'Equivalencia',
     },
     {
       key: 'approved',
@@ -54,33 +54,33 @@ function buildRows(effect) {
 
 export function EquivalenceComparisonTable({ effect }) {
   return (
-    <Table className="table-fixed text-size-13">
+    <Table className="table-fixed text-size-12 md:text-size-13">
       <colgroup>
-        <col className="w-[34%]" />
-        <col className="w-[22%]" />
-        <col className="w-[24%]" />
-        <col className="w-[20%]" />
+        <col className="w-[31%]" />
+        <col className="w-[23%]" />
+        <col className="w-[23%]" />
+        <col className="w-[23%]" />
       </colgroup>
       <TableCaption className="sr-only">Efecto de la equivalencia sobre el plan del alumno</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead scope="col">Dato</TableHead>
-          <TableHead scope="col">Hoy</TableHead>
-          <TableHead scope="col" className="bg-accent-soft text-ink">
+          <TableHead scope="col" className="px-1.5 md:px-2">Dato</TableHead>
+          <TableHead scope="col" className="px-1.5 md:px-2">Hoy</TableHead>
+          <TableHead scope="col" className="bg-accent-soft px-1.5 text-ink md:px-2">
             Nuevo
           </TableHead>
-          <TableHead scope="col">Diferencia</TableHead>
+          <TableHead scope="col" className="px-1.5 md:px-2">Diferencia</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {buildRows(effect).map((row) => (
           <TableRow key={row.key}>
-            <TableHead scope="row" className="whitespace-normal font-semibold text-ink">
+            <TableHead scope="row" className="whitespace-normal px-1.5 font-semibold text-ink md:px-2">
               {row.label}
             </TableHead>
-            <TableCell className="whitespace-normal tabular-nums text-ink-soft">{row.before}</TableCell>
-            <TableCell className="whitespace-normal bg-accent-soft font-semibold tabular-nums text-ink">{row.after}</TableCell>
-            <TableCell className="whitespace-normal tabular-nums text-ink">{row.delta}</TableCell>
+            <TableCell className="whitespace-normal px-1.5 tabular-nums text-ink-soft md:px-2">{row.before}</TableCell>
+            <TableCell className="whitespace-normal bg-accent-soft px-1.5 font-semibold tabular-nums text-ink md:px-2">{row.after}</TableCell>
+            <TableCell className="whitespace-normal px-1.5 tabular-nums text-ink md:px-2">{row.delta}</TableCell>
           </TableRow>
         ))}
       </TableBody>

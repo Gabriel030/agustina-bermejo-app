@@ -43,7 +43,7 @@ function CloseButton({ disabled, onClick }) {
   );
 }
 
-function RecordFooter({ step, pending, denied, conflict, onCancel, onBack, onClose, onSubmitReview }) {
+function RecordFooter({ step, pending, denied, conflict, onCancel, onBack, onClose, onSubmitReview, onSave }) {
   if (conflict) {
     return (
       <div className="flex justify-end">
@@ -64,11 +64,11 @@ function RecordFooter({ step, pending, denied, conflict, onCancel, onBack, onClo
         </Button>
       )}
       {step === 'review' ? (
-        <Button type="submit" variant="primary" className="min-h-11" loading={pending} disabled={denied}>
+        <Button key="save" type="button" variant="primary" className="min-h-11" loading={pending} disabled={denied} onClick={onSave}>
           {pending ? 'Guardando…' : 'Cargar equivalencia'}
         </Button>
       ) : (
-        <Button type="button" variant="primary" className="min-h-11" disabled={denied} onClick={onSubmitReview}>
+        <Button key="review" type="button" variant="primary" className="min-h-11" disabled={denied} onClick={onSubmitReview}>
           Revisar
         </Button>
       )}
@@ -161,8 +161,7 @@ export function EquivalenceRecordDialog({ request, studentId, programEnrollmentI
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        if (step === 'review') save();
-        else handleSubmit(goToReview, rejectInvalid)();
+        if (step === 'changes') handleSubmit(goToReview, rejectInvalid)();
       }}
       className="flex flex-col gap-4"
     >
@@ -203,6 +202,7 @@ export function EquivalenceRecordDialog({ request, studentId, programEnrollmentI
         onBack={() => setStep('changes')}
         onClose={onClose}
         onSubmitReview={() => handleSubmit(goToReview, rejectInvalid)()}
+        onSave={save}
       />
     </form>
   );

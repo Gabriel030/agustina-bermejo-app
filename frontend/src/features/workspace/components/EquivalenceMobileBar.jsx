@@ -17,6 +17,8 @@ export function EquivalenceMobileBar({ programEnrollmentId }) {
       compact="menu"
       aria-label="Acciones de equivalencias"
       summary={summary}
+      compactSummary={`${activeCount} ${activeCount === 1 ? 'vigente' : 'vigentes'}`}
+      compactHint="Equivalencias"
       hint={denied ? actions.recordDeniedReason : undefined}
       primary={{
         label: 'Cargar equivalencia',

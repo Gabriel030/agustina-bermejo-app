@@ -216,6 +216,7 @@ describe('equivalence record form', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Revisar' }));
 
     expect(await within(dialog).findByText('Paso 2 de 2')).toBeInTheDocument();
+    expect(recorded).toBeNull();
     const table = within(dialog).getByRole('table');
     ['Hoy', 'Nuevo', 'Diferencia'].forEach((name) => expect(within(table).getByRole('columnheader', { name })).toBeInTheDocument());
     const cells = (name) => within(within(table).getByRole('row', { name })).getAllByRole('cell').map((cell) => cell.textContent);
@@ -223,7 +224,7 @@ describe('equivalence record form', () => {
     expect(cells(/Créditos/)).toEqual(['3', '6', '+3']);
     expect(cells(/Avance del plan/)).toEqual(['25 %', '50 %', '+25 %']);
     expect(cells(/Promedio/)).toEqual(['8,00', '7,00', '−1,00']);
-    expect(cells(/Estado de la materia/)).toEqual(['Disponible', 'Aprobada', 'Aprobada por equivalencia']);
+    expect(cells(/Estado de la materia/)).toEqual(['Disponible', 'Aprobada', 'Equivalencia']);
     expect(within(dialog).getByRole('heading', { name: 'Materias que se desbloquean' })).toBeInTheDocument();
     expect(within(dialog).getByText('Física')).toBeInTheDocument();
   });

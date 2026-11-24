@@ -6,7 +6,7 @@ export function EquivalenceReview({ effect }) {
       <p className="text-size-13 text-ink">
         <span className="font-semibold">{effect.subject.subjectName}</span> <span className="text-ink-faint">({effect.subject.subjectCode})</span> pasa a estar aprobada por equivalencia.
       </p>
-      <div className="overflow-x-auto">
+      <div role="region" aria-label="Comparación Hoy y Nuevo" tabIndex={0} className="overflow-x-auto rounded-lg focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-(--focus-ring)">
         <EquivalenceComparisonTable effect={effect} />
       </div>
       <section className="flex flex-col gap-2" aria-labelledby="equivalence-unlocked-title">
