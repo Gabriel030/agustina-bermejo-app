@@ -45,21 +45,21 @@ export const constanciasHandlers = [
     const status = new URL(request.url).searchParams.get('status');
     return HttpResponse.json([
       certificateException(),
-      certificateException({ id: 10, studentId: 45, enrollmentId: 81, status: 'APPROVED', decidedById: 3, decidedAt: '2026-11-22T09:00:00', decisionReason: 'Reclamo verificado', validUntil: '2026-11-29T09:00:00' }),
+      certificateException({ id: 10, studentId: 45, enrollmentId: 81, status: 'APPROVED', decidedById: 3, decidedByName: 'Dora Directora', decidedAt: '2026-11-22T09:00:00', decisionReason: 'Reclamo verificado', validUntil: '2026-11-29T09:00:00' }),
     ].filter((exception) => !status || exception.status === status));
   }),
   http.post(`${API}/certificate-exceptions/direct`, async ({ request }) => {
     const body = await request.json().catch(() => ({}));
     return HttpResponse.json(
-      certificateException({ id: 11, ...body, status: 'APPROVED', createdByDirector: true, validUntil: '2026-11-30T09:00:00' }),
+      certificateException({ id: 11, ...body, status: 'APPROVED', createdByDirector: true, decidedByName: 'Dora Directora', validUntil: '2026-11-30T09:00:00' }),
       { status: 201 },
     );
   }),
   http.post(`${API}/certificate-exceptions/:id/approve`, ({ params }) =>
-    HttpResponse.json(certificateException({ id: Number(params.id), status: 'APPROVED', validUntil: '2026-11-30T09:00:00' })),
+    HttpResponse.json(certificateException({ id: Number(params.id), status: 'APPROVED', decidedByName: 'Dora Directora', validUntil: '2026-11-30T09:00:00' })),
   ),
   http.post(`${API}/certificate-exceptions/:id/reject`, ({ params }) =>
-    HttpResponse.json(certificateException({ id: Number(params.id), status: 'REJECTED', decisionReason: 'Falta la documentación' })),
+    HttpResponse.json(certificateException({ id: Number(params.id), status: 'REJECTED', decidedByName: 'Dora Directora', decisionReason: 'Falta la documentación' })),
   ),
   http.post(`${API}/certificate-exceptions/:id/withdraw`, ({ params }) =>
     HttpResponse.json(certificateException({ id: Number(params.id), status: 'WITHDRAWN' })),
