@@ -35,6 +35,7 @@ function ExpandToggle({ row, label }) {
       type="button"
       variant="ghost"
       size="icon"
+      className="max-md:size-11"
       aria-label={label}
       aria-expanded={row.getIsExpanded()}
       onClick={row.getToggleExpandedHandler()}
@@ -161,7 +162,7 @@ function CardToolbar({ table }) {
             table.setSorting([{ id, desc: direction === 'desc' }]);
           }}
         >
-          <SelectTrigger aria-label="Ordenar por" className="h-8 w-auto gap-2 text-xs">
+          <SelectTrigger aria-label="Ordenar por" className="h-8 w-auto gap-2 text-xs max-md:data-[size=default]:h-11">
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>

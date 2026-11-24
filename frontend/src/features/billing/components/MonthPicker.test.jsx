@@ -25,6 +25,15 @@ describe('MonthPicker', () => {
     await waitFor(() => expect(screen.queryByRole('group', { name: 'Meses de 2026' })).not.toBeInTheDocument());
   });
 
+  it('keeps the year step buttons and the year selector at 44px on mobile', async () => {
+    setup();
+    await open();
+
+    expect(screen.getByRole('button', { name: /^Año anterior/ })).toHaveClass('max-md:h-11');
+    expect(screen.getByRole('button', { name: /^Año siguiente/ })).toHaveClass('max-md:h-11');
+    expect(screen.getByRole('button', { name: /^Elegir año|^2026/ })).toHaveClass('max-md:h-11');
+  });
+
   it('marks the selected month and the current month', async () => {
     setup({ value: '2026-05' });
     await open();

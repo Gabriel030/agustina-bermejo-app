@@ -732,7 +732,7 @@ function TabReporteDeAsistencia({ type, sectionId }) {
       {(reporte ?? []).length > 0 && (
         <GlassCard className="flex flex-col gap-1 p-3">
           <div className="px-2 pb-1 font-heading text-size-14 font-semibold text-ink">% de asistencia por alumno</div>
-          <div className="px-2 pb-1 text-size-11 text-ink-faint">Pasá el mouse por la barra para ver presencias e inasistencias</div>
+          <div className="px-2 pb-1 text-size-11 text-ink-faint"><span className="hidden [@media(hover:hover)]:inline">Pasá el mouse por la barra para ver presencias e inasistencias</span><span className="[@media(hover:hover)]:hidden">Tocá la barra para ver presencias e inasistencias</span></div>
           {[...reporte].sort((a, b) => (attendancePercentToPoints(b.attendancePercent) ?? 0) - (attendancePercentToPoints(a.attendancePercent) ?? 0)).map((entrada) => (
             <BarraAsistenciaPorAlumno key={entrada.enrollmentId} entrada={entrada} totalClases={totalClasesPorAlumno.get(entrada.studentId)} />
           ))}
