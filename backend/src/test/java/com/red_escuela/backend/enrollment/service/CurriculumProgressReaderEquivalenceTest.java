@@ -182,8 +182,8 @@ class CurriculumProgressReaderEquivalenceTest {
     void equivalenceSatisfiesBothApprovedAndPassedCourseworkRequirements() {
         plan = List.of(entry(1L, 3), entry(2L, 3), entry(3L, 3));
         prerequisites = Map.of(
-                2L, List.of(new PrerequisiteView(1L, "Materia 1", RequirementType.APPROVED, "S1")),
-                3L, List.of(new PrerequisiteView(1L, "Materia 1", RequirementType.PASSED_COURSEWORK, "S1")));
+                2L, List.of(new PrerequisiteView(1L, "Materia 1", RequirementType.APPROVED, "S1", null)),
+                3L, List.of(new PrerequisiteView(1L, "Materia 1", RequirementType.PASSED_COURSEWORK, "S1", null)));
         recognized(1L, "7.00");
 
         CurriculumProgressView view = read();
@@ -195,7 +195,7 @@ class CurriculumProgressReaderEquivalenceTest {
     @Test
     void dependentSubjectStaysBlockedWithoutTheEquivalence() {
         plan = List.of(entry(1L, 3), entry(2L, 3));
-        prerequisites = Map.of(2L, List.of(new PrerequisiteView(1L, "Materia 1", RequirementType.APPROVED, "S1")));
+        prerequisites = Map.of(2L, List.of(new PrerequisiteView(1L, "Materia 1", RequirementType.APPROVED, "S1", null)));
 
         CurriculumProgressView view = read();
 
