@@ -40,6 +40,9 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
     @Query("select new com.red_escuela.backend.identity.repository.StudentDocumentRow(p.dni, s.id) from Student s join s.person p where p.documentType = :type and p.dni in :numbers")
     List<StudentDocumentRow> findIdsByDocumentTypeAndNumbers(@Param("type") DocumentType type, @Param("numbers") Collection<String> numbers);
 
+    @Query(value = "select p.id from person p where p.id in (:personIds) and p.email is not null and exists (select 1 from student s where s.guardian_email is not null and lower(trim(s.guardian_email)) = lower(trim(p.email)))", nativeQuery = true)
+    List<Long> findPersonIdsWithEmailEqualToAnyGuardianEmail(@Param("personIds") Collection<Long> personIds);
+
     Optional<Student> findByIdAndPerson_Status(Long id, StatusType status);
 
     Optional<Student> findByPerson_DniAndPerson_Status(String dni, StatusType status);

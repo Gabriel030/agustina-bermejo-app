@@ -8,6 +8,7 @@ import com.red_escuela.backend.identity.api.EmailRecipient;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import java.util.Optional;
+import com.red_escuela.backend.identity.api.GuardianEmailCollisionFinder;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -106,6 +107,8 @@ class InvitationSendIT extends AbstractIntegrationTest {
     private NotificationDeliveryRepository deliveryRepository;
     @Autowired
     private PersonContactFinder personContactFinder;
+    @Autowired
+    private GuardianEmailCollisionFinder guardianEmailCollisionFinder;
     @Autowired
     private InvitationActivationTokenRequester tokenRequester;
     @Autowired
@@ -251,7 +254,7 @@ class InvitationSendIT extends AbstractIntegrationTest {
 
     private InvitationRecipientSendTransaction senderWith(TransactionalEmailGateway gateway, CircuitBreaker breaker,
                                                           InvitationActivationTokenRequester requester) {
-        return new InvitationRecipientSendTransaction(waveRepository, recipientRepository, deliveryRepository, personContactFinder, requester,
+        return new InvitationRecipientSendTransaction(waveRepository, recipientRepository, deliveryRepository, personContactFinder, guardianEmailCollisionFinder, requester,
                 emailFactory, new InvitationMailSender(gateway, breaker, looseBulkhead()), deliveryRecorder, capacity, clock);
     }
 
@@ -375,6 +378,21 @@ class InvitationSendIT extends AbstractIntegrationTest {
         assertThat(result).isEqualTo(InvitationSendResult.EXCLUDED);
         assertThat(recipientColumn(recipientId, "exclusion_reason")).isEqualTo("NO_EMAIL");
         assertThat(sentEmails).isEmpty();
+    }
+
+    @Test
+    void aPersonWhoseEmailNowMatchesAGuardianEmailIsExcludedAsSharedEmailWithoutSending() {
+        long personId = importedStudent();
+        long waveId = runningWave(10);
+        long recipientId = recipientOf(waveId, personId);
+        jdbc.update("insert into student (institution_id, person_id, onboarding_status, guardian_email) select min(id), ?, 'CONFIRMADO', (select email from person where id = ?) from institution", personId, personId);
+
+        InvitationSendResult result = send(senderWith(recordingGateway(), disabledBreaker()), recipientId);
+
+        assertThat(result).isEqualTo(InvitationSendResult.EXCLUDED);
+        assertThat(recipientColumn(recipientId, "exclusion_reason")).isEqualTo("SHARED_EMAIL");
+        assertThat(sentEmails).isEmpty();
+        jdbc.update("delete from student where person_id = ?", personId);
     }
 
     @Test
@@ -602,7 +620,7 @@ class InvitationSendIT extends AbstractIntegrationTest {
         };
         jdbc.update("update person set email = ? where id = ?", newEmail, personId);
         InvitationRecipientSendTransaction sender = new InvitationRecipientSendTransaction(waveRepository, recipientRepository, deliveryRepository,
-                staleFinder, tokenRequester, emailFactory, new InvitationMailSender(recordingGateway(), disabledBreaker(), looseBulkhead()),
+                staleFinder, guardianEmailCollisionFinder, tokenRequester, emailFactory, new InvitationMailSender(recordingGateway(), disabledBreaker(), looseBulkhead()),
                 deliveryRecorder, capacity, clock);
 
         InvitationSendResult result = send(sender, recipientId);

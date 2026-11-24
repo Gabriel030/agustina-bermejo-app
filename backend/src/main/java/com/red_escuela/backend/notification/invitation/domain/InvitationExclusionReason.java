@@ -5,5 +5,6 @@ public enum InvitationExclusionReason {
     ALREADY_ACTIVE,
     NOT_ELIGIBLE,
     IN_OTHER_WAVE,
-    WAVE_CANCELLED
+    WAVE_CANCELLED,
+    SHARED_EMAIL
 }
