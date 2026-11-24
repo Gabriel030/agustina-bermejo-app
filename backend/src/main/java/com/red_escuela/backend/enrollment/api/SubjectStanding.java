@@ -39,12 +39,16 @@ public record SubjectStanding(List<CourseworkEntry> coursework, RecognizedEquiva
         return isApprovedByEquivalence() ? ApprovalSource.EQUIVALENCE : null;
     }
 
-    public Grade bestApprovedScore() {
-        return Stream.concat(
+    public Grade scoreForPrerequisiteCheck() {
+        List<Grade> approvedSourceScores = Stream.concat(
                         coursework.stream().filter(entry -> entry.status() == EnrollmentStatus.APPROVED)
                                 .map(CourseworkEntry::finalScore),
                         Stream.ofNullable(equivalence).map(RecognizedEquivalence::originScore))
-                .filter(Objects::nonNull).max(Comparator.naturalOrder()).orElse(null);
+                .toList();
+        if (approvedSourceScores.isEmpty() || approvedSourceScores.contains(null)) {
+            return null;
+        }
+        return approvedSourceScores.stream().max(Comparator.naturalOrder()).orElse(null);
     }
 
     public Grade approvedScore() {

@@ -17,6 +17,7 @@ import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository.PrerequisiteStatusRow;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalenceStatus;
 import com.red_escuela.backend.shared.domain.Grade;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -71,8 +73,8 @@ class ProgramPrerequisiteEvaluatorTest {
     }
 
     private void studentApprovedWithScore(Long prerequisiteSubjectId, String... scores) {
-        java.util.Arrays.stream(scores).map(score -> {
-            SubjectSectionEnrollmentRepository.PrerequisiteStatusRow row = mock(SubjectSectionEnrollmentRepository.PrerequisiteStatusRow.class);
+        Arrays.stream(scores).map(score -> {
+            PrerequisiteStatusRow row = mock(PrerequisiteStatusRow.class);
             when(row.getProgramEnrollmentId()).thenReturn(ENROLLMENT_ID);
             when(row.getSubjectId()).thenReturn(prerequisiteSubjectId);
             when(row.getStatus()).thenReturn(EnrollmentStatus.APPROVED);
@@ -342,5 +344,38 @@ class ProgramPrerequisiteEvaluatorTest {
         studentApprovedWithScore(10L, "2");
 
         assertThat(evaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isTrue();
+    }
+
+    @Test
+    void approvedAttemptWithoutScoreIsMetEvenWhenEquivalenceHasScoreBelowMinimum() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
+        studentApprovedWithScore(10L, (String) null);
+        studentHasEquivalence(10L, "4");
+
+        assertThat(evaluator.assess(ENROLLMENT_ID, SUBJECT_ID)).singleElement().satisfies(assessment -> {
+            assertThat(assessment.met()).isTrue();
+            assertThat(assessment.approvedScore()).isNull();
+        });
+    }
+
+    @Test
+    void equivalenceWithoutScoreIsMetEvenWhenApprovedAttemptIsBelowMinimum() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
+        studentApprovedWithScore(10L, "4");
+        studentHasEquivalence(10L, null);
+
+        assertThat(evaluator.assess(ENROLLMENT_ID, SUBJECT_ID)).extracting(PrerequisiteAssessment::met).containsExactly(true);
+    }
+
+    @Test
+    void bestScoreBetweenApprovedAttemptAndEquivalenceDecides() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
+        studentApprovedWithScore(10L, "7");
+        studentHasEquivalence(10L, "4");
+
+        assertThat(evaluator.assess(ENROLLMENT_ID, SUBJECT_ID)).singleElement().satisfies(assessment -> {
+            assertThat(assessment.met()).isTrue();
+            assertThat(assessment.approvedScore()).isEqualTo(Grade.of(new BigDecimal("7")));
+        });
     }
 }

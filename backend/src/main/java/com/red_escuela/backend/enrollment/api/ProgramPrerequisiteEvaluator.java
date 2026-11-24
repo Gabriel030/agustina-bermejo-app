@@ -89,7 +89,7 @@ public class ProgramPrerequisiteEvaluator {
                             prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE);
                     PrerequisiteStanding standing = requirementPolicy.standingOf(
                             subjectStanding.courseworkStatuses(), subjectStanding.isApprovedByEquivalence());
-                    return assessment(prerequisite, standing, subjectStanding.bestApprovedScore());
+                    return assessment(prerequisite, standing, subjectStanding.scoreForPrerequisiteCheck());
                 })
                 .toList();
     }
