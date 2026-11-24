@@ -24,7 +24,7 @@ export function construirEventosDelCalendario({ termStartDate, termEndDate, tp1D
     if (fecha) eventos.push({ fecha: aClaveDia(fecha), tono: 'accent', etiqueta: `Parcial ${i + 1}` });
   });
   [finalCall1Date, finalCall2Date].forEach((fecha, i) => {
-    if (fecha) eventos.push({ fecha: aClaveDia(fecha), tono: 'accent2', etiqueta: `Llamado ${i + 1}` });
+    if (fecha) eventos.push({ fecha: aClaveDia(fecha), tono: 'accent', etiqueta: `Llamado ${i + 1}` });
   });
   return eventos;
 }

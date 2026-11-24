@@ -9,7 +9,6 @@
   --ink-soft: oklch(44.8% 0.034 270);
   --ink-faint: oklch(51.5% 0.033 270);
   --accent: oklch(50.2% 0.092 226);
-  --accent-2: var(--accent);
   --accent-soft: oklch(94.8% 0.018 218);
   --on-accent: oklch(100% 0 0);
   --success: oklch(51.8% 0.110 158);
@@ -39,7 +38,7 @@
   --sh-popover: var(--sh-overlay);
   --sh-sticky-left: 6px 0 8px -6px color-mix(in oklch, var(--ink) 25%, transparent);
   --sh-sticky-right: -6px 0 8px -6px color-mix(in oklch, var(--ink) 25%, transparent);
-  --sh-highlight-row: inset 3px 0 0 var(--accent-2), inset -3px 0 0 var(--accent-2);
+  --sh-highlight-row: inset 3px 0 0 var(--accent), inset -3px 0 0 var(--accent);
   --r-sm: 0.375rem;
   --r-md: 0.5rem;
   --r-lg: 0.5rem;
@@ -88,7 +87,6 @@
   --ink-soft: oklch(78.7% 0.023 272);
   --ink-faint: oklch(67.1% 0.029 272);
   --accent: oklch(76.9% 0.104 218);
-  --accent-2: var(--accent);
   --accent-soft: oklch(30.0% 0.037 222);
   --on-accent: oklch(19.2% 0.015 272);
   --success: oklch(76.1% 0.135 157);
