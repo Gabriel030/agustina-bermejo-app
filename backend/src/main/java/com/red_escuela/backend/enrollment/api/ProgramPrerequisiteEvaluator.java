@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Component
@@ -61,10 +62,21 @@ public class ProgramPrerequisiteEvaluator {
     }
 
     public List<PrerequisiteAssessment> findUnmetForApprovalOrEmptyOutsidePlan(Long programEnrollmentId, Long subjectId) {
+        return findAssessmentsMatchingOrEmptyOutsidePlan(programEnrollmentId, subjectId,
+                assessment -> !requirementPolicy.isMetForApproval(assessment.standing()));
+    }
+
+    public List<PrerequisiteAssessment> findUnmetForFinalExamOrEmptyOutsidePlan(Long programEnrollmentId, Long subjectId) {
+        return findAssessmentsMatchingOrEmptyOutsidePlan(programEnrollmentId, subjectId,
+                assessment -> !requirementPolicy.isMetForApproval(assessment.standing()) || !assessment.met());
+    }
+
+    private List<PrerequisiteAssessment> findAssessmentsMatchingOrEmptyOutsidePlan(
+            Long programEnrollmentId, Long subjectId, Predicate<PrerequisiteAssessment> filter) {
         Long programId = findProgramEnrollment(programEnrollmentId).getProgram().getId();
         return programCurriculumFinder.findProgramSubject(programId, subjectId)
                 .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject).stream()
-                        .filter(assessment -> !requirementPolicy.isMetForApproval(assessment.standing()))
+                        .filter(filter)
                         .toList())
                 .orElse(List.of());
     }
