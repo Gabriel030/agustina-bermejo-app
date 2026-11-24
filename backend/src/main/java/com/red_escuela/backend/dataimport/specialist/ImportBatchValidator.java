@@ -15,6 +15,7 @@ import com.red_escuela.backend.dataimport.repository.ImportBatchRepository;
 import com.red_escuela.backend.dataimport.repository.ImportFileRepository;
 import com.red_escuela.backend.dataimport.repository.ImportRowCommittedKey;
 import com.red_escuela.backend.dataimport.repository.ImportRowRepository;
+import com.red_escuela.backend.shared.persistence.InClauseChunks;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -56,7 +57,11 @@ public class ImportBatchValidator {
         this.eventRepository = eventRepository;
         this.registry = registry;
         this.entityManager = entityManager;
-        this.chunkSize = Math.max(1, chunkSize);
+        this.chunkSize = Math.min(InClauseChunks.DEFAULT_SIZE, Math.max(1, chunkSize));
+    }
+
+    public int validationChunkSize() {
+        return chunkSize;
     }
 
     @Transactional
