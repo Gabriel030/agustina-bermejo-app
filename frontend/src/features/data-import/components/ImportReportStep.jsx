@@ -106,6 +106,14 @@ export function ImportReportStep({ batch }) {
           </StatCard>
         ))}
       </div>
+      {batch.graduationsPendingReview > 0 && (
+        <Notice tone="warning">
+          {batch.graduationsPendingReview === 1
+            ? '1 egreso quedó pendiente de revisión del Director'
+            : `${batch.graduationsPendingReview.toLocaleString('es-AR')} egresos quedaron pendientes de revisión del Director`}
+          . No habilitan certificado hasta que se revisen.
+        </Notice>
+      )}
       <GlassCard className="p-0">
         <ul className="divide-y divide-border" aria-label="Resultado por bloque">
           {batch.counters.map((block) => (

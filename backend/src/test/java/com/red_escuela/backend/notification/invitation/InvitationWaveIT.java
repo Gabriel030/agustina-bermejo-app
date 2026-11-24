@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.invitation;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dataimport.api.ImportedAccount;
 import com.red_escuela.backend.notification.invitation.domain.InvitationErrorCode;
@@ -610,7 +611,7 @@ class InvitationWaveIT extends AbstractIntegrationTest {
         transactions.executeWithoutResult(status -> {
             InvitationWaveRecipient recipient = recipientRepository.findById(recipientId).orElseThrow();
             recipient.queue(5L);
-            recipient.markSent(java.time.Instant.now());
+            recipient.markSent(java.time.Instant.now(MutableClock.INSTANCE));
             recipientRepository.saveAndFlush(recipient);
         });
         assertThat(jdbc.queryForObject("select status from invitation_wave_recipient where id = ?", String.class, recipientId)).isEqualTo("SENT");

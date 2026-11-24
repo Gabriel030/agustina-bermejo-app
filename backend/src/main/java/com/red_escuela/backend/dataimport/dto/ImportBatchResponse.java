@@ -18,7 +18,8 @@ public record ImportBatchResponse(
         LocalDateTime committedAt,
         LocalDateTime sealedAt,
         List<ImportFileResponse> files,
-        List<ImportBlockCounters> counters) {
+        List<ImportBlockCounters> counters,
+        long graduationsPendingReview) {
 
     public record ImportFileResponse(ImportEntityType entityType, String originalName, int rowCount, long sizeBytes,
             LocalDateTime uploadedAt) {
@@ -31,9 +32,10 @@ public record ImportBatchResponse(
     public record ImportBlockCounters(ImportEntityType entityType, Map<ImportRowStatus, Long> rowsByStatus) {
     }
 
-    public static ImportBatchResponse from(ImportBatch batch, List<ImportFile> files, List<ImportBlockCounters> counters) {
+    public static ImportBatchResponse from(ImportBatch batch, List<ImportFile> files, List<ImportBlockCounters> counters,
+            long graduationsPendingReview) {
         return new ImportBatchResponse(batch.getId(), batch.getName(), batch.getStatus(), batch.getCreatedAt(),
                 batch.getValidatedAt(), batch.getCommittedAt(), batch.getSealedAt(), files.stream().map(ImportFileResponse::from).toList(),
-                counters);
+                counters, graduationsPendingReview);
     }
 }

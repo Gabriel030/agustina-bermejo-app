@@ -11,8 +11,11 @@ function iniciales(nombre, apellido) {
   return `${nombre?.[0] ?? ''}${apellido?.[0] ?? ''}`.toUpperCase();
 }
 
+const MENU_PATH_ALIASES = [['/cierre-de-comision/', '/cierres-de-comision/']];
+
 function pageTitleFor(items, pathname, fallback) {
-  const matches = items.filter((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
+  const menuPathname = MENU_PATH_ALIASES.reduce((path, [from, to]) => path.replace(from, to), pathname);
+  const matches = items.filter((item) => menuPathname === item.to || menuPathname.startsWith(`${item.to}/`));
   const current = matches.sort((a, b) => b.to.length - a.to.length)[0];
   return current?.label ?? fallback;
 }
