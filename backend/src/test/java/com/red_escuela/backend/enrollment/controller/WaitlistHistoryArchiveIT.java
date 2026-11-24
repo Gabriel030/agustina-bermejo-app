@@ -145,9 +145,9 @@ class WaitlistHistoryArchiveIT extends AbstractIntegrationTest {
     }
 
     private long insertAuditEntry(String table, LocalDateTime occurredAt, Long enrollmentId, String reason) {
-        return jdbc.queryForObject("insert into " + table + " (occurred_at, action, entity_type, entity_id, reason) "
-                + "values (?, ?, ?, ?, ?) returning id", Long.class, occurredAt, WITHDRAWN_BY_STAFF,
-                AuditEntityType.SECTION_ENROLLMENT.name(), enrollmentId, reason);
+        return jdbc.queryForObject("insert into " + table + " (id, occurred_at, action, entity_type, entity_id, reason) "
+                + "values (nextval(pg_get_serial_sequence('audit_log', 'id')), ?, ?, ?, ?, ?) returning id", Long.class,
+                occurredAt, WITHDRAWN_BY_STAFF, AuditEntityType.SECTION_ENROLLMENT.name(), enrollmentId, reason);
     }
 
     private SubjectSection queueSection(Program program, int termYear) {
